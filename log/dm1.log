@@ -1,0 +1,1355 @@
+1. D reg for ARM64_INS_STP
+2. Unsupported Op for ARM64_INS_DMB In ARM64_INS_MRS CNTVCT_EL0
+3. Unsupported insn: ARM64_INS_MADD
+4. Stuck on BR to 0xfffff772ce00 at 0x31fc
+
+kern  :info  : [   36.222804] rust_kjit: Hot SVC at 0xfffff772ce0c with PID 2631 on CPU 1
+kern  :info  : [   36.223164] rust_kjit: Vlabel: 0xfffff7668660 -> 0x118	len 0x118 + ofst 0x0
+kern  :info  : [   36.223169] rust_kjit: Vlabel: 0xfffff7668664 -> 0x128	len 0x128 + ofst 0x0
+kern  :info  : [   36.223170] rust_kjit: Vlabel: 0xfffff7668668 -> 0x12c	len 0x12c + ofst 0x0
+kern  :info  : [   36.223171] rust_kjit: Vlabel: 0xfffff766866c -> 0x130	len 0x130 + ofst 0x0
+kern  :info  : [   36.223172] rust_kjit: Vlabel: 0xfffff7668670 -> 0x134	len 0x134 + ofst 0x0
+kern  :info  : [   36.223173] rust_kjit: Vlabel: 0xfffff7668674 -> 0x138	len 0x138 + ofst 0x0
+kern  :info  : [   36.223174] rust_kjit: Vlabel: 0xfffff7668678 -> 0x13c	len 0x13c + ofst 0x0
+kern  :info  : [   36.223174] rust_kjit: Vlabel: 0xfffff766867c -> 0x140	len 0x140 + ofst 0x0
+kern  :info  : [   36.223175] rust_kjit: Vlabel: 0xfffff7668680 -> 0x144	len 0x144 + ofst 0x0
+kern  :info  : [   36.223176] rust_kjit: Vlabel: 0xfffff7668684 -> 0x148	len 0x148 + ofst 0x0
+kern  :info  : [   36.223177] rust_kjit: Vlabel: 0xfffff7668688 -> 0x14c	len 0x14c + ofst 0x0
+kern  :info  : [   36.223179] rust_kjit: Vlabel: 0xfffff772ce0c -> 0x15c	len 0x15c + ofst 0x0
+kern  :info  : [   36.223180] rust_kjit: Vlabel: 0xfffff772ce10 -> 0x160	len 0x160 + ofst 0x0
+kern  :info  : [   36.223182] rust_kjit: Vlabel: 0xfffff772ce14 -> 0x184	len 0x184 + ofst 0x0
+kern  :info  : [   36.223183] rust_kjit: Vlabel: 0xfffff772ce18 -> 0x194	len 0x194 + ofst 0x0
+kern  :info  : [   36.223184] rust_kjit: Vlabel: 0xfffff7668660 -> 0x1b8	len 0x1b8 + ofst 0x0
+kern  :info  : [   36.223185] rust_kjit: Final code: fd 7b b4 a9 fd 03 00 91 f2 2f 00 f9 f3 53 06 a9 f5 5b 07 a9 f7 63 08 a9 f9 6b 09 a9 fb 73 0a a9 f0 03 00 aa f1 03 01 aa f0 47 0b a9 00 06 40 a9 02 0e 41 a9 04 16 42 a9 06 1e 43 a9 08 26 44 a9 0a 2e 45 a9 0c 36 46 a9 0e 3e 47 a9 12 4e 49 a9 14 56 4a a9 16 5e 4b a9 18 66 4c a9 1a 6e 4d a9 1c 72 40 f9 1e 7a 40 f9 11 76 40 f9 f1 23 00 f9 11 7e 40 f9 f1 27 00 f9 10 46 48 a9 ec 37 01 a9 ee 3f 02 a9 f0 47 03 a9 f0 47 44 a9 34 00 00 14 f0 47 04 a9 f0 47 4b a9 2a 2e 00 a9 ee 3f 41 a9 0e 3e 06 a9 ee 3f 42 a9 0e 3e 07 a9 ee 3f 43 a9 0e 3e 08 a9 ee 23 40 f9 0e 76 00 f9 ee 27 40 f9 0e 7e 00 f9 00 06 00 a9 02 0e 01 a9 04 16 02 a9 06 1e 03 a9 08 22 00 f9 12 4e 09 a9 14 56 0a a9 16 5e 0b a9 18 66 0c a9 1a 6e 0d a9 1c 72 00 f9 1e 7a 00 f9 e0 03 09 aa f2 2f 40 f9 f3 53 46 a9 
+kern  :info  : [   36.223303] rust_kjit: Final code con't: f5 5b 47 a9 f7 63 48 a9 f9 6b 49 a9 fb 73 4a a9 fd 7b cc a8 c0 03 5f d6 02 00 e0 d2 e2 ff df f2 c2 ef be f2 02 00 9e f2 42 ec 46 f9 43 d0 3b d5 30 7a bf a9 e1 03 00 aa e1 03 01 4b f0 03 11 aa 61 68 22 b8 00 00 80 92 30 7a c1 a8 89 00 80 d2 ea 03 1e aa 2b 00 00 10 ce ff ff 17 1f fc 3f b1 09 42 3b d5 09 02 80 f2 69 00 c0 f2 0a 00 e0 d2 ea ff df f2 4a ee be f2 0a c3 99 f2 2b 00 00 10 c4 ff ff 17 89 00 80 d2 ea 03 1e aa 2b 00 00 10 c0 ff ff 17 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 ea ff df f2 ca ec be f2 0a cc 90 f2 2b 00 00 10 b7 ff ff 17 d8 ff ff 17 
+kern  :info  : [   36.223534] rust_kjit: ###### Lift session 1 ######
+kern  :info  : [   36.223536] rust_kjit: Fdebug at 0x180
+kern  :info  : [   36.223538] rust_kjit: B: Continue at 0x184
+kern  :info  : [   36.223539] rust_kjit: Fret at 0x190
+kern  :info  : [   36.224809] rust_kjit: Vlabel: 0xaaaaaab1a588 -> 0x1bc	len 0x0 + ofst 0x1bc
+kern  :info  : [   36.224816] rust_kjit: Vlabel: 0xaaaaaab1a58c -> 0x1cc	len 0x10 + ofst 0x1bc
+kern  :info  : [   36.224817] rust_kjit: Vlabel: 0xaaaaaab1a590 -> 0x1d0	len 0x14 + ofst 0x1bc
+kern  :info  : [   36.224818] rust_kjit: Vlabel: 0xaaaaaab1a594 -> 0x1d4	len 0x18 + ofst 0x1bc
+kern  :info  : [   36.224819] rust_kjit: Vlabel: 0xaaaaaab1a598 -> 0x1d8	len 0x1c + ofst 0x1bc
+kern  :info  : [   36.224820] rust_kjit: Vlabel: 0xaaaaaab1a59c -> 0x1dc	len 0x20 + ofst 0x1bc
+kern  :info  : [   36.224821] rust_kjit: Vlabel: 0xaaaaaab1a5a0 -> 0x1e0	len 0x24 + ofst 0x1bc
+kern  :info  : [   36.224823] rust_kjit: Vlabel: 0xaaaaaab1a5a4 -> 0x204	len 0x48 + ofst 0x1bc
+kern  :info  : [   36.224824] rust_kjit: Vlabel: 0xaaaaaab1a5a8 -> 0x208	len 0x4c + ofst 0x1bc
+kern  :info  : [   36.224825] rust_kjit: Vlabel: 0xaaaaaab1a5ac -> 0x20c	len 0x50 + ofst 0x1bc
+kern  :info  : [   36.224826] rust_kjit: Vlabel: 0xaaaaaab1a5b0 -> 0x210	len 0x54 + ofst 0x1bc
+kern  :info  : [   36.224826] rust_kjit: Vlabel: 0xaaaaaab1a5b4 -> 0x214	len 0x58 + ofst 0x1bc
+kern  :info  : [   36.224827] rust_kjit: Vlabel: 0xaaaaaab1a5b8 -> 0x218	len 0x5c + ofst 0x1bc
+kern  :info  : [   36.224828] rust_kjit: Vlabel: 0xaaaaaab1a5bc -> 0x21c	len 0x60 + ofst 0x1bc
+kern  :info  : [   36.224830] rust_kjit: Vlabel: 0xaaaaaab1a5dc -> 0x22c	len 0x70 + ofst 0x1bc
+kern  :info  : [   36.224831] rust_kjit: Vlabel: 0xaaaaaab1a5e0 -> 0x230	len 0x74 + ofst 0x1bc
+kern  :info  : [   36.224832] rust_kjit: Vlabel: 0xaaaaaab1a5e4 -> 0x234	len 0x78 + ofst 0x1bc
+kern  :info  : [   36.224833] rust_kjit: Vlabel: 0xaaaaaab1a5e8 -> 0x238	len 0x7c + ofst 0x1bc
+kern  :info  : [   36.224834] rust_kjit: Vlabel: 0xaaaaaab1a5ec -> 0x23c	len 0x80 + ofst 0x1bc
+kern  :info  : [   36.224835] rust_kjit: Vlabel: 0xaaaaaab1a5f0 -> 0x240	len 0x84 + ofst 0x1bc
+kern  :info  : [   36.224836] rust_kjit: Vlabel: 0xaaaaaab1a588 -> 0x264	len 0xa8 + ofst 0x1bc
+kern  :info  : [   36.224840] rust_kjit: Vlabel: 0xaaaaaab1a5f4 -> 0x268	len 0xac + ofst 0x1bc
+kern  :info  : [   36.224841] rust_kjit: Vlabel: 0xaaaaaab1a5f8 -> 0x26c	len 0xb0 + ofst 0x1bc
+kern  :info  : [   36.224842] rust_kjit: Vlabel: 0xaaaaaab1a5fc -> 0x290	len 0xd4 + ofst 0x1bc
+kern  :info  : [   36.224843] rust_kjit: Vlabel: 0xaaaaaab1a600 -> 0x294	len 0xd8 + ofst 0x1bc
+kern  :info  : [   36.224844] rust_kjit: Vlabel: 0xaaaaaab1a604 -> 0x298	len 0xdc + ofst 0x1bc
+kern  :info  : [   36.224845] rust_kjit: Vlabel: 0xaaaaaab1a608 -> 0x29c	len 0xe0 + ofst 0x1bc
+kern  :info  : [   36.224846] rust_kjit: Vlabel: 0xaaaaaab1a60c -> 0x2a0	len 0xe4 + ofst 0x1bc
+kern  :info  : [   36.224847] rust_kjit: Vlabel: 0xaaaaaab1a610 -> 0x2a4	len 0xe8 + ofst 0x1bc
+kern  :info  : [   36.224848] rust_kjit: Vlabel: 0xaaaaaab1a614 -> 0x2c8	len 0x10c + ofst 0x1bc
+kern  :info  : [   36.224849] rust_kjit: Vlabel: 0xaaaaaab1a618 -> 0x2cc	len 0x110 + ofst 0x1bc
+kern  :info  : [   36.224850] rust_kjit: Vlabel: 0xaaaaaab1a61c -> 0x2d0	len 0x114 + ofst 0x1bc
+kern  :info  : [   36.224851] rust_kjit: Vlabel: 0xaaaaaab1a620 -> 0x2d4	len 0x118 + ofst 0x1bc
+kern  :info  : [   36.224853] rust_kjit: Vlabel: 0xaaaaaab1a624 -> 0x2f8	len 0x13c + ofst 0x1bc
+kern  :info  : [   36.224854] rust_kjit: Vlabel: 0xaaaaaab1a628 -> 0x2fc	len 0x140 + ofst 0x1bc
+kern  :info  : [   36.224855] rust_kjit: Vlabel: 0xaaaaaab1a614 -> 0x324	len 0x168 + ofst 0x1bc
+kern  :info  : [   36.224856] rust_kjit: Vlabel: 0xaaaaaab1a62c -> 0x328	len 0x16c + ofst 0x1bc
+kern  :info  : [   36.224857] rust_kjit: Vlabel: 0xaaaaaab1a630 -> 0x32c	len 0x170 + ofst 0x1bc
+kern  :info  : [   36.224858] rust_kjit: Vlabel: 0xaaaaaab1a588 -> 0x350	len 0x194 + ofst 0x1bc
+kern  :info  : [   36.224859] rust_kjit: Vlabel: 0xaaaaaab1a64c -> 0x354	len 0x198 + ofst 0x1bc
+kern  :info  : [   36.224861] rust_kjit: Vlabel: 0xaaaaaab1a650 -> 0x370	len 0x1b4 + ofst 0x1bc
+kern  :info  : [   36.224861] rust_kjit: Vlabel: 0xaaaaaab1a654 -> 0x374	len 0x1b8 + ofst 0x1bc
+kern  :info  : [   36.224862] rust_kjit: Vlabel: 0xaaaaaab1a658 -> 0x378	len 0x1bc + ofst 0x1bc
+kern  :info  : [   36.224863] rust_kjit: Vlabel: 0xaaaaaab1a65c -> 0x37c	len 0x1c0 + ofst 0x1bc
+kern  :info  : [   36.224864] rust_kjit: Vlabel: 0xaaaaaab1a660 -> 0x380	len 0x1c4 + ofst 0x1bc
+kern  :info  : [   36.224865] rust_kjit: Vlabel: 0xaaaaaab1a664 -> 0x384	len 0x1c8 + ofst 0x1bc
+kern  :info  : [   36.224866] rust_kjit: Vlabel: 0xaaaaaab1a668 -> 0x388	len 0x1cc + ofst 0x1bc
+kern  :info  : [   36.224867] rust_kjit: Vlabel: 0xaaaaaab1a66c -> 0x3ac	len 0x1f0 + ofst 0x1bc
+kern  :info  : [   36.224869] rust_kjit: Vlabel: 0xaaaaaab1a670 -> 0x3d0	len 0x214 + ofst 0x1bc
+kern  :info  : [   36.224870] rust_kjit: Vlabel: 0xaaaaaab1a674 -> 0x3d4	len 0x218 + ofst 0x1bc
+kern  :info  : [   36.224871] rust_kjit: Vlabel: 0xaaaaaab1a678 -> 0x3f8	len 0x23c + ofst 0x1bc
+kern  :info  : [   36.224872] rust_kjit: Vlabel: 0xaaaaaab1a67c -> 0x3fc	len 0x240 + ofst 0x1bc
+kern  :info  : [   36.224873] rust_kjit: Vlabel: 0xaaaaaab1a680 -> 0x400	len 0x244 + ofst 0x1bc
+kern  :info  : [   36.224875] rust_kjit: Vlabel: 0xaaaaaab1a684 -> 0x424	len 0x268 + ofst 0x1bc
+kern  :info  : [   36.224876] rust_kjit: Vlabel: 0xaaaaaab1a688 -> 0x428	len 0x26c + ofst 0x1bc
+kern  :info  : [   36.224877] rust_kjit: Vlabel: 0xaaaaaab1a68c -> 0x42c	len 0x270 + ofst 0x1bc
+kern  :info  : [   36.224877] rust_kjit: Vlabel: 0xaaaaaab1a690 -> 0x430	len 0x274 + ofst 0x1bc
+kern  :info  : [   36.224878] rust_kjit: Vlabel: 0xaaaaaab1a694 -> 0x434	len 0x278 + ofst 0x1bc
+kern  :info  : [   36.224880] rust_kjit: Vlabel: 0xaaaaaab1a698 -> 0x458	len 0x29c + ofst 0x1bc
+kern  :info  : [   36.224881] rust_kjit: Vlabel: 0xaaaaaab1a69c -> 0x47c	len 0x2c0 + ofst 0x1bc
+kern  :info  : [   36.224882] rust_kjit: Vlabel: 0xaaaaaab1a6a0 -> 0x480	len 0x2c4 + ofst 0x1bc
+kern  :info  : [   36.224883] rust_kjit: Vlabel: 0xaaaaaab1a6a4 -> 0x4a8	len 0x2ec + ofst 0x1bc
+kern  :info  : [   36.224884] rust_kjit: Vlabel: 0xaaaaaab1a6a8 -> 0x4ac	len 0x2f0 + ofst 0x1bc
+kern  :info  : [   36.224885] rust_kjit: Vlabel: 0xaaaaaab1a6ac -> 0x4b0	len 0x2f4 + ofst 0x1bc
+kern  :info  : [   36.224886] rust_kjit: Vlabel: 0xaaaaaab1a6b0 -> 0x4b4	len 0x2f8 + ofst 0x1bc
+kern  :info  : [   36.224888] rust_kjit: Vlabel: 0xaaaaaab1a6b4 -> 0x4d8	len 0x31c + ofst 0x1bc
+kern  :info  : [   36.224889] rust_kjit: Vlabel: 0xaaaaaab1a6b8 -> 0x4dc	len 0x320 + ofst 0x1bc
+kern  :info  : [   36.224890] rust_kjit: Vlabel: 0xaaaaaab1a6bc -> 0x4e0	len 0x324 + ofst 0x1bc
+kern  :info  : [   36.224890] rust_kjit: Vlabel: 0xaaaaaab1a6c0 -> 0x4e4	len 0x328 + ofst 0x1bc
+kern  :info  : [   36.224891] rust_kjit: Vlabel: 0xaaaaaab1a6c4 -> 0x4e8	len 0x32c + ofst 0x1bc
+kern  :info  : [   36.224892] rust_kjit: Vlabel: 0xaaaaaab1a6c8 -> 0x4ec	len 0x330 + ofst 0x1bc
+kern  :info  : [   36.224894] rust_kjit: Vlabel: 0xaaaaaab1a6cc -> 0x508	len 0x34c + ofst 0x1bc
+kern  :info  : [   36.224894] rust_kjit: Vlabel: 0xaaaaaab1a6d0 -> 0x50c	len 0x350 + ofst 0x1bc
+kern  :info  : [   36.224895] rust_kjit: Vlabel: 0xaaaaaab1a6d4 -> 0x510	len 0x354 + ofst 0x1bc
+kern  :info  : [   36.224896] rust_kjit: Vlabel: 0xaaaaaab1a6d8 -> 0x514	len 0x358 + ofst 0x1bc
+kern  :info  : [   36.224897] rust_kjit: Vlabel: 0xaaaaaab1a6dc -> 0x518	len 0x35c + ofst 0x1bc
+kern  :info  : [   36.224898] rust_kjit: Vlabel: 0xaaaaaab1a6e0 -> 0x528	len 0x36c + ofst 0x1bc
+kern  :info  : [   36.224899] rust_kjit: Vlabel: 0xaaaaaab1a6e4 -> 0x52c	len 0x370 + ofst 0x1bc
+kern  :info  : [   36.224901] rust_kjit: Vlabel: 0xaaaaaab1a688 -> 0x554	len 0x398 + ofst 0x1bc
+kern  :info  : [   36.224902] rust_kjit: Vlabel: 0xaaaaaab1a6e8 -> 0x558	len 0x39c + ofst 0x1bc
+kern  :info  : [   36.224903] rust_kjit: Vlabel: 0xaaaaaab1a6ec -> 0x55c	len 0x3a0 + ofst 0x1bc
+kern  :info  : [   36.224903] rust_kjit: Vlabel: 0xaaaaaab1a6f0 -> 0x560	len 0x3a4 + ofst 0x1bc
+kern  :info  : [   36.224904] rust_kjit: Vlabel: 0xaaaaaab1a6f4 -> 0x564	len 0x3a8 + ofst 0x1bc
+kern  :info  : [   36.224905] rust_kjit: Vlabel: 0xaaaaaab1a6f8 -> 0x568	len 0x3ac + ofst 0x1bc
+kern  :info  : [   36.224907] rust_kjit: Vlabel: 0xaaaaaab1a698 -> 0x58c	len 0x3d0 + ofst 0x1bc
+kern  :info  : [   36.224908] rust_kjit: Vlabel: 0xaaaaaab1a6fc -> 0x590	len 0x3d4 + ofst 0x1bc
+kern  :info  : [   36.224909] rust_kjit: Vlabel: 0xaaaaaab1a700 -> 0x594	len 0x3d8 + ofst 0x1bc
+kern  :info  : [   36.224910] rust_kjit: Vlabel: 0xaaaaaab1a704 -> 0x598	len 0x3dc + ofst 0x1bc
+kern  :info  : [   36.224911] rust_kjit: Vlabel: 0xaaaaaab1a708 -> 0x59c	len 0x3e0 + ofst 0x1bc
+kern  :info  : [   36.224911] rust_kjit: Vlabel: 0xaaaaaab1a70c -> 0x5a0	len 0x3e4 + ofst 0x1bc
+kern  :info  : [   36.224913] rust_kjit: Vlabel: 0xaaaaaab1a6b4 -> 0x5c4	len 0x408 + ofst 0x1bc
+kern  :info  : [   36.224914] rust_kjit: Vlabel: 0xaaaaaab1a710 -> 0x5c8	len 0x40c + ofst 0x1bc
+kern  :info  : [   36.224915] rust_kjit: Vlabel: 0xaaaaaab1a714 -> 0x5d8	len 0x41c + ofst 0x1bc
+kern  :info  : [   36.224916] rust_kjit: Vlabel: 0xaaaaaab1a718 -> 0x5dc	len 0x420 + ofst 0x1bc
+kern  :info  : [   36.224918] rust_kjit: Vlabel: 0xaaaaaab1a71c -> 0x600	len 0x444 + ofst 0x1bc
+kern  :info  : [   36.224919] rust_kjit: Vlabel: 0xaaaaaab1a720 -> 0x604	len 0x448 + ofst 0x1bc
+kern  :info  : [   36.224919] rust_kjit: Vlabel: 0xaaaaaab1a724 -> 0x608	len 0x44c + ofst 0x1bc
+kern  :info  : [   36.224921] rust_kjit: Vlabel: 0xaaaaaab1a6a8 -> 0x62c	len 0x470 + ofst 0x1bc
+kern  :info  : [   36.224922] rust_kjit: Vlabel: 0xaaaaaab1a728 -> 0x630	len 0x474 + ofst 0x1bc
+kern  :info  : [   36.224923] rust_kjit: Vlabel: 0xaaaaaab1a72c -> 0x634	len 0x478 + ofst 0x1bc
+kern  :info  : [   36.224924] rust_kjit: Vlabel: 0xaaaaaab1a6a8 -> 0x658	len 0x49c + ofst 0x1bc
+kern  :info  : [   36.224925] rust_kjit: Vlabel: 0xaaaaaab1a730 -> 0x65c	len 0x4a0 + ofst 0x1bc
+kern  :info  : [   36.224926] rust_kjit: Vlabel: 0xaaaaaab1a734 -> 0x660	len 0x4a4 + ofst 0x1bc
+kern  :info  : [   36.224927] rust_kjit: Vlabel: 0xaaaaaab1a6a8 -> 0x684	len 0x4c8 + ofst 0x1bc
+kern  :info  : [   36.224928] rust_kjit: Vlabel: 0xaaaaaab1a738 -> 0x688	len 0x4cc + ofst 0x1bc
+kern  :info  : [   36.224929] rust_kjit: Vlabel: 0xaaaaaab1a73c -> 0x68c	len 0x4d0 + ofst 0x1bc
+kern  :info  : [   36.224931] rust_kjit: Vlabel: 0xaaaaaab1a688 -> 0x6b0	len 0x4f4 + ofst 0x1bc
+kern  :info  : [   36.224932] rust_kjit: Vlabel: 0xaaaaaab1a740 -> 0x6b4	len 0x4f8 + ofst 0x1bc
+kern  :info  : [   36.224933] rust_kjit: Vlabel: 0xaaaaaab1a744 -> 0x6b8	len 0x4fc + ofst 0x1bc
+kern  :info  : [   36.224934] rust_kjit: Vlabel: 0xaaaaaab1a688 -> 0x6dc	len 0x520 + ofst 0x1bc
+kern  :info  : [   36.224935] rust_kjit: Final code: 00 00 e0 d2 40 55 d5 f2 a0 57 b5 f2 00 00 9e f2 00 c0 47 f9 22 0e 40 f9 01 00 40 f9 42 00 01 eb 01 00 80 d2 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a c9 94 f2 2b 00 00 10 a4 ff ff 17 30 7a 42 a9 33 52 43 a9 35 5a 44 a9 37 2a 40 f9 31 82 01 91 1f 20 03 d5 89 00 80 d2 ea 03 1e aa 2b 00 00 10 9a ff ff 17 e0 6a 76 b8 a3 02 40 b9 62 02 00 6a e2 6a 36 b8 80 02 43 7a 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a b1 94 f2 2b 00 00 10 8c ff ff 17 d6 ff ff 17 61 04 00 71 09 42 3b d5 09 02 80 f2 a9 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a c5 94 f2 2b 00 00 10 81 ff ff 17 04 04 80 52 e2 03 80 92 a0 0a 40 f9 63 08 24 9b 00 00 03 8b 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 
+kern  :info  : [   36.225012] rust_kjit: Final code con't: 8a c4 94 f2 2b 00 00 10 73 ff ff 17 21 04 00 51 00 80 00 d1 3f 04 00 31 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a c5 94 f2 2b 00 00 10 67 ff ff 17 02 00 40 b9 5f 00 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a c2 94 f2 2b 00 00 10 5c ff ff 17 e9 ff ff 17 a1 02 00 b9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a b1 94 f2 2b 00 00 10 51 ff ff 17 9b ff ff 17 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 66 9c f2 2b 00 00 10 49 ff ff 17 1f 20 03 d5 e3 03 01 aa e1 03 02 aa 62 f0 5f 38 40 08 00 12 1f 08 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a e8 94 f2 2b 00 00 10 3a ff ff 17 09 42 3b d5 09 02 80 f2 49 01 c0 f2 0a 00 e0 d2 
+kern  :info  : [   36.225088] rust_kjit: Final code con't: 4a 55 d5 f2 2a 56 b5 f2 0a dc 94 f2 2b 00 00 10 31 ff ff 17 1f 0c 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a e7 94 f2 2b 00 00 10 27 ff ff 17 02 00 80 52 1f 10 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a d1 94 f2 2b 00 00 10 1c ff ff 17 62 f0 5e b8 20 f0 5f 38 05 08 00 12 bf 08 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a e0 94 f2 2b 00 00 10 0f ff ff 17 09 42 3b d5 09 02 80 f2 29 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a e2 94 f2 2b 00 00 10 06 ff ff 17 04 7c 03 53 bf 00 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a d5 94 f2 2b 00 00 10 fb fe ff 17 24 d0 5f 38 00 00 80 52 5f 00 04 6b 09 42 3b d5 09 02 80 f2 
+kern  :info  : [   36.225161] rust_kjit: Final code con't: 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a e2 94 f2 2b 00 00 10 ef fe ff 17 1f 20 03 d5 30 7a bf a9 42 7c 40 93 f0 03 11 aa e0 03 03 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 7e 9c f2 2b 00 00 10 e3 fe ff 17 1f 00 00 71 30 7a c1 a8 1f 20 03 d5 e0 17 9f 1a 89 00 80 d2 ea 03 1e aa 2b 00 00 10 db fe ff 17 42 7c 03 53 1f 00 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a d1 94 f2 2b 00 00 10 d0 fe ff 17 b5 ff ff 17 20 f0 5f 38 62 d0 5f 38 05 08 00 12 bf 08 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a d3 94 f2 2b 00 00 10 c2 fe ff 17 b3 ff ff 17 1f 20 03 d5 24 b0 5f 78 00 00 80 52 5f 00 04 6b 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a d6 94 f2 
+kern  :info  : [   36.225272] rust_kjit: Final code con't: 2b 00 00 10 b4 fe ff 17 c5 ff ff 17 89 00 80 d2 ea 03 1e aa 2b 00 00 10 af fe ff 17 bf 0c 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a e6 94 f2 2b 00 00 10 a5 fe ff 17 04 00 80 52 bf 10 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a d5 94 f2 2b 00 00 10 9a fe ff 17 a0 ff ff 17 24 f0 5e b8 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a d5 94 f2 2b 00 00 10 8f fe ff 17 95 ff ff 17 24 70 5f b8 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a d5 94 f2 2b 00 00 10 84 fe ff 17 8a ff ff 17 62 70 5f b8 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a d1 94 f2 2b 00 00 10 79 fe ff 17 5e ff ff 17 62 b0 5f 78 09 42 3b d5 
+kern  :info  : [   36.225367] rust_kjit: Final code con't: 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a d1 94 f2 2b 00 00 10 6e fe ff 17 53 ff ff 17 
+kern  :info  : [   36.225540] rust_kjit: RET to 0xaaaaaab1a5dc at 0x22c
+kern  :info  : [   36.225543] rust_kjit: Fdebug at 0x260
+kern  :info  : [   36.225544] rust_kjit: B to 0xaaaaaab1a588 at 0x1bc
+kern  :info  : [   36.225545] rust_kjit: Fdebug at 0x200
+kern  :info  : [   36.225546] rust_kjit: B: Continue at 0x204
+kern  :info  : [   36.225547] rust_kjit: Fret at 0x228
+kern  :err   : [   36.230344] rust_kjit: D reg for ARM64_INS_STP
+kern  :err   : [   36.231074] rust_kjit: RET JIT failed for 0xaaaaaab20700
+kern  :info  : [   36.231077] rust_kjit: Leaving with cnt 5, svc_loop_cnt 0
+kern  :info  : [   36.231085] rust_kjit: ###### Lift session 2 ######
+kern  :info  : [   36.231086] rust_kjit: Fdebug at 0x180
+kern  :info  : [   36.231086] rust_kjit: B: Continue at 0x184
+kern  :info  : [   36.231087] rust_kjit: Fret at 0x190
+kern  :info  : [   36.231984] rust_kjit: Vlabel: 0xaaaaaab1a4e0 -> 0x6e0	len 0x0 + ofst 0x6e0
+kern  :info  : [   36.231992] rust_kjit: Vlabel: 0xaaaaaab1a4e4 -> 0x6e4	len 0x4 + ofst 0x6e0
+kern  :info  : [   36.231993] rust_kjit: Vlabel: 0xaaaaaab1a4e8 -> 0x6e8	len 0x8 + ofst 0x6e0
+kern  :info  : [   36.231994] rust_kjit: Vlabel: 0xaaaaaab1a4ec -> 0x6ec	len 0xc + ofst 0x6e0
+kern  :info  : [   36.231995] rust_kjit: Vlabel: 0xaaaaaab1a4f0 -> 0x6f0	len 0x10 + ofst 0x6e0
+kern  :info  : [   36.231996] rust_kjit: Vlabel: 0xaaaaaab1a4f4 -> 0x6f4	len 0x14 + ofst 0x6e0
+kern  :info  : [   36.231997] rust_kjit: Vlabel: 0xaaaaaab1a4f8 -> 0x6f8	len 0x18 + ofst 0x6e0
+kern  :info  : [   36.231998] rust_kjit: Vlabel: 0xaaaaaab1a4fc -> 0x6fc	len 0x1c + ofst 0x6e0
+kern  :info  : [   36.231999] rust_kjit: Vlabel: 0xaaaaaab1a500 -> 0x700	len 0x20 + ofst 0x6e0
+kern  :info  : [   36.232000] rust_kjit: Vlabel: 0xaaaaaab1a504 -> 0x704	len 0x24 + ofst 0x6e0
+kern  :info  : [   36.232000] rust_kjit: Vlabel: 0xaaaaaab1a508 -> 0x708	len 0x28 + ofst 0x6e0
+kern  :info  : [   36.232001] rust_kjit: Vlabel: 0xaaaaaab1a50c -> 0x70c	len 0x2c + ofst 0x6e0
+kern  :info  : [   36.232002] rust_kjit: Vlabel: 0xaaaaaab1a510 -> 0x71c	len 0x3c + ofst 0x6e0
+kern  :info  : [   36.232004] rust_kjit: Vlabel: 0xaaaaaab1a514 -> 0x720	len 0x40 + ofst 0x6e0
+kern  :info  : [   36.232005] rust_kjit: Vlabel: 0xaaaaaab1a518 -> 0x724	len 0x44 + ofst 0x6e0
+kern  :info  : [   36.232005] rust_kjit: Vlabel: 0xaaaaaab1a51c -> 0x728	len 0x48 + ofst 0x6e0
+kern  :info  : [   36.232006] rust_kjit: Vlabel: 0xaaaaaab1a520 -> 0x72c	len 0x4c + ofst 0x6e0
+kern  :info  : [   36.232007] rust_kjit: Vlabel: 0xaaaaaab1a524 -> 0x730	len 0x50 + ofst 0x6e0
+kern  :info  : [   36.232009] rust_kjit: Vlabel: 0xaaaaaab1a588 -> 0x758	len 0x78 + ofst 0x6e0
+kern  :info  : [   36.232026] rust_kjit: Vlabel: 0xaaaaaab1a528 -> 0x75c	len 0x7c + ofst 0x6e0
+kern  :info  : [   36.232027] rust_kjit: Vlabel: 0xaaaaaab1a52c -> 0x760	len 0x80 + ofst 0x6e0
+kern  :info  : [   36.232028] rust_kjit: Vlabel: 0xaaaaaab1a530 -> 0x764	len 0x84 + ofst 0x6e0
+kern  :info  : [   36.232029] rust_kjit: Vlabel: 0xaaaaaab1a534 -> 0x768	len 0x88 + ofst 0x6e0
+kern  :info  : [   36.232030] rust_kjit: Vlabel: 0xaaaaaab1a538 -> 0x76c	len 0x8c + ofst 0x6e0
+kern  :info  : [   36.232030] rust_kjit: Vlabel: 0xaaaaaab1a53c -> 0x770	len 0x90 + ofst 0x6e0
+kern  :info  : [   36.232031] rust_kjit: Vlabel: 0xaaaaaab1a540 -> 0x774	len 0x94 + ofst 0x6e0
+kern  :info  : [   36.232032] rust_kjit: Vlabel: 0xaaaaaab1a544 -> 0x778	len 0x98 + ofst 0x6e0
+kern  :info  : [   36.232033] rust_kjit: Vlabel: 0xaaaaaab1a548 -> 0x77c	len 0x9c + ofst 0x6e0
+kern  :info  : [   36.232034] rust_kjit: Vlabel: 0xaaaaaab1a54c -> 0x780	len 0xa0 + ofst 0x6e0
+kern  :info  : [   36.232036] rust_kjit: Vlabel: 0xaaaaaab1a550 -> 0x7ac	len 0xcc + ofst 0x6e0
+kern  :info  : [   36.232037] rust_kjit: Vlabel: 0xaaaaaab1a554 -> 0x7b0	len 0xd0 + ofst 0x6e0
+kern  :info  : [   36.232038] rust_kjit: Vlabel: 0xaaaaaab1a558 -> 0x7b4	len 0xd4 + ofst 0x6e0
+kern  :info  : [   36.232039] rust_kjit: Vlabel: 0xaaaaaab1a55c -> 0x7dc	len 0xfc + ofst 0x6e0
+kern  :info  : [   36.232040] rust_kjit: Vlabel: 0xaaaaaab1a560 -> 0x7e0	len 0x100 + ofst 0x6e0
+kern  :info  : [   36.232041] rust_kjit: Vlabel: 0xaaaaaab1a564 -> 0x7e4	len 0x104 + ofst 0x6e0
+kern  :info  : [   36.232042] rust_kjit: Vlabel: 0xaaaaaab1a568 -> 0x7e8	len 0x108 + ofst 0x6e0
+kern  :info  : [   36.232043] rust_kjit: Vlabel: 0xaaaaaab1a56c -> 0x7ec	len 0x10c + ofst 0x6e0
+kern  :info  : [   36.232044] rust_kjit: Vlabel: 0xaaaaaab1a570 -> 0x808	len 0x128 + ofst 0x6e0
+kern  :info  : [   36.232045] rust_kjit: Vlabel: 0xaaaaaab1a574 -> 0x80c	len 0x12c + ofst 0x6e0
+kern  :info  : [   36.232046] rust_kjit: Vlabel: 0xaaaaaab1a578 -> 0x810	len 0x130 + ofst 0x6e0
+kern  :info  : [   36.232047] rust_kjit: Vlabel: 0xaaaaaab1a57c -> 0x814	len 0x134 + ofst 0x6e0
+kern  :info  : [   36.232048] rust_kjit: Vlabel: 0xaaaaaab1a580 -> 0x818	len 0x138 + ofst 0x6e0
+kern  :info  : [   36.232048] rust_kjit: Vlabel: 0xaaaaaab1a584 -> 0x81c	len 0x13c + ofst 0x6e0
+kern  :info  : [   36.232050] rust_kjit: Vlabel: 0xaaaaaab1a5f4 -> 0x840	len 0x160 + ofst 0x6e0
+kern  :info  : [   36.232051] rust_kjit: Vlabel: 0xaaaaaab1a5c0 -> 0x844	len 0x164 + ofst 0x6e0
+kern  :info  : [   36.232052] rust_kjit: Vlabel: 0xaaaaaab1a5c4 -> 0x86c	len 0x18c + ofst 0x6e0
+kern  :info  : [   36.232053] rust_kjit: Vlabel: 0xaaaaaab1a5c8 -> 0x870	len 0x190 + ofst 0x6e0
+kern  :info  : [   36.232054] rust_kjit: Vlabel: 0xaaaaaab1a560 -> 0x898	len 0x1b8 + ofst 0x6e0
+kern  :info  : [   36.232055] rust_kjit: Vlabel: 0xaaaaaab1a5cc -> 0x89c	len 0x1bc + ofst 0x6e0
+kern  :info  : [   36.232056] rust_kjit: Vlabel: 0xaaaaaab1a5d0 -> 0x8a0	len 0x1c0 + ofst 0x6e0
+kern  :info  : [   36.232057] rust_kjit: Vlabel: 0xaaaaaab1a5d4 -> 0x8a4	len 0x1c4 + ofst 0x6e0
+kern  :info  : [   36.232058] rust_kjit: Vlabel: 0xaaaaaab1a5d8 -> 0x8a8	len 0x1c8 + ofst 0x6e0
+kern  :info  : [   36.232059] rust_kjit: Vlabel: 0xaaaaaab1a634 -> 0x8c4	len 0x1e4 + ofst 0x6e0
+kern  :info  : [   36.232060] rust_kjit: Vlabel: 0xaaaaaab1a638 -> 0x8c8	len 0x1e8 + ofst 0x6e0
+kern  :info  : [   36.232061] rust_kjit: Vlabel: 0xaaaaaab1a63c -> 0x8cc	len 0x1ec + ofst 0x6e0
+kern  :info  : [   36.232062] rust_kjit: Vlabel: 0xaaaaaab1a55c -> 0x8f0	len 0x210 + ofst 0x6e0
+kern  :info  : [   36.232063] rust_kjit: Vlabel: 0xaaaaaab1a640 -> 0x8f4	len 0x214 + ofst 0x6e0
+kern  :info  : [   36.232064] rust_kjit: Vlabel: 0xaaaaaab1a644 -> 0x8f8	len 0x218 + ofst 0x6e0
+kern  :info  : [   36.232065] rust_kjit: Vlabel: 0xaaaaaab1a648 -> 0x8fc	len 0x21c + ofst 0x6e0
+kern  :info  : [   36.232066] rust_kjit: Vlabel: 0xaaaaaab1a55c -> 0x920	len 0x240 + ofst 0x6e0
+kern  :info  : [   36.232067] rust_kjit: Vlabel: 0xaaaaaab1b210 -> 0x924	len 0x244 + ofst 0x6e0
+kern  :info  : [   36.232068] rust_kjit: Vlabel: 0xaaaaaab1b214 -> 0x928	len 0x248 + ofst 0x6e0
+kern  :info  : [   36.232070] rust_kjit: Vlabel: 0xaaaaaab1b218 -> 0x94c	len 0x26c + ofst 0x6e0
+kern  :info  : [   36.232071] rust_kjit: Vlabel: 0xaaaaaab1b21c -> 0x950	len 0x270 + ofst 0x6e0
+kern  :info  : [   36.232072] rust_kjit: Vlabel: 0xaaaaaab1b220 -> 0x954	len 0x274 + ofst 0x6e0
+kern  :info  : [   36.232073] rust_kjit: Vlabel: 0xaaaaaab1b224 -> 0x958	len 0x278 + ofst 0x6e0
+kern  :info  : [   36.232074] rust_kjit: Vlabel: 0xaaaaaab1b228 -> 0x984	len 0x2a4 + ofst 0x6e0
+kern  :info  : [   36.232075] rust_kjit: Vlabel: 0xaaaaaab1b22c -> 0x988	len 0x2a8 + ofst 0x6e0
+kern  :info  : [   36.232077] rust_kjit: Vlabel: 0xaaaaaab1b230 -> 0x9b4	len 0x2d4 + ofst 0x6e0
+kern  :info  : [   36.232078] rust_kjit: Vlabel: 0xaaaaaab1b234 -> 0x9b8	len 0x2d8 + ofst 0x6e0
+kern  :info  : [   36.232079] rust_kjit: Vlabel: 0xaaaaaab1b238 -> 0x9bc	len 0x2dc + ofst 0x6e0
+kern  :info  : [   36.232079] rust_kjit: Vlabel: 0xaaaaaab1b23c -> 0x9c0	len 0x2e0 + ofst 0x6e0
+kern  :info  : [   36.232080] rust_kjit: Vlabel: 0xaaaaaab1b240 -> 0x9c4	len 0x2e4 + ofst 0x6e0
+kern  :info  : [   36.232082] rust_kjit: Vlabel: 0xaaaaaab1b244 -> 0x9e8	len 0x308 + ofst 0x6e0
+kern  :info  : [   36.232083] rust_kjit: Vlabel: 0xaaaaaab1b248 -> 0x9ec	len 0x30c + ofst 0x6e0
+kern  :info  : [   36.232084] rust_kjit: Vlabel: 0xaaaaaab1b24c -> 0x9f0	len 0x310 + ofst 0x6e0
+kern  :info  : [   36.232085] rust_kjit: Vlabel: 0xaaaaaab1b250 -> 0x9f4	len 0x314 + ofst 0x6e0
+kern  :info  : [   36.232086] rust_kjit: Vlabel: 0xaaaaaab1b254 -> 0xa04	len 0x324 + ofst 0x6e0
+kern  :info  : [   36.232087] rust_kjit: Vlabel: 0xaaaaaab1b258 -> 0xa08	len 0x328 + ofst 0x6e0
+kern  :info  : [   36.232087] rust_kjit: Vlabel: 0xaaaaaab1b25c -> 0xa0c	len 0x32c + ofst 0x6e0
+kern  :info  : [   36.232088] rust_kjit: Vlabel: 0xaaaaaab1b260 -> 0xa10	len 0x330 + ofst 0x6e0
+kern  :info  : [   36.232089] rust_kjit: Vlabel: 0xaaaaaab1b264 -> 0xa14	len 0x334 + ofst 0x6e0
+kern  :info  : [   36.232090] rust_kjit: Vlabel: 0xaaaaaab1b268 -> 0xa18	len 0x338 + ofst 0x6e0
+kern  :info  : [   36.232092] rust_kjit: Vlabel: 0xaaaaaab1b26c -> 0xa3c	len 0x35c + ofst 0x6e0
+kern  :info  : [   36.232093] rust_kjit: Vlabel: 0xaaaaaab1b270 -> 0xa40	len 0x360 + ofst 0x6e0
+kern  :info  : [   36.232093] rust_kjit: Vlabel: 0xaaaaaab1b274 -> 0xa44	len 0x364 + ofst 0x6e0
+kern  :info  : [   36.232094] rust_kjit: Vlabel: 0xaaaaaab1b278 -> 0xa48	len 0x368 + ofst 0x6e0
+kern  :info  : [   36.232095] rust_kjit: Vlabel: 0xaaaaaab1b27c -> 0xa4c	len 0x36c + ofst 0x6e0
+kern  :info  : [   36.232096] rust_kjit: Vlabel: 0xaaaaaab1b280 -> 0xa50	len 0x370 + ofst 0x6e0
+kern  :info  : [   36.232097] rust_kjit: Vlabel: 0xaaaaaab1b294 -> 0xa60	len 0x380 + ofst 0x6e0
+kern  :info  : [   36.232098] rust_kjit: Vlabel: 0xaaaaaab1b298 -> 0xa64	len 0x384 + ofst 0x6e0
+kern  :info  : [   36.232099] rust_kjit: Vlabel: 0xaaaaaab1b244 -> 0xa88	len 0x3a8 + ofst 0x6e0
+kern  :info  : [   36.232100] rust_kjit: Vlabel: 0xaaaaaab1b2b0 -> 0xa8c	len 0x3ac + ofst 0x6e0
+kern  :info  : [   36.232101] rust_kjit: Vlabel: 0xaaaaaab1b2b4 -> 0xa90	len 0x3b0 + ofst 0x6e0
+kern  :info  : [   36.232111] rust_kjit: Vlabel: 0xaaaaaab1b2b8 -> 0xa94	len 0x3b4 + ofst 0x6e0
+kern  :info  : [   36.232112] rust_kjit: Vlabel: 0xaaaaaab1b2bc -> 0xa98	len 0x3b8 + ofst 0x6e0
+kern  :info  : [   36.232113] rust_kjit: Vlabel: 0xaaaaaab1b250 -> 0xabc	len 0x3dc + ofst 0x6e0
+kern  :info  : [   36.232114] rust_kjit: Vlabel: 0xaaaaaab1b2c0 -> 0xac0	len 0x3e0 + ofst 0x6e0
+kern  :info  : [   36.232115] rust_kjit: Vlabel: 0xaaaaaab1b2c4 -> 0xac4	len 0x3e4 + ofst 0x6e0
+kern  :info  : [   36.232116] rust_kjit: Vlabel: 0xaaaaaab1b2c8 -> 0xac8	len 0x3e8 + ofst 0x6e0
+kern  :info  : [   36.232117] rust_kjit: Vlabel: 0xaaaaaab1b2cc -> 0xae4	len 0x404 + ofst 0x6e0
+kern  :info  : [   36.232118] rust_kjit: Vlabel: 0xaaaaaab1b2d0 -> 0xae8	len 0x408 + ofst 0x6e0
+kern  :info  : [   36.232119] rust_kjit: Vlabel: 0xaaaaaab1b2d4 -> 0xaec	len 0x40c + ofst 0x6e0
+kern  :info  : [   36.232120] rust_kjit: Vlabel: 0xaaaaaab1b2d8 -> 0xaf0	len 0x410 + ofst 0x6e0
+kern  :info  : [   36.232121] rust_kjit: Vlabel: 0xaaaaaab1b2dc -> 0xaf4	len 0x414 + ofst 0x6e0
+kern  :info  : [   36.232122] rust_kjit: Vlabel: 0xaaaaaab1b2e0 -> 0xaf8	len 0x418 + ofst 0x6e0
+kern  :info  : [   36.232123] rust_kjit: Vlabel: 0xaaaaaab1b2e4 -> 0xafc	len 0x41c + ofst 0x6e0
+kern  :info  : [   36.232124] rust_kjit: Vlabel: 0xaaaaaab1b2e8 -> 0xb20	len 0x440 + ofst 0x6e0
+kern  :info  : [   36.232125] rust_kjit: Vlabel: 0xaaaaaab1b2ec -> 0xb24	len 0x444 + ofst 0x6e0
+kern  :info  : [   36.232126] rust_kjit: Vlabel: 0xaaaaaab1b2f0 -> 0xb28	len 0x448 + ofst 0x6e0
+kern  :info  : [   36.232127] rust_kjit: Vlabel: 0xaaaaaab1a4e0 -> 0xb4c	len 0x46c + ofst 0x6e0
+kern  :info  : [   36.232129] rust_kjit: Vlabel: 0xaaaaaab1b2f4 -> 0xb50	len 0x470 + ofst 0x6e0
+kern  :info  : [   36.232129] rust_kjit: Vlabel: 0xaaaaaab1b2f8 -> 0xb54	len 0x474 + ofst 0x6e0
+kern  :info  : [   36.232130] rust_kjit: Vlabel: 0xaaaaaab1b2fc -> 0xb58	len 0x478 + ofst 0x6e0
+kern  :info  : [   36.232131] rust_kjit: Final code: 1f 20 03 d5 31 82 01 d1 30 7a 02 a9 30 82 00 91 35 5a 04 a9 f5 03 00 aa 36 7c 7b 93 37 2a 00 f9 b7 0a 40 f9 33 52 03 a9 f4 03 01 2a 00 00 e0 d2 40 55 d5 f2 a0 57 b5 f2 00 00 9e f2 00 c0 47 f9 01 00 40 f9 21 0e 00 f9 01 00 80 d2 e0 6a 76 b8 1f 00 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a b1 94 f2 2b 00 00 10 4f fe ff 17 99 fe ff 17 a3 1a 40 f9 41 00 1e 32 5f 00 7f f2 3f fe 00 a9 22 10 82 1a 01 00 22 0a f3 03 22 2a 60 00 40 b9 22 00 1f 12 29 00 80 d2 3f 00 09 ea 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a b8 94 f2 2b 00 00 10 3a fe ff 17 21 00 80 52 21 0a 00 b9 5f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a c6 94 f2 2b 00 00 10 2e fe ff 17 34 12 00 b9 
+kern  :info  : [   36.232198] rust_kjit: Final code con't: 23 22 00 91 e2 03 14 2a 61 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 28 9d f2 2b 00 00 10 23 fe ff 17 e0 6a 76 b8 a3 02 40 b9 62 02 00 6a e2 6a 36 b8 80 02 43 7a 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a be 94 f2 2b 00 00 10 15 fe ff 17 8a fe ff 17 5f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a c8 94 f2 2b 00 00 10 0a fe ff 17 34 12 00 b9 3f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a ac 94 f2 2b 00 00 10 ff fd ff 17 d2 ff ff 17 23 22 00 91 e2 03 14 2a 41 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 28 9d f2 2b 00 00 10 f4 fd ff 17 a1 00 80 52 21 0a 00 b9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 
+kern  :info  : [   36.232321] rust_kjit: Final code con't: 2a 56 b5 f2 8a ab 94 f2 2b 00 00 10 e9 fd ff 17 bb ff ff 17 81 00 80 52 21 0a 00 b9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a ab 94 f2 2b 00 00 10 dd fd ff 17 af ff ff 17 1f 04 00 31 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 56 96 f2 2b 00 00 10 d2 fd ff 17 c1 6a 75 b8 21 00 14 2a c1 6a 35 b8 29 00 80 d2 9f 02 09 ea 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a 45 96 f2 2b 00 00 10 c4 fd ff 17 38 07 00 f9 29 00 80 d2 9f 06 09 ea 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a 46 96 f2 2b 00 00 10 b8 fd ff 17 38 0b 00 f9 40 03 40 b9 37 0f 00 f9 1f 00 13 6b 09 42 3b d5 09 02 80 f2 89 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a 52 96 f2 
+kern  :info  : [   36.232396] rust_kjit: Final code con't: 2b 00 00 10 ab fd ff 17 35 5a 44 a9 00 00 80 52 37 62 45 a9 01 00 e0 d2 41 55 d5 f2 a1 57 b5 f2 01 00 9e f2 21 c0 47 f9 23 0e 40 f9 22 00 40 f9 63 00 02 eb 02 00 80 d2 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 58 96 f2 2b 00 00 10 96 fd ff 17 30 7a 42 a9 33 52 43 a9 39 6a 46 a9 31 c2 01 91 1f 20 03 d5 89 00 80 d2 ea 03 1e aa 2b 00 00 10 8d fd ff 17 53 03 00 b9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a 48 96 f2 2b 00 00 10 83 fd ff 17 d8 ff ff 17 35 5a 44 a9 00 00 80 12 37 62 45 a9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 4a 96 f2 2b 00 00 10 76 fd ff 17 ce ff ff 17 35 5a 04 a9 37 62 05 a9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 66 9c f2 2b 00 00 10 
+kern  :info  : [   36.232468] rust_kjit: Final code con't: 6c fd ff 17 1f 20 03 d5 1f 20 03 d5 30 7a bf a9 f0 03 11 aa 03 04 40 b9 7f 00 01 6b 09 42 3b d5 09 02 80 f2 c9 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a 5e 96 f2 2b 00 00 10 5d fd ff 17 30 7a c1 a8 1f 20 03 d5 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 9c 94 f2 2b 00 00 10 52 fd ff 17 e5 fe ff 17 30 7a c1 a8 1f 20 03 d5 89 00 80 d2 ea 03 1e aa 2b 00 00 10 4b fd ff 17 
+kern  :info  : [   36.232618] rust_kjit: RET to 0xaaaaaab1b210 at 0x924
+kern  :info  : [   36.232619] rust_kjit: Fdebug at 0x948
+kern  :info  : [   36.232620] rust_kjit: B: Continue at 0x94c
+kern  :info  : [   36.232621] rust_kjit: Fdebug at 0x980
+kern  :info  : [   36.232621] rust_kjit: B: Continue at 0x984
+kern  :info  : [   36.232622] rust_kjit: Fdebug at 0x9b0
+kern  :info  : [   36.232623] rust_kjit: B to 0xaaaaaab1b234 at 0x9b8
+kern  :info  : [   36.232624] rust_kjit: Fdebug at 0x9e4
+kern  :info  : [   36.232624] rust_kjit: B: Continue at 0x9e8
+kern  :info  : [   36.232625] rust_kjit: Fdebug at 0xa38
+kern  :info  : [   36.232626] rust_kjit: B: Continue at 0xa3c
+kern  :info  : [   36.232627] rust_kjit: Fret at 0xa5c
+kern  :info  : [   36.233125] rust_kjit: Vlabel: 0xaaaaaab1f588 -> 0xb68	len 0x0 + ofst 0xb68
+kern  :info  : [   36.233132] rust_kjit: Vlabel: 0xaaaaaab1f58c -> 0xb94	len 0x2c + ofst 0xb68
+kern  :info  : [   36.233133] rust_kjit: Vlabel: 0xaaaaaab1f590 -> 0xb98	len 0x30 + ofst 0xb68
+kern  :info  : [   36.233134] rust_kjit: Vlabel: 0xaaaaaab1f594 -> 0xb9c	len 0x34 + ofst 0xb68
+kern  :info  : [   36.233136] rust_kjit: Vlabel: 0xaaaaaab1f598 -> 0xba0	len 0x38 + ofst 0xb68
+kern  :info  : [   36.233137] rust_kjit: Vlabel: 0xaaaaaab1f59c -> 0xba4	len 0x3c + ofst 0xb68
+kern  :info  : [   36.233138] rust_kjit: Vlabel: 0xaaaaaab1f5a0 -> 0xba8	len 0x40 + ofst 0xb68
+kern  :info  : [   36.233140] rust_kjit: Vlabel: 0xaaaaaab1f5c4 -> 0xbb8	len 0x50 + ofst 0xb68
+kern  :info  : [   36.233141] rust_kjit: Vlabel: 0xaaaaaab1f5c8 -> 0xbbc	len 0x54 + ofst 0xb68
+kern  :info  : [   36.233142] rust_kjit: Vlabel: 0xaaaaaab1f5cc -> 0xbc0	len 0x58 + ofst 0xb68
+kern  :info  : [   36.233143] rust_kjit: Vlabel: 0xaaaaaab1f5d0 -> 0xbc4	len 0x5c + ofst 0xb68
+kern  :info  : [   36.233149] rust_kjit: Vlabel: 0xaaaaaab1f5d4 -> 0xbc8	len 0x60 + ofst 0xb68
+kern  :info  : [   36.233151] rust_kjit: Vlabel: 0xaaaaaab1f5d8 -> 0xbd8	len 0x70 + ofst 0xb68
+kern  :info  : [   36.233152] rust_kjit: Vlabel: 0xaaaaaab1f5dc -> 0xbdc	len 0x74 + ofst 0xb68
+kern  :info  : [   36.233153] rust_kjit: Vlabel: 0xaaaaaab1f5e0 -> 0xbe0	len 0x78 + ofst 0xb68
+kern  :info  : [   36.233156] rust_kjit: Vlabel: 0xaaaaaab1f5e4 -> 0xc04	len 0x9c + ofst 0xb68
+kern  :info  : [   36.233158] rust_kjit: Vlabel: 0xaaaaaab1f5e8 -> 0xc08	len 0xa0 + ofst 0xb68
+kern  :info  : [   36.233159] rust_kjit: Vlabel: 0xaaaaaab1f5ec -> 0xc0c	len 0xa4 + ofst 0xb68
+kern  :info  : [   36.233160] rust_kjit: Vlabel: 0xaaaaaab1f5f0 -> 0xc10	len 0xa8 + ofst 0xb68
+kern  :info  : [   36.233161] rust_kjit: Vlabel: 0xaaaaaab1f5f4 -> 0xc14	len 0xac + ofst 0xb68
+kern  :info  : [   36.233162] rust_kjit: Vlabel: 0xaaaaaab1f5f8 -> 0xc18	len 0xb0 + ofst 0xb68
+kern  :info  : [   36.233164] rust_kjit: Vlabel: 0xaaaaaab1f5fc -> 0xc1c	len 0xb4 + ofst 0xb68
+kern  :info  : [   36.233165] rust_kjit: Vlabel: 0xaaaaaab1f600 -> 0xc20	len 0xb8 + ofst 0xb68
+kern  :info  : [   36.233166] rust_kjit: Vlabel: 0xaaaaaab1f604 -> 0xc24	len 0xbc + ofst 0xb68
+kern  :info  : [   36.233167] rust_kjit: Vlabel: 0xaaaaaab1f608 -> 0xc28	len 0xc0 + ofst 0xb68
+kern  :info  : [   36.233169] rust_kjit: Vlabel: 0xaaaaaab1f588 -> 0xc54	len 0xec + ofst 0xb68
+kern  :info  : [   36.233170] rust_kjit: Vlabel: 0xaaaaaab1f60c -> 0xc58	len 0xf0 + ofst 0xb68
+kern  :info  : [   36.233173] rust_kjit: Vlabel: 0xaaaaaab1f610 -> 0xc84	len 0x11c + ofst 0xb68
+kern  :info  : [   36.233175] rust_kjit: Vlabel: 0xaaaaaab1f614 -> 0xc88	len 0x120 + ofst 0xb68
+kern  :info  : [   36.233176] rust_kjit: Vlabel: 0xaaaaaab1f618 -> 0xc8c	len 0x124 + ofst 0xb68
+kern  :info  : [   36.233181] rust_kjit: Vlabel: 0xaaaaaab1f61c -> 0xc90	len 0x128 + ofst 0xb68
+kern  :info  : [   36.233183] rust_kjit: Vlabel: 0xaaaaaab1f620 -> 0xc94	len 0x12c + ofst 0xb68
+kern  :info  : [   36.233185] rust_kjit: Vlabel: 0xaaaaaab1f650 -> 0xca4	len 0x13c + ofst 0xb68
+kern  :info  : [   36.233186] rust_kjit: Vlabel: 0xaaaaaab1f654 -> 0xca8	len 0x140 + ofst 0xb68
+kern  :info  : [   36.233189] rust_kjit: Vlabel: 0xaaaaaab1f658 -> 0xcd4	len 0x16c + ofst 0xb68
+kern  :info  : [   36.233190] rust_kjit: Vlabel: 0xaaaaaab1f65c -> 0xcd8	len 0x170 + ofst 0xb68
+kern  :info  : [   36.233191] rust_kjit: Vlabel: 0xaaaaaab1f660 -> 0xcdc	len 0x174 + ofst 0xb68
+kern  :info  : [   36.233193] rust_kjit: Vlabel: 0xaaaaaab1f664 -> 0xce0	len 0x178 + ofst 0xb68
+kern  :info  : [   36.233194] rust_kjit: Vlabel: 0xaaaaaab1f668 -> 0xce4	len 0x17c + ofst 0xb68
+kern  :info  : [   36.233195] rust_kjit: Vlabel: 0xaaaaaab1f66c -> 0xce8	len 0x180 + ofst 0xb68
+kern  :info  : [   36.233196] rust_kjit: Vlabel: 0xaaaaaab1f670 -> 0xcec	len 0x184 + ofst 0xb68
+kern  :info  : [   36.233198] rust_kjit: Vlabel: 0xaaaaaab1f6d0 -> 0xcfc	len 0x194 + ofst 0xb68
+kern  :info  : [   36.233199] rust_kjit: Vlabel: 0xaaaaaab1f6d4 -> 0xd00	len 0x198 + ofst 0xb68
+kern  :info  : [   36.233200] rust_kjit: Vlabel: 0xaaaaaab1f6d8 -> 0xd10	len 0x1a8 + ofst 0xb68
+kern  :info  : [   36.233201] rust_kjit: Vlabel: 0xaaaaaab1f6dc -> 0xd14	len 0x1ac + ofst 0xb68
+kern  :info  : [   36.233202] rust_kjit: Vlabel: 0xaaaaaab1f6e0 -> 0xd18	len 0x1b0 + ofst 0xb68
+kern  :info  : [   36.233203] rust_kjit: Vlabel: 0xaaaaaab1f6e4 -> 0xd1c	len 0x1b4 + ofst 0xb68
+kern  :info  : [   36.233204] rust_kjit: Vlabel: 0xaaaaaab1f6e8 -> 0xd20	len 0x1b8 + ofst 0xb68
+kern  :info  : [   36.233206] rust_kjit: Vlabel: 0xaaaaaab1f7b4 -> 0xd30	len 0x1c8 + ofst 0xb68
+kern  :info  : [   36.233235] rust_kjit: Vlabel: 0xaaaaaab1f5d8 -> 0xd5c	len 0x1f4 + ofst 0xb68
+kern  :info  : [   36.233254] rust_kjit: Vlabel: 0xaaaaaab1f7b8 -> 0xd60	len 0x1f8 + ofst 0xb68
+kern  :info  : [   36.233256] rust_kjit: Vlabel: 0xaaaaaab1f7bc -> 0xd64	len 0x1fc + ofst 0xb68
+kern  :info  : [   36.233259] rust_kjit: Vlabel: 0xaaaaaab1f5c4 -> 0xd88	len 0x220 + ofst 0xb68
+kern  :info  : [   36.233260] rust_kjit: Vlabel: 0xaaaaaab1f7c0 -> 0xd8c	len 0x224 + ofst 0xb68
+kern  :info  : [   36.233263] rust_kjit: Vlabel: 0xaaaaaab1f5d8 -> 0xdb8	len 0x250 + ofst 0xb68
+kern  :info  : [   36.233264] rust_kjit: Vlabel: 0xaaaaaab1f7c4 -> 0xdbc	len 0x254 + ofst 0xb68
+kern  :info  : [   36.233265] rust_kjit: Vlabel: 0xaaaaaab1f7c8 -> 0xdc0	len 0x258 + ofst 0xb68
+kern  :info  : [   36.233267] rust_kjit: Vlabel: 0xaaaaaab1f5c4 -> 0xde4	len 0x27c + ofst 0xb68
+kern  :info  : [   36.233268] rust_kjit: Final code: 29 00 80 d2 3f 00 09 ea 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a f8 9e f2 2b 00 00 10 40 fd ff 17 44 04 40 f9 e0 03 14 aa 42 0c 40 f9 e3 03 18 2a e1 03 1a 2a 49 00 80 d2 ea 03 04 aa 2b 00 00 10 37 fd ff 17 42 0c 40 f9 e3 03 18 2a e1 03 1a 2a e0 03 14 aa 49 00 80 d2 ea 03 04 aa 2b 00 00 10 2f fd ff 17 73 22 00 91 3f 03 13 eb 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a ca 9e f2 2b 00 00 10 24 fd ff 17 82 0e 40 f9 5a 68 73 b8 42 00 13 8b 80 0a 40 f9 55 7f 7b 93 58 04 40 b9 02 00 15 8b 00 68 75 b8 01 03 00 0a 29 00 80 d2 1f 08 09 ea 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a b1 9e f2 2b 00 00 10 10 fd ff 17 c5 ff ff 17 29 00 80 d2 3f 04 09 ea 09 42 3b d5 09 02 80 f2 
+kern  :info  : [   36.233339] rust_kjit: Final code con't: 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a f6 9e f2 2b 00 00 10 04 fd ff 17 44 08 41 a9 e0 03 14 aa e3 03 18 2a e1 03 1a 2a 49 00 80 d2 ea 03 04 aa 2b 00 00 10 fc fc ff 17 39 6a 44 a9 29 00 80 d2 df 06 09 ea 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a da 9e f2 2b 00 00 10 f0 fc ff 17 33 52 41 a9 e0 03 17 2a 35 5a 42 a9 37 62 43 a9 30 7a c7 a8 1f 20 03 d5 89 00 80 d2 ea 03 1e aa 2b 00 00 10 e6 fc ff 17 39 6a 04 a9 19 00 e0 d2 59 55 d5 f2 b9 57 b5 f2 19 00 9e f2 39 eb 47 f9 93 12 40 f9 20 03 40 f9 96 06 40 f9 49 00 80 d2 ea 03 00 aa 2b 00 00 10 d9 fc ff 17 29 00 80 d2 3f 00 09 ea 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a bb 9e f2 2b 00 00 10 ce fc ff 17 9f ff ff 17 44 04 40 f9 09 42 3b d5 
+kern  :info  : [   36.233406] rust_kjit: Final code con't: 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a b8 9e f2 2b 00 00 10 c3 fc ff 17 8c ff ff 17 29 00 80 d2 3f 04 09 ea 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a bb 9e f2 2b 00 00 10 b7 fc ff 17 88 ff ff 17 44 08 40 f9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a b8 9e f2 2b 00 00 10 ac fc ff 17 75 ff ff 17 
+kern  :info  : [   36.233534] rust_kjit: RET to 0xaaaaaab1f5d8 at 0xbd8
+kern  :info  : [   36.233535] rust_kjit: Fdebug at 0xc00
+kern  :info  : [   36.233536] rust_kjit: B: Continue at 0xc04
+kern  :info  : [   36.233537] rust_kjit: Fdebug at 0xc50
+kern  :info  : [   36.233538] rust_kjit: B to 0xaaaaaab1f588 at 0xb68
+kern  :info  : [   36.233539] rust_kjit: Fdebug at 0xb90
+kern  :info  : [   36.233539] rust_kjit: B to 0xaaaaaab1f7c0 at 0xd8c
+kern  :info  : [   36.233540] rust_kjit: Fdebug at 0xdb4
+kern  :info  : [   36.233541] rust_kjit: B: Continue at 0xdb8
+kern  :info  : [   36.233542] rust_kjit: Fdebug at 0xc00
+kern  :info  : [   36.233542] rust_kjit: B: Continue at 0xc04
+kern  :info  : [   36.233546] rust_kjit: Fdebug at 0xc50
+kern  :info  : [   36.233547] rust_kjit: B to 0xaaaaaab1f588 at 0xb68
+kern  :info  : [   36.233547] rust_kjit: Fdebug at 0xb90
+kern  :info  : [   36.233548] rust_kjit: B to 0xaaaaaab1f7c0 at 0xd8c
+kern  :info  : [   36.233549] rust_kjit: Fdebug at 0xdb4
+kern  :info  : [   36.233549] rust_kjit: B: Continue at 0xdb8
+kern  :info  : [   36.233550] rust_kjit: Fdebug at 0xc00
+kern  :info  : [   36.233551] rust_kjit: B: Continue at 0xc04
+kern  :info  : [   36.233551] rust_kjit: Fdebug at 0xc50
+kern  :info  : [   36.233552] rust_kjit: B to 0xaaaaaab1f588 at 0xb68
+kern  :info  : [   36.233553] rust_kjit: Fdebug at 0xb90
+kern  :info  : [   36.233553] rust_kjit: B to 0xaaaaaab1f7c0 at 0xd8c
+kern  :info  : [   36.233554] rust_kjit: Fdebug at 0xdb4
+kern  :info  : [   36.233554] rust_kjit: B: Continue at 0xdb8
+kern  :info  : [   36.233555] rust_kjit: Fdebug at 0xc00
+kern  :info  : [   36.233556] rust_kjit: B: Continue at 0xc04
+kern  :info  : [   36.233556] rust_kjit: Fdebug at 0xc50
+kern  :info  : [   36.233557] rust_kjit: B to 0xaaaaaab1f588 at 0xb68
+kern  :info  : [   36.233558] rust_kjit: Fdebug at 0xb90
+kern  :info  : [   36.233558] rust_kjit: B: Continue at 0xb94
+kern  :info  : [   36.233559] rust_kjit: Fblr at 0xbb4
+kern  :info  : [   36.240379] rust_kjit: Vlabel: 0xaaaaaab250d0 -> 0xde8	len 0x0 + ofst 0xde8
+kern  :info  : [   36.240383] rust_kjit: Vlabel: 0xaaaaaab250d4 -> 0xdec	len 0x4 + ofst 0xde8
+kern  :info  : [   36.240384] rust_kjit: Vlabel: 0xaaaaaab250d8 -> 0xdf0	len 0x8 + ofst 0xde8
+kern  :info  : [   36.240385] rust_kjit: Vlabel: 0xaaaaaab250dc -> 0xe00	len 0x18 + ofst 0xde8
+kern  :info  : [   36.240386] rust_kjit: Vlabel: 0xaaaaaab250e0 -> 0xe04	len 0x1c + ofst 0xde8
+kern  :info  : [   36.240387] rust_kjit: Vlabel: 0xaaaaaab250e4 -> 0xe08	len 0x20 + ofst 0xde8
+kern  :info  : [   36.240388] rust_kjit: Vlabel: 0xaaaaaab250e8 -> 0xe0c	len 0x24 + ofst 0xde8
+kern  :info  : [   36.240389] rust_kjit: Vlabel: 0xaaaaaab250ec -> 0xe10	len 0x28 + ofst 0xde8
+kern  :info  : [   36.240390] rust_kjit: Vlabel: 0xaaaaaab250f0 -> 0xe14	len 0x2c + ofst 0xde8
+kern  :info  : [   36.240391] rust_kjit: Vlabel: 0xaaaaaab250f4 -> 0xe18	len 0x30 + ofst 0xde8
+kern  :info  : [   36.240392] rust_kjit: Vlabel: 0xaaaaaab250f8 -> 0xe1c	len 0x34 + ofst 0xde8
+kern  :info  : [   36.240393] rust_kjit: Vlabel: 0xaaaaaab250fc -> 0xe20	len 0x38 + ofst 0xde8
+kern  :info  : [   36.240394] rust_kjit: Vlabel: 0xaaaaaab25100 -> 0xe24	len 0x3c + ofst 0xde8
+kern  :info  : [   36.240395] rust_kjit: Vlabel: 0xaaaaaab25104 -> 0xe28	len 0x40 + ofst 0xde8
+kern  :info  : [   36.240397] rust_kjit: Vlabel: 0xaaaaaab25108 -> 0xe54	len 0x6c + ofst 0xde8
+kern  :info  : [   36.240398] rust_kjit: Vlabel: 0xaaaaaab2510c -> 0xe58	len 0x70 + ofst 0xde8
+kern  :info  : [   36.240400] rust_kjit: Vlabel: 0xaaaaaab25110 -> 0xe74	len 0x8c + ofst 0xde8
+kern  :info  : [   36.240402] rust_kjit: Vlabel: 0xaaaaaab25114 -> 0xe9c	len 0xb4 + ofst 0xde8
+kern  :info  : [   36.240403] rust_kjit: Vlabel: 0xaaaaaab25118 -> 0xea0	len 0xb8 + ofst 0xde8
+kern  :info  : [   36.240404] rust_kjit: Vlabel: 0xaaaaaab2511c -> 0xea4	len 0xbc + ofst 0xde8
+kern  :info  : [   36.240405] rust_kjit: Vlabel: 0xaaaaaab25120 -> 0xea8	len 0xc0 + ofst 0xde8
+kern  :info  : [   36.240407] rust_kjit: Vlabel: 0xaaaaaab25124 -> 0xed0	len 0xe8 + ofst 0xde8
+kern  :info  : [   36.240408] rust_kjit: Vlabel: 0xaaaaaab25128 -> 0xee0	len 0xf8 + ofst 0xde8
+kern  :info  : [   36.240409] rust_kjit: Vlabel: 0xaaaaaab2512c -> 0xee4	len 0xfc + ofst 0xde8
+kern  :info  : [   36.240410] rust_kjit: Vlabel: 0xaaaaaab25130 -> 0xee8	len 0x100 + ofst 0xde8
+kern  :info  : [   36.240411] rust_kjit: Vlabel: 0xaaaaaab25134 -> 0xeec	len 0x104 + ofst 0xde8
+kern  :info  : [   36.240412] rust_kjit: Vlabel: 0xaaaaaab25138 -> 0xef0	len 0x108 + ofst 0xde8
+kern  :info  : [   36.240413] rust_kjit: Vlabel: 0xaaaaaab2513c -> 0xef4	len 0x10c + ofst 0xde8
+kern  :info  : [   36.240414] rust_kjit: Vlabel: 0xaaaaaab25140 -> 0xf04	len 0x11c + ofst 0xde8
+kern  :info  : [   36.240415] rust_kjit: Vlabel: 0xaaaaaab25144 -> 0xf08	len 0x120 + ofst 0xde8
+kern  :info  : [   36.240416] rust_kjit: Vlabel: 0xaaaaaab25148 -> 0xf0c	len 0x124 + ofst 0xde8
+kern  :info  : [   36.240417] rust_kjit: Vlabel: 0xaaaaaab2514c -> 0xf10	len 0x128 + ofst 0xde8
+kern  :info  : [   36.240418] rust_kjit: Vlabel: 0xaaaaaab25150 -> 0xf14	len 0x12c + ofst 0xde8
+kern  :info  : [   36.240420] rust_kjit: Vlabel: 0xaaaaaab25154 -> 0xf30	len 0x148 + ofst 0xde8
+kern  :info  : [   36.240422] rust_kjit: Vlabel: 0xaaaaaab25158 -> 0xf58	len 0x170 + ofst 0xde8
+kern  :info  : [   36.240423] rust_kjit: Vlabel: 0xaaaaaab2515c -> 0xf5c	len 0x174 + ofst 0xde8
+kern  :info  : [   36.240425] rust_kjit: Vlabel: 0xaaaaaab25160 -> 0xf84	len 0x19c + ofst 0xde8
+kern  :info  : [   36.240426] rust_kjit: Vlabel: 0xaaaaaab25164 -> 0xf88	len 0x1a0 + ofst 0xde8
+kern  :info  : [   36.240428] rust_kjit: Vlabel: 0xaaaaaab25168 -> 0xfac	len 0x1c4 + ofst 0xde8
+kern  :info  : [   36.240429] rust_kjit: Vlabel: 0xaaaaaab2516c -> 0xfb0	len 0x1c8 + ofst 0xde8
+kern  :info  : [   36.240430] rust_kjit: Vlabel: 0xaaaaaab25170 -> 0xfb4	len 0x1cc + ofst 0xde8
+kern  :info  : [   36.240432] rust_kjit: Vlabel: 0xaaaaaab25174 -> 0xfd8	len 0x1f0 + ofst 0xde8
+kern  :info  : [   36.240433] rust_kjit: Vlabel: 0xaaaaaab25178 -> 0xfdc	len 0x1f4 + ofst 0xde8
+kern  :info  : [   36.240433] rust_kjit: Vlabel: 0xaaaaaab2517c -> 0xfe0	len 0x1f8 + ofst 0xde8
+kern  :info  : [   36.240436] rust_kjit: Vlabel: 0xaaaaaab25180 -> 0x1008	len 0x220 + ofst 0xde8
+kern  :info  : [   36.240437] rust_kjit: Vlabel: 0xaaaaaab25184 -> 0x100c	len 0x224 + ofst 0xde8
+kern  :info  : [   36.240439] rust_kjit: Vlabel: 0xaaaaaab25188 -> 0x1034	len 0x24c + ofst 0xde8
+kern  :info  : [   36.240440] rust_kjit: Vlabel: 0xaaaaaab2518c -> 0x1038	len 0x250 + ofst 0xde8
+kern  :info  : [   36.240441] rust_kjit: Vlabel: 0xaaaaaab25190 -> 0x103c	len 0x254 + ofst 0xde8
+kern  :info  : [   36.240442] rust_kjit: Vlabel: 0xaaaaaab25194 -> 0x1040	len 0x258 + ofst 0xde8
+kern  :info  : [   36.240444] rust_kjit: Vlabel: 0xaaaaaab25198 -> 0x105c	len 0x274 + ofst 0xde8
+kern  :info  : [   36.240446] rust_kjit: Vlabel: 0xaaaaaab2519c -> 0x1084	len 0x29c + ofst 0xde8
+kern  :info  : [   36.240447] rust_kjit: Vlabel: 0xaaaaaab251a0 -> 0x1088	len 0x2a0 + ofst 0xde8
+kern  :info  : [   36.240448] rust_kjit: Vlabel: 0xaaaaaab251a4 -> 0x108c	len 0x2a4 + ofst 0xde8
+kern  :info  : [   36.240449] rust_kjit: Vlabel: 0xaaaaaab251a8 -> 0x1090	len 0x2a8 + ofst 0xde8
+kern  :info  : [   36.240450] rust_kjit: Vlabel: 0xaaaaaab251ac -> 0x1094	len 0x2ac + ofst 0xde8
+kern  :info  : [   36.240452] rust_kjit: Vlabel: 0xaaaaaab251b0 -> 0x10b8	len 0x2d0 + ofst 0xde8
+kern  :info  : [   36.240453] rust_kjit: Vlabel: 0xaaaaaab251b4 -> 0x10bc	len 0x2d4 + ofst 0xde8
+kern  :info  : [   36.240454] rust_kjit: Vlabel: 0xaaaaaab251b8 -> 0x10c0	len 0x2d8 + ofst 0xde8
+kern  :info  : [   36.240455] rust_kjit: Vlabel: 0xaaaaaab251bc -> 0x10c4	len 0x2dc + ofst 0xde8
+kern  :info  : [   36.240457] rust_kjit: Vlabel: 0xaaaaaab251c0 -> 0x10e0	len 0x2f8 + ofst 0xde8
+kern  :info  : [   36.240458] rust_kjit: Vlabel: 0xaaaaaab251c4 -> 0x10e4	len 0x2fc + ofst 0xde8
+kern  :info  : [   36.240459] rust_kjit: Vlabel: 0xaaaaaab251c8 -> 0x10e8	len 0x300 + ofst 0xde8
+kern  :info  : [   36.240461] rust_kjit: Vlabel: 0xaaaaaab251cc -> 0x110c	len 0x324 + ofst 0xde8
+kern  :info  : [   36.240462] rust_kjit: Vlabel: 0xaaaaaab251d0 -> 0x1110	len 0x328 + ofst 0xde8
+kern  :info  : [   36.240463] rust_kjit: Vlabel: 0xaaaaaab251d4 -> 0x1114	len 0x32c + ofst 0xde8
+kern  :info  : [   36.240464] rust_kjit: Vlabel: 0xaaaaaab251d8 -> 0x1118	len 0x330 + ofst 0xde8
+kern  :info  : [   36.240465] rust_kjit: Vlabel: 0xaaaaaab251dc -> 0x111c	len 0x334 + ofst 0xde8
+kern  :info  : [   36.240465] rust_kjit: Vlabel: 0xaaaaaab251e0 -> 0x1120	len 0x338 + ofst 0xde8
+kern  :info  : [   36.240466] rust_kjit: Vlabel: 0xaaaaaab251e4 -> 0x1124	len 0x33c + ofst 0xde8
+kern  :info  : [   36.240469] rust_kjit: Vlabel: 0xaaaaaab251e8 -> 0x1148	len 0x360 + ofst 0xde8
+kern  :info  : [   36.240470] rust_kjit: Vlabel: 0xaaaaaab25148 -> 0x1170	len 0x388 + ofst 0xde8
+kern  :info  : [   36.240471] rust_kjit: Vlabel: 0xaaaaaab251ec -> 0x1174	len 0x38c + ofst 0xde8
+kern  :info  : [   36.240472] rust_kjit: Vlabel: 0xaaaaaab251f0 -> 0x1178	len 0x390 + ofst 0xde8
+kern  :info  : [   36.240473] rust_kjit: Vlabel: 0xaaaaaab251f4 -> 0x117c	len 0x394 + ofst 0xde8
+kern  :info  : [   36.240475] rust_kjit: Vlabel: 0xaaaaaab251f8 -> 0x118c	len 0x3a4 + ofst 0xde8
+kern  :info  : [   36.240476] rust_kjit: Vlabel: 0xaaaaaab251fc -> 0x1190	len 0x3a8 + ofst 0xde8
+kern  :info  : [   36.240477] rust_kjit: Vlabel: 0xaaaaaab25200 -> 0x1194	len 0x3ac + ofst 0xde8
+kern  :info  : [   36.240478] rust_kjit: Vlabel: 0xaaaaaab25204 -> 0x1198	len 0x3b0 + ofst 0xde8
+kern  :info  : [   36.240479] rust_kjit: Vlabel: 0xaaaaaab25208 -> 0x119c	len 0x3b4 + ofst 0xde8
+kern  :info  : [   36.240479] rust_kjit: Vlabel: 0xaaaaaab2520c -> 0x11a0	len 0x3b8 + ofst 0xde8
+kern  :info  : [   36.240482] rust_kjit: Vlabel: 0xaaaaaab25210 -> 0x11c4	len 0x3dc + ofst 0xde8
+kern  :info  : [   36.240483] rust_kjit: Vlabel: 0xaaaaaab25214 -> 0x11c8	len 0x3e0 + ofst 0xde8
+kern  :info  : [   36.240484] rust_kjit: Vlabel: 0xaaaaaab25218 -> 0x11cc	len 0x3e4 + ofst 0xde8
+kern  :info  : [   36.240485] rust_kjit: Vlabel: 0xaaaaaab2521c -> 0x11d0	len 0x3e8 + ofst 0xde8
+kern  :info  : [   36.240486] rust_kjit: Vlabel: 0xaaaaaab25220 -> 0x11d4	len 0x3ec + ofst 0xde8
+kern  :info  : [   36.240487] rust_kjit: Vlabel: 0xaaaaaab25224 -> 0x11d8	len 0x3f0 + ofst 0xde8
+kern  :info  : [   36.240488] rust_kjit: Vlabel: 0xaaaaaab25228 -> 0x11e8	len 0x400 + ofst 0xde8
+kern  :info  : [   36.240489] rust_kjit: Vlabel: 0xaaaaaab2522c -> 0x11ec	len 0x404 + ofst 0xde8
+kern  :info  : [   36.240490] rust_kjit: Vlabel: 0xaaaaaab25230 -> 0x11f0	len 0x408 + ofst 0xde8
+kern  :info  : [   36.240491] rust_kjit: Vlabel: 0xaaaaaab25234 -> 0x11f4	len 0x40c + ofst 0xde8
+kern  :info  : [   36.240493] rust_kjit: Vlabel: 0xaaaaaab25238 -> 0x1210	len 0x428 + ofst 0xde8
+kern  :info  : [   36.240494] rust_kjit: Vlabel: 0xaaaaaab2523c -> 0x1214	len 0x42c + ofst 0xde8
+kern  :info  : [   36.240496] rust_kjit: Vlabel: 0xaaaaaab25240 -> 0x123c	len 0x454 + ofst 0xde8
+kern  :info  : [   36.240497] rust_kjit: Vlabel: 0xaaaaaab25244 -> 0x1240	len 0x458 + ofst 0xde8
+kern  :info  : [   36.240498] rust_kjit: Vlabel: 0xaaaaaab25248 -> 0x1244	len 0x45c + ofst 0xde8
+kern  :info  : [   36.240499] rust_kjit: Vlabel: 0xaaaaaab2524c -> 0x1248	len 0x460 + ofst 0xde8
+kern  :info  : [   36.240500] rust_kjit: Vlabel: 0xaaaaaab25250 -> 0x124c	len 0x464 + ofst 0xde8
+kern  :info  : [   36.240501] rust_kjit: Vlabel: 0xaaaaaab25254 -> 0x1250	len 0x468 + ofst 0xde8
+kern  :info  : [   36.240502] rust_kjit: Vlabel: 0xaaaaaab25258 -> 0x1254	len 0x46c + ofst 0xde8
+kern  :info  : [   36.240503] rust_kjit: Vlabel: 0xaaaaaab2525c -> 0x1258	len 0x470 + ofst 0xde8
+kern  :info  : [   36.240504] rust_kjit: Vlabel: 0xaaaaaab25260 -> 0x125c	len 0x474 + ofst 0xde8
+kern  :info  : [   36.240506] rust_kjit: Vlabel: 0xaaaaaab25250 -> 0x1280	len 0x498 + ofst 0xde8
+kern  :info  : [   36.240507] rust_kjit: Vlabel: 0xaaaaaab25264 -> 0x1284	len 0x49c + ofst 0xde8
+kern  :info  : [   36.240508] rust_kjit: Vlabel: 0xaaaaaab25268 -> 0x1288	len 0x4a0 + ofst 0xde8
+kern  :info  : [   36.240510] rust_kjit: Vlabel: 0xaaaaaab2526c -> 0x12b0	len 0x4c8 + ofst 0xde8
+kern  :info  : [   36.240511] rust_kjit: Vlabel: 0xaaaaaab25270 -> 0x12b4	len 0x4cc + ofst 0xde8
+kern  :info  : [   36.240512] rust_kjit: Vlabel: 0xaaaaaab25274 -> 0x12b8	len 0x4d0 + ofst 0xde8
+kern  :info  : [   36.240513] rust_kjit: Vlabel: 0xaaaaaab25278 -> 0x12bc	len 0x4d4 + ofst 0xde8
+kern  :info  : [   36.240514] rust_kjit: Vlabel: 0xaaaaaab2527c -> 0x12c0	len 0x4d8 + ofst 0xde8
+kern  :info  : [   36.240515] rust_kjit: Vlabel: 0xaaaaaab25280 -> 0x12c4	len 0x4dc + ofst 0xde8
+kern  :info  : [   36.240516] rust_kjit: Vlabel: 0xaaaaaab25284 -> 0x12c8	len 0x4e0 + ofst 0xde8
+kern  :info  : [   36.240517] rust_kjit: Vlabel: 0xaaaaaab25288 -> 0x12cc	len 0x4e4 + ofst 0xde8
+kern  :info  : [   36.240518] rust_kjit: Vlabel: 0xaaaaaab2528c -> 0x12d0	len 0x4e8 + ofst 0xde8
+kern  :info  : [   36.240519] rust_kjit: Vlabel: 0xaaaaaab25290 -> 0x12d4	len 0x4ec + ofst 0xde8
+kern  :info  : [   36.240521] rust_kjit: Vlabel: 0xaaaaaab25280 -> 0x12f8	len 0x510 + ofst 0xde8
+kern  :info  : [   36.240522] rust_kjit: Vlabel: 0xaaaaaab25294 -> 0x12fc	len 0x514 + ofst 0xde8
+kern  :info  : [   36.240523] rust_kjit: Vlabel: 0xaaaaaab25298 -> 0x1300	len 0x518 + ofst 0xde8
+kern  :info  : [   36.240524] rust_kjit: Vlabel: 0xaaaaaab2529c -> 0x1304	len 0x51c + ofst 0xde8
+kern  :info  : [   36.240526] rust_kjit: Vlabel: 0xaaaaaab25148 -> 0x132c	len 0x544 + ofst 0xde8
+kern  :info  : [   36.240527] rust_kjit: Vlabel: 0xaaaaaab252a0 -> 0x1330	len 0x548 + ofst 0xde8
+kern  :info  : [   36.240528] rust_kjit: Vlabel: 0xaaaaaab251ec -> 0x1354	len 0x56c + ofst 0xde8
+kern  :info  : [   36.240530] rust_kjit: Vlabel: 0xaaaaaab252a4 -> 0x1358	len 0x570 + ofst 0xde8
+kern  :info  : [   36.240531] rust_kjit: Vlabel: 0xaaaaaab252a8 -> 0x135c	len 0x574 + ofst 0xde8
+kern  :info  : [   36.240532] rust_kjit: Vlabel: 0xaaaaaab252ac -> 0x1360	len 0x578 + ofst 0xde8
+kern  :info  : [   36.240534] rust_kjit: Vlabel: 0xaaaaaab252b0 -> 0x137c	len 0x594 + ofst 0xde8
+kern  :info  : [   36.240535] rust_kjit: Vlabel: 0xaaaaaab252b4 -> 0x1380	len 0x598 + ofst 0xde8
+kern  :info  : [   36.240536] rust_kjit: Vlabel: 0xaaaaaab252b8 -> 0x1384	len 0x59c + ofst 0xde8
+kern  :info  : [   36.240538] rust_kjit: Vlabel: 0xaaaaaab252bc -> 0x13a8	len 0x5c0 + ofst 0xde8
+kern  :info  : [   36.240539] rust_kjit: Vlabel: 0xaaaaaab252c0 -> 0x13ac	len 0x5c4 + ofst 0xde8
+kern  :info  : [   36.240540] rust_kjit: Vlabel: 0xaaaaaab252c4 -> 0x13b0	len 0x5c8 + ofst 0xde8
+kern  :info  : [   36.240541] rust_kjit: Vlabel: 0xaaaaaab252c8 -> 0x13b4	len 0x5cc + ofst 0xde8
+kern  :info  : [   36.240542] rust_kjit: Vlabel: 0xaaaaaab252cc -> 0x13b8	len 0x5d0 + ofst 0xde8
+kern  :info  : [   36.240543] rust_kjit: Vlabel: 0xaaaaaab252d0 -> 0x13bc	len 0x5d4 + ofst 0xde8
+kern  :info  : [   36.240544] rust_kjit: Vlabel: 0xaaaaaab252d4 -> 0x13c0	len 0x5d8 + ofst 0xde8
+kern  :info  : [   36.240545] rust_kjit: Vlabel: 0xaaaaaab252d8 -> 0x13c4	len 0x5dc + ofst 0xde8
+kern  :info  : [   36.240548] rust_kjit: Vlabel: 0xaaaaaab252dc -> 0x13ec	len 0x604 + ofst 0xde8
+kern  :info  : [   36.240549] rust_kjit: Vlabel: 0xaaaaaab252e0 -> 0x13f0	len 0x608 + ofst 0xde8
+kern  :info  : [   36.240551] rust_kjit: Vlabel: 0xaaaaaab252e4 -> 0x140c	len 0x624 + ofst 0xde8
+kern  :info  : [   36.240552] rust_kjit: Vlabel: 0xaaaaaab252e8 -> 0x1410	len 0x628 + ofst 0xde8
+kern  :info  : [   36.240553] rust_kjit: Vlabel: 0xaaaaaab252ec -> 0x1414	len 0x62c + ofst 0xde8
+kern  :info  : [   36.240554] rust_kjit: Vlabel: 0xaaaaaab252f0 -> 0x1418	len 0x630 + ofst 0xde8
+kern  :info  : [   36.240555] rust_kjit: Vlabel: 0xaaaaaab252f4 -> 0x141c	len 0x634 + ofst 0xde8
+kern  :info  : [   36.240556] rust_kjit: Vlabel: 0xaaaaaab252f8 -> 0x1420	len 0x638 + ofst 0xde8
+kern  :info  : [   36.240558] rust_kjit: Vlabel: 0xaaaaaab252fc -> 0x143c	len 0x654 + ofst 0xde8
+kern  :info  : [   36.240559] rust_kjit: Vlabel: 0xaaaaaab25300 -> 0x1440	len 0x658 + ofst 0xde8
+kern  :info  : [   36.240560] rust_kjit: Vlabel: 0xaaaaaab25304 -> 0x1444	len 0x65c + ofst 0xde8
+kern  :info  : [   36.240561] rust_kjit: Vlabel: 0xaaaaaab25308 -> 0x1448	len 0x660 + ofst 0xde8
+kern  :info  : [   36.240562] rust_kjit: Vlabel: 0xaaaaaab25148 -> 0x1470	len 0x688 + ofst 0xde8
+kern  :info  : [   36.240563] rust_kjit: Vlabel: 0xaaaaaab2530c -> 0x1474	len 0x68c + ofst 0xde8
+kern  :info  : [   36.240565] rust_kjit: Vlabel: 0xaaaaaab25310 -> 0x1484	len 0x69c + ofst 0xde8
+kern  :info  : [   36.240566] rust_kjit: Vlabel: 0xaaaaaab25314 -> 0x1488	len 0x6a0 + ofst 0xde8
+kern  :info  : [   36.240567] rust_kjit: Vlabel: 0xaaaaaab25318 -> 0x148c	len 0x6a4 + ofst 0xde8
+kern  :info  : [   36.240568] rust_kjit: Vlabel: 0xaaaaaab2531c -> 0x1490	len 0x6a8 + ofst 0xde8
+kern  :info  : [   36.240569] rust_kjit: Vlabel: 0xaaaaaab25320 -> 0x1494	len 0x6ac + ofst 0xde8
+kern  :info  : [   36.240570] rust_kjit: Vlabel: 0xaaaaaab25324 -> 0x1498	len 0x6b0 + ofst 0xde8
+kern  :info  : [   36.240572] rust_kjit: Vlabel: 0xaaaaaab25328 -> 0x14bc	len 0x6d4 + ofst 0xde8
+kern  :info  : [   36.240573] rust_kjit: Vlabel: 0xaaaaaab2532c -> 0x14c0	len 0x6d8 + ofst 0xde8
+kern  :info  : [   36.240575] rust_kjit: Vlabel: 0xaaaaaab25330 -> 0x14e8	len 0x700 + ofst 0xde8
+kern  :info  : [   36.240576] rust_kjit: Vlabel: 0xaaaaaab25334 -> 0x14ec	len 0x704 + ofst 0xde8
+kern  :info  : [   36.240579] rust_kjit: Vlabel: 0xaaaaaab25338 -> 0x1514	len 0x72c + ofst 0xde8
+kern  :info  : [   36.240580] rust_kjit: Vlabel: 0xaaaaaab2533c -> 0x1524	len 0x73c + ofst 0xde8
+kern  :info  : [   36.240581] rust_kjit: Vlabel: 0xaaaaaab25340 -> 0x1528	len 0x740 + ofst 0xde8
+kern  :info  : [   36.240582] rust_kjit: Vlabel: 0xaaaaaab25344 -> 0x152c	len 0x744 + ofst 0xde8
+kern  :info  : [   36.240583] rust_kjit: Vlabel: 0xaaaaaab25348 -> 0x1530	len 0x748 + ofst 0xde8
+kern  :info  : [   36.240584] rust_kjit: Vlabel: 0xaaaaaab2534c -> 0x1534	len 0x74c + ofst 0xde8
+kern  :info  : [   36.240586] rust_kjit: Vlabel: 0xaaaaaab25350 -> 0x1550	len 0x768 + ofst 0xde8
+kern  :info  : [   36.240587] rust_kjit: Vlabel: 0xaaaaaab25354 -> 0x1554	len 0x76c + ofst 0xde8
+kern  :info  : [   36.240589] rust_kjit: Vlabel: 0xaaaaaab25358 -> 0x1570	len 0x788 + ofst 0xde8
+kern  :info  : [   36.240590] rust_kjit: Vlabel: 0xaaaaaab2535c -> 0x1574	len 0x78c + ofst 0xde8
+kern  :info  : [   36.240591] rust_kjit: Vlabel: 0xaaaaaab25360 -> 0x1578	len 0x790 + ofst 0xde8
+kern  :info  : [   36.240593] rust_kjit: Vlabel: 0xaaaaaab25364 -> 0x1594	len 0x7ac + ofst 0xde8
+kern  :info  : [   36.240594] rust_kjit: Vlabel: 0xaaaaaab25368 -> 0x1598	len 0x7b0 + ofst 0xde8
+kern  :info  : [   36.240596] rust_kjit: Vlabel: 0xaaaaaab2536c -> 0x15c0	len 0x7d8 + ofst 0xde8
+kern  :info  : [   36.240597] rust_kjit: Vlabel: 0xaaaaaab25370 -> 0x15c4	len 0x7dc + ofst 0xde8
+kern  :info  : [   36.240599] rust_kjit: Vlabel: 0xaaaaaab25374 -> 0x15e0	len 0x7f8 + ofst 0xde8
+kern  :info  : [   36.240600] rust_kjit: Vlabel: 0xaaaaaab25378 -> 0x15e4	len 0x7fc + ofst 0xde8
+kern  :info  : [   36.240601] rust_kjit: Vlabel: 0xaaaaaab2537c -> 0x15e8	len 0x800 + ofst 0xde8
+kern  :info  : [   36.240603] rust_kjit: Vlabel: 0xaaaaaab251f4 -> 0x160c	len 0x824 + ofst 0xde8
+kern  :info  : [   36.240604] rust_kjit: Vlabel: 0xaaaaaab25380 -> 0x1610	len 0x828 + ofst 0xde8
+kern  :info  : [   36.240605] rust_kjit: Vlabel: 0xaaaaaab25384 -> 0x1614	len 0x82c + ofst 0xde8
+kern  :info  : [   36.240606] rust_kjit: Vlabel: 0xaaaaaab25388 -> 0x1618	len 0x830 + ofst 0xde8
+kern  :info  : [   36.240608] rust_kjit: Vlabel: 0xaaaaaab2538c -> 0x163c	len 0x854 + ofst 0xde8
+kern  :info  : [   36.240609] rust_kjit: Vlabel: 0xaaaaaab25390 -> 0x1640	len 0x858 + ofst 0xde8
+kern  :info  : [   36.240610] rust_kjit: Vlabel: 0xaaaaaab25394 -> 0x1644	len 0x85c + ofst 0xde8
+kern  :info  : [   36.240613] rust_kjit: Vlabel: 0xaaaaaab25398 -> 0x1668	len 0x880 + ofst 0xde8
+kern  :info  : [   36.240614] rust_kjit: Vlabel: 0xaaaaaab2539c -> 0x166c	len 0x884 + ofst 0xde8
+kern  :info  : [   36.240615] rust_kjit: Vlabel: 0xaaaaaab253a0 -> 0x1670	len 0x888 + ofst 0xde8
+kern  :info  : [   36.240616] rust_kjit: Vlabel: 0xaaaaaab2519c -> 0x1694	len 0x8ac + ofst 0xde8
+kern  :info  : [   36.240617] rust_kjit: Vlabel: 0xaaaaaab253a4 -> 0x1698	len 0x8b0 + ofst 0xde8
+kern  :info  : [   36.240619] rust_kjit: Vlabel: 0xaaaaaab253a8 -> 0x169c	len 0x8b4 + ofst 0xde8
+kern  :info  : [   36.240620] rust_kjit: Vlabel: 0xaaaaaab253ac -> 0x16ac	len 0x8c4 + ofst 0xde8
+kern  :info  : [   36.240621] rust_kjit: Vlabel: 0xaaaaaab253b0 -> 0x16b0	len 0x8c8 + ofst 0xde8
+kern  :info  : [   36.240622] rust_kjit: Vlabel: 0xaaaaaab253b4 -> 0x16b4	len 0x8cc + ofst 0xde8
+kern  :info  : [   36.240623] rust_kjit: Vlabel: 0xaaaaaab253b8 -> 0x16b8	len 0x8d0 + ofst 0xde8
+kern  :info  : [   36.240625] rust_kjit: Vlabel: 0xaaaaaab253bc -> 0x16d4	len 0x8ec + ofst 0xde8
+kern  :info  : [   36.240626] rust_kjit: Vlabel: 0xaaaaaab251b8 -> 0x16fc	len 0x914 + ofst 0xde8
+kern  :info  : [   36.240628] rust_kjit: Vlabel: 0xaaaaaab253c0 -> 0x1700	len 0x918 + ofst 0xde8
+kern  :info  : [   36.240629] rust_kjit: Vlabel: 0xaaaaaab253c4 -> 0x1710	len 0x928 + ofst 0xde8
+kern  :info  : [   36.240630] rust_kjit: Vlabel: 0xaaaaaab253c8 -> 0x1714	len 0x92c + ofst 0xde8
+kern  :info  : [   36.240631] rust_kjit: Vlabel: 0xaaaaaab253cc -> 0x1718	len 0x930 + ofst 0xde8
+kern  :info  : [   36.240632] rust_kjit: Vlabel: 0xaaaaaab253d0 -> 0x171c	len 0x934 + ofst 0xde8
+kern  :info  : [   36.240633] rust_kjit: Vlabel: 0xaaaaaab253d4 -> 0x172c	len 0x944 + ofst 0xde8
+kern  :info  : [   36.240634] rust_kjit: Vlabel: 0xaaaaaab253d8 -> 0x1730	len 0x948 + ofst 0xde8
+kern  :info  : [   36.240635] rust_kjit: Vlabel: 0xaaaaaab253dc -> 0x1734	len 0x94c + ofst 0xde8
+kern  :info  : [   36.240636] rust_kjit: Vlabel: 0xaaaaaab253e0 -> 0x1738	len 0x950 + ofst 0xde8
+kern  :info  : [   36.240637] rust_kjit: Vlabel: 0xaaaaaab253e4 -> 0x173c	len 0x954 + ofst 0xde8
+kern  :info  : [   36.240639] rust_kjit: Vlabel: 0xaaaaaab253e8 -> 0x1758	len 0x970 + ofst 0xde8
+kern  :info  : [   36.240640] rust_kjit: Vlabel: 0xaaaaaab253ec -> 0x175c	len 0x974 + ofst 0xde8
+kern  :info  : [   36.240642] rust_kjit: Vlabel: 0xaaaaaab253f0 -> 0x1778	len 0x990 + ofst 0xde8
+kern  :info  : [   36.240643] rust_kjit: Vlabel: 0xaaaaaab253f4 -> 0x177c	len 0x994 + ofst 0xde8
+kern  :info  : [   36.240644] rust_kjit: Vlabel: 0xaaaaaab253f8 -> 0x1780	len 0x998 + ofst 0xde8
+kern  :info  : [   36.240645] rust_kjit: Vlabel: 0xaaaaaab253fc -> 0x1784	len 0x99c + ofst 0xde8
+kern  :info  : [   36.240646] rust_kjit: Vlabel: 0xaaaaaab25400 -> 0x1788	len 0x9a0 + ofst 0xde8
+kern  :info  : [   36.240651] rust_kjit: Vlabel: 0xaaaaaab251b0 -> 0x17ac	len 0x9c4 + ofst 0xde8
+kern  :info  : [   36.240652] rust_kjit: Vlabel: 0xaaaaaab25404 -> 0x17b0	len 0x9c8 + ofst 0xde8
+kern  :info  : [   36.240653] rust_kjit: Vlabel: 0xaaaaaab25408 -> 0x17b4	len 0x9cc + ofst 0xde8
+kern  :info  : [   36.240654] rust_kjit: Vlabel: 0xaaaaaab2540c -> 0x17b8	len 0x9d0 + ofst 0xde8
+kern  :info  : [   36.240655] rust_kjit: Vlabel: 0xaaaaaab25410 -> 0x17bc	len 0x9d4 + ofst 0xde8
+kern  :info  : [   36.240657] rust_kjit: Vlabel: 0xaaaaaab25414 -> 0x17d8	len 0x9f0 + ofst 0xde8
+kern  :info  : [   36.240660] rust_kjit: Vlabel: 0xaaaaaab25418 -> 0x1800	len 0xa18 + ofst 0xde8
+kern  :info  : [   36.240661] rust_kjit: Vlabel: 0xaaaaaab2541c -> 0x1804	len 0xa1c + ofst 0xde8
+kern  :info  : [   36.240662] rust_kjit: Vlabel: 0xaaaaaab251b8 -> 0x1828	len 0xa40 + ofst 0xde8
+kern  :info  : [   36.240664] rust_kjit: Vlabel: 0xaaaaaab25420 -> 0x182c	len 0xa44 + ofst 0xde8
+kern  :info  : [   36.240665] rust_kjit: Vlabel: 0xaaaaaab25424 -> 0x1830	len 0xa48 + ofst 0xde8
+kern  :info  : [   36.240667] rust_kjit: Vlabel: 0xaaaaaab25428 -> 0x184c	len 0xa64 + ofst 0xde8
+kern  :info  : [   36.240668] rust_kjit: Vlabel: 0xaaaaaab2542c -> 0x1850	len 0xa68 + ofst 0xde8
+kern  :info  : [   36.240669] rust_kjit: Vlabel: 0xaaaaaab25430 -> 0x1854	len 0xa6c + ofst 0xde8
+kern  :info  : [   36.240670] rust_kjit: Vlabel: 0xaaaaaab25434 -> 0x1858	len 0xa70 + ofst 0xde8
+kern  :info  : [   36.240671] rust_kjit: Vlabel: 0xaaaaaab25438 -> 0x185c	len 0xa74 + ofst 0xde8
+kern  :info  : [   36.240672] rust_kjit: Vlabel: 0xaaaaaab2543c -> 0x1860	len 0xa78 + ofst 0xde8
+kern  :info  : [   36.240674] rust_kjit: Vlabel: 0xaaaaaab25440 -> 0x187c	len 0xa94 + ofst 0xde8
+kern  :info  : [   36.240676] rust_kjit: Vlabel: 0xaaaaaab252fc -> 0x18a0	len 0xab8 + ofst 0xde8
+kern  :info  : [   36.240677] rust_kjit: Vlabel: 0xaaaaaab25444 -> 0x18a4	len 0xabc + ofst 0xde8
+kern  :info  : [   36.240678] rust_kjit: Vlabel: 0xaaaaaab25448 -> 0x18a8	len 0xac0 + ofst 0xde8
+kern  :info  : [   36.240679] rust_kjit: Vlabel: 0xaaaaaab2544c -> 0x18ac	len 0xac4 + ofst 0xde8
+kern  :info  : [   36.240680] rust_kjit: Vlabel: 0xaaaaaab25450 -> 0x18b0	len 0xac8 + ofst 0xde8
+kern  :info  : [   36.240681] rust_kjit: Vlabel: 0xaaaaaab25454 -> 0x18c0	len 0xad8 + ofst 0xde8
+kern  :info  : [   36.240682] rust_kjit: Vlabel: 0xaaaaaab25458 -> 0x18c4	len 0xadc + ofst 0xde8
+kern  :info  : [   36.240683] rust_kjit: Vlabel: 0xaaaaaab2545c -> 0x18c8	len 0xae0 + ofst 0xde8
+kern  :info  : [   36.240684] rust_kjit: Vlabel: 0xaaaaaab25460 -> 0x18cc	len 0xae4 + ofst 0xde8
+kern  :info  : [   36.240685] rust_kjit: Vlabel: 0xaaaaaab25464 -> 0x18d0	len 0xae8 + ofst 0xde8
+kern  :info  : [   36.240686] rust_kjit: Vlabel: 0xaaaaaab25468 -> 0x18d4	len 0xaec + ofst 0xde8
+kern  :info  : [   36.240688] rust_kjit: Vlabel: 0xaaaaaab2546c -> 0x18e4	len 0xafc + ofst 0xde8
+kern  :info  : [   36.240689] rust_kjit: Vlabel: 0xaaaaaab25470 -> 0x18e8	len 0xb00 + ofst 0xde8
+kern  :info  : [   36.240690] rust_kjit: Vlabel: 0xaaaaaab25474 -> 0x18ec	len 0xb04 + ofst 0xde8
+kern  :info  : [   36.240692] rust_kjit: Vlabel: 0xaaaaaab25478 -> 0x1908	len 0xb20 + ofst 0xde8
+kern  :info  : [   36.240693] rust_kjit: Vlabel: 0xaaaaaab2547c -> 0x1918	len 0xb30 + ofst 0xde8
+kern  :info  : [   36.240694] rust_kjit: Vlabel: 0xaaaaaab25480 -> 0x191c	len 0xb34 + ofst 0xde8
+kern  :info  : [   36.240695] rust_kjit: Vlabel: 0xaaaaaab25484 -> 0x1920	len 0xb38 + ofst 0xde8
+kern  :info  : [   36.240697] rust_kjit: Vlabel: 0xaaaaaab25488 -> 0x193c	len 0xb54 + ofst 0xde8
+kern  :info  : [   36.240698] rust_kjit: Vlabel: 0xaaaaaab2548c -> 0x1940	len 0xb58 + ofst 0xde8
+kern  :info  : [   36.240699] rust_kjit: Vlabel: 0xaaaaaab25490 -> 0x1944	len 0xb5c + ofst 0xde8
+kern  :info  : [   36.240702] rust_kjit: Vlabel: 0xaaaaaab25494 -> 0x196c	len 0xb84 + ofst 0xde8
+kern  :info  : [   36.240703] rust_kjit: Vlabel: 0xaaaaaab25498 -> 0x197c	len 0xb94 + ofst 0xde8
+kern  :info  : [   36.240704] rust_kjit: Vlabel: 0xaaaaaab2549c -> 0x1980	len 0xb98 + ofst 0xde8
+kern  :info  : [   36.240705] rust_kjit: Vlabel: 0xaaaaaab254a0 -> 0x1984	len 0xb9c + ofst 0xde8
+kern  :info  : [   36.240706] rust_kjit: Vlabel: 0xaaaaaab254a4 -> 0x1988	len 0xba0 + ofst 0xde8
+kern  :info  : [   36.240707] rust_kjit: Vlabel: 0xaaaaaab254a8 -> 0x198c	len 0xba4 + ofst 0xde8
+kern  :info  : [   36.240709] rust_kjit: Vlabel: 0xaaaaaab254ac -> 0x19b0	len 0xbc8 + ofst 0xde8
+kern  :info  : [   36.240710] rust_kjit: Vlabel: 0xaaaaaab254b0 -> 0x19b4	len 0xbcc + ofst 0xde8
+kern  :info  : [   36.240713] rust_kjit: Vlabel: 0xaaaaaab254b4 -> 0x19dc	len 0xbf4 + ofst 0xde8
+kern  :info  : [   36.240714] rust_kjit: Vlabel: 0xaaaaaab254b8 -> 0x19e0	len 0xbf8 + ofst 0xde8
+kern  :info  : [   36.240716] rust_kjit: Vlabel: 0xaaaaaab254bc -> 0x19fc	len 0xc14 + ofst 0xde8
+kern  :info  : [   36.240717] rust_kjit: Vlabel: 0xaaaaaab254c0 -> 0x1a00	len 0xc18 + ofst 0xde8
+kern  :info  : [   36.240718] rust_kjit: Vlabel: 0xaaaaaab254c4 -> 0x1a04	len 0xc1c + ofst 0xde8
+kern  :info  : [   36.240720] rust_kjit: Vlabel: 0xaaaaaab254c8 -> 0x1a20	len 0xc38 + ofst 0xde8
+kern  :info  : [   36.240721] rust_kjit: Vlabel: 0xaaaaaab254cc -> 0x1a24	len 0xc3c + ofst 0xde8
+kern  :info  : [   36.240723] rust_kjit: Vlabel: 0xaaaaaab254d0 -> 0x1a40	len 0xc58 + ofst 0xde8
+kern  :info  : [   36.240724] rust_kjit: Vlabel: 0xaaaaaab254d4 -> 0x1a44	len 0xc5c + ofst 0xde8
+kern  :info  : [   36.240725] rust_kjit: Vlabel: 0xaaaaaab254d8 -> 0x1a48	len 0xc60 + ofst 0xde8
+kern  :info  : [   36.240726] rust_kjit: Vlabel: 0xaaaaaab254dc -> 0x1a4c	len 0xc64 + ofst 0xde8
+kern  :info  : [   36.240728] rust_kjit: Vlabel: 0xaaaaaab254e0 -> 0x1a50	len 0xc68 + ofst 0xde8
+kern  :info  : [   36.240729] rust_kjit: Vlabel: 0xaaaaaab254e4 -> 0x1a54	len 0xc6c + ofst 0xde8
+kern  :info  : [   36.240730] rust_kjit: Vlabel: 0xaaaaaab254e8 -> 0x1a58	len 0xc70 + ofst 0xde8
+kern  :info  : [   36.240732] rust_kjit: Vlabel: 0xaaaaaab254ec -> 0x1a74	len 0xc8c + ofst 0xde8
+kern  :info  : [   36.240733] rust_kjit: Vlabel: 0xaaaaaab254f0 -> 0x1a78	len 0xc90 + ofst 0xde8
+kern  :info  : [   36.240734] rust_kjit: Vlabel: 0xaaaaaab254f4 -> 0x1a7c	len 0xc94 + ofst 0xde8
+kern  :info  : [   36.240736] rust_kjit: Vlabel: 0xaaaaaab254f8 -> 0x1aa0	len 0xcb8 + ofst 0xde8
+kern  :info  : [   36.240737] rust_kjit: Vlabel: 0xaaaaaab254fc -> 0x1aa4	len 0xcbc + ofst 0xde8
+kern  :info  : [   36.240739] rust_kjit: Vlabel: 0xaaaaaab25500 -> 0x1aa8	len 0xcc0 + ofst 0xde8
+kern  :info  : [   36.240740] rust_kjit: Vlabel: 0xaaaaaab25504 -> 0x1aac	len 0xcc4 + ofst 0xde8
+kern  :info  : [   36.240742] rust_kjit: Vlabel: 0xaaaaaab25508 -> 0x1ad4	len 0xcec + ofst 0xde8
+kern  :info  : [   36.240743] rust_kjit: Vlabel: 0xaaaaaab2550c -> 0x1ad8	len 0xcf0 + ofst 0xde8
+kern  :info  : [   36.240746] rust_kjit: Vlabel: 0xaaaaaab25510 -> 0x1b00	len 0xd18 + ofst 0xde8
+kern  :info  : [   36.240747] rust_kjit: Vlabel: 0xaaaaaab25514 -> 0x1b04	len 0xd1c + ofst 0xde8
+kern  :info  : [   36.240749] rust_kjit: Vlabel: 0xaaaaaab25518 -> 0x1b2c	len 0xd44 + ofst 0xde8
+kern  :info  : [   36.240751] rust_kjit: Vlabel: 0xaaaaaab254ac -> 0x1b54	len 0xd6c + ofst 0xde8
+kern  :info  : [   36.240752] rust_kjit: Vlabel: 0xaaaaaab2551c -> 0x1b58	len 0xd70 + ofst 0xde8
+kern  :info  : [   36.240753] rust_kjit: Vlabel: 0xaaaaaab25520 -> 0x1b5c	len 0xd74 + ofst 0xde8
+kern  :info  : [   36.240755] rust_kjit: Vlabel: 0xaaaaaab25524 -> 0x1b78	len 0xd90 + ofst 0xde8
+kern  :info  : [   36.240756] rust_kjit: Vlabel: 0xaaaaaab25528 -> 0x1b7c	len 0xd94 + ofst 0xde8
+kern  :info  : [   36.240758] rust_kjit: Vlabel: 0xaaaaaab254ac -> 0x1ba4	len 0xdbc + ofst 0xde8
+kern  :info  : [   36.240759] rust_kjit: Vlabel: 0xaaaaaab2552c -> 0x1ba8	len 0xdc0 + ofst 0xde8
+kern  :info  : [   36.240761] rust_kjit: Vlabel: 0xaaaaaab25530 -> 0x1bac	len 0xdc4 + ofst 0xde8
+kern  :info  : [   36.240762] rust_kjit: Vlabel: 0xaaaaaab25534 -> 0x1bb0	len 0xdc8 + ofst 0xde8
+kern  :info  : [   36.240764] rust_kjit: Vlabel: 0xaaaaaab25538 -> 0x1bcc	len 0xde4 + ofst 0xde8
+kern  :info  : [   36.240765] rust_kjit: Vlabel: 0xaaaaaab2553c -> 0x1bd0	len 0xde8 + ofst 0xde8
+kern  :info  : [   36.240767] rust_kjit: Vlabel: 0xaaaaaab25540 -> 0x1bec	len 0xe04 + ofst 0xde8
+kern  :info  : [   36.240768] rust_kjit: Vlabel: 0xaaaaaab25544 -> 0x1bf0	len 0xe08 + ofst 0xde8
+kern  :info  : [   36.240769] rust_kjit: Vlabel: 0xaaaaaab25548 -> 0x1bf4	len 0xe0c + ofst 0xde8
+kern  :info  : [   36.240770] rust_kjit: Vlabel: 0xaaaaaab2554c -> 0x1bf8	len 0xe10 + ofst 0xde8
+kern  :info  : [   36.240772] rust_kjit: Vlabel: 0xaaaaaab25550 -> 0x1c14	len 0xe2c + ofst 0xde8
+kern  :info  : [   36.240773] rust_kjit: Vlabel: 0xaaaaaab25554 -> 0x1c18	len 0xe30 + ofst 0xde8
+kern  :info  : [   36.240775] rust_kjit: Vlabel: 0xaaaaaab25558 -> 0x1c1c	len 0xe34 + ofst 0xde8
+kern  :info  : [   36.240776] rust_kjit: Vlabel: 0xaaaaaab2555c -> 0x1c20	len 0xe38 + ofst 0xde8
+kern  :info  : [   36.240778] rust_kjit: Vlabel: 0xaaaaaab25560 -> 0x1c3c	len 0xe54 + ofst 0xde8
+kern  :info  : [   36.240780] rust_kjit: Vlabel: 0xaaaaaab25564 -> 0x1c64	len 0xe7c + ofst 0xde8
+kern  :info  : [   36.240781] rust_kjit: Vlabel: 0xaaaaaab25568 -> 0x1c68	len 0xe80 + ofst 0xde8
+kern  :info  : [   36.240783] rust_kjit: Vlabel: 0xaaaaaab2556c -> 0x1c84	len 0xe9c + ofst 0xde8
+kern  :info  : [   36.240785] rust_kjit: Vlabel: 0xaaaaaab25570 -> 0x1c94	len 0xeac + ofst 0xde8
+kern  :info  : [   36.240786] rust_kjit: Vlabel: 0xaaaaaab25574 -> 0x1c98	len 0xeb0 + ofst 0xde8
+kern  :info  : [   36.240787] rust_kjit: Vlabel: 0xaaaaaab25578 -> 0x1c9c	len 0xeb4 + ofst 0xde8
+kern  :info  : [   36.240788] rust_kjit: Vlabel: 0xaaaaaab2557c -> 0x1ca0	len 0xeb8 + ofst 0xde8
+kern  :info  : [   36.240790] rust_kjit: Vlabel: 0xaaaaaab25580 -> 0x1cbc	len 0xed4 + ofst 0xde8
+kern  :info  : [   36.240791] rust_kjit: Vlabel: 0xaaaaaab25584 -> 0x1cc0	len 0xed8 + ofst 0xde8
+kern  :info  : [   36.240792] rust_kjit: Vlabel: 0xaaaaaab25588 -> 0x1cc4	len 0xedc + ofst 0xde8
+kern  :info  : [   36.240794] rust_kjit: Vlabel: 0xaaaaaab2558c -> 0x1ce0	len 0xef8 + ofst 0xde8
+kern  :info  : [   36.240796] rust_kjit: Vlabel: 0xaaaaaab25590 -> 0x1ce4	len 0xefc + ofst 0xde8
+kern  :info  : [   36.240797] rust_kjit: Vlabel: 0xaaaaaab25594 -> 0x1ce8	len 0xf00 + ofst 0xde8
+kern  :info  : [   36.240799] rust_kjit: Vlabel: 0xaaaaaab25598 -> 0x1d04	len 0xf1c + ofst 0xde8
+kern  :info  : [   36.240800] rust_kjit: Vlabel: 0xaaaaaab2559c -> 0x1d08	len 0xf20 + ofst 0xde8
+kern  :info  : [   36.240801] rust_kjit: Vlabel: 0xaaaaaab255a0 -> 0x1d0c	len 0xf24 + ofst 0xde8
+kern  :info  : [   36.240802] rust_kjit: Vlabel: 0xaaaaaab255a4 -> 0x1d10	len 0xf28 + ofst 0xde8
+kern  :info  : [   36.240804] rust_kjit: Vlabel: 0xaaaaaab255a8 -> 0x1d20	len 0xf38 + ofst 0xde8
+kern  :info  : [   36.240805] rust_kjit: Vlabel: 0xaaaaaab255ac -> 0x1d24	len 0xf3c + ofst 0xde8
+kern  :info  : [   36.240807] rust_kjit: Vlabel: 0xaaaaaab255b0 -> 0x1d40	len 0xf58 + ofst 0xde8
+kern  :info  : [   36.240808] rust_kjit: Vlabel: 0xaaaaaab255b4 -> 0x1d44	len 0xf5c + ofst 0xde8
+kern  :info  : [   36.240809] rust_kjit: Vlabel: 0xaaaaaab25530 -> 0x1d6c	len 0xf84 + ofst 0xde8
+kern  :info  : [   36.240811] rust_kjit: Vlabel: 0xaaaaaab255b8 -> 0x1d70	len 0xf88 + ofst 0xde8
+kern  :info  : [   36.240812] rust_kjit: Vlabel: 0xaaaaaab255bc -> 0x1d74	len 0xf8c + ofst 0xde8
+kern  :info  : [   36.240813] rust_kjit: Vlabel: 0xaaaaaab255c0 -> 0x1d78	len 0xf90 + ofst 0xde8
+kern  :info  : [   36.240815] rust_kjit: Vlabel: 0xaaaaaab255c4 -> 0x1d9c	len 0xfb4 + ofst 0xde8
+kern  :info  : [   36.240817] rust_kjit: Vlabel: 0xaaaaaab255c8 -> 0x1da0	len 0xfb8 + ofst 0xde8
+kern  :info  : [   36.240819] rust_kjit: Vlabel: 0xaaaaaab255cc -> 0x1dc4	len 0xfdc + ofst 0xde8
+kern  :info  : [   36.240820] rust_kjit: Vlabel: 0xaaaaaab255d0 -> 0x1dc8	len 0xfe0 + ofst 0xde8
+kern  :info  : [   36.240822] rust_kjit: Vlabel: 0xaaaaaab255d4 -> 0x1dcc	len 0xfe4 + ofst 0xde8
+kern  :info  : [   36.240825] rust_kjit: Vlabel: 0xaaaaaab255d8 -> 0x1df4	len 0x100c + ofst 0xde8
+kern  :info  : [   36.240826] rust_kjit: Vlabel: 0xaaaaaab255dc -> 0x1e04	len 0x101c + ofst 0xde8
+kern  :info  : [   36.240827] rust_kjit: Vlabel: 0xaaaaaab255e0 -> 0x1e08	len 0x1020 + ofst 0xde8
+kern  :info  : [   36.240828] rust_kjit: Vlabel: 0xaaaaaab255e4 -> 0x1e0c	len 0x1024 + ofst 0xde8
+kern  :info  : [   36.240829] rust_kjit: Vlabel: 0xaaaaaab255e8 -> 0x1e1c	len 0x1034 + ofst 0xde8
+kern  :info  : [   36.240831] rust_kjit: Vlabel: 0xaaaaaab255ec -> 0x1e20	len 0x1038 + ofst 0xde8
+kern  :info  : [   36.240832] rust_kjit: Vlabel: 0xaaaaaab255f0 -> 0x1e24	len 0x103c + ofst 0xde8
+kern  :info  : [   36.240833] rust_kjit: Vlabel: 0xaaaaaab255f4 -> 0x1e28	len 0x1040 + ofst 0xde8
+kern  :info  : [   36.240834] rust_kjit: Vlabel: 0xaaaaaab255f8 -> 0x1e2c	len 0x1044 + ofst 0xde8
+kern  :info  : [   36.240835] rust_kjit: Vlabel: 0xaaaaaab255fc -> 0x1e30	len 0x1048 + ofst 0xde8
+kern  :info  : [   36.240837] rust_kjit: Vlabel: 0xaaaaaab25600 -> 0x1e34	len 0x104c + ofst 0xde8
+kern  :info  : [   36.240839] rust_kjit: Vlabel: 0xaaaaaab25604 -> 0x1e58	len 0x1070 + ofst 0xde8
+kern  :info  : [   36.240840] rust_kjit: Vlabel: 0xaaaaaab25608 -> 0x1e5c	len 0x1074 + ofst 0xde8
+kern  :info  : [   36.240842] rust_kjit: Vlabel: 0xaaaaaab2560c -> 0x1e60	len 0x1078 + ofst 0xde8
+kern  :info  : [   36.240844] rust_kjit: Vlabel: 0xaaaaaab25610 -> 0x1e84	len 0x109c + ofst 0xde8
+kern  :info  : [   36.240845] rust_kjit: Vlabel: 0xaaaaaab25614 -> 0x1e88	len 0x10a0 + ofst 0xde8
+kern  :info  : [   36.240846] rust_kjit: Vlabel: 0xaaaaaab25618 -> 0x1e8c	len 0x10a4 + ofst 0xde8
+kern  :info  : [   36.240848] rust_kjit: Vlabel: 0xaaaaaab2561c -> 0x1e90	len 0x10a8 + ofst 0xde8
+kern  :info  : [   36.240849] rust_kjit: Vlabel: 0xaaaaaab25620 -> 0x1e94	len 0x10ac + ofst 0xde8
+kern  :info  : [   36.240850] rust_kjit: Vlabel: 0xaaaaaab25624 -> 0x1e98	len 0x10b0 + ofst 0xde8
+kern  :info  : [   36.240851] rust_kjit: Vlabel: 0xaaaaaab25628 -> 0x1e9c	len 0x10b4 + ofst 0xde8
+kern  :info  : [   36.240852] rust_kjit: Vlabel: 0xaaaaaab2562c -> 0x1ea0	len 0x10b8 + ofst 0xde8
+kern  :info  : [   36.240853] rust_kjit: Vlabel: 0xaaaaaab25630 -> 0x1ea4	len 0x10bc + ofst 0xde8
+kern  :info  : [   36.240856] rust_kjit: Vlabel: 0xaaaaaab25634 -> 0x1ec8	len 0x10e0 + ofst 0xde8
+kern  :info  : [   36.240857] rust_kjit: Vlabel: 0xaaaaaab25638 -> 0x1ecc	len 0x10e4 + ofst 0xde8
+kern  :info  : [   36.240858] rust_kjit: Vlabel: 0xaaaaaab2563c -> 0x1ed0	len 0x10e8 + ofst 0xde8
+kern  :info  : [   36.240861] rust_kjit: Vlabel: 0xaaaaaab25640 -> 0x1ef4	len 0x110c + ofst 0xde8
+kern  :info  : [   36.240862] rust_kjit: Vlabel: 0xaaaaaab25644 -> 0x1ef8	len 0x1110 + ofst 0xde8
+kern  :info  : [   36.240863] rust_kjit: Vlabel: 0xaaaaaab25648 -> 0x1efc	len 0x1114 + ofst 0xde8
+kern  :info  : [   36.240864] rust_kjit: Vlabel: 0xaaaaaab2564c -> 0x1f00	len 0x1118 + ofst 0xde8
+kern  :info  : [   36.240867] rust_kjit: Vlabel: 0xaaaaaab25650 -> 0x1f28	len 0x1140 + ofst 0xde8
+kern  :info  : [   36.240868] rust_kjit: Vlabel: 0xaaaaaab25654 -> 0x1f2c	len 0x1144 + ofst 0xde8
+kern  :info  : [   36.240869] rust_kjit: Vlabel: 0xaaaaaab25658 -> 0x1f30	len 0x1148 + ofst 0xde8
+kern  :info  : [   36.240870] rust_kjit: Vlabel: 0xaaaaaab2565c -> 0x1f34	len 0x114c + ofst 0xde8
+kern  :info  : [   36.240872] rust_kjit: Vlabel: 0xaaaaaab25660 -> 0x1f50	len 0x1168 + ofst 0xde8
+kern  :info  : [   36.240874] rust_kjit: Vlabel: 0xaaaaaab25664 -> 0x1f54	len 0x116c + ofst 0xde8
+kern  :info  : [   36.240875] rust_kjit: Vlabel: 0xaaaaaab25668 -> 0x1f58	len 0x1170 + ofst 0xde8
+kern  :info  : [   36.240876] rust_kjit: Vlabel: 0xaaaaaab2566c -> 0x1f5c	len 0x1174 + ofst 0xde8
+kern  :info  : [   36.240878] rust_kjit: Vlabel: 0xaaaaaab25670 -> 0x1f78	len 0x1190 + ofst 0xde8
+kern  :info  : [   36.240879] rust_kjit: Vlabel: 0xaaaaaab25674 -> 0x1f7c	len 0x1194 + ofst 0xde8
+kern  :info  : [   36.240880] rust_kjit: Vlabel: 0xaaaaaab25678 -> 0x1f80	len 0x1198 + ofst 0xde8
+kern  :info  : [   36.240882] rust_kjit: Vlabel: 0xaaaaaab2567c -> 0x1f84	len 0x119c + ofst 0xde8
+kern  :info  : [   36.240883] rust_kjit: Vlabel: 0xaaaaaab25680 -> 0x1f88	len 0x11a0 + ofst 0xde8
+kern  :info  : [   36.240885] rust_kjit: Vlabel: 0xaaaaaab25684 -> 0x1fa4	len 0x11bc + ofst 0xde8
+kern  :info  : [   36.240886] rust_kjit: Vlabel: 0xaaaaaab25688 -> 0x1fa8	len 0x11c0 + ofst 0xde8
+kern  :info  : [   36.240887] rust_kjit: Vlabel: 0xaaaaaab2568c -> 0x1fac	len 0x11c4 + ofst 0xde8
+kern  :info  : [   36.240888] rust_kjit: Vlabel: 0xaaaaaab25690 -> 0x1fb0	len 0x11c8 + ofst 0xde8
+kern  :info  : [   36.240891] rust_kjit: Vlabel: 0xaaaaaab25694 -> 0x1fd8	len 0x11f0 + ofst 0xde8
+kern  :info  : [   36.240894] rust_kjit: Vlabel: 0xaaaaaab25698 -> 0x2000	len 0x1218 + ofst 0xde8
+kern  :info  : [   36.240895] rust_kjit: Vlabel: 0xaaaaaab2569c -> 0x2004	len 0x121c + ofst 0xde8
+kern  :info  : [   36.240896] rust_kjit: Vlabel: 0xaaaaaab256a0 -> 0x2008	len 0x1220 + ofst 0xde8
+kern  :info  : [   36.240897] rust_kjit: Vlabel: 0xaaaaaab256a4 -> 0x200c	len 0x1224 + ofst 0xde8
+kern  :info  : [   36.240900] rust_kjit: Vlabel: 0xaaaaaab256a8 -> 0x2030	len 0x1248 + ofst 0xde8
+kern  :info  : [   36.240901] rust_kjit: Vlabel: 0xaaaaaab256ac -> 0x2034	len 0x124c + ofst 0xde8
+kern  :info  : [   36.240902] rust_kjit: Vlabel: 0xaaaaaab256b0 -> 0x2038	len 0x1250 + ofst 0xde8
+kern  :info  : [   36.240904] rust_kjit: Vlabel: 0xaaaaaab256b4 -> 0x203c	len 0x1254 + ofst 0xde8
+kern  :info  : [   36.240905] rust_kjit: Vlabel: 0xaaaaaab256b8 -> 0x2040	len 0x1258 + ofst 0xde8
+kern  :info  : [   36.240906] rust_kjit: Vlabel: 0xaaaaaab256bc -> 0x2044	len 0x125c + ofst 0xde8
+kern  :info  : [   36.240907] rust_kjit: Vlabel: 0xaaaaaab256c0 -> 0x2048	len 0x1260 + ofst 0xde8
+kern  :info  : [   36.240908] rust_kjit: Vlabel: 0xaaaaaab256c4 -> 0x204c	len 0x1264 + ofst 0xde8
+kern  :info  : [   36.240910] rust_kjit: Vlabel: 0xaaaaaab256cc -> 0x205c	len 0x1274 + ofst 0xde8
+kern  :info  : [   36.240912] rust_kjit: Vlabel: 0xaaaaaab256d0 -> 0x2060	len 0x1278 + ofst 0xde8
+kern  :info  : [   36.240914] rust_kjit: Vlabel: 0xaaaaaab256d4 -> 0x2084	len 0x129c + ofst 0xde8
+kern  :info  : [   36.240916] rust_kjit: Vlabel: 0xaaaaaab256d8 -> 0x2088	len 0x12a0 + ofst 0xde8
+kern  :info  : [   36.240917] rust_kjit: Vlabel: 0xaaaaaab256dc -> 0x208c	len 0x12a4 + ofst 0xde8
+kern  :info  : [   36.240919] rust_kjit: Vlabel: 0xaaaaaab256e0 -> 0x20b4	len 0x12cc + ofst 0xde8
+kern  :info  : [   36.240920] rust_kjit: Vlabel: 0xaaaaaab256e4 -> 0x20b8	len 0x12d0 + ofst 0xde8
+kern  :info  : [   36.240923] rust_kjit: Vlabel: 0xaaaaaab256e8 -> 0x20dc	len 0x12f4 + ofst 0xde8
+kern  :info  : [   36.240924] rust_kjit: Vlabel: 0xaaaaaab256ec -> 0x20e0	len 0x12f8 + ofst 0xde8
+kern  :info  : [   36.240926] rust_kjit: Vlabel: 0xaaaaaab256f0 -> 0x20e4	len 0x12fc + ofst 0xde8
+kern  :info  : [   36.240927] rust_kjit: Vlabel: 0xaaaaaab256f4 -> 0x20e8	len 0x1300 + ofst 0xde8
+kern  :info  : [   36.240928] rust_kjit: Vlabel: 0xaaaaaab256f8 -> 0x20ec	len 0x1304 + ofst 0xde8
+kern  :info  : [   36.240929] rust_kjit: Vlabel: 0xaaaaaab256fc -> 0x20f0	len 0x1308 + ofst 0xde8
+kern  :info  : [   36.240931] rust_kjit: Vlabel: 0xaaaaaab25700 -> 0x20f4	len 0x130c + ofst 0xde8
+kern  :info  : [   36.240932] rust_kjit: Vlabel: 0xaaaaaab25704 -> 0x20f8	len 0x1310 + ofst 0xde8
+kern  :info  : [   36.240933] rust_kjit: Vlabel: 0xaaaaaab25708 -> 0x20fc	len 0x1314 + ofst 0xde8
+kern  :info  : [   36.240935] rust_kjit: Vlabel: 0xaaaaaab256f0 -> 0x2120	len 0x1338 + ofst 0xde8
+kern  :info  : [   36.240936] rust_kjit: Vlabel: 0xaaaaaab2570c -> 0x2124	len 0x133c + ofst 0xde8
+kern  :info  : [   36.240937] rust_kjit: Vlabel: 0xaaaaaab25710 -> 0x2128	len 0x1340 + ofst 0xde8
+kern  :info  : [   36.240938] rust_kjit: Vlabel: 0xaaaaaab25714 -> 0x212c	len 0x1344 + ofst 0xde8
+kern  :info  : [   36.240940] rust_kjit: Vlabel: 0xaaaaaab25718 -> 0x2130	len 0x1348 + ofst 0xde8
+kern  :info  : [   36.240941] rust_kjit: Vlabel: 0xaaaaaab255f0 -> 0x2154	len 0x136c + ofst 0xde8
+kern  :info  : [   36.240943] rust_kjit: Vlabel: 0xaaaaaab2571c -> 0x2158	len 0x1370 + ofst 0xde8
+kern  :info  : [   36.240945] rust_kjit: Vlabel: 0xaaaaaab25720 -> 0x2174	len 0x138c + ofst 0xde8
+kern  :info  : [   36.240946] rust_kjit: Vlabel: 0xaaaaaab25724 -> 0x2178	len 0x1390 + ofst 0xde8
+kern  :info  : [   36.240948] rust_kjit: Vlabel: 0xaaaaaab25728 -> 0x2194	len 0x13ac + ofst 0xde8
+kern  :info  : [   36.240950] rust_kjit: Vlabel: 0xaaaaaab2572c -> 0x2198	len 0x13b0 + ofst 0xde8
+kern  :info  : [   36.240952] rust_kjit: Vlabel: 0xaaaaaab25730 -> 0x21b4	len 0x13cc + ofst 0xde8
+kern  :info  : [   36.240953] rust_kjit: Vlabel: 0xaaaaaab25734 -> 0x21b8	len 0x13d0 + ofst 0xde8
+kern  :info  : [   36.240954] rust_kjit: Vlabel: 0xaaaaaab25738 -> 0x21bc	len 0x13d4 + ofst 0xde8
+kern  :info  : [   36.240955] rust_kjit: Vlabel: 0xaaaaaab2573c -> 0x21c0	len 0x13d8 + ofst 0xde8
+kern  :info  : [   36.240957] rust_kjit: Vlabel: 0xaaaaaab25740 -> 0x21dc	len 0x13f4 + ofst 0xde8
+kern  :info  : [   36.240959] rust_kjit: Vlabel: 0xaaaaaab25744 -> 0x21e0	len 0x13f8 + ofst 0xde8
+kern  :info  : [   36.240960] rust_kjit: Vlabel: 0xaaaaaab25748 -> 0x21e4	len 0x13fc + ofst 0xde8
+kern  :info  : [   36.240961] rust_kjit: Vlabel: 0xaaaaaab2574c -> 0x21e8	len 0x1400 + ofst 0xde8
+kern  :info  : [   36.240963] rust_kjit: Vlabel: 0xaaaaaab25750 -> 0x2204	len 0x141c + ofst 0xde8
+kern  :info  : [   36.240966] rust_kjit: Vlabel: 0xaaaaaab25754 -> 0x222c	len 0x1444 + ofst 0xde8
+kern  :info  : [   36.240967] rust_kjit: Vlabel: 0xaaaaaab25758 -> 0x223c	len 0x1454 + ofst 0xde8
+kern  :info  : [   36.240968] rust_kjit: Vlabel: 0xaaaaaab2575c -> 0x2240	len 0x1458 + ofst 0xde8
+kern  :info  : [   36.240970] rust_kjit: Vlabel: 0xaaaaaab25760 -> 0x2244	len 0x145c + ofst 0xde8
+kern  :info  : [   36.240971] rust_kjit: Vlabel: 0xaaaaaab25764 -> 0x2248	len 0x1460 + ofst 0xde8
+kern  :info  : [   36.240972] rust_kjit: Vlabel: 0xaaaaaab25768 -> 0x224c	len 0x1464 + ofst 0xde8
+kern  :info  : [   36.240973] rust_kjit: Vlabel: 0xaaaaaab2576c -> 0x2250	len 0x1468 + ofst 0xde8
+kern  :info  : [   36.240975] rust_kjit: Vlabel: 0xaaaaaab251b8 -> 0x2274	len 0x148c + ofst 0xde8
+kern  :info  : [   36.240976] rust_kjit: Vlabel: 0xaaaaaab25770 -> 0x2278	len 0x1490 + ofst 0xde8
+kern  :info  : [   36.240977] rust_kjit: Vlabel: 0xaaaaaab25774 -> 0x227c	len 0x1494 + ofst 0xde8
+kern  :info  : [   36.240978] rust_kjit: Vlabel: 0xaaaaaab25778 -> 0x2280	len 0x1498 + ofst 0xde8
+kern  :info  : [   36.240981] rust_kjit: Vlabel: 0xaaaaaab2577c -> 0x229c	len 0x14b4 + ofst 0xde8
+kern  :info  : [   36.240982] rust_kjit: Vlabel: 0xaaaaaab25780 -> 0x22a0	len 0x14b8 + ofst 0xde8
+kern  :info  : [   36.240983] rust_kjit: Vlabel: 0xaaaaaab25784 -> 0x22a4	len 0x14bc + ofst 0xde8
+kern  :info  : [   36.240985] rust_kjit: Vlabel: 0xaaaaaab256e0 -> 0x22c8	len 0x14e0 + ofst 0xde8
+kern  :info  : [   36.240986] rust_kjit: Vlabel: 0xaaaaaab25788 -> 0x22cc	len 0x14e4 + ofst 0xde8
+kern  :info  : [   36.240987] rust_kjit: Vlabel: 0xaaaaaab2578c -> 0x22d0	len 0x14e8 + ofst 0xde8
+kern  :info  : [   36.240989] rust_kjit: Vlabel: 0xaaaaaab25790 -> 0x22d4	len 0x14ec + ofst 0xde8
+kern  :info  : [   36.240991] rust_kjit: Vlabel: 0xaaaaaab25794 -> 0x22f0	len 0x1508 + ofst 0xde8
+kern  :info  : [   36.240992] rust_kjit: Vlabel: 0xaaaaaab25798 -> 0x22f4	len 0x150c + ofst 0xde8
+kern  :info  : [   36.240993] rust_kjit: Vlabel: 0xaaaaaab2579c -> 0x22f8	len 0x1510 + ofst 0xde8
+kern  :info  : [   36.240994] rust_kjit: Vlabel: 0xaaaaaab257a0 -> 0x22fc	len 0x1514 + ofst 0xde8
+kern  :info  : [   36.240996] rust_kjit: Vlabel: 0xaaaaaab257a4 -> 0x2300	len 0x1518 + ofst 0xde8
+kern  :info  : [   36.240997] rust_kjit: Vlabel: 0xaaaaaab257a8 -> 0x2304	len 0x151c + ofst 0xde8
+kern  :info  : [   36.240998] rust_kjit: Vlabel: 0xaaaaaab257ac -> 0x2308	len 0x1520 + ofst 0xde8
+kern  :info  : [   36.240999] rust_kjit: Vlabel: 0xaaaaaab257b0 -> 0x230c	len 0x1524 + ofst 0xde8
+kern  :info  : [   36.241001] rust_kjit: Vlabel: 0xaaaaaab25108 -> 0x2330	len 0x1548 + ofst 0xde8
+kern  :info  : [   36.241002] rust_kjit: Vlabel: 0xaaaaaab257b4 -> 0x2334	len 0x154c + ofst 0xde8
+kern  :info  : [   36.241003] rust_kjit: Vlabel: 0xaaaaaab257b8 -> 0x2338	len 0x1550 + ofst 0xde8
+kern  :info  : [   36.241004] rust_kjit: Vlabel: 0xaaaaaab257bc -> 0x233c	len 0x1554 + ofst 0xde8
+kern  :info  : [   36.241006] rust_kjit: Vlabel: 0xaaaaaab257c0 -> 0x2340	len 0x1558 + ofst 0xde8
+kern  :info  : [   36.241007] rust_kjit: Vlabel: 0xaaaaaab257c4 -> 0x2350	len 0x1568 + ofst 0xde8
+kern  :info  : [   36.241008] rust_kjit: Vlabel: 0xaaaaaab257c8 -> 0x2354	len 0x156c + ofst 0xde8
+kern  :info  : [   36.241009] rust_kjit: Vlabel: 0xaaaaaab257cc -> 0x2358	len 0x1570 + ofst 0xde8
+kern  :info  : [   36.241012] rust_kjit: Vlabel: 0xaaaaaab257d0 -> 0x2374	len 0x158c + ofst 0xde8
+kern  :info  : [   36.241013] rust_kjit: Vlabel: 0xaaaaaab257d4 -> 0x2378	len 0x1590 + ofst 0xde8
+kern  :info  : [   36.241014] rust_kjit: Vlabel: 0xaaaaaab257d8 -> 0x2388	len 0x15a0 + ofst 0xde8
+kern  :info  : [   36.241016] rust_kjit: Vlabel: 0xaaaaaab257dc -> 0x2398	len 0x15b0 + ofst 0xde8
+kern  :info  : [   36.241017] rust_kjit: Vlabel: 0xaaaaaab257e0 -> 0x239c	len 0x15b4 + ofst 0xde8
+kern  :info  : [   36.241018] rust_kjit: Vlabel: 0xaaaaaab257e4 -> 0x23a0	len 0x15b8 + ofst 0xde8
+kern  :info  : [   36.241019] rust_kjit: Vlabel: 0xaaaaaab257e8 -> 0x23b0	len 0x15c8 + ofst 0xde8
+kern  :info  : [   36.241021] rust_kjit: Vlabel: 0xaaaaaab257ec -> 0x23b4	len 0x15cc + ofst 0xde8
+kern  :info  : [   36.241022] rust_kjit: Vlabel: 0xaaaaaab257f0 -> 0x23b8	len 0x15d0 + ofst 0xde8
+kern  :info  : [   36.241023] rust_kjit: Vlabel: 0xaaaaaab257f4 -> 0x23bc	len 0x15d4 + ofst 0xde8
+kern  :info  : [   36.241025] rust_kjit: Vlabel: 0xaaaaaab257f8 -> 0x23d8	len 0x15f0 + ofst 0xde8
+kern  :info  : [   36.241027] rust_kjit: Vlabel: 0xaaaaaab257fc -> 0x23dc	len 0x15f4 + ofst 0xde8
+kern  :info  : [   36.241029] rust_kjit: Vlabel: 0xaaaaaab25800 -> 0x23f8	len 0x1610 + ofst 0xde8
+kern  :info  : [   36.241030] rust_kjit: Vlabel: 0xaaaaaab25804 -> 0x23fc	len 0x1614 + ofst 0xde8
+kern  :info  : [   36.241032] rust_kjit: Vlabel: 0xaaaaaab25808 -> 0x2418	len 0x1630 + ofst 0xde8
+kern  :info  : [   36.241034] rust_kjit: Vlabel: 0xaaaaaab2580c -> 0x2428	len 0x1640 + ofst 0xde8
+kern  :info  : [   36.241035] rust_kjit: Vlabel: 0xaaaaaab25810 -> 0x242c	len 0x1644 + ofst 0xde8
+kern  :info  : [   36.241036] rust_kjit: Vlabel: 0xaaaaaab25814 -> 0x2430	len 0x1648 + ofst 0xde8
+kern  :info  : [   36.241037] rust_kjit: Vlabel: 0xaaaaaab25818 -> 0x2434	len 0x164c + ofst 0xde8
+kern  :info  : [   36.241039] rust_kjit: Vlabel: 0xaaaaaab2581c -> 0x2450	len 0x1668 + ofst 0xde8
+kern  :info  : [   36.241041] rust_kjit: Vlabel: 0xaaaaaab25820 -> 0x2454	len 0x166c + ofst 0xde8
+kern  :info  : [   36.241042] rust_kjit: Vlabel: 0xaaaaaab25824 -> 0x2458	len 0x1670 + ofst 0xde8
+kern  :info  : [   36.241044] rust_kjit: Vlabel: 0xaaaaaab25828 -> 0x2474	len 0x168c + ofst 0xde8
+kern  :info  : [   36.241045] rust_kjit: Vlabel: 0xaaaaaab2582c -> 0x2478	len 0x1690 + ofst 0xde8
+kern  :info  : [   36.241047] rust_kjit: Vlabel: 0xaaaaaab25830 -> 0x247c	len 0x1694 + ofst 0xde8
+kern  :info  : [   36.241048] rust_kjit: Vlabel: 0xaaaaaab25834 -> 0x2480	len 0x1698 + ofst 0xde8
+kern  :info  : [   36.241049] rust_kjit: Vlabel: 0xaaaaaab251b8 -> 0x24a4	len 0x16bc + ofst 0xde8
+kern  :info  : [   36.241051] rust_kjit: Vlabel: 0xaaaaaab25838 -> 0x24a8	len 0x16c0 + ofst 0xde8
+kern  :info  : [   36.241052] rust_kjit: Vlabel: 0xaaaaaab2583c -> 0x24ac	len 0x16c4 + ofst 0xde8
+kern  :info  : [   36.241054] rust_kjit: Vlabel: 0xaaaaaab25840 -> 0x24c8	len 0x16e0 + ofst 0xde8
+kern  :info  : [   36.241056] rust_kjit: Vlabel: 0xaaaaaab2536c -> 0x24ec	len 0x1704 + ofst 0xde8
+kern  :info  : [   36.241057] rust_kjit: Vlabel: 0xaaaaaab25844 -> 0x24f0	len 0x1708 + ofst 0xde8
+kern  :info  : [   36.241058] rust_kjit: Vlabel: 0xaaaaaab25848 -> 0x24f4	len 0x170c + ofst 0xde8
+kern  :info  : [   36.241061] rust_kjit: Vlabel: 0xaaaaaab2584c -> 0x2510	len 0x1728 + ofst 0xde8
+kern  :info  : [   36.241062] rust_kjit: Vlabel: 0xaaaaaab25338 -> 0x2534	len 0x174c + ofst 0xde8
+kern  :info  : [   36.241063] rust_kjit: Vlabel: 0xaaaaaab25850 -> 0x2538	len 0x1750 + ofst 0xde8
+kern  :info  : [   36.241065] rust_kjit: Vlabel: 0xaaaaaab25854 -> 0x253c	len 0x1754 + ofst 0xde8
+kern  :info  : [   36.241066] rust_kjit: Vlabel: 0xaaaaaab25858 -> 0x2540	len 0x1758 + ofst 0xde8
+kern  :info  : [   36.241067] rust_kjit: Vlabel: 0xaaaaaab2585c -> 0x2550	len 0x1768 + ofst 0xde8
+kern  :info  : [   36.241069] rust_kjit: Vlabel: 0xaaaaaab25860 -> 0x2560	len 0x1778 + ofst 0xde8
+kern  :info  : [   36.241070] rust_kjit: Vlabel: 0xaaaaaab25864 -> 0x2564	len 0x177c + ofst 0xde8
+kern  :info  : [   36.241071] rust_kjit: Vlabel: 0xaaaaaab25868 -> 0x2568	len 0x1780 + ofst 0xde8
+kern  :info  : [   36.241072] rust_kjit: Vlabel: 0xaaaaaab2586c -> 0x256c	len 0x1784 + ofst 0xde8
+kern  :info  : [   36.241073] rust_kjit: Vlabel: 0xaaaaaab25870 -> 0x2570	len 0x1788 + ofst 0xde8
+kern  :info  : [   36.241075] rust_kjit: Vlabel: 0xaaaaaab25874 -> 0x258c	len 0x17a4 + ofst 0xde8
+kern  :info  : [   36.241077] rust_kjit: Vlabel: 0xaaaaaab25878 -> 0x2590	len 0x17a8 + ofst 0xde8
+kern  :info  : [   36.241078] rust_kjit: Vlabel: 0xaaaaaab25530 -> 0x25b8	len 0x17d0 + ofst 0xde8
+kern  :info  : [   36.241080] rust_kjit: Vlabel: 0xaaaaaab2587c -> 0x25bc	len 0x17d4 + ofst 0xde8
+kern  :info  : [   36.241081] rust_kjit: Vlabel: 0xaaaaaab25880 -> 0x25c0	len 0x17d8 + ofst 0xde8
+kern  :info  : [   36.241082] rust_kjit: Vlabel: 0xaaaaaab25884 -> 0x25c4	len 0x17dc + ofst 0xde8
+kern  :info  : [   36.241083] rust_kjit: Vlabel: 0xaaaaaab25888 -> 0x25c8	len 0x17e0 + ofst 0xde8
+kern  :info  : [   36.241086] rust_kjit: Vlabel: 0xaaaaaab2588c -> 0x25ec	len 0x1804 + ofst 0xde8
+kern  :info  : [   36.241087] rust_kjit: Vlabel: 0xaaaaaab25890 -> 0x25fc	len 0x1814 + ofst 0xde8
+kern  :info  : [   36.241089] rust_kjit: Vlabel: 0xaaaaaab25894 -> 0x2600	len 0x1818 + ofst 0xde8
+kern  :info  : [   36.241090] rust_kjit: Vlabel: 0xaaaaaab25898 -> 0x2604	len 0x181c + ofst 0xde8
+kern  :info  : [   36.241091] rust_kjit: Vlabel: 0xaaaaaab2589c -> 0x2608	len 0x1820 + ofst 0xde8
+kern  :info  : [   36.241093] rust_kjit: Vlabel: 0xaaaaaab258a0 -> 0x2618	len 0x1830 + ofst 0xde8
+kern  :info  : [   36.241094] rust_kjit: Vlabel: 0xaaaaaab258a4 -> 0x261c	len 0x1834 + ofst 0xde8
+kern  :info  : [   36.241095] rust_kjit: Vlabel: 0xaaaaaab258a8 -> 0x2620	len 0x1838 + ofst 0xde8
+kern  :info  : [   36.241096] rust_kjit: Vlabel: 0xaaaaaab258ac -> 0x2624	len 0x183c + ofst 0xde8
+kern  :info  : [   36.241099] rust_kjit: Vlabel: 0xaaaaaab258b4 -> 0x2634	len 0x184c + ofst 0xde8
+kern  :info  : [   36.241100] rust_kjit: Vlabel: 0xaaaaaab258b8 -> 0x2638	len 0x1850 + ofst 0xde8
+kern  :info  : [   36.241101] rust_kjit: Vlabel: 0xaaaaaab258bc -> 0x2648	len 0x1860 + ofst 0xde8
+kern  :info  : [   36.241102] rust_kjit: Vlabel: 0xaaaaaab258c0 -> 0x264c	len 0x1864 + ofst 0xde8
+kern  :info  : [   36.241104] rust_kjit: Vlabel: 0xaaaaaab258c4 -> 0x2650	len 0x1868 + ofst 0xde8
+kern  :info  : [   36.241105] rust_kjit: Vlabel: 0xaaaaaab258c8 -> 0x2654	len 0x186c + ofst 0xde8
+kern  :info  : [   36.241106] rust_kjit: Vlabel: 0xaaaaaab258cc -> 0x2664	len 0x187c + ofst 0xde8
+kern  :info  : [   36.241107] rust_kjit: Vlabel: 0xaaaaaab258d0 -> 0x2668	len 0x1880 + ofst 0xde8
+kern  :info  : [   36.241108] rust_kjit: Vlabel: 0xaaaaaab258d4 -> 0x266c	len 0x1884 + ofst 0xde8
+kern  :info  : [   36.241111] rust_kjit: Vlabel: 0xaaaaaab258d8 -> 0x2688	len 0x18a0 + ofst 0xde8
+kern  :info  : [   36.241112] rust_kjit: Vlabel: 0xaaaaaab25530 -> 0x26ac	len 0x18c4 + ofst 0xde8
+kern  :info  : [   36.241114] rust_kjit: Vlabel: 0xaaaaaab258dc -> 0x26b0	len 0x18c8 + ofst 0xde8
+kern  :info  : [   36.241115] rust_kjit: Vlabel: 0xaaaaaab258e0 -> 0x26b4	len 0x18cc + ofst 0xde8
+kern  :info  : [   36.241118] rust_kjit: Vlabel: 0xaaaaaab258e4 -> 0x26e0	len 0x18f8 + ofst 0xde8
+kern  :info  : [   36.241119] rust_kjit: Vlabel: 0xaaaaaab258e8 -> 0x26e4	len 0x18fc + ofst 0xde8
+kern  :info  : [   36.241120] rust_kjit: Vlabel: 0xaaaaaab258ec -> 0x26e8	len 0x1900 + ofst 0xde8
+kern  :info  : [   36.241122] rust_kjit: Vlabel: 0xaaaaaab258f0 -> 0x26ec	len 0x1904 + ofst 0xde8
+kern  :info  : [   36.241123] rust_kjit: Vlabel: 0xaaaaaab258f4 -> 0x26f0	len 0x1908 + ofst 0xde8
+kern  :info  : [   36.241125] rust_kjit: Vlabel: 0xaaaaaab258f8 -> 0x26f4	len 0x190c + ofst 0xde8
+kern  :info  : [   36.241126] rust_kjit: Vlabel: 0xaaaaaab258fc -> 0x26f8	len 0x1910 + ofst 0xde8
+kern  :info  : [   36.241127] rust_kjit: Vlabel: 0xaaaaaab25900 -> 0x26fc	len 0x1914 + ofst 0xde8
+kern  :info  : [   36.241130] rust_kjit: Vlabel: 0xaaaaaab25904 -> 0x2720	len 0x1938 + ofst 0xde8
+kern  :info  : [   36.241131] rust_kjit: Vlabel: 0xaaaaaab25908 -> 0x2724	len 0x193c + ofst 0xde8
+kern  :info  : [   36.241132] rust_kjit: Vlabel: 0xaaaaaab2590c -> 0x2728	len 0x1940 + ofst 0xde8
+kern  :info  : [   36.241134] rust_kjit: Vlabel: 0xaaaaaab1a4e0 -> 0x2744	len 0x195c + ofst 0xde8
+kern  :info  : [   36.241135] rust_kjit: Vlabel: 0xaaaaaab25910 -> 0x2748	len 0x1960 + ofst 0xde8
+kern  :info  : [   36.241136] rust_kjit: Vlabel: 0xaaaaaab25914 -> 0x274c	len 0x1964 + ofst 0xde8
+kern  :info  : [   36.241137] rust_kjit: Vlabel: 0xaaaaaab25918 -> 0x2750	len 0x1968 + ofst 0xde8
+kern  :info  : [   36.241139] rust_kjit: Vlabel: 0xaaaaaab2591c -> 0x2754	len 0x196c + ofst 0xde8
+kern  :info  : [   36.241140] rust_kjit: Vlabel: 0xaaaaaab25920 -> 0x2758	len 0x1970 + ofst 0xde8
+kern  :info  : [   36.241142] rust_kjit: Vlabel: 0xaaaaaab25924 -> 0x277c	len 0x1994 + ofst 0xde8
+kern  :info  : [   36.241144] rust_kjit: Vlabel: 0xaaaaaab25928 -> 0x2780	len 0x1998 + ofst 0xde8
+kern  :info  : [   36.241145] rust_kjit: Vlabel: 0xaaaaaab2592c -> 0x2784	len 0x199c + ofst 0xde8
+kern  :info  : [   36.241146] rust_kjit: Vlabel: 0xaaaaaab1a4e0 -> 0x27a0	len 0x19b8 + ofst 0xde8
+kern  :info  : [   36.241148] rust_kjit: Vlabel: 0xaaaaaab25930 -> 0x27a4	len 0x19bc + ofst 0xde8
+kern  :info  : [   36.241149] rust_kjit: Vlabel: 0xaaaaaab25934 -> 0x27a8	len 0x19c0 + ofst 0xde8
+kern  :info  : [   36.241150] rust_kjit: Vlabel: 0xaaaaaab25938 -> 0x27ac	len 0x19c4 + ofst 0xde8
+kern  :info  : [   36.241152] rust_kjit: Vlabel: 0xaaaaaab2593c -> 0x27b0	len 0x19c8 + ofst 0xde8
+kern  :info  : [   36.241153] rust_kjit: Vlabel: 0xaaaaaab25940 -> 0x27b4	len 0x19cc + ofst 0xde8
+kern  :info  : [   36.241154] rust_kjit: Vlabel: 0xaaaaaab25944 -> 0x27c4	len 0x19dc + ofst 0xde8
+kern  :info  : [   36.241156] rust_kjit: Vlabel: 0xaaaaaab25948 -> 0x27c8	len 0x19e0 + ofst 0xde8
+kern  :info  : [   36.241157] rust_kjit: Vlabel: 0xaaaaaab2594c -> 0x27cc	len 0x19e4 + ofst 0xde8
+kern  :info  : [   36.241159] rust_kjit: Vlabel: 0xaaaaaab25950 -> 0x27e8	len 0x1a00 + ofst 0xde8
+kern  :info  : [   36.241161] rust_kjit: Vlabel: 0xaaaaaab25954 -> 0x27f8	len 0x1a10 + ofst 0xde8
+kern  :info  : [   36.241162] rust_kjit: Vlabel: 0xaaaaaab25958 -> 0x27fc	len 0x1a14 + ofst 0xde8
+kern  :info  : [   36.241163] rust_kjit: Vlabel: 0xaaaaaab2595c -> 0x2800	len 0x1a18 + ofst 0xde8
+kern  :info  : [   36.241164] rust_kjit: Vlabel: 0xaaaaaab25960 -> 0x2804	len 0x1a1c + ofst 0xde8
+kern  :info  : [   36.241166] rust_kjit: Vlabel: 0xaaaaaab25964 -> 0x2808	len 0x1a20 + ofst 0xde8
+kern  :info  : [   36.241167] rust_kjit: Vlabel: 0xaaaaaab25968 -> 0x280c	len 0x1a24 + ofst 0xde8
+kern  :info  : [   36.241168] rust_kjit: Vlabel: 0xaaaaaab2596c -> 0x2810	len 0x1a28 + ofst 0xde8
+kern  :info  : [   36.241170] rust_kjit: Vlabel: 0xaaaaaab251f4 -> 0x2834	len 0x1a4c + ofst 0xde8
+kern  :info  : [   36.241171] rust_kjit: Vlabel: 0xaaaaaab25970 -> 0x2838	len 0x1a50 + ofst 0xde8
+kern  :info  : [   36.241172] rust_kjit: Vlabel: 0xaaaaaab25974 -> 0x283c	len 0x1a54 + ofst 0xde8
+kern  :info  : [   36.241174] rust_kjit: Vlabel: 0xaaaaaab25978 -> 0x2858	len 0x1a70 + ofst 0xde8
+kern  :info  : [   36.241176] rust_kjit: Vlabel: 0xaaaaaab2597c -> 0x285c	len 0x1a74 + ofst 0xde8
+kern  :info  : [   36.241177] rust_kjit: Vlabel: 0xaaaaaab251ec -> 0x2884	len 0x1a9c + ofst 0xde8
+kern  :info  : [   36.241179] rust_kjit: Vlabel: 0xaaaaaab25980 -> 0x2888	len 0x1aa0 + ofst 0xde8
+kern  :info  : [   36.241180] rust_kjit: Vlabel: 0xaaaaaab25984 -> 0x2898	len 0x1ab0 + ofst 0xde8
+kern  :info  : [   36.241182] rust_kjit: Vlabel: 0xaaaaaab25988 -> 0x289c	len 0x1ab4 + ofst 0xde8
+kern  :info  : [   36.241183] rust_kjit: Vlabel: 0xaaaaaab251ec -> 0x28c4	len 0x1adc + ofst 0xde8
+kern  :info  : [   36.241185] rust_kjit: Vlabel: 0xaaaaaab2598c -> 0x28c8	len 0x1ae0 + ofst 0xde8
+kern  :info  : [   36.241186] rust_kjit: Vlabel: 0xaaaaaab25990 -> 0x28cc	len 0x1ae4 + ofst 0xde8
+kern  :info  : [   36.241187] rust_kjit: Vlabel: 0xaaaaaab25994 -> 0x28d0	len 0x1ae8 + ofst 0xde8
+kern  :info  : [   36.241188] rust_kjit: Vlabel: 0xaaaaaab25998 -> 0x28d4	len 0x1aec + ofst 0xde8
+kern  :info  : [   36.241190] rust_kjit: Vlabel: 0xaaaaaab2599c -> 0x28d8	len 0x1af0 + ofst 0xde8
+kern  :info  : [   36.241191] rust_kjit: Vlabel: 0xaaaaaab251f4 -> 0x28fc	len 0x1b14 + ofst 0xde8
+kern  :info  : [   36.241193] rust_kjit: Vlabel: 0xaaaaaab259a0 -> 0x2900	len 0x1b18 + ofst 0xde8
+kern  :info  : [   36.241194] rust_kjit: Vlabel: 0xaaaaaab259a4 -> 0x2910	len 0x1b28 + ofst 0xde8
+kern  :info  : [   36.241195] rust_kjit: Vlabel: 0xaaaaaab259a8 -> 0x2914	len 0x1b2c + ofst 0xde8
+kern  :info  : [   36.241197] rust_kjit: Vlabel: 0xaaaaaab258f0 -> 0x2938	len 0x1b50 + ofst 0xde8
+kern  :info  : [   36.241198] rust_kjit: Vlabel: 0xaaaaaab259ac -> 0x293c	len 0x1b54 + ofst 0xde8
+kern  :info  : [   36.241200] rust_kjit: Vlabel: 0xaaaaaab259b0 -> 0x294c	len 0x1b64 + ofst 0xde8
+kern  :info  : [   36.241201] rust_kjit: Vlabel: 0xaaaaaab259b4 -> 0x2950	len 0x1b68 + ofst 0xde8
+kern  :info  : [   36.241202] rust_kjit: Vlabel: 0xaaaaaab259b8 -> 0x2960	len 0x1b78 + ofst 0xde8
+kern  :info  : [   36.241204] rust_kjit: Vlabel: 0xaaaaaab259bc -> 0x2970	len 0x1b88 + ofst 0xde8
+kern  :info  : [   36.241205] rust_kjit: Vlabel: 0xaaaaaab259c0 -> 0x2974	len 0x1b8c + ofst 0xde8
+kern  :info  : [   36.241206] rust_kjit: Vlabel: 0xaaaaaab259c4 -> 0x2978	len 0x1b90 + ofst 0xde8
+kern  :info  : [   36.241208] rust_kjit: Vlabel: 0xaaaaaab259c8 -> 0x297c	len 0x1b94 + ofst 0xde8
+kern  :info  : [   36.241209] rust_kjit: Vlabel: 0xaaaaaab259cc -> 0x2980	len 0x1b98 + ofst 0xde8
+kern  :info  : [   36.241234] rust_kjit: Vlabel: 0xaaaaaab259d0 -> 0x299c	len 0x1bb4 + ofst 0xde8
+kern  :info  : [   36.241235] rust_kjit: Vlabel: 0xaaaaaab259d4 -> 0x29ac	len 0x1bc4 + ofst 0xde8
+kern  :info  : [   36.241237] rust_kjit: Vlabel: 0xaaaaaab259d8 -> 0x29b0	len 0x1bc8 + ofst 0xde8
+kern  :info  : [   36.241238] rust_kjit: Vlabel: 0xaaaaaab259dc -> 0x29c0	len 0x1bd8 + ofst 0xde8
+kern  :info  : [   36.241239] rust_kjit: Vlabel: 0xaaaaaab259e0 -> 0x29d0	len 0x1be8 + ofst 0xde8
+kern  :info  : [   36.241241] rust_kjit: Vlabel: 0xaaaaaab259e4 -> 0x29d4	len 0x1bec + ofst 0xde8
+kern  :info  : [   36.241242] rust_kjit: Vlabel: 0xaaaaaab259e8 -> 0x29d8	len 0x1bf0 + ofst 0xde8
+kern  :info  : [   36.241243] rust_kjit: Vlabel: 0xaaaaaab259ec -> 0x29dc	len 0x1bf4 + ofst 0xde8
+kern  :info  : [   36.241244] rust_kjit: Vlabel: 0xaaaaaab259f0 -> 0x29e0	len 0x1bf8 + ofst 0xde8
+kern  :info  : [   36.241247] rust_kjit: Vlabel: 0xaaaaaab259f4 -> 0x29fc	len 0x1c14 + ofst 0xde8
+kern  :info  : [   36.241248] rust_kjit: Vlabel: 0xaaaaaab259f8 -> 0x2a0c	len 0x1c24 + ofst 0xde8
+kern  :info  : [   36.241250] rust_kjit: Vlabel: 0xaaaaaab259fc -> 0x2a10	len 0x1c28 + ofst 0xde8
+kern  :info  : [   36.241252] rust_kjit: Vlabel: 0xaaaaaab25a00 -> 0x2a20	len 0x1c38 + ofst 0xde8
+kern  :info  : [   36.241253] rust_kjit: Vlabel: 0xaaaaaab25a04 -> 0x2a30	len 0x1c48 + ofst 0xde8
+kern  :info  : [   36.241255] rust_kjit: Vlabel: 0xaaaaaab25a08 -> 0x2a34	len 0x1c4c + ofst 0xde8
+kern  :info  : [   36.241256] rust_kjit: Vlabel: 0xaaaaaab25a0c -> 0x2a38	len 0x1c50 + ofst 0xde8
+kern  :info  : [   36.241257] rust_kjit: Vlabel: 0xaaaaaab25a10 -> 0x2a3c	len 0x1c54 + ofst 0xde8
+kern  :info  : [   36.241259] rust_kjit: Vlabel: 0xaaaaaab25a14 -> 0x2a40	len 0x1c58 + ofst 0xde8
+kern  :info  : [   36.241262] rust_kjit: Vlabel: 0xaaaaaab25a18 -> 0x2a5c	len 0x1c74 + ofst 0xde8
+kern  :info  : [   36.241263] rust_kjit: Vlabel: 0xaaaaaab25a1c -> 0x2a6c	len 0x1c84 + ofst 0xde8
+kern  :info  : [   36.241265] rust_kjit: Vlabel: 0xaaaaaab25a20 -> 0x2a70	len 0x1c88 + ofst 0xde8
+kern  :info  : [   36.241266] rust_kjit: Vlabel: 0xaaaaaab25a24 -> 0x2a74	len 0x1c8c + ofst 0xde8
+kern  :info  : [   36.241267] rust_kjit: Vlabel: 0xaaaaaab25a28 -> 0x2a78	len 0x1c90 + ofst 0xde8
+kern  :info  : [   36.241268] rust_kjit: Vlabel: 0xaaaaaab25a2c -> 0x2a88	len 0x1ca0 + ofst 0xde8
+kern  :info  : [   36.241270] rust_kjit: Vlabel: 0xaaaaaab25a30 -> 0x2a8c	len 0x1ca4 + ofst 0xde8
+kern  :info  : [   36.241271] rust_kjit: Vlabel: 0xaaaaaab25a34 -> 0x2a90	len 0x1ca8 + ofst 0xde8
+kern  :info  : [   36.241272] rust_kjit: Vlabel: 0xaaaaaab25a38 -> 0x2a94	len 0x1cac + ofst 0xde8
+kern  :info  : [   36.241275] rust_kjit: Vlabel: 0xaaaaaab25a3c -> 0x2ab0	len 0x1cc8 + ofst 0xde8
+kern  :info  : [   36.241276] rust_kjit: Vlabel: 0xaaaaaab25a40 -> 0x2ab4	len 0x1ccc + ofst 0xde8
+kern  :info  : [   36.241278] rust_kjit: Vlabel: 0xaaaaaab25a44 -> 0x2ad0	len 0x1ce8 + ofst 0xde8
+kern  :info  : [   36.241280] rust_kjit: Vlabel: 0xaaaaaab25a48 -> 0x2ad4	len 0x1cec + ofst 0xde8
+kern  :info  : [   36.241281] rust_kjit: Vlabel: 0xaaaaaab25a4c -> 0x2ad8	len 0x1cf0 + ofst 0xde8
+kern  :info  : [   36.241283] rust_kjit: Vlabel: 0xaaaaaab25a50 -> 0x2adc	len 0x1cf4 + ofst 0xde8
+kern  :info  : [   36.241284] rust_kjit: Vlabel: 0xaaaaaab25a54 -> 0x2aec	len 0x1d04 + ofst 0xde8
+kern  :info  : [   36.241286] rust_kjit: Vlabel: 0xaaaaaab25a58 -> 0x2afc	len 0x1d14 + ofst 0xde8
+kern  :info  : [   36.241287] rust_kjit: Vlabel: 0xaaaaaab25a5c -> 0x2b00	len 0x1d18 + ofst 0xde8
+kern  :info  : [   36.241288] rust_kjit: Vlabel: 0xaaaaaab25a60 -> 0x2b04	len 0x1d1c + ofst 0xde8
+kern  :info  : [   36.241290] rust_kjit: Vlabel: 0xaaaaaab25a64 -> 0x2b08	len 0x1d20 + ofst 0xde8
+kern  :info  : [   36.241291] rust_kjit: Vlabel: 0xaaaaaab25a68 -> 0x2b0c	len 0x1d24 + ofst 0xde8
+kern  :info  : [   36.241292] rust_kjit: Vlabel: 0xaaaaaab25a6c -> 0x2b10	len 0x1d28 + ofst 0xde8
+kern  :info  : [   36.241294] rust_kjit: Vlabel: 0xaaaaaab25a70 -> 0x2b14	len 0x1d2c + ofst 0xde8
+kern  :info  : [   36.241295] rust_kjit: Vlabel: 0xaaaaaab25a74 -> 0x2b18	len 0x1d30 + ofst 0xde8
+kern  :info  : [   36.241297] rust_kjit: Vlabel: 0xaaaaaab25a78 -> 0x2b34	len 0x1d4c + ofst 0xde8
+kern  :info  : [   36.241298] rust_kjit: Vlabel: 0xaaaaaab25a7c -> 0x2b38	len 0x1d50 + ofst 0xde8
+kern  :info  : [   36.241301] rust_kjit: Vlabel: 0xaaaaaab25a80 -> 0x2b54	len 0x1d6c + ofst 0xde8
+kern  :info  : [   36.241302] rust_kjit: Vlabel: 0xaaaaaab25a84 -> 0x2b64	len 0x1d7c + ofst 0xde8
+kern  :info  : [   36.241304] rust_kjit: Vlabel: 0xaaaaaab25a88 -> 0x2b68	len 0x1d80 + ofst 0xde8
+kern  :info  : [   36.241305] rust_kjit: Vlabel: 0xaaaaaab25a8c -> 0x2b6c	len 0x1d84 + ofst 0xde8
+kern  :info  : [   36.241306] rust_kjit: Vlabel: 0xaaaaaab25a90 -> 0x2b70	len 0x1d88 + ofst 0xde8
+kern  :info  : [   36.241308] rust_kjit: Vlabel: 0xaaaaaab25a94 -> 0x2b80	len 0x1d98 + ofst 0xde8
+kern  :info  : [   36.241309] rust_kjit: Vlabel: 0xaaaaaab25a98 -> 0x2b84	len 0x1d9c + ofst 0xde8
+kern  :info  : [   36.241310] rust_kjit: Vlabel: 0xaaaaaab25a9c -> 0x2b88	len 0x1da0 + ofst 0xde8
+kern  :info  : [   36.241311] rust_kjit: Vlabel: 0xaaaaaab25aa0 -> 0x2b8c	len 0x1da4 + ofst 0xde8
+kern  :info  : [   36.241313] rust_kjit: Vlabel: 0xaaaaaab25aa4 -> 0x2b90	len 0x1da8 + ofst 0xde8
+kern  :info  : [   36.241315] rust_kjit: Vlabel: 0xaaaaaab25aa8 -> 0x2bac	len 0x1dc4 + ofst 0xde8
+kern  :info  : [   36.241316] rust_kjit: Vlabel: 0xaaaaaab25aac -> 0x2bb0	len 0x1dc8 + ofst 0xde8
+kern  :info  : [   36.241318] rust_kjit: Vlabel: 0xaaaaaab25590 -> 0x2bd4	len 0x1dec + ofst 0xde8
+kern  :info  : [   36.241319] rust_kjit: Vlabel: 0xaaaaaab25ab0 -> 0x2bd8	len 0x1df0 + ofst 0xde8
+kern  :info  : [   36.241321] rust_kjit: Vlabel: 0xaaaaaab25ab4 -> 0x2be8	len 0x1e00 + ofst 0xde8
+kern  :info  : [   36.241322] rust_kjit: Vlabel: 0xaaaaaab25ab8 -> 0x2bec	len 0x1e04 + ofst 0xde8
+kern  :info  : [   36.241323] rust_kjit: Vlabel: 0xaaaaaab25abc -> 0x2bf0	len 0x1e08 + ofst 0xde8
+kern  :info  : [   36.241325] rust_kjit: Vlabel: 0xaaaaaab25ac0 -> 0x2c00	len 0x1e18 + ofst 0xde8
+kern  :info  : [   36.241326] rust_kjit: Vlabel: 0xaaaaaab25ac4 -> 0x2c04	len 0x1e1c + ofst 0xde8
+kern  :info  : [   36.241327] rust_kjit: Vlabel: 0xaaaaaab25ac8 -> 0x2c08	len 0x1e20 + ofst 0xde8
+kern  :info  : [   36.241329] rust_kjit: Vlabel: 0xaaaaaab25acc -> 0x2c0c	len 0x1e24 + ofst 0xde8
+kern  :info  : [   36.241331] rust_kjit: Vlabel: 0xaaaaaab25ad0 -> 0x2c28	len 0x1e40 + ofst 0xde8
+kern  :info  : [   36.241332] rust_kjit: Vlabel: 0xaaaaaab25ad4 -> 0x2c2c	len 0x1e44 + ofst 0xde8
+kern  :info  : [   36.241334] rust_kjit: Vlabel: 0xaaaaaab25590 -> 0x2c50	len 0x1e68 + ofst 0xde8
+kern  :info  : [   36.241336] rust_kjit: Vlabel: 0xaaaaaab25ad8 -> 0x2c54	len 0x1e6c + ofst 0xde8
+kern  :info  : [   36.241337] rust_kjit: Vlabel: 0xaaaaaab25adc -> 0x2c64	len 0x1e7c + ofst 0xde8
+kern  :info  : [   36.241338] rust_kjit: Vlabel: 0xaaaaaab25ae0 -> 0x2c68	len 0x1e80 + ofst 0xde8
+kern  :info  : [   36.241340] rust_kjit: Vlabel: 0xaaaaaab25ae4 -> 0x2c6c	len 0x1e84 + ofst 0xde8
+kern  :info  : [   36.241341] rust_kjit: Vlabel: 0xaaaaaab25ae8 -> 0x2c70	len 0x1e88 + ofst 0xde8
+kern  :info  : [   36.241343] rust_kjit: Vlabel: 0xaaaaaab25590 -> 0x2c94	len 0x1eac + ofst 0xde8
+kern  :info  : [   36.241344] rust_kjit: Vlabel: 0xaaaaaab25aec -> 0x2c98	len 0x1eb0 + ofst 0xde8
+kern  :info  : [   36.241346] rust_kjit: Vlabel: 0xaaaaaab25af0 -> 0x2ca8	len 0x1ec0 + ofst 0xde8
+kern  :info  : [   36.241347] rust_kjit: Vlabel: 0xaaaaaab25af4 -> 0x2cac	len 0x1ec4 + ofst 0xde8
+kern  :info  : [   36.241348] rust_kjit: Vlabel: 0xaaaaaab25af8 -> 0x2cbc	len 0x1ed4 + ofst 0xde8
+kern  :info  : [   36.241350] rust_kjit: Vlabel: 0xaaaaaab25afc -> 0x2ccc	len 0x1ee4 + ofst 0xde8
+kern  :info  : [   36.241351] rust_kjit: Vlabel: 0xaaaaaab25b00 -> 0x2cd0	len 0x1ee8 + ofst 0xde8
+kern  :info  : [   36.241352] rust_kjit: Vlabel: 0xaaaaaab25b04 -> 0x2cd4	len 0x1eec + ofst 0xde8
+kern  :info  : [   36.241354] rust_kjit: Vlabel: 0xaaaaaab25b08 -> 0x2cd8	len 0x1ef0 + ofst 0xde8
+kern  :info  : [   36.241355] rust_kjit: Vlabel: 0xaaaaaab25b0c -> 0x2cdc	len 0x1ef4 + ofst 0xde8
+kern  :info  : [   36.241358] rust_kjit: Vlabel: 0xaaaaaab25b10 -> 0x2cf8	len 0x1f10 + ofst 0xde8
+kern  :info  : [   36.241359] rust_kjit: Vlabel: 0xaaaaaab25b14 -> 0x2d08	len 0x1f20 + ofst 0xde8
+kern  :info  : [   36.241361] rust_kjit: Vlabel: 0xaaaaaab25b18 -> 0x2d0c	len 0x1f24 + ofst 0xde8
+kern  :info  : [   36.241362] rust_kjit: Vlabel: 0xaaaaaab25b1c -> 0x2d1c	len 0x1f34 + ofst 0xde8
+kern  :info  : [   36.241364] rust_kjit: Vlabel: 0xaaaaaab25b20 -> 0x2d2c	len 0x1f44 + ofst 0xde8
+kern  :info  : [   36.241365] rust_kjit: Vlabel: 0xaaaaaab25b24 -> 0x2d30	len 0x1f48 + ofst 0xde8
+kern  :info  : [   36.241367] rust_kjit: Vlabel: 0xaaaaaab25b28 -> 0x2d34	len 0x1f4c + ofst 0xde8
+kern  :info  : [   36.241369] rust_kjit: Vlabel: 0xaaaaaab25b2c -> 0x2d38	len 0x1f50 + ofst 0xde8
+kern  :info  : [   36.241370] rust_kjit: Vlabel: 0xaaaaaab25b30 -> 0x2d3c	len 0x1f54 + ofst 0xde8
+kern  :info  : [   36.241373] rust_kjit: Vlabel: 0xaaaaaab25b34 -> 0x2d58	len 0x1f70 + ofst 0xde8
+kern  :info  : [   36.241374] rust_kjit: Vlabel: 0xaaaaaab25b38 -> 0x2d68	len 0x1f80 + ofst 0xde8
+kern  :info  : [   36.241375] rust_kjit: Vlabel: 0xaaaaaab25b3c -> 0x2d6c	len 0x1f84 + ofst 0xde8
+kern  :info  : [   36.241377] rust_kjit: Vlabel: 0xaaaaaab25b40 -> 0x2d7c	len 0x1f94 + ofst 0xde8
+kern  :info  : [   36.241378] rust_kjit: Vlabel: 0xaaaaaab25b44 -> 0x2d8c	len 0x1fa4 + ofst 0xde8
+kern  :info  : [   36.241379] rust_kjit: Vlabel: 0xaaaaaab25b48 -> 0x2d90	len 0x1fa8 + ofst 0xde8
+kern  :info  : [   36.241381] rust_kjit: Vlabel: 0xaaaaaab25b4c -> 0x2d94	len 0x1fac + ofst 0xde8
+kern  :info  : [   36.241382] rust_kjit: Vlabel: 0xaaaaaab25b50 -> 0x2d98	len 0x1fb0 + ofst 0xde8
+kern  :info  : [   36.241383] rust_kjit: Vlabel: 0xaaaaaab25b54 -> 0x2d9c	len 0x1fb4 + ofst 0xde8
+kern  :info  : [   36.241386] rust_kjit: Vlabel: 0xaaaaaab25b58 -> 0x2db8	len 0x1fd0 + ofst 0xde8
+kern  :info  : [   36.241387] rust_kjit: Vlabel: 0xaaaaaab25b5c -> 0x2dc8	len 0x1fe0 + ofst 0xde8
+kern  :info  : [   36.241389] rust_kjit: Vlabel: 0xaaaaaab25b60 -> 0x2dcc	len 0x1fe4 + ofst 0xde8
+kern  :info  : [   36.241390] rust_kjit: Vlabel: 0xaaaaaab25b64 -> 0x2ddc	len 0x1ff4 + ofst 0xde8
+kern  :info  : [   36.241392] rust_kjit: Vlabel: 0xaaaaaab25b68 -> 0x2dec	len 0x2004 + ofst 0xde8
+kern  :info  : [   36.241394] rust_kjit: Vlabel: 0xaaaaaab25b6c -> 0x2df0	len 0x2008 + ofst 0xde8
+kern  :info  : [   36.241395] rust_kjit: Vlabel: 0xaaaaaab25b70 -> 0x2df4	len 0x200c + ofst 0xde8
+kern  :info  : [   36.241396] rust_kjit: Vlabel: 0xaaaaaab25b74 -> 0x2df8	len 0x2010 + ofst 0xde8
+kern  :info  : [   36.241398] rust_kjit: Vlabel: 0xaaaaaab25b78 -> 0x2dfc	len 0x2014 + ofst 0xde8
+kern  :info  : [   36.241400] rust_kjit: Vlabel: 0xaaaaaab25b7c -> 0x2e18	len 0x2030 + ofst 0xde8
+kern  :info  : [   36.241402] rust_kjit: Vlabel: 0xaaaaaab25b80 -> 0x2e1c	len 0x2034 + ofst 0xde8
+kern  :info  : [   36.241403] rust_kjit: Vlabel: 0xaaaaaab25b84 -> 0x2e20	len 0x2038 + ofst 0xde8
+kern  :info  : [   36.241404] rust_kjit: Vlabel: 0xaaaaaab25b88 -> 0x2e24	len 0x203c + ofst 0xde8
+kern  :info  : [   36.241407] rust_kjit: Vlabel: 0xaaaaaab25b8c -> 0x2e40	len 0x2058 + ofst 0xde8
+kern  :info  : [   36.241408] rust_kjit: Vlabel: 0xaaaaaab25b90 -> 0x2e50	len 0x2068 + ofst 0xde8
+kern  :info  : [   36.241409] rust_kjit: Vlabel: 0xaaaaaab25b94 -> 0x2e54	len 0x206c + ofst 0xde8
+kern  :info  : [   36.241411] rust_kjit: Vlabel: 0xaaaaaab25b98 -> 0x2e64	len 0x207c + ofst 0xde8
+kern  :info  : [   36.241412] rust_kjit: Vlabel: 0xaaaaaab25b9c -> 0x2e74	len 0x208c + ofst 0xde8
+kern  :info  : [   36.241413] rust_kjit: Vlabel: 0xaaaaaab25ba0 -> 0x2e78	len 0x2090 + ofst 0xde8
+kern  :info  : [   36.241416] rust_kjit: Vlabel: 0xaaaaaab25ba4 -> 0x2e7c	len 0x2094 + ofst 0xde8
+kern  :info  : [   36.241418] rust_kjit: Vlabel: 0xaaaaaab25ba8 -> 0x2e80	len 0x2098 + ofst 0xde8
+kern  :info  : [   36.241419] rust_kjit: Vlabel: 0xaaaaaab25bac -> 0x2e84	len 0x209c + ofst 0xde8
+kern  :info  : [   36.241421] rust_kjit: Vlabel: 0xaaaaaab25bb0 -> 0x2ea0	len 0x20b8 + ofst 0xde8
+kern  :info  : [   36.241423] rust_kjit: Vlabel: 0xaaaaaab25bb4 -> 0x2ea4	len 0x20bc + ofst 0xde8
+kern  :info  : [   36.241424] rust_kjit: Vlabel: 0xaaaaaab25bb8 -> 0x2ea8	len 0x20c0 + ofst 0xde8
+kern  :info  : [   36.241426] rust_kjit: Vlabel: 0xaaaaaab25bbc -> 0x2eb8	len 0x20d0 + ofst 0xde8
+kern  :info  : [   36.241427] rust_kjit: Vlabel: 0xaaaaaab25bc0 -> 0x2ebc	len 0x20d4 + ofst 0xde8
+kern  :info  : [   36.241428] rust_kjit: Vlabel: 0xaaaaaab25bc4 -> 0x2ec0	len 0x20d8 + ofst 0xde8
+kern  :info  : [   36.241430] rust_kjit: Vlabel: 0xaaaaaab25bc8 -> 0x2ec4	len 0x20dc + ofst 0xde8
+kern  :info  : [   36.241431] rust_kjit: Vlabel: 0xaaaaaab25bcc -> 0x2ec8	len 0x20e0 + ofst 0xde8
+kern  :info  : [   36.241432] rust_kjit: Vlabel: 0xaaaaaab25bd0 -> 0x2ecc	len 0x20e4 + ofst 0xde8
+kern  :info  : [   36.241434] rust_kjit: Vlabel: 0xaaaaaab25bd4 -> 0x2ed0	len 0x20e8 + ofst 0xde8
+kern  :info  : [   36.241435] rust_kjit: Vlabel: 0xaaaaaab25bd8 -> 0x2ed4	len 0x20ec + ofst 0xde8
+kern  :info  : [   36.241437] rust_kjit: Vlabel: 0xaaaaaab25bdc -> 0x2ef0	len 0x2108 + ofst 0xde8
+kern  :info  : [   36.241439] rust_kjit: Vlabel: 0xaaaaaab25be0 -> 0x2ef4	len 0x210c + ofst 0xde8
+kern  :info  : [   36.241440] rust_kjit: Vlabel: 0xaaaaaab25be4 -> 0x2ef8	len 0x2110 + ofst 0xde8
+kern  :info  : [   36.241442] rust_kjit: Vlabel: 0xaaaaaab25be8 -> 0x2f08	len 0x2120 + ofst 0xde8
+kern  :info  : [   36.241443] rust_kjit: Vlabel: 0xaaaaaab25bec -> 0x2f0c	len 0x2124 + ofst 0xde8
+kern  :info  : [   36.241444] rust_kjit: Vlabel: 0xaaaaaab25bf0 -> 0x2f10	len 0x2128 + ofst 0xde8
+kern  :info  : [   36.241446] rust_kjit: Vlabel: 0xaaaaaab25bf4 -> 0x2f14	len 0x212c + ofst 0xde8
+kern  :info  : [   36.241447] rust_kjit: Vlabel: 0xaaaaaab25bf8 -> 0x2f18	len 0x2130 + ofst 0xde8
+kern  :info  : [   36.241448] rust_kjit: Vlabel: 0xaaaaaab25bfc -> 0x2f1c	len 0x2134 + ofst 0xde8
+kern  :info  : [   36.241450] rust_kjit: Vlabel: 0xaaaaaab25c00 -> 0x2f20	len 0x2138 + ofst 0xde8
+kern  :info  : [   36.241453] rust_kjit: Vlabel: 0xaaaaaab25c04 -> 0x2f44	len 0x215c + ofst 0xde8
+kern  :info  : [   36.241454] rust_kjit: Vlabel: 0xaaaaaab25c08 -> 0x2f48	len 0x2160 + ofst 0xde8
+kern  :info  : [   36.241455] rust_kjit: Vlabel: 0xaaaaaab25c0c -> 0x2f4c	len 0x2164 + ofst 0xde8
+kern  :info  : [   36.241457] rust_kjit: Vlabel: 0xaaaaaab25c10 -> 0x2f50	len 0x2168 + ofst 0xde8
+kern  :info  : [   36.241459] rust_kjit: Vlabel: 0xaaaaaab25c14 -> 0x2f60	len 0x2178 + ofst 0xde8
+kern  :info  : [   36.241461] rust_kjit: Vlabel: 0xaaaaaab25c18 -> 0x2f7c	len 0x2194 + ofst 0xde8
+kern  :info  : [   36.241462] rust_kjit: Vlabel: 0xaaaaaab25c1c -> 0x2f80	len 0x2198 + ofst 0xde8
+kern  :info  : [   36.241464] rust_kjit: Vlabel: 0xaaaaaab25c20 -> 0x2f84	len 0x219c + ofst 0xde8
+kern  :info  : [   36.241465] rust_kjit: Vlabel: 0xaaaaaab25c24 -> 0x2f88	len 0x21a0 + ofst 0xde8
+kern  :info  : [   36.241466] rust_kjit: Vlabel: 0xaaaaaab25c28 -> 0x2f8c	len 0x21a4 + ofst 0xde8
+kern  :info  : [   36.241468] rust_kjit: Vlabel: 0xaaaaaab25c2c -> 0x2f90	len 0x21a8 + ofst 0xde8
+kern  :info  : [   36.241469] rust_kjit: Vlabel: 0xaaaaaab25c30 -> 0x2f94	len 0x21ac + ofst 0xde8
+kern  :info  : [   36.241471] rust_kjit: Vlabel: 0xaaaaaab25c34 -> 0x2f98	len 0x21b0 + ofst 0xde8
+kern  :info  : [   36.241472] rust_kjit: Vlabel: 0xaaaaaab25c38 -> 0x2f9c	len 0x21b4 + ofst 0xde8
+kern  :info  : [   36.241474] rust_kjit: Vlabel: 0xaaaaaab25c3c -> 0x2fb8	len 0x21d0 + ofst 0xde8
+kern  :info  : [   36.241476] rust_kjit: Vlabel: 0xaaaaaab25c40 -> 0x2fbc	len 0x21d4 + ofst 0xde8
+kern  :info  : [   36.241477] rust_kjit: Vlabel: 0xaaaaaab25c44 -> 0x2fc0	len 0x21d8 + ofst 0xde8
+kern  :info  : [   36.241478] rust_kjit: Vlabel: 0xaaaaaab25c48 -> 0x2fc4	len 0x21dc + ofst 0xde8
+kern  :info  : [   36.241480] rust_kjit: Vlabel: 0xaaaaaab25c4c -> 0x2fc8	len 0x21e0 + ofst 0xde8
+kern  :info  : [   36.241481] rust_kjit: Vlabel: 0xaaaaaab25c50 -> 0x2fcc	len 0x21e4 + ofst 0xde8
+kern  :info  : [   36.241483] rust_kjit: Vlabel: 0xaaaaaab25c54 -> 0x2fd0	len 0x21e8 + ofst 0xde8
+kern  :info  : [   36.241484] rust_kjit: Vlabel: 0xaaaaaab25c58 -> 0x2fd4	len 0x21ec + ofst 0xde8
+kern  :info  : [   36.241485] rust_kjit: Final code: 1f 20 03 d5 31 02 03 d1 00 00 e0 d2 40 55 d5 f2 a0 57 b5 f2 00 00 9e f2 00 c0 47 f9 30 7a 06 a9 30 82 01 91 41 28 40 f9 33 52 07 a9 f3 03 02 aa 02 00 40 f9 22 2e 00 f9 02 00 80 d2 3f 22 00 f9 29 00 80 d2 3f fc 09 ea 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a f1 8a f2 2b 00 00 10 90 fc ff 17 60 02 40 f9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 6a 56 b5 f2 0a 62 81 f2 2b 00 00 10 88 fc ff 17 1f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 48 8b f2 2b 00 00 10 7e fc ff 17 60 5a 40 b9 37 62 09 a9 38 02 01 91 1f 00 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 3e 8a f2 2b 00 00 10 71 fc ff 17 00 00 e0 d2 40 55 d5 f2 00 58 b5 f2 00 00 80 f2 17 40 0b 91 e0 02 05 91 
+kern  :info  : [   36.241551] rust_kjit: Final code con't: 20 12 00 f9 35 5a 08 a9 39 6a 0a a9 19 00 e0 d2 59 55 d5 f2 19 57 b5 f2 19 00 9e f2 20 e3 3d 91 20 06 00 f9 60 02 40 f9 e1 03 18 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 6a 56 b5 f2 0a b8 82 f2 2b 00 00 10 59 fc ff 17 1f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 4a 8b f2 2b 00 00 10 4f fc ff 17 34 22 40 f9 9f 02 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 3d 8a f2 2b 00 00 10 44 fc ff 17 9f 1a 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 43 8b f2 2b 00 00 10 3a fc ff 17 80 02 40 b9 1f 18 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 37 8a f2 2b 00 00 10 2f fc ff 17 76 36 40 f9 95 12 40 f9 df 02 00 f1 09 42 3b d5 
+kern  :info  : [   36.241612] rust_kjit: Final code con't: 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 56 8b f2 2b 00 00 10 23 fc ff 17 60 1a 40 f9 1f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 50 8b f2 2b 00 00 10 18 fc ff 17 21 06 40 f9 e0 03 15 aa a2 00 80 d2 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a dc 9c f2 2b 00 00 10 0e fc ff 17 1f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 70 8a f2 2b 00 00 10 04 fc ff 17 20 12 40 f9 00 00 40 b9 61 72 40 b9 1f 00 01 6b 09 42 3b d5 09 02 80 f2 c9 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 80 8a f2 2b 00 00 10 f7 fb ff 17 34 22 40 f9 60 72 00 b9 e0 03 14 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 96 8b f2 2b 00 00 10 ed fb ff 17 60 5e 40 b9 1f 00 00 71 
+kern  :info  : [   36.241673] rust_kjit: Final code con't: 09 42 3b d5 09 02 80 f2 c9 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 54 8a f2 2b 00 00 10 e2 fb ff 17 62 5a 40 b9 00 04 00 51 61 62 40 b9 42 04 00 51 62 02 0b 29 3f 00 00 71 09 42 3b d5 09 02 80 f2 a9 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 45 8a f2 2b 00 00 10 d3 fb ff 17 5f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 29 8a f2 2b 00 00 10 c9 fb ff 17 67 ff ff 17 35 5a 48 a9 39 6a 4a a9 00 00 e0 d2 40 55 d5 f2 a0 57 b5 f2 00 00 9e f2 00 c0 47 f9 22 2e 40 f9 01 00 40 f9 42 00 01 eb 01 00 80 d2 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 6f 8b f2 2b 00 00 10 b4 fb ff 17 30 7a 46 a9 33 52 47 a9 37 62 49 a9 31 02 03 91 1f 20 03 d5 89 00 80 d2 ea 03 1e aa 2b 00 00 10 ab fb ff 17 
+kern  :info  : [   36.241735] rust_kjit: Final code con't: 60 06 40 f9 02 00 80 92 21 7c 40 93 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 30 9c f2 2b 00 00 10 a1 fb ff 17 62 0e 40 f9 5f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 4c 8a f2 2b 00 00 10 96 fb ff 17 60 0a 40 f9 63 62 80 b9 02 0c 02 8b e3 03 03 cb 01 00 40 f9 21 00 03 8b 01 84 00 f8 5f 00 00 eb 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 4a 8a f2 2b 00 00 10 85 fb ff 17 f3 ff ff 17 62 1a 40 f9 5f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 52 8a f2 2b 00 00 10 79 fb ff 17 60 16 40 f9 63 62 80 b9 02 0c 02 8b e3 03 03 cb 1f 20 03 d5 01 00 40 f9 21 00 03 8b 01 84 00 f8 5f 00 00 eb 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 
+kern  :info  : [   36.241796] rust_kjit: Final code con't: 4a 56 b5 f2 0a 50 8a f2 2b 00 00 10 67 fb ff 17 f3 ff ff 17 62 5a 40 b9 7f 62 00 b9 5f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 29 8a f2 2b 00 00 10 5a fb ff 17 f8 fe ff 17 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 3d 8a f2 2b 00 00 10 50 fb ff 17 88 ff ff 17 e1 22 02 91 20 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 57 b5 f2 0a 76 9a f2 2b 00 00 10 46 fb ff 17 e1 82 40 b9 3f 00 00 6b 09 42 3b d5 09 02 80 f2 c9 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 5f 8a f2 2b 00 00 10 3b fb ff 17 61 2a 40 f9 14 d8 98 d2 e2 02 41 b9 b4 05 a0 f2 3f 00 14 eb e0 96 40 f9 21 d0 94 9a 5f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 84 8a f2 2b 00 00 10 
+kern  :info  : [   36.241861] rust_kjit: Final code con't: 2a fb ff 17 22 00 80 d2 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 6a 56 b5 f2 8a 16 94 f2 2b 00 00 10 22 fb ff 17 61 2a 40 f9 22 00 80 d2 e0 9a 40 f9 3f 00 14 eb 21 d0 94 9a 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 6a 56 b5 f2 8a 16 94 f2 2b 00 00 10 16 fb ff 17 60 5a 40 b9 00 04 00 51 60 5a 00 b9 1f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 29 8a f2 2b 00 00 10 09 fb ff 17 a7 fe ff 17 00 00 e0 d2 40 55 d5 f2 00 58 b5 f2 00 00 80 f2 14 40 0b 91 80 22 02 91 01 00 40 b9 80 82 40 b9 3f 00 00 6b 09 42 3b d5 09 02 80 f2 69 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 2e 8b f2 2b 00 00 10 f6 fa ff 17 80 b2 40 b9 1f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 1b 8b f2 2b 00 00 10 eb fa ff 17 
+kern  :info  : [   36.241922] rust_kjit: Final code con't: 80 02 41 b9 1f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 08 8b f2 2b 00 00 10 e0 fa ff 17 00 00 e0 d2 40 55 d5 f2 00 58 b5 f2 00 00 80 f2 14 40 0b 91 95 f2 01 91 00 00 80 12 e1 03 15 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 57 b5 f2 0a 8e 9a f2 2b 00 00 10 d1 fa ff 17 e0 03 13 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a ce 84 f2 2b 00 00 10 c9 fa ff 17 e1 03 15 aa 20 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 57 b5 f2 0a 8e 9a f2 2b 00 00 10 c0 fa ff 17 80 02 41 b9 1f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 07 8b f2 2b 00 00 10 b5 fa ff 17 e0 03 13 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 6a 9f f2 2b 00 00 10 ad fa ff 17 35 5a 48 a9 39 6a 4a a9 
+kern  :info  : [   36.241983] rust_kjit: Final code con't: 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 3e 8a f2 2b 00 00 10 a2 fa ff 17 dc fe ff 17 a0 02 40 39 1f 04 01 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 75 8a f2 2b 00 00 10 96 fa ff 17 a0 06 40 39 1f 4c 01 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 75 8a f2 2b 00 00 10 8b fa ff 17 a0 0a 40 39 1f 2c 01 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 33 8a f2 2b 00 00 10 80 fa ff 17 7c fe ff 17 1f 20 03 d5 01 00 e0 d2 41 55 d5 f2 01 57 b5 f2 01 00 9e f2 e0 03 15 aa 21 00 3e 91 62 01 80 d2 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a dc 9c f2 2b 00 00 10 70 fa ff 17 1f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 
+kern  :info  : [   36.242046] rust_kjit: Final code con't: 4a 55 d5 f2 4a 56 b5 f2 0a 37 8a f2 2b 00 00 10 66 fa ff 17 71 fe ff 17 00 00 e0 d2 40 55 d5 f2 a0 57 b5 f2 00 00 9e f2 00 f8 47 f9 e5 03 15 aa c3 02 40 f9 02 00 e0 d2 42 55 d5 f2 02 57 b5 f2 02 00 9e f2 00 00 40 f9 42 40 3e 91 c4 0a 40 b9 41 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 9a 9c f2 2b 00 00 10 4f fa ff 17 20 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 7a 9c f2 2b 00 00 10 47 fa ff 17 20 12 40 f9 00 00 40 b9 61 72 40 b9 1f 00 01 6b 09 42 3b d5 09 02 80 f2 a9 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 36 8a f2 2b 00 00 10 3a fa ff 17 43 fe ff 17 f4 e2 04 91 20 00 80 52 e1 03 14 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 57 b5 f2 0a 76 9a f2 2b 00 00 10 2f fa ff 17 1f 00 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 
+kern  :info  : [   36.242110] rust_kjit: Final code con't: 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 88 8a f2 2b 00 00 10 25 fa ff 17 34 22 40 f9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 37 8a f2 2b 00 00 10 1b fa ff 17 26 fe ff 17 22 00 80 d2 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 6a 56 b5 f2 0a 3a 94 f2 2b 00 00 10 12 fa ff 17 61 2a 40 f9 22 00 80 d2 e0 9a 40 f9 3f 00 14 eb 21 d0 94 9a 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 6a 56 b5 f2 0a 3a 94 f2 2b 00 00 10 06 fa ff 17 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 5f 8a f2 2b 00 00 10 fd f9 ff 17 e7 fe ff 17 3b 72 0b a9 20 00 80 52 80 02 00 b9 00 00 e0 d2 40 55 d5 f2 a0 57 b5 f2 00 00 9e f2 00 f8 47 f9 21 00 80 d2 42 08 80 d2 e3 03 00 aa 23 1e 00 f9 00 00 e0 d2 40 55 d5 f2 00 57 b5 f2 00 00 9e f2 00 c0 3e 91 
+kern  :info  : [   36.242170] rust_kjit: Final code con't: 63 00 40 f9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 50 9d f2 2b 00 00 10 e3 f9 ff 17 00 00 e0 d2 40 55 d5 f2 c0 57 b5 f2 00 00 80 f2 00 00 01 91 00 20 00 91 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 7c 86 f2 2b 00 00 10 d6 f9 ff 17 e1 16 41 b9 f5 03 00 aa 3f 00 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a b3 8a f2 2b 00 00 10 ca f9 ff 17 00 00 e0 d2 40 55 d5 f2 00 58 b5 f2 00 00 80 f2 16 40 0b 91 da 22 07 91 14 00 80 d2 1c 00 80 d2 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 9f 8a f2 2b 00 00 10 b9 f9 ff 17 79 1f 40 f9 3f 03 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 9a 8a f2 2b 00 00 10 ae f9 ff 17 e0 03 19 aa 29 00 80 d2 0a 00 e0 d2 
+kern  :info  : [   36.242244] rust_kjit: Final code con't: 4a 55 d5 f2 8a 56 b5 f2 0a 1a 8e f2 2b 00 00 10 a6 f9 ff 17 e1 03 1a aa e0 03 00 cb 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 57 b5 f2 0a 7c 9a f2 2b 00 00 10 9d f9 ff 17 e0 03 19 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 8a 56 b5 f2 0a 94 85 f2 2b 00 00 10 95 f9 ff 17 61 0b 40 f9 7f 1f 00 f9 7f 43 00 b9 e2 03 1b aa e0 03 15 aa 9c 07 00 91 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a e8 89 f2 2b 00 00 10 88 f9 ff 17 c0 16 81 b9 9f 03 00 eb 09 42 3b d5 09 02 80 f2 69 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a b4 8a f2 2b 00 00 10 7d f9 ff 17 c0 8e 40 f9 1b 78 7c f8 60 03 40 f9 1f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 3a 8b f2 2b 00 00 10 70 f9 ff 17 61 0b 40 f9 3f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 
+kern  :info  : [   36.242308] rust_kjit: Final code con't: 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 35 8b f2 2b 00 00 10 65 f9 ff 17 61 0b 40 b9 3f 00 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 3e 8b f2 2b 00 00 10 5a f9 ff 17 9f 02 00 f1 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 95 8a f2 2b 00 00 10 50 f9 ff 17 97 ff ff 17 02 00 80 d2 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a b2 9f f2 2b 00 00 10 47 f9 ff 17 f4 03 00 aa 1f 00 00 f1 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 95 8a f2 2b 00 00 10 3c f9 ff 17 83 ff ff 17 1c 00 80 d2 e0 03 1c aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 96 8b f2 2b 00 00 10 32 f9 ff 17 e0 03 14 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a f2 9f f2 2b 00 00 10 
+kern  :info  : [   36.242382] rust_kjit: Final code con't: 2a f9 ff 17 02 00 80 d2 01 00 80 52 e0 03 15 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 92 9d f2 2b 00 00 10 20 f9 ff 17 e0 03 15 aa 02 00 80 d2 21 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 92 9d f2 2b 00 00 10 16 f9 ff 17 bf 02 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 5b 8b f2 2b 00 00 10 0c f9 ff 17 e0 03 15 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 8a 56 b5 f2 0a 1a 8e f2 2b 00 00 10 04 f9 ff 17 01 00 e0 d2 41 55 d5 f2 01 58 b5 f2 01 00 80 f2 33 40 0b 91 61 22 07 91 e0 03 00 cb 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 57 b5 f2 0a 7c 9a f2 2b 00 00 10 f6 f8 ff 17 73 e2 04 91 e0 03 15 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 8a 56 b5 f2 0a 94 85 f2 2b 00 00 10 ed f8 ff 17 7f 02 00 b9 20 00 80 52 
+kern  :info  : [   36.242468] rust_kjit: Final code con't: 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 46 9d f2 2b 00 00 10 e4 f8 ff 17 14 00 80 d2 1f 20 03 d5 e0 03 14 aa 01 00 e0 d2 41 55 d5 f2 21 57 b5 f2 01 00 80 f2 21 e0 00 91 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 6a 56 b5 f2 8a ee 82 f2 2b 00 00 10 d5 f8 ff 17 fc 03 00 aa 1f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a a6 8a f2 2b 00 00 10 ca f8 ff 17 90 ff ff 17 00 00 40 b9 1f 18 00 71 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 16 8b f2 2b 00 00 10 be f8 ff 17 1f 08 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 71 8b f2 2b 00 00 10 b4 f8 ff 17 80 1b 40 f9 1a 00 80 d2 1f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 
+kern  :info  : [   36.242530] rust_kjit: Final code con't: 8a e3 8a f2 2b 00 00 10 a8 f8 ff 17 00 00 e0 d2 40 55 d5 f2 60 57 b5 f2 00 00 86 f2 00 40 3e 91 20 1a 00 f9 00 00 e0 d2 40 55 d5 f2 a0 57 b5 f2 00 00 9e f2 00 b8 47 f9 20 16 00 f9 80 1f 40 f9 00 78 7a f8 01 00 40 b9 3f 08 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 6b 8b f2 2b 00 00 10 8f f8 ff 17 01 18 40 f9 3f 08 00 f1 09 42 3b d5 09 02 80 f2 49 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 62 8b f2 2b 00 00 10 84 f8 ff 17 01 1c 40 f9 22 00 40 f9 21 80 40 a9 5b 04 40 f9 f9 03 1b 2a 05 00 40 b9 36 04 40 f9 bf 08 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 5d 8b f2 2b 00 00 10 73 f8 ff 17 01 18 40 f9 3f 08 00 f1 09 42 3b d5 09 02 80 f2 49 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 
+kern  :info  : [   36.242614] rust_kjit: Final code con't: 8a 5d 8b f2 2b 00 00 10 68 f8 ff 17 00 1c 40 f9 00 08 40 f9 03 10 40 f9 7f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 66 8b f2 2b 00 00 10 5b f8 ff 17 e0 03 03 aa 23 0a 00 f9 25 1e 00 b9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 62 9c f2 2b 00 00 10 51 f8 ff 17 23 0a 40 f9 e1 03 00 aa e0 03 03 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a e4 93 f2 2b 00 00 10 47 f8 ff 17 e4 03 00 aa e1 03 04 aa e0 03 15 aa 24 0a 00 f9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a c0 87 f2 2b 00 00 10 3c f8 ff 17 e1 03 00 aa 24 0a 40 f9 25 1e 40 b9 1f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 0a 8b f2 2b 00 00 10 2f f8 ff 17 9f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 
+kern  :info  : [   36.242689] rust_kjit: Final code con't: 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a d9 8a f2 2b 00 00 10 25 f8 ff 17 83 f0 5f 38 63 08 00 12 7f 10 00 71 09 42 3b d5 09 02 80 f2 29 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a d6 8a f2 2b 00 00 10 19 f8 ff 17 20 1a 40 f9 00 78 a3 b8 84 00 00 cb 20 16 40 f9 21 0a 00 f9 03 10 40 f9 e0 03 04 aa 49 00 80 d2 ea 03 03 aa 2b 00 00 10 0e f8 ff 17 3f 08 40 f2 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a f6 8a f2 2b 00 00 10 04 f8 ff 17 23 04 40 f9 60 1c 40 f9 1f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a ee 8a f2 2b 00 00 10 f8 f7 ff 17 7f 03 16 6b 09 42 3b d5 09 02 80 f2 a9 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a e1 8a f2 2b 00 00 10 ee f7 ff 17 65 1c 40 f9 d6 06 00 11 61 40 40 b9 
+kern  :info  : [   36.242755] rust_kjit: Final code con't: 24 04 00 11 64 40 00 b9 b9 d8 21 b8 39 07 00 11 3f 03 16 6b 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a de 8a f2 2b 00 00 10 dd f7 ff 17 f1 ff ff 17 80 1b 40 f9 5a 07 00 91 5f 03 00 eb 09 42 3b d5 09 02 80 f2 89 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a be 8a f2 2b 00 00 10 d0 f7 ff 17 34 ff ff 17 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 00 9d f2 2b 00 00 10 c8 f7 ff 17 e0 03 1c aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 96 8b f2 2b 00 00 10 c0 f7 ff 17 e0 03 14 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a f2 9f f2 2b 00 00 10 b8 f7 ff 17 02 00 80 d2 01 00 80 52 e0 03 15 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 92 9d f2 2b 00 00 10 ae f7 ff 17 e0 03 15 aa 02 00 80 d2 21 00 80 52 
+kern  :info  : [   36.242818] rust_kjit: Final code con't: 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 92 9d f2 2b 00 00 10 a4 f7 ff 17 bf 02 00 f1 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 00 8b f2 2b 00 00 10 9a f7 ff 17 00 00 e0 d2 40 55 d5 f2 00 58 b5 f2 00 00 80 f2 00 40 0b 91 00 e0 04 91 1f 00 00 b9 34 22 40 f9 3b 72 4b a9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 37 8a f2 2b 00 00 10 88 f7 ff 17 93 fb ff 17 20 00 a0 d2 23 0a 00 f9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 6a 56 b5 f2 8a 94 84 f2 2b 00 00 10 7e f7 ff 17 23 0a 40 f9 60 1c 00 f9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a dc 8a f2 2b 00 00 10 73 f7 ff 17 7b ff ff 17 01 00 80 d2 20 22 01 91 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a b8 9c f2 
+kern  :info  : [   36.242881] rust_kjit: Final code con't: 2b 00 00 10 69 f7 ff 17 20 8a 44 a9 03 48 88 d2 e3 01 a0 f2 61 26 40 f9 00 08 03 9b 00 00 01 cb 60 2a 00 f9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 21 8a f2 2b 00 00 10 59 f7 ff 17 c9 fa ff 17 33 1e 40 f9 02 03 80 d2 21 00 80 d2 00 00 e0 d2 40 55 d5 f2 00 57 b5 f2 00 00 9a f2 00 a0 14 91 63 02 40 f9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 50 9d f2 2b 00 00 10 48 f7 ff 17 60 02 40 f9 05 00 e0 d2 45 55 d5 f2 05 57 b5 f2 05 00 9a f2 03 00 e0 d2 43 55 d5 f2 03 57 b5 f2 03 00 9a f2 a5 00 16 91 63 60 15 91 02 00 e0 d2 42 55 d5 f2 02 57 b5 f2 02 00 9a f2 42 80 15 91 84 64 80 52 41 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 9a 9c f2 2b 00 00 10 2f f7 ff 17 60 01 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 
+kern  :info  : [   36.242943] rust_kjit: Final code con't: 0a 56 b5 f2 0a cc 9c f2 2b 00 00 10 27 f7 ff 17 e0 03 15 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 8a 56 b5 f2 0a 1a 8e f2 2b 00 00 10 1f f7 ff 17 01 00 e0 d2 41 55 d5 f2 01 58 b5 f2 01 00 80 f2 34 40 0b 91 81 22 07 91 e0 03 00 cb 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 57 b5 f2 0a 7c 9a f2 2b 00 00 10 11 f7 ff 17 94 e2 04 91 e0 03 15 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 8a 56 b5 f2 0a 94 85 f2 2b 00 00 10 08 f7 ff 17 9f 02 00 b9 34 22 40 f9 3b 72 4b a9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 37 8a f2 2b 00 00 10 fc f6 ff 17 07 fb ff 17 80 22 05 91 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 98 9c f2 2b 00 00 10 f3 f6 ff 17 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 6d 8a f2 2b 00 00 10 
+kern  :info  : [   36.243005] rust_kjit: Final code con't: ea f6 ff 17 35 fc ff 17 80 22 05 91 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 60 9c f2 2b 00 00 10 e1 f6 ff 17 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 67 8a f2 2b 00 00 10 d8 f6 ff 17 f8 fb ff 17 20 1e 40 f9 e1 03 05 2a 03 00 e0 d2 43 55 d5 f2 23 57 b5 f2 03 00 80 f2 02 00 e0 d2 42 55 d5 f2 22 57 b5 f2 02 00 80 f2 63 20 01 91 42 40 05 91 00 00 40 f9 24 06 00 f9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 9a 9c f2 2b 00 00 10 c2 f6 ff 17 24 06 40 f9 9f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a a6 8a f2 2b 00 00 10 b7 f6 ff 17 7d fd ff 17 80 f0 5f 38 00 08 00 12 1f 10 00 71 09 42 3b d5 09 02 80 f2 29 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 13 8b f2 2b 00 00 10 
+kern  :info  : [   36.243067] rust_kjit: Final code con't: aa f6 ff 17 01 00 e0 d2 41 55 d5 f2 61 57 b5 f2 01 00 86 f2 21 40 3e 91 20 78 a0 b8 84 00 00 cb 01 00 e0 d2 41 55 d5 f2 a1 57 b5 f2 01 00 9e f2 21 b8 47 f9 e0 03 04 aa 21 10 40 f9 49 00 80 d2 ea 03 01 aa 2b 00 00 10 98 f6 ff 17 20 1e 40 f9 03 00 e0 d2 43 55 d5 f2 23 57 b5 f2 03 00 80 f2 84 13 40 f9 63 20 01 91 00 00 40 f9 02 00 e0 d2 42 55 d5 f2 22 57 b5 f2 02 00 80 f2 41 00 80 52 42 e0 01 91 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 9a 9c f2 2b 00 00 10 83 f6 ff 17 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a a6 8a f2 2b 00 00 10 7a f6 ff 17 40 fd ff 17 60 66 40 b9 29 00 80 d2 1f 7c 09 ea 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 34 8b f2 2b 00 00 10 6d f6 ff 17 81 86 40 f9 20 d8 60 f8 
+kern  :info  : [   36.243147] rust_kjit: Final code con't: 14 08 40 f9 61 02 40 f9 80 06 40 b9 21 8c 40 b9 3f 00 00 6b 09 42 3b d5 09 02 80 f2 69 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 27 8b f2 2b 00 00 10 5d f6 ff 17 e0 03 14 aa 42 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 9c 94 f2 2b 00 00 10 54 f6 ff 17 e7 f7 ff 17 61 02 40 f9 80 06 40 b9 21 8c 40 b9 3f 00 00 6b 09 42 3b d5 09 02 80 f2 69 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 27 8b f2 2b 00 00 10 46 f6 ff 17 e0 03 14 aa 22 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 9c 94 f2 2b 00 00 10 3d f6 ff 17 d0 f7 ff 17 60 02 40 f9 01 8c 40 b9 e0 03 14 aa e4 03 13 aa 03 00 e0 d2 43 55 d5 f2 43 56 b5 f2 03 00 80 f2 42 00 80 52 63 c0 13 91 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 2e 96 f2 2b 00 00 10 2b f6 ff 17 
+kern  :info  : [   36.243227] rust_kjit: Final code con't: 00 00 e0 d2 40 55 d5 f2 00 58 b5 f2 00 00 80 f2 00 40 0b 91 35 5a 48 a9 00 b4 40 b9 39 6a 4a a9 7f 22 00 f9 60 5a 00 b9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 3e 8a f2 2b 00 00 10 18 f6 ff 17 52 fa ff 17 e0 03 13 aa 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 6a 9f f2 2b 00 00 10 0f f6 ff 17 80 02 41 b9 1f 00 00 71 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 3d 8a f2 2b 00 00 10 04 f6 ff 17 3c fa ff 17 00 00 e0 d2 40 55 d5 f2 00 58 b5 f2 00 00 80 f2 00 68 41 f9 1f 00 00 f1 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 3d 8a f2 2b 00 00 10 f4 f5 ff 17 2c fa ff 17 35 5a 48 a9 21 00 80 52 39 6a 4a a9 01 28 00 b9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 
+kern  :info  : [   36.243296] rust_kjit: Final code con't: 4a 55 d5 f2 4a 56 b5 f2 8a 3e 8a f2 2b 00 00 10 e6 f5 ff 17 20 fa ff 17 00 00 e0 d2 40 55 d5 f2 00 58 b5 f2 00 00 80 f2 14 68 41 f9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 1e 8b f2 2b 00 00 10 d7 f5 ff 17 6d ff ff 17 03 00 e0 d2 43 55 d5 f2 63 57 b5 f2 03 00 86 f2 63 40 3e 91 01 00 e0 d2 41 55 d5 f2 01 57 b5 f2 01 00 9a f2 00 00 e0 d2 40 55 d5 f2 20 57 b5 f2 00 00 80 f2 63 40 01 91 21 40 2a 91 00 40 00 91 02 a5 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 88 9c f2 2b 00 00 10 be f5 ff 17 03 00 e0 d2 43 55 d5 f2 63 57 b5 f2 03 00 86 f2 63 40 3e 91 01 00 e0 d2 41 55 d5 f2 01 57 b5 f2 01 00 9a f2 00 00 e0 d2 40 55 d5 f2 00 57 b5 f2 00 00 9e f2 63 40 01 91 21 40 2a 91 00 e0 3f 91 e2 a4 80 52 29 00 80 d2 0a 00 e0 d2 
+kern  :info  : [   36.243358] rust_kjit: Final code con't: 4a 55 d5 f2 0a 56 b5 f2 0a 88 9c f2 2b 00 00 10 a6 f5 ff 17 03 00 e0 d2 43 55 d5 f2 63 57 b5 f2 03 00 86 f2 63 40 3e 91 01 00 e0 d2 41 55 d5 f2 01 57 b5 f2 01 00 9a f2 00 00 e0 d2 40 55 d5 f2 20 57 b5 f2 00 00 80 f2 63 40 01 91 21 40 2a 91 00 a0 00 91 22 a5 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 88 9c f2 2b 00 00 10 8e f5 ff 17 03 00 e0 d2 43 55 d5 f2 a3 57 b5 f2 03 00 9e f2 63 f8 47 f9 62 04 80 d2 21 00 80 d2 00 00 e0 d2 40 55 d5 f2 00 57 b5 f2 00 00 9e f2 00 40 3d 91 3b 72 0b a9 63 00 40 f9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 50 9d f2 2b 00 00 10 79 f5 ff 17 20 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 46 9d f2 2b 00 00 10 71 f5 ff 17 35 5a 08 a9 37 62 09 a9 39 6a 0a a9 02 00 e0 d2 42 55 d5 f2 02 57 b5 f2 
+kern  :info  : [   36.243421] rust_kjit: Final code con't: 02 00 9e f2 00 00 e0 d2 40 55 d5 f2 a0 57 b5 f2 00 00 9e f2 00 f8 47 f9 42 00 3d 91 63 02 40 f9 41 00 80 52 00 00 40 f9 63 30 00 91 3b 72 0b a9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 9a 9c f2 2b 00 00 10 58 f5 ff 17 20 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 46 9d f2 2b 00 00 10 50 f5 ff 17 00 00 e0 d2 40 55 d5 f2 a0 57 b5 f2 00 00 9e f2 00 f8 47 f9 e5 03 15 aa c3 02 40 f9 02 00 e0 d2 42 55 d5 f2 22 57 b5 f2 02 00 80 f2 00 00 40 f9 42 a0 06 91 c4 0a 40 b9 41 00 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 9a 9c f2 2b 00 00 10 3a f5 ff 17 3b 72 0b a9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a b2 8a f2 2b 00 00 10 30 f5 ff 17 44 fc ff 17 00 00 e0 d2 40 55 d5 f2 a0 57 b5 f2 00 00 9e f2 
+kern  :info  : [   36.243483] rust_kjit: Final code con't: 00 f8 47 f9 e3 03 15 aa 02 00 e0 d2 42 55 d5 f2 22 57 b5 f2 02 00 80 f2 41 00 80 52 42 40 06 91 00 00 40 f9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 9a 9c f2 2b 00 00 10 1b f5 ff 17 3b 72 0b a9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a b2 8a f2 2b 00 00 10 11 f5 ff 17 25 fc ff 17 00 00 e0 d2 40 55 d5 f2 00 58 b5 f2 00 00 80 f2 00 40 0b 91 00 e0 04 91 1f 00 00 b9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a b2 8a f2 2b 00 00 10 00 f5 ff 17 14 fc ff 17 03 00 e0 d2 43 55 d5 f2 63 57 b5 f2 03 00 86 f2 63 40 3e 91 01 00 e0 d2 41 55 d5 f2 01 57 b5 f2 01 00 9a f2 00 00 e0 d2 40 55 d5 f2 20 57 b5 f2 00 00 80 f2 63 40 01 91 21 40 2a 91 00 e0 03 91 02 a9 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 
+kern  :info  : [   36.243546] rust_kjit: Final code con't: 0a 56 b5 f2 0a 88 9c f2 2b 00 00 10 e7 f4 ff 17 03 00 e0 d2 43 55 d5 f2 63 57 b5 f2 03 00 86 f2 63 40 3e 91 01 00 e0 d2 41 55 d5 f2 01 57 b5 f2 01 00 9a f2 00 00 e0 d2 40 55 d5 f2 20 57 b5 f2 00 00 80 f2 63 40 01 91 21 40 2a 91 00 80 03 91 62 a8 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 88 9c f2 2b 00 00 10 cf f4 ff 17 03 00 e0 d2 43 55 d5 f2 63 57 b5 f2 03 00 86 f2 63 40 3e 91 01 00 e0 d2 41 55 d5 f2 01 57 b5 f2 01 00 9a f2 00 00 e0 d2 40 55 d5 f2 20 57 b5 f2 00 00 80 f2 63 40 01 91 21 40 2a 91 00 c0 04 91 22 a9 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 88 9c f2 2b 00 00 10 b7 f4 ff 17 03 00 e0 d2 43 55 d5 f2 63 57 b5 f2 03 00 86 f2 63 40 3e 91 01 00 e0 d2 41 55 d5 f2 01 57 b5 f2 01 00 9a f2 00 00 e0 d2 40 55 d5 f2 20 57 b5 f2 
+kern  :info  : [   36.243608] rust_kjit: Final code con't: 00 00 80 f2 63 40 01 91 21 40 2a 91 00 00 03 91 42 a8 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 88 9c f2 2b 00 00 10 9f f4 ff 17 35 5a 08 a9 39 6a 0a a9 3b 72 0b a9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 66 9c f2 2b 00 00 10 95 f4 ff 17 03 00 e0 d2 43 55 d5 f2 63 57 b5 f2 03 00 86 f2 63 40 3e 91 01 00 e0 d2 41 55 d5 f2 01 57 b5 f2 01 00 9a f2 00 00 e0 d2 40 55 d5 f2 20 57 b5 f2 00 00 80 f2 63 40 01 91 21 40 2a 91 00 60 02 91 e2 a7 80 52 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 88 9c f2 2b 00 00 10 7d f4 ff 17 1f 20 03 d5 31 82 00 d1 03 00 e0 d2 43 55 d5 f2 a3 57 b5 f2 03 00 9e f2 63 c0 47 f9 e2 03 11 aa 30 7a 01 a9 30 42 00 91 64 00 40 f9 24 06 00 f9 04 00 80 d2 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a be 89 f2 
+kern  :info  : [   36.243670] rust_kjit: Final code con't: 2b 00 00 10 69 f4 ff 17 1f 00 00 f1 22 02 40 f9 01 00 e0 d2 41 55 d5 f2 a1 57 b5 f2 01 00 9e f2 21 c0 47 f9 40 00 80 9a 23 06 40 f9 22 00 40 f9 63 00 02 eb 02 00 80 d2 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 8a 82 8b f2 2b 00 00 10 54 f4 ff 17 30 7a 41 a9 31 82 00 91 1f 20 03 d5 89 00 80 d2 ea 03 1e aa 2b 00 00 10 4d f4 ff 17 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 66 9c f2 2b 00 00 10 46 f4 ff 17 1f 20 03 d5 1f 20 03 d5 1f 20 03 d5 30 7a be a9 f0 03 11 aa 33 0a 00 f9 f3 03 00 aa 00 06 80 d2 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 4a 56 b5 f2 0a 42 83 f2 2b 00 00 10 37 f4 ff 17 02 00 80 92 13 08 00 a9 1f 08 00 f9 1f fc 01 a9 33 0a 40 f9 30 7a c2 a8 1f 20 03 d5 89 00 80 d2 ea 03 1e aa 2b 00 00 10 2c f4 ff 17 
+kern  :info  : [   36.244819] rust_kjit: BLR to unknown target 0xaaaaaab250d0 at 0xde8
+kern  :info  : [   36.244840] rust_kjit: Fdebug at 0xe50
+kern  :info  : [   36.244841] rust_kjit: B to 0xaaaaaab25788 at 0x22cc
+kern  :info  : [   36.244842] rust_kjit: Fbl at 0x22ec
+kern  :info  : [   36.244910] rust_kjit: Vlabel: 0xaaaaaab0e5c0 -> 0x2fe4	len 0x0 + ofst 0x2fe4
+kern  :info  : [   36.244912] rust_kjit: Vlabel: 0xaaaaaab0e5c4 -> 0x2ff4	len 0x10 + ofst 0x2fe4
+kern  :info  : [   36.244914] rust_kjit: Vlabel: 0xaaaaaab0e5c8 -> 0x2ff8	len 0x14 + ofst 0x2fe4
+kern  :info  : [   36.244915] rust_kjit: Vlabel: 0xaaaaaab0e5cc -> 0x2ffc	len 0x18 + ofst 0x2fe4
+kern  :info  : [   36.244917] rust_kjit: Final code: 0f 00 80 d2 4f 55 d5 f2 af 57 b5 f2 0f 00 9e f2 ee 41 46 f9 ef 01 32 91 69 00 80 d2 ea 03 0e aa ee 1f 00 f9 ef 1b 00 f9 2b 00 00 10 20 f4 ff 17 
+kern  :info  : [   36.244934] rust_kjit: BL to unknown target 0xaaaaaab0e5c0 at 0x2fe4
+kern  :info  : [   36.244935] rust_kjit: Fbr at 0x3010
+kern  :warn  : [   36.245433] rust_kjit: Unsupported Op for ARM64_INS_DMB
+kern  :err   : [   36.245452] rust_kjit: In ARM64_INS_MRS
+kern  :info  : [   36.245454] rust_kjit: CNTVCT_EL0
+                              ,
+kern  :warn  : [   36.245471] rust_kjit: disasm_no_addr failed, nop filled in for insn
+kern  :warn  : [   36.245488] rust_kjit: Unsupported Op for ARM64_INS_DMB
+kern  :err   : [   36.245583] rust_kjit: ConfRes - Unsupported insn: ARM64_INS_MADD
+kern  :err   : [   36.245662] rust_kjit: BR JIT failed for 0xfffff7ffb5c8
+kern  :info  : [   36.245664] rust_kjit: Leaving with cnt 27, svc_loop_cnt 0
+kern  :info  : [   36.245681] rust_kjit: ###### Lift session 3 ######
+kern  :info  : [   36.245682] rust_kjit: Fdebug at 0x180
+kern  :info  : [   36.245682] rust_kjit: B: Continue at 0x184
+kern  :info  : [   36.245683] rust_kjit: Fret at 0x190 to known target 0xaaaaaab1a570
+kern  :info  : [   36.245685] rust_kjit: Fdebug at 0x83c
+kern  :info  : [   36.245685] rust_kjit: B: Continue at 0x840
+kern  :info  : [   36.245686] rust_kjit: Fdebug at 0x28c
+kern  :info  : [   36.245686] rust_kjit: B: Continue at 0x290
+kern  :info  : [   36.245687] rust_kjit: Fdebug at 0x2c4
+kern  :info  : [   36.245688] rust_kjit: B to 0xaaaaaab1a624 at 0x2f8
+kern  :info  : [   36.245689] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245689] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245690] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245691] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245692] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245692] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245693] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245693] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245695] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245695] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245696] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245696] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245697] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245698] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245699] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245699] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245700] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245701] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245702] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245702] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245703] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245704] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245705] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245705] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245706] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245707] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245708] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245708] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245709] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245710] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245711] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245711] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245712] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245712] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245713] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245714] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245715] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245715] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245716] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245717] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245717] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245718] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245718] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245719] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245719] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245720] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245720] rust_kjit: Fdebug at 0x2f4
+kern  :info  : [   36.245721] rust_kjit: B: Continue at 0x2f8
+kern  :info  : [   36.245722] rust_kjit: Fdebug at 0x320
+kern  :info  : [   36.245722] rust_kjit: B: Continue at 0x324
+kern  :info  : [   36.245723] rust_kjit: Leaving with cnt 30, svc_loop_cnt 0
+kern  :info  : [   36.245727] rust_kjit: ###### Lift session 4 ######
+kern  :info  : [   36.245727] rust_kjit: Fdebug at 0x180
+kern  :info  : [   36.245728] rust_kjit: B: Continue at 0x184
+kern  :info  : [   36.245729] rust_kjit: Fret at 0x190 to known target 0xaaaaaab1a5dc
+kern  :info  : [   36.245730] rust_kjit: Fdebug at 0x260
+kern  :info  : [   36.245730] rust_kjit: B to 0xaaaaaab1a588 at 0x1bc
+kern  :info  : [   36.245731] rust_kjit: Fdebug at 0x200
+kern  :info  : [   36.245731] rust_kjit: B: Continue at 0x204
+kern  :info  : [   36.245732] rust_kjit: Fret at 0x228 to known target 0xaaaaaab25930
+kern  :info  : [   36.245734] rust_kjit: Fbl at 0x27e4
+kern  :info  : [   36.246045] rust_kjit: Vlabel: 0xaaaaaab1b170 -> 0x3014	len 0x0 + ofst 0x3014
+kern  :info  : [   36.246047] rust_kjit: Vlabel: 0xaaaaaab1b174 -> 0x3018	len 0x4 + ofst 0x3014
+kern  :info  : [   36.246049] rust_kjit: Vlabel: 0xaaaaaab1b178 -> 0x301c	len 0x8 + ofst 0x3014
+kern  :info  : [   36.246050] rust_kjit: Vlabel: 0xaaaaaab1b17c -> 0x3020	len 0xc + ofst 0x3014
+kern  :info  : [   36.246052] rust_kjit: Vlabel: 0xaaaaaab1b180 -> 0x3024	len 0x10 + ofst 0x3014
+kern  :info  : [   36.246053] rust_kjit: Vlabel: 0xaaaaaab1b184 -> 0x3028	len 0x14 + ofst 0x3014
+kern  :info  : [   36.246054] rust_kjit: Vlabel: 0xaaaaaab1b188 -> 0x302c	len 0x18 + ofst 0x3014
+kern  :info  : [   36.246056] rust_kjit: Vlabel: 0xaaaaaab1b18c -> 0x3030	len 0x1c + ofst 0x3014
+kern  :info  : [   36.246057] rust_kjit: Vlabel: 0xaaaaaab1b190 -> 0x3040	len 0x2c + ofst 0x3014
+kern  :info  : [   36.246059] rust_kjit: Vlabel: 0xaaaaaab1b194 -> 0x3044	len 0x30 + ofst 0x3014
+kern  :info  : [   36.246060] rust_kjit: Vlabel: 0xaaaaaab1b198 -> 0x3048	len 0x34 + ofst 0x3014
+kern  :info  : [   36.246061] rust_kjit: Vlabel: 0xaaaaaab1b19c -> 0x304c	len 0x38 + ofst 0x3014
+kern  :info  : [   36.246063] rust_kjit: Vlabel: 0xaaaaaab1b1a0 -> 0x3050	len 0x3c + ofst 0x3014
+kern  :info  : [   36.246064] rust_kjit: Vlabel: 0xaaaaaab1b1a4 -> 0x3054	len 0x40 + ofst 0x3014
+kern  :info  : [   36.246066] rust_kjit: Vlabel: 0xaaaaaab1b1a8 -> 0x3058	len 0x44 + ofst 0x3014
+kern  :info  : [   36.246067] rust_kjit: Vlabel: 0xaaaaaab1b1ac -> 0x305c	len 0x48 + ofst 0x3014
+kern  :info  : [   36.246070] rust_kjit: Vlabel: 0xaaaaaab1b1b0 -> 0x3080	len 0x6c + ofst 0x3014
+kern  :info  : [   36.246072] rust_kjit: Vlabel: 0xaaaaaab1b1b4 -> 0x3084	len 0x70 + ofst 0x3014
+kern  :info  : [   36.246073] rust_kjit: Vlabel: 0xaaaaaab1b1b8 -> 0x3088	len 0x74 + ofst 0x3014
+kern  :info  : [   36.246074] rust_kjit: Vlabel: 0xaaaaaab1b1bc -> 0x308c	len 0x78 + ofst 0x3014
+kern  :info  : [   36.246076] rust_kjit: Vlabel: 0xaaaaaab1b1c0 -> 0x3090	len 0x7c + ofst 0x3014
+kern  :info  : [   36.246077] rust_kjit: Vlabel: 0xaaaaaab1b1c4 -> 0x3094	len 0x80 + ofst 0x3014
+kern  :info  : [   36.246078] rust_kjit: Vlabel: 0xaaaaaab1b1c8 -> 0x3098	len 0x84 + ofst 0x3014
+kern  :info  : [   36.246080] rust_kjit: Vlabel: 0xaaaaaab1b1cc -> 0x309c	len 0x88 + ofst 0x3014
+kern  :info  : [   36.246081] rust_kjit: Vlabel: 0xaaaaaab1b1d0 -> 0x30a0	len 0x8c + ofst 0x3014
+kern  :info  : [   36.246089] rust_kjit: Vlabel: 0xaaaaaab1b1d4 -> 0x30a4	len 0x90 + ofst 0x3014
+kern  :info  : [   36.246090] rust_kjit: Vlabel: 0xaaaaaab1b1d8 -> 0x30a8	len 0x94 + ofst 0x3014
+kern  :info  : [   36.246091] rust_kjit: Vlabel: 0xaaaaaab1b1dc -> 0x30ac	len 0x98 + ofst 0x3014
+kern  :info  : [   36.246093] rust_kjit: Vlabel: 0xaaaaaab1b1e0 -> 0x30b0	len 0x9c + ofst 0x3014
+kern  :info  : [   36.246094] rust_kjit: Vlabel: 0xaaaaaab1b1e4 -> 0x30b4	len 0xa0 + ofst 0x3014
+kern  :info  : [   36.246095] rust_kjit: Vlabel: 0xaaaaaab1b1e8 -> 0x30b8	len 0xa4 + ofst 0x3014
+kern  :info  : [   36.246097] rust_kjit: Vlabel: 0xaaaaaab1b1ec -> 0x30bc	len 0xa8 + ofst 0x3014
+kern  :info  : [   36.246098] rust_kjit: Vlabel: 0xaaaaaab1b1f0 -> 0x30c0	len 0xac + ofst 0x3014
+kern  :info  : [   36.246101] rust_kjit: Vlabel: 0xaaaaaab1b1f4 -> 0x30ec	len 0xd8 + ofst 0x3014
+kern  :info  : [   36.246103] rust_kjit: Vlabel: 0xaaaaaab1b1f8 -> 0x30f0	len 0xdc + ofst 0x3014
+kern  :info  : [   36.246106] rust_kjit: Vlabel: 0xaaaaaab1b1fc -> 0x311c	len 0x108 + ofst 0x3014
+kern  :info  : [   36.246108] rust_kjit: Vlabel: 0xaaaaaab1b200 -> 0x3120	len 0x10c + ofst 0x3014
+kern  :info  : [   36.246109] rust_kjit: Vlabel: 0xaaaaaab1b204 -> 0x3124	len 0x110 + ofst 0x3014
+kern  :info  : [   36.246111] rust_kjit: Vlabel: 0xaaaaaab1b208 -> 0x3128	len 0x114 + ofst 0x3014
+kern  :info  : [   36.246112] rust_kjit: Vlabel: 0xaaaaaab1b20c -> 0x312c	len 0x118 + ofst 0x3014
+kern  :info  : [   36.246114] rust_kjit: Vlabel: 0xaaaaaab1b284 -> 0x3148	len 0x134 + ofst 0x3014
+kern  :info  : [   36.246116] rust_kjit: Vlabel: 0xaaaaaab1b288 -> 0x314c	len 0x138 + ofst 0x3014
+kern  :info  : [   36.246117] rust_kjit: Vlabel: 0xaaaaaab1b28c -> 0x3150	len 0x13c + ofst 0x3014
+kern  :info  : [   36.246118] rust_kjit: Vlabel: 0xaaaaaab1b290 -> 0x3154	len 0x140 + ofst 0x3014
+kern  :info  : [   36.246120] rust_kjit: Vlabel: 0xaaaaaab1b1fc -> 0x3178	len 0x164 + ofst 0x3014
+kern  :info  : [   36.246122] rust_kjit: Vlabel: 0xaaaaaab1b29c -> 0x317c	len 0x168 + ofst 0x3014
+kern  :info  : [   36.246124] rust_kjit: Vlabel: 0xaaaaaab1b2a0 -> 0x3198	len 0x184 + ofst 0x3014
+kern  :info  : [   36.246126] rust_kjit: Vlabel: 0xaaaaaab1b2a4 -> 0x319c	len 0x188 + ofst 0x3014
+kern  :info  : [   36.246127] rust_kjit: Vlabel: 0xaaaaaab1b2a8 -> 0x31a0	len 0x18c + ofst 0x3014
+kern  :info  : [   36.246128] rust_kjit: Vlabel: 0xaaaaaab1b2ac -> 0x31a4	len 0x190 + ofst 0x3014
+kern  :info  : [   36.246129] rust_kjit: Vlabel: 0xaaaaaab1b250 -> 0x31c8	len 0x1b4 + ofst 0x3014
+kern  :info  : [   36.246130] rust_kjit: Final code: 1f 20 03 d5 31 c2 01 d1 30 7a 02 a9 30 82 00 91 05 04 40 b9 33 52 03 a9 f3 03 01 2a 01 00 e0 d2 41 55 d5 f2 a1 57 b5 f2 01 00 9e f2 21 c0 47 f9 39 6a 06 a9 fa 03 00 aa 20 00 40 f9 20 0e 00 f9 00 00 80 d2 bf 00 13 6b 09 42 3b d5 09 02 80 f2 c9 01 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a 53 96 f2 2b 00 00 10 05 f4 ff 17 35 5a 04 a9 75 7e 7b 93 f4 03 02 2a 56 0b 40 f9 3f fe 00 a9 61 00 80 52 37 62 05 a9 d9 02 15 8b c2 6a 75 b8 40 1b 40 f9 5f 00 00 71 f8 03 03 aa f7 03 04 aa 23 00 80 52 82 02 02 2a 21 10 83 1a 29 00 80 d2 5f 00 09 ea 09 42 3b d5 09 02 80 f2 29 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 3f 96 f2 2b 00 00 10 ea f3 ff 17 23 0a 00 b9 29 00 80 d2 5f 04 09 ea 09 42 3b d5 09 02 80 f2 49 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a 50 96 f2 
+kern  :info  : [   36.246194] rust_kjit: Final code con't: 2b 00 00 10 de f3 ff 17 00 00 40 b9 23 22 00 91 e2 03 13 2a 33 12 00 b9 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 28 9d f2 2b 00 00 10 d3 f3 ff 17 22 0a 40 b9 42 00 1e 32 22 0a 00 b9 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 8a 3f 96 f2 2b 00 00 10 c7 f3 ff 17 e9 ff ff 17 29 00 80 d2 0a 00 e0 d2 4a 55 d5 f2 0a 56 b5 f2 0a 0a 9d f2 2b 00 00 10 bf f3 ff 17 41 04 80 52 01 00 00 b9 00 00 80 12 09 42 3b d5 09 02 80 f2 09 00 c0 f2 0a 00 e0 d2 4a 55 d5 f2 2a 56 b5 f2 0a 4a 96 f2 2b 00 00 10 b3 f3 ff 17 0b f6 ff 17 
+kern  :info  : [   36.246297] rust_kjit: BL to unknown target 0xaaaaaab1b170 at 0x3014
+kern  :info  : [   36.246299] rust_kjit: Fdebug at 0x307c
+kern  :info  : [   36.246299] rust_kjit: B: Continue at 0x3080
+kern  :info  : [   36.246300] rust_kjit: Fdebug at 0x30e8
+kern  :info  : [   36.246301] rust_kjit: B to 0xaaaaaab1b1f8 at 0x30f0
+kern  :info  : [   36.246302] rust_kjit: Fdebug at 0x3118
+kern  :info  : [   36.246303] rust_kjit: B to 0xaaaaaab1b284 at 0x3148
+kern  :info  : [   36.246304] rust_kjit: Fdebug at 0x3174
+kern  :info  : [   36.246305] rust_kjit: B to 0xaaaaaab1b1fc at 0x311c
+kern  :info  : [   36.246306] rust_kjit: Fbl at 0x3144
+kern  :info  : [   36.246358] rust_kjit: Vlabel: 0xaaaaaab0e940 -> 0x31cc	len 0x0 + ofst 0x31cc
+kern  :info  : [   36.246360] rust_kjit: Vlabel: 0xaaaaaab0e944 -> 0x31dc	len 0x10 + ofst 0x31cc
+kern  :info  : [   36.246361] rust_kjit: Vlabel: 0xaaaaaab0e948 -> 0x31e0	len 0x14 + ofst 0x31cc
+kern  :info  : [   36.246363] rust_kjit: Vlabel: 0xaaaaaab0e94c -> 0x31e4	len 0x18 + ofst 0x31cc
+kern  :info  : [   36.246364] rust_kjit: Final code: 0f 00 80 d2 4f 55 d5 f2 af 57 b5 f2 0f 00 9e f2 ee 21 47 f9 ef 01 39 91 69 00 80 d2 ea 03 0e aa ee 1f 00 f9 ef 1b 00 f9 2b 00 00 10 a6 f3 ff 17 
+kern  :info  : [   36.246381] rust_kjit: BL to unknown target 0xaaaaaab0e940 at 0x31cc
+kern  :info  : [   36.246382] rust_kjit: Fbr at 0x31f8
+kern  :info  : [   36.246394] rust_kjit: Loop detected
+kern  :info  : [   36.246408] rust_kjit: Vlabel: 0xfffff772ce00 -> 0x31fc	len 0x0 + ofst 0x31fc
+kern  :info  : [   36.246410] rust_kjit: Vlabel: 0xfffff772ce04 -> 0x3200	len 0x4 + ofst 0x31fc
+kern  :info  : [   36.246411] rust_kjit: Vlabel: 0xfffff772ce08 -> 0x3204	len 0x8 + ofst 0x31fc
+kern  :info  : [   36.246412] rust_kjit: Vlabel: 0xfffff772ce0c -> 0x3214	len 0x18 + ofst 0x31fc
+kern  :info  : [   36.246413] rust_kjit: Final code: 1f 20 03 d5 a8 02 80 d2 09 00 80 d2 ea 03 08 aa 2b 00 00 10 a0 f3 ff 17 d2 f3 ff 17 
+kern  :info  : [   36.246423] rust_kjit: BR to 0xfffff772ce00 at 0x31fc
