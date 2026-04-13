@@ -1,0 +1,24 @@
+{
+    "name": "KJIT Dev",
+    "image": "kjit-dev:latest",
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    "remoteEnv": {
+        "KJIT_IGNORE_LOCAL_ENV": "1"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "rust-lang.rust-analyzer"
+            ],
+            "settings": {
+                "rust-analyzer.server.path": "/workspace/.kjit/bin/rust-analyzer",
+                "rust-analyzer.linkedProjects": [
+                    "rust-project.json"
+                ],
+                "rust-analyzer.procMacro.enable": true
+            }
+        }
+    },
+    "postCreateCommand": "bash .devcontainer/post-create.sh"
+}
