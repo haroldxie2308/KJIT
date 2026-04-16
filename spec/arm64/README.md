@@ -5,7 +5,7 @@ This directory holds source-controlled artifacts derived from Arm's official A64
 Current contents:
 
 - `generated/a64_subset.json`: compact machine-readable summary for the current supported subset
-- `generated/a64_subset.rs`: Rust table form of the same subset
+- `generated/a64_subset.rs`: Rust table form of the same subset, including decode-match and field-extraction helpers
 
 Generation:
 
@@ -29,3 +29,4 @@ Notes:
 
 - The checked-in artifacts are intentionally narrow and are not yet wired into the kernel translator.
 - The intended next use is as generated decode/field tables for the future shared translation core.
+- The current subset is biased toward the instruction families already used in the userspace harness.

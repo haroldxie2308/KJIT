@@ -674,3 +674,163 @@ This is now in a reasonable shape to extend toward:
 - more supported instruction families
 - generated field extraction helpers
 - eventual consumption by the shared translation core
+
+## 2026-04-16: Next concrete step after groundwork commit
+
+Immediate implementation target:
+
+- extend the generated subset to cover more of the instruction families already present in the userspace harness:
+  - `MOVZ`
+  - `MOVK`
+  - `B`
+  - `CBNZ`
+  - `TBZ`
+  - `TBNZ`
+  - `LDR (immediate)`
+  - `STR (immediate)`
+
+But do it in a way that moves the generated output closer to shared-core consumption.
+
+That means the generator should now emit:
+
+- richer field metadata:
+  - `width`
+  - `mask`
+  - `shift`
+- helper methods in Rust:
+  - instruction match test
+  - named field extraction
+
+Important constraint:
+
+- for `LDR/STR (immediate)`, keep all official encoding variants in the generated table for now
+- the shared core can later choose to consume only the unsigned-offset variants first
+- generation should reflect the official source accurately rather than prematurely collapsing encodings
+
+Result of this step:
+
+- extended the generated subset from 4 instruction XML files / 6 variants to:
+  - 12 instruction XML files
+  - 27 encoding variants
+
+Added families:
+
+- `B`
+- `CBNZ`
+- `MOVZ`
+- `MOVK`
+- `TBZ`
+- `TBNZ`
+- `LDR (immediate)`
+- `STR (immediate)`
+
+Generated Rust output now includes:
+
+- richer field metadata:
+  - `hi`
+  - `lo`
+  - `width`
+  - `mask`
+- helper methods:
+  - `GeneratedFieldSpec::extract`
+  - `GeneratedInsnSpec::matches`
+  - `GeneratedInsnSpec::field`
+  - `GeneratedInsnSpec::extract_field`
+  - `generated_a64_subset_match(word)`
+
+Validation added:
+
+- `userspace-harness` now includes the generated Rust file directly in tests
+- tests assert:
+  - sample opcode -> expected generated instruction key
+  - expected field extraction for representative instructions
+
+Validated locally and in the docker image:
+
+- `make arm64-spec-gen`
+- `cargo test --manifest-path userspace-harness/Cargo.toml -- --nocapture`
+- `./scripts/docker-dev.sh --no-tty -- cargo test --manifest-path userspace-harness/Cargo.toml -- --nocapture`
+
+Current state:
+
+- the generated spec is still not semantic lowering logic
+- but it is now a plausible shared input layer for:
+  - decode matching
+  - field extraction
+  - future handwritten lowering into the smaller IR
+
+## 2026-04-16: First shared typed decoded layer
+
+Implemented a first reusable shared module tree:
+
+- `shared/trans_core/mod.rs`
+- `shared/trans_core/arm64/mod.rs`
+- `shared/trans_core/arm64/generated.rs`
+
+What this shared layer now owns:
+
+- typed decoded ARM64 instruction forms
+- explicit decode errors
+- importer from generated spec tables to typed decoded instructions
+
+Current typed coverage:
+
+- `Nop`
+- move-wide:
+  - `MOVZ`
+  - `MOVK`
+- PC-relative address:
+  - `ADR`
+  - `ADRP`
+- add/sub immediate:
+  - `ADD`
+  - `SUB`
+  - `SUBS` / `CMP`-alias shape
+- branches:
+  - `B`
+  - `B.cond`
+  - `CBZ`
+  - `CBNZ`
+  - `TBZ`
+  - `TBNZ`
+- load/store immediate:
+  - `LDR`
+  - `STR`
+  - preserving official addressing variants:
+    - unsigned scaled offset
+    - pre-index
+    - post-index
+
+Important structural change:
+
+- `userspace-harness/src/translate.rs` now lowers from the shared typed decode layer instead of from the old handwritten `arm64::decode_program`
+- the old handwritten `userspace-harness/src/arm64.rs` still remains as the execution oracle / assembler path
+
+Why this is a good intermediate state:
+
+- the generated spec tables are no longer isolated artifacts
+- the harness now exercises the actual shared decode/import path
+- the importer is still separate from lowering, so stage boundaries are clearer
+
+Validation now covers:
+
+- generated table match tests
+- generated field extraction tests
+- shared typed decode tests
+- full built-in harness cases using the shared decode -> lowering path
+
+Validated locally and in docker:
+
+- `make arm64-spec-gen`
+- `cargo test --manifest-path userspace-harness/Cargo.toml -- --nocapture`
+- `./scripts/docker-dev.sh --no-tty -- cargo test --manifest-path userspace-harness/Cargo.toml -- --nocapture`
+
+Current limitation:
+
+- harness lowering still only accepts a narrow subset of the typed decoded layer
+- for example:
+  - `MOVK` as an original instruction is still rejected by lowering
+  - `TBZ/TBNZ` are decoded but not lowered yet
+  - pre/post-indexed `LDR/STR` are decoded but not lowered yet
+
+This is acceptable for now because decode/import and lowering are being grown in separate steps.

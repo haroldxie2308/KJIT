@@ -34,28 +34,104 @@
             "name": "op",
             "hi": 31,
             "lo": 31,
-            "width": 1
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
           },
           {
             "name": "immlo",
             "hi": 30,
             "lo": 29,
-            "width": 2
+            "width": 2,
+            "shift": 29,
+            "mask": "0x60000000"
           },
           {
             "name": "immhi",
             "hi": 23,
             "lo": 5,
-            "width": 19
+            "width": 19,
+            "shift": 5,
+            "mask": "0x00ffffe0"
           },
           {
             "name": "Rd",
             "hi": 4,
             "lo": 0,
-            "width": 5
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
           }
         ],
         "asm": "ADR <Xd> , <label>"
+      }
+    ]
+  },
+  {
+    "source_file": "adrp.xml",
+    "section_id": "ADRP",
+    "heading": "ADRP",
+    "title": "ADRP -- A64",
+    "docvars": {
+      "address-form": "literal",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "ADRP",
+      "offset-type": "off19s"
+    },
+    "variants": [
+      {
+        "section_id": "ADRP",
+        "heading": "ADRP",
+        "title": "ADRP -- A64",
+        "iclass": "Literal",
+        "encoding_name": "ADRP_only_pcreladdr",
+        "encoding_label": "",
+        "mnemonic": "ADRP",
+        "docvars": {
+          "address-form": "literal",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "ADRP",
+          "offset-type": "off19s"
+        },
+        "mask": "0x9f000000",
+        "value": "0x90000000",
+        "fields": [
+          {
+            "name": "op",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "immlo",
+            "hi": 30,
+            "lo": 29,
+            "width": 2,
+            "shift": 29,
+            "mask": "0x60000000"
+          },
+          {
+            "name": "immhi",
+            "hi": 23,
+            "lo": 5,
+            "width": 19,
+            "shift": 5,
+            "mask": "0x00ffffe0"
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "ADRP <Xd> , <label>"
       }
     ]
   },
@@ -95,43 +171,57 @@
             "name": "sf",
             "hi": 31,
             "lo": 31,
-            "width": 1
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
           },
           {
             "name": "op",
             "hi": 30,
             "lo": 30,
-            "width": 1
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000"
           },
           {
             "name": "S",
             "hi": 29,
             "lo": 29,
-            "width": 1
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000"
           },
           {
             "name": "sh",
             "hi": 22,
             "lo": 22,
-            "width": 1
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000"
           },
           {
             "name": "imm12",
             "hi": 21,
             "lo": 10,
-            "width": 12
+            "width": 12,
+            "shift": 10,
+            "mask": "0x003ffc00"
           },
           {
             "name": "Rn",
             "hi": 9,
             "lo": 5,
-            "width": 5
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
           },
           {
             "name": "Rd",
             "hi": 4,
             "lo": 0,
-            "width": 5
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
           }
         ],
         "asm": "ADD <Wd|WSP> , <Wn|WSP> , # <imm> {, <shift> }"
@@ -159,46 +249,452 @@
             "name": "sf",
             "hi": 31,
             "lo": 31,
-            "width": 1
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
           },
           {
             "name": "op",
             "hi": 30,
             "lo": 30,
-            "width": 1
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000"
           },
           {
             "name": "S",
             "hi": 29,
             "lo": 29,
-            "width": 1
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000"
           },
           {
             "name": "sh",
             "hi": 22,
             "lo": 22,
-            "width": 1
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000"
           },
           {
             "name": "imm12",
             "hi": 21,
             "lo": 10,
-            "width": 12
+            "width": 12,
+            "shift": 10,
+            "mask": "0x003ffc00"
           },
           {
             "name": "Rn",
             "hi": 9,
             "lo": 5,
-            "width": 5
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
           },
           {
             "name": "Rd",
             "hi": 4,
             "lo": 0,
-            "width": 5
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
           }
         ],
         "asm": "ADD <Xd|SP> , <Xn|SP> , # <imm> {, <shift> }"
+      }
+    ]
+  },
+  {
+    "source_file": "sub_addsub_imm.xml",
+    "section_id": "SUB_addsub_imm",
+    "heading": "SUB (immediate)",
+    "title": "SUB (immediate) -- A64",
+    "docvars": {
+      "cond-setting": "no-s",
+      "immediate-type": "imm12u",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "SUB"
+    },
+    "variants": [
+      {
+        "section_id": "SUB_addsub_imm",
+        "heading": "SUB (immediate)",
+        "title": "SUB (immediate) -- A64",
+        "iclass": "Not setting the condition flags",
+        "encoding_name": "SUB_32_addsub_imm",
+        "encoding_label": "32-bit",
+        "mnemonic": "SUB",
+        "docvars": {
+          "cond-setting": "no-s",
+          "immediate-type": "imm12u",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "SUB",
+          "datatype": "32"
+        },
+        "mask": "0xff800000",
+        "value": "0x51000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000"
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000"
+          },
+          {
+            "name": "sh",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000"
+          },
+          {
+            "name": "imm12",
+            "hi": 21,
+            "lo": 10,
+            "width": 12,
+            "shift": 10,
+            "mask": "0x003ffc00"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "SUB <Wd|WSP> , <Wn|WSP> , # <imm> {, <shift> }"
+      },
+      {
+        "section_id": "SUB_addsub_imm",
+        "heading": "SUB (immediate)",
+        "title": "SUB (immediate) -- A64",
+        "iclass": "Not setting the condition flags",
+        "encoding_name": "SUB_64_addsub_imm",
+        "encoding_label": "64-bit",
+        "mnemonic": "SUB",
+        "docvars": {
+          "cond-setting": "no-s",
+          "immediate-type": "imm12u",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "SUB",
+          "datatype": "64"
+        },
+        "mask": "0xff800000",
+        "value": "0xd1000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000"
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000"
+          },
+          {
+            "name": "sh",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000"
+          },
+          {
+            "name": "imm12",
+            "hi": 21,
+            "lo": 10,
+            "width": 12,
+            "shift": 10,
+            "mask": "0x003ffc00"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "SUB <Xd|SP> , <Xn|SP> , # <imm> {, <shift> }"
+      }
+    ]
+  },
+  {
+    "source_file": "subs_addsub_imm.xml",
+    "section_id": "SUBS_addsub_imm",
+    "heading": "SUBS (immediate)",
+    "title": "SUBS (immediate) -- A64",
+    "docvars": {
+      "cond-setting": "S",
+      "immediate-type": "imm12u",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "SUBS"
+    },
+    "variants": [
+      {
+        "section_id": "SUBS_addsub_imm",
+        "heading": "SUBS (immediate)",
+        "title": "SUBS (immediate) -- A64",
+        "iclass": "Setting the condition flags",
+        "encoding_name": "SUBS_32S_addsub_imm",
+        "encoding_label": "32-bit",
+        "mnemonic": "SUBS",
+        "docvars": {
+          "cond-setting": "S",
+          "immediate-type": "imm12u",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "SUBS",
+          "datatype": "32"
+        },
+        "mask": "0xff800000",
+        "value": "0x71000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000"
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000"
+          },
+          {
+            "name": "sh",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000"
+          },
+          {
+            "name": "imm12",
+            "hi": 21,
+            "lo": 10,
+            "width": 12,
+            "shift": 10,
+            "mask": "0x003ffc00"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "SUBS <Wd> , <Wn|WSP> , # <imm> {, <shift> }"
+      },
+      {
+        "section_id": "SUBS_addsub_imm",
+        "heading": "SUBS (immediate)",
+        "title": "SUBS (immediate) -- A64",
+        "iclass": "Setting the condition flags",
+        "encoding_name": "SUBS_64S_addsub_imm",
+        "encoding_label": "64-bit",
+        "mnemonic": "SUBS",
+        "docvars": {
+          "cond-setting": "S",
+          "immediate-type": "imm12u",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "SUBS",
+          "datatype": "64"
+        },
+        "mask": "0xff800000",
+        "value": "0xf1000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000"
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000"
+          },
+          {
+            "name": "sh",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000"
+          },
+          {
+            "name": "imm12",
+            "hi": 21,
+            "lo": 10,
+            "width": 12,
+            "shift": 10,
+            "mask": "0x003ffc00"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "SUBS <Xd> , <Xn|SP> , # <imm> {, <shift> }"
+      }
+    ]
+  },
+  {
+    "source_file": "b_uncond.xml",
+    "section_id": "B_uncond",
+    "heading": "B",
+    "title": "B -- A64",
+    "docvars": {
+      "branch-offset": "br26",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "B"
+    },
+    "variants": [
+      {
+        "section_id": "B_uncond",
+        "heading": "B",
+        "title": "B -- A64",
+        "iclass": "26-bit signed PC-relative branch offset",
+        "encoding_name": "B_only_branch_imm",
+        "encoding_label": "",
+        "mnemonic": "B",
+        "docvars": {
+          "branch-offset": "br26",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "B"
+        },
+        "mask": "0xfc000000",
+        "value": "0x14000000",
+        "fields": [
+          {
+            "name": "op",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "imm26",
+            "hi": 25,
+            "lo": 0,
+            "width": 26,
+            "shift": 0,
+            "mask": "0x03ffffff"
+          }
+        ],
+        "asm": "B <label>"
       }
     ]
   },
@@ -237,19 +733,25 @@
             "name": "imm19",
             "hi": 23,
             "lo": 5,
-            "width": 19
+            "width": 19,
+            "shift": 5,
+            "mask": "0x00ffffe0"
           },
           {
             "name": "o0",
             "hi": 4,
             "lo": 4,
-            "width": 1
+            "width": 1,
+            "shift": 4,
+            "mask": "0x00000010"
           },
           {
             "name": "cond",
             "hi": 3,
             "lo": 0,
-            "width": 4
+            "width": 4,
+            "shift": 0,
+            "mask": "0x0000000f"
           }
         ],
         "asm": "B. <cond> <label>"
@@ -292,25 +794,33 @@
             "name": "sf",
             "hi": 31,
             "lo": 31,
-            "width": 1
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
           },
           {
             "name": "op",
             "hi": 24,
             "lo": 24,
-            "width": 1
+            "width": 1,
+            "shift": 24,
+            "mask": "0x01000000"
           },
           {
             "name": "imm19",
             "hi": 23,
             "lo": 5,
-            "width": 19
+            "width": 19,
+            "shift": 5,
+            "mask": "0x00ffffe0"
           },
           {
             "name": "Rt",
             "hi": 4,
             "lo": 0,
-            "width": 5
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
           }
         ],
         "asm": "CBZ <Wt> , <label>"
@@ -338,28 +848,1469 @@
             "name": "sf",
             "hi": 31,
             "lo": 31,
-            "width": 1
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
           },
           {
             "name": "op",
             "hi": 24,
             "lo": 24,
-            "width": 1
+            "width": 1,
+            "shift": 24,
+            "mask": "0x01000000"
           },
           {
             "name": "imm19",
             "hi": 23,
             "lo": 5,
-            "width": 19
+            "width": 19,
+            "shift": 5,
+            "mask": "0x00ffffe0"
           },
           {
             "name": "Rt",
             "hi": 4,
             "lo": 0,
-            "width": 5
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
           }
         ],
         "asm": "CBZ <Xt> , <label>"
+      }
+    ]
+  },
+  {
+    "source_file": "cbnz.xml",
+    "section_id": "CBNZ",
+    "heading": "CBNZ",
+    "title": "CBNZ -- A64",
+    "docvars": {
+      "branch-offset": "br19",
+      "compare-with": "cmp-nonzero",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "CBNZ"
+    },
+    "variants": [
+      {
+        "section_id": "CBNZ",
+        "heading": "CBNZ",
+        "title": "CBNZ -- A64",
+        "iclass": "19-bit signed PC-relative branch offset",
+        "encoding_name": "CBNZ_32_compbranch",
+        "encoding_label": "32-bit",
+        "mnemonic": "CBNZ",
+        "docvars": {
+          "branch-offset": "br19",
+          "compare-with": "cmp-nonzero",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "CBNZ",
+          "datatype": "32"
+        },
+        "mask": "0xff000000",
+        "value": "0x35000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "op",
+            "hi": 24,
+            "lo": 24,
+            "width": 1,
+            "shift": 24,
+            "mask": "0x01000000"
+          },
+          {
+            "name": "imm19",
+            "hi": 23,
+            "lo": 5,
+            "width": 19,
+            "shift": 5,
+            "mask": "0x00ffffe0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "CBNZ <Wt> , <label>"
+      },
+      {
+        "section_id": "CBNZ",
+        "heading": "CBNZ",
+        "title": "CBNZ -- A64",
+        "iclass": "19-bit signed PC-relative branch offset",
+        "encoding_name": "CBNZ_64_compbranch",
+        "encoding_label": "64-bit",
+        "mnemonic": "CBNZ",
+        "docvars": {
+          "branch-offset": "br19",
+          "compare-with": "cmp-nonzero",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "CBNZ",
+          "datatype": "64"
+        },
+        "mask": "0xff000000",
+        "value": "0xb5000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "op",
+            "hi": 24,
+            "lo": 24,
+            "width": 1,
+            "shift": 24,
+            "mask": "0x01000000"
+          },
+          {
+            "name": "imm19",
+            "hi": 23,
+            "lo": 5,
+            "width": 19,
+            "shift": 5,
+            "mask": "0x00ffffe0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "CBNZ <Xt> , <label>"
+      }
+    ]
+  },
+  {
+    "source_file": "movz.xml",
+    "section_id": "MOVZ",
+    "heading": "MOVZ",
+    "title": "MOVZ -- A64",
+    "docvars": {
+      "immediate-type": "imm18-packed",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "MOVZ"
+    },
+    "variants": [
+      {
+        "section_id": "MOVZ",
+        "heading": "MOVZ",
+        "title": "MOVZ -- A64",
+        "iclass": "Immediate packed into 16-bit value and 2-bit shift",
+        "encoding_name": "MOVZ_32_movewide",
+        "encoding_label": "32-bit",
+        "mnemonic": "MOVZ",
+        "docvars": {
+          "immediate-type": "imm18-packed",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "MOVZ",
+          "datatype": "32"
+        },
+        "mask": "0xffc00000",
+        "value": "0x52800000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "opc",
+            "hi": 30,
+            "lo": 29,
+            "width": 2,
+            "shift": 29,
+            "mask": "0x60000000"
+          },
+          {
+            "name": "hw",
+            "hi": 22,
+            "lo": 21,
+            "width": 2,
+            "shift": 21,
+            "mask": "0x00600000"
+          },
+          {
+            "name": "imm16",
+            "hi": 20,
+            "lo": 5,
+            "width": 16,
+            "shift": 5,
+            "mask": "0x001fffe0"
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "MOVZ <Wd> , # <imm> {, LSL # <shift> }"
+      },
+      {
+        "section_id": "MOVZ",
+        "heading": "MOVZ",
+        "title": "MOVZ -- A64",
+        "iclass": "Immediate packed into 16-bit value and 2-bit shift",
+        "encoding_name": "MOVZ_64_movewide",
+        "encoding_label": "64-bit",
+        "mnemonic": "MOVZ",
+        "docvars": {
+          "immediate-type": "imm18-packed",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "MOVZ",
+          "datatype": "64"
+        },
+        "mask": "0xff800000",
+        "value": "0xd2800000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "opc",
+            "hi": 30,
+            "lo": 29,
+            "width": 2,
+            "shift": 29,
+            "mask": "0x60000000"
+          },
+          {
+            "name": "hw",
+            "hi": 22,
+            "lo": 21,
+            "width": 2,
+            "shift": 21,
+            "mask": "0x00600000"
+          },
+          {
+            "name": "imm16",
+            "hi": 20,
+            "lo": 5,
+            "width": 16,
+            "shift": 5,
+            "mask": "0x001fffe0"
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "MOVZ <Xd> , # <imm> {, LSL # <shift> }"
+      }
+    ]
+  },
+  {
+    "source_file": "movk.xml",
+    "section_id": "MOVK",
+    "heading": "MOVK",
+    "title": "MOVK -- A64",
+    "docvars": {
+      "immediate-type": "imm18-packed",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "MOVK"
+    },
+    "variants": [
+      {
+        "section_id": "MOVK",
+        "heading": "MOVK",
+        "title": "MOVK -- A64",
+        "iclass": "Immediate packed into 16-bit value and 2-bit shift",
+        "encoding_name": "MOVK_32_movewide",
+        "encoding_label": "32-bit",
+        "mnemonic": "MOVK",
+        "docvars": {
+          "immediate-type": "imm18-packed",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "MOVK",
+          "datatype": "32"
+        },
+        "mask": "0xffc00000",
+        "value": "0x72800000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "opc",
+            "hi": 30,
+            "lo": 29,
+            "width": 2,
+            "shift": 29,
+            "mask": "0x60000000"
+          },
+          {
+            "name": "hw",
+            "hi": 22,
+            "lo": 21,
+            "width": 2,
+            "shift": 21,
+            "mask": "0x00600000"
+          },
+          {
+            "name": "imm16",
+            "hi": 20,
+            "lo": 5,
+            "width": 16,
+            "shift": 5,
+            "mask": "0x001fffe0"
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "MOVK <Wd> , # <imm> {, LSL # <shift> }"
+      },
+      {
+        "section_id": "MOVK",
+        "heading": "MOVK",
+        "title": "MOVK -- A64",
+        "iclass": "Immediate packed into 16-bit value and 2-bit shift",
+        "encoding_name": "MOVK_64_movewide",
+        "encoding_label": "64-bit",
+        "mnemonic": "MOVK",
+        "docvars": {
+          "immediate-type": "imm18-packed",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "MOVK",
+          "datatype": "64"
+        },
+        "mask": "0xff800000",
+        "value": "0xf2800000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "opc",
+            "hi": 30,
+            "lo": 29,
+            "width": 2,
+            "shift": 29,
+            "mask": "0x60000000"
+          },
+          {
+            "name": "hw",
+            "hi": 22,
+            "lo": 21,
+            "width": 2,
+            "shift": 21,
+            "mask": "0x00600000"
+          },
+          {
+            "name": "imm16",
+            "hi": 20,
+            "lo": 5,
+            "width": 16,
+            "shift": 5,
+            "mask": "0x001fffe0"
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "MOVK <Xd> , # <imm> {, LSL # <shift> }"
+      }
+    ]
+  },
+  {
+    "source_file": "tbz.xml",
+    "section_id": "TBZ",
+    "heading": "TBZ",
+    "title": "TBZ -- A64",
+    "docvars": {
+      "branch-offset": "br14",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "TBZ"
+    },
+    "variants": [
+      {
+        "section_id": "TBZ",
+        "heading": "TBZ",
+        "title": "TBZ -- A64",
+        "iclass": "14-bit signed PC-relative branch offset",
+        "encoding_name": "TBZ_only_testbranch",
+        "encoding_label": "",
+        "mnemonic": "TBZ",
+        "docvars": {
+          "branch-offset": "br14",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "TBZ"
+        },
+        "mask": "0x7f000000",
+        "value": "0x36000000",
+        "fields": [
+          {
+            "name": "b5",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "op",
+            "hi": 24,
+            "lo": 24,
+            "width": 1,
+            "shift": 24,
+            "mask": "0x01000000"
+          },
+          {
+            "name": "b40",
+            "hi": 23,
+            "lo": 19,
+            "width": 5,
+            "shift": 19,
+            "mask": "0x00f80000"
+          },
+          {
+            "name": "imm14",
+            "hi": 18,
+            "lo": 5,
+            "width": 14,
+            "shift": 5,
+            "mask": "0x0007ffe0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "TBZ <R> <t> , # <imm> , <label>"
+      }
+    ]
+  },
+  {
+    "source_file": "tbnz.xml",
+    "section_id": "TBNZ",
+    "heading": "TBNZ",
+    "title": "TBNZ -- A64",
+    "docvars": {
+      "branch-offset": "br14",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "TBNZ"
+    },
+    "variants": [
+      {
+        "section_id": "TBNZ",
+        "heading": "TBNZ",
+        "title": "TBNZ -- A64",
+        "iclass": "14-bit signed PC-relative branch offset",
+        "encoding_name": "TBNZ_only_testbranch",
+        "encoding_label": "",
+        "mnemonic": "TBNZ",
+        "docvars": {
+          "branch-offset": "br14",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "TBNZ"
+        },
+        "mask": "0x7f000000",
+        "value": "0x37000000",
+        "fields": [
+          {
+            "name": "b5",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000"
+          },
+          {
+            "name": "op",
+            "hi": 24,
+            "lo": 24,
+            "width": 1,
+            "shift": 24,
+            "mask": "0x01000000"
+          },
+          {
+            "name": "b40",
+            "hi": 23,
+            "lo": 19,
+            "width": 5,
+            "shift": 19,
+            "mask": "0x00f80000"
+          },
+          {
+            "name": "imm14",
+            "hi": 18,
+            "lo": 5,
+            "width": 14,
+            "shift": 5,
+            "mask": "0x0007ffe0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "TBNZ <R> <t> , # <imm> , <label>"
+      }
+    ]
+  },
+  {
+    "source_file": "ldr_imm_gen.xml",
+    "section_id": "LDR_imm_gen",
+    "heading": "LDR (immediate)",
+    "title": "LDR (immediate) -- A64",
+    "docvars": {
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "LDR"
+    },
+    "variants": [
+      {
+        "section_id": "LDR_imm_gen",
+        "heading": "LDR (immediate)",
+        "title": "LDR (immediate) -- A64",
+        "iclass": "Post-index",
+        "encoding_name": "LDR_32_ldst_immpost",
+        "encoding_label": "32-bit",
+        "mnemonic": "LDR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDR",
+          "address-form": "post-indexed",
+          "offset-type": "off9s_u",
+          "address-form-reg-type": "post-indexed-32-reg",
+          "atomic-ops": "LDR-32-reg",
+          "reg-type": "32-reg"
+        },
+        "mask": "0xffe00c00",
+        "value": "0xb8400400",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "LDR <Wt> , [ <Xn|SP> ], # <simm>"
+      },
+      {
+        "section_id": "LDR_imm_gen",
+        "heading": "LDR (immediate)",
+        "title": "LDR (immediate) -- A64",
+        "iclass": "Post-index",
+        "encoding_name": "LDR_64_ldst_immpost",
+        "encoding_label": "64-bit",
+        "mnemonic": "LDR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDR",
+          "address-form": "post-indexed",
+          "offset-type": "off9s_u",
+          "address-form-reg-type": "post-indexed-64-reg",
+          "atomic-ops": "LDR-64-reg",
+          "reg-type": "64-reg"
+        },
+        "mask": "0xffe00c00",
+        "value": "0xf8400400",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "LDR <Xt> , [ <Xn|SP> ], # <simm>"
+      },
+      {
+        "section_id": "LDR_imm_gen",
+        "heading": "LDR (immediate)",
+        "title": "LDR (immediate) -- A64",
+        "iclass": "Pre-index",
+        "encoding_name": "LDR_32_ldst_immpre",
+        "encoding_label": "32-bit",
+        "mnemonic": "LDR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDR",
+          "address-form": "pre-indexed",
+          "offset-type": "off9s_u",
+          "address-form-reg-type": "pre-indexed-32-reg",
+          "atomic-ops": "LDR-32-reg",
+          "reg-type": "32-reg"
+        },
+        "mask": "0xffe00c00",
+        "value": "0xb8400c00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "LDR <Wt> , [ <Xn|SP> , # <simm> ]!"
+      },
+      {
+        "section_id": "LDR_imm_gen",
+        "heading": "LDR (immediate)",
+        "title": "LDR (immediate) -- A64",
+        "iclass": "Pre-index",
+        "encoding_name": "LDR_64_ldst_immpre",
+        "encoding_label": "64-bit",
+        "mnemonic": "LDR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDR",
+          "address-form": "pre-indexed",
+          "offset-type": "off9s_u",
+          "address-form-reg-type": "pre-indexed-64-reg",
+          "atomic-ops": "LDR-64-reg",
+          "reg-type": "64-reg"
+        },
+        "mask": "0xffe00c00",
+        "value": "0xf8400c00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "LDR <Xt> , [ <Xn|SP> , # <simm> ]!"
+      },
+      {
+        "section_id": "LDR_imm_gen",
+        "heading": "LDR (immediate)",
+        "title": "LDR (immediate) -- A64",
+        "iclass": "Unsigned offset",
+        "encoding_name": "LDR_32_ldst_pos",
+        "encoding_label": "32-bit",
+        "mnemonic": "LDR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDR",
+          "address-form": "unsigned-scaled-offset",
+          "offset-type": "off12u_s",
+          "address-form-reg-type": "unsigned-scaled-offset-32-reg",
+          "atomic-ops": "LDR-32-reg",
+          "reg-type": "32-reg"
+        },
+        "mask": "0xffc00000",
+        "value": "0xb9400000",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm12",
+            "hi": 21,
+            "lo": 10,
+            "width": 12,
+            "shift": 10,
+            "mask": "0x003ffc00"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "LDR <Wt> , [ <Xn|SP> {, # <pimm> }]"
+      },
+      {
+        "section_id": "LDR_imm_gen",
+        "heading": "LDR (immediate)",
+        "title": "LDR (immediate) -- A64",
+        "iclass": "Unsigned offset",
+        "encoding_name": "LDR_64_ldst_pos",
+        "encoding_label": "64-bit",
+        "mnemonic": "LDR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDR",
+          "address-form": "unsigned-scaled-offset",
+          "offset-type": "off12u_s",
+          "address-form-reg-type": "unsigned-scaled-offset-64-reg",
+          "atomic-ops": "LDR-64-reg",
+          "reg-type": "64-reg"
+        },
+        "mask": "0xffc00000",
+        "value": "0xf9400000",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm12",
+            "hi": 21,
+            "lo": 10,
+            "width": 12,
+            "shift": 10,
+            "mask": "0x003ffc00"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "LDR <Xt> , [ <Xn|SP> {, # <pimm> }]"
+      }
+    ]
+  },
+  {
+    "source_file": "str_imm_gen.xml",
+    "section_id": "STR_imm_gen",
+    "heading": "STR (immediate)",
+    "title": "STR (immediate) -- A64",
+    "docvars": {
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "STR"
+    },
+    "variants": [
+      {
+        "section_id": "STR_imm_gen",
+        "heading": "STR (immediate)",
+        "title": "STR (immediate) -- A64",
+        "iclass": "Post-index",
+        "encoding_name": "STR_32_ldst_immpost",
+        "encoding_label": "32-bit",
+        "mnemonic": "STR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STR",
+          "address-form": "post-indexed",
+          "offset-type": "off9s_u",
+          "address-form-reg-type": "post-indexed-32-reg",
+          "atomic-ops": "STR-32-reg",
+          "reg-type": "32-reg"
+        },
+        "mask": "0xffe00c00",
+        "value": "0xb8000400",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "STR <Wt> , [ <Xn|SP> ], # <simm>"
+      },
+      {
+        "section_id": "STR_imm_gen",
+        "heading": "STR (immediate)",
+        "title": "STR (immediate) -- A64",
+        "iclass": "Post-index",
+        "encoding_name": "STR_64_ldst_immpost",
+        "encoding_label": "64-bit",
+        "mnemonic": "STR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STR",
+          "address-form": "post-indexed",
+          "offset-type": "off9s_u",
+          "address-form-reg-type": "post-indexed-64-reg",
+          "atomic-ops": "STR-64-reg",
+          "reg-type": "64-reg"
+        },
+        "mask": "0xffe00c00",
+        "value": "0xf8000400",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "STR <Xt> , [ <Xn|SP> ], # <simm>"
+      },
+      {
+        "section_id": "STR_imm_gen",
+        "heading": "STR (immediate)",
+        "title": "STR (immediate) -- A64",
+        "iclass": "Pre-index",
+        "encoding_name": "STR_32_ldst_immpre",
+        "encoding_label": "32-bit",
+        "mnemonic": "STR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STR",
+          "address-form": "pre-indexed",
+          "offset-type": "off9s_u",
+          "address-form-reg-type": "pre-indexed-32-reg",
+          "atomic-ops": "STR-32-reg",
+          "reg-type": "32-reg"
+        },
+        "mask": "0xffe00c00",
+        "value": "0xb8000c00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "STR <Wt> , [ <Xn|SP> , # <simm> ]!"
+      },
+      {
+        "section_id": "STR_imm_gen",
+        "heading": "STR (immediate)",
+        "title": "STR (immediate) -- A64",
+        "iclass": "Pre-index",
+        "encoding_name": "STR_64_ldst_immpre",
+        "encoding_label": "64-bit",
+        "mnemonic": "STR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STR",
+          "address-form": "pre-indexed",
+          "offset-type": "off9s_u",
+          "address-form-reg-type": "pre-indexed-64-reg",
+          "atomic-ops": "STR-64-reg",
+          "reg-type": "64-reg"
+        },
+        "mask": "0xffe00c00",
+        "value": "0xf8000c00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "STR <Xt> , [ <Xn|SP> , # <simm> ]!"
+      },
+      {
+        "section_id": "STR_imm_gen",
+        "heading": "STR (immediate)",
+        "title": "STR (immediate) -- A64",
+        "iclass": "Unsigned offset",
+        "encoding_name": "STR_32_ldst_pos",
+        "encoding_label": "32-bit",
+        "mnemonic": "STR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STR",
+          "address-form": "unsigned-scaled-offset",
+          "offset-type": "off12u_s",
+          "address-form-reg-type": "unsigned-scaled-offset-32-reg",
+          "atomic-ops": "STR-32-reg",
+          "reg-type": "32-reg"
+        },
+        "mask": "0xffc00000",
+        "value": "0xb9000000",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm12",
+            "hi": 21,
+            "lo": 10,
+            "width": 12,
+            "shift": 10,
+            "mask": "0x003ffc00"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "STR <Wt> , [ <Xn|SP> {, # <pimm> }]"
+      },
+      {
+        "section_id": "STR_imm_gen",
+        "heading": "STR (immediate)",
+        "title": "STR (immediate) -- A64",
+        "iclass": "Unsigned offset",
+        "encoding_name": "STR_64_ldst_pos",
+        "encoding_label": "64-bit",
+        "mnemonic": "STR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STR",
+          "address-form": "unsigned-scaled-offset",
+          "offset-type": "off12u_s",
+          "address-form-reg-type": "unsigned-scaled-offset-64-reg",
+          "atomic-ops": "STR-64-reg",
+          "reg-type": "64-reg"
+        },
+        "mask": "0xffc00000",
+        "value": "0xf9000000",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000"
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000"
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000"
+          },
+          {
+            "name": "imm12",
+            "hi": 21,
+            "lo": 10,
+            "width": 12,
+            "shift": 10,
+            "mask": "0x003ffc00"
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0"
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f"
+          }
+        ],
+        "asm": "STR <Xt> , [ <Xn|SP> {, # <pimm> }]"
       }
     ]
   }
