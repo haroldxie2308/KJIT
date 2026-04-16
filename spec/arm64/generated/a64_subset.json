@@ -1,0 +1,366 @@
+[
+  {
+    "source_file": "adr.xml",
+    "section_id": "ADR",
+    "heading": "ADR",
+    "title": "ADR -- A64",
+    "docvars": {
+      "address-form": "literal",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "ADR",
+      "offset-type": "off19s"
+    },
+    "variants": [
+      {
+        "section_id": "ADR",
+        "heading": "ADR",
+        "title": "ADR -- A64",
+        "iclass": "Literal",
+        "encoding_name": "ADR_only_pcreladdr",
+        "encoding_label": "",
+        "mnemonic": "ADR",
+        "docvars": {
+          "address-form": "literal",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "ADR",
+          "offset-type": "off19s"
+        },
+        "mask": "0x9f000000",
+        "value": "0x10000000",
+        "fields": [
+          {
+            "name": "op",
+            "hi": 31,
+            "lo": 31,
+            "width": 1
+          },
+          {
+            "name": "immlo",
+            "hi": 30,
+            "lo": 29,
+            "width": 2
+          },
+          {
+            "name": "immhi",
+            "hi": 23,
+            "lo": 5,
+            "width": 19
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5
+          }
+        ],
+        "asm": "ADR <Xd> , <label>"
+      }
+    ]
+  },
+  {
+    "source_file": "add_addsub_imm.xml",
+    "section_id": "ADD_addsub_imm",
+    "heading": "ADD (immediate)",
+    "title": "ADD (immediate) -- A64",
+    "docvars": {
+      "cond-setting": "no-s",
+      "immediate-type": "imm12u",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "ADD"
+    },
+    "variants": [
+      {
+        "section_id": "ADD_addsub_imm",
+        "heading": "ADD (immediate)",
+        "title": "ADD (immediate) -- A64",
+        "iclass": "Not setting the condition flags",
+        "encoding_name": "ADD_32_addsub_imm",
+        "encoding_label": "32-bit",
+        "mnemonic": "ADD",
+        "docvars": {
+          "cond-setting": "no-s",
+          "immediate-type": "imm12u",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "ADD",
+          "datatype": "32"
+        },
+        "mask": "0xff800000",
+        "value": "0x11000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1
+          },
+          {
+            "name": "sh",
+            "hi": 22,
+            "lo": 22,
+            "width": 1
+          },
+          {
+            "name": "imm12",
+            "hi": 21,
+            "lo": 10,
+            "width": 12
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5
+          }
+        ],
+        "asm": "ADD <Wd|WSP> , <Wn|WSP> , # <imm> {, <shift> }"
+      },
+      {
+        "section_id": "ADD_addsub_imm",
+        "heading": "ADD (immediate)",
+        "title": "ADD (immediate) -- A64",
+        "iclass": "Not setting the condition flags",
+        "encoding_name": "ADD_64_addsub_imm",
+        "encoding_label": "64-bit",
+        "mnemonic": "ADD",
+        "docvars": {
+          "cond-setting": "no-s",
+          "immediate-type": "imm12u",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "ADD",
+          "datatype": "64"
+        },
+        "mask": "0xff800000",
+        "value": "0x91000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1
+          },
+          {
+            "name": "sh",
+            "hi": 22,
+            "lo": 22,
+            "width": 1
+          },
+          {
+            "name": "imm12",
+            "hi": 21,
+            "lo": 10,
+            "width": 12
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5
+          }
+        ],
+        "asm": "ADD <Xd|SP> , <Xn|SP> , # <imm> {, <shift> }"
+      }
+    ]
+  },
+  {
+    "source_file": "b_cond.xml",
+    "section_id": "B_cond",
+    "heading": "B.cond",
+    "title": "B.cond -- A64",
+    "docvars": {
+      "branch-offset": "br19",
+      "compare-with": "cmp-cond",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "B"
+    },
+    "variants": [
+      {
+        "section_id": "B_cond",
+        "heading": "B.cond",
+        "title": "B.cond -- A64",
+        "iclass": "19-bit signed PC-relative branch offset",
+        "encoding_name": "B_only_condbranch",
+        "encoding_label": "",
+        "mnemonic": "B",
+        "docvars": {
+          "branch-offset": "br19",
+          "compare-with": "cmp-cond",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "B"
+        },
+        "mask": "0xff000010",
+        "value": "0x54000000",
+        "fields": [
+          {
+            "name": "imm19",
+            "hi": 23,
+            "lo": 5,
+            "width": 19
+          },
+          {
+            "name": "o0",
+            "hi": 4,
+            "lo": 4,
+            "width": 1
+          },
+          {
+            "name": "cond",
+            "hi": 3,
+            "lo": 0,
+            "width": 4
+          }
+        ],
+        "asm": "B. <cond> <label>"
+      }
+    ]
+  },
+  {
+    "source_file": "cbz.xml",
+    "section_id": "CBZ",
+    "heading": "CBZ",
+    "title": "CBZ -- A64",
+    "docvars": {
+      "branch-offset": "br19",
+      "compare-with": "cmp-zero",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "CBZ"
+    },
+    "variants": [
+      {
+        "section_id": "CBZ",
+        "heading": "CBZ",
+        "title": "CBZ -- A64",
+        "iclass": "19-bit signed PC-relative branch offset",
+        "encoding_name": "CBZ_32_compbranch",
+        "encoding_label": "32-bit",
+        "mnemonic": "CBZ",
+        "docvars": {
+          "branch-offset": "br19",
+          "compare-with": "cmp-zero",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "CBZ",
+          "datatype": "32"
+        },
+        "mask": "0xff000000",
+        "value": "0x34000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1
+          },
+          {
+            "name": "op",
+            "hi": 24,
+            "lo": 24,
+            "width": 1
+          },
+          {
+            "name": "imm19",
+            "hi": 23,
+            "lo": 5,
+            "width": 19
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5
+          }
+        ],
+        "asm": "CBZ <Wt> , <label>"
+      },
+      {
+        "section_id": "CBZ",
+        "heading": "CBZ",
+        "title": "CBZ -- A64",
+        "iclass": "19-bit signed PC-relative branch offset",
+        "encoding_name": "CBZ_64_compbranch",
+        "encoding_label": "64-bit",
+        "mnemonic": "CBZ",
+        "docvars": {
+          "branch-offset": "br19",
+          "compare-with": "cmp-zero",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "CBZ",
+          "datatype": "64"
+        },
+        "mask": "0xff000000",
+        "value": "0xb4000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1
+          },
+          {
+            "name": "op",
+            "hi": 24,
+            "lo": 24,
+            "width": 1
+          },
+          {
+            "name": "imm19",
+            "hi": 23,
+            "lo": 5,
+            "width": 19
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5
+          }
+        ],
+        "asm": "CBZ <Xt> , <label>"
+      }
+    ]
+  }
+]

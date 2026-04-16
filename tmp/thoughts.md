@@ -1,0 +1,676 @@
+# Thoughts
+
+## 2026-04-16
+
+### Pre-rewrite priority: userspace validation harness
+
+Before rewriting the translator/assembler, build a userspace validation harness that compares:
+
+- original ARM64 instruction stream behavior
+- translated/lowered behavior
+- final encoded instruction behavior where possible
+
+Core idea:
+
+- decouple correctness work from kernel execution
+- move fast in userspace with deterministic tests
+- catch handwritten assembler bugs and translation bugs before touching runtime integration
+
+Recommended scope for the harness:
+
+- instruction-by-instruction semantic checks for a supported subset first
+- basic-block level checks next
+- small control-flow program checks after that
+- differential testing between:
+  - original instruction semantics
+  - internal lowered IR semantics
+  - encoded output semantics via simulation or interpretation
+
+Recommended architecture:
+
+- `tests/userspace/decoder`: reads bytes / disassembles with Capstone
+- `tests/userspace/model`: defines machine state and instruction semantics
+- `tests/userspace/translator_model`: mirrors translation decisions without kernel dependencies
+- `tests/userspace/encoder_check`: validates encoded bytes against expected semantics
+- `tests/userspace/cases`: curated deterministic cases plus fuzz-generated cases
+
+Key design rule:
+
+- the oracle should not be the same code path as the implementation under test
+- avoid "testing the assembler with the assembler" or "testing translation with the same translation logic"
+
+Good first target:
+
+- pure register/immediate ALU instructions
+- simple loads/stores with a modeled memory
+- direct branches / compare-and-branch
+
+Delay for later:
+
+- syscall / SVC behavior
+- kernel-specific prologue/epilogue ABI details
+- page permissions / executable page behavior
+- profiler and lifting policy
+
+Validation strategy:
+
+- run original bytes in an interpreter with a modeled register file / flags / memory
+- run translated IR in a second interpreter
+- optionally run encoded output in a third interpreter or against a trusted emulator
+- compare final machine state and control-flow outcome
+
+Success criterion:
+
+- for supported instruction subsets, translation correctness is proven in userspace before kernel execution is involved
+
+This should happen before large-scale rewrite work. It will make the rewrite safer and will also define the semantic contract of the new pipeline.
+
+### Initial implementation direction
+
+Implement the first harness as a standalone Rust userspace crate with no third-party dependencies.
+
+Why this shape:
+
+- runs cleanly in the existing `kjit-dev:latest` Docker image
+- does not depend on kernel Rust bindings
+- keeps the harness isolated from rewrite churn in kernel-facing code
+
+Initial supported scope:
+
+- 64-bit GPR subset only
+- `ADR` / `ADRP`
+- `MOVZ` / `MOVK`
+- `ADD` / `SUB`
+- `CMP` via `SUBS`
+- `B`, `B.cond`, `CBZ`, `CBNZ`
+- `LDR` / `STR` unsigned immediate (64-bit)
+- `NOP`
+
+Initial validation pipeline:
+
+- decode and interpret original ARM64 bytes
+- translate into a lowered IR
+- interpret lowered IR
+- encode lowered IR back to ARM64 bytes
+- decode and interpret the encoded ARM64 bytes
+- compare normalized machine states
+
+Important simplification:
+
+- the first harness excludes kernel/UCA runtime semantics (`SVC`, prologue/epilogue, lifted return protocol)
+- it is meant to validate translator/assembler groundwork, not full runtime behavior yet
+
+### `trans` workflow observations
+
+Current high-level flow:
+
+- `Translator::trans()` sets session state and deduplicates known failures
+- `Translator::__trans()` runs:
+  - `cfa()`
+  - `preprocess()`
+  - `code_gen()`
+
+This is the right broad shape, but the stage boundaries are too blurry.
+
+#### Stage 1: `cfa()`
+
+What it does now:
+
+- disassembles user bytes
+- discovers control-flow edges
+- splits basic blocks dynamically
+- reuses previous `vlabels` state to skip already translated addresses
+
+Main issue:
+
+- `cfa()` is not only building a CFG for the current session; it is already coupled to accumulated translation history through `vlabels`
+
+Suggestion:
+
+- make `cfa()` a pure per-session CFG builder
+- reuse/cache should happen in a higher-level lookup layer, not inside graph construction
+- represent successors as block/label references, not just raw user addresses
+
+#### Stage 2: `preprocess()`
+
+What it does now:
+
+- rewrites special instructions (`ADR`, `BL`, `BR`, `RET`, `SVC`, etc.)
+- injects runtime protocol (`x9/x10/x11`)
+- re-disassembles synthesized bytes back into `cs_insn`
+- runs `ConfResolver`
+- mutates bytes and instruction lists together
+
+Main issue:
+
+- this stage mixes semantic lowering, runtime ABI lowering, and register/scratch legalization
+
+Suggestion:
+
+- split `preprocess()` into explicit passes:
+  - semantic lowering
+  - runtime protocol lowering
+  - scratch/register legalization
+- stop converting generated bytes back into Capstone instructions as the main internal representation
+- instead introduce an internal typed instruction form that later passes own
+
+#### Stage 3: `ConfResolver`
+
+What it does now:
+
+- computes register conflicts
+- allocates scratch mappings
+- emits prefix/suffix save/restore code
+- re-encodes instructions
+- reconstructs synthetic disassembly objects for later phases
+- performs end-of-block recovery logic
+
+Main issue:
+
+- `ConfResolver` is effectively a hidden compiler backend stage, but it is written like an instruction-by-instruction helper
+
+Suggestion:
+
+- make this an explicit legalization phase over typed instructions
+- separate:
+  - liveness/conflict analysis
+  - scratch allocation
+  - spill/reload insertion
+  - final lowering to encodable operations
+
+This should probably become the first major rewrite target after the harness.
+
+#### Stage 4: `code_gen()`
+
+What it does now:
+
+- emits prologue and epilogue
+- assigns virtual labels
+- resolves some branches eagerly
+- defers others through `pending_b_insns`
+- duplicates branch-resolution logic that already exists in `resolve_branch()`
+- also appends synthetic fallthrough branches for cross-session reuse
+
+Main issues:
+
+- `code_gen()` is doing both frame/trampoline construction and CFG/linking
+- branch resolution is duplicated
+- `vlabels` is used for too many roles:
+  - cache of old translations
+  - current session label table
+  - mapping back from translated offsets to user addresses
+
+Suggestion:
+
+- split `code_gen()` into:
+  - trampoline/prologue/epilogue builder
+  - block encoder
+  - final label/link fixup pass
+- replace `vlabels` with separate maps for:
+  - user address -> translated block entry
+  - translated offset -> user address
+  - cached previously translated entrypoints
+
+#### Structural suggestion
+
+Target rewrite pipeline should look more like:
+
+1. Decode:
+   user bytes -> decoded instructions
+2. CFG build:
+   decoded instructions -> basic blocks + edges
+3. Lower:
+   decoded instructions -> internal typed IR
+4. Legalize:
+   IR -> scratch-safe IR
+5. Encode:
+   IR -> machine code fragments
+6. Link:
+   fragments + labels -> final code blob
+7. Wrap:
+   final code blob + runtime trampoline
+
+This preserves the current conceptual structure while making each stage testable in userspace.
+
+### Aligning userspace-first implementation with eventual kernel reuse
+
+Keep current `trans` as the behavioral reference, but do not clone its new implementation separately for userspace and kernel.
+
+Recommended rule:
+
+- shared compiler logic lives in a target-independent core
+- kernel and userspace each provide only thin adapters
+
+#### Proposed split
+
+1. `trans-core`
+
+- `no_std` + `alloc`
+- owns:
+  - decoded instruction model
+  - CFG data structures
+  - lowered IR
+  - legalization
+  - encoding
+  - label/link logic
+- should not depend on:
+  - kernel crate
+  - `pt_regs`
+  - `UserSlice`
+  - vmalloc/xpage
+  - printk
+
+2. `trans-kernel`
+
+- owns kernel-specific adapters:
+  - userspace memory reads
+  - executable memory allocation
+  - runtime trampoline / prologue / epilogue
+  - integration with UCA and `pt_regs`
+
+3. `trans-userspace`
+
+- owns userspace adapters:
+  - byte-buffer backed memory reader
+  - harness/test loaders
+  - CLI/debug tooling
+
+#### What should be shared exactly
+
+Share source files or modules for:
+
+- instruction enums / operand types
+- CFG builder
+- IR definitions
+- legalization / scratch allocation
+- encoder
+- branch/link fixup
+
+Do not share the current kernel runtime protocol pieces directly.
+
+Those should remain adapter-side for now:
+
+- `SVC` / runtime return protocol
+- `pt_regs` layout assumptions
+- prologue / epilogue details
+- `XPage`
+
+#### Interface shape
+
+The core pipeline should work over traits / plain data, for example:
+
+- instruction source / decoder input
+- memory read abstraction
+- symbol/entry metadata
+- diagnostics sink
+
+But keep the abstraction budget small.
+
+Prefer a few narrow interfaces over pervasive generic plumbing.
+
+#### Practical migration strategy
+
+1. implement the new pipeline in userspace first
+2. structure it immediately as reusable modules, not harness-only code
+3. validate it against explicit semantic tests and real programs under `./test`, not against current `trans` output
+4. keep current `trans` only as a backup/reference for missing behavior or recovery
+5. once stable, call the shared core from kernel-side adapter code
+6. only then replace old internals in `trans`
+
+#### Important design constraint
+
+If a piece of logic requires `cs_insn` pointers, kernel allocators, or `pt_regs`, it is probably in the wrong layer.
+
+The core should consume owned, plain decoded data structures so that:
+
+- userspace tests can run them directly
+- kernel can feed them without rewriting semantics
+
+#### Short version
+
+Build the new translator as a shared compiler core with two front/back adapters:
+
+- userspace adapter for validation
+- kernel adapter for real execution
+
+That maximizes code reuse while keeping kernel-only concerns out of the reusable logic.
+
+### Shared module development approach
+
+Do not treat current `trans` as the oracle.
+
+The new shared module should be developed against:
+
+- semantic unit tests
+- userspace harness cases
+- real code snippets/programs from `./test`
+- later, end-to-end runtime checks in kernel/QEMU
+
+#### What the shared module must own from day 1
+
+- a plain decoded instruction representation
+- a per-session CFG representation
+- a lowered IR representation
+- an encoder interface
+- an explicit error model for unsupported instructions / lowering failures
+
+This gives a stable contract before integrating kernel-specific behavior.
+
+#### Development order for the shared module
+
+1. define core data structures
+   - `DecodedInsn`
+   - `BasicBlock`
+   - `Cfg`
+   - `LoweredInsn`
+   - `EncodeFixup` / label representation
+2. define narrow stage APIs
+   - decode / import
+   - CFG build
+   - lower
+   - legalize
+   - encode
+3. implement the smallest supported subset end-to-end
+4. wire that subset into the userspace harness
+5. add real test programs from `./test`
+6. expand instruction coverage iteratively
+
+#### Suggested first shared-module API shape
+
+Keep it simple and explicit. For example:
+
+- `decode_program(bytes, base_addr) -> Vec<DecodedInsn>`
+- `build_cfg(decoded, entry_addr) -> Cfg`
+- `lower_cfg(cfg) -> LoweredProgram`
+- `legalize(program) -> LoweredProgram`
+- `encode(program) -> EncodedProgram`
+
+The exact names do not matter. What matters is that each stage takes owned plain data and returns owned plain data.
+
+#### How to use `./test`
+
+Use `./test` as the source of realistic user programs, but not all at once.
+
+Recommended path:
+
+- start by extracting or hand-authoring small instruction slices modeled after those programs
+- once the core subset is stable, run larger functions/basic blocks derived from `./test`
+- only later try whole-program or syscall-heavy paths
+
+#### What “iterative” should mean here
+
+Each iteration should add:
+
+- one small instruction family or control-flow feature
+- one or more deterministic harness cases
+- one realistic example derived from `./test`
+- clear unsupported behavior for everything else
+
+Avoid pretending to support wide instruction coverage early.
+
+#### Most important constraint
+
+The shared module should fail explicitly and predictably on unsupported instructions.
+
+That is much better than preserving today’s pattern of partial lowering, silent fallthrough, or panic-heavy behavior.
+
+### Next discussion round
+
+The next useful discussion should pin down the first shared-module contract in detail.
+
+Topics to settle before implementation:
+
+1. decoded instruction shape
+2. CFG/block representation
+3. lowered IR boundary
+4. label/fixup model
+5. stage input/output ownership
+6. error model
+7. first supported subset
+
+Recommended principle:
+
+- keep the first version minimal and closed
+- prefer an intentionally small enum model over trying to mirror all Capstone detail immediately
+- add variants only when justified by test cases
+
+Proposed first target:
+
+- straight-line basic blocks plus direct branches
+- enough instructions to cover:
+  - immediate materialization
+  - integer ALU
+  - flags
+  - simple memory
+  - direct control flow
+
+Suggested order for the discussion:
+
+1. define `DecodedInsn`
+2. define `BasicBlock` / `Cfg`
+3. define `LoweredInsn`
+4. define stage APIs
+5. define unsupported/error behavior
+
+### Discussion: scalable instruction modeling and generation
+
+Concern:
+
+- a small hand-written enum like `Alu / Load / Store / Branch` is fine for the first subset
+- but it does not scale cleanly to broad ARM64 coverage if we keep extending it ad hoc
+
+Important distinction:
+
+- `DecodedInsn` does not need to model the full ISA forever
+- but the import/decode layer does need a scalable way to add supported instructions
+
+Recommended architecture for scaling:
+
+1. keep two layers of instruction representation
+   - import/decode representation: closer to ARM64
+   - lowered IR: smaller, more semantic, optimized for translation
+2. do not force the lowered IR to mirror every ARM64 instruction family
+3. do not force the decode layer to collapse everything into a tiny enum too early
+
+#### Better shape than a single growing mega-enum
+
+Use:
+
+- a machine-readable instruction description source
+- generated decode/encode helpers for supported instructions
+- hand-written lowering from decoded ARM64 forms into a smaller shared IR
+
+So the scalable part should be:
+
+- instruction metadata / decode / field extraction / encode support
+
+Not:
+
+- endlessly hand-extending a giant manual match tree
+
+#### On using the ARM64 manual as the source
+
+Conceptually this is the right direction:
+
+- use the architectural spec as the source of truth
+- generate support for a restricted subset first
+- extend gradually
+
+But practically, the discussion should separate:
+
+- source of truth for instruction formats
+- generated artifacts in our repo
+- hand-written lowering semantics
+
+The shared core should not depend on the manual directly at runtime.
+
+#### Proposed generated-vs-handwritten split
+
+Generated:
+
+- instruction IDs / families
+- operand field extraction
+- encoding field placement
+- validation of operand ranges / shifts / widths
+
+Hand-written:
+
+- translation/lowering policy
+- CFG behavior
+- scratch/legalization logic
+- runtime protocol lowering
+- semantic interpretation used in the harness
+
+#### Why this split is good
+
+- generation reduces handwritten bit-manipulation bugs
+- handwritten lowering keeps policy explicit and reviewable
+- userspace and kernel can share the same generated instruction support files
+
+#### Suggested practical path
+
+Start with a small local instruction schema and generation pipeline now.
+
+That means:
+
+- define our own declarative descriptions for the first supported instruction families
+- generate decode/encode code from that schema
+- later, if feasible, replace or enrich that schema from ARM64-spec-derived data
+
+This avoids blocking on full-spec ingestion while still moving toward generation.
+
+#### Recommended immediate design choice
+
+Do not design `DecodedInsn` as the only scaling mechanism.
+
+Instead design:
+
+- `InsnClass` / `InsnId`
+- typed operand/field structures
+- generated field decode/encode
+- handwritten lowering to a smaller IR
+
+This gives us a path from:
+
+- small supported subset now
+- larger generated instruction coverage later
+
+without rewriting the shared-module architecture.
+
+## 2026-04-16: Official Arm XML tryout
+
+Downloaded the official Arm A64 machine-readable bundle into `./tmp`:
+
+- `tmp/arm64_reference.html`
+- `tmp/a_profile_architecture.html`
+- `tmp/ISA_A64_xml_A_profile-2026-03.tar.gz`
+- extracted under `tmp/isa_a64_2026_03/ISA_A64_xml_A_profile-2026-03/`
+
+Initial read of `adr.xml`, `b_cond.xml`, `cbz.xml`, and `add_addsub_imm.xml` shows the per-instruction XML is a good first generator input.
+
+Useful observations:
+
+- `instructionsection` gives stable instruction id, title, and docvars.
+- `classes/iclass/regdiagram` gives the base 32-bit layout.
+- fixed bits are directly present in `<c>` cells under `box`.
+- named variable fields are exposed by `box name=...`.
+- `encoding` children give per-variant overrides like `sf == 0/1`.
+- `asmtemplate` is good enough to capture operand presentation text if we want it.
+- decode pseudocode is present, but for the first generator pass we should treat it as metadata, not parse it semantically.
+
+Practical conclusion:
+
+- use per-instruction XML first for supported families
+- do not start from `encodingindex.xml` for the first generator; it is useful later for full-ISA decode trie generation, but it is too global and noisy for the first iteration
+
+First tryout target:
+
+- generate a compact instruction spec table for a narrow subset:
+  - `ADR`
+  - `ADD (immediate)`
+  - `B.cond`
+  - `CBZ`
+
+Generated output should include:
+
+- instruction/variant id
+- mnemonic/title
+- mask/value pair for matching
+- named bitfield positions
+- enough information to emit Rust tables later
+
+Tryout result:
+
+- implemented `tmp/arm64_xml_tryout.py`
+- parser reads the official XML bundle directly
+- generated artifacts:
+  - `tmp/generated_arm64_subset.json`
+  - `tmp/generated_arm64_subset.rs`
+
+Current generated subset:
+
+- `ADR`
+- `ADD (immediate)` 32/64
+- `B.cond`
+- `CBZ` 32/64
+
+The generator currently extracts:
+
+- section id / heading / title
+- variant encoding name
+- mnemonic/docvars
+- match `mask` / `value`
+- named field slices with `hi/lo`
+- flattened asm template text
+
+Validation:
+
+- ran the parser in the project docker image
+- assembled sample A64 instructions with `llvm-mc` / `llvm-objdump`
+- checked generated mask/value pairs against real opcodes:
+  - `ADR` matched `0x10000000`
+  - `ADD x1, x2, #5` matched `0x91001441`
+  - `B.eq` matched `0x54000000`
+  - `CBZ x3` matched `0xb4000003`
+
+Conclusion:
+
+- the official Arm per-instruction XML is viable as the source for generated decode tables for the supported subset
+- we can realistically generate a shared Rust table layer from this data
+- next extension should be:
+  - field extraction helpers
+  - selected operand metadata
+  - more instruction families from the subset we want in the harness/shared core
+
+## 2026-04-16: Move tryout code out of tmp
+
+Placement decision:
+
+- generator script belongs under `scripts/`
+- checked-in generated artifacts belong under `spec/arm64/generated/`
+- downloaded vendor HTML/XML bundle can stay in `tmp/`
+
+Implemented:
+
+- moved generator to `scripts/gen-arm64-spec.py`
+- added `spec/arm64/README.md`
+- generated:
+  - `spec/arm64/generated/a64_subset.json`
+  - `spec/arm64/generated/a64_subset.rs`
+- added `make arm64-spec-gen`
+
+Validation after the move:
+
+- ran `make arm64-spec-gen` locally
+- ran `./scripts/docker-dev.sh --no-tty -- make arm64-spec-gen`
+- reassembled sample instructions in the docker image and checked moved JSON output:
+  - `ADR.ADR_only_pcreladdr` matched `0x10000000`
+  - `ADD_addsub_imm.ADD_64_addsub_imm` matched `0x91001441`
+  - `B_cond.B_only_condbranch` matched `0x54000000`
+  - `CBZ.CBZ_64_compbranch` matched `0xb4000003`
+
+This is now in a reasonable shape to extend toward:
+
+- more supported instruction families
+- generated field extraction helpers
+- eventual consumption by the shared translation core
