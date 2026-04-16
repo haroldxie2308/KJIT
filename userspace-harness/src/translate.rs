@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::trans_core::cfg::{build_cfg, BlockId, Cfg};
 use crate::lowered::LoweredInsn;
 use crate::trans_core::arm64::{
     decode_program, AddSubOp, BranchCondition, DecodedInsnKind, GprWidth, LoadStoreAddressing,
@@ -8,15 +9,36 @@ use crate::trans_core::arm64::{
 
 pub fn translate_program(program: &[u8], base_pc: u64) -> Result<Vec<LoweredInsn>, String> {
     let decoded = decode_program(program, base_pc).map_err(|err| err.to_string())?;
-    let mut pc_to_index = BTreeMap::new();
-    for index in 0..decoded.len() {
-        pc_to_index.insert(base_pc + (index as u64) * 4, index);
-    }
-    let end_pc = base_pc + (decoded.len() as u64) * 4;
+    let cfg = build_cfg(&decoded).map_err(|err| err.to_string())?;
+    let lowered_index_by_block = lowered_index_by_block(&cfg);
 
     let mut lowered = Vec::with_capacity(decoded.len());
-    for insn in decoded {
-        let lower = match insn.kind {
+    for block in &cfg.blocks {
+        for insn in &block.insns {
+            let lower = lower_insn(insn.kind, &cfg, &lowered_index_by_block)?;
+            lowered.push(lower);
+        }
+    }
+
+    Ok(lowered)
+}
+
+fn lowered_index_by_block(cfg: &Cfg) -> BTreeMap<BlockId, usize> {
+    let mut map = BTreeMap::new();
+    let mut next_index = 0usize;
+    for block in &cfg.blocks {
+        map.insert(block.id, next_index);
+        next_index += block.insns.len();
+    }
+    map
+}
+
+fn lower_insn(
+    kind: DecodedInsnKind,
+    cfg: &Cfg,
+    lowered_index_by_block: &BTreeMap<BlockId, usize>,
+) -> Result<LoweredInsn, String> {
+    let lower = match kind {
             DecodedInsnKind::Nop => LoweredInsn::Nop,
             DecodedInsnKind::MoveWide {
                 op: MoveWideOp::Zero,
@@ -78,11 +100,11 @@ pub fn translate_program(program: &[u8], base_pc: u64) -> Result<Vec<LoweredInsn
                 ));
             }
             DecodedInsnKind::Branch { target } => LoweredInsn::B {
-                target: resolve_target(target, &pc_to_index, end_pc)?,
+                target: resolve_target(target, cfg, lowered_index_by_block)?,
             },
             DecodedInsnKind::CondBranch { cond, target } => LoweredInsn::BCond {
                 cond: lower_condition(cond),
-                target: resolve_target(target, &pc_to_index, end_pc)?,
+                target: resolve_target(target, cfg, lowered_index_by_block)?,
             },
             DecodedInsnKind::CompareBranch {
                 nonzero: false,
@@ -91,7 +113,7 @@ pub fn translate_program(program: &[u8], base_pc: u64) -> Result<Vec<LoweredInsn
                 target,
             } => LoweredInsn::Cbz {
                 rt,
-                target: resolve_target(target, &pc_to_index, end_pc)?,
+                target: resolve_target(target, cfg, lowered_index_by_block)?,
             },
             DecodedInsnKind::CompareBranch {
                 nonzero: true,
@@ -100,7 +122,7 @@ pub fn translate_program(program: &[u8], base_pc: u64) -> Result<Vec<LoweredInsn
                 target,
             } => LoweredInsn::Cbnz {
                 rt,
-                target: resolve_target(target, &pc_to_index, end_pc)?,
+                target: resolve_target(target, cfg, lowered_index_by_block)?,
             },
             DecodedInsnKind::CompareBranch { width, .. } => {
                 return Err(format!(
@@ -116,7 +138,7 @@ pub fn translate_program(program: &[u8], base_pc: u64) -> Result<Vec<LoweredInsn
             } => LoweredInsn::StrImm {
                 rt,
                 rn,
-                offset: insn_load_store_offset(insn.kind)?,
+                offset: insn_load_store_offset(kind)?,
             },
             DecodedInsnKind::LoadStoreImm {
                 op: LoadStoreOp::Load,
@@ -127,7 +149,7 @@ pub fn translate_program(program: &[u8], base_pc: u64) -> Result<Vec<LoweredInsn
             } => LoweredInsn::LdrImm {
                 rt,
                 rn,
-                offset: insn_load_store_offset(insn.kind)?,
+                offset: insn_load_store_offset(kind)?,
             },
             DecodedInsnKind::LoadStoreImm {
                 op,
@@ -143,10 +165,8 @@ pub fn translate_program(program: &[u8], base_pc: u64) -> Result<Vec<LoweredInsn
                 return Err("TBZ/TBNZ lowering is not wired into the harness yet".to_string());
             }
         };
-        lowered.push(lower);
-    }
 
-    Ok(lowered)
+    Ok(lower)
 }
 
 fn lower_condition(cond: BranchCondition) -> crate::arm64::Condition {
@@ -177,14 +197,16 @@ fn insn_load_store_offset(kind: DecodedInsnKind) -> Result<u16, String> {
 
 fn resolve_target(
     target_pc: u64,
-    pc_to_index: &BTreeMap<u64, usize>,
-    end_pc: u64,
+    cfg: &Cfg,
+    lowered_index_by_block: &BTreeMap<BlockId, usize>,
 ) -> Result<usize, String> {
-    if target_pc == end_pc {
-        return Ok(pc_to_index.len());
-    }
-    pc_to_index
+    let block = cfg
+        .pc_to_block
         .get(&target_pc)
         .copied()
-        .ok_or_else(|| format!("branch target {target_pc:#x} is outside the supported program"))
+        .ok_or_else(|| format!("branch target {target_pc:#x} is outside the supported program"))?;
+    lowered_index_by_block
+        .get(&block)
+        .copied()
+        .ok_or_else(|| format!("missing lowered block for target pc {target_pc:#x}"))
 }

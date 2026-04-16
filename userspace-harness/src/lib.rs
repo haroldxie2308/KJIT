@@ -202,4 +202,39 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn shared_cfg_splits_conditional_branch_into_basic_blocks() {
+        use crate::trans_core::arm64::decode_program;
+        use crate::trans_core::cfg::{build_cfg, BlockTerminator};
+
+        let case = crate::cases::find_case("conditional_branch_taken").unwrap();
+        let decoded = decode_program(&case.original_program, case.base_pc).unwrap();
+        let cfg = build_cfg(&decoded).unwrap();
+
+        assert_eq!(cfg.blocks.len(), 3);
+
+        assert_eq!(cfg.blocks[0].start_index, 0);
+        assert_eq!(cfg.blocks[0].end_index, 3);
+        assert_eq!(
+            cfg.blocks[0].terminator,
+            BlockTerminator::CondBranch {
+                taken: cfg.blocks[2].id,
+                fallthrough: cfg.blocks[1].id,
+            }
+        );
+
+        assert_eq!(cfg.blocks[1].start_index, 3);
+        assert_eq!(cfg.blocks[1].end_index, 4);
+        assert_eq!(
+            cfg.blocks[1].terminator,
+            BlockTerminator::Fallthrough {
+                next: Some(cfg.blocks[2].id),
+            }
+        );
+
+        assert_eq!(cfg.blocks[2].start_index, 4);
+        assert_eq!(cfg.blocks[2].end_index, 5);
+        assert_eq!(cfg.blocks[2].terminator, BlockTerminator::Fallthrough { next: None });
+    }
 }
