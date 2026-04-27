@@ -25,7 +25,7 @@ Options:
 Examples:
   ./scripts/docker-dev.sh
   ./scripts/docker-dev.sh --build-image
-  ./scripts/docker-dev.sh -- make docker-kernel-prepare
+  ./scripts/docker-dev.sh -- make kernel-prepare
   ./scripts/docker-dev.sh -- ./scripts/gen-rust-project.sh
 EOF
 }

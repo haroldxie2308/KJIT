@@ -2,7 +2,7 @@
 
 ## Introduction 
 
-This kernel module provides a framework for userspace code JIT in kernel. It utilizes [Capstone](https://www.capstone-engine.org) for disassembly coupled with a handwritten assembler to produce the final output. [Capstone-rs](https://github.com/capstone-rust/capstone-rs) is used to interact with the Captone library.
+This kernel module provides a framework for userspace code JIT in kernel. The current direction is to decode and validate ARM64 machine code in the shared/userspace pipeline, then pass already-emitted kernel-safe bytes to the kernel executor.
 
 ## Supported Architecture
 
@@ -10,7 +10,7 @@ ARM64
 
 ## How to get started?
 
-The module has to be installed on Rust-enabled Linux kernel with Capstone embedded. The Rust features required by this module have yet to be merged into mainline kernel. That is to say, for a really quick start, I have provided a fork from the repository [Rust-for-Linux](https://github.com/Rust-for-Linux/linux/tree/rust-dev) at [linux-w-capstone](https://github.com/haroldxie2308/linux-w-capstone) with Capstone embedded. 
+The module targets a Rust-enabled ARM64 Linux kernel. The canonical kernel source tree for local development is the shallow upstream Linux submodule at `dep/linux`.
 
 Let's assume you are already familiar with [the documentation of developing with Rust in kernel](https://docs.kernel.org/rust/quick-start.html) (pay attention to building the kernel and prepare rust-analyzer for better coding experience) and have read through some tricks on writing out-of-tree modules (like how to initialize and build some basic modules).
 
@@ -21,12 +21,12 @@ If you have not done so, here are some good places to start:
 
 After you've watched loads of videos and read through lines of code online, it's time to get your hand dirty!
 
-1. Make sure you have an ARM64 server/laptop/PC to work with (or "to meddle with", to be precise ;) )
-2. Download [linux-w-capstone](https://github.com/haroldxie2308/linux-w-capstone) and build the kernel with Rust enabled
-3. Install the newly built kernel to your machine (you'd better experiment this with virtual machine or qemu before actually install it on the real one)
-4. Clone this git repo. The `linux-w-capstone` kernel tree is now tracked as a submodule under `./linux-w-capstone`
-5. Make the module, load it and start experimenting with SVC intensive applications!
-6. `make dm` in another terminal to register a log of the `dmesg` content 
+1. Clone this repo with submodules so `dep/linux` is available.
+2. Use the Linux dev container for kernel build and editor work.
+3. Run `make prepare && make rust-analyzer`.
+4. Run `make module-build` after the kernel build if you want to build the out-of-tree module.
+5. Boot and debug the kernel with QEMU before attempting real-machine deployment.
+6. `make dm` in another terminal to register a log of the `dmesg` content.
 
 **Important Note: your device will probably stuck on starting running SVC intensive applications, this is probably due to unknown bugs in the UCA module.**
 
@@ -56,7 +56,8 @@ The repo now includes a local kernel/QEMU workflow so the Rust module, kernel so
 
 ### Layout
 
-- `linux-w-capstone/`: kernel source tree submodule
+- `dep/linux/`: canonical upstream Linux kernel source tree submodule
+- `linux-w-capstone/`: historical Capstone-enabled kernel fork kept as a reference during migration
 - `kernel-config/`: tiny ARM64/QEMU kernel config fragments used by the local workflow
 - `.kjit.env`: optional local overrides for build and QEMU settings
 - `.kjit/qemu/`: QEMU runtime state such as PID, QMP socket, and serial log
@@ -73,15 +74,15 @@ The repo now includes a local kernel/QEMU workflow so the Rust module, kernel so
 ### Notes
 
 - Docker is intended for development and build tooling. QEMU remains the target for actual in-kernel execution, deployment, and debug
-- The build helpers now use `linux-w-capstone/` as the canonical source-and-build tree by default. Native kernel config/build steps still require Linux, but the Docker wrapper provides a Linux userspace for those steps
-- `make` and `make rust-analyzer` now use `KDIR=$(CURDIR)/linux-w-capstone` and `KBUILD_OUTPUT=$(CURDIR)/linux-w-capstone` by default
+- The build helpers now use `dep/linux/` as the canonical source-and-build tree by default. Native kernel config/build steps still require Linux, but the Docker wrapper provides a Linux userspace for those steps
+- `make` and `make rust-analyzer` now use `KDIR=$(CURDIR)/dep/linux` and `KBUILD_OUTPUT=$(CURDIR)/dep/linux` by default
 - The default kernel profile is `tiny-qemu-debug`, built from the fragments under `kernel-config/`
-- `scripts/qemu-run.sh` expects a built ARM64 `Image` at `linux-w-capstone/arch/arm64/boot/Image`
+- `scripts/qemu-run.sh` expects a built ARM64 `Image` at `dep/linux/arch/arm64/boot/Image`
 - QEMU rootfs and initramfs paths are configured through `.kjit.env`
 - The Rust-for-Linux out-of-tree flow expects Rust metadata and proc-macro artifacts from a kernel build, so `kernel-build` is the prerequisite for `rust-analyzer` quality and external Rust module builds
 - `rust-project.json` should be generated inside the Linux dev container so rust-analyzer sees the same toolchain and proc-macro environment as the kernel build
 - Build-oriented `make` targets are intended to run inside the Linux dev container, not on the macOS host
-- You can still override `KBUILD_OUTPUT` in `.kjit.env` if you want a separate output tree, but the default workflow now builds the kernel submodule in place
+- You can still override `KDIR` or `KBUILD_OUTPUT` in `.kjit.env` if you want a different kernel tree or separate output tree, but the default workflow now builds the upstream Linux submodule in place
 - `kernel-build` now builds `Image` and modules only; `dtbs` are skipped by default because the QEMU `virt` machine does not need them
 
 ### Container Dev
@@ -132,7 +133,7 @@ Notes:
 
 - The dev container ignores host-local `.kjit.env` by default so macOS/Linux path overrides do not leak into the Linux workspace
 - `scripts/setup-dev-rust-analyzer.sh` installs a toolchain-matched `rust-analyzer` component and links it at `/workspace/.kjit/bin/rust-analyzer`
-- VS Code is configured to use that linked binary instead of the extension-bundled server, so it matches the Rust 1.78 proc-macro ABI used by the kernel build
+- VS Code is configured to use that linked binary instead of the extension-bundled server, so it matches the Rust toolchain used by the kernel build
 - QEMU remains a host-side workflow unless you explicitly decide to run it from inside a Linux environment with the required acceleration and device access
 
 ## License

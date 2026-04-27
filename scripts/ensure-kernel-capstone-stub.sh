@@ -31,7 +31,7 @@ EOF
 cat >"$capstone_dir/stub.c" <<'EOF'
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Placeholder object for linux-w-capstone trees that keep the Kconfig/Makefile
- * hooks but do not vendor the actual Capstone library sources.
+ * Placeholder object for legacy Capstone-enabled kernel forks that keep the
+ * Kconfig/Makefile hooks but do not vendor the actual Capstone library sources.
  */
 EOF

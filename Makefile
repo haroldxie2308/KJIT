@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 
-KDIR ?= $(CURDIR)/linux-w-capstone
+KDIR ?= $(CURDIR)/dep/linux
 KBUILD_OUTPUT ?= $(KDIR)
 ARCH ?= arm64
 LLVM ?= 1

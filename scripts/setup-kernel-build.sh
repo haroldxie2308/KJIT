@@ -68,7 +68,9 @@ if [[ ! -f "$KDIR/Makefile" ]]; then
     exit 1
 fi
 
-bash "$ROOT_DIR/scripts/ensure-kernel-capstone-stub.sh" "$KDIR"
+if [[ "$KJIT_ENABLE_CAPSTONE_STUB" == "1" ]]; then
+    bash "$ROOT_DIR/scripts/ensure-kernel-capstone-stub.sh" "$KDIR"
+fi
 
 kernel_make=(make -C "$KDIR" ARCH="$ARCH" LLVM="$LLVM")
 if [[ "$KBUILD_OUTPUT" != "$KDIR" ]]; then

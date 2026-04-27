@@ -7,12 +7,13 @@ if [[ "${KJIT_IGNORE_LOCAL_ENV:-0}" != "1" && -f "$ROOT_DIR/.kjit.env" ]]; then
     source "$ROOT_DIR/.kjit.env"
 fi
 
-: "${KDIR:=$ROOT_DIR/linux-w-capstone}"
+: "${KDIR:=$ROOT_DIR/dep/linux}"
 : "${KBUILD_OUTPUT:=$KDIR}"
 : "${ARCH:=arm64}"
 : "${LLVM:=1}"
 : "${DEFCONFIG:=tinyconfig}"
 : "${KJIT_KERNEL_PROFILE:=tiny-qemu-debug}"
+: "${KJIT_ENABLE_CAPSTONE_STUB:=0}"
 
 : "${QEMU_BINARY:=qemu-system-aarch64}"
 : "${QEMU_MEMORY:=4096}"
