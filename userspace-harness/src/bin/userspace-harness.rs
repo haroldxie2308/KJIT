@@ -31,7 +31,7 @@ fn main() {
         match run_case(&case) {
             Ok(report) => {
                 println!(
-                    "PASS {}\toriginal/lowered/encoded states match\tencoded_bytes={}",
+                    "PASS {}\toriginal/IR/encoded states match\tencoded_bytes={}",
                     report.name,
                     report.encoded_program.len()
                 );

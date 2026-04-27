@@ -2,59 +2,59 @@ extern crate alloc;
 
 pub mod arm64;
 pub mod cases;
-pub mod lowered;
+pub mod ir;
 pub mod model;
-pub mod translate;
 #[path = "../../shared/trans_core/mod.rs"]
 pub mod trans_core;
+pub mod translate;
 
 use cases::HarnessCase;
-use lowered::{encode_program, execute_program as execute_lowered};
+use ir::{encode_program, execute_program as execute_ir, IrProgram};
 use model::NormalizedState;
 use translate::translate_program;
 
 #[derive(Debug)]
 pub struct CaseReport {
     pub name: &'static str,
-    pub lowered_program: Vec<lowered::LoweredInsn>,
+    pub ir_program: IrProgram,
     pub encoded_program: Vec<u8>,
     pub original_state: NormalizedState,
-    pub lowered_state: NormalizedState,
+    pub ir_state: NormalizedState,
     pub encoded_state: NormalizedState,
 }
 
 pub fn run_case(case: &HarnessCase) -> Result<CaseReport, String> {
     let original =
         arm64::execute_program(&case.original_program, case.base_pc, &case.initial_state)?;
-    let lowered_program = translate_program(&case.original_program, case.base_pc)?;
-    let lowered = execute_lowered(&lowered_program, &case.initial_state)?;
-    let encoded_program = encode_program(&lowered_program)?;
+    let ir_program = translate_program(&case.original_program, case.base_pc)?;
+    let ir = execute_ir(&ir_program, &case.initial_state)?;
+    let encoded_program = encode_program(&ir_program)?;
     let encoded = arm64::execute_program(&encoded_program, case.base_pc, &case.initial_state)?;
 
     let original_state = NormalizedState::from_execution(&original);
-    let lowered_state = NormalizedState::from_execution(&lowered);
+    let ir_state = NormalizedState::from_execution(&ir);
     let encoded_state = NormalizedState::from_execution(&encoded);
 
-    if original_state != lowered_state {
+    if original_state != ir_state {
         return Err(format!(
-            "original vs lowered mismatch for `{}`\noriginal: {:#?}\nlowered: {:#?}",
-            case.name, original_state, lowered_state
+            "original vs IR mismatch for `{}`\noriginal: {:#?}\nIR: {:#?}",
+            case.name, original_state, ir_state
         ));
     }
 
-    if lowered_state != encoded_state {
+    if ir_state != encoded_state {
         return Err(format!(
-            "lowered vs encoded mismatch for `{}`\nlowered: {:#?}\nencoded: {:#?}",
-            case.name, lowered_state, encoded_state
+            "IR vs encoded mismatch for `{}`\nIR: {:#?}\nencoded: {:#?}",
+            case.name, ir_state, encoded_state
         ));
     }
 
     Ok(CaseReport {
         name: case.name,
-        lowered_program,
+        ir_program,
         encoded_program,
         original_state,
-        lowered_state,
+        ir_state,
         encoded_state,
     })
 }
