@@ -25,3 +25,18 @@ toy_cfg_demo:
 
 .Lexit:
     nop
+
+.global toy_translate_entry
+toy_translate_entry:
+    movz x0, #1
+    cbnz x0, .Ltranslate_hot
+    movz x1, #0x1111
+    b .Ltranslate_join
+
+.Ltranslate_hot:
+    movz x1, #0x2222
+
+.Ltranslate_join:
+    str x1, [x10, #16]
+    ldr x3, [x10, #16]
+    nop

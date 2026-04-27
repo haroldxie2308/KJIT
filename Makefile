@@ -13,7 +13,7 @@ endif
 
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare module-build rustavailable-check \
 	kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset \
-	userspace-harness-test userspace-harness-run userspace-harness-dump-cfg arm64-spec-gen workflow-help
+	userspace-harness-test userspace-harness-run userspace-harness-dump-cfg test-asm-pipeline arm64-spec-gen workflow-help
 
 default:
 	$(KMAKE) M=$$PWD
@@ -77,6 +77,9 @@ userspace-harness-run:
 userspace-harness-dump-cfg:
 	bash ./scripts/demo-toy-cfg.sh
 
+test-asm-pipeline:
+	bash ./scripts/run-asm-fixture.sh
+
 arm64-spec-gen:
 	python3 ./scripts/gen-arm64-spec.py --xml-dir "$(ARM64_ISA_XML_DIR)"
 
@@ -94,6 +97,7 @@ workflow-help:
 		'userspace-harness-test Run the standalone userspace validation harness tests' \
 		'userspace-harness-run  Run the standalone userspace validation harness CLI' \
 		'userspace-harness-dump-cfg Assemble the toy AArch64 fixture and print its basic blocks' \
+		'test-asm-pipeline Run assembly fixture through mock-reader translation comparison' \
 		'qemu-run        Boot the local kernel image in QEMU (foreground)' \
 		'qemu-run-bg     Boot the local kernel image in QEMU (background)' \
 		'qemu-reset      Reset the running QEMU guest through QMP'

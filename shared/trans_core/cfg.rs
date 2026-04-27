@@ -1,18 +1,39 @@
 extern crate alloc;
 
-use alloc::collections::{BTreeMap, BTreeSet};
+use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
-use crate::trans_core::arm64::{DecodedInsn, DecodedInsnKind};
+use crate::trans_core::arm64::{decode_word, DecodeError, DecodedInsn, DecodedInsnKind};
+use crate::trans_core::input::{CodeProvider, CodeReadError, TranslationRequest};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BlockId(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RuntimeExitReason {
+    Bl { target_pc: u64, resume_pc: u64 },
+    Blr { target_reg: u8, resume_pc: u64 },
+    Br { target_reg: u8 },
+    Ret { lr_reg: u8 },
+    Svc { resume_pc: u64 },
+    Unsupported,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BlockTerminator {
-    Fallthrough { next: Option<BlockId> },
-    Branch { target: BlockId },
-    CondBranch { taken: BlockId, fallthrough: BlockId },
+    Fallthrough {
+        next: Option<BlockId>,
+    },
+    Branch {
+        target: BlockId,
+    },
+    CondBranch {
+        taken: BlockId,
+        fallthrough: BlockId,
+    },
+    RuntimeExit {
+        reason: RuntimeExitReason,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -32,133 +53,118 @@ pub struct Cfg {
     pub pc_to_block: BTreeMap<u64, BlockId>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CfgError {
-    BranchTargetOutsideProgram { source_pc: u64, target_pc: u64 },
+    CodeRead(CodeReadError),
+    Decode(DecodeError),
+    EmptyBlock {
+        start_pc: u64,
+    },
+    BranchIntoExistingBlock {
+        target_pc: u64,
+        block_start_pc: u64,
+        block_end_pc: u64,
+    },
 }
 
 impl core::fmt::Display for CfgError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::BranchTargetOutsideProgram {
-                source_pc,
+            Self::CodeRead(err) => write!(f, "{err}"),
+            Self::Decode(err) => write!(f, "{err}"),
+            Self::EmptyBlock { start_pc } => {
+                write!(f, "no instructions decoded for block at pc {start_pc:#x}")
+            }
+            Self::BranchIntoExistingBlock {
                 target_pc,
+                block_start_pc,
+                block_end_pc,
             } => write!(
                 f,
-                "branch target {target_pc:#x} from source pc {source_pc:#x} is outside the decoded program"
+                "branch target {target_pc:#x} lands inside existing block [{block_start_pc:#x}, {block_end_pc:#x}]"
             ),
         }
     }
 }
 
-fn branch_target(kind: &DecodedInsnKind) -> Option<u64> {
-    match kind {
-        DecodedInsnKind::Branch { target }
-        | DecodedInsnKind::CondBranch { target, .. }
-        | DecodedInsnKind::CompareBranch { target, .. }
-        | DecodedInsnKind::TestBitBranch { target, .. } => Some(*target),
-        _ => None,
-    }
-}
-
-fn is_conditional(kind: &DecodedInsnKind) -> bool {
-    matches!(
-        kind,
-        DecodedInsnKind::CondBranch { .. }
-            | DecodedInsnKind::CompareBranch { .. }
-            | DecodedInsnKind::TestBitBranch { .. }
-    )
-}
-
-pub fn build_cfg(decoded: &[DecodedInsn]) -> Result<Cfg, CfgError> {
-    let mut leaders = BTreeSet::new();
-    if decoded.is_empty() {
-        return Ok(Cfg {
-            entry: BlockId(0),
-            blocks: Vec::new(),
-            pc_to_block: BTreeMap::new(),
-        });
-    }
-
-    let end_pc = decoded
-        .last()
-        .map(|insn| insn.pc + 4)
-        .expect("non-empty decoded program");
-    let mut pc_to_index = BTreeMap::new();
-    for (index, insn) in decoded.iter().enumerate() {
-        pc_to_index.insert(insn.pc, index);
-    }
-
-    leaders.insert(0usize);
-    for (index, insn) in decoded.iter().enumerate() {
-        if let Some(target_pc) = branch_target(&insn.kind) {
-            if target_pc != end_pc && !pc_to_index.contains_key(&target_pc) {
-                return Err(CfgError::BranchTargetOutsideProgram {
-                    source_pc: insn.pc,
-                    target_pc,
-                });
-            }
-
-            if let Some(&target_index) = pc_to_index.get(&target_pc) {
-                leaders.insert(target_index);
-            }
-        }
-
-        if is_conditional(&insn.kind) {
-            let next_index = index + 1;
-            if next_index < decoded.len() {
-                leaders.insert(next_index);
-            }
-        }
-    }
-
-    let leader_indices: Vec<usize> = leaders.into_iter().collect();
-    let mut blocks = Vec::with_capacity(leader_indices.len());
+pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Result<Cfg, CfgError> {
+    let mut blocks = Vec::new();
     let mut pc_to_block = BTreeMap::new();
+    let mut pending = Vec::new();
 
-    for (block_index, &start_index) in leader_indices.iter().enumerate() {
-        let end_index = leader_indices
-            .get(block_index + 1)
-            .copied()
-            .unwrap_or(decoded.len());
-        let id = BlockId(block_index);
-        let insns = decoded[start_index..end_index].to_vec();
-        let start_pc = insns[0].pc;
-        pc_to_block.insert(start_pc, id);
+    enqueue_block(request.entry_pc, &mut pc_to_block, &mut pending);
+
+    let mut pending_index = 0usize;
+    let mut decoded_index = 0usize;
+    while pending_index < pending.len() {
+        let start_pc = pending[pending_index];
+        pending_index += 1;
+
+        if blocks
+            .iter()
+            .any(|block: &BasicBlock| block.start_pc == start_pc)
+        {
+            continue;
+        }
+
+        reject_inside_existing_block(start_pc, &blocks)?;
+
+        let id = *pc_to_block
+            .get(&start_pc)
+            .expect("pending block must have an assigned id");
+        let start_index = decoded_index;
+        let mut pc = start_pc;
+        let mut insns = Vec::new();
+
+        let terminator = loop {
+            if !insns.is_empty() {
+                if let Some(next) = pc_to_block.get(&pc).copied() {
+                    break BlockTerminator::Fallthrough { next: Some(next) };
+                }
+            }
+
+            let insn = match read_insn(code, pc) {
+                Ok(insn) => insn,
+                Err(CfgError::CodeRead(_)) if !insns.is_empty() => {
+                    break BlockTerminator::Fallthrough { next: None };
+                }
+                Err(err) => return Err(err),
+            };
+            pc = pc.wrapping_add(4);
+            decoded_index += 1;
+
+            match insn.kind {
+                DecodedInsnKind::Branch { target } => {
+                    let target = enqueue_block(target, &mut pc_to_block, &mut pending);
+                    insns.push(insn);
+                    break BlockTerminator::Branch { target };
+                }
+                DecodedInsnKind::CondBranch { target, .. }
+                | DecodedInsnKind::CompareBranch { target, .. }
+                | DecodedInsnKind::TestBitBranch { target, .. } => {
+                    let fallthrough = enqueue_block(pc, &mut pc_to_block, &mut pending);
+                    let taken = enqueue_block(target, &mut pc_to_block, &mut pending);
+                    insns.push(insn);
+                    break BlockTerminator::CondBranch { taken, fallthrough };
+                }
+                _ => {
+                    insns.push(insn);
+                }
+            }
+        };
+
+        if insns.is_empty() {
+            return Err(CfgError::EmptyBlock { start_pc });
+        }
+
         blocks.push(BasicBlock {
             id,
             start_pc,
             start_index,
-            end_index,
+            end_index: decoded_index,
             insns,
-            terminator: BlockTerminator::Fallthrough { next: None },
+            terminator,
         });
-    }
-
-    let blocks_len = blocks.len();
-    for block_index in 0..blocks_len {
-        let block = &blocks[block_index];
-        let last = block
-            .insns
-            .last()
-            .expect("basic block must contain at least one instruction");
-        let terminator = match &last.kind {
-            DecodedInsnKind::Branch { target } => BlockTerminator::Branch {
-                target: *pc_to_block.get(target).expect("validated branch target"),
-            },
-            DecodedInsnKind::CondBranch { target, .. }
-            | DecodedInsnKind::CompareBranch { target, .. }
-            | DecodedInsnKind::TestBitBranch { target, .. } => {
-                let taken = *pc_to_block.get(target).expect("validated branch target");
-                let fallthrough = BlockId(block.id.0 + 1);
-                BlockTerminator::CondBranch { taken, fallthrough }
-            }
-            _ => {
-                let next = blocks.get(block.id.0 + 1).map(|next_block| next_block.id);
-                BlockTerminator::Fallthrough { next }
-            }
-        };
-        blocks[block_index].terminator = terminator;
     }
 
     Ok(Cfg {
@@ -166,4 +172,41 @@ pub fn build_cfg(decoded: &[DecodedInsn]) -> Result<Cfg, CfgError> {
         blocks,
         pc_to_block,
     })
+}
+
+fn enqueue_block(
+    pc: u64,
+    pc_to_block: &mut BTreeMap<u64, BlockId>,
+    pending: &mut Vec<u64>,
+) -> BlockId {
+    if let Some(id) = pc_to_block.get(&pc).copied() {
+        return id;
+    }
+
+    let id = BlockId(pc_to_block.len());
+    pc_to_block.insert(pc, id);
+    pending.push(pc);
+    id
+}
+
+fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<DecodedInsn, CfgError> {
+    let mut bytes = [0_u8; 4];
+    code.read_exact(pc, &mut bytes)
+        .map_err(CfgError::CodeRead)?;
+    let word = u32::from_le_bytes(bytes);
+    decode_word(word, pc).map_err(CfgError::Decode)
+}
+
+fn reject_inside_existing_block(pc: u64, blocks: &[BasicBlock]) -> Result<(), CfgError> {
+    for block in blocks {
+        let block_end = block.start_pc + (block.insns.len() as u64) * 4;
+        if block.start_pc < pc && pc < block_end {
+            return Err(CfgError::BranchIntoExistingBlock {
+                target_pc: pc,
+                block_start_pc: block.start_pc,
+                block_end_pc: block_end,
+            });
+        }
+    }
+    Ok(())
 }

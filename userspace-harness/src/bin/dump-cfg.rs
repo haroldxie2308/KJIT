@@ -1,8 +1,9 @@
 use std::fs;
 use std::path::PathBuf;
 
-use userspace_harness::trans_core::arm64::decode_program;
 use userspace_harness::trans_core::cfg::{build_cfg, BlockTerminator};
+use userspace_harness::trans_core::input::{TranslationRequest, TranslationTrigger};
+use userspace_harness::MockCodeProvider;
 
 fn parse_base_pc(text: &str) -> Result<u64, String> {
     if let Some(hex) = text.strip_prefix("0x").or_else(|| text.strip_prefix("0X")) {
@@ -41,15 +42,13 @@ fn main() {
         }
     };
 
-    let decoded = match decode_program(&bytes, base_pc) {
-        Ok(program) => program,
-        Err(err) => {
-            eprintln!("decode failed: {err}");
-            std::process::exit(1);
-        }
+    let code = MockCodeProvider::new(base_pc, bytes);
+    let request = TranslationRequest {
+        entry_pc: base_pc,
+        trigger: TranslationTrigger::Manual,
+        regs: None,
     };
-
-    let cfg = match build_cfg(&decoded) {
+    let cfg = match build_cfg(&request, &code) {
         Ok(cfg) => cfg,
         Err(err) => {
             eprintln!("cfg build failed: {err}");
@@ -84,6 +83,9 @@ fn main() {
                     "  terminator: cond -> b{} else b{}",
                     taken.0, fallthrough.0
                 );
+            }
+            BlockTerminator::RuntimeExit { reason } => {
+                println!("  terminator: runtime-exit {:?}", reason);
             }
         }
     }
