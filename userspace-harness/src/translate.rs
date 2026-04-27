@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use crate::ir::{IrInsn, IrProgram};
 use crate::trans_core::arm64::{
-    decode_program, AddSubOp, BranchCondition, DecodedInsnKind, GprWidth, LoadStoreAddressing,
-    LoadStoreOp, MoveWideOp,
+    decode_program, AddSubOp, DecodedInsnKind, GprWidth, LoadStoreAddressing, LoadStoreOp,
+    MoveWideOp,
 };
 use crate::trans_core::cfg::{build_cfg, BlockId, Cfg};
 
@@ -101,7 +101,7 @@ fn translate_insn_to_ir(
             target: resolve_target(target, cfg, ir_index_by_block)?,
         },
         DecodedInsnKind::CondBranch { cond, target } => IrInsn::BCond {
-            cond: lower_condition(cond),
+            cond,
             target: resolve_target(target, cfg, ir_index_by_block)?,
         },
         DecodedInsnKind::CompareBranch {
@@ -165,18 +165,6 @@ fn translate_insn_to_ir(
     };
 
     Ok(ir_insn)
-}
-
-fn lower_condition(cond: BranchCondition) -> crate::arm64::Condition {
-    match cond {
-        BranchCondition::Eq => crate::arm64::Condition::Eq,
-        BranchCondition::Ne => crate::arm64::Condition::Ne,
-        BranchCondition::Ge => crate::arm64::Condition::Ge,
-        BranchCondition::Lt => crate::arm64::Condition::Lt,
-        BranchCondition::Gt => crate::arm64::Condition::Gt,
-        BranchCondition::Le => crate::arm64::Condition::Le,
-        BranchCondition::Al => crate::arm64::Condition::Al,
-    }
 }
 
 fn insn_load_store_offset(kind: DecodedInsnKind) -> Result<u16, String> {

@@ -4,28 +4,10 @@ use crate::arm64::{
     encode_sub_imm, encode_sub_reg, Condition,
 };
 use crate::model::{ExecutionResult, HaltReason, MachineState};
+use crate::trans_core::arm64::BranchCondition;
+pub use crate::trans_core::ir::{IrInsn, IrProgram};
 
 const MAX_STEPS: usize = 1024;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum IrInsn {
-    Nop,
-    LoadImm64 { rd: u8, value: u64 },
-    AddImm { rd: u8, rn: u8, imm12: u16 },
-    AddReg { rd: u8, rn: u8, rm: u8 },
-    SubImm { rd: u8, rn: u8, imm12: u16 },
-    SubReg { rd: u8, rn: u8, rm: u8 },
-    CmpImm { rn: u8, imm12: u16 },
-    CmpReg { rn: u8, rm: u8 },
-    B { target: usize },
-    BCond { cond: Condition, target: usize },
-    Cbz { rt: u8, target: usize },
-    Cbnz { rt: u8, target: usize },
-    StrImm { rt: u8, rn: u8, offset: u16 },
-    LdrImm { rt: u8, rn: u8, offset: u16 },
-}
-
-pub type IrProgram = Vec<IrInsn>;
 
 impl IrInsn {
     fn encoded_words(self) -> usize {
@@ -112,7 +94,7 @@ pub fn execute_program(
                 pc = target;
             }
             IrInsn::BCond { cond, target } => {
-                if cond.eval(&state) {
+                if eval_condition(cond, &state) {
                     pc = target;
                 } else {
                     pc += 1;
@@ -198,7 +180,7 @@ pub fn encode_program(insns: &[IrInsn]) -> Result<Vec<u8>, String> {
             }
             IrInsn::BCond { cond, target } => {
                 let target_pc = (encoded_offsets[target] * 4) as i64;
-                let word = encode_b_cond(cond, target_pc - curr_pc)?;
+                let word = encode_b_cond(harness_condition(cond), target_pc - curr_pc)?;
                 bytes.extend_from_slice(&word.to_le_bytes());
             }
             IrInsn::Cbz { rt, target } => {
@@ -222,4 +204,29 @@ pub fn encode_program(insns: &[IrInsn]) -> Result<Vec<u8>, String> {
         }
     }
     Ok(bytes)
+}
+
+fn eval_condition(cond: BranchCondition, state: &MachineState) -> bool {
+    let flags = state.flags;
+    match cond {
+        BranchCondition::Eq => flags.z,
+        BranchCondition::Ne => !flags.z,
+        BranchCondition::Ge => flags.n == flags.v,
+        BranchCondition::Lt => flags.n != flags.v,
+        BranchCondition::Gt => !flags.z && flags.n == flags.v,
+        BranchCondition::Le => flags.z || flags.n != flags.v,
+        BranchCondition::Al => true,
+    }
+}
+
+fn harness_condition(cond: BranchCondition) -> Condition {
+    match cond {
+        BranchCondition::Eq => Condition::Eq,
+        BranchCondition::Ne => Condition::Ne,
+        BranchCondition::Ge => Condition::Ge,
+        BranchCondition::Lt => Condition::Lt,
+        BranchCondition::Gt => Condition::Gt,
+        BranchCondition::Le => Condition::Le,
+        BranchCondition::Al => Condition::Al,
+    }
 }
