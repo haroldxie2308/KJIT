@@ -10,8 +10,22 @@ if [[ ! -f "$KBUILD_OUTPUT/.config" ]]; then
     exit 1
 fi
 
+if [[ "$(uname -s)" != "Linux" ]]; then
+    cat >&2 <<EOF
+rust-project.json must be generated inside the Linux dev environment.
+Current host: $(uname -s)
+
+Run:
+  ./scripts/docker-dev.sh -- make rust-analyzer
+EOF
+    exit 1
+fi
+
 require_cmd python3
 require_cmd rustc
+
+: "${RUSTC:=rustc}"
+export RUSTC
 
 rust_obj_dir="$KDIR/rust"
 if [[ "$KBUILD_OUTPUT" != "$KDIR" && -f "$KBUILD_OUTPUT/rust/libmacros.so" ]]; then
@@ -30,8 +44,9 @@ if [[ ! -f "$rust_obj_dir/libmacros.so" ]]; then
     exit 1
 fi
 
-rustc_sysroot="$(rustc --print sysroot)"
+rustc_sysroot="$("$RUSTC" --print sysroot)"
 rust_lib_src="${RUST_LIB_SRC:-$rustc_sysroot/lib/rustlib/src/rust/library}"
+core_edition="${KJIT_RUST_CORE_EDITION:-2021}"
 
 if [[ ! -d "$rust_lib_src" ]]; then
     echo "Rust source tree not found: $rust_lib_src" >&2
@@ -42,8 +57,15 @@ fi
 python3 "$KDIR/scripts/generate_rust_analyzer.py" \
     --cfgs="core=--cfg no_fp_fmt_parse" \
     --cfgs="alloc=--cfg no_global_oom_handling --cfg no_rc --cfg no_sync" \
+    --cfgs='proc_macro2=--cfg feature="proc-macro" --cfg wrap_proc_macro' \
+    --cfgs='quote=--cfg feature="proc-macro"' \
+    --cfgs='syn=--cfg feature="clone-impls" --cfg feature="derive" --cfg feature="full" --cfg feature="parsing" --cfg feature="printing" --cfg feature="proc-macro" --cfg feature="visit-mut"' \
+    --cfgs="pin_init_internal=--cfg kernel --cfg USE_RUSTC_FEATURES" \
+    --cfgs="pin_init=--cfg kernel --cfg USE_RUSTC_FEATURES" \
+    "$core_edition" \
     "$KDIR" \
     "$KBUILD_OUTPUT" \
+    "$rustc_sysroot" \
     "$rust_lib_src" \
     "$ROOT_DIR" > "$ROOT_DIR/rust-project.json"
 
