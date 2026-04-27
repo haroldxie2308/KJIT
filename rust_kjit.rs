@@ -9,14 +9,10 @@
 
 use kernel::prelude::*;
 
-mod trans;
-mod utils;
-mod uca;
-
 module! {
     type: RustKJIT,
     name: "rust_kjit",
-    author: "WENHAO XIE",
+    authors: ["WENHAO XIE"],
     description: "Rust KJIT Module",
     license: "GPL",
 }
@@ -28,16 +24,12 @@ struct RustKJIT {}
 impl kernel::Module for RustKJIT {
     fn init(_module: &'static ThisModule) -> Result<Self> {
         pr_info!("######## Rust KJIT inits ########\n");
-        trans::up();
-    	uca::up();
         Ok(RustKJIT {})
     }
 }
 
 impl Drop for RustKJIT {
     fn drop(&mut self) {
-    	uca::down();
-        trans::down();
         pr_info!("######## Rust KJIT exits ########\n");
     }
 }
