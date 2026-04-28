@@ -424,4 +424,60 @@ mod tests {
             BlockTerminator::Fallthrough { next_pc: None }
         );
     }
+
+    #[test]
+    fn shared_cfg_splits_existing_block_when_branch_targets_middle() {
+        use crate::arm64::Condition;
+        use crate::trans_core::cfg::{build_cfg, BlockTerminator};
+
+        let base_pc = 0x9000;
+        let mut program = Vec::new();
+        program.extend_from_slice(
+            &crate::arm64::encode_b_cond(Condition::Eq, 12)
+                .unwrap()
+                .to_le_bytes(),
+        );
+        program.extend_from_slice(&0xd503_201f_u32.to_le_bytes());
+        program.extend_from_slice(&0xd503_201f_u32.to_le_bytes());
+        program.extend_from_slice(&crate::arm64::encode_b(-4).unwrap().to_le_bytes());
+
+        let code = MockCodeProvider::new(base_pc, program);
+        let request = TranslationRequest {
+            entry_pc: base_pc,
+            trigger: TranslationTrigger::Manual,
+            regs: None,
+        };
+        let cfg = build_cfg(&request, &code).unwrap();
+
+        assert_eq!(cfg.blocks.len(), 4);
+        assert_eq!(cfg.blocks[0].start_pc, base_pc);
+        assert_eq!(cfg.blocks[1].start_pc, base_pc + 4);
+        assert_eq!(cfg.blocks[2].start_pc, base_pc + 8);
+        assert_eq!(cfg.blocks[3].start_pc, base_pc + 12);
+
+        assert_eq!(cfg.blocks[1].start_index, 1);
+        assert_eq!(cfg.blocks[1].end_index, 2);
+        assert_eq!(
+            cfg.blocks[1].terminator,
+            BlockTerminator::Fallthrough {
+                next_pc: Some(base_pc + 8),
+            }
+        );
+
+        assert_eq!(cfg.blocks[2].start_index, 2);
+        assert_eq!(cfg.blocks[2].end_index, 3);
+        assert_eq!(
+            cfg.blocks[2].terminator,
+            BlockTerminator::Fallthrough {
+                next_pc: Some(base_pc + 12),
+            }
+        );
+
+        assert_eq!(
+            cfg.blocks[3].terminator,
+            BlockTerminator::Branch {
+                target_pc: base_pc + 8,
+            }
+        );
+    }
 }

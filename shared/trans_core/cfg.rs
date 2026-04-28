@@ -42,14 +42,7 @@ pub struct Cfg {
 pub enum CfgError {
     CodeRead(CodeReadError),
     Decode(DecodeError),
-    EmptyBlock {
-        start_pc: u64,
-    },
-    BranchIntoExistingBlock {
-        target_pc: u64,
-        block_start_pc: u64,
-        block_end_pc: u64,
-    },
+    EmptyBlock { start_pc: u64 },
 }
 
 impl core::fmt::Display for CfgError {
@@ -60,14 +53,6 @@ impl core::fmt::Display for CfgError {
             Self::EmptyBlock { start_pc } => {
                 write!(f, "no instructions decoded for block at pc {start_pc:#x}")
             }
-            Self::BranchIntoExistingBlock {
-                target_pc,
-                block_start_pc,
-                block_end_pc,
-            } => write!(
-                f,
-                "branch target {target_pc:#x} lands inside existing block [{block_start_pc:#x}, {block_end_pc:#x}]"
-            ),
         }
     }
 }
@@ -84,14 +69,9 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
         let start_pc = pending[pending_index];
         pending_index += 1;
 
-        if blocks
-            .iter()
-            .any(|block: &BasicBlock| block.start_pc == start_pc)
-        {
+        if ensure_block_boundary(start_pc, &mut blocks) {
             continue;
         }
-
-        reject_inside_existing_block(start_pc, &blocks)?;
 
         let start_index = decoded_index;
         let mut pc = start_pc;
@@ -99,7 +79,7 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
 
         let terminator = loop {
             if !insns.is_empty() {
-                if block_exists_or_pending(pc, &blocks, &pending) {
+                if pending.contains(&pc) || ensure_block_boundary(pc, &mut blocks) {
                     break BlockTerminator::Fallthrough { next_pc: Some(pc) };
                 }
             }
@@ -196,10 +176,6 @@ fn enqueue_block(pc: u64, pending: &mut Vec<u64>) {
     }
 }
 
-fn block_exists_or_pending(pc: u64, blocks: &[BasicBlock], pending: &[u64]) -> bool {
-    blocks.iter().any(|block| block.start_pc == pc) || pending.contains(&pc)
-}
-
 fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<DecodedInsn, CfgError> {
     let mut bytes = [0_u8; 4];
     code.read_exact(pc, &mut bytes)
@@ -208,16 +184,43 @@ fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<DecodedInsn, CfgError
     decode_word(word, pc).map_err(CfgError::Decode)
 }
 
-fn reject_inside_existing_block(pc: u64, blocks: &[BasicBlock]) -> Result<(), CfgError> {
-    for block in blocks {
-        let block_end = block.start_pc + (block.insns.len() as u64) * 4;
-        if block.start_pc < pc && pc < block_end {
-            return Err(CfgError::BranchIntoExistingBlock {
-                target_pc: pc,
-                block_start_pc: block.start_pc,
-                block_end_pc: block_end,
-            });
-        }
+fn ensure_block_boundary(pc: u64, blocks: &mut Vec<BasicBlock>) -> bool {
+    if blocks.iter().any(|block| block.start_pc == pc) {
+        return true;
     }
-    Ok(())
+
+    split_existing_block_at(pc, blocks)
+}
+
+fn split_existing_block_at(pc: u64, blocks: &mut Vec<BasicBlock>) -> bool {
+    for index in 0..blocks.len() {
+        let block_start = blocks[index].start_pc;
+        let block_end = block_start + (blocks[index].insns.len() as u64) * 4;
+        if !(block_start < pc && pc < block_end) {
+            continue;
+        }
+
+        let split_offset = ((pc - block_start) / 4) as usize;
+        let tail_start_index = blocks[index].start_index + split_offset;
+        let tail_end_index = blocks[index].end_index;
+        let tail_terminator = blocks[index].terminator;
+        let tail_insns = blocks[index].insns.split_off(split_offset);
+
+        blocks[index].end_index = tail_start_index;
+        blocks[index].terminator = BlockTerminator::Fallthrough { next_pc: Some(pc) };
+
+        blocks.insert(
+            index + 1,
+            BasicBlock {
+                start_pc: pc,
+                start_index: tail_start_index,
+                end_index: tail_end_index,
+                insns: tail_insns,
+                terminator: tail_terminator,
+            },
+        );
+        return true;
+    }
+
+    false
 }
