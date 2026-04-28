@@ -15,7 +15,7 @@ pub enum RuntimeExitReason {
     Blr { target_reg: u8, resume_pc: u64 },
     Br { target_reg: u8 },
     Ret { lr_reg: u8 },
-    Svc { resume_pc: u64 },
+    Svc { imm16: u16, resume_pc: u64 },
     Unsupported,
 }
 
@@ -138,6 +138,40 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
                     let target = enqueue_block(target, &mut pc_to_block, &mut pending);
                     insns.push(insn);
                     break BlockTerminator::Branch { target };
+                }
+                DecodedInsnKind::BranchLink { target } => {
+                    let reason = RuntimeExitReason::Bl {
+                        target_pc: target,
+                        resume_pc: pc,
+                    };
+                    insns.push(insn);
+                    break BlockTerminator::RuntimeExit { reason };
+                }
+                DecodedInsnKind::BranchLinkReg { rn } => {
+                    let reason = RuntimeExitReason::Blr {
+                        target_reg: rn,
+                        resume_pc: pc,
+                    };
+                    insns.push(insn);
+                    break BlockTerminator::RuntimeExit { reason };
+                }
+                DecodedInsnKind::BranchReg { rn } => {
+                    let reason = RuntimeExitReason::Br { target_reg: rn };
+                    insns.push(insn);
+                    break BlockTerminator::RuntimeExit { reason };
+                }
+                DecodedInsnKind::Ret { rn } => {
+                    let reason = RuntimeExitReason::Ret { lr_reg: rn };
+                    insns.push(insn);
+                    break BlockTerminator::RuntimeExit { reason };
+                }
+                DecodedInsnKind::Svc { imm16 } => {
+                    let reason = RuntimeExitReason::Svc {
+                        imm16,
+                        resume_pc: pc,
+                    };
+                    insns.push(insn);
+                    break BlockTerminator::RuntimeExit { reason };
                 }
                 DecodedInsnKind::CondBranch { target, .. }
                 | DecodedInsnKind::CompareBranch { target, .. }

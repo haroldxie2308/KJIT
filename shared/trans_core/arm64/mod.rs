@@ -113,6 +113,21 @@ pub enum DecodedInsnKind {
     Branch {
         target: u64,
     },
+    BranchLink {
+        target: u64,
+    },
+    BranchReg {
+        rn: u8,
+    },
+    BranchLinkReg {
+        rn: u8,
+    },
+    Ret {
+        rn: u8,
+    },
+    Svc {
+        imm16: u16,
+    },
     CondBranch {
         cond: BranchCondition,
         target: u64,
@@ -230,6 +245,58 @@ pub fn decode_word(word: u32, pc: u64) -> Result<DecodedInsn, DecodeError> {
             pc,
             word,
             kind: DecodedInsnKind::Nop,
+        });
+    }
+
+    if word & 0xFC00_0000 == 0x9400_0000 {
+        let imm26 = word & 0x03FF_FFFF;
+        let offset = sign_extend(imm26, 26) << 2;
+        return Ok(DecodedInsn {
+            pc,
+            word,
+            kind: DecodedInsnKind::BranchLink {
+                target: pc.wrapping_add_signed(offset),
+            },
+        });
+    }
+
+    if word & 0xFFFF_FC1F == 0xD61F_0000 {
+        return Ok(DecodedInsn {
+            pc,
+            word,
+            kind: DecodedInsnKind::BranchReg {
+                rn: ((word >> 5) & 0x1F) as u8,
+            },
+        });
+    }
+
+    if word & 0xFFFF_FC1F == 0xD63F_0000 {
+        return Ok(DecodedInsn {
+            pc,
+            word,
+            kind: DecodedInsnKind::BranchLinkReg {
+                rn: ((word >> 5) & 0x1F) as u8,
+            },
+        });
+    }
+
+    if word & 0xFFFF_FC1F == 0xD65F_0000 {
+        return Ok(DecodedInsn {
+            pc,
+            word,
+            kind: DecodedInsnKind::Ret {
+                rn: ((word >> 5) & 0x1F) as u8,
+            },
+        });
+    }
+
+    if word & 0xFFE0_001F == 0xD400_0001 {
+        return Ok(DecodedInsn {
+            pc,
+            word,
+            kind: DecodedInsnKind::Svc {
+                imm16: ((word >> 5) & 0xFFFF) as u16,
+            },
         });
     }
 

@@ -6,9 +6,9 @@ use alloc::string::{String, ToString};
 use crate::trans_core::arm64::{
     AddSubOp, DecodedInsnKind, GprWidth, LoadStoreAddressing, LoadStoreOp, MoveWideOp,
 };
-use crate::trans_core::cfg::{build_cfg, BlockId, Cfg};
+use crate::trans_core::cfg::{build_cfg, BlockId, Cfg, RuntimeExitReason};
 use crate::trans_core::input::{CodeProvider, TranslationRequest};
-use crate::trans_core::ir::{IrInsn, IrProgram};
+use crate::trans_core::ir::{IrInsn, IrProgram, LinkSlot};
 
 pub fn translate_request<P: CodeProvider>(
     request: &TranslationRequest,
@@ -16,11 +16,18 @@ pub fn translate_request<P: CodeProvider>(
 ) -> Result<IrProgram, String> {
     let cfg = build_cfg(request, code).map_err(|err| err.to_string())?;
     let ir_index_by_block = ir_index_by_block(&cfg);
+    let mut next_link_slot = 0usize;
 
     let mut ir = IrProgram::with_capacity(cfg.blocks.iter().map(|block| block.insns.len()).sum());
     for block in &cfg.blocks {
         for insn in &block.insns {
-            let ir_insn = translate_insn_to_ir(insn.kind, &cfg, &ir_index_by_block)?;
+            let ir_insn = translate_insn_to_ir(
+                insn.pc,
+                insn.kind,
+                &cfg,
+                &ir_index_by_block,
+                &mut next_link_slot,
+            )?;
             ir.push(ir_insn);
         }
     }
@@ -39,9 +46,11 @@ fn ir_index_by_block(cfg: &Cfg) -> BTreeMap<BlockId, usize> {
 }
 
 fn translate_insn_to_ir(
+    pc: u64,
     kind: DecodedInsnKind,
     cfg: &Cfg,
     ir_index_by_block: &BTreeMap<BlockId, usize>,
+    next_link_slot: &mut usize,
 ) -> Result<IrInsn, String> {
     let ir_insn = match kind {
         DecodedInsnKind::Nop => IrInsn::Nop,
@@ -167,9 +176,42 @@ fn translate_insn_to_ir(
         DecodedInsnKind::TestBitBranch { .. } => {
             return Err("TBZ/TBNZ IR translation is not wired into the harness yet".to_string());
         }
+        DecodedInsnKind::BranchLink { target } => runtime_exit(
+            RuntimeExitReason::Bl {
+                target_pc: target,
+                resume_pc: pc + 4,
+            },
+            next_link_slot,
+        ),
+        DecodedInsnKind::BranchLinkReg { rn } => runtime_exit(
+            RuntimeExitReason::Blr {
+                target_reg: rn,
+                resume_pc: pc + 4,
+            },
+            next_link_slot,
+        ),
+        DecodedInsnKind::BranchReg { rn } => {
+            runtime_exit(RuntimeExitReason::Br { target_reg: rn }, next_link_slot)
+        }
+        DecodedInsnKind::Ret { rn } => {
+            runtime_exit(RuntimeExitReason::Ret { lr_reg: rn }, next_link_slot)
+        }
+        DecodedInsnKind::Svc { imm16 } => runtime_exit(
+            RuntimeExitReason::Svc {
+                imm16,
+                resume_pc: pc + 4,
+            },
+            next_link_slot,
+        ),
     };
 
     Ok(ir_insn)
+}
+
+fn runtime_exit(reason: RuntimeExitReason, next_link_slot: &mut usize) -> IrInsn {
+    let slot = LinkSlot(*next_link_slot);
+    *next_link_slot += 1;
+    IrInsn::RuntimeExit { slot, reason }
 }
 
 fn insn_load_store_offset(kind: DecodedInsnKind) -> Result<u16, String> {

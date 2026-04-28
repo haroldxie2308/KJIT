@@ -5,7 +5,7 @@ use crate::arm64::{
 };
 use crate::model::{ExecutionResult, HaltReason, MachineState};
 use crate::trans_core::arm64::BranchCondition;
-pub use crate::trans_core::ir::{IrInsn, IrProgram};
+pub use crate::trans_core::ir::{IrInsn, IrProgram, LinkSlot};
 
 const MAX_STEPS: usize = 1024;
 
@@ -94,7 +94,7 @@ pub fn execute_program(
                 pc = target;
             }
             IrInsn::BCond { cond, target } => {
-                if eval_condition(cond, &state) {
+                if eval_condition_for_jit(cond, &state) {
                     pc = target;
                 } else {
                     pc += 1;
@@ -125,6 +125,13 @@ pub fn execute_program(
                 let value = state.read_u64(addr);
                 state.write_reg(rt, value);
                 pc += 1;
+            }
+            IrInsn::RuntimeExit { reason, .. } => {
+                return Ok(ExecutionResult {
+                    state,
+                    halt_reason: HaltReason::RuntimeExit { reason },
+                    steps,
+                });
             }
         }
     }
@@ -201,12 +208,17 @@ pub fn encode_program(insns: &[IrInsn]) -> Result<Vec<u8>, String> {
                 let word = encode_ldr_imm(rt, rn, offset)?;
                 bytes.extend_from_slice(&word.to_le_bytes());
             }
+            IrInsn::RuntimeExit { .. } => {
+                return Err(
+                    "cannot encode runtime exits as standalone AArch64 bytes yet".to_string(),
+                );
+            }
         }
     }
     Ok(bytes)
 }
 
-fn eval_condition(cond: BranchCondition, state: &MachineState) -> bool {
+pub(crate) fn eval_condition_for_jit(cond: BranchCondition, state: &MachineState) -> bool {
     let flags = state.flags;
     match cond {
         BranchCondition::Eq => flags.z,

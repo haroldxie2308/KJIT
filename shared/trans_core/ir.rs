@@ -1,4 +1,8 @@
 use crate::trans_core::arm64::BranchCondition;
+use crate::trans_core::cfg::RuntimeExitReason;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LinkSlot(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum IrInsn {
@@ -16,6 +20,10 @@ pub enum IrInsn {
     Cbnz { rt: u8, target: usize },
     StrImm { rt: u8, rn: u8, offset: u16 },
     LdrImm { rt: u8, rn: u8, offset: u16 },
+    RuntimeExit {
+        slot: LinkSlot,
+        reason: RuntimeExitReason,
+    },
 }
 
 pub type IrProgram = Vec<IrInsn>;

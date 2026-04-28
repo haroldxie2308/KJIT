@@ -1,5 +1,7 @@
 use std::collections::BTreeMap;
 
+use crate::trans_core::cfg::RuntimeExitReason;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Flags {
     pub n: bool,
@@ -19,6 +21,7 @@ pub struct MachineState {
 pub enum HaltReason {
     FellOffEnd,
     StepLimitExceeded,
+    RuntimeExit { reason: RuntimeExitReason },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

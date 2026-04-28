@@ -3,6 +3,7 @@ extern crate alloc;
 pub mod arm64;
 pub mod cases;
 pub mod ir;
+pub mod jit;
 pub mod model;
 #[path = "../../shared/trans_core/mod.rs"]
 pub mod trans_core;
@@ -215,6 +216,44 @@ mod tests {
     }
 
     #[test]
+    fn jit_runtime_handles_svc_and_links_resume_slot() {
+        use crate::jit::{JitRuntime, SyscallHandler};
+        use crate::trans_core::ir::LinkSlot;
+
+        struct CountingSyscall {
+            calls: usize,
+        }
+
+        impl SyscallHandler for CountingSyscall {
+            fn handle_svc(&mut self, _imm16: u16, state: &mut MachineState) -> Result<(), String> {
+                self.calls += 1;
+                state.write_reg(0, self.calls as u64);
+                Ok(())
+            }
+        }
+
+        let base_pc = 0x8000;
+        let mut program = Vec::new();
+        program.extend_from_slice(&crate::arm64::encode_movz(8, 0, 0).unwrap().to_le_bytes());
+        program.extend_from_slice(&0xd400_0001_u32.to_le_bytes());
+        program.extend_from_slice(
+            &crate::arm64::encode_movz(1, 0x1234, 0)
+                .unwrap()
+                .to_le_bytes(),
+        );
+        program.extend_from_slice(&0xd503_201f_u32.to_le_bytes());
+
+        let code = MockCodeProvider::new(base_pc, program);
+        let mut runtime = JitRuntime::new(code, CountingSyscall { calls: 0 });
+        let result = runtime.execute(base_pc, &MachineState::new()).unwrap();
+
+        assert_eq!(result.halt_reason, crate::model::HaltReason::FellOffEnd);
+        assert_eq!(result.state.read_reg(0), 1);
+        assert_eq!(result.state.read_reg(1), 0x1234);
+        assert!(runtime.is_link_slot_resolved(LinkSlot(0)));
+    }
+
+    #[test]
     fn generated_arm64_subset_matches_sample_opcodes() {
         use generated_a64_spec::generated_a64_subset_match;
 
@@ -339,6 +378,9 @@ mod tests {
                 addressing: LoadStoreAddressing::UnsignedScaledOffset { imm12: 2 },
             }
         );
+
+        let svc = decode_word(0xD400_0001, 0x30).unwrap();
+        assert_eq!(svc.kind, DecodedInsnKind::Svc { imm16: 0 });
     }
 
     #[test]
