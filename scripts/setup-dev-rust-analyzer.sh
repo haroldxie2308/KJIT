@@ -20,10 +20,13 @@ if [[ -z "$host_triple" ]]; then
     exit 1
 fi
 
+ra_bin="$(rustup which rust-analyzer 2>/dev/null || true)"
 component="rust-analyzer-${host_triple}"
-rustup component add "$component" >/dev/null
+if [[ -z "$ra_bin" ]] || [[ ! -x "$ra_bin" ]]; then
+    rustup component add "$component" >/dev/null
+    ra_bin="$(rustup which rust-analyzer 2>/dev/null || true)"
+fi
 
-ra_bin="$(rustup which rust-analyzer)"
 if [[ -z "$ra_bin" ]] || [[ ! -x "$ra_bin" ]]; then
     echo "Failed to locate a runnable rust-analyzer from rustup." >&2
     exit 1

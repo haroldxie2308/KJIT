@@ -95,6 +95,44 @@ The Linux development image is defined in `docker/dev/Dockerfile` and is intende
 - `make rust-analyzer`: generate `rust-project.json`
 - `make module-build`: build the KJIT out-of-tree module
 
+### Vim / Neovim
+
+The dev image includes Vim and Neovim. Neovim is configured during container startup to use the same toolchain-matched rust-analyzer binary as VS Code:
+
+- `rust-analyzer` binary: `/workspace/.kjit/bin/rust-analyzer`
+- Neovim config: `$HOME/.config/nvim/init.lua`
+- Rust project metadata: `rust-project.json`
+
+From VS Code Dev Containers, `.devcontainer/post-create.sh` runs the editor setup automatically.
+
+To start the same Docker development environment directly from a terminal without VS Code:
+
+```sh
+./scripts/docker-dev.sh --build-image
+```
+
+After the first build, you can start it with:
+
+```sh
+./scripts/docker-dev.sh
+```
+
+Inside the container, run:
+
+```sh
+make prepare
+make rust-analyzer
+nvim
+```
+
+The Docker wrapper sets `HOME=/workspace/.kjit/docker-home`, so Neovim config and shell aliases persist under the repo-local `.kjit/` directory.
+
+Neovim also includes NERDTree:
+
+- `Ctrl-n`: toggle NERDTree
+- `<leader>nt`: toggle NERDTree
+- `<leader>nf`: reveal the current file in NERDTree
+
 ### Sublime Text
 
 This repo includes `KJIT.sublime-project` and `KJIT.sublime-build` for Sublime Text.
@@ -120,11 +158,8 @@ This repo also includes `.vscode/settings.json`, `.vscode/tasks.json`, and `.vsc
 The recommended editor workflow is VS Code Remote Containers:
 
 1. Open the repo in VS Code
-2. Build the dev image on the host:
-   `docker build -t kjit-dev:latest -f docker/dev/Dockerfile docker/dev`
-3. Run `Dev Containers: Reopen in Container`
-4. Inside the container, run:
-   - `bash scripts/setup-dev-rust-analyzer.sh`
+2. Run `Dev Containers: Reopen in Container`
+3. Inside the container, run:
    - `make prepare`
    - `make rust-analyzer`
    - `make module-build`
@@ -132,7 +167,7 @@ The recommended editor workflow is VS Code Remote Containers:
 Notes:
 
 - The dev container ignores host-local `.kjit.env` by default so macOS/Linux path overrides do not leak into the Linux workspace
-- `scripts/setup-dev-rust-analyzer.sh` installs a toolchain-matched `rust-analyzer` component and links it at `/workspace/.kjit/bin/rust-analyzer`
+- `scripts/setup-dev-editor.sh` installs a toolchain-matched `rust-analyzer` component, links it at `/workspace/.kjit/bin/rust-analyzer`, and configures Neovim
 - VS Code is configured to use that linked binary instead of the extension-bundled server, so it matches the Rust toolchain used by the kernel build
 - QEMU remains a host-side workflow unless you explicitly decide to run it from inside a Linux environment with the required acceleration and device access
 

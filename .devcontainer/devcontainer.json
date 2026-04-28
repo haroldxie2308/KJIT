@@ -1,6 +1,9 @@
 {
     "name": "KJIT Dev",
-    "image": "kjit-dev:latest",
+    "build": {
+        "dockerfile": "../docker/dev/Dockerfile",
+        "context": "../docker/dev"
+    },
     "workspaceFolder": "/workspace",
     "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
     "remoteEnv": {

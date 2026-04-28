@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-git config --global --add safe.directory /workspace
-bash /workspace/scripts/setup-dev-rust-analyzer.sh
+bash /workspace/scripts/setup-dev-editor.sh
 
 cat <<'EOF'
 Dev container ready.
