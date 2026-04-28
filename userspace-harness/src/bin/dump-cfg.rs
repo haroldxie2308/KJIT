@@ -57,32 +57,32 @@ fn main() {
     };
 
     println!(
-        "CFG blocks={} entry=b{} base_pc={:#x}",
+        "CFG blocks={} entry_pc={:#x} base_pc={:#x}",
         cfg.blocks.len(),
-        cfg.entry.0,
+        cfg.entry_pc,
         base_pc
     );
-    for block in &cfg.blocks {
+    for (index, block) in cfg.blocks.iter().enumerate() {
         println!(
-            "block b{} start_pc={:#x} insn_range=[{}, {})",
-            block.id.0, block.start_pc, block.start_index, block.end_index
+            "block #{} start_pc={:#x} insn_range=[{}, {})",
+            index, block.start_pc, block.start_index, block.end_index
         );
         for insn in &block.insns {
             println!("  {:#06x}: {:#010x} {:?}", insn.pc, insn.word, insn.kind);
         }
         match block.terminator {
-            BlockTerminator::Fallthrough { next } => match next {
-                Some(next) => println!("  terminator: fallthrough -> b{}", next.0),
+            BlockTerminator::Fallthrough { next_pc } => match next_pc {
+                Some(next_pc) => println!("  terminator: fallthrough -> pc {next_pc:#x}"),
                 None => println!("  terminator: exit"),
             },
-            BlockTerminator::Branch { target } => {
-                println!("  terminator: branch -> b{}", target.0);
+            BlockTerminator::Branch { target_pc } => {
+                println!("  terminator: branch -> pc {target_pc:#x}");
             }
-            BlockTerminator::CondBranch { taken, fallthrough } => {
-                println!(
-                    "  terminator: cond -> b{} else b{}",
-                    taken.0, fallthrough.0
-                );
+            BlockTerminator::CondBranch {
+                taken_pc,
+                fallthrough_pc,
+            } => {
+                println!("  terminator: cond -> pc {taken_pc:#x} else pc {fallthrough_pc:#x}");
             }
             BlockTerminator::RuntimeExit { reason } => {
                 println!("  terminator: runtime-exit {:?}", reason);

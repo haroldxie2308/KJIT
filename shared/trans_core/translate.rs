@@ -1,33 +1,25 @@
 extern crate alloc;
 
-use alloc::collections::BTreeMap;
 use alloc::string::{String, ToString};
 
 use crate::trans_core::arm64::{
     AddSubOp, DecodedInsnKind, GprWidth, LoadStoreAddressing, LoadStoreOp, MoveWideOp,
 };
-use crate::trans_core::cfg::{build_cfg, BlockId, Cfg, RuntimeExitReason};
+use crate::trans_core::cfg::{build_cfg, RuntimeExitReason};
 use crate::trans_core::input::{CodeProvider, TranslationRequest};
-use crate::trans_core::ir::{IrInsn, IrProgram, LinkSlot};
+use crate::trans_core::ir::{IrInsn, IrInsnKind, IrProgram, LinkSlot};
 
 pub fn translate_request<P: CodeProvider>(
     request: &TranslationRequest,
     code: &P,
 ) -> Result<IrProgram, String> {
     let cfg = build_cfg(request, code).map_err(|err| err.to_string())?;
-    let ir_index_by_block = ir_index_by_block(&cfg);
     let mut next_link_slot = 0usize;
 
     let mut ir = IrProgram::with_capacity(cfg.blocks.iter().map(|block| block.insns.len()).sum());
     for block in &cfg.blocks {
         for insn in &block.insns {
-            let ir_insn = translate_insn_to_ir(
-                insn.pc,
-                insn.kind,
-                &cfg,
-                &ir_index_by_block,
-                &mut next_link_slot,
-            )?;
+            let ir_insn = translate_insn_to_ir(insn.pc, insn.kind, &mut next_link_slot)?;
             ir.push(ir_insn);
         }
     }
@@ -35,25 +27,13 @@ pub fn translate_request<P: CodeProvider>(
     Ok(ir)
 }
 
-fn ir_index_by_block(cfg: &Cfg) -> BTreeMap<BlockId, usize> {
-    let mut map = BTreeMap::new();
-    let mut next_index = 0usize;
-    for block in &cfg.blocks {
-        map.insert(block.id, next_index);
-        next_index += block.insns.len();
-    }
-    map
-}
-
 fn translate_insn_to_ir(
     pc: u64,
     kind: DecodedInsnKind,
-    cfg: &Cfg,
-    ir_index_by_block: &BTreeMap<BlockId, usize>,
     next_link_slot: &mut usize,
 ) -> Result<IrInsn, String> {
-    let ir_insn = match kind {
-        DecodedInsnKind::Nop => IrInsn::Nop,
+    let ir_kind = match kind {
+        DecodedInsnKind::Nop => IrInsnKind::Nop,
         DecodedInsnKind::MoveWide {
             op: MoveWideOp::Zero,
             width: GprWidth::X64,
@@ -62,7 +42,7 @@ fn translate_insn_to_ir(
             shift,
         } => {
             let value = (imm16 as u64) << shift;
-            IrInsn::LoadImm64 { rd, value }
+            IrInsnKind::LoadImm64 { rd, value }
         }
         DecodedInsnKind::MoveWide {
             op: MoveWideOp::Keep,
@@ -78,7 +58,9 @@ fn translate_insn_to_ir(
                 "only 64-bit move-wide instructions are supported in IR translation, got {width:?}"
             ));
         }
-        DecodedInsnKind::PcRelAddress { rd, target, .. } => IrInsn::LoadImm64 { rd, value: target },
+        DecodedInsnKind::PcRelAddress { rd, target, .. } => {
+            IrInsnKind::LoadImm64 { rd, value: target }
+        }
         DecodedInsnKind::AddSubImm {
             op: AddSubOp::Add,
             width: GprWidth::X64,
@@ -87,7 +69,7 @@ fn translate_insn_to_ir(
             rn,
             imm12,
             shift12: false,
-        } => IrInsn::AddImm { rd, rn, imm12 },
+        } => IrInsnKind::AddImm { rd, rn, imm12 },
         DecodedInsnKind::AddSubImm {
             op: AddSubOp::Sub,
             width: GprWidth::X64,
@@ -96,7 +78,7 @@ fn translate_insn_to_ir(
             rn,
             imm12,
             shift12: false,
-        } => IrInsn::SubImm { rd, rn, imm12 },
+        } => IrInsnKind::SubImm { rd, rn, imm12 },
         DecodedInsnKind::AddSubImm {
             op: AddSubOp::Sub,
             width: GprWidth::X64,
@@ -105,36 +87,34 @@ fn translate_insn_to_ir(
             rn,
             imm12,
             shift12: false,
-        } => IrInsn::CmpImm { rn, imm12 },
+        } => IrInsnKind::CmpImm { rn, imm12 },
         DecodedInsnKind::AddSubImm { width, shift12, .. } => {
             return Err(format!(
                 "unsupported add/sub immediate IR translation: width={width:?}, shift12={shift12}"
             ));
         }
-        DecodedInsnKind::Branch { target } => IrInsn::B {
-            target: resolve_target(target, cfg, ir_index_by_block)?,
-        },
-        DecodedInsnKind::CondBranch { cond, target } => IrInsn::BCond {
+        DecodedInsnKind::Branch { target } => IrInsnKind::B { target_pc: target },
+        DecodedInsnKind::CondBranch { cond, target } => IrInsnKind::BCond {
             cond,
-            target: resolve_target(target, cfg, ir_index_by_block)?,
+            target_pc: target,
         },
         DecodedInsnKind::CompareBranch {
             nonzero: false,
             width: GprWidth::X64,
             rt,
             target,
-        } => IrInsn::Cbz {
+        } => IrInsnKind::Cbz {
             rt,
-            target: resolve_target(target, cfg, ir_index_by_block)?,
+            target_pc: target,
         },
         DecodedInsnKind::CompareBranch {
             nonzero: true,
             width: GprWidth::X64,
             rt,
             target,
-        } => IrInsn::Cbnz {
+        } => IrInsnKind::Cbnz {
             rt,
-            target: resolve_target(target, cfg, ir_index_by_block)?,
+            target_pc: target,
         },
         DecodedInsnKind::CompareBranch { width, .. } => {
             return Err(format!(
@@ -147,7 +127,7 @@ fn translate_insn_to_ir(
             rt,
             rn,
             addressing: LoadStoreAddressing::UnsignedScaledOffset { .. },
-        } => IrInsn::StrImm {
+        } => IrInsnKind::StrImm {
             rt,
             rn,
             offset: insn_load_store_offset(kind)?,
@@ -158,7 +138,7 @@ fn translate_insn_to_ir(
             rt,
             rn,
             addressing: LoadStoreAddressing::UnsignedScaledOffset { .. },
-        } => IrInsn::LdrImm {
+        } => IrInsnKind::LdrImm {
             rt,
             rn,
             offset: insn_load_store_offset(kind)?,
@@ -205,13 +185,13 @@ fn translate_insn_to_ir(
         ),
     };
 
-    Ok(ir_insn)
+    Ok(IrInsn { pc, kind: ir_kind })
 }
 
-fn runtime_exit(reason: RuntimeExitReason, next_link_slot: &mut usize) -> IrInsn {
+fn runtime_exit(reason: RuntimeExitReason, next_link_slot: &mut usize) -> IrInsnKind {
     let slot = LinkSlot(*next_link_slot);
     *next_link_slot += 1;
-    IrInsn::RuntimeExit { slot, reason }
+    IrInsnKind::RuntimeExit { slot, reason }
 }
 
 fn insn_load_store_offset(kind: DecodedInsnKind) -> Result<u16, String> {
@@ -224,19 +204,4 @@ fn insn_load_store_offset(kind: DecodedInsnKind) -> Result<u16, String> {
         }
         _ => Err("expected load/store instruction".to_string()),
     }
-}
-
-fn resolve_target(
-    target_pc: u64,
-    cfg: &Cfg,
-    ir_index_by_block: &BTreeMap<BlockId, usize>,
-) -> Result<usize, String> {
-    let block =
-        cfg.pc_to_block.get(&target_pc).copied().ok_or_else(|| {
-            format!("branch target {target_pc:#x} is outside the supported program")
-        })?;
-    ir_index_by_block
-        .get(&block)
-        .copied()
-        .ok_or_else(|| format!("missing IR block for target pc {target_pc:#x}"))
 }

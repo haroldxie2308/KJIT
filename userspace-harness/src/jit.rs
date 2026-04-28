@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::ir::{IrInsn, IrProgram, LinkSlot};
+use crate::ir::{IrInsn, IrInsnKind, IrProgram, LinkSlot};
 use crate::model::{ExecutionResult, HaltReason, MachineState};
 use crate::trans_core::cfg::RuntimeExitReason;
 use crate::trans_core::input::{TranslationRequest, TranslationTrigger};
@@ -26,6 +26,7 @@ pub struct JitRuntime<H: SyscallHandler> {
     code: MockCodeProvider,
     program: IrProgram,
     entry_by_pc: BTreeMap<u64, usize>,
+    ir_index_by_pc: BTreeMap<u64, usize>,
     link_slots: BTreeMap<LinkSlot, usize>,
     next_link_slot: usize,
     syscall_handler: H,
@@ -37,6 +38,7 @@ impl<H: SyscallHandler> JitRuntime<H> {
             code,
             program: Vec::new(),
             entry_by_pc: BTreeMap::new(),
+            ir_index_by_pc: BTreeMap::new(),
             link_slots: BTreeMap::new(),
             next_link_slot: 0,
             syscall_handler,
@@ -75,81 +77,81 @@ impl<H: SyscallHandler> JitRuntime<H> {
                 .ok_or_else(|| format!("JIT IR pc out of range: {pc}"))?;
             steps += 1;
 
-            match insn {
-                IrInsn::Nop => pc += 1,
-                IrInsn::LoadImm64 { rd, value } => {
+            match insn.kind {
+                IrInsnKind::Nop => pc += 1,
+                IrInsnKind::LoadImm64 { rd, value } => {
                     state.write_reg(rd, value);
                     pc += 1;
                 }
-                IrInsn::AddImm { rd, rn, imm12 } => {
+                IrInsnKind::AddImm { rd, rn, imm12 } => {
                     let value = state.read_reg(rn).wrapping_add(imm12 as u64);
                     state.write_reg(rd, value);
                     pc += 1;
                 }
-                IrInsn::AddReg { rd, rn, rm } => {
+                IrInsnKind::AddReg { rd, rn, rm } => {
                     let value = state.read_reg(rn).wrapping_add(state.read_reg(rm));
                     state.write_reg(rd, value);
                     pc += 1;
                 }
-                IrInsn::SubImm { rd, rn, imm12 } => {
+                IrInsnKind::SubImm { rd, rn, imm12 } => {
                     let value = state.read_reg(rn).wrapping_sub(imm12 as u64);
                     state.write_reg(rd, value);
                     pc += 1;
                 }
-                IrInsn::SubReg { rd, rn, rm } => {
+                IrInsnKind::SubReg { rd, rn, rm } => {
                     let value = state.read_reg(rn).wrapping_sub(state.read_reg(rm));
                     state.write_reg(rd, value);
                     pc += 1;
                 }
-                IrInsn::CmpImm { rn, imm12 } => {
+                IrInsnKind::CmpImm { rn, imm12 } => {
                     let lhs = state.read_reg(rn);
                     let rhs = imm12 as u64;
                     let result = lhs.wrapping_sub(rhs);
                     state.update_sub_flags(lhs, rhs, result);
                     pc += 1;
                 }
-                IrInsn::CmpReg { rn, rm } => {
+                IrInsnKind::CmpReg { rn, rm } => {
                     let lhs = state.read_reg(rn);
                     let rhs = state.read_reg(rm);
                     let result = lhs.wrapping_sub(rhs);
                     state.update_sub_flags(lhs, rhs, result);
                     pc += 1;
                 }
-                IrInsn::B { target } => pc = target,
-                IrInsn::BCond { cond, target } => {
+                IrInsnKind::B { target_pc } => pc = self.resolve_ir_pc(target_pc)?,
+                IrInsnKind::BCond { cond, target_pc } => {
                     if crate::ir::eval_condition_for_jit(cond, &state) {
-                        pc = target;
+                        pc = self.resolve_ir_pc(target_pc)?;
                     } else {
                         pc += 1;
                     }
                 }
-                IrInsn::Cbz { rt, target } => {
+                IrInsnKind::Cbz { rt, target_pc } => {
                     if state.read_reg(rt) == 0 {
-                        pc = target;
+                        pc = self.resolve_ir_pc(target_pc)?;
                     } else {
                         pc += 1;
                     }
                 }
-                IrInsn::Cbnz { rt, target } => {
+                IrInsnKind::Cbnz { rt, target_pc } => {
                     if state.read_reg(rt) != 0 {
-                        pc = target;
+                        pc = self.resolve_ir_pc(target_pc)?;
                     } else {
                         pc += 1;
                     }
                 }
-                IrInsn::StrImm { rt, rn, offset } => {
+                IrInsnKind::StrImm { rt, rn, offset } => {
                     let addr = state.read_reg(rn).wrapping_add(offset as u64);
                     let value = state.read_reg(rt);
                     state.write_u64(addr, value);
                     pc += 1;
                 }
-                IrInsn::LdrImm { rt, rn, offset } => {
+                IrInsnKind::LdrImm { rt, rn, offset } => {
                     let addr = state.read_reg(rn).wrapping_add(offset as u64);
                     let value = state.read_u64(addr);
                     state.write_reg(rt, value);
                     pc += 1;
                 }
-                IrInsn::RuntimeExit { slot, reason } => {
+                IrInsnKind::RuntimeExit { slot, reason } => {
                     pc = self.handle_runtime_exit(slot, reason, &mut state)?;
                 }
             }
@@ -199,9 +201,16 @@ impl<H: SyscallHandler> JitRuntime<H> {
         if let Some(target) = self.link_slots.get(&slot).copied() {
             return Ok(target);
         }
-        let target = self.translate_entry(target_pc)?;
+        let target = self.resolve_ir_pc(target_pc)?;
         self.link_slots.insert(slot, target);
         Ok(target)
+    }
+
+    fn resolve_ir_pc(&mut self, target_pc: u64) -> Result<usize, String> {
+        if let Some(target) = self.ir_index_by_pc.get(&target_pc).copied() {
+            return Ok(target);
+        }
+        self.translate_entry(target_pc)
     }
 
     fn translate_entry(&mut self, entry_pc: u64) -> Result<usize, String> {
@@ -219,29 +228,31 @@ impl<H: SyscallHandler> JitRuntime<H> {
         let mut fragment = translate_request(&request, &self.code)?;
         let base = self.program.len();
         let slot_base = self.next_link_slot;
-        let slot_count = relocate_fragment(base, slot_base, &mut fragment);
+        let slot_count = relocate_fragment(slot_base, &mut fragment);
         self.next_link_slot += slot_count;
+        for (offset, insn) in fragment.iter().enumerate() {
+            if self.ir_index_by_pc.contains_key(&insn.pc) {
+                return Err(format!(
+                    "translated fragment overlaps existing pc: {:#x}",
+                    insn.pc
+                ));
+            }
+            self.ir_index_by_pc.insert(insn.pc, base + offset);
+        }
         self.program.extend(fragment);
         self.entry_by_pc.insert(entry_pc, base);
         Ok(base)
     }
 }
 
-fn relocate_fragment(base: usize, slot_base: usize, fragment: &mut [IrInsn]) -> usize {
+fn relocate_fragment(slot_base: usize, fragment: &mut [IrInsn]) -> usize {
     let mut slot_count = 0usize;
     for insn in fragment {
-        match insn {
-            IrInsn::B { target }
-            | IrInsn::BCond { target, .. }
-            | IrInsn::Cbz { target, .. }
-            | IrInsn::Cbnz { target, .. } => {
-                *target += base;
+        if let IrInsnKind::RuntimeExit { slot, .. } = &mut insn.kind {
+            if slot.0 >= slot_count {
+                slot_count = slot.0 + 1;
             }
-            IrInsn::RuntimeExit { slot, .. } => {
-                slot.0 += slot_base;
-                slot_count += 1;
-            }
-            _ => {}
+            slot.0 += slot_base;
         }
     }
     slot_count

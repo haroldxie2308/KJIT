@@ -403,8 +403,8 @@ mod tests {
         assert_eq!(
             cfg.blocks[0].terminator,
             BlockTerminator::CondBranch {
-                taken: cfg.blocks[2].id,
-                fallthrough: cfg.blocks[1].id,
+                taken_pc: cfg.blocks[2].start_pc,
+                fallthrough_pc: cfg.blocks[1].start_pc,
             }
         );
 
@@ -413,7 +413,7 @@ mod tests {
         assert_eq!(
             cfg.blocks[1].terminator,
             BlockTerminator::Fallthrough {
-                next: Some(cfg.blocks[2].id),
+                next_pc: Some(cfg.blocks[2].start_pc),
             }
         );
 
@@ -421,7 +421,7 @@ mod tests {
         assert_eq!(cfg.blocks[2].end_index, 5);
         assert_eq!(
             cfg.blocks[2].terminator,
-            BlockTerminator::Fallthrough { next: None }
+            BlockTerminator::Fallthrough { next_pc: None }
         );
     }
 }

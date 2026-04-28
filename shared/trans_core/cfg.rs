@@ -1,13 +1,9 @@
 extern crate alloc;
 
-use alloc::collections::BTreeMap;
 use alloc::vec::Vec;
 
 use crate::trans_core::arm64::{decode_word, DecodeError, DecodedInsn, DecodedInsnKind};
 use crate::trans_core::input::{CodeProvider, CodeReadError, TranslationRequest};
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct BlockId(pub usize);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeExitReason {
@@ -21,24 +17,14 @@ pub enum RuntimeExitReason {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BlockTerminator {
-    Fallthrough {
-        next: Option<BlockId>,
-    },
-    Branch {
-        target: BlockId,
-    },
-    CondBranch {
-        taken: BlockId,
-        fallthrough: BlockId,
-    },
-    RuntimeExit {
-        reason: RuntimeExitReason,
-    },
+    Fallthrough { next_pc: Option<u64> },
+    Branch { target_pc: u64 },
+    CondBranch { taken_pc: u64, fallthrough_pc: u64 },
+    RuntimeExit { reason: RuntimeExitReason },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BasicBlock {
-    pub id: BlockId,
     pub start_pc: u64,
     pub start_index: usize,
     pub end_index: usize,
@@ -48,9 +34,8 @@ pub struct BasicBlock {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Cfg {
-    pub entry: BlockId,
+    pub entry_pc: u64,
     pub blocks: Vec<BasicBlock>,
-    pub pc_to_block: BTreeMap<u64, BlockId>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -89,10 +74,9 @@ impl core::fmt::Display for CfgError {
 
 pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Result<Cfg, CfgError> {
     let mut blocks = Vec::new();
-    let mut pc_to_block = BTreeMap::new();
     let mut pending = Vec::new();
 
-    enqueue_block(request.entry_pc, &mut pc_to_block, &mut pending);
+    enqueue_block(request.entry_pc, &mut pending);
 
     let mut pending_index = 0usize;
     let mut decoded_index = 0usize;
@@ -109,24 +93,21 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
 
         reject_inside_existing_block(start_pc, &blocks)?;
 
-        let id = *pc_to_block
-            .get(&start_pc)
-            .expect("pending block must have an assigned id");
         let start_index = decoded_index;
         let mut pc = start_pc;
         let mut insns = Vec::new();
 
         let terminator = loop {
             if !insns.is_empty() {
-                if let Some(next) = pc_to_block.get(&pc).copied() {
-                    break BlockTerminator::Fallthrough { next: Some(next) };
+                if block_exists_or_pending(pc, &blocks, &pending) {
+                    break BlockTerminator::Fallthrough { next_pc: Some(pc) };
                 }
             }
 
             let insn = match read_insn(code, pc) {
                 Ok(insn) => insn,
                 Err(CfgError::CodeRead(_)) if !insns.is_empty() => {
-                    break BlockTerminator::Fallthrough { next: None };
+                    break BlockTerminator::Fallthrough { next_pc: None };
                 }
                 Err(err) => return Err(err),
             };
@@ -135,9 +116,9 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
 
             match insn.kind {
                 DecodedInsnKind::Branch { target } => {
-                    let target = enqueue_block(target, &mut pc_to_block, &mut pending);
+                    enqueue_block(target, &mut pending);
                     insns.push(insn);
-                    break BlockTerminator::Branch { target };
+                    break BlockTerminator::Branch { target_pc: target };
                 }
                 DecodedInsnKind::BranchLink { target } => {
                     let reason = RuntimeExitReason::Bl {
@@ -176,10 +157,13 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
                 DecodedInsnKind::CondBranch { target, .. }
                 | DecodedInsnKind::CompareBranch { target, .. }
                 | DecodedInsnKind::TestBitBranch { target, .. } => {
-                    let fallthrough = enqueue_block(pc, &mut pc_to_block, &mut pending);
-                    let taken = enqueue_block(target, &mut pc_to_block, &mut pending);
+                    enqueue_block(pc, &mut pending);
+                    enqueue_block(target, &mut pending);
                     insns.push(insn);
-                    break BlockTerminator::CondBranch { taken, fallthrough };
+                    break BlockTerminator::CondBranch {
+                        taken_pc: target,
+                        fallthrough_pc: pc,
+                    };
                 }
                 _ => {
                     insns.push(insn);
@@ -192,7 +176,6 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
         }
 
         blocks.push(BasicBlock {
-            id,
             start_pc,
             start_index,
             end_index: decoded_index,
@@ -202,25 +185,19 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
     }
 
     Ok(Cfg {
-        entry: BlockId(0),
+        entry_pc: request.entry_pc,
         blocks,
-        pc_to_block,
     })
 }
 
-fn enqueue_block(
-    pc: u64,
-    pc_to_block: &mut BTreeMap<u64, BlockId>,
-    pending: &mut Vec<u64>,
-) -> BlockId {
-    if let Some(id) = pc_to_block.get(&pc).copied() {
-        return id;
+fn enqueue_block(pc: u64, pending: &mut Vec<u64>) {
+    if !pending.contains(&pc) {
+        pending.push(pc);
     }
+}
 
-    let id = BlockId(pc_to_block.len());
-    pc_to_block.insert(pc, id);
-    pending.push(pc);
-    id
+fn block_exists_or_pending(pc: u64, blocks: &[BasicBlock], pending: &[u64]) -> bool {
+    blocks.iter().any(|block| block.start_pc == pc) || pending.contains(&pc)
 }
 
 fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<DecodedInsn, CfgError> {
