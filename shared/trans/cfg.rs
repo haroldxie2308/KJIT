@@ -1,5 +1,5 @@
+use crate::shared::arm64::{decode_word, DecodeError, DecodedInsn};
 use crate::shared::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
-use crate::shared::trans::arm64::{decode_word, DecodeError, DecodedInsn};
 use crate::shared::trans::input::{CodeProvider, CodeReadError, TranslationRequest};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

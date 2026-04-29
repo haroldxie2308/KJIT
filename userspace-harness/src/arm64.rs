@@ -1,5 +1,5 @@
 use crate::model::{ExecutionResult, HaltReason, MachineState};
-use crate::shared::trans::arm64::{decode_word, A64Condition, A64Insn};
+use crate::shared::arm64::{decode_word, A64Condition, A64Insn};
 
 const MAX_STEPS: usize = 1024;
 

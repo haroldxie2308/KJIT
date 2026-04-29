@@ -126,7 +126,7 @@ fn register_snapshot(state: &MachineState, pc: u64) -> RegisterSnapshot {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::trans::arm64::{A64Condition, A64Insn};
+    use crate::shared::arm64::{A64Condition, A64Insn};
 
     #[test]
     fn generated_arm64_subset_matches_sample_opcodes() {

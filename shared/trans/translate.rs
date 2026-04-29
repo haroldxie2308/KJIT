@@ -1,5 +1,5 @@
+use crate::shared::arm64::DecodedInsn;
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
-use crate::shared::trans::arm64::DecodedInsn;
 use crate::shared::trans::cfg::{build_cfg, CfgError};
 use crate::shared::trans::input::{CodeProvider, TranslationRequest};
 
