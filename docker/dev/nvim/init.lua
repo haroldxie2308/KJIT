@@ -17,7 +17,21 @@ vim.opt.swapfile = false
 
 vim.g.NERDTreeMouseMode = 2
 vim.opt.packpath:append("/opt/kjit/nvim/site")
+pcall(vim.cmd, "packadd tokyonight.nvim")
 pcall(vim.cmd, "packadd nerdtree")
+
+local ok_tokyonight, tokyonight = pcall(require, "tokyonight")
+if ok_tokyonight then
+    tokyonight.setup({
+        style = "night",
+        terminal_colors = true,
+        styles = {
+            comments = { italic = false },
+            keywords = { italic = false },
+        },
+    })
+    vim.cmd.colorscheme("tokyonight-night")
+end
 
 local function map(mode, lhs, rhs, desc)
     vim.keymap.set(mode, lhs, rhs, { silent = true, desc = desc })

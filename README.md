@@ -101,6 +101,7 @@ The dev image includes Vim and Neovim. Neovim is configured during container sta
 
 - `rust-analyzer` binary: `/workspace/.kjit/bin/rust-analyzer`
 - Neovim config: `$HOME/.config/nvim/init.lua`
+- Theme: Tokyo Night
 - Rust project metadata: `rust-project.json`
 
 From VS Code Dev Containers, `.devcontainer/post-create.sh` runs the editor setup automatically.
