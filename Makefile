@@ -13,7 +13,7 @@ endif
 
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare module-build rustavailable-check \
 	kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset \
-	userspace-harness-test userspace-harness-run userspace-harness-dump-cfg test-asm-pipeline arm64-spec-gen workflow-help
+	userspace-harness-test userspace-harness-dump-cfg test-asm-pipeline arm64-spec-gen workflow-help
 
 default:
 	$(KMAKE) M=$$PWD
@@ -71,9 +71,6 @@ module-build: default
 userspace-harness-test:
 	cargo test --manifest-path userspace-harness/Cargo.toml -- --nocapture
 
-userspace-harness-run:
-	cargo run --manifest-path userspace-harness/Cargo.toml -- $(CASE)
-
 userspace-harness-dump-cfg:
 	bash ./scripts/demo-toy-cfg.sh
 
@@ -95,7 +92,6 @@ workflow-help:
 		'module-build    Build the KJIT module' \
 		'arm64-spec-gen  Generate the checked-in ARM64 subset tables from the Arm XML bundle' \
 		'userspace-harness-test Run the standalone userspace validation harness tests' \
-		'userspace-harness-run  Run the standalone userspace validation harness CLI' \
 		'userspace-harness-dump-cfg Assemble the toy AArch64 fixture and print its basic blocks' \
 		'test-asm-pipeline Run assembly fixture through mock-reader translation comparison' \
 		'qemu-run        Boot the local kernel image in QEMU (foreground)' \

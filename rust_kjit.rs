@@ -8,7 +8,6 @@
 #![allow(elided_lifetimes_in_paths)]
 
 #[allow(missing_docs)]
-#[path = "shared/mod.rs"]
 pub mod shared;
 
 use kernel::prelude::*;

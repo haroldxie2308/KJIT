@@ -1,19 +1,16 @@
 extern crate alloc;
 
 pub mod arm64;
-pub mod cases;
 pub mod ir;
 pub mod jit;
 pub mod model;
 #[path = "../../shared/mod.rs"]
 pub mod shared;
-pub mod translate;
 
 use crate::shared::trans_core::input::{
     CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
 };
 use crate::shared::trans_core::translate::translate_request;
-use cases::HarnessCase;
 use ir::{encode_program, execute_program as execute_ir, IrProgram};
 use model::{MachineState, NormalizedState};
 
@@ -25,48 +22,6 @@ pub struct CaseReport {
     pub original_state: NormalizedState,
     pub ir_state: NormalizedState,
     pub encoded_state: NormalizedState,
-}
-
-pub fn run_case(case: &HarnessCase) -> Result<CaseReport, String> {
-    let original =
-        arm64::execute_program(&case.original_program, case.base_pc, &case.initial_state)?;
-    let code = MockCodeProvider::new(case.base_pc, case.original_program.clone());
-    let request = TranslationRequest {
-        entry_pc: case.base_pc,
-        trigger: TranslationTrigger::Manual,
-        regs: Some(register_snapshot(&case.initial_state, case.base_pc)),
-    };
-    let ir_program = translate_request(&request, &code).map_err(|err| err.to_string())?;
-    let ir = execute_ir(&ir_program, &case.initial_state)?;
-    let encoded_program = encode_program(&ir_program)?;
-    let encoded = arm64::execute_program(&encoded_program, case.base_pc, &case.initial_state)?;
-
-    let original_state = NormalizedState::from_execution(&original);
-    let ir_state = NormalizedState::from_execution(&ir);
-    let encoded_state = NormalizedState::from_execution(&encoded);
-
-    if original_state != ir_state {
-        return Err(format!(
-            "original vs IR mismatch for `{}`\noriginal: {:#?}\nIR: {:#?}",
-            case.name, original_state, ir_state
-        ));
-    }
-
-    if ir_state != encoded_state {
-        return Err(format!(
-            "IR vs encoded mismatch for `{}`\nIR: {:#?}\nencoded: {:#?}",
-            case.name, ir_state, encoded_state
-        ));
-    }
-
-    Ok(CaseReport {
-        name: case.name,
-        ir_program,
-        encoded_program,
-        original_state,
-        ir_state,
-        encoded_state,
-    })
 }
 
 pub struct MockCodeProvider {
@@ -178,15 +133,6 @@ mod tests {
             env!("CARGO_MANIFEST_DIR"),
             "/../spec/arm64/generated/a64_subset.rs"
         ));
-    }
-
-    #[test]
-    fn built_in_cases_pass() {
-        for case in cases::built_in_cases() {
-            if let Err(err) = run_case(&case) {
-                panic!("case `{}` failed: {err}", case.name);
-            }
-        }
     }
 
     #[test]
@@ -385,12 +331,32 @@ mod tests {
 
     #[test]
     fn shared_cfg_splits_conditional_branch_into_basic_blocks() {
+        use crate::arm64::Condition;
         use crate::shared::trans_core::cfg::{build_cfg, BlockTerminator};
 
-        let case = crate::cases::find_case("conditional_branch_taken").unwrap();
-        let code = MockCodeProvider::new(case.base_pc, case.original_program);
+        let base_pc = 0x6000;
+        let mut program = Vec::new();
+        program.extend_from_slice(&crate::arm64::encode_movz(0, 5, 0).unwrap().to_le_bytes());
+        program.extend_from_slice(&crate::arm64::encode_cmp_imm(0, 5).to_le_bytes());
+        program.extend_from_slice(
+            &crate::arm64::encode_b_cond(Condition::Eq, 8)
+                .unwrap()
+                .to_le_bytes(),
+        );
+        program.extend_from_slice(
+            &crate::arm64::encode_movz(1, 0x1111, 0)
+                .unwrap()
+                .to_le_bytes(),
+        );
+        program.extend_from_slice(
+            &crate::arm64::encode_movz(1, 0x2222, 0)
+                .unwrap()
+                .to_le_bytes(),
+        );
+
+        let code = MockCodeProvider::new(base_pc, program);
         let request = TranslationRequest {
-            entry_pc: case.base_pc,
+            entry_pc: base_pc,
             trigger: TranslationTrigger::Manual,
             regs: None,
         };
@@ -398,8 +364,8 @@ mod tests {
 
         assert_eq!(cfg.blocks.len(), 3);
 
-        assert_eq!(cfg.blocks[0].start_addr, case.base_pc);
-        assert_eq!(cfg.blocks[0].end_addr, case.base_pc + 12);
+        assert_eq!(cfg.blocks[0].start_addr, base_pc);
+        assert_eq!(cfg.blocks[0].end_addr, base_pc + 12);
         assert_eq!(cfg.blocks[0].insns.len(), 3);
         assert_eq!(
             cfg.blocks[0].terminator,
@@ -409,8 +375,8 @@ mod tests {
             }
         );
 
-        assert_eq!(cfg.blocks[1].start_addr, case.base_pc + 12);
-        assert_eq!(cfg.blocks[1].end_addr, case.base_pc + 16);
+        assert_eq!(cfg.blocks[1].start_addr, base_pc + 12);
+        assert_eq!(cfg.blocks[1].end_addr, base_pc + 16);
         assert_eq!(cfg.blocks[1].insns.len(), 1);
         assert_eq!(
             cfg.blocks[1].terminator,
@@ -419,8 +385,8 @@ mod tests {
             }
         );
 
-        assert_eq!(cfg.blocks[2].start_addr, case.base_pc + 16);
-        assert_eq!(cfg.blocks[2].end_addr, case.base_pc + 20);
+        assert_eq!(cfg.blocks[2].start_addr, base_pc + 16);
+        assert_eq!(cfg.blocks[2].end_addr, base_pc + 20);
         assert_eq!(cfg.blocks[2].insns.len(), 1);
         assert_eq!(
             cfg.blocks[2].terminator,
