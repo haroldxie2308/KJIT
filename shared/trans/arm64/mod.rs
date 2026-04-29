@@ -8,6 +8,44 @@ mod generated;
 pub use generated::{A64EncodeError, A64Insn};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum A64Condition {
+    Eq,
+    Ne,
+    Ge,
+    Lt,
+    Gt,
+    Le,
+    Al,
+}
+
+impl A64Condition {
+    pub const fn from_bits(bits: u8) -> Option<Self> {
+        match bits {
+            0x0 => Some(Self::Eq),
+            0x1 => Some(Self::Ne),
+            0xA => Some(Self::Ge),
+            0xB => Some(Self::Lt),
+            0xC => Some(Self::Gt),
+            0xD => Some(Self::Le),
+            0xE | 0xF => Some(Self::Al),
+            _ => None,
+        }
+    }
+
+    pub const fn bits(self) -> u8 {
+        match self {
+            Self::Eq => 0x0,
+            Self::Ne => 0x1,
+            Self::Ge => 0xA,
+            Self::Lt => 0xB,
+            Self::Gt => 0xC,
+            Self::Le => 0xD,
+            Self::Al => 0xE,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DecodedInsn {
     pub pc: u64,
     pub word: u32,
@@ -32,6 +70,47 @@ impl fmt::Display for DecodeError {
 }
 
 impl A64Insn {
+    pub fn pc_relative_address(self, pc: u64) -> Option<u64> {
+        match self {
+            Self::AdrAdrOnlyPcreladdr { immlo, immhi, .. } => {
+                let imm = (immhi << 2) | u32::from(immlo);
+                Some(pc.wrapping_add_signed(sign_extend(imm, 21)))
+            }
+            Self::AdrpAdrpOnlyPcreladdr { immlo, immhi, .. } => {
+                let imm = (immhi << 2) | u32::from(immlo);
+                let page_pc = pc & !0xFFF;
+                Some(page_pc.wrapping_add_signed(sign_extend(imm, 21) << 12))
+            }
+            _ => None,
+        }
+    }
+
+    pub const fn condition(self) -> Option<A64Condition> {
+        match self {
+            Self::BCondBOnlyCondbranch { cond, .. } => A64Condition::from_bits(cond),
+            _ => None,
+        }
+    }
+
+    pub const fn add_sub_imm(sh: u8, imm12: u16) -> Option<u64> {
+        match sh {
+            0 => Some(imm12 as u64),
+            1 => Some((imm12 as u64) << 12),
+            _ => None,
+        }
+    }
+
+    pub const fn move_wide_shift(hw: u8) -> Option<u8> {
+        match hw {
+            0..=3 => Some(hw * 16),
+            _ => None,
+        }
+    }
+
+    pub fn signed_imm9(imm9: u16) -> i64 {
+        sign_extend(u32::from(imm9), 9)
+    }
+
     pub fn direct_branch_target(self, pc: u64) -> Option<u64> {
         match self {
             Self::BUncondBOnlyBranchImm { imm26 } => Some(pc_relative_target(pc, imm26, 26)),

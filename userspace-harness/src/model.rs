@@ -79,7 +79,25 @@ impl MachineState {
         u64::from_le_bytes(bytes)
     }
 
+    pub fn read_u32(&self, addr: u64) -> u32 {
+        let mut bytes = [0_u8; 4];
+        for (i, byte) in bytes.iter_mut().enumerate() {
+            *byte = *self.memory.get(&(addr + i as u64)).unwrap_or(&0);
+        }
+        u32::from_le_bytes(bytes)
+    }
+
     pub fn write_u64(&mut self, addr: u64, value: u64) {
+        for (i, byte) in value.to_le_bytes().into_iter().enumerate() {
+            if byte == 0 {
+                self.memory.remove(&(addr + i as u64));
+            } else {
+                self.memory.insert(addr + i as u64, byte);
+            }
+        }
+    }
+
+    pub fn write_u32(&mut self, addr: u64, value: u32) {
         for (i, byte) in value.to_le_bytes().into_iter().enumerate() {
             if byte == 0 {
                 self.memory.remove(&(addr + i as u64));

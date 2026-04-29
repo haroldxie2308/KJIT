@@ -126,18 +126,10 @@ fn register_snapshot(state: &MachineState, pc: u64) -> RegisterSnapshot {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    mod generated_a64_spec {
-        include!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../spec/arm64/generated/a64_subset.rs"
-        ));
-    }
+    use crate::shared::trans::arm64::{A64Condition, A64Insn};
 
     #[test]
     fn generated_arm64_subset_matches_sample_opcodes() {
-        use generated_a64_spec::generated_a64_subset_match;
-
         let samples = [
             ("ADR.ADR_only_pcreladdr", 0x1000_0000_u32),
             ("ADD_addsub_imm.ADD_64_addsub_imm", 0x9100_1441_u32),
@@ -154,10 +146,12 @@ mod tests {
         ];
 
         for (expected_key, opcode) in samples {
-            let spec = generated_a64_subset_match(opcode)
-                .unwrap_or_else(|| panic!("no generated spec matched opcode {opcode:#010x}"));
+            let insn = A64Insn::decode(opcode).unwrap_or_else(|| {
+                panic!("no generated instruction matched opcode {opcode:#010x}")
+            });
             assert_eq!(
-                spec.key, expected_key,
+                insn.key(),
+                expected_key,
                 "unexpected match for opcode {opcode:#010x}"
             );
         }
@@ -165,69 +159,112 @@ mod tests {
 
     #[test]
     fn generated_arm64_subset_extracts_expected_fields() {
-        use generated_a64_spec::generated_a64_subset_match;
-
-        let add = generated_a64_subset_match(0x9100_1441).unwrap();
-        assert_eq!(add.extract_field(0x9100_1441, "imm12"), Some(5));
-        assert_eq!(add.extract_field(0x9100_1441, "Rn"), Some(2));
-        assert_eq!(add.extract_field(0x9100_1441, "Rd"), Some(1));
-
-        let movz = generated_a64_subset_match(0xD2A2_4685).unwrap();
-        assert_eq!(movz.extract_field(0xD2A2_4685, "hw"), Some(1));
-        assert_eq!(movz.extract_field(0xD2A2_4685, "imm16"), Some(0x1234));
-        assert_eq!(movz.extract_field(0xD2A2_4685, "Rd"), Some(5));
-
-        let movk = generated_a64_subset_match(0xF2D5_79A5).unwrap();
-        assert_eq!(movk.extract_field(0xF2D5_79A5, "hw"), Some(2));
-        assert_eq!(movk.extract_field(0xF2D5_79A5, "imm16"), Some(0xABCD));
-        assert_eq!(movk.extract_field(0xF2D5_79A5, "Rd"), Some(5));
-
-        let tbz = generated_a64_subset_match(0x3638_0006).unwrap();
-        assert_eq!(tbz.extract_field(0x3638_0006, "b5"), Some(0));
-        assert_eq!(tbz.extract_field(0x3638_0006, "b40"), Some(7));
-        assert_eq!(tbz.extract_field(0x3638_0006, "Rt"), Some(6));
-
-        let tbnz = generated_a64_subset_match(0xB708_0007).unwrap();
-        assert_eq!(tbnz.extract_field(0xB708_0007, "b5"), Some(1));
-        assert_eq!(tbnz.extract_field(0xB708_0007, "b40"), Some(1));
-        assert_eq!(tbnz.extract_field(0xB708_0007, "Rt"), Some(7));
-
-        let ldr = generated_a64_subset_match(0xF940_0928).unwrap();
-        assert_eq!(ldr.extract_field(0xF940_0928, "size"), Some(3));
-        assert_eq!(ldr.extract_field(0xF940_0928, "imm12"), Some(2));
-        assert_eq!(ldr.extract_field(0xF940_0928, "Rn"), Some(9));
-        assert_eq!(ldr.extract_field(0xF940_0928, "Rt"), Some(8));
-
-        let str_ = generated_a64_subset_match(0xF900_0D6A).unwrap();
-        assert_eq!(str_.extract_field(0xF900_0D6A, "size"), Some(3));
-        assert_eq!(str_.extract_field(0xF900_0D6A, "imm12"), Some(3));
-        assert_eq!(str_.extract_field(0xF900_0D6A, "Rn"), Some(11));
-        assert_eq!(str_.extract_field(0xF900_0D6A, "Rt"), Some(10));
+        assert_eq!(
+            A64Insn::decode(0x9100_1441),
+            Some(A64Insn::AddAddsubImmAdd64AddsubImm {
+                sh: 0,
+                imm12: 5,
+                rn: 2,
+                rd: 1,
+            })
+        );
+        assert_eq!(
+            A64Insn::decode(0xD2A2_4685),
+            Some(A64Insn::MovzMovz64Movewide {
+                hw: 1,
+                imm16: 0x1234,
+                rd: 5,
+            })
+        );
+        assert_eq!(
+            A64Insn::decode(0xF2D5_79A5),
+            Some(A64Insn::MovkMovk64Movewide {
+                hw: 2,
+                imm16: 0xABCD,
+                rd: 5,
+            })
+        );
+        assert_eq!(
+            A64Insn::decode(0x3638_0006),
+            Some(A64Insn::TbzTbzOnlyTestbranch {
+                b5: 0,
+                b40: 7,
+                imm14: 0,
+                rt: 6,
+            })
+        );
+        assert_eq!(
+            A64Insn::decode(0xB708_0007),
+            Some(A64Insn::TbnzTbnzOnlyTestbranch {
+                b5: 1,
+                b40: 1,
+                imm14: 0,
+                rt: 7,
+            })
+        );
+        assert_eq!(
+            A64Insn::decode(0xF940_0928),
+            Some(A64Insn::LdrImmGenLdr64LdstPos {
+                imm12: 2,
+                rn: 9,
+                rt: 8,
+            })
+        );
+        assert_eq!(
+            A64Insn::decode(0xF900_0D6A),
+            Some(A64Insn::StrImmGenStr64LdstPos {
+                imm12: 3,
+                rn: 11,
+                rt: 10,
+            })
+        );
     }
 
     #[test]
     fn shared_cfg_splits_conditional_branch_into_basic_blocks() {
-        use crate::arm64::Condition;
         use crate::shared::trans::cfg::{build_cfg, BlockTerminator};
 
         let base_pc = 0x6000;
         let mut program = Vec::new();
-        program.extend_from_slice(&crate::arm64::encode_movz(0, 5, 0).unwrap().to_le_bytes());
-        program.extend_from_slice(&crate::arm64::encode_cmp_imm(0, 5).to_le_bytes());
         program.extend_from_slice(
-            &crate::arm64::encode_b_cond(Condition::Eq, 8)
-                .unwrap()
-                .to_le_bytes(),
+            &encode(A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: 5,
+                rd: 0,
+            })
+            .to_le_bytes(),
         );
         program.extend_from_slice(
-            &crate::arm64::encode_movz(1, 0x1111, 0)
-                .unwrap()
-                .to_le_bytes(),
+            &encode(A64Insn::SubsAddsubImmSubs64sAddsubImm {
+                sh: 0,
+                imm12: 5,
+                rn: 0,
+                rd: 31,
+            })
+            .to_le_bytes(),
         );
         program.extend_from_slice(
-            &crate::arm64::encode_movz(1, 0x2222, 0)
-                .unwrap()
-                .to_le_bytes(),
+            &encode(A64Insn::BCondBOnlyCondbranch {
+                imm19: branch_imm(8, 19),
+                cond: A64Condition::Eq.bits(),
+            })
+            .to_le_bytes(),
+        );
+        program.extend_from_slice(
+            &encode(A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: 0x1111,
+                rd: 1,
+            })
+            .to_le_bytes(),
+        );
+        program.extend_from_slice(
+            &encode(A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: 0x2222,
+                rd: 1,
+            })
+            .to_le_bytes(),
         );
 
         let code = MockCodeProvider::new(base_pc, program);
@@ -272,19 +309,25 @@ mod tests {
 
     #[test]
     fn shared_cfg_splits_existing_block_when_branch_targets_middle() {
-        use crate::arm64::Condition;
         use crate::shared::trans::cfg::{build_cfg, BlockTerminator};
 
         let base_pc = 0x9000;
         let mut program = Vec::new();
         program.extend_from_slice(
-            &crate::arm64::encode_b_cond(Condition::Eq, 12)
-                .unwrap()
-                .to_le_bytes(),
+            &encode(A64Insn::BCondBOnlyCondbranch {
+                imm19: branch_imm(12, 19),
+                cond: A64Condition::Eq.bits(),
+            })
+            .to_le_bytes(),
         );
-        program.extend_from_slice(&0xd503_201f_u32.to_le_bytes());
-        program.extend_from_slice(&0xd503_201f_u32.to_le_bytes());
-        program.extend_from_slice(&crate::arm64::encode_b(-4).unwrap().to_le_bytes());
+        program.extend_from_slice(&encode(A64Insn::NopNopHiHints {}).to_le_bytes());
+        program.extend_from_slice(&encode(A64Insn::NopNopHiHints {}).to_le_bytes());
+        program.extend_from_slice(
+            &encode(A64Insn::BUncondBOnlyBranchImm {
+                imm26: branch_imm(-4, 26),
+            })
+            .to_le_bytes(),
+        );
 
         let code = MockCodeProvider::new(base_pc, program);
         let request = TranslationRequest {
@@ -324,5 +367,19 @@ mod tests {
                 target_pc: base_pc + 8,
             }
         );
+    }
+
+    fn encode(insn: A64Insn) -> u32 {
+        insn.encode()
+            .unwrap_or_else(|err| panic!("failed to encode {}: {err:?}", insn.key()))
+    }
+
+    fn branch_imm(offset_bytes: i64, bits: u8) -> u32 {
+        assert_eq!(offset_bytes % 4, 0);
+        let value = offset_bytes >> 2;
+        let min = -(1_i64 << (bits - 1));
+        let max = (1_i64 << (bits - 1)) - 1;
+        assert!((min..=max).contains(&value));
+        (value as i128 & ((1_i128 << bits) - 1)) as u32
     }
 }
