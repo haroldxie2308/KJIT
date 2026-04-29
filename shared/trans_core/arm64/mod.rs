@@ -1,6 +1,6 @@
 use core::fmt;
 
-use crate::trans_core::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
+use crate::shared::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
 
 mod generated;
 

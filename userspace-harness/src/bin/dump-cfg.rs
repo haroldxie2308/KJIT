@@ -1,8 +1,8 @@
 use std::fs;
 use std::path::PathBuf;
 
-use userspace_harness::trans_core::cfg::{build_cfg, BlockTerminator};
-use userspace_harness::trans_core::input::{TranslationRequest, TranslationTrigger};
+use userspace_harness::shared::trans_core::cfg::{build_cfg, BlockTerminator};
+use userspace_harness::shared::trans_core::input::{TranslationRequest, TranslationTrigger};
 use userspace_harness::MockCodeProvider;
 
 fn parse_base_pc(text: &str) -> Result<u64, String> {

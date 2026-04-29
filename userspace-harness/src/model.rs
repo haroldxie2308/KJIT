@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::trans_core::cfg::RuntimeExitReason;
+use crate::shared::trans_core::cfg::RuntimeExitReason;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Flags {

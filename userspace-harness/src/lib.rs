@@ -5,17 +5,17 @@ pub mod cases;
 pub mod ir;
 pub mod jit;
 pub mod model;
-#[path = "../../shared/trans_core/mod.rs"]
-pub mod trans_core;
+#[path = "../../shared/mod.rs"]
+pub mod shared;
 pub mod translate;
 
+use crate::shared::trans_core::input::{
+    CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
+};
+use crate::shared::trans_core::translate::translate_request;
 use cases::HarnessCase;
 use ir::{encode_program, execute_program as execute_ir, IrProgram};
 use model::{MachineState, NormalizedState};
-use trans_core::input::{
-    CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
-};
-use trans_core::translate::translate_request;
 
 #[derive(Debug)]
 pub struct CaseReport {
@@ -218,7 +218,7 @@ mod tests {
     #[test]
     fn jit_runtime_handles_svc_and_links_resume_slot() {
         use crate::jit::{JitRuntime, SyscallHandler};
-        use crate::trans_core::ir::LinkSlot;
+        use crate::shared::trans_core::ir::LinkSlot;
 
         struct CountingSyscall {
             calls: usize,
@@ -326,7 +326,7 @@ mod tests {
 
     #[test]
     fn shared_typed_decode_maps_sample_opcodes() {
-        use crate::trans_core::arm64::{
+        use crate::shared::trans_core::arm64::{
             decode_word, AddSubOp, DecodedInsnKind, GprWidth, LoadStoreAddressing, LoadStoreOp,
             MoveWideOp, PcRelOp,
         };
@@ -385,7 +385,7 @@ mod tests {
 
     #[test]
     fn shared_cfg_splits_conditional_branch_into_basic_blocks() {
-        use crate::trans_core::cfg::{build_cfg, BlockTerminator};
+        use crate::shared::trans_core::cfg::{build_cfg, BlockTerminator};
 
         let case = crate::cases::find_case("conditional_branch_taken").unwrap();
         let code = MockCodeProvider::new(case.base_pc, case.original_program);
@@ -428,7 +428,7 @@ mod tests {
     #[test]
     fn shared_cfg_splits_existing_block_when_branch_targets_middle() {
         use crate::arm64::Condition;
-        use crate::trans_core::cfg::{build_cfg, BlockTerminator};
+        use crate::shared::trans_core::cfg::{build_cfg, BlockTerminator};
 
         let base_pc = 0x9000;
         let mut program = Vec::new();

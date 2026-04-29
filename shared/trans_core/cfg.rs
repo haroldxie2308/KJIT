@@ -1,6 +1,6 @@
-use crate::trans_core::arm64::{decode_word, DecodeError, DecodedInsn, DecodedInsnKind};
-use crate::trans_core::input::{CodeProvider, CodeReadError, TranslationRequest};
-use crate::trans_core::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
+use crate::shared::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
+use crate::shared::trans_core::arm64::{decode_word, DecodeError, DecodedInsn, DecodedInsnKind};
+use crate::shared::trans_core::input::{CodeProvider, CodeReadError, TranslationRequest};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeExitReason {

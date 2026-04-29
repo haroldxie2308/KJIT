@@ -1,10 +1,10 @@
-use crate::trans_core::arm64::{
+use crate::shared::platform::{SharedAllocError, SharedResult, GFP_KERNEL};
+use crate::shared::trans_core::arm64::{
     AddSubOp, DecodedInsnKind, GprWidth, LoadStoreAddressing, LoadStoreOp, MoveWideOp,
 };
-use crate::trans_core::cfg::{build_cfg, CfgError, RuntimeExitReason};
-use crate::trans_core::input::{CodeProvider, TranslationRequest};
-use crate::trans_core::ir::{IrInsn, IrInsnKind, IrProgram, LinkSlot};
-use crate::trans_core::platform::{SharedAllocError, SharedResult, GFP_KERNEL};
+use crate::shared::trans_core::cfg::{build_cfg, CfgError, RuntimeExitReason};
+use crate::shared::trans_core::input::{CodeProvider, TranslationRequest};
+use crate::shared::trans_core::ir::{IrInsn, IrInsnKind, IrProgram, LinkSlot};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TranslateError {

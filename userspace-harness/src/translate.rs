@@ -1,1 +1,1 @@
-pub use crate::trans_core::translate::translate_request;
+pub use crate::shared::trans_core::translate::translate_request;

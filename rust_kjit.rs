@@ -8,8 +8,8 @@
 #![allow(elided_lifetimes_in_paths)]
 
 #[allow(missing_docs)]
-#[path = "shared/trans_core/mod.rs"]
-pub mod trans_core;
+#[path = "shared/mod.rs"]
+pub mod shared;
 
 use kernel::prelude::*;
 
