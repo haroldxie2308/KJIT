@@ -134,6 +134,15 @@ Neovim also includes NERDTree:
 - `<leader>nt`: toggle NERDTree
 - `<leader>nf`: reveal the current file in NERDTree
 
+Neovim also includes Trouble:
+
+- `<leader>xx`: workspace diagnostics
+- `<leader>xX`: current buffer diagnostics
+- `<leader>cs`: document symbols
+- `<leader>cl`: LSP definitions, references, implementations, and related locations
+- `<leader>xL`: location list
+- `<leader>xQ`: quickfix list
+
 ### Sublime Text
 
 This repo includes `KJIT.sublime-project` and `KJIT.sublime-build` for Sublime Text.

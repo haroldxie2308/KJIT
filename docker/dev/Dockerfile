@@ -59,6 +59,10 @@ RUN git clone https://github.com/folke/tokyonight.nvim.git /opt/kjit/nvim/site/p
     && git -C /opt/kjit/nvim/site/pack/kjit/opt/tokyonight.nvim -c advice.detachedHead=false checkout cdc07ac78467a233fd62c493de29a17e0cf2b2b6 \
     && rm -rf /opt/kjit/nvim/site/pack/kjit/opt/tokyonight.nvim/.git
 
+RUN git clone https://github.com/folke/trouble.nvim.git /opt/kjit/nvim/site/pack/kjit/opt/trouble.nvim \
+    && git -C /opt/kjit/nvim/site/pack/kjit/opt/trouble.nvim -c advice.detachedHead=false checkout bd67efe408d4816e25e8491cc5ad4088e708a69a \
+    && rm -rf /opt/kjit/nvim/site/pack/kjit/opt/trouble.nvim/.git
+
 COPY nvim/init.lua /opt/kjit/nvim/init.lua
 
 WORKDIR /workspace

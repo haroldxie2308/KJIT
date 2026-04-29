@@ -18,6 +18,7 @@ vim.opt.swapfile = false
 vim.g.NERDTreeMouseMode = 2
 vim.opt.packpath:append("/opt/kjit/nvim/site")
 pcall(vim.cmd, "packadd tokyonight.nvim")
+pcall(vim.cmd, "packadd trouble.nvim")
 pcall(vim.cmd, "packadd nerdtree")
 
 local ok_tokyonight, tokyonight = pcall(require, "tokyonight")
@@ -31,6 +32,11 @@ if ok_tokyonight then
         },
     })
     vim.cmd.colorscheme("tokyonight-night")
+end
+
+local ok_trouble, trouble = pcall(require, "trouble")
+if ok_trouble then
+    trouble.setup({})
 end
 
 local function map(mode, lhs, rhs, desc)
@@ -52,6 +58,12 @@ end, "Format")
 map("n", "<C-n>", "<cmd>NERDTreeToggle<CR>", "Toggle NERDTree")
 map("n", "<leader>nt", "<cmd>NERDTreeToggle<CR>", "Toggle NERDTree")
 map("n", "<leader>nf", "<cmd>NERDTreeFind<CR>", "Reveal file in NERDTree")
+map("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<CR>", "Workspace diagnostics")
+map("n", "<leader>xX", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>", "Buffer diagnostics")
+map("n", "<leader>cs", "<cmd>Trouble symbols toggle focus=false<CR>", "Document symbols")
+map("n", "<leader>cl", "<cmd>Trouble lsp toggle focus=false win.position=right<CR>", "LSP locations")
+map("n", "<leader>xL", "<cmd>Trouble loclist toggle<CR>", "Location list")
+map("n", "<leader>xQ", "<cmd>Trouble qflist toggle<CR>", "Quickfix list")
 
 vim.api.nvim_create_autocmd("BufEnter", {
     callback = function()
