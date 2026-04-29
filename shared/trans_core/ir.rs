@@ -1,9 +1,6 @@
-extern crate alloc;
-
-use alloc::vec::Vec;
-
 use crate::trans_core::arm64::BranchCondition;
 use crate::trans_core::cfg::RuntimeExitReason;
+use crate::trans_core::platform::SharedVec;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LinkSlot(pub usize);
@@ -80,4 +77,4 @@ pub enum IrInsnKind {
     },
 }
 
-pub type IrProgram = Vec<IrInsn>;
+pub type IrProgram = SharedVec<IrInsn>;

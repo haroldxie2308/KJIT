@@ -4,11 +4,12 @@ use crate::trans_core::arm64::{
 use crate::trans_core::cfg::{build_cfg, CfgError, RuntimeExitReason};
 use crate::trans_core::input::{CodeProvider, TranslationRequest};
 use crate::trans_core::ir::{IrInsn, IrInsnKind, IrProgram, LinkSlot};
-use crate::trans_core::platform::SharedResult;
+use crate::trans_core::platform::{SharedAllocError, SharedResult, GFP_KERNEL};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TranslateError {
     Cfg(CfgError),
+    Alloc(SharedAllocError),
     StandaloneMovk,
     UnsupportedMoveWide {
         width: GprWidth,
@@ -42,6 +43,7 @@ impl core::fmt::Display for TranslateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Cfg(err) => write!(f, "{err}"),
+            Self::Alloc(err) => write!(f, "allocation failed while translating: {err:?}"),
             Self::StandaloneMovk => {
                 write!(
                     f,
@@ -97,11 +99,16 @@ pub fn translate_request<P: CodeProvider>(
     let cfg = build_cfg(request, code)?;
     let mut next_link_slot = 0usize;
 
-    let mut ir = IrProgram::with_capacity(cfg.blocks.iter().map(|block| block.insns.len()).sum());
+    let mut ir = IrProgram::with_capacity(
+        cfg.blocks.iter().map(|block| block.insns.len()).sum(),
+        GFP_KERNEL,
+    )
+    .map_err(TranslateError::Alloc)?;
     for block in &cfg.blocks {
         for insn in &block.insns {
             let ir_insn = translate_insn_to_ir(insn.pc, insn.kind, &mut next_link_slot)?;
-            ir.push(ir_insn);
+            ir.push(ir_insn, GFP_KERNEL)
+                .map_err(TranslateError::Alloc)?;
         }
     }
 

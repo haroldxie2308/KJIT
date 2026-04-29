@@ -7,7 +7,7 @@
 #![allow(unused)]
 #![allow(elided_lifetimes_in_paths)]
 
-#[cfg(rust_analyzer)]
+#[allow(missing_docs)]
 #[path = "shared/trans_core/mod.rs"]
 pub mod trans_core;
 

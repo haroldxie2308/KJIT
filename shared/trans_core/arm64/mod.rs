@@ -1,7 +1,6 @@
-extern crate alloc;
-
-use alloc::vec::Vec;
 use core::fmt;
+
+use crate::trans_core::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
 
 mod generated;
 
@@ -180,6 +179,7 @@ pub enum DecodeError {
     InvalidConditionBits {
         bits: u8,
     },
+    Alloc(SharedAllocError),
 }
 
 impl fmt::Display for DecodeError {
@@ -203,6 +203,7 @@ impl fmt::Display for DecodeError {
             Self::InvalidConditionBits { bits } => {
                 write!(f, "unsupported condition bits: {bits:#x}")
             }
+            Self::Alloc(err) => write!(f, "allocation failed while decoding: {err:?}"),
         }
     }
 }
@@ -395,7 +396,11 @@ pub fn decode_word(word: u32, pc: u64) -> Result<DecodedInsn, DecodeError> {
             let b40 = field_u32(spec, word, "b40")? as u8;
             DecodedInsnKind::TestBitBranch {
                 nonzero: spec.key.starts_with("TBNZ."),
-                width: if b5 == 0 { GprWidth::W32 } else { GprWidth::X64 },
+                width: if b5 == 0 {
+                    GprWidth::W32
+                } else {
+                    GprWidth::X64
+                },
                 rt: field_u32(spec, word, "Rt")? as u8,
                 bit: (b5 << 5) | b40,
                 target: pc.wrapping_add_signed(offset),
@@ -452,7 +457,7 @@ pub fn decode_word(word: u32, pc: u64) -> Result<DecodedInsn, DecodeError> {
     Ok(DecodedInsn { pc, word, kind })
 }
 
-pub fn decode_program(program: &[u8], base_pc: u64) -> Result<Vec<DecodedInsn>, DecodeError> {
+pub fn decode_program(program: &[u8], base_pc: u64) -> Result<SharedVec<DecodedInsn>, DecodeError> {
     if program.len() % 4 != 0 {
         return Err(DecodeError::UnsupportedEncoding {
             pc: base_pc,
@@ -462,11 +467,14 @@ pub fn decode_program(program: &[u8], base_pc: u64) -> Result<Vec<DecodedInsn>, 
         });
     }
 
-    let mut decoded = Vec::with_capacity(program.len() / 4);
+    let mut decoded =
+        SharedVec::with_capacity(program.len() / 4, GFP_KERNEL).map_err(DecodeError::Alloc)?;
     for (index, chunk) in program.chunks_exact(4).enumerate() {
         let pc = base_pc + (index as u64) * 4;
         let word = u32::from_le_bytes(chunk.try_into().unwrap());
-        decoded.push(decode_word(word, pc)?);
+        decoded
+            .push(decode_word(word, pc)?, GFP_KERNEL)
+            .map_err(DecodeError::Alloc)?;
     }
     Ok(decoded)
 }

@@ -6,3 +6,6 @@ edition = "2021"
 [lib]
 name = "userspace_harness"
 path = "src/lib.rs"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(CONFIG_RUST)"] }

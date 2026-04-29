@@ -1,9 +1,6 @@
-extern crate alloc;
-
-use alloc::vec::Vec;
-
 use crate::trans_core::arm64::{decode_word, DecodeError, DecodedInsn, DecodedInsnKind};
 use crate::trans_core::input::{CodeProvider, CodeReadError, TranslationRequest};
+use crate::trans_core::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeExitReason {
@@ -23,26 +20,27 @@ pub enum BlockTerminator {
     RuntimeExit { reason: RuntimeExitReason },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct BasicBlock {
     pub start_addr: u64,
     pub end_addr: u64,
     pub start_index: usize,
     pub end_index: usize,
-    pub insns: Vec<DecodedInsn>,
+    pub insns: SharedVec<DecodedInsn>,
     pub terminator: BlockTerminator,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Cfg {
     pub entry_pc: u64,
-    pub blocks: Vec<BasicBlock>,
+    pub blocks: SharedVec<BasicBlock>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CfgError {
     CodeRead(CodeReadError),
     Decode(DecodeError),
+    Alloc(SharedAllocError),
     EmptyBlock { start_addr: u64 },
 }
 
@@ -51,6 +49,7 @@ impl core::fmt::Display for CfgError {
         match self {
             Self::CodeRead(err) => write!(f, "{err}"),
             Self::Decode(err) => write!(f, "{err}"),
+            Self::Alloc(err) => write!(f, "allocation failed while building CFG: {err:?}"),
             Self::EmptyBlock { start_addr } => {
                 write!(f, "no instructions decoded for block at pc {start_addr:#x}")
             }
@@ -59,10 +58,10 @@ impl core::fmt::Display for CfgError {
 }
 
 pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Result<Cfg, CfgError> {
-    let mut blocks = Vec::new();
-    let mut pending = Vec::new();
+    let mut blocks = SharedVec::new();
+    let mut pending = SharedVec::new();
 
-    enqueue_block(request.entry_pc, &mut pending);
+    enqueue_block(request.entry_pc, &mut pending)?;
 
     let mut pending_index = 0usize;
     let mut decoded_index = 0usize;
@@ -70,17 +69,17 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
         let start_addr = pending[pending_index];
         pending_index += 1;
 
-        if ensure_block_boundary(start_addr, &mut blocks) {
+        if ensure_block_boundary(start_addr, &mut blocks)? {
             continue;
         }
 
         let start_index = decoded_index;
         let mut pc = start_addr;
-        let mut insns = Vec::new();
+        let mut insns = SharedVec::new();
 
         let terminator = loop {
             if !insns.is_empty() {
-                if pending.contains(&pc) || ensure_block_boundary(pc, &mut blocks) {
+                if pending.contains(&pc) || ensure_block_boundary(pc, &mut blocks)? {
                     break BlockTerminator::Fallthrough { next_pc: Some(pc) };
                 }
             }
@@ -97,8 +96,8 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
 
             match insn.kind {
                 DecodedInsnKind::Branch { target } => {
-                    enqueue_block(target, &mut pending);
-                    insns.push(insn);
+                    enqueue_block(target, &mut pending)?;
+                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
                     break BlockTerminator::Branch { target_pc: target };
                 }
                 DecodedInsnKind::BranchLink { target } => {
@@ -106,7 +105,7 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
                         target_pc: target,
                         resume_pc: pc,
                     };
-                    insns.push(insn);
+                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
                     break BlockTerminator::RuntimeExit { reason };
                 }
                 DecodedInsnKind::BranchLinkReg { rn } => {
@@ -114,17 +113,17 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
                         target_reg: rn,
                         resume_pc: pc,
                     };
-                    insns.push(insn);
+                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
                     break BlockTerminator::RuntimeExit { reason };
                 }
                 DecodedInsnKind::BranchReg { rn } => {
                     let reason = RuntimeExitReason::Br { target_reg: rn };
-                    insns.push(insn);
+                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
                     break BlockTerminator::RuntimeExit { reason };
                 }
                 DecodedInsnKind::Ret { rn } => {
                     let reason = RuntimeExitReason::Ret { lr_reg: rn };
-                    insns.push(insn);
+                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
                     break BlockTerminator::RuntimeExit { reason };
                 }
                 DecodedInsnKind::Svc { imm16 } => {
@@ -132,22 +131,22 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
                         imm16,
                         resume_pc: pc,
                     };
-                    insns.push(insn);
+                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
                     break BlockTerminator::RuntimeExit { reason };
                 }
                 DecodedInsnKind::CondBranch { target, .. }
                 | DecodedInsnKind::CompareBranch { target, .. }
                 | DecodedInsnKind::TestBitBranch { target, .. } => {
-                    enqueue_block(pc, &mut pending);
-                    enqueue_block(target, &mut pending);
-                    insns.push(insn);
+                    enqueue_block(pc, &mut pending)?;
+                    enqueue_block(target, &mut pending)?;
+                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
                     break BlockTerminator::CondBranch {
                         taken_pc: target,
                         fallthrough_pc: pc,
                     };
                 }
                 _ => {
-                    insns.push(insn);
+                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
                 }
             }
         };
@@ -156,14 +155,19 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
             return Err(CfgError::EmptyBlock { start_addr });
         }
 
-        blocks.push(BasicBlock {
-            start_addr,
-            end_addr: pc.wrapping_sub(4),
-            start_index,
-            end_index: decoded_index,
-            insns,
-            terminator,
-        });
+        blocks
+            .push(
+                BasicBlock {
+                    start_addr,
+                    end_addr: pc.wrapping_sub(4),
+                    start_index,
+                    end_index: decoded_index,
+                    insns,
+                    terminator,
+                },
+                GFP_KERNEL,
+            )
+            .map_err(CfgError::Alloc)?;
     }
 
     Ok(Cfg {
@@ -172,10 +176,11 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
     })
 }
 
-fn enqueue_block(pc: u64, pending: &mut Vec<u64>) {
+fn enqueue_block(pc: u64, pending: &mut SharedVec<u64>) -> Result<(), CfgError> {
     if !pending.contains(&pc) {
-        pending.push(pc);
+        pending.push(pc, GFP_KERNEL).map_err(CfgError::Alloc)?;
     }
+    Ok(())
 }
 
 fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<DecodedInsn, CfgError> {
@@ -186,15 +191,15 @@ fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<DecodedInsn, CfgError
     decode_word(word, pc).map_err(CfgError::Decode)
 }
 
-fn ensure_block_boundary(pc: u64, blocks: &mut Vec<BasicBlock>) -> bool {
+fn ensure_block_boundary(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Result<bool, CfgError> {
     if blocks.iter().any(|block| block.start_addr == pc) {
-        return true;
+        return Ok(true);
     }
 
     split_existing_block_at(pc, blocks)
 }
 
-fn split_existing_block_at(pc: u64, blocks: &mut Vec<BasicBlock>) -> bool {
+fn split_existing_block_at(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Result<bool, CfgError> {
     for index in 0..blocks.len() {
         let block_start = blocks[index].start_addr;
         let block_end = block_start + (blocks[index].insns.len() as u64) * 4;
@@ -206,25 +211,31 @@ fn split_existing_block_at(pc: u64, blocks: &mut Vec<BasicBlock>) -> bool {
         let tail_start_index = blocks[index].start_index + split_offset;
         let tail_end_index = blocks[index].end_index;
         let tail_terminator = blocks[index].terminator;
-        let tail_insns = blocks[index].insns.split_off(split_offset);
+        let tail_insns = blocks[index]
+            .insns
+            .split_off_copy(split_offset, GFP_KERNEL)
+            .map_err(CfgError::Alloc)?;
 
         blocks[index].end_addr = pc - 4;
         blocks[index].end_index = tail_start_index;
         blocks[index].terminator = BlockTerminator::Fallthrough { next_pc: Some(pc) };
 
-        blocks.insert(
-            index + 1,
-            BasicBlock {
-                start_addr: pc,
-                end_addr: block_end,
-                start_index: tail_start_index,
-                end_index: tail_end_index,
-                insns: tail_insns,
-                terminator: tail_terminator,
-            },
-        );
-        return true;
+        blocks
+            .insert(
+                index + 1,
+                BasicBlock {
+                    start_addr: pc,
+                    end_addr: block_end,
+                    start_index: tail_start_index,
+                    end_index: tail_end_index,
+                    insns: tail_insns,
+                    terminator: tail_terminator,
+                },
+                GFP_KERNEL,
+            )
+            .map_err(CfgError::Alloc)?;
+        return Ok(true);
     }
 
-    false
+    Ok(false)
 }

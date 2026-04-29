@@ -4,6 +4,7 @@ use crate::ir::{IrInsn, IrInsnKind, IrProgram, LinkSlot};
 use crate::model::{ExecutionResult, HaltReason, MachineState};
 use crate::trans_core::cfg::RuntimeExitReason;
 use crate::trans_core::input::{TranslationRequest, TranslationTrigger};
+use crate::trans_core::platform::GFP_KERNEL;
 use crate::trans_core::translate::translate_request;
 use crate::MockCodeProvider;
 
@@ -36,7 +37,7 @@ impl<H: SyscallHandler> JitRuntime<H> {
     pub fn new(code: MockCodeProvider, syscall_handler: H) -> Self {
         Self {
             code,
-            program: Vec::new(),
+            program: IrProgram::new(),
             entry_by_pc: BTreeMap::new(),
             ir_index_by_pc: BTreeMap::new(),
             link_slots: BTreeMap::new(),
@@ -240,7 +241,9 @@ impl<H: SyscallHandler> JitRuntime<H> {
             }
             self.ir_index_by_pc.insert(insn.pc, base + offset);
         }
-        self.program.extend(fragment);
+        self.program
+            .append(fragment, GFP_KERNEL)
+            .map_err(|err| format!("failed to append translated fragment: {err:?}"))?;
         self.entry_by_pc.insert(entry_pc, base);
         Ok(base)
     }
