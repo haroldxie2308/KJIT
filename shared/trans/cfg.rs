@@ -1,4 +1,4 @@
-use crate::shared::arm64::{decode_word, DecodeError, DecodedInsn};
+use crate::shared::arm64::{decode_word, DecodeError, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
 use crate::shared::trans::input::{CodeProvider, CodeReadError, TranslationRequest};
 
@@ -25,7 +25,7 @@ pub enum BlockTerminator {
 pub struct BasicBlock {
     pub start_addr: u64,
     pub end_addr: u64,
-    pub insns: SharedVec<DecodedInsn>,
+    pub insns: SharedVec<IrInsn>,
     pub terminator: BlockTerminator,
 }
 
@@ -92,14 +92,14 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
             pc = pc.wrapping_add(4);
 
             insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
-            if let Some(target) = insn.insn.direct_branch_target(insn.pc) {
+            if let Some(target) = insn.inner.direct_branch_target(insn.pc) {
                 enqueue_block(target, &mut pending)?;
                 break BlockTerminator::Branch { target_pc: target };
             }
-            if let Some(reason) = insn.insn.runtime_exit_reason(insn.pc) {
+            if let Some(reason) = insn.inner.runtime_exit_reason(insn.pc) {
                 break BlockTerminator::RuntimeExit { reason };
             }
-            if let Some((taken_pc, fallthrough_pc)) = insn.insn.conditional_targets(insn.pc) {
+            if let Some((taken_pc, fallthrough_pc)) = insn.inner.conditional_targets(insn.pc) {
                 enqueue_block(fallthrough_pc, &mut pending)?;
                 enqueue_block(taken_pc, &mut pending)?;
                 break BlockTerminator::CondBranch {
@@ -139,7 +139,7 @@ fn enqueue_block(pc: u64, pending: &mut SharedVec<u64>) -> Result<(), CfgError> 
     Ok(())
 }
 
-fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<DecodedInsn, CfgError> {
+fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<IrInsn, CfgError> {
     let mut bytes = [0_u8; 4];
     code.read_exact(pc, &mut bytes)
         .map_err(CfgError::CodeRead)?;

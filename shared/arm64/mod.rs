@@ -46,10 +46,10 @@ impl A64Condition {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct DecodedInsn {
+pub struct IrInsn {
     pub pc: u64,
     pub word: u32,
-    pub insn: A64Insn,
+    pub inner: A64Insn,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -155,12 +155,12 @@ impl A64Insn {
     }
 }
 
-pub fn decode_word(word: u32, pc: u64) -> Result<DecodedInsn, DecodeError> {
-    let insn = A64Insn::decode(word).ok_or(DecodeError::UnsupportedWord { pc, word })?;
-    Ok(DecodedInsn { pc, word, insn })
+pub fn decode_word(word: u32, pc: u64) -> Result<IrInsn, DecodeError> {
+    let inner = A64Insn::decode(word).ok_or(DecodeError::UnsupportedWord { pc, word })?;
+    Ok(IrInsn { pc, word, inner })
 }
 
-pub fn decode_program(program: &[u8], base_pc: u64) -> Result<SharedVec<DecodedInsn>, DecodeError> {
+pub fn decode_program(program: &[u8], base_pc: u64) -> Result<SharedVec<IrInsn>, DecodeError> {
     if program.len() % 4 != 0 {
         return Err(DecodeError::UnsupportedWord {
             pc: base_pc,

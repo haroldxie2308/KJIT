@@ -1,9 +1,9 @@
-use crate::shared::arm64::DecodedInsn;
+use crate::shared::arm64::IrInsn;
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::{build_cfg, CfgError};
 use crate::shared::trans::input::{CodeProvider, TranslationRequest};
 
-pub type TranslatedProgram = SharedVec<DecodedInsn>;
+pub type TranslatedProgram = SharedVec<IrInsn>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TranslateError {
