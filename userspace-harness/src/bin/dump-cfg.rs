@@ -64,8 +64,11 @@ fn main() {
     );
     for (index, block) in cfg.blocks.iter().enumerate() {
         println!(
-            "block #{} start_pc={:#x} insn_range=[{}, {})",
-            index, block.start_addr, block.start_index, block.end_index
+            "block #{} start_pc={:#x} end_pc={:#x} insns={}",
+            index,
+            block.start_addr,
+            block.end_addr,
+            block.insns.len()
         );
         for insn in &block.insns {
             println!("  {:#06x}: {:#010x} {:?}", insn.pc, insn.word, insn.kind);

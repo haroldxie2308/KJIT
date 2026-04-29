@@ -398,8 +398,9 @@ mod tests {
 
         assert_eq!(cfg.blocks.len(), 3);
 
-        assert_eq!(cfg.blocks[0].start_index, 0);
-        assert_eq!(cfg.blocks[0].end_index, 3);
+        assert_eq!(cfg.blocks[0].start_addr, case.base_pc);
+        assert_eq!(cfg.blocks[0].end_addr, case.base_pc + 12);
+        assert_eq!(cfg.blocks[0].insns.len(), 3);
         assert_eq!(
             cfg.blocks[0].terminator,
             BlockTerminator::CondBranch {
@@ -408,8 +409,9 @@ mod tests {
             }
         );
 
-        assert_eq!(cfg.blocks[1].start_index, 3);
-        assert_eq!(cfg.blocks[1].end_index, 4);
+        assert_eq!(cfg.blocks[1].start_addr, case.base_pc + 12);
+        assert_eq!(cfg.blocks[1].end_addr, case.base_pc + 16);
+        assert_eq!(cfg.blocks[1].insns.len(), 1);
         assert_eq!(
             cfg.blocks[1].terminator,
             BlockTerminator::Fallthrough {
@@ -417,8 +419,9 @@ mod tests {
             }
         );
 
-        assert_eq!(cfg.blocks[2].start_index, 4);
-        assert_eq!(cfg.blocks[2].end_index, 5);
+        assert_eq!(cfg.blocks[2].start_addr, case.base_pc + 16);
+        assert_eq!(cfg.blocks[2].end_addr, case.base_pc + 20);
+        assert_eq!(cfg.blocks[2].insns.len(), 1);
         assert_eq!(
             cfg.blocks[2].terminator,
             BlockTerminator::Fallthrough { next_pc: None }
@@ -455,8 +458,8 @@ mod tests {
         assert_eq!(cfg.blocks[2].start_addr, base_pc + 8);
         assert_eq!(cfg.blocks[3].start_addr, base_pc + 12);
 
-        assert_eq!(cfg.blocks[1].start_index, 1);
-        assert_eq!(cfg.blocks[1].end_index, 2);
+        assert_eq!(cfg.blocks[1].end_addr, base_pc + 8);
+        assert_eq!(cfg.blocks[1].insns.len(), 1);
         assert_eq!(
             cfg.blocks[1].terminator,
             BlockTerminator::Fallthrough {
@@ -464,8 +467,8 @@ mod tests {
             }
         );
 
-        assert_eq!(cfg.blocks[2].start_index, 2);
-        assert_eq!(cfg.blocks[2].end_index, 3);
+        assert_eq!(cfg.blocks[2].end_addr, base_pc + 12);
+        assert_eq!(cfg.blocks[2].insns.len(), 1);
         assert_eq!(
             cfg.blocks[2].terminator,
             BlockTerminator::Fallthrough {

@@ -20,12 +20,11 @@ pub enum BlockTerminator {
     RuntimeExit { reason: RuntimeExitReason },
 }
 
+/// Basic block over a half-open PC range: [start_addr, end_addr).
 #[derive(Debug, PartialEq, Eq)]
 pub struct BasicBlock {
     pub start_addr: u64,
     pub end_addr: u64,
-    pub start_index: usize,
-    pub end_index: usize,
     pub insns: SharedVec<DecodedInsn>,
     pub terminator: BlockTerminator,
 }
@@ -64,7 +63,6 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
     enqueue_block(request.entry_pc, &mut pending)?;
 
     let mut pending_index = 0usize;
-    let mut decoded_index = 0usize;
     while pending_index < pending.len() {
         let start_addr = pending[pending_index];
         pending_index += 1;
@@ -73,7 +71,6 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
             continue;
         }
 
-        let start_index = decoded_index;
         let mut pc = start_addr;
         let mut insns = SharedVec::new();
 
@@ -92,7 +89,6 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
                 Err(err) => return Err(err),
             };
             pc = pc.wrapping_add(4);
-            decoded_index += 1;
 
             match insn.kind {
                 DecodedInsnKind::Branch { target } => {
@@ -159,9 +155,7 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
             .push(
                 BasicBlock {
                     start_addr,
-                    end_addr: pc.wrapping_sub(4),
-                    start_index,
-                    end_index: decoded_index,
+                    end_addr: pc,
                     insns,
                     terminator,
                 },
@@ -202,22 +196,19 @@ fn ensure_block_boundary(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Result<
 fn split_existing_block_at(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Result<bool, CfgError> {
     for index in 0..blocks.len() {
         let block_start = blocks[index].start_addr;
-        let block_end = block_start + (blocks[index].insns.len() as u64) * 4;
-        if !(block_start < pc && pc < block_end) {
+        if !(block_start < pc && pc < blocks[index].end_addr) {
             continue;
         }
 
         let split_offset = ((pc - block_start) / 4) as usize;
-        let tail_start_index = blocks[index].start_index + split_offset;
-        let tail_end_index = blocks[index].end_index;
+        let tail_end_addr = blocks[index].end_addr;
         let tail_terminator = blocks[index].terminator;
         let tail_insns = blocks[index]
             .insns
             .split_off_copy(split_offset, GFP_KERNEL)
             .map_err(CfgError::Alloc)?;
 
-        blocks[index].end_addr = pc - 4;
-        blocks[index].end_index = tail_start_index;
+        blocks[index].end_addr = pc;
         blocks[index].terminator = BlockTerminator::Fallthrough { next_pc: Some(pc) };
 
         blocks
@@ -225,9 +216,7 @@ fn split_existing_block_at(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Resul
                 index + 1,
                 BasicBlock {
                     start_addr: pc,
-                    end_addr: block_end,
-                    start_index: tail_start_index,
-                    end_index: tail_end_index,
+                    end_addr: tail_end_addr,
                     insns: tail_insns,
                     terminator: tail_terminator,
                 },
