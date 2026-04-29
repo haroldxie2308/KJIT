@@ -7,6 +7,10 @@
 #![allow(unused)]
 #![allow(elided_lifetimes_in_paths)]
 
+#[cfg(rust_analyzer)]
+#[path = "shared/trans_core/mod.rs"]
+pub mod trans_core;
+
 use kernel::prelude::*;
 
 module! {

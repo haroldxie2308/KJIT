@@ -1,19 +1,100 @@
-extern crate alloc;
-
-use alloc::string::{String, ToString};
-
 use crate::trans_core::arm64::{
     AddSubOp, DecodedInsnKind, GprWidth, LoadStoreAddressing, LoadStoreOp, MoveWideOp,
 };
-use crate::trans_core::cfg::{build_cfg, RuntimeExitReason};
+use crate::trans_core::cfg::{build_cfg, CfgError, RuntimeExitReason};
 use crate::trans_core::input::{CodeProvider, TranslationRequest};
 use crate::trans_core::ir::{IrInsn, IrInsnKind, IrProgram, LinkSlot};
+use crate::trans_core::platform::SharedResult;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TranslateError {
+    Cfg(CfgError),
+    StandaloneMovk,
+    UnsupportedMoveWide {
+        width: GprWidth,
+    },
+    UnsupportedAddSubImm {
+        width: GprWidth,
+        shift12: bool,
+    },
+    UnsupportedCompareBranch {
+        width: GprWidth,
+    },
+    UnsupportedLoadStore {
+        op: LoadStoreOp,
+        width: GprWidth,
+        addressing: LoadStoreAddressing,
+    },
+    UnsupportedTestBitBranch,
+    LoadStoreOffsetOutOfRange {
+        offset: i32,
+    },
+    ExpectedLoadStore,
+}
+
+impl From<CfgError> for TranslateError {
+    fn from(err: CfgError) -> Self {
+        Self::Cfg(err)
+    }
+}
+
+impl core::fmt::Display for TranslateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Cfg(err) => write!(f, "{err}"),
+            Self::StandaloneMovk => {
+                write!(
+                    f,
+                    "MOVK is not accepted as a standalone original instruction in this harness"
+                )
+            }
+            Self::UnsupportedMoveWide { width } => {
+                write!(
+                    f,
+                    "only 64-bit move-wide instructions are supported in IR translation, got {width:?}"
+                )
+            }
+            Self::UnsupportedAddSubImm { width, shift12 } => {
+                write!(
+                    f,
+                    "unsupported add/sub immediate IR translation: width={width:?}, shift12={shift12}"
+                )
+            }
+            Self::UnsupportedCompareBranch { width } => {
+                write!(
+                    f,
+                    "only 64-bit compare-and-branch is supported in IR translation, got {width:?}"
+                )
+            }
+            Self::UnsupportedLoadStore {
+                op,
+                width,
+                addressing,
+            } => {
+                write!(
+                    f,
+                    "unsupported load/store IR translation: op={op:?}, width={width:?}, addressing={addressing:?}"
+                )
+            }
+            Self::UnsupportedTestBitBranch => {
+                write!(
+                    f,
+                    "TBZ/TBNZ IR translation is not wired into the harness yet"
+                )
+            }
+            Self::LoadStoreOffsetOutOfRange { offset } => {
+                write!(f, "load/store offset out of range: {offset}")
+            }
+            Self::ExpectedLoadStore => write!(f, "expected load/store instruction"),
+        }
+    }
+}
 
 pub fn translate_request<P: CodeProvider>(
     request: &TranslationRequest,
     code: &P,
-) -> Result<IrProgram, String> {
-    let cfg = build_cfg(request, code).map_err(|err| err.to_string())?;
+) -> SharedResult<IrProgram, TranslateError> {
+    let cfg = build_cfg(request, code)?;
     let mut next_link_slot = 0usize;
 
     let mut ir = IrProgram::with_capacity(cfg.blocks.iter().map(|block| block.insns.len()).sum());
@@ -31,7 +112,7 @@ fn translate_insn_to_ir(
     pc: u64,
     kind: DecodedInsnKind,
     next_link_slot: &mut usize,
-) -> Result<IrInsn, String> {
+) -> SharedResult<IrInsn, TranslateError> {
     let ir_kind = match kind {
         DecodedInsnKind::Nop => IrInsnKind::Nop,
         DecodedInsnKind::MoveWide {
@@ -47,16 +128,9 @@ fn translate_insn_to_ir(
         DecodedInsnKind::MoveWide {
             op: MoveWideOp::Keep,
             ..
-        } => {
-            return Err(
-                "MOVK is not accepted as a standalone original instruction in this harness"
-                    .to_string(),
-            );
-        }
+        } => return Err(TranslateError::StandaloneMovk),
         DecodedInsnKind::MoveWide { width, .. } => {
-            return Err(format!(
-                "only 64-bit move-wide instructions are supported in IR translation, got {width:?}"
-            ));
+            return Err(TranslateError::UnsupportedMoveWide { width });
         }
         DecodedInsnKind::PcRelAddress { rd, target, .. } => {
             IrInsnKind::LoadImm64 { rd, value: target }
@@ -89,9 +163,7 @@ fn translate_insn_to_ir(
             shift12: false,
         } => IrInsnKind::CmpImm { rn, imm12 },
         DecodedInsnKind::AddSubImm { width, shift12, .. } => {
-            return Err(format!(
-                "unsupported add/sub immediate IR translation: width={width:?}, shift12={shift12}"
-            ));
+            return Err(TranslateError::UnsupportedAddSubImm { width, shift12 });
         }
         DecodedInsnKind::Branch { target } => IrInsnKind::B { target_pc: target },
         DecodedInsnKind::CondBranch { cond, target } => IrInsnKind::BCond {
@@ -117,9 +189,7 @@ fn translate_insn_to_ir(
             target_pc: target,
         },
         DecodedInsnKind::CompareBranch { width, .. } => {
-            return Err(format!(
-                "only 64-bit compare-and-branch is supported in IR translation, got {width:?}"
-            ));
+            return Err(TranslateError::UnsupportedCompareBranch { width });
         }
         DecodedInsnKind::LoadStoreImm {
             op: LoadStoreOp::Store,
@@ -149,12 +219,14 @@ fn translate_insn_to_ir(
             addressing,
             ..
         } => {
-            return Err(format!(
-                "unsupported load/store IR translation: op={op:?}, width={width:?}, addressing={addressing:?}"
-            ));
+            return Err(TranslateError::UnsupportedLoadStore {
+                op,
+                width,
+                addressing,
+            });
         }
         DecodedInsnKind::TestBitBranch { .. } => {
-            return Err("TBZ/TBNZ IR translation is not wired into the harness yet".to_string());
+            return Err(TranslateError::UnsupportedTestBitBranch);
         }
         DecodedInsnKind::BranchLink { target } => runtime_exit(
             RuntimeExitReason::Bl {
@@ -194,14 +266,14 @@ fn runtime_exit(reason: RuntimeExitReason, next_link_slot: &mut usize) -> IrInsn
     IrInsnKind::RuntimeExit { slot, reason }
 }
 
-fn insn_load_store_offset(kind: DecodedInsnKind) -> Result<u16, String> {
+fn insn_load_store_offset(kind: DecodedInsnKind) -> SharedResult<u16, TranslateError> {
     match kind {
         DecodedInsnKind::LoadStoreImm {
             width, addressing, ..
         } => {
             let offset = addressing.byte_offset(width);
-            u16::try_from(offset).map_err(|_| format!("load/store offset out of range: {offset}"))
+            u16::try_from(offset).map_err(|_| TranslateError::LoadStoreOffsetOutOfRange { offset })
         }
-        _ => Err("expected load/store instruction".to_string()),
+        _ => Err(TranslateError::ExpectedLoadStore),
     }
 }

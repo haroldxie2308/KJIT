@@ -25,7 +25,8 @@ pub enum BlockTerminator {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BasicBlock {
-    pub start_pc: u64,
+    pub start_addr: u64,
+    pub end_addr: u64,
     pub start_index: usize,
     pub end_index: usize,
     pub insns: Vec<DecodedInsn>,
@@ -42,7 +43,7 @@ pub struct Cfg {
 pub enum CfgError {
     CodeRead(CodeReadError),
     Decode(DecodeError),
-    EmptyBlock { start_pc: u64 },
+    EmptyBlock { start_addr: u64 },
 }
 
 impl core::fmt::Display for CfgError {
@@ -50,8 +51,8 @@ impl core::fmt::Display for CfgError {
         match self {
             Self::CodeRead(err) => write!(f, "{err}"),
             Self::Decode(err) => write!(f, "{err}"),
-            Self::EmptyBlock { start_pc } => {
-                write!(f, "no instructions decoded for block at pc {start_pc:#x}")
+            Self::EmptyBlock { start_addr } => {
+                write!(f, "no instructions decoded for block at pc {start_addr:#x}")
             }
         }
     }
@@ -66,15 +67,15 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
     let mut pending_index = 0usize;
     let mut decoded_index = 0usize;
     while pending_index < pending.len() {
-        let start_pc = pending[pending_index];
+        let start_addr = pending[pending_index];
         pending_index += 1;
 
-        if ensure_block_boundary(start_pc, &mut blocks) {
+        if ensure_block_boundary(start_addr, &mut blocks) {
             continue;
         }
 
         let start_index = decoded_index;
-        let mut pc = start_pc;
+        let mut pc = start_addr;
         let mut insns = Vec::new();
 
         let terminator = loop {
@@ -152,11 +153,12 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
         };
 
         if insns.is_empty() {
-            return Err(CfgError::EmptyBlock { start_pc });
+            return Err(CfgError::EmptyBlock { start_addr });
         }
 
         blocks.push(BasicBlock {
-            start_pc,
+            start_addr,
+            end_addr: pc.wrapping_sub(4),
             start_index,
             end_index: decoded_index,
             insns,
@@ -185,7 +187,7 @@ fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<DecodedInsn, CfgError
 }
 
 fn ensure_block_boundary(pc: u64, blocks: &mut Vec<BasicBlock>) -> bool {
-    if blocks.iter().any(|block| block.start_pc == pc) {
+    if blocks.iter().any(|block| block.start_addr == pc) {
         return true;
     }
 
@@ -194,7 +196,7 @@ fn ensure_block_boundary(pc: u64, blocks: &mut Vec<BasicBlock>) -> bool {
 
 fn split_existing_block_at(pc: u64, blocks: &mut Vec<BasicBlock>) -> bool {
     for index in 0..blocks.len() {
-        let block_start = blocks[index].start_pc;
+        let block_start = blocks[index].start_addr;
         let block_end = block_start + (blocks[index].insns.len() as u64) * 4;
         if !(block_start < pc && pc < block_end) {
             continue;
@@ -206,13 +208,15 @@ fn split_existing_block_at(pc: u64, blocks: &mut Vec<BasicBlock>) -> bool {
         let tail_terminator = blocks[index].terminator;
         let tail_insns = blocks[index].insns.split_off(split_offset);
 
+        blocks[index].end_addr = pc - 4;
         blocks[index].end_index = tail_start_index;
         blocks[index].terminator = BlockTerminator::Fallthrough { next_pc: Some(pc) };
 
         blocks.insert(
             index + 1,
             BasicBlock {
-                start_pc: pc,
+                start_addr: pc,
+                end_addr: block_end,
                 start_index: tail_start_index,
                 end_index: tail_end_index,
                 insns: tail_insns,

@@ -1,3 +1,7 @@
+extern crate alloc;
+
+use alloc::vec::Vec;
+
 use crate::trans_core::arm64::BranchCondition;
 use crate::trans_core::cfg::RuntimeExitReason;
 

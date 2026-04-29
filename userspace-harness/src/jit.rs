@@ -225,7 +225,8 @@ impl<H: SyscallHandler> JitRuntime<H> {
             },
             regs: None,
         };
-        let mut fragment = translate_request(&request, &self.code)?;
+        let mut fragment =
+            translate_request(&request, &self.code).map_err(|err| err.to_string())?;
         let base = self.program.len();
         let slot_base = self.next_link_slot;
         let slot_count = relocate_fragment(slot_base, &mut fragment);

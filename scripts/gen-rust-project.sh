@@ -54,6 +54,9 @@ if [[ ! -d "$rust_lib_src" ]]; then
     exit 1
 fi
 
+tmp_project="$(mktemp)"
+trap 'rm -f "$tmp_project"' EXIT
+
 python3 "$KDIR/scripts/generate_rust_analyzer.py" \
     --cfgs="core=--cfg no_fp_fmt_parse" \
     --cfgs="alloc=--cfg no_global_oom_handling --cfg no_rc --cfg no_sync" \
@@ -67,6 +70,35 @@ python3 "$KDIR/scripts/generate_rust_analyzer.py" \
     "$KBUILD_OUTPUT" \
     "$rustc_sysroot" \
     "$rust_lib_src" \
-    "$ROOT_DIR" > "$ROOT_DIR/rust-project.json"
+    "$ROOT_DIR" > "$tmp_project"
+
+python3 - "$tmp_project" "$ROOT_DIR/rust-project.json" <<'PY'
+import json
+import sys
+
+src, dst = sys.argv[1:3]
+with open(src, "r", encoding="utf-8") as f:
+    project = json.load(f)
+
+crate_indices = {
+    crate.get("display_name"): index
+    for index, crate in enumerate(project["crates"])
+}
+alloc_index = crate_indices.get("alloc")
+
+for crate in project["crates"]:
+    if crate.get("display_name") == "rust_kjit":
+        cfg = crate.setdefault("cfg", [])
+        if "--cfg" not in cfg or "rust_analyzer" not in cfg:
+            cfg.extend(["--cfg", "rust_analyzer"])
+        deps = crate.setdefault("deps", [])
+        if alloc_index is not None and not any(dep.get("name") == "alloc" for dep in deps):
+            deps.append({"crate": alloc_index, "name": "alloc"})
+        break
+
+with open(dst, "w", encoding="utf-8") as f:
+    json.dump(project, f, indent=4)
+    f.write("\n")
+PY
 
 echo "Generated $ROOT_DIR/rust-project.json"

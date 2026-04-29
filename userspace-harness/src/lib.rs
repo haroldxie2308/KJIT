@@ -36,7 +36,7 @@ pub fn run_case(case: &HarnessCase) -> Result<CaseReport, String> {
         trigger: TranslationTrigger::Manual,
         regs: Some(register_snapshot(&case.initial_state, case.base_pc)),
     };
-    let ir_program = translate_request(&request, &code)?;
+    let ir_program = translate_request(&request, &code).map_err(|err| err.to_string())?;
     let ir = execute_ir(&ir_program, &case.initial_state)?;
     let encoded_program = encode_program(&ir_program)?;
     let encoded = arm64::execute_program(&encoded_program, case.base_pc, &case.initial_state)?;
@@ -125,7 +125,7 @@ pub fn run_entry_fixture(
         trigger: TranslationTrigger::HotSvc,
         regs: Some(register_snapshot(initial_state, entry_pc)),
     };
-    let ir_program = translate_request(&request, &code)?;
+    let ir_program = translate_request(&request, &code).map_err(|err| err.to_string())?;
     let ir = execute_ir(&ir_program, initial_state)?;
     let encoded_program = encode_program(&ir_program)?;
     let encoded = arm64::execute_program(&encoded_program, entry_pc, initial_state)?;
@@ -403,8 +403,8 @@ mod tests {
         assert_eq!(
             cfg.blocks[0].terminator,
             BlockTerminator::CondBranch {
-                taken_pc: cfg.blocks[2].start_pc,
-                fallthrough_pc: cfg.blocks[1].start_pc,
+                taken_pc: cfg.blocks[2].start_addr,
+                fallthrough_pc: cfg.blocks[1].start_addr,
             }
         );
 
@@ -413,7 +413,7 @@ mod tests {
         assert_eq!(
             cfg.blocks[1].terminator,
             BlockTerminator::Fallthrough {
-                next_pc: Some(cfg.blocks[2].start_pc),
+                next_pc: Some(cfg.blocks[2].start_addr),
             }
         );
 
@@ -450,10 +450,10 @@ mod tests {
         let cfg = build_cfg(&request, &code).unwrap();
 
         assert_eq!(cfg.blocks.len(), 4);
-        assert_eq!(cfg.blocks[0].start_pc, base_pc);
-        assert_eq!(cfg.blocks[1].start_pc, base_pc + 4);
-        assert_eq!(cfg.blocks[2].start_pc, base_pc + 8);
-        assert_eq!(cfg.blocks[3].start_pc, base_pc + 12);
+        assert_eq!(cfg.blocks[0].start_addr, base_pc);
+        assert_eq!(cfg.blocks[1].start_addr, base_pc + 4);
+        assert_eq!(cfg.blocks[2].start_addr, base_pc + 8);
+        assert_eq!(cfg.blocks[3].start_addr, base_pc + 12);
 
         assert_eq!(cfg.blocks[1].start_index, 1);
         assert_eq!(cfg.blocks[1].end_index, 2);
