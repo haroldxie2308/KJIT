@@ -7,10 +7,10 @@ pub mod model;
 #[path = "../../shared/mod.rs"]
 pub mod shared;
 
-use crate::shared::trans_core::input::{
+use crate::shared::trans::input::{
     CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
 };
-use crate::shared::trans_core::translate::translate_request;
+use crate::shared::trans::translate::translate_request;
 use ir::{encode_program, execute_program as execute_ir, IrProgram};
 use model::{MachineState, NormalizedState};
 
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn jit_runtime_handles_svc_and_links_resume_slot() {
         use crate::jit::{JitRuntime, SyscallHandler};
-        use crate::shared::trans_core::ir::LinkSlot;
+        use crate::shared::trans::ir::LinkSlot;
 
         struct CountingSyscall {
             calls: usize,
@@ -272,7 +272,7 @@ mod tests {
 
     #[test]
     fn shared_typed_decode_maps_sample_opcodes() {
-        use crate::shared::trans_core::arm64::{
+        use crate::shared::trans::arm64::{
             decode_word, AddSubOp, DecodedInsnKind, GprWidth, LoadStoreAddressing, LoadStoreOp,
             MoveWideOp, PcRelOp,
         };
@@ -332,7 +332,7 @@ mod tests {
     #[test]
     fn shared_cfg_splits_conditional_branch_into_basic_blocks() {
         use crate::arm64::Condition;
-        use crate::shared::trans_core::cfg::{build_cfg, BlockTerminator};
+        use crate::shared::trans::cfg::{build_cfg, BlockTerminator};
 
         let base_pc = 0x6000;
         let mut program = Vec::new();
@@ -397,7 +397,7 @@ mod tests {
     #[test]
     fn shared_cfg_splits_existing_block_when_branch_targets_middle() {
         use crate::arm64::Condition;
-        use crate::shared::trans_core::cfg::{build_cfg, BlockTerminator};
+        use crate::shared::trans::cfg::{build_cfg, BlockTerminator};
 
         let base_pc = 0x9000;
         let mut program = Vec::new();

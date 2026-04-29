@@ -1,6 +1,6 @@
 use crate::shared::platform::SharedVec;
-use crate::shared::trans_core::arm64::BranchCondition;
-use crate::shared::trans_core::cfg::RuntimeExitReason;
+use crate::shared::trans::arm64::BranchCondition;
+use crate::shared::trans::cfg::RuntimeExitReason;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LinkSlot(pub usize);

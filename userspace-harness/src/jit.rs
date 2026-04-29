@@ -3,9 +3,9 @@ use std::collections::BTreeMap;
 use crate::ir::{IrInsn, IrInsnKind, IrProgram, LinkSlot};
 use crate::model::{ExecutionResult, HaltReason, MachineState};
 use crate::shared::platform::GFP_KERNEL;
-use crate::shared::trans_core::cfg::RuntimeExitReason;
-use crate::shared::trans_core::input::{TranslationRequest, TranslationTrigger};
-use crate::shared::trans_core::translate::translate_request;
+use crate::shared::trans::cfg::RuntimeExitReason;
+use crate::shared::trans::input::{TranslationRequest, TranslationTrigger};
+use crate::shared::trans::translate::translate_request;
 use crate::MockCodeProvider;
 
 const MAX_JIT_STEPS: usize = 4096;

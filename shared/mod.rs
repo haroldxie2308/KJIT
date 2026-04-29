@@ -1,2 +1,2 @@
 pub mod platform;
-pub mod trans_core;
+pub mod trans;

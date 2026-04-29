@@ -6,8 +6,8 @@ use crate::arm64::{
     encode_sub_imm, encode_sub_reg, Condition,
 };
 use crate::model::{ExecutionResult, HaltReason, MachineState};
-use crate::shared::trans_core::arm64::BranchCondition;
-pub use crate::shared::trans_core::ir::{IrInsn, IrInsnKind, IrProgram, LinkSlot};
+use crate::shared::trans::arm64::BranchCondition;
+pub use crate::shared::trans::ir::{IrInsn, IrInsnKind, IrProgram, LinkSlot};
 
 const MAX_STEPS: usize = 1024;
 
