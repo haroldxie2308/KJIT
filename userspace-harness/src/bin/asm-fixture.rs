@@ -37,8 +37,8 @@ fn main() {
     ) {
         Ok(report) => {
             println!(
-                "PASS asm-fixture\tentry_pc={entry_pc:#x}\tir_insns={}\tencoded_bytes={}",
-                report.ir_program.len(),
+                "PASS asm-fixture\tentry_pc={entry_pc:#x}\ttranslated_insns={}\tencoded_bytes={}",
+                report.translated_program.len(),
                 report.encoded_program.len()
             );
         }

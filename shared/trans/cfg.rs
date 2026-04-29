@@ -1,5 +1,5 @@
 use crate::shared::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
-use crate::shared::trans::arm64::{decode_word, DecodeError, DecodedInsn, DecodedInsnKind};
+use crate::shared::trans::arm64::{decode_word, DecodeError, DecodedInsn};
 use crate::shared::trans::input::{CodeProvider, CodeReadError, TranslationRequest};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -76,6 +76,7 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
 
         let terminator = loop {
             if !insns.is_empty() {
+                // If we have current pc already explored
                 if pending.contains(&pc) || ensure_block_boundary(pc, &mut blocks)? {
                     break BlockTerminator::Fallthrough { next_pc: Some(pc) };
                 }
@@ -90,60 +91,21 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
             };
             pc = pc.wrapping_add(4);
 
-            match insn.kind {
-                DecodedInsnKind::Branch { target } => {
-                    enqueue_block(target, &mut pending)?;
-                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
-                    break BlockTerminator::Branch { target_pc: target };
-                }
-                DecodedInsnKind::BranchLink { target } => {
-                    let reason = RuntimeExitReason::Bl {
-                        target_pc: target,
-                        resume_pc: pc,
-                    };
-                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
-                    break BlockTerminator::RuntimeExit { reason };
-                }
-                DecodedInsnKind::BranchLinkReg { rn } => {
-                    let reason = RuntimeExitReason::Blr {
-                        target_reg: rn,
-                        resume_pc: pc,
-                    };
-                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
-                    break BlockTerminator::RuntimeExit { reason };
-                }
-                DecodedInsnKind::BranchReg { rn } => {
-                    let reason = RuntimeExitReason::Br { target_reg: rn };
-                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
-                    break BlockTerminator::RuntimeExit { reason };
-                }
-                DecodedInsnKind::Ret { rn } => {
-                    let reason = RuntimeExitReason::Ret { lr_reg: rn };
-                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
-                    break BlockTerminator::RuntimeExit { reason };
-                }
-                DecodedInsnKind::Svc { imm16 } => {
-                    let reason = RuntimeExitReason::Svc {
-                        imm16,
-                        resume_pc: pc,
-                    };
-                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
-                    break BlockTerminator::RuntimeExit { reason };
-                }
-                DecodedInsnKind::CondBranch { target, .. }
-                | DecodedInsnKind::CompareBranch { target, .. }
-                | DecodedInsnKind::TestBitBranch { target, .. } => {
-                    enqueue_block(pc, &mut pending)?;
-                    enqueue_block(target, &mut pending)?;
-                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
-                    break BlockTerminator::CondBranch {
-                        taken_pc: target,
-                        fallthrough_pc: pc,
-                    };
-                }
-                _ => {
-                    insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
-                }
+            insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
+            if let Some(target) = insn.insn.direct_branch_target(insn.pc) {
+                enqueue_block(target, &mut pending)?;
+                break BlockTerminator::Branch { target_pc: target };
+            }
+            if let Some(reason) = insn.insn.runtime_exit_reason(insn.pc) {
+                break BlockTerminator::RuntimeExit { reason };
+            }
+            if let Some((taken_pc, fallthrough_pc)) = insn.insn.conditional_targets(insn.pc) {
+                enqueue_block(fallthrough_pc, &mut pending)?;
+                enqueue_block(taken_pc, &mut pending)?;
+                break BlockTerminator::CondBranch {
+                    taken_pc,
+                    fallthrough_pc,
+                };
             }
         };
 

@@ -1,8 +1,6 @@
 extern crate alloc;
 
 pub mod arm64;
-pub mod ir;
-pub mod jit;
 pub mod model;
 #[path = "../../shared/mod.rs"]
 pub mod shared;
@@ -10,17 +8,15 @@ pub mod shared;
 use crate::shared::trans::input::{
     CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
 };
-use crate::shared::trans::translate::translate_request;
-use ir::{encode_program, execute_program as execute_ir, IrProgram};
+use crate::shared::trans::translate::{translate_request, TranslatedProgram};
 use model::{MachineState, NormalizedState};
 
 #[derive(Debug)]
 pub struct CaseReport {
     pub name: &'static str,
-    pub ir_program: IrProgram,
+    pub translated_program: TranslatedProgram,
     pub encoded_program: Vec<u8>,
     pub original_state: NormalizedState,
-    pub ir_state: NormalizedState,
     pub encoded_state: NormalizedState,
 }
 
@@ -80,35 +76,38 @@ pub fn run_entry_fixture(
         trigger: TranslationTrigger::HotSvc,
         regs: Some(register_snapshot(initial_state, entry_pc)),
     };
-    let ir_program = translate_request(&request, &code).map_err(|err| err.to_string())?;
-    let ir = execute_ir(&ir_program, initial_state)?;
-    let encoded_program = encode_program(&ir_program)?;
+    let translated_program = translate_request(&request, &code).map_err(|err| err.to_string())?;
+    let encoded_program = encode_translated_program(&translated_program)?;
     let encoded = arm64::execute_program(&encoded_program, entry_pc, initial_state)?;
 
     let original_state = NormalizedState::from_execution(&original);
-    let ir_state = NormalizedState::from_execution(&ir);
     let encoded_state = NormalizedState::from_execution(&encoded);
 
-    if original_state != ir_state {
+    if original_state != encoded_state {
         return Err(format!(
-            "original vs IR mismatch for `{name}`\noriginal: {original_state:#?}\nIR: {ir_state:#?}",
-        ));
-    }
-
-    if ir_state != encoded_state {
-        return Err(format!(
-            "IR vs encoded mismatch for `{name}`\nIR: {ir_state:#?}\nencoded: {encoded_state:#?}",
+            "original vs encoded mismatch for `{name}`\noriginal: {original_state:#?}\nencoded: {encoded_state:#?}",
         ));
     }
 
     Ok(CaseReport {
         name,
-        ir_program,
+        translated_program,
         encoded_program,
         original_state,
-        ir_state,
         encoded_state,
     })
+}
+
+fn encode_translated_program(program: &TranslatedProgram) -> Result<Vec<u8>, String> {
+    let mut bytes = Vec::with_capacity(program.len() * 4);
+    for insn in program {
+        let word = insn
+            .insn
+            .encode()
+            .map_err(|err| format!("failed to encode {}: {err:?}", insn.insn.key()))?;
+        bytes.extend_from_slice(&word.to_le_bytes());
+    }
+    Ok(bytes)
 }
 
 fn register_snapshot(state: &MachineState, pc: u64) -> RegisterSnapshot {
@@ -133,70 +132,6 @@ mod tests {
             env!("CARGO_MANIFEST_DIR"),
             "/../spec/arm64/generated/a64_subset.rs"
         ));
-    }
-
-    #[test]
-    fn lazy_translation_skips_unreachable_invalid_word() {
-        let base_pc = 0x7000;
-        let mut program = Vec::new();
-        program.extend_from_slice(&crate::arm64::encode_b(8).unwrap().to_le_bytes());
-        program.extend_from_slice(&0xffff_ffff_u32.to_le_bytes());
-        program.extend_from_slice(&0xd503_201f_u32.to_le_bytes());
-
-        let code = MockCodeProvider::new(base_pc, program.clone());
-        let request = TranslationRequest {
-            entry_pc: base_pc,
-            trigger: TranslationTrigger::Manual,
-            regs: None,
-        };
-
-        let ir_program = translate_request(&request, &code).unwrap();
-        let initial_state = MachineState::new();
-        let original = arm64::execute_program(&program, base_pc, &initial_state).unwrap();
-        let ir = execute_ir(&ir_program, &initial_state).unwrap();
-
-        assert_eq!(
-            NormalizedState::from_execution(&original),
-            NormalizedState::from_execution(&ir)
-        );
-    }
-
-    #[test]
-    fn jit_runtime_handles_svc_and_links_resume_slot() {
-        use crate::jit::{JitRuntime, SyscallHandler};
-        use crate::shared::trans::ir::LinkSlot;
-
-        struct CountingSyscall {
-            calls: usize,
-        }
-
-        impl SyscallHandler for CountingSyscall {
-            fn handle_svc(&mut self, _imm16: u16, state: &mut MachineState) -> Result<(), String> {
-                self.calls += 1;
-                state.write_reg(0, self.calls as u64);
-                Ok(())
-            }
-        }
-
-        let base_pc = 0x8000;
-        let mut program = Vec::new();
-        program.extend_from_slice(&crate::arm64::encode_movz(8, 0, 0).unwrap().to_le_bytes());
-        program.extend_from_slice(&0xd400_0001_u32.to_le_bytes());
-        program.extend_from_slice(
-            &crate::arm64::encode_movz(1, 0x1234, 0)
-                .unwrap()
-                .to_le_bytes(),
-        );
-        program.extend_from_slice(&0xd503_201f_u32.to_le_bytes());
-
-        let code = MockCodeProvider::new(base_pc, program);
-        let mut runtime = JitRuntime::new(code, CountingSyscall { calls: 0 });
-        let result = runtime.execute(base_pc, &MachineState::new()).unwrap();
-
-        assert_eq!(result.halt_reason, crate::model::HaltReason::FellOffEnd);
-        assert_eq!(result.state.read_reg(0), 1);
-        assert_eq!(result.state.read_reg(1), 0x1234);
-        assert!(runtime.is_link_slot_resolved(LinkSlot(0)));
     }
 
     #[test]
@@ -268,65 +203,6 @@ mod tests {
         assert_eq!(str_.extract_field(0xF900_0D6A, "imm12"), Some(3));
         assert_eq!(str_.extract_field(0xF900_0D6A, "Rn"), Some(11));
         assert_eq!(str_.extract_field(0xF900_0D6A, "Rt"), Some(10));
-    }
-
-    #[test]
-    fn shared_typed_decode_maps_sample_opcodes() {
-        use crate::shared::trans::arm64::{
-            decode_word, AddSubOp, DecodedInsnKind, GprWidth, LoadStoreAddressing, LoadStoreOp,
-            MoveWideOp, PcRelOp,
-        };
-
-        let adrp = decode_word(0xB000_0003, 0x4010).unwrap();
-        assert_eq!(
-            adrp.kind,
-            DecodedInsnKind::PcRelAddress {
-                op: PcRelOp::Adrp,
-                rd: 3,
-                target: 0x5000,
-            }
-        );
-
-        let cmp = decode_word(0xF100_141F, 0x6004).unwrap();
-        assert_eq!(
-            cmp.kind,
-            DecodedInsnKind::AddSubImm {
-                op: AddSubOp::Sub,
-                width: GprWidth::X64,
-                set_flags: true,
-                rd: 31,
-                rn: 0,
-                imm12: 5,
-                shift12: false,
-            }
-        );
-
-        let movk = decode_word(0xF2D5_79A5, 0x1C).unwrap();
-        assert_eq!(
-            movk.kind,
-            DecodedInsnKind::MoveWide {
-                op: MoveWideOp::Keep,
-                width: GprWidth::X64,
-                rd: 5,
-                imm16: 0xABCD,
-                shift: 32,
-            }
-        );
-
-        let ldr = decode_word(0xF940_0928, 0x28).unwrap();
-        assert_eq!(
-            ldr.kind,
-            DecodedInsnKind::LoadStoreImm {
-                op: LoadStoreOp::Load,
-                width: GprWidth::X64,
-                rt: 8,
-                rn: 9,
-                addressing: LoadStoreAddressing::UnsignedScaledOffset { imm12: 2 },
-            }
-        );
-
-        let svc = decode_word(0xD400_0001, 0x30).unwrap();
-        assert_eq!(svc.kind, DecodedInsnKind::Svc { imm16: 0 });
     }
 
     #[test]

@@ -4,28 +4,13 @@ from __future__ import annotations
 import argparse
 import json
 import textwrap
+import tomllib
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
 
-DEFAULT_SUBSET = [
-    "adr.xml",
-    "adrp.xml",
-    "add_addsub_imm.xml",
-    "sub_addsub_imm.xml",
-    "subs_addsub_imm.xml",
-    "b_uncond.xml",
-    "b_cond.xml",
-    "cbz.xml",
-    "cbnz.xml",
-    "movz.xml",
-    "movk.xml",
-    "tbz.xml",
-    "tbnz.xml",
-    "ldr_imm_gen.xml",
-    "str_imm_gen.xml",
-]
+DEFAULT_SUBSET_CONFIG = "./spec/arm64/subset.toml"
 
 
 @dataclass
@@ -33,6 +18,7 @@ class FieldSlice:
     name: str
     hi: int
     width: int
+    variable: bool
 
     @property
     def lo(self) -> int:
@@ -81,7 +67,15 @@ def parse_box(box: ET.Element) -> tuple[int, int, list[FieldSlice]]:
 
     fields: list[FieldSlice] = []
     if name:
-        fields.append(FieldSlice(name=name, hi=hibit, width=width))
+        field_mask = ((1 << width) - 1) << (hibit - width + 1)
+        fields.append(
+            FieldSlice(
+                name=name,
+                hi=hibit,
+                width=width,
+                variable=(mask & field_mask) != field_mask,
+            )
+        )
 
     return mask, value, fields
 
@@ -125,6 +119,8 @@ def parse_instruction(path: Path) -> dict:
         iclass_docvars = parse_docvars(iclass)
         for encoding in iclass.findall("encoding"):
             enc_mask, enc_value, _ = parse_regdiagram(encoding)
+            combined_mask = base_mask | enc_mask
+            combined_value = base_value | enc_value
             variant_docvars = {**section_docvars, **iclass_docvars, **parse_docvars(encoding)}
             asm = flatten_text(encoding.find("asmtemplate")) if encoding.find("asmtemplate") is not None else ""
             variants.append(
@@ -137,8 +133,8 @@ def parse_instruction(path: Path) -> dict:
                     "encoding_label": encoding.attrib.get("label", ""),
                     "mnemonic": variant_docvars.get("mnemonic", heading.split()[0] if heading else section_id),
                     "docvars": variant_docvars,
-                    "mask": f"0x{(base_mask | enc_mask):08x}",
-                    "value": f"0x{(base_value | enc_value):08x}",
+                    "mask": f"0x{combined_mask:08x}",
+                    "value": f"0x{combined_value:08x}",
                     "fields": [
                         {
                             "name": field.name,
@@ -147,6 +143,11 @@ def parse_instruction(path: Path) -> dict:
                             "width": field.width,
                             "shift": field.lo,
                             "mask": f"0x{(((1 << field.width) - 1) << field.lo):08x}",
+                            "variable": (
+                                combined_mask
+                                & (((1 << field.width) - 1) << field.lo)
+                            )
+                            != (((1 << field.width) - 1) << field.lo),
                         }
                         for field in fields
                     ],
@@ -164,6 +165,46 @@ def parse_instruction(path: Path) -> dict:
     }
 
 
+def form_source_file(form_key: str) -> str:
+    section_id, separator, _ = form_key.partition(".")
+    if separator != "." or not section_id:
+        raise ValueError(f"invalid form key `{form_key}`; expected `<section>.<encoding>`")
+    return f"{section_id.lower()}.xml"
+
+
+def load_decode_forms(path: Path) -> list[str]:
+    config = tomllib.loads(path.read_text(encoding="utf-8"))
+    forms = config.get("decode", {}).get("forms")
+    if not isinstance(forms, list) or not all(isinstance(form, str) for form in forms):
+        raise ValueError(f"{path} must define decode.forms as a string array")
+    return forms
+
+
+def filter_specs_by_forms(specs: list[dict], forms: list[str]) -> list[dict]:
+    wanted = set(forms)
+    found: set[str] = set()
+    filtered: list[dict] = []
+
+    for spec in specs:
+        variants = []
+        for variant in spec["variants"]:
+            key = f'{variant["section_id"]}.{variant["encoding_name"]}'
+            if key in wanted:
+                variants.append(variant)
+                found.add(key)
+
+        if variants:
+            spec = {**spec, "variants": variants}
+            filtered.append(spec)
+
+    missing = [form for form in forms if form not in found]
+    if missing:
+        missing_list = "\n".join(f"  - {form}" for form in missing)
+        raise ValueError(f"configured generated forms were not found in XML:\n{missing_list}")
+
+    return filtered
+
+
 def rust_ident(text: str) -> str:
     chars: list[str] = []
     for ch in text:
@@ -177,6 +218,213 @@ def rust_ident(text: str) -> str:
     if ident and ident[0].isdigit():
         ident = f"V_{ident}"
     return ident or "UNNAMED"
+
+
+def rust_variant_ident(text: str) -> str:
+    ident = rust_ident(text)
+    parts = [part for part in ident.split("_") if part]
+    variant = "".join(part[0] + part[1:].lower() for part in parts)
+    if variant and variant[0].isdigit():
+        variant = f"V{variant}"
+    return variant or "Unnamed"
+
+
+def rust_field_ident(text: str) -> str:
+    chars: list[str] = []
+    prev_lower_or_digit = False
+    for ch in text:
+        if ch.isalnum():
+            if ch.isupper() and prev_lower_or_digit:
+                chars.append("_")
+            chars.append(ch.lower())
+            prev_lower_or_digit = ch.islower() or ch.isdigit()
+        else:
+            chars.append("_")
+            prev_lower_or_digit = False
+
+    ident = "".join(chars).strip("_")
+    while "__" in ident:
+        ident = ident.replace("__", "_")
+    if not ident:
+        ident = "field"
+    if ident[0].isdigit():
+        ident = f"field_{ident}"
+    if ident in {"as", "break", "const", "continue", "crate", "else", "enum", "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type", "unsafe", "use", "where", "while"}:
+        ident = f"{ident}_field"
+    return ident
+
+
+def rust_field_type(width: int) -> str:
+    if width <= 8:
+        return "u8"
+    if width <= 16:
+        return "u16"
+    return "u32"
+
+
+def render_a64_insn(specs: list[dict]) -> list[str]:
+    variants: list[dict] = []
+    for spec in specs:
+        for variant in spec["variants"]:
+            key = f'{variant["section_id"]}.{variant["encoding_name"]}'
+            fields = [
+                {
+                    **field,
+                    "rust_name": rust_field_ident(field["name"]),
+                    "rust_type": rust_field_type(field["width"]),
+                }
+                for field in variant["fields"]
+                if field["variable"]
+            ]
+            variants.append(
+                {
+                    **variant,
+                    "key": key,
+                    "variant_name": rust_variant_ident(key),
+                    "fields": fields,
+                }
+            )
+
+    lines = [
+        "#[allow(dead_code)]",
+        "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
+        "pub enum A64Insn {",
+    ]
+    for variant in variants:
+        lines.append(f"    {variant['variant_name']} {{")
+        for field in variant["fields"]:
+            lines.append(f"        {field['rust_name']}: {field['rust_type']},")
+        lines.append("    },")
+    lines.append("}")
+    lines.append("")
+    lines.extend(
+        [
+            "#[allow(dead_code)]",
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
+            "pub enum A64EncodeError {",
+            "    FieldOutOfRange {",
+            "        insn: &'static str,",
+            "        field: &'static str,",
+            "        value: u32,",
+            "        width: u8,",
+            "    },",
+            "}",
+            "",
+            "fn encode_a64_field(",
+            "    insn: &'static str,",
+            "    field: &'static str,",
+            "    value: u32,",
+            "    width: u8,",
+            "    shift: u8,",
+            ") -> Result<u32, A64EncodeError> {",
+            "    if width < 32 && value >= (1_u32 << width) {",
+            "        return Err(A64EncodeError::FieldOutOfRange {",
+            "            insn,",
+            "            field,",
+            "            value,",
+            "            width,",
+            "        });",
+            "    }",
+            "    Ok(value << shift)",
+            "}",
+            "",
+            "#[allow(dead_code)]",
+            "impl A64Insn {",
+            "    pub const fn key(&self) -> &'static str {",
+            "        match self {",
+        ]
+    )
+    for variant in variants:
+        lines.append(f"            Self::{variant['variant_name']} {{ .. }} => \"{variant['key']}\",")
+    lines.extend(
+        [
+            "        }",
+            "    }",
+            "",
+            "    pub const fn mnemonic(&self) -> &'static str {",
+            "        match self {",
+        ]
+    )
+    for variant in variants:
+        lines.append(f"            Self::{variant['variant_name']} {{ .. }} => \"{variant['mnemonic']}\",")
+    lines.extend(
+        [
+            "        }",
+            "    }",
+            "",
+            "    pub const fn asm_template(&self) -> &'static str {",
+            "        match self {",
+        ]
+    )
+    for variant in variants:
+        lines.append(
+            f"            Self::{variant['variant_name']} {{ .. }} => {json.dumps(variant['asm'])},"
+        )
+    lines.extend(
+        [
+            "        }",
+            "    }",
+            "",
+            "    pub fn decode(word: u32) -> Option<Self> {",
+            "        decode_a64_insn(word)",
+            "    }",
+            "",
+            "    pub fn encode(self) -> Result<u32, A64EncodeError> {",
+            "        match self {",
+        ]
+    )
+    for variant in variants:
+        if variant["fields"]:
+            field_list = ", ".join(field["rust_name"] for field in variant["fields"])
+            lines.append(f"            Self::{variant['variant_name']} {{ {field_list} }} => {{")
+        else:
+            lines.append(f"            Self::{variant['variant_name']} {{ }} => {{")
+        if variant["fields"]:
+            lines.append(f"                let mut word = {variant['value']};")
+        else:
+            lines.append(f"                let word = {variant['value']};")
+        for field in variant["fields"]:
+            lines.append(
+                "                word |= encode_a64_field("
+                f"\"{variant['key']}\", "
+                f"\"{field['name']}\", "
+                f"{field['rust_name']} as u32, "
+                f"{field['width']}, "
+                f"{field['shift']}"
+                ")?;"
+            )
+        lines.append("                Ok(word)")
+        lines.append("            }")
+    lines.extend(
+        [
+            "        }",
+            "    }",
+            "}",
+            "",
+            "#[allow(dead_code)]",
+            "pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {",
+        ]
+    )
+    for variant in variants:
+        lines.append(f"    if (word & {variant['mask']}) == {variant['value']} {{")
+        if variant["fields"]:
+            lines.append(f"        return Some(A64Insn::{variant['variant_name']} {{")
+            for field in variant["fields"]:
+                lines.append(
+                    f"            {field['rust_name']}: ((word & {field['mask']}) >> {field['shift']}) as {field['rust_type']},"
+                )
+            lines.append("        });")
+        else:
+            lines.append(f"        return Some(A64Insn::{variant['variant_name']} {{ }});")
+        lines.append("    }")
+    lines.extend(
+        [
+            "    None",
+            "}",
+            "",
+        ]
+    )
+    return lines
 
 
 def render_rust(specs: list[dict]) -> str:
@@ -241,12 +489,14 @@ def render_rust(specs: list[dict]) -> str:
         "}",
         "",
     ]
+    lines.extend(render_a64_insn(specs))
 
     all_entries: list[str] = []
     for spec in specs:
         for variant in spec["variants"]:
             key = f'{variant["section_id"]}.{variant["encoding_name"]}'
             array_name = f'FIELDS_{rust_ident(key)}'
+            lines.append("#[allow(dead_code)]")
             lines.append(f"pub const {array_name}: &[GeneratedFieldSpec] = &[")
             for field in variant["fields"]:
                 lines.append(
@@ -274,12 +524,14 @@ def render_rust(specs: list[dict]) -> str:
                 ).rstrip()
             )
 
+    lines.append("#[allow(dead_code)]")
     lines.append("pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[")
     for entry in all_entries:
         for line in entry.splitlines():
             lines.append(f"    {line}")
     lines.append("];")
     lines.append("")
+    lines.append("#[allow(dead_code)]")
     lines.append("pub fn generated_a64_subset_match(word: u32) -> Option<&'static GeneratedInsnSpec> {")
     lines.append("    let mut index = 0;")
     lines.append("    while index < GENERATED_A64_SUBSET.len() {")
@@ -305,8 +557,13 @@ def main() -> None:
     parser.add_argument(
         "--instructions",
         nargs="*",
-        default=DEFAULT_SUBSET,
-        help="Instruction XML filenames to parse.",
+        default=None,
+        help="Instruction XML filenames to parse. Overrides --subset-config and emits all variants in those files.",
+    )
+    parser.add_argument(
+        "--subset-config",
+        default=DEFAULT_SUBSET_CONFIG,
+        help="TOML subset config containing decode.forms.",
     )
     parser.add_argument(
         "--json-out",
@@ -321,7 +578,13 @@ def main() -> None:
     args = parser.parse_args()
 
     xml_dir = Path(args.xml_dir)
-    specs = [parse_instruction(xml_dir / filename) for filename in args.instructions]
+    if args.instructions is None:
+        decode_forms = load_decode_forms(Path(args.subset_config))
+        instructions = list(dict.fromkeys(form_source_file(form) for form in decode_forms))
+        specs = [parse_instruction(xml_dir / filename) for filename in instructions]
+        specs = filter_specs_by_forms(specs, decode_forms)
+    else:
+        specs = [parse_instruction(xml_dir / filename) for filename in args.instructions]
 
     json_out = Path(args.json_out)
     json_out.parent.mkdir(parents=True, exist_ok=True)

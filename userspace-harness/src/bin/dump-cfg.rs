@@ -71,7 +71,7 @@ fn main() {
             block.insns.len()
         );
         for insn in &block.insns {
-            println!("  {:#06x}: {:#010x} {:?}", insn.pc, insn.word, insn.kind);
+            println!("  {:#06x}: {:#010x} {:?}", insn.pc, insn.word, insn.insn);
         }
         match block.terminator {
             BlockTerminator::Fallthrough { next_pc } => match next_pc {

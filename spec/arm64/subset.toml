@@ -1,0 +1,75 @@
+# Canonical A64 subset for KJIT development.
+#
+# Form names are exact ARM XML identifiers in "<instruction-section>.<encoding-name>"
+# format. Do not use mnemonic wildcards here.
+
+version = 1
+source = "Arm ISA XML A-profile 2026-03"
+policy = "exact-form-only"
+
+[decode]
+# Exact forms intended to be generated from XML.
+forms = [
+  "ADR.ADR_only_pcreladdr",
+  "ADRP.ADRP_only_pcreladdr",
+  "ADD_addsub_imm.ADD_32_addsub_imm",
+  "ADD_addsub_imm.ADD_64_addsub_imm",
+  "SUB_addsub_imm.SUB_32_addsub_imm",
+  "SUB_addsub_imm.SUB_64_addsub_imm",
+  "SUBS_addsub_imm.SUBS_32S_addsub_imm",
+  "SUBS_addsub_imm.SUBS_64S_addsub_imm",
+  "B_uncond.B_only_branch_imm",
+  "B_cond.B_only_condbranch",
+  "CBZ.CBZ_32_compbranch",
+  "CBZ.CBZ_64_compbranch",
+  "CBNZ.CBNZ_32_compbranch",
+  "CBNZ.CBNZ_64_compbranch",
+  "MOVZ.MOVZ_32_movewide",
+  "MOVZ.MOVZ_64_movewide",
+  "MOVK.MOVK_32_movewide",
+  "MOVK.MOVK_64_movewide",
+  "TBZ.TBZ_only_testbranch",
+  "TBNZ.TBNZ_only_testbranch",
+  "LDR_imm_gen.LDR_32_ldst_immpost",
+  "LDR_imm_gen.LDR_64_ldst_immpost",
+  "LDR_imm_gen.LDR_32_ldst_immpre",
+  "LDR_imm_gen.LDR_64_ldst_immpre",
+  "LDR_imm_gen.LDR_32_ldst_pos",
+  "LDR_imm_gen.LDR_64_ldst_pos",
+  "STR_imm_gen.STR_32_ldst_immpost",
+  "STR_imm_gen.STR_64_ldst_immpost",
+  "STR_imm_gen.STR_32_ldst_immpre",
+  "STR_imm_gen.STR_64_ldst_immpre",
+  "STR_imm_gen.STR_32_ldst_pos",
+  "STR_imm_gen.STR_64_ldst_pos",
+  "NOP.NOP_HI_hints",
+  "BL.BL_only_branch_imm",
+  "BR.BR_64_branch_reg",
+  "BLR.BLR_64_branch_reg",
+  "RET.RET_64R_branch_reg",
+  "SVC.SVC_EX_exception",
+]
+
+[translate]
+# Current translator support is narrower than decode support. Extra operand
+# restrictions, such as 64-bit only or no shifted immediate, are still enforced
+# in Rust until the generator grows predicate support.
+forms = [
+  "ADR.ADR_only_pcreladdr",
+  "ADRP.ADRP_only_pcreladdr",
+  "ADD_addsub_imm.ADD_64_addsub_imm",
+  "SUB_addsub_imm.SUB_64_addsub_imm",
+  "SUBS_addsub_imm.SUBS_64S_addsub_imm",
+  "B_uncond.B_only_branch_imm",
+  "B_cond.B_only_condbranch",
+  "CBZ.CBZ_64_compbranch",
+  "CBNZ.CBNZ_64_compbranch",
+  "MOVZ.MOVZ_64_movewide",
+  "LDR_imm_gen.LDR_64_ldst_pos",
+  "STR_imm_gen.STR_64_ldst_pos",
+  "BL.BL_only_branch_imm",
+  "BR.BR_64_branch_reg",
+  "BLR.BLR_64_branch_reg",
+  "RET.RET_64R_branch_reg",
+  "SVC.SVC_EX_exception",
+]
