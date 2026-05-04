@@ -1,8 +1,6 @@
 use crate::model::{ExecutionResult, HaltReason, MachineState};
 use crate::shared::arm64::{decode_word, A64Condition, A64Insn};
 
-const MAX_STEPS: usize = 1024;
-
 pub fn execute_program(
     program: &[u8],
     base_pc: u64,
@@ -17,14 +15,6 @@ pub fn execute_program(
     let mut steps = 0;
 
     loop {
-        if steps >= MAX_STEPS {
-            return Ok(ExecutionResult {
-                state,
-                halt_reason: HaltReason::StepLimitExceeded,
-                steps,
-            });
-        }
-
         if pc < base_pc {
             return Err(format!("pc moved before base address: {pc:#x}"));
         }
@@ -48,7 +38,7 @@ pub fn execute_program(
         let decoded = decode_word(word, pc).map_err(|err| err.to_string())?;
         steps += 1;
 
-        if let Some(reason) = decoded.insn.runtime_exit_reason(pc) {
+        if let Some(reason) = decoded.inner.runtime_exit_reason(pc) {
             return Ok(ExecutionResult {
                 state,
                 halt_reason: HaltReason::RuntimeExit { reason },
@@ -56,11 +46,15 @@ pub fn execute_program(
             });
         }
 
-        pc = execute_insn(decoded.insn, pc, &mut state)?;
+        pc = execute_insn(decoded.inner, pc, &mut state)?;
     }
 }
 
-fn execute_insn(insn: A64Insn, pc: u64, state: &mut MachineState) -> Result<u64, String> {
+pub(crate) fn execute_insn(
+    insn: A64Insn,
+    pc: u64,
+    state: &mut MachineState,
+) -> Result<u64, String> {
     match insn {
         A64Insn::NopNopHiHints {} => Ok(pc + 4),
 
@@ -86,6 +80,17 @@ fn execute_insn(insn: A64Insn, pc: u64, state: &mut MachineState) -> Result<u64,
         }
         A64Insn::MovkMovk64Movewide { hw, imm16, rd } => {
             write_movk(state, 64, rd, imm16, hw)?;
+            Ok(pc + 4)
+        }
+        A64Insn::OrrLogShiftOrr64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            let shifted = shifted_reg64(state.read_reg(rm), shift, imm6)?;
+            state.write_reg(rd, state.read_reg(rn) | shifted);
             Ok(pc + 4)
         }
 
@@ -228,12 +233,19 @@ fn execute_insn(insn: A64Insn, pc: u64, state: &mut MachineState) -> Result<u64,
             Ok(pc + 4)
         }
 
-        A64Insn::BlBlOnlyBranchImm { .. }
-        | A64Insn::BrBr64BranchReg { .. }
-        | A64Insn::BlrBlr64BranchReg { .. }
-        | A64Insn::RetRet64rBranchReg { .. }
-        | A64Insn::SvcSvcExException { .. } => {
-            unreachable!("runtime exits are handled before instruction execution")
+        A64Insn::BlBlOnlyBranchImm { imm26 } => {
+            let target = pc_relative_target(pc, imm26, 26);
+            state.write_reg(30, pc.wrapping_add(4));
+            Ok(target)
+        }
+        A64Insn::BlrBlr64BranchReg { rn } => {
+            state.write_reg(30, pc.wrapping_add(4));
+            Ok(state.read_reg(rn))
+        }
+        A64Insn::BrBr64BranchReg { rn } => Ok(state.read_reg(rn)),
+        A64Insn::RetRet64rBranchReg { rn } => Ok(state.read_reg(rn)),
+        A64Insn::SvcSvcExException { .. } => {
+            Err("raw SVC is not executable inside the userspace runtime fragment".to_string())
         }
     }
 }
@@ -269,6 +281,16 @@ fn write_movk(
     let mask = !(0xFFFF_u64 << shift);
     write_reg_sized(state, rd, (old & mask) | ((imm16 as u64) << shift), bits);
     Ok(())
+}
+
+fn shifted_reg64(value: u64, shift: u8, amount: u8) -> Result<u64, String> {
+    match shift {
+        0 => Ok(value << amount),
+        1 => Ok(value >> amount),
+        2 => Ok(((value as i64) >> amount) as u64),
+        3 => Ok(value.rotate_right(amount as u32)),
+        _ => Err(format!("unsupported shifted-register shift field: {shift}")),
+    }
 }
 
 fn branch_on_zero(
@@ -361,4 +383,13 @@ fn update_sub_flags_sized(state: &mut MachineState, lhs: u64, rhs: u64, result: 
 
 fn add_signed(value: u64, offset: i64) -> u64 {
     value.wrapping_add_signed(offset)
+}
+
+fn pc_relative_target(pc: u64, encoded: u32, bits: u8) -> u64 {
+    pc.wrapping_add_signed(sign_extend(encoded, bits) << 2)
+}
+
+fn sign_extend(value: u32, bits: u8) -> i64 {
+    let shift = 64 - bits as u32;
+    ((value as i64) << shift) >> shift
 }

@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use userspace_harness::shared::trans::cfg::{build_cfg, BlockTerminator};
+use userspace_harness::shared::trans::cfg::build_cfg;
 use userspace_harness::shared::trans::input::{TranslationRequest, TranslationTrigger};
 use userspace_harness::MockCodeProvider;
 
@@ -71,25 +71,17 @@ fn main() {
             block.insns.len()
         );
         for insn in &block.insns {
-            println!("  {:#06x}: {:#010x} {:?}", insn.pc, insn.word, insn.insn);
+            println!("  {:#06x}: {:#010x} {:?}", insn.pc, insn.word, insn.inner);
         }
-        match block.terminator {
-            BlockTerminator::Fallthrough { next_pc } => match next_pc {
-                Some(next_pc) => println!("  terminator: fallthrough -> pc {next_pc:#x}"),
-                None => println!("  terminator: exit"),
-            },
-            BlockTerminator::Branch { target_pc } => {
-                println!("  terminator: branch -> pc {target_pc:#x}");
-            }
-            BlockTerminator::CondBranch {
-                taken_pc,
-                fallthrough_pc,
-            } => {
-                println!("  terminator: cond -> pc {taken_pc:#x} else pc {fallthrough_pc:#x}");
-            }
-            BlockTerminator::RuntimeExit { reason } => {
-                println!("  terminator: runtime-exit {:?}", reason);
-            }
+        print!("  prev:");
+        for pc in &block.prev {
+            print!(" {pc:#x}");
         }
+        println!();
+        print!("  next:");
+        for pc in &block.next {
+            print!(" {pc:#x}");
+        }
+        println!();
     }
 }

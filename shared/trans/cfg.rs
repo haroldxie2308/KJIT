@@ -12,21 +12,14 @@ pub enum RuntimeExitReason {
     Unsupported,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum BlockTerminator {
-    Fallthrough { next_pc: Option<u64> },
-    Branch { target_pc: u64 },
-    CondBranch { taken_pc: u64, fallthrough_pc: u64 },
-    RuntimeExit { reason: RuntimeExitReason },
-}
-
 /// Basic block over a half-open PC range: [start_addr, end_addr).
 #[derive(Debug, PartialEq, Eq)]
 pub struct BasicBlock {
     pub start_addr: u64,
     pub end_addr: u64,
     pub insns: SharedVec<IrInsn>,
-    pub terminator: BlockTerminator,
+    pub prev: SharedVec<u64>,
+    pub next: SharedVec<u64>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -74,18 +67,18 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
         let mut pc = start_addr;
         let mut insns = SharedVec::new();
 
-        let terminator = loop {
+        let next = loop {
             if !insns.is_empty() {
                 // If we have current pc already explored
                 if pending.contains(&pc) || ensure_block_boundary(pc, &mut blocks)? {
-                    break BlockTerminator::Fallthrough { next_pc: Some(pc) };
+                    break next_from_one(pc)?;
                 }
             }
 
             let insn = match read_insn(code, pc) {
                 Ok(insn) => insn,
                 Err(CfgError::CodeRead(_)) if !insns.is_empty() => {
-                    break BlockTerminator::Fallthrough { next_pc: None };
+                    break SharedVec::new();
                 }
                 Err(err) => return Err(err),
             };
@@ -94,18 +87,15 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
             insns.push(insn, GFP_KERNEL).map_err(CfgError::Alloc)?;
             if let Some(target) = insn.inner.direct_branch_target(insn.pc) {
                 enqueue_block(target, &mut pending)?;
-                break BlockTerminator::Branch { target_pc: target };
+                break next_from_one(target)?;
             }
-            if let Some(reason) = insn.inner.runtime_exit_reason(insn.pc) {
-                break BlockTerminator::RuntimeExit { reason };
+            if insn.inner.runtime_exit_reason(insn.pc).is_some() {
+                break SharedVec::new();
             }
             if let Some((taken_pc, fallthrough_pc)) = insn.inner.conditional_targets(insn.pc) {
                 enqueue_block(fallthrough_pc, &mut pending)?;
                 enqueue_block(taken_pc, &mut pending)?;
-                break BlockTerminator::CondBranch {
-                    taken_pc,
-                    fallthrough_pc,
-                };
+                break next_from_two(taken_pc, fallthrough_pc)?;
             }
         };
 
@@ -119,12 +109,15 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
                     start_addr,
                     end_addr: pc,
                     insns,
-                    terminator,
+                    prev: SharedVec::new(),
+                    next,
                 },
                 GFP_KERNEL,
             )
             .map_err(CfgError::Alloc)?;
     }
+
+    populate_prev(&mut blocks)?;
 
     Ok(Cfg {
         entry_pc: request.entry_pc,
@@ -137,6 +130,19 @@ fn enqueue_block(pc: u64, pending: &mut SharedVec<u64>) -> Result<(), CfgError> 
         pending.push(pc, GFP_KERNEL).map_err(CfgError::Alloc)?;
     }
     Ok(())
+}
+
+fn next_from_one(pc: u64) -> Result<SharedVec<u64>, CfgError> {
+    let mut next = SharedVec::with_capacity(1, GFP_KERNEL).map_err(CfgError::Alloc)?;
+    next.push(pc, GFP_KERNEL).map_err(CfgError::Alloc)?;
+    Ok(next)
+}
+
+fn next_from_two(first: u64, second: u64) -> Result<SharedVec<u64>, CfgError> {
+    let mut next = SharedVec::with_capacity(2, GFP_KERNEL).map_err(CfgError::Alloc)?;
+    next.push(first, GFP_KERNEL).map_err(CfgError::Alloc)?;
+    next.push(second, GFP_KERNEL).map_err(CfgError::Alloc)?;
+    Ok(next)
 }
 
 fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<IrInsn, CfgError> {
@@ -164,14 +170,17 @@ fn split_existing_block_at(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Resul
 
         let split_offset = ((pc - block_start) / 4) as usize;
         let tail_end_addr = blocks[index].end_addr;
-        let tail_terminator = blocks[index].terminator;
+        let tail_next = core::mem::replace(&mut blocks[index].next, SharedVec::new());
         let tail_insns = blocks[index]
             .insns
             .split_off_copy(split_offset, GFP_KERNEL)
             .map_err(CfgError::Alloc)?;
 
         blocks[index].end_addr = pc;
-        blocks[index].terminator = BlockTerminator::Fallthrough { next_pc: Some(pc) };
+        blocks[index]
+            .next
+            .push(pc, GFP_KERNEL)
+            .map_err(CfgError::Alloc)?;
 
         blocks
             .insert(
@@ -180,7 +189,8 @@ fn split_existing_block_at(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Resul
                     start_addr: pc,
                     end_addr: tail_end_addr,
                     insns: tail_insns,
-                    terminator: tail_terminator,
+                    prev: SharedVec::new(),
+                    next: tail_next,
                 },
                 GFP_KERNEL,
             )
@@ -189,4 +199,25 @@ fn split_existing_block_at(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Resul
     }
 
     Ok(false)
+}
+
+fn populate_prev(blocks: &mut SharedVec<BasicBlock>) -> Result<(), CfgError> {
+    for index in 0..blocks.len() {
+        blocks[index].prev = SharedVec::new();
+    }
+
+    for source_index in 0..blocks.len() {
+        let source = blocks[source_index].start_addr;
+        for next_index in 0..blocks[source_index].next.len() {
+            let target = blocks[source_index].next[next_index];
+            if let Some(block_index) = blocks.iter().position(|block| block.start_addr == target) {
+                blocks[block_index]
+                    .prev
+                    .push(source, GFP_KERNEL)
+                    .map_err(CfgError::Alloc)?;
+            }
+        }
+    }
+
+    Ok(())
 }

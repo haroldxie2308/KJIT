@@ -149,6 +149,13 @@ pub enum A64Insn {
         imm16: u16,
         rd: u8,
     },
+    OrrLogShiftOrr64LogShift {
+        shift: u8,
+        rm: u8,
+        imm6: u8,
+        rn: u8,
+        rd: u8,
+    },
     TbzTbzOnlyTestbranch {
         b5: u8,
         b40: u8,
@@ -291,6 +298,7 @@ impl A64Insn {
             Self::MovzMovz64Movewide { .. } => "MOVZ.MOVZ_64_movewide",
             Self::MovkMovk32Movewide { .. } => "MOVK.MOVK_32_movewide",
             Self::MovkMovk64Movewide { .. } => "MOVK.MOVK_64_movewide",
+            Self::OrrLogShiftOrr64LogShift { .. } => "ORR_log_shift.ORR_64_log_shift",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ.TBZ_only_testbranch",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ.TBNZ_only_testbranch",
             Self::LdrImmGenLdr32LdstImmpost { .. } => "LDR_imm_gen.LDR_32_ldst_immpost",
@@ -334,6 +342,7 @@ impl A64Insn {
             Self::MovzMovz64Movewide { .. } => "MOVZ",
             Self::MovkMovk32Movewide { .. } => "MOVK",
             Self::MovkMovk64Movewide { .. } => "MOVK",
+            Self::OrrLogShiftOrr64LogShift { .. } => "ORR",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ",
             Self::LdrImmGenLdr32LdstImmpost { .. } => "LDR",
@@ -377,6 +386,7 @@ impl A64Insn {
             Self::MovzMovz64Movewide { .. } => "MOVZ <Xd> , # <imm> {, LSL # <shift> }",
             Self::MovkMovk32Movewide { .. } => "MOVK <Wd> , # <imm> {, LSL # <shift> }",
             Self::MovkMovk64Movewide { .. } => "MOVK <Xd> , # <imm> {, LSL # <shift> }",
+            Self::OrrLogShiftOrr64LogShift { .. } => "ORR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ <R> <t> , # <imm> , <label>",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ <R> <t> , # <imm> , <label>",
             Self::LdrImmGenLdr32LdstImmpost { .. } => "LDR <Wt> , [ <Xn|SP> ], # <simm>",
@@ -529,6 +539,15 @@ impl A64Insn {
                 word |= encode_a64_field("MOVK.MOVK_64_movewide", "hw", hw as u32, 2, 21)?;
                 word |= encode_a64_field("MOVK.MOVK_64_movewide", "imm16", imm16 as u32, 16, 5)?;
                 word |= encode_a64_field("MOVK.MOVK_64_movewide", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::OrrLogShiftOrr64LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0xaa000000;
+                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "imm6", imm6 as u32, 6, 10)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rd", rd as u32, 5, 0)?;
                 Ok(word)
             }
             Self::TbzTbzOnlyTestbranch { b5, b40, imm14, rt } => {
@@ -788,6 +807,15 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
         return Some(A64Insn::MovkMovk64Movewide {
             hw: ((word & 0x00600000) >> 21) as u8,
             imm16: ((word & 0x001fffe0) >> 5) as u16,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xff200000) == 0xaa000000 {
+        return Some(A64Insn::OrrLogShiftOrr64LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            imm6: ((word & 0x0000fc00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
             rd: ((word & 0x0000001f) >> 0) as u8,
         });
     }
@@ -1082,6 +1110,18 @@ pub const FIELDS_MOVK_MOVK_64_MOVEWIDE: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
     GeneratedFieldSpec { name: "hw", hi: 22, lo: 21, width: 2, mask: 0x00600000 },
     GeneratedFieldSpec { name: "imm16", hi: 20, lo: 5, width: 16, mask: 0x001fffe0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
     GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
 ];
 
@@ -1475,6 +1515,17 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         value: 0xf2800000,
         fields: FIELDS_MOVK_MOVK_64_MOVEWIDE,
         asm: "MOVK <Xd> , # <imm> {, LSL # <shift> }",
+    },
+    GeneratedInsnSpec {
+        key: "ORR_log_shift.ORR_64_log_shift",
+        mnemonic: "ORR",
+        heading: "ORR (shifted register)",
+        title: "ORR (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0xaa000000,
+        fields: FIELDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT,
+        asm: "ORR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
     },
     GeneratedInsnSpec {
         key: "TBZ.TBZ_only_testbranch",

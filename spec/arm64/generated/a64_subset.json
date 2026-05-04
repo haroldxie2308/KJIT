@@ -1368,6 +1368,116 @@
     ]
   },
   {
+    "source_file": "orr_log_shift.xml",
+    "section_id": "ORR_log_shift",
+    "heading": "ORR (shifted register)",
+    "title": "ORR (shifted register) -- A64",
+    "docvars": {
+      "cond-setting": "no-s",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "ORR",
+      "reguse": "shifted-reg"
+    },
+    "variants": [
+      {
+        "section_id": "ORR_log_shift",
+        "heading": "ORR (shifted register)",
+        "title": "ORR (shifted register) -- A64",
+        "iclass": "Not setting the condition flags",
+        "encoding_name": "ORR_64_log_shift",
+        "encoding_label": "64-bit",
+        "mnemonic": "ORR",
+        "docvars": {
+          "cond-setting": "no-s",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "ORR",
+          "reguse": "shifted-reg",
+          "datatype": "64",
+          "datatype-reguse": "64-shifted-reg"
+        },
+        "mask": "0xff200000",
+        "value": "0xaa000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "opc",
+            "hi": 30,
+            "lo": 29,
+            "width": 2,
+            "shift": 29,
+            "mask": "0x60000000",
+            "variable": false
+          },
+          {
+            "name": "shift",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000",
+            "variable": true
+          },
+          {
+            "name": "N",
+            "hi": 21,
+            "lo": 21,
+            "width": 1,
+            "shift": 21,
+            "mask": "0x00200000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "imm6",
+            "hi": 15,
+            "lo": 10,
+            "width": 6,
+            "shift": 10,
+            "mask": "0x0000fc00",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "asm": "ORR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }"
+      }
+    ]
+  },
+  {
     "source_file": "tbz.xml",
     "section_id": "TBZ",
     "heading": "TBZ",

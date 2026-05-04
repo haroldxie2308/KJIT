@@ -38,5 +38,6 @@ impl fmt::Display for CodeReadError {
 }
 
 pub trait CodeProvider {
+    fn entry_addr(&self) -> u64;
     fn read_exact(&self, pc: u64, dst: &mut [u8]) -> Result<(), CodeReadError>;
 }

@@ -20,7 +20,6 @@ pub struct MachineState {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HaltReason {
     FellOffEnd,
-    StepLimitExceeded,
     RuntimeExit { reason: RuntimeExitReason },
 }
 

@@ -2,7 +2,7 @@ extern crate alloc;
 
 pub mod arm64;
 pub mod model;
-#[path = "../../shared/mod.rs"]
+pub mod runtime;
 pub mod shared;
 
 use crate::shared::trans::input::{
@@ -102,9 +102,9 @@ fn encode_translated_program(program: &TranslatedProgram) -> Result<Vec<u8>, Str
     let mut bytes = Vec::with_capacity(program.len() * 4);
     for insn in program {
         let word = insn
-            .insn
+            .inner
             .encode()
-            .map_err(|err| format!("failed to encode {}: {err:?}", insn.insn.key()))?;
+            .map_err(|err| format!("failed to encode {}: {err:?}", insn.inner.key()))?;
         bytes.extend_from_slice(&word.to_le_bytes());
     }
     Ok(bytes)
@@ -222,7 +222,7 @@ mod tests {
 
     #[test]
     fn shared_cfg_splits_conditional_branch_into_basic_blocks() {
-        use crate::shared::trans::cfg::{build_cfg, BlockTerminator};
+        use crate::shared::trans::cfg::build_cfg;
 
         let base_pc = 0x6000;
         let mut program = Vec::new();
@@ -280,36 +280,31 @@ mod tests {
         assert_eq!(cfg.blocks[0].start_addr, base_pc);
         assert_eq!(cfg.blocks[0].end_addr, base_pc + 12);
         assert_eq!(cfg.blocks[0].insns.len(), 3);
+        assert_eq!(&*cfg.blocks[0].prev, &[]);
         assert_eq!(
-            cfg.blocks[0].terminator,
-            BlockTerminator::CondBranch {
-                taken_pc: cfg.blocks[2].start_addr,
-                fallthrough_pc: cfg.blocks[1].start_addr,
-            }
+            &*cfg.blocks[0].next,
+            &[cfg.blocks[2].start_addr, cfg.blocks[1].start_addr]
         );
 
         assert_eq!(cfg.blocks[1].start_addr, base_pc + 12);
         assert_eq!(cfg.blocks[1].end_addr, base_pc + 16);
         assert_eq!(cfg.blocks[1].insns.len(), 1);
-        assert_eq!(
-            cfg.blocks[1].terminator,
-            BlockTerminator::Fallthrough {
-                next_pc: Some(cfg.blocks[2].start_addr),
-            }
-        );
+        assert_eq!(&*cfg.blocks[1].prev, &[cfg.blocks[0].start_addr]);
+        assert_eq!(&*cfg.blocks[1].next, &[cfg.blocks[2].start_addr]);
 
         assert_eq!(cfg.blocks[2].start_addr, base_pc + 16);
         assert_eq!(cfg.blocks[2].end_addr, base_pc + 20);
         assert_eq!(cfg.blocks[2].insns.len(), 1);
         assert_eq!(
-            cfg.blocks[2].terminator,
-            BlockTerminator::Fallthrough { next_pc: None }
+            &*cfg.blocks[2].prev,
+            &[cfg.blocks[0].start_addr, cfg.blocks[1].start_addr]
         );
+        assert_eq!(&*cfg.blocks[2].next, &[]);
     }
 
     #[test]
     fn shared_cfg_splits_existing_block_when_branch_targets_middle() {
-        use crate::shared::trans::cfg::{build_cfg, BlockTerminator};
+        use crate::shared::trans::cfg::build_cfg;
 
         let base_pc = 0x9000;
         let mut program = Vec::new();
@@ -345,28 +340,19 @@ mod tests {
 
         assert_eq!(cfg.blocks[1].end_addr, base_pc + 8);
         assert_eq!(cfg.blocks[1].insns.len(), 1);
-        assert_eq!(
-            cfg.blocks[1].terminator,
-            BlockTerminator::Fallthrough {
-                next_pc: Some(base_pc + 8),
-            }
-        );
+        assert_eq!(&*cfg.blocks[1].prev, &[cfg.blocks[0].start_addr]);
+        assert_eq!(&*cfg.blocks[1].next, &[base_pc + 8]);
 
         assert_eq!(cfg.blocks[2].end_addr, base_pc + 12);
         assert_eq!(cfg.blocks[2].insns.len(), 1);
         assert_eq!(
-            cfg.blocks[2].terminator,
-            BlockTerminator::Fallthrough {
-                next_pc: Some(base_pc + 12),
-            }
+            &*cfg.blocks[2].prev,
+            &[cfg.blocks[0].start_addr, base_pc + 4]
         );
+        assert_eq!(&*cfg.blocks[2].next, &[base_pc + 12]);
 
-        assert_eq!(
-            cfg.blocks[3].terminator,
-            BlockTerminator::Branch {
-                target_pc: base_pc + 8,
-            }
-        );
+        assert_eq!(&*cfg.blocks[3].prev, &[base_pc + 8]);
+        assert_eq!(&*cfg.blocks[3].next, &[base_pc + 8]);
     }
 
     fn encode(insn: A64Insn) -> u32 {
