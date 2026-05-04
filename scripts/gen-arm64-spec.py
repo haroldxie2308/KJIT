@@ -538,6 +538,21 @@ def render_operand_role(role: dict[str, str], fields: list[dict]) -> str:
             raise ValueError(f"unsupported operand role: {role}")
 
 
+def branch_target_roles(variant: dict) -> list[dict[str, str]]:
+    return [
+        role
+        for role in variant.get("operand_roles", [])
+        if role["kind"] == "BranchTarget"
+    ]
+
+
+def field_by_name(fields: list[dict], name: str) -> dict:
+    for field in fields:
+        if field["name"] == name:
+            return field
+    raise ValueError(f"missing generated field metadata for branch target field `{name}`")
+
+
 def render_a64_insn(specs: list[dict]) -> list[str]:
     variants: list[dict] = []
     for spec in specs:
@@ -587,6 +602,21 @@ def render_a64_insn(specs: list[dict]) -> list[str]:
             "    },",
             "}",
             "",
+            "#[allow(dead_code)]",
+            "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
+            "pub enum A64RewriteError {",
+            "    UnsupportedField {",
+            "        insn: &'static str,",
+            "        field: &'static str,",
+            "    },",
+            "    FieldOutOfRange {",
+            "        insn: &'static str,",
+            "        field: &'static str,",
+            "        value: u32,",
+            "        width: u8,",
+            "    },",
+            "}",
+            "",
             "fn encode_a64_field(",
             "    insn: &'static str,",
             "    field: &'static str,",
@@ -603,6 +633,23 @@ def render_a64_insn(specs: list[dict]) -> list[str]:
             "        });",
             "    }",
             "    Ok(value << shift)",
+            "}",
+            "",
+            "fn validate_a64_rewrite_field(",
+            "    insn: &'static str,",
+            "    field: &'static str,",
+            "    value: u32,",
+            "    width: u8,",
+            ") -> Result<(), A64RewriteError> {",
+            "    if width < 32 && value >= (1_u32 << width) {",
+            "        return Err(A64RewriteError::FieldOutOfRange {",
+            "            insn,",
+            "            field,",
+            "            value,",
+            "            width,",
+            "        });",
+            "    }",
+            "    Ok(())",
             "}",
             "",
             "#[allow(dead_code)]",
@@ -674,6 +721,76 @@ def render_a64_insn(specs: list[dict]) -> list[str]:
         lines.append("            }")
     lines.extend(
         [
+            "        }",
+            "    }",
+            "",
+            "    pub fn branch_target_imm(&self, field: &'static str) -> Option<u32> {",
+            "        match self {",
+        ]
+    )
+    for variant in variants:
+        for role in branch_target_roles(variant):
+            target_field = field_by_name(variant["fields"], role["field"])
+            if variant["fields"]:
+                lines.append(
+                    f"            Self::{variant['variant_name']} {{ {target_field['rust_name']}, .. }} "
+                    f"if field == \"{target_field['name']}\" => Some(*{target_field['rust_name']} as u32),"
+                )
+            else:
+                raise ValueError(f"branch target role without fields in {variant['key']}")
+    lines.extend(
+        [
+            "            _ => None,",
+            "        }",
+            "    }",
+            "",
+            "    pub fn set_branch_target_imm(",
+            "        self,",
+            "        field: &'static str,",
+            "        encoded: u32,",
+            "    ) -> Result<Self, A64RewriteError> {",
+            "        let insn_key = self.key();",
+            "        match self {",
+        ]
+    )
+    for variant in variants:
+        for role in branch_target_roles(variant):
+            target_field = field_by_name(variant["fields"], role["field"])
+            pattern_fields = []
+            result_fields = []
+            for field in variant["fields"]:
+                if field["name"] == target_field["name"]:
+                    result_fields.append(f"{field['rust_name']}: encoded as {field['rust_type']}")
+                else:
+                    pattern_fields.append(field["rust_name"])
+                    result_fields.append(field["rust_name"])
+
+            pattern = ", ".join(pattern_fields)
+            if pattern:
+                pattern = f"{pattern}, .."
+            else:
+                pattern = ".."
+            result = ", ".join(result_fields)
+            lines.append(
+                f"            Self::{variant['variant_name']} {{ {pattern} }} "
+                f"if field == \"{target_field['name']}\" => {{"
+            )
+            lines.append(
+                "                validate_a64_rewrite_field("
+                f"\"{variant['key']}\", "
+                f"\"{target_field['name']}\", "
+                "encoded, "
+                f"{target_field['width']}"
+                ")?;"
+            )
+            lines.append(f"                Ok(Self::{variant['variant_name']} {{ {result} }})")
+            lines.append("            }")
+    lines.extend(
+        [
+            "            _ => Err(A64RewriteError::UnsupportedField {",
+            "                insn: insn_key,",
+            "                field,",
+            "            }),",
             "        }",
             "    }",
             "",

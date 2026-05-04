@@ -283,6 +283,21 @@ pub enum A64EncodeError {
     },
 }
 
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum A64RewriteError {
+    UnsupportedField {
+        insn: &'static str,
+        field: &'static str,
+    },
+    FieldOutOfRange {
+        insn: &'static str,
+        field: &'static str,
+        value: u32,
+        width: u8,
+    },
+}
+
 fn encode_a64_field(
     insn: &'static str,
     field: &'static str,
@@ -299,6 +314,23 @@ fn encode_a64_field(
         });
     }
     Ok(value << shift)
+}
+
+fn validate_a64_rewrite_field(
+    insn: &'static str,
+    field: &'static str,
+    value: u32,
+    width: u8,
+) -> Result<(), A64RewriteError> {
+    if width < 32 && value >= (1_u32 << width) {
+        return Err(A64RewriteError::FieldOutOfRange {
+            insn,
+            field,
+            value,
+            width,
+        });
+    }
+    Ok(())
 }
 
 #[allow(dead_code)]
@@ -704,6 +736,71 @@ impl A64Insn {
                 word |= encode_a64_field("SVC.SVC_EX_exception", "imm16", imm16 as u32, 16, 5)?;
                 Ok(word)
             }
+        }
+    }
+
+    pub fn branch_target_imm(&self, field: &'static str) -> Option<u32> {
+        match self {
+            Self::BUncondBOnlyBranchImm { imm26, .. } if field == "imm26" => Some(*imm26 as u32),
+            Self::BCondBOnlyCondbranch { imm19, .. } if field == "imm19" => Some(*imm19 as u32),
+            Self::CbzCbz32Compbranch { imm19, .. } if field == "imm19" => Some(*imm19 as u32),
+            Self::CbzCbz64Compbranch { imm19, .. } if field == "imm19" => Some(*imm19 as u32),
+            Self::CbnzCbnz32Compbranch { imm19, .. } if field == "imm19" => Some(*imm19 as u32),
+            Self::CbnzCbnz64Compbranch { imm19, .. } if field == "imm19" => Some(*imm19 as u32),
+            Self::TbzTbzOnlyTestbranch { imm14, .. } if field == "imm14" => Some(*imm14 as u32),
+            Self::TbnzTbnzOnlyTestbranch { imm14, .. } if field == "imm14" => Some(*imm14 as u32),
+            Self::BlBlOnlyBranchImm { imm26, .. } if field == "imm26" => Some(*imm26 as u32),
+            _ => None,
+        }
+    }
+
+    pub fn set_branch_target_imm(
+        self,
+        field: &'static str,
+        encoded: u32,
+    ) -> Result<Self, A64RewriteError> {
+        let insn_key = self.key();
+        match self {
+            Self::BUncondBOnlyBranchImm { .. } if field == "imm26" => {
+                validate_a64_rewrite_field("B_uncond.B_only_branch_imm", "imm26", encoded, 26)?;
+                Ok(Self::BUncondBOnlyBranchImm { imm26: encoded as u32 })
+            }
+            Self::BCondBOnlyCondbranch { cond, .. } if field == "imm19" => {
+                validate_a64_rewrite_field("B_cond.B_only_condbranch", "imm19", encoded, 19)?;
+                Ok(Self::BCondBOnlyCondbranch { imm19: encoded as u32, cond })
+            }
+            Self::CbzCbz32Compbranch { rt, .. } if field == "imm19" => {
+                validate_a64_rewrite_field("CBZ.CBZ_32_compbranch", "imm19", encoded, 19)?;
+                Ok(Self::CbzCbz32Compbranch { imm19: encoded as u32, rt })
+            }
+            Self::CbzCbz64Compbranch { rt, .. } if field == "imm19" => {
+                validate_a64_rewrite_field("CBZ.CBZ_64_compbranch", "imm19", encoded, 19)?;
+                Ok(Self::CbzCbz64Compbranch { imm19: encoded as u32, rt })
+            }
+            Self::CbnzCbnz32Compbranch { rt, .. } if field == "imm19" => {
+                validate_a64_rewrite_field("CBNZ.CBNZ_32_compbranch", "imm19", encoded, 19)?;
+                Ok(Self::CbnzCbnz32Compbranch { imm19: encoded as u32, rt })
+            }
+            Self::CbnzCbnz64Compbranch { rt, .. } if field == "imm19" => {
+                validate_a64_rewrite_field("CBNZ.CBNZ_64_compbranch", "imm19", encoded, 19)?;
+                Ok(Self::CbnzCbnz64Compbranch { imm19: encoded as u32, rt })
+            }
+            Self::TbzTbzOnlyTestbranch { b5, b40, rt, .. } if field == "imm14" => {
+                validate_a64_rewrite_field("TBZ.TBZ_only_testbranch", "imm14", encoded, 14)?;
+                Ok(Self::TbzTbzOnlyTestbranch { b5, b40, imm14: encoded as u16, rt })
+            }
+            Self::TbnzTbnzOnlyTestbranch { b5, b40, rt, .. } if field == "imm14" => {
+                validate_a64_rewrite_field("TBNZ.TBNZ_only_testbranch", "imm14", encoded, 14)?;
+                Ok(Self::TbnzTbnzOnlyTestbranch { b5, b40, imm14: encoded as u16, rt })
+            }
+            Self::BlBlOnlyBranchImm { .. } if field == "imm26" => {
+                validate_a64_rewrite_field("BL.BL_only_branch_imm", "imm26", encoded, 26)?;
+                Ok(Self::BlBlOnlyBranchImm { imm26: encoded as u32 })
+            }
+            _ => Err(A64RewriteError::UnsupportedField {
+                insn: insn_key,
+                field,
+            }),
         }
     }
 
