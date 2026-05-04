@@ -28,15 +28,16 @@ toy_cfg_demo:
 
 .global toy_translate_entry
 toy_translate_entry:
-    movz x0, #1
-    cbnz x0, .Ltranslate_hot
-    movz x1, #0x1111
-    b .Ltranslate_join
+    movz x0, #200
+    movz x1, #0
+    movz x8, #172
 
-.Ltranslate_hot:
-    movz x1, #0x2222
+.Ltranslate_loop:
+    add x1, x1, #1
+    svc #0
+    subs x0, x0, #1
+    cbnz x0, .Ltranslate_loop
 
-.Ltranslate_join:
     str x1, [x10, #16]
     ldr x3, [x10, #16]
-    nop
+    ret

@@ -89,7 +89,11 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
                 enqueue_block(target, &mut pending)?;
                 break next_from_one(target)?;
             }
-            if insn.inner.runtime_exit_reason(insn.pc).is_some() {
+            if let Some(reason) = insn.inner.runtime_exit_reason(insn.pc) {
+                if let RuntimeExitReason::Svc { resume_pc, .. } = reason {
+                    enqueue_block(resume_pc, &mut pending)?;
+                    break next_from_one(resume_pc)?;
+                }
                 break SharedVec::new();
             }
             if let Some((taken_pc, fallthrough_pc)) = insn.inner.conditional_targets(insn.pc) {
