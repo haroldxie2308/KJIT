@@ -27,6 +27,18 @@
           "mnemonic": "ADR",
           "offset-type": "off19s"
         },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<label>",
+            "link": "immhiimmlo_offset",
+            "hover": "Is the program label whose address is to be calculated. Its offset from the address of this instruction, in the range +/-1MB, is encoded in \"immhi:immlo\"."
+          }
+        ],
         "mask": "0x9f000000",
         "value": "0x10000000",
         "fields": [
@@ -67,6 +79,13 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
         "asm": "ADR <Xd> , <label>"
       }
     ]
@@ -99,6 +118,18 @@
           "mnemonic": "ADRP",
           "offset-type": "off19s"
         },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<label>",
+            "link": "immhiimmlo_offset__2",
+            "hover": "Is the program label whose 4KB page address is to be calculated. Its offset from the page address of this instruction, in the range +/-4GB, is encoded as \"immhi:immlo\" times 4096."
+          }
+        ],
         "mask": "0x9f000000",
         "value": "0x90000000",
         "fields": [
@@ -139,6 +170,13 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
         "asm": "ADRP <Xd> , <label>"
       }
     ]
@@ -172,6 +210,28 @@
           "mnemonic": "ADD",
           "datatype": "32"
         },
+        "asm_operands": [
+          {
+            "text": "<Wd|WSP>",
+            "link": "WdWSP_option",
+            "hover": "Is the 32-bit name of the destination general-purpose register or stack pointer, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn|WSP>",
+            "link": "WnWSP_option",
+            "hover": "Is the 32-bit name of the source general-purpose register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__17",
+            "hover": "Is an unsigned immediate, in the range 0 to 4095, encoded in the \"imm12\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift_option",
+            "hover": "Is the optional left shift to apply to the immediate, defaulting to LSL #0 and "
+          }
+        ],
         "mask": "0xff800000",
         "value": "0x11000000",
         "fields": [
@@ -239,6 +299,18 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
         "asm": "ADD <Wd|WSP> , <Wn|WSP> , # <imm> {, <shift> }"
       },
       {
@@ -257,6 +329,28 @@
           "mnemonic": "ADD",
           "datatype": "64"
         },
+        "asm_operands": [
+          {
+            "text": "<Xd|SP>",
+            "link": "XdSP_option",
+            "hover": "Is the 64-bit name of the destination general-purpose register or stack pointer, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option__3",
+            "hover": "Is the 64-bit name of the source general-purpose register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__17",
+            "hover": "Is an unsigned immediate, in the range 0 to 4095, encoded in the \"imm12\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift_option",
+            "hover": "Is the optional left shift to apply to the immediate, defaulting to LSL #0 and "
+          }
+        ],
         "mask": "0xff800000",
         "value": "0x91000000",
         "fields": [
@@ -324,6 +418,18 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
         "asm": "ADD <Xd|SP> , <Xn|SP> , # <imm> {, <shift> }"
       }
     ]
@@ -357,6 +463,28 @@
           "mnemonic": "SUB",
           "datatype": "32"
         },
+        "asm_operands": [
+          {
+            "text": "<Wd|WSP>",
+            "link": "WdWSP_option",
+            "hover": "Is the 32-bit name of the destination general-purpose register or stack pointer, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn|WSP>",
+            "link": "WnWSP_option",
+            "hover": "Is the 32-bit name of the source general-purpose register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__17",
+            "hover": "Is an unsigned immediate, in the range 0 to 4095, encoded in the \"imm12\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift_option",
+            "hover": "Is the optional left shift to apply to the immediate, defaulting to LSL #0 and "
+          }
+        ],
         "mask": "0xff800000",
         "value": "0x51000000",
         "fields": [
@@ -424,6 +552,18 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
         "asm": "SUB <Wd|WSP> , <Wn|WSP> , # <imm> {, <shift> }"
       },
       {
@@ -442,6 +582,28 @@
           "mnemonic": "SUB",
           "datatype": "64"
         },
+        "asm_operands": [
+          {
+            "text": "<Xd|SP>",
+            "link": "XdSP_option",
+            "hover": "Is the 64-bit name of the destination general-purpose register or stack pointer, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option__3",
+            "hover": "Is the 64-bit name of the source general-purpose register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__17",
+            "hover": "Is an unsigned immediate, in the range 0 to 4095, encoded in the \"imm12\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift_option",
+            "hover": "Is the optional left shift to apply to the immediate, defaulting to LSL #0 and "
+          }
+        ],
         "mask": "0xff800000",
         "value": "0xd1000000",
         "fields": [
@@ -509,6 +671,18 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
         "asm": "SUB <Xd|SP> , <Xn|SP> , # <imm> {, <shift> }"
       }
     ]
@@ -542,6 +716,28 @@
           "mnemonic": "SUBS",
           "datatype": "32"
         },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR",
+            "hover": "Is the 32-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn|WSP>",
+            "link": "WnWSP_option",
+            "hover": "Is the 32-bit name of the source general-purpose register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__17",
+            "hover": "Is an unsigned immediate, in the range 0 to 4095, encoded in the \"imm12\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift_option",
+            "hover": "Is the optional left shift to apply to the immediate, defaulting to LSL #0 and "
+          }
+        ],
         "mask": "0xff800000",
         "value": "0x71000000",
         "fields": [
@@ -609,6 +805,23 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "FlagsWrite",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
         "asm": "SUBS <Wd> , <Wn|WSP> , # <imm> {, <shift> }"
       },
       {
@@ -627,6 +840,28 @@
           "mnemonic": "SUBS",
           "datatype": "64"
         },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option__3",
+            "hover": "Is the 64-bit name of the source general-purpose register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__17",
+            "hover": "Is an unsigned immediate, in the range 0 to 4095, encoded in the \"imm12\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift_option",
+            "hover": "Is the optional left shift to apply to the immediate, defaulting to LSL #0 and "
+          }
+        ],
         "mask": "0xff800000",
         "value": "0xf1000000",
         "fields": [
@@ -694,6 +929,23 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "FlagsWrite",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
         "asm": "SUBS <Xd> , <Xn|SP> , # <imm> {, <shift> }"
       }
     ]
@@ -724,6 +976,13 @@
           "isa": "A64",
           "mnemonic": "B"
         },
+        "asm_operands": [
+          {
+            "text": "<label>",
+            "link": "imm26_offset",
+            "hover": "Is the program label to be unconditionally branched to. Its offset from the address of this instruction, in the range +/-128MB, is encoded as \"imm26\" times 4."
+          }
+        ],
         "mask": "0xfc000000",
         "value": "0x14000000",
         "fields": [
@@ -744,6 +1003,18 @@
             "shift": 0,
             "mask": "0x03ffffff",
             "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "BranchTarget",
+            "field": "imm26",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
           }
         ],
         "asm": "B <label>"
@@ -778,6 +1049,18 @@
           "isa": "A64",
           "mnemonic": "B"
         },
+        "asm_operands": [
+          {
+            "text": "<cond>",
+            "link": "cond_option",
+            "hover": "Is one of the standard conditions, encoded in the standard way, and "
+          },
+          {
+            "text": "<label>",
+            "link": "imm19_offset",
+            "hover": "Is the program label to be conditionally branched to. Its offset from the address of this instruction, in the range +/-1MB, is encoded as \"imm19\" times 4."
+          }
+        ],
         "mask": "0xff000010",
         "value": "0x54000000",
         "fields": [
@@ -807,6 +1090,23 @@
             "shift": 0,
             "mask": "0x0000000f",
             "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "BranchTarget",
+            "field": "imm19",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "FlagsRead",
+            "field": "",
+            "width": "Unknown"
           }
         ],
         "asm": "B. <cond> <label>"
@@ -842,6 +1142,18 @@
           "mnemonic": "CBZ",
           "datatype": "32"
         },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR",
+            "hover": "Is the 32-bit name of the general-purpose register to be tested, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<label>",
+            "link": "imm19_offset",
+            "hover": "Is the program label to be conditionally branched to. Its offset from the address of this instruction, in the range +/-1MB, is encoded as \"imm19\" times 4."
+          }
+        ],
         "mask": "0xff000000",
         "value": "0x34000000",
         "fields": [
@@ -882,6 +1194,23 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "BranchTarget",
+            "field": "imm19",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
         "asm": "CBZ <Wt> , <label>"
       },
       {
@@ -900,6 +1229,18 @@
           "mnemonic": "CBZ",
           "datatype": "64"
         },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR",
+            "hover": "Is the 64-bit name of the general-purpose register to be tested, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<label>",
+            "link": "imm19_offset",
+            "hover": "Is the program label to be conditionally branched to. Its offset from the address of this instruction, in the range +/-1MB, is encoded as \"imm19\" times 4."
+          }
+        ],
         "mask": "0xff000000",
         "value": "0xb4000000",
         "fields": [
@@ -940,6 +1281,23 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "BranchTarget",
+            "field": "imm19",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
         "asm": "CBZ <Xt> , <label>"
       }
     ]
@@ -973,6 +1331,18 @@
           "mnemonic": "CBNZ",
           "datatype": "32"
         },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR",
+            "hover": "Is the 32-bit name of the general-purpose register to be tested, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<label>",
+            "link": "imm19_offset",
+            "hover": "Is the program label to be conditionally branched to. Its offset from the address of this instruction, in the range +/-1MB, is encoded as \"imm19\" times 4."
+          }
+        ],
         "mask": "0xff000000",
         "value": "0x35000000",
         "fields": [
@@ -1013,6 +1383,23 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "BranchTarget",
+            "field": "imm19",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
         "asm": "CBNZ <Wt> , <label>"
       },
       {
@@ -1031,6 +1418,18 @@
           "mnemonic": "CBNZ",
           "datatype": "64"
         },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR",
+            "hover": "Is the 64-bit name of the general-purpose register to be tested, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<label>",
+            "link": "imm19_offset",
+            "hover": "Is the program label to be conditionally branched to. Its offset from the address of this instruction, in the range +/-1MB, is encoded as \"imm19\" times 4."
+          }
+        ],
         "mask": "0xff000000",
         "value": "0xb5000000",
         "fields": [
@@ -1071,6 +1470,23 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "BranchTarget",
+            "field": "imm19",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
         "asm": "CBNZ <Xt> , <label>"
       }
     ]
@@ -1102,6 +1518,23 @@
           "mnemonic": "MOVZ",
           "datatype": "32"
         },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR",
+            "hover": "Is the 32-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__18",
+            "hover": "Is the 16-bit unsigned immediate, in the range 0 to 65535, encoded in the \"imm16\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift__7",
+            "hover": "For the \"32-bit\" variant: is the amount by which to shift the immediate left, either 0 (the default) or 16, encoded in the \"hw\" field as <shift>/16."
+          }
+        ],
         "mask": "0xffc00000",
         "value": "0x52800000",
         "fields": [
@@ -1151,6 +1584,13 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
         "asm": "MOVZ <Wd> , # <imm> {, LSL # <shift> }"
       },
       {
@@ -1168,6 +1608,23 @@
           "mnemonic": "MOVZ",
           "datatype": "64"
         },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__18",
+            "hover": "Is the 16-bit unsigned immediate, in the range 0 to 65535, encoded in the \"imm16\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift__8",
+            "hover": "For the \"64-bit\" variant: is the amount by which to shift the immediate left, either 0 (the default), 16, 32 or 48, encoded in the \"hw\" field as <shift>/16."
+          }
+        ],
         "mask": "0xff800000",
         "value": "0xd2800000",
         "fields": [
@@ -1217,6 +1674,13 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
         "asm": "MOVZ <Xd> , # <imm> {, LSL # <shift> }"
       }
     ]
@@ -1248,6 +1712,23 @@
           "mnemonic": "MOVK",
           "datatype": "32"
         },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR",
+            "hover": "Is the 32-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__18",
+            "hover": "Is the 16-bit unsigned immediate, in the range 0 to 65535, encoded in the \"imm16\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift__7",
+            "hover": "For the \"32-bit\" variant: is the amount by which to shift the immediate left, either 0 (the default) or 16, encoded in the \"hw\" field as <shift>/16."
+          }
+        ],
         "mask": "0xffc00000",
         "value": "0x72800000",
         "fields": [
@@ -1297,6 +1778,18 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rd",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
         "asm": "MOVK <Wd> , # <imm> {, LSL # <shift> }"
       },
       {
@@ -1314,6 +1807,23 @@
           "mnemonic": "MOVK",
           "datatype": "64"
         },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__18",
+            "hover": "Is the 16-bit unsigned immediate, in the range 0 to 65535, encoded in the \"imm16\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift__8",
+            "hover": "For the \"64-bit\" variant: is the amount by which to shift the immediate left, either 0 (the default), 16, 32 or 48, encoded in the \"hw\" field as <shift>/16."
+          }
+        ],
         "mask": "0xff800000",
         "value": "0xf2800000",
         "fields": [
@@ -1363,6 +1873,18 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rd",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
         "asm": "MOVK <Xd> , # <imm> {, LSL # <shift> }"
       }
     ]
@@ -1397,6 +1919,33 @@
           "datatype": "64",
           "datatype-reguse": "64-shifted-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Xn>",
+            "link": "XnOrXZR__12",
+            "hover": "Is the 64-bit name of the first general-purpose source register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Xm>",
+            "link": "XmOrXZR__4",
+            "hover": "Is the 64-bit name of the second general-purpose source register, encoded in the \"Rm\" field."
+          },
+          {
+            "text": "<shift>",
+            "link": "shift_option__3",
+            "hover": "Is the optional shift to be applied to the final source, defaulting to LSL and "
+          },
+          {
+            "text": "<amount>",
+            "link": "amount__6",
+            "hover": "For the \"64-bit\" variant: is the shift amount, in the range 0 to 63, defaulting to 0 and encoded in the \"imm6\" field."
+          }
+        ],
         "mask": "0xff200000",
         "value": "0xaa000000",
         "fields": [
@@ -1473,6 +2022,23 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
         "asm": "ORR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }"
       }
     ]
@@ -1503,6 +2069,28 @@
           "isa": "A64",
           "mnemonic": "TBZ"
         },
+        "asm_operands": [
+          {
+            "text": "<R>",
+            "link": "R_option",
+            "hover": "Is a width specifier, "
+          },
+          {
+            "text": "<t>",
+            "link": "Rt_option",
+            "hover": "Is the number [0-30] of the general-purpose register to be tested or the name ZR (31), encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm_0_63",
+            "hover": "Is the bit number to be tested, in the range 0 to 63, encoded in \"b5:b40\"."
+          },
+          {
+            "text": "<label>",
+            "link": "imm14_offset",
+            "hover": "Is the program label to be conditionally branched to. Its offset from the address of this instruction, in the range +/-32KB, is encoded as \"imm14\" times 4."
+          }
+        ],
         "mask": "0x7f000000",
         "value": "0x36000000",
         "fields": [
@@ -1552,6 +2140,23 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "BranchTarget",
+            "field": "imm14",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "Unknown"
+          }
+        ],
         "asm": "TBZ <R> <t> , # <imm> , <label>"
       }
     ]
@@ -1582,6 +2187,28 @@
           "isa": "A64",
           "mnemonic": "TBNZ"
         },
+        "asm_operands": [
+          {
+            "text": "<R>",
+            "link": "R_option",
+            "hover": "Is a width specifier, "
+          },
+          {
+            "text": "<t>",
+            "link": "Rt_option",
+            "hover": "Is the number [0-30] of the general-purpose register to be tested or the name ZR (31), encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm_0_63",
+            "hover": "Is the bit number to be tested, in the range 0 to 63, encoded in \"b5:b40\"."
+          },
+          {
+            "text": "<label>",
+            "link": "imm14_offset",
+            "hover": "Is the program label to be conditionally branched to. Its offset from the address of this instruction, in the range +/-32KB, is encoded as \"imm14\" times 4."
+          }
+        ],
         "mask": "0x7f000000",
         "value": "0x37000000",
         "fields": [
@@ -1631,6 +2258,23 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "BranchTarget",
+            "field": "imm14",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "Unknown"
+          }
+        ],
         "asm": "TBNZ <R> <t> , # <imm> , <label>"
       }
     ]
@@ -1664,6 +2308,23 @@
           "atomic-ops": "LDR-32-reg",
           "reg-type": "32-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm__3",
+            "hover": "Is the signed immediate byte offset, in the range -256 to 255, encoded in the \"imm9\" field."
+          }
+        ],
         "mask": "0xffe00c00",
         "value": "0xb8400400",
         "fields": [
@@ -1722,6 +2383,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
         "asm": "LDR <Wt> , [ <Xn|SP> ], # <simm>"
       },
       {
@@ -1742,6 +2430,23 @@
           "atomic-ops": "LDR-64-reg",
           "reg-type": "64-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__11",
+            "hover": "Is the 64-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm__3",
+            "hover": "Is the signed immediate byte offset, in the range -256 to 255, encoded in the \"imm9\" field."
+          }
+        ],
         "mask": "0xffe00c00",
         "value": "0xf8400400",
         "fields": [
@@ -1800,6 +2505,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
         "asm": "LDR <Xt> , [ <Xn|SP> ], # <simm>"
       },
       {
@@ -1820,6 +2552,23 @@
           "atomic-ops": "LDR-32-reg",
           "reg-type": "32-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm__3",
+            "hover": "Is the signed immediate byte offset, in the range -256 to 255, encoded in the \"imm9\" field."
+          }
+        ],
         "mask": "0xffe00c00",
         "value": "0xb8400c00",
         "fields": [
@@ -1878,6 +2627,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
         "asm": "LDR <Wt> , [ <Xn|SP> , # <simm> ]!"
       },
       {
@@ -1898,6 +2674,23 @@
           "atomic-ops": "LDR-64-reg",
           "reg-type": "64-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__11",
+            "hover": "Is the 64-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm__3",
+            "hover": "Is the signed immediate byte offset, in the range -256 to 255, encoded in the \"imm9\" field."
+          }
+        ],
         "mask": "0xffe00c00",
         "value": "0xf8400c00",
         "fields": [
@@ -1956,6 +2749,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
         "asm": "LDR <Xt> , [ <Xn|SP> , # <simm> ]!"
       },
       {
@@ -1976,6 +2796,23 @@
           "atomic-ops": "LDR-32-reg",
           "reg-type": "32-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<pimm>",
+            "link": "pimm__6",
+            "hover": "For the \"32-bit\" variant: is the optional positive immediate byte offset, a multiple of 4 in the range 0 to 16380, defaulting to 0 and encoded in the \"imm12\" field as <pimm>/4."
+          }
+        ],
         "mask": "0xffc00000",
         "value": "0xb9400000",
         "fields": [
@@ -2034,6 +2871,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm12",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
         "asm": "LDR <Wt> , [ <Xn|SP> {, # <pimm> }]"
       },
       {
@@ -2054,6 +2918,23 @@
           "atomic-ops": "LDR-64-reg",
           "reg-type": "64-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__11",
+            "hover": "Is the 64-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<pimm>",
+            "link": "pimm__8",
+            "hover": "For the \"64-bit\" variant: is the optional positive immediate byte offset, a multiple of 8 in the range 0 to 32760, defaulting to 0 and encoded in the \"imm12\" field as <pimm>/8."
+          }
+        ],
         "mask": "0xffc00000",
         "value": "0xf9400000",
         "fields": [
@@ -2112,6 +2993,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm12",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
         "asm": "LDR <Xt> , [ <Xn|SP> {, # <pimm> }]"
       }
     ]
@@ -2145,6 +3053,23 @@
           "atomic-ops": "STR-32-reg",
           "reg-type": "32-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm__3",
+            "hover": "Is the signed immediate byte offset, in the range -256 to 255, encoded in the \"imm9\" field."
+          }
+        ],
         "mask": "0xffe00c00",
         "value": "0xb8000400",
         "fields": [
@@ -2203,6 +3128,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "W32"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          }
+        ],
         "asm": "STR <Wt> , [ <Xn|SP> ], # <simm>"
       },
       {
@@ -2223,6 +3175,23 @@
           "atomic-ops": "STR-64-reg",
           "reg-type": "64-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__11",
+            "hover": "Is the 64-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm__3",
+            "hover": "Is the signed immediate byte offset, in the range -256 to 255, encoded in the \"imm9\" field."
+          }
+        ],
         "mask": "0xffe00c00",
         "value": "0xf8000400",
         "fields": [
@@ -2281,6 +3250,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "X64"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          }
+        ],
         "asm": "STR <Xt> , [ <Xn|SP> ], # <simm>"
       },
       {
@@ -2301,6 +3297,23 @@
           "atomic-ops": "STR-32-reg",
           "reg-type": "32-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm__3",
+            "hover": "Is the signed immediate byte offset, in the range -256 to 255, encoded in the \"imm9\" field."
+          }
+        ],
         "mask": "0xffe00c00",
         "value": "0xb8000c00",
         "fields": [
@@ -2359,6 +3372,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "W32"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          }
+        ],
         "asm": "STR <Wt> , [ <Xn|SP> , # <simm> ]!"
       },
       {
@@ -2379,6 +3419,23 @@
           "atomic-ops": "STR-64-reg",
           "reg-type": "64-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__11",
+            "hover": "Is the 64-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm__3",
+            "hover": "Is the signed immediate byte offset, in the range -256 to 255, encoded in the \"imm9\" field."
+          }
+        ],
         "mask": "0xffe00c00",
         "value": "0xf8000c00",
         "fields": [
@@ -2437,6 +3494,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "X64"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          }
+        ],
         "asm": "STR <Xt> , [ <Xn|SP> , # <simm> ]!"
       },
       {
@@ -2457,6 +3541,23 @@
           "atomic-ops": "STR-32-reg",
           "reg-type": "32-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<pimm>",
+            "link": "pimm__6",
+            "hover": "For the \"32-bit\" variant: is the optional positive immediate byte offset, a multiple of 4 in the range 0 to 16380, defaulting to 0 and encoded in the \"imm12\" field as <pimm>/4."
+          }
+        ],
         "mask": "0xffc00000",
         "value": "0xb9000000",
         "fields": [
@@ -2515,6 +3616,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm12",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
         "asm": "STR <Wt> , [ <Xn|SP> {, # <pimm> }]"
       },
       {
@@ -2535,6 +3663,23 @@
           "atomic-ops": "STR-64-reg",
           "reg-type": "64-reg"
         },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__11",
+            "hover": "Is the 64-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<pimm>",
+            "link": "pimm__8",
+            "hover": "For the \"64-bit\" variant: is the optional positive immediate byte offset, a multiple of 8 in the range 0 to 32760, defaulting to 0 and encoded in the \"imm12\" field as <pimm>/8."
+          }
+        ],
         "mask": "0xffc00000",
         "value": "0xf9000000",
         "fields": [
@@ -2593,6 +3738,33 @@
             "variable": true
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm12",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
         "asm": "STR <Xt> , [ <Xn|SP> {, # <pimm> }]"
       }
     ]
@@ -2621,6 +3793,7 @@
           "isa": "A64",
           "mnemonic": "NOP"
         },
+        "asm_operands": [],
         "mask": "0xffffffff",
         "value": "0xd503201f",
         "fields": [
@@ -2643,6 +3816,7 @@
             "variable": false
           }
         ],
+        "operand_roles": [],
         "asm": "NOP"
       }
     ]
@@ -2673,6 +3847,13 @@
           "isa": "A64",
           "mnemonic": "BL"
         },
+        "asm_operands": [
+          {
+            "text": "<label>",
+            "link": "imm26_offset",
+            "hover": "Is the program label to be unconditionally branched to. Its offset from the address of this instruction, in the range +/-128MB, is encoded as \"imm26\" times 4."
+          }
+        ],
         "mask": "0xfc000000",
         "value": "0x94000000",
         "fields": [
@@ -2693,6 +3874,23 @@
             "shift": 0,
             "mask": "0x03ffffff",
             "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "BranchTarget",
+            "field": "imm26",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ImplicitRegWrite",
+            "field": "x30",
+            "width": "X64"
           }
         ],
         "asm": "BL <label>"
@@ -2723,6 +3921,13 @@
           "isa": "A64",
           "mnemonic": "BR"
         },
+        "asm_operands": [
+          {
+            "text": "<Xn>",
+            "link": "XnOrXZR",
+            "hover": "Is the 64-bit name of the general-purpose register holding the address to be branched to, encoded in the \"Rn\" field."
+          }
+        ],
         "mask": "0xfffffc1f",
         "value": "0xd61f0000",
         "fields": [
@@ -2790,6 +3995,18 @@
             "variable": false
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          }
+        ],
         "asm": "BR <Xn>"
       }
     ]
@@ -2818,6 +4035,13 @@
           "isa": "A64",
           "mnemonic": "BLR"
         },
+        "asm_operands": [
+          {
+            "text": "<Xn>",
+            "link": "XnOrXZR",
+            "hover": "Is the 64-bit name of the general-purpose register holding the address to be branched to, encoded in the \"Rn\" field."
+          }
+        ],
         "mask": "0xfffffc1f",
         "value": "0xd63f0000",
         "fields": [
@@ -2885,6 +4109,23 @@
             "variable": false
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "ImplicitRegWrite",
+            "field": "x30",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          }
+        ],
         "asm": "BLR <Xn>"
       }
     ]
@@ -2913,6 +4154,13 @@
           "isa": "A64",
           "mnemonic": "RET"
         },
+        "asm_operands": [
+          {
+            "text": "<Xn>",
+            "link": "Xn",
+            "hover": "Is the 64-bit name of the general-purpose register holding the address to be branched to, encoded in the \"Rn\" field. Defaults to X30 if absent."
+          }
+        ],
         "mask": "0xfffffc1f",
         "value": "0xd65f0000",
         "fields": [
@@ -2980,6 +4228,18 @@
             "variable": false
           }
         ],
+        "operand_roles": [
+          {
+            "kind": "ControlFlow",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          }
+        ],
         "asm": "RET  { <Xn> }"
       }
     ]
@@ -3008,6 +4268,13 @@
           "isa": "A64",
           "mnemonic": "SVC"
         },
+        "asm_operands": [
+          {
+            "text": "<imm>",
+            "link": "imm",
+            "hover": "Is a 16-bit unsigned immediate, in the range 0 to 65535, encoded in the \"imm16\" field."
+          }
+        ],
         "mask": "0xffe0001f",
         "value": "0xd4000001",
         "fields": [
@@ -3048,6 +4315,7 @@
             "variable": false
           }
         ],
+        "operand_roles": [],
         "asm": "SVC  # <imm>"
       }
     ]

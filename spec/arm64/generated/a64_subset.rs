@@ -21,6 +21,30 @@ impl GeneratedFieldSpec {
 }
 
 #[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum A64RegWidth {
+    W32,
+    X64,
+    Unknown,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum A64OperandRole {
+    RegRead { field: &'static str, width: A64RegWidth },
+    RegWrite { field: &'static str, width: A64RegWidth },
+    RegReadWrite { field: &'static str, width: A64RegWidth },
+    ImplicitRegWrite { reg: u8, width: A64RegWidth },
+    BranchTarget { field: &'static str, scale: u8, bits: u8 },
+    MemBase { field: &'static str },
+    MemOffset { field: &'static str },
+    FlagsRead,
+    FlagsWrite,
+    ControlFlow,
+    Memory,
+}
+
+#[allow(dead_code)]
 #[derive(Clone, Copy, Debug)]
 pub struct GeneratedInsnSpec {
     pub key: &'static str,
@@ -31,6 +55,7 @@ pub struct GeneratedInsnSpec {
     pub mask: u32,
     pub value: u32,
     pub fields: &'static [GeneratedFieldSpec],
+    pub operands: &'static [A64OperandRole],
     pub asm: &'static str,
 }
 
@@ -681,6 +706,50 @@ impl A64Insn {
             }
         }
     }
+
+    pub const fn operand_roles(&self) -> &'static [A64OperandRole] {
+        match self {
+            Self::AdrAdrOnlyPcreladdr { .. } => OPERANDS_ADR_ADR_ONLY_PCRELADDR,
+            Self::AdrpAdrpOnlyPcreladdr { .. } => OPERANDS_ADRP_ADRP_ONLY_PCRELADDR,
+            Self::AddAddsubImmAdd32AddsubImm { .. } => OPERANDS_ADD_ADDSUB_IMM_ADD_32_ADDSUB_IMM,
+            Self::AddAddsubImmAdd64AddsubImm { .. } => OPERANDS_ADD_ADDSUB_IMM_ADD_64_ADDSUB_IMM,
+            Self::SubAddsubImmSub32AddsubImm { .. } => OPERANDS_SUB_ADDSUB_IMM_SUB_32_ADDSUB_IMM,
+            Self::SubAddsubImmSub64AddsubImm { .. } => OPERANDS_SUB_ADDSUB_IMM_SUB_64_ADDSUB_IMM,
+            Self::SubsAddsubImmSubs32sAddsubImm { .. } => OPERANDS_SUBS_ADDSUB_IMM_SUBS_32S_ADDSUB_IMM,
+            Self::SubsAddsubImmSubs64sAddsubImm { .. } => OPERANDS_SUBS_ADDSUB_IMM_SUBS_64S_ADDSUB_IMM,
+            Self::BUncondBOnlyBranchImm { .. } => OPERANDS_B_UNCOND_B_ONLY_BRANCH_IMM,
+            Self::BCondBOnlyCondbranch { .. } => OPERANDS_B_COND_B_ONLY_CONDBRANCH,
+            Self::CbzCbz32Compbranch { .. } => OPERANDS_CBZ_CBZ_32_COMPBRANCH,
+            Self::CbzCbz64Compbranch { .. } => OPERANDS_CBZ_CBZ_64_COMPBRANCH,
+            Self::CbnzCbnz32Compbranch { .. } => OPERANDS_CBNZ_CBNZ_32_COMPBRANCH,
+            Self::CbnzCbnz64Compbranch { .. } => OPERANDS_CBNZ_CBNZ_64_COMPBRANCH,
+            Self::MovzMovz32Movewide { .. } => OPERANDS_MOVZ_MOVZ_32_MOVEWIDE,
+            Self::MovzMovz64Movewide { .. } => OPERANDS_MOVZ_MOVZ_64_MOVEWIDE,
+            Self::MovkMovk32Movewide { .. } => OPERANDS_MOVK_MOVK_32_MOVEWIDE,
+            Self::MovkMovk64Movewide { .. } => OPERANDS_MOVK_MOVK_64_MOVEWIDE,
+            Self::OrrLogShiftOrr64LogShift { .. } => OPERANDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT,
+            Self::TbzTbzOnlyTestbranch { .. } => OPERANDS_TBZ_TBZ_ONLY_TESTBRANCH,
+            Self::TbnzTbnzOnlyTestbranch { .. } => OPERANDS_TBNZ_TBNZ_ONLY_TESTBRANCH,
+            Self::LdrImmGenLdr32LdstImmpost { .. } => OPERANDS_LDR_IMM_GEN_LDR_32_LDST_IMMPOST,
+            Self::LdrImmGenLdr64LdstImmpost { .. } => OPERANDS_LDR_IMM_GEN_LDR_64_LDST_IMMPOST,
+            Self::LdrImmGenLdr32LdstImmpre { .. } => OPERANDS_LDR_IMM_GEN_LDR_32_LDST_IMMPRE,
+            Self::LdrImmGenLdr64LdstImmpre { .. } => OPERANDS_LDR_IMM_GEN_LDR_64_LDST_IMMPRE,
+            Self::LdrImmGenLdr32LdstPos { .. } => OPERANDS_LDR_IMM_GEN_LDR_32_LDST_POS,
+            Self::LdrImmGenLdr64LdstPos { .. } => OPERANDS_LDR_IMM_GEN_LDR_64_LDST_POS,
+            Self::StrImmGenStr32LdstImmpost { .. } => OPERANDS_STR_IMM_GEN_STR_32_LDST_IMMPOST,
+            Self::StrImmGenStr64LdstImmpost { .. } => OPERANDS_STR_IMM_GEN_STR_64_LDST_IMMPOST,
+            Self::StrImmGenStr32LdstImmpre { .. } => OPERANDS_STR_IMM_GEN_STR_32_LDST_IMMPRE,
+            Self::StrImmGenStr64LdstImmpre { .. } => OPERANDS_STR_IMM_GEN_STR_64_LDST_IMMPRE,
+            Self::StrImmGenStr32LdstPos { .. } => OPERANDS_STR_IMM_GEN_STR_32_LDST_POS,
+            Self::StrImmGenStr64LdstPos { .. } => OPERANDS_STR_IMM_GEN_STR_64_LDST_POS,
+            Self::NopNopHiHints { .. } => OPERANDS_NOP_NOP_HI_HINTS,
+            Self::BlBlOnlyBranchImm { .. } => OPERANDS_BL_BL_ONLY_BRANCH_IMM,
+            Self::BrBr64BranchReg { .. } => OPERANDS_BR_BR_64_BRANCH_REG,
+            Self::BlrBlr64BranchReg { .. } => OPERANDS_BLR_BLR_64_BRANCH_REG,
+            Self::RetRet64rBranchReg { .. } => OPERANDS_RET_RET_64R_BRANCH_REG,
+            Self::SvcSvcExException { .. } => OPERANDS_SVC_SVC_EX_EXCEPTION,
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -959,11 +1028,21 @@ pub const FIELDS_ADR_ADR_ONLY_PCRELADDR: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_ADR_ADR_ONLY_PCRELADDR: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_ADRP_ADRP_ONLY_PCRELADDR: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "op", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "immlo", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
     GeneratedFieldSpec { name: "immhi", hi: 23, lo: 5, width: 19, mask: 0x00ffffe0 },
     GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADRP_ADRP_ONLY_PCRELADDR: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -978,6 +1057,12 @@ pub const FIELDS_ADD_ADDSUB_IMM_ADD_32_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_ADD_ADDSUB_IMM_ADD_32_ADDSUB_IMM: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_ADD_ADDSUB_IMM_ADD_64_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
@@ -986,6 +1071,12 @@ pub const FIELDS_ADD_ADDSUB_IMM_ADD_64_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
     GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
     GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADD_ADDSUB_IMM_ADD_64_ADDSUB_IMM: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1000,6 +1091,12 @@ pub const FIELDS_SUB_ADDSUB_IMM_SUB_32_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_SUB_ADDSUB_IMM_SUB_32_ADDSUB_IMM: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_SUB_ADDSUB_IMM_SUB_64_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
@@ -1008,6 +1105,12 @@ pub const FIELDS_SUB_ADDSUB_IMM_SUB_64_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
     GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
     GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SUB_ADDSUB_IMM_SUB_64_ADDSUB_IMM: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1022,6 +1125,13 @@ pub const FIELDS_SUBS_ADDSUB_IMM_SUBS_32S_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_SUBS_ADDSUB_IMM_SUBS_32S_ADDSUB_IMM: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_SUBS_ADDSUB_IMM_SUBS_64S_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
@@ -1033,9 +1143,22 @@ pub const FIELDS_SUBS_ADDSUB_IMM_SUBS_64S_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_SUBS_ADDSUB_IMM_SUBS_64S_ADDSUB_IMM: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_B_UNCOND_B_ONLY_BRANCH_IMM: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "op", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "imm26", hi: 25, lo: 0, width: 26, mask: 0x03ffffff },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_B_UNCOND_B_ONLY_BRANCH_IMM: &[A64OperandRole] = &[
+    A64OperandRole::BranchTarget { field: "imm26", scale: 2, bits: 26 },
+    A64OperandRole::ControlFlow,
 ];
 
 #[allow(dead_code)]
@@ -1043,6 +1166,13 @@ pub const FIELDS_B_COND_B_ONLY_CONDBRANCH: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "imm19", hi: 23, lo: 5, width: 19, mask: 0x00ffffe0 },
     GeneratedFieldSpec { name: "o0", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
     GeneratedFieldSpec { name: "cond", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_B_COND_B_ONLY_CONDBRANCH: &[A64OperandRole] = &[
+    A64OperandRole::BranchTarget { field: "imm19", scale: 2, bits: 19 },
+    A64OperandRole::ControlFlow,
+    A64OperandRole::FlagsRead,
 ];
 
 #[allow(dead_code)]
@@ -1054,11 +1184,25 @@ pub const FIELDS_CBZ_CBZ_32_COMPBRANCH: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_CBZ_CBZ_32_COMPBRANCH: &[A64OperandRole] = &[
+    A64OperandRole::BranchTarget { field: "imm19", scale: 2, bits: 19 },
+    A64OperandRole::ControlFlow,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_CBZ_CBZ_64_COMPBRANCH: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "op", hi: 24, lo: 24, width: 1, mask: 0x01000000 },
     GeneratedFieldSpec { name: "imm19", hi: 23, lo: 5, width: 19, mask: 0x00ffffe0 },
     GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CBZ_CBZ_64_COMPBRANCH: &[A64OperandRole] = &[
+    A64OperandRole::BranchTarget { field: "imm19", scale: 2, bits: 19 },
+    A64OperandRole::ControlFlow,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1070,11 +1214,25 @@ pub const FIELDS_CBNZ_CBNZ_32_COMPBRANCH: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_CBNZ_CBNZ_32_COMPBRANCH: &[A64OperandRole] = &[
+    A64OperandRole::BranchTarget { field: "imm19", scale: 2, bits: 19 },
+    A64OperandRole::ControlFlow,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_CBNZ_CBNZ_64_COMPBRANCH: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "op", hi: 24, lo: 24, width: 1, mask: 0x01000000 },
     GeneratedFieldSpec { name: "imm19", hi: 23, lo: 5, width: 19, mask: 0x00ffffe0 },
     GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CBNZ_CBNZ_64_COMPBRANCH: &[A64OperandRole] = &[
+    A64OperandRole::BranchTarget { field: "imm19", scale: 2, bits: 19 },
+    A64OperandRole::ControlFlow,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1087,12 +1245,22 @@ pub const FIELDS_MOVZ_MOVZ_32_MOVEWIDE: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_MOVZ_MOVZ_32_MOVEWIDE: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_MOVZ_MOVZ_64_MOVEWIDE: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
     GeneratedFieldSpec { name: "hw", hi: 22, lo: 21, width: 2, mask: 0x00600000 },
     GeneratedFieldSpec { name: "imm16", hi: 20, lo: 5, width: 16, mask: 0x001fffe0 },
     GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MOVZ_MOVZ_64_MOVEWIDE: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1105,12 +1273,24 @@ pub const FIELDS_MOVK_MOVK_32_MOVEWIDE: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_MOVK_MOVK_32_MOVEWIDE: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_MOVK_MOVK_64_MOVEWIDE: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
     GeneratedFieldSpec { name: "hw", hi: 22, lo: 21, width: 2, mask: 0x00600000 },
     GeneratedFieldSpec { name: "imm16", hi: 20, lo: 5, width: 16, mask: 0x001fffe0 },
     GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MOVK_MOVK_64_MOVEWIDE: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1126,6 +1306,13 @@ pub const FIELDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_TBZ_TBZ_ONLY_TESTBRANCH: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "b5", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "op", hi: 24, lo: 24, width: 1, mask: 0x01000000 },
@@ -1135,12 +1322,26 @@ pub const FIELDS_TBZ_TBZ_ONLY_TESTBRANCH: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_TBZ_TBZ_ONLY_TESTBRANCH: &[A64OperandRole] = &[
+    A64OperandRole::BranchTarget { field: "imm14", scale: 2, bits: 14 },
+    A64OperandRole::ControlFlow,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::Unknown },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_TBNZ_TBNZ_ONLY_TESTBRANCH: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "b5", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "op", hi: 24, lo: 24, width: 1, mask: 0x01000000 },
     GeneratedFieldSpec { name: "b40", hi: 23, lo: 19, width: 5, mask: 0x00f80000 },
     GeneratedFieldSpec { name: "imm14", hi: 18, lo: 5, width: 14, mask: 0x0007ffe0 },
     GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_TBNZ_TBNZ_ONLY_TESTBRANCH: &[A64OperandRole] = &[
+    A64OperandRole::BranchTarget { field: "imm14", scale: 2, bits: 14 },
+    A64OperandRole::ControlFlow,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::Unknown },
 ];
 
 #[allow(dead_code)]
@@ -1154,6 +1355,15 @@ pub const FIELDS_LDR_IMM_GEN_LDR_32_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_LDR_IMM_GEN_LDR_32_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_LDR_IMM_GEN_LDR_64_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
     GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
@@ -1161,6 +1371,15 @@ pub const FIELDS_LDR_IMM_GEN_LDR_64_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
     GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
     GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_IMM_GEN_LDR_64_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1174,6 +1393,15 @@ pub const FIELDS_LDR_IMM_GEN_LDR_32_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_LDR_IMM_GEN_LDR_32_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_LDR_IMM_GEN_LDR_64_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
     GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
@@ -1181,6 +1409,15 @@ pub const FIELDS_LDR_IMM_GEN_LDR_64_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
     GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
     GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_IMM_GEN_LDR_64_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1194,6 +1431,15 @@ pub const FIELDS_LDR_IMM_GEN_LDR_32_LDST_POS: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_LDR_IMM_GEN_LDR_32_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_LDR_IMM_GEN_LDR_64_LDST_POS: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
     GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
@@ -1201,6 +1447,15 @@ pub const FIELDS_LDR_IMM_GEN_LDR_64_LDST_POS: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
     GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
     GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_IMM_GEN_LDR_64_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1214,6 +1469,15 @@ pub const FIELDS_STR_IMM_GEN_STR_32_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_STR_IMM_GEN_STR_32_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_STR_IMM_GEN_STR_64_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
     GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
@@ -1221,6 +1485,15 @@ pub const FIELDS_STR_IMM_GEN_STR_64_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
     GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
     GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STR_IMM_GEN_STR_64_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1234,6 +1507,15 @@ pub const FIELDS_STR_IMM_GEN_STR_32_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_STR_IMM_GEN_STR_32_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_STR_IMM_GEN_STR_64_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
     GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
@@ -1241,6 +1523,15 @@ pub const FIELDS_STR_IMM_GEN_STR_64_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
     GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
     GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STR_IMM_GEN_STR_64_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1254,6 +1545,15 @@ pub const FIELDS_STR_IMM_GEN_STR_32_LDST_POS: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_STR_IMM_GEN_STR_32_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_STR_IMM_GEN_STR_64_LDST_POS: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
     GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
@@ -1264,15 +1564,35 @@ pub const FIELDS_STR_IMM_GEN_STR_64_LDST_POS: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_STR_IMM_GEN_STR_64_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_NOP_NOP_HI_HINTS: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "CRm", hi: 11, lo: 8, width: 4, mask: 0x00000f00 },
     GeneratedFieldSpec { name: "op2", hi: 7, lo: 5, width: 3, mask: 0x000000e0 },
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_NOP_NOP_HI_HINTS: &[A64OperandRole] = &[
+];
+
+#[allow(dead_code)]
 pub const FIELDS_BL_BL_ONLY_BRANCH_IMM: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "op", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "imm26", hi: 25, lo: 0, width: 26, mask: 0x03ffffff },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_BL_BL_ONLY_BRANCH_IMM: &[A64OperandRole] = &[
+    A64OperandRole::BranchTarget { field: "imm26", scale: 2, bits: 26 },
+    A64OperandRole::ControlFlow,
+    A64OperandRole::ImplicitRegWrite { reg: 30, width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1287,6 +1607,12 @@ pub const FIELDS_BR_BR_64_BRANCH_REG: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_BR_BR_64_BRANCH_REG: &[A64OperandRole] = &[
+    A64OperandRole::ControlFlow,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_BLR_BLR_64_BRANCH_REG: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "Z", hi: 24, lo: 24, width: 1, mask: 0x01000000 },
     GeneratedFieldSpec { name: "op", hi: 22, lo: 21, width: 2, mask: 0x00600000 },
@@ -1295,6 +1621,13 @@ pub const FIELDS_BLR_BLR_64_BRANCH_REG: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "M", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
     GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
     GeneratedFieldSpec { name: "Rm", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_BLR_BLR_64_BRANCH_REG: &[A64OperandRole] = &[
+    A64OperandRole::ControlFlow,
+    A64OperandRole::ImplicitRegWrite { reg: 30, width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -1309,11 +1642,21 @@ pub const FIELDS_RET_RET_64R_BRANCH_REG: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
+pub const OPERANDS_RET_RET_64R_BRANCH_REG: &[A64OperandRole] = &[
+    A64OperandRole::ControlFlow,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_SVC_SVC_EX_EXCEPTION: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "opc", hi: 23, lo: 21, width: 3, mask: 0x00e00000 },
     GeneratedFieldSpec { name: "imm16", hi: 20, lo: 5, width: 16, mask: 0x001fffe0 },
     GeneratedFieldSpec { name: "op2", hi: 4, lo: 2, width: 3, mask: 0x0000001c },
     GeneratedFieldSpec { name: "LL", hi: 1, lo: 0, width: 2, mask: 0x00000003 },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SVC_SVC_EX_EXCEPTION: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
@@ -1327,6 +1670,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0x9f000000,
         value: 0x10000000,
         fields: FIELDS_ADR_ADR_ONLY_PCRELADDR,
+        operands: OPERANDS_ADR_ADR_ONLY_PCRELADDR,
         asm: "ADR <Xd> , <label>",
     },
     GeneratedInsnSpec {
@@ -1338,6 +1682,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0x9f000000,
         value: 0x90000000,
         fields: FIELDS_ADRP_ADRP_ONLY_PCRELADDR,
+        operands: OPERANDS_ADRP_ADRP_ONLY_PCRELADDR,
         asm: "ADRP <Xd> , <label>",
     },
     GeneratedInsnSpec {
@@ -1349,6 +1694,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff800000,
         value: 0x11000000,
         fields: FIELDS_ADD_ADDSUB_IMM_ADD_32_ADDSUB_IMM,
+        operands: OPERANDS_ADD_ADDSUB_IMM_ADD_32_ADDSUB_IMM,
         asm: "ADD <Wd|WSP> , <Wn|WSP> , # <imm> {, <shift> }",
     },
     GeneratedInsnSpec {
@@ -1360,6 +1706,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff800000,
         value: 0x91000000,
         fields: FIELDS_ADD_ADDSUB_IMM_ADD_64_ADDSUB_IMM,
+        operands: OPERANDS_ADD_ADDSUB_IMM_ADD_64_ADDSUB_IMM,
         asm: "ADD <Xd|SP> , <Xn|SP> , # <imm> {, <shift> }",
     },
     GeneratedInsnSpec {
@@ -1371,6 +1718,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff800000,
         value: 0x51000000,
         fields: FIELDS_SUB_ADDSUB_IMM_SUB_32_ADDSUB_IMM,
+        operands: OPERANDS_SUB_ADDSUB_IMM_SUB_32_ADDSUB_IMM,
         asm: "SUB <Wd|WSP> , <Wn|WSP> , # <imm> {, <shift> }",
     },
     GeneratedInsnSpec {
@@ -1382,6 +1730,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff800000,
         value: 0xd1000000,
         fields: FIELDS_SUB_ADDSUB_IMM_SUB_64_ADDSUB_IMM,
+        operands: OPERANDS_SUB_ADDSUB_IMM_SUB_64_ADDSUB_IMM,
         asm: "SUB <Xd|SP> , <Xn|SP> , # <imm> {, <shift> }",
     },
     GeneratedInsnSpec {
@@ -1393,6 +1742,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff800000,
         value: 0x71000000,
         fields: FIELDS_SUBS_ADDSUB_IMM_SUBS_32S_ADDSUB_IMM,
+        operands: OPERANDS_SUBS_ADDSUB_IMM_SUBS_32S_ADDSUB_IMM,
         asm: "SUBS <Wd> , <Wn|WSP> , # <imm> {, <shift> }",
     },
     GeneratedInsnSpec {
@@ -1404,6 +1754,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff800000,
         value: 0xf1000000,
         fields: FIELDS_SUBS_ADDSUB_IMM_SUBS_64S_ADDSUB_IMM,
+        operands: OPERANDS_SUBS_ADDSUB_IMM_SUBS_64S_ADDSUB_IMM,
         asm: "SUBS <Xd> , <Xn|SP> , # <imm> {, <shift> }",
     },
     GeneratedInsnSpec {
@@ -1415,6 +1766,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xfc000000,
         value: 0x14000000,
         fields: FIELDS_B_UNCOND_B_ONLY_BRANCH_IMM,
+        operands: OPERANDS_B_UNCOND_B_ONLY_BRANCH_IMM,
         asm: "B <label>",
     },
     GeneratedInsnSpec {
@@ -1426,6 +1778,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff000010,
         value: 0x54000000,
         fields: FIELDS_B_COND_B_ONLY_CONDBRANCH,
+        operands: OPERANDS_B_COND_B_ONLY_CONDBRANCH,
         asm: "B. <cond> <label>",
     },
     GeneratedInsnSpec {
@@ -1437,6 +1790,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff000000,
         value: 0x34000000,
         fields: FIELDS_CBZ_CBZ_32_COMPBRANCH,
+        operands: OPERANDS_CBZ_CBZ_32_COMPBRANCH,
         asm: "CBZ <Wt> , <label>",
     },
     GeneratedInsnSpec {
@@ -1448,6 +1802,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff000000,
         value: 0xb4000000,
         fields: FIELDS_CBZ_CBZ_64_COMPBRANCH,
+        operands: OPERANDS_CBZ_CBZ_64_COMPBRANCH,
         asm: "CBZ <Xt> , <label>",
     },
     GeneratedInsnSpec {
@@ -1459,6 +1814,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff000000,
         value: 0x35000000,
         fields: FIELDS_CBNZ_CBNZ_32_COMPBRANCH,
+        operands: OPERANDS_CBNZ_CBNZ_32_COMPBRANCH,
         asm: "CBNZ <Wt> , <label>",
     },
     GeneratedInsnSpec {
@@ -1470,6 +1826,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff000000,
         value: 0xb5000000,
         fields: FIELDS_CBNZ_CBNZ_64_COMPBRANCH,
+        operands: OPERANDS_CBNZ_CBNZ_64_COMPBRANCH,
         asm: "CBNZ <Xt> , <label>",
     },
     GeneratedInsnSpec {
@@ -1481,6 +1838,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffc00000,
         value: 0x52800000,
         fields: FIELDS_MOVZ_MOVZ_32_MOVEWIDE,
+        operands: OPERANDS_MOVZ_MOVZ_32_MOVEWIDE,
         asm: "MOVZ <Wd> , # <imm> {, LSL # <shift> }",
     },
     GeneratedInsnSpec {
@@ -1492,6 +1850,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff800000,
         value: 0xd2800000,
         fields: FIELDS_MOVZ_MOVZ_64_MOVEWIDE,
+        operands: OPERANDS_MOVZ_MOVZ_64_MOVEWIDE,
         asm: "MOVZ <Xd> , # <imm> {, LSL # <shift> }",
     },
     GeneratedInsnSpec {
@@ -1503,6 +1862,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffc00000,
         value: 0x72800000,
         fields: FIELDS_MOVK_MOVK_32_MOVEWIDE,
+        operands: OPERANDS_MOVK_MOVK_32_MOVEWIDE,
         asm: "MOVK <Wd> , # <imm> {, LSL # <shift> }",
     },
     GeneratedInsnSpec {
@@ -1514,6 +1874,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff800000,
         value: 0xf2800000,
         fields: FIELDS_MOVK_MOVK_64_MOVEWIDE,
+        operands: OPERANDS_MOVK_MOVK_64_MOVEWIDE,
         asm: "MOVK <Xd> , # <imm> {, LSL # <shift> }",
     },
     GeneratedInsnSpec {
@@ -1525,6 +1886,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xff200000,
         value: 0xaa000000,
         fields: FIELDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT,
+        operands: OPERANDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT,
         asm: "ORR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
     },
     GeneratedInsnSpec {
@@ -1536,6 +1898,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0x7f000000,
         value: 0x36000000,
         fields: FIELDS_TBZ_TBZ_ONLY_TESTBRANCH,
+        operands: OPERANDS_TBZ_TBZ_ONLY_TESTBRANCH,
         asm: "TBZ <R> <t> , # <imm> , <label>",
     },
     GeneratedInsnSpec {
@@ -1547,6 +1910,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0x7f000000,
         value: 0x37000000,
         fields: FIELDS_TBNZ_TBNZ_ONLY_TESTBRANCH,
+        operands: OPERANDS_TBNZ_TBNZ_ONLY_TESTBRANCH,
         asm: "TBNZ <R> <t> , # <imm> , <label>",
     },
     GeneratedInsnSpec {
@@ -1558,6 +1922,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffe00c00,
         value: 0xb8400400,
         fields: FIELDS_LDR_IMM_GEN_LDR_32_LDST_IMMPOST,
+        operands: OPERANDS_LDR_IMM_GEN_LDR_32_LDST_IMMPOST,
         asm: "LDR <Wt> , [ <Xn|SP> ], # <simm>",
     },
     GeneratedInsnSpec {
@@ -1569,6 +1934,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffe00c00,
         value: 0xf8400400,
         fields: FIELDS_LDR_IMM_GEN_LDR_64_LDST_IMMPOST,
+        operands: OPERANDS_LDR_IMM_GEN_LDR_64_LDST_IMMPOST,
         asm: "LDR <Xt> , [ <Xn|SP> ], # <simm>",
     },
     GeneratedInsnSpec {
@@ -1580,6 +1946,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffe00c00,
         value: 0xb8400c00,
         fields: FIELDS_LDR_IMM_GEN_LDR_32_LDST_IMMPRE,
+        operands: OPERANDS_LDR_IMM_GEN_LDR_32_LDST_IMMPRE,
         asm: "LDR <Wt> , [ <Xn|SP> , # <simm> ]!",
     },
     GeneratedInsnSpec {
@@ -1591,6 +1958,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffe00c00,
         value: 0xf8400c00,
         fields: FIELDS_LDR_IMM_GEN_LDR_64_LDST_IMMPRE,
+        operands: OPERANDS_LDR_IMM_GEN_LDR_64_LDST_IMMPRE,
         asm: "LDR <Xt> , [ <Xn|SP> , # <simm> ]!",
     },
     GeneratedInsnSpec {
@@ -1602,6 +1970,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffc00000,
         value: 0xb9400000,
         fields: FIELDS_LDR_IMM_GEN_LDR_32_LDST_POS,
+        operands: OPERANDS_LDR_IMM_GEN_LDR_32_LDST_POS,
         asm: "LDR <Wt> , [ <Xn|SP> {, # <pimm> }]",
     },
     GeneratedInsnSpec {
@@ -1613,6 +1982,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffc00000,
         value: 0xf9400000,
         fields: FIELDS_LDR_IMM_GEN_LDR_64_LDST_POS,
+        operands: OPERANDS_LDR_IMM_GEN_LDR_64_LDST_POS,
         asm: "LDR <Xt> , [ <Xn|SP> {, # <pimm> }]",
     },
     GeneratedInsnSpec {
@@ -1624,6 +1994,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffe00c00,
         value: 0xb8000400,
         fields: FIELDS_STR_IMM_GEN_STR_32_LDST_IMMPOST,
+        operands: OPERANDS_STR_IMM_GEN_STR_32_LDST_IMMPOST,
         asm: "STR <Wt> , [ <Xn|SP> ], # <simm>",
     },
     GeneratedInsnSpec {
@@ -1635,6 +2006,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffe00c00,
         value: 0xf8000400,
         fields: FIELDS_STR_IMM_GEN_STR_64_LDST_IMMPOST,
+        operands: OPERANDS_STR_IMM_GEN_STR_64_LDST_IMMPOST,
         asm: "STR <Xt> , [ <Xn|SP> ], # <simm>",
     },
     GeneratedInsnSpec {
@@ -1646,6 +2018,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffe00c00,
         value: 0xb8000c00,
         fields: FIELDS_STR_IMM_GEN_STR_32_LDST_IMMPRE,
+        operands: OPERANDS_STR_IMM_GEN_STR_32_LDST_IMMPRE,
         asm: "STR <Wt> , [ <Xn|SP> , # <simm> ]!",
     },
     GeneratedInsnSpec {
@@ -1657,6 +2030,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffe00c00,
         value: 0xf8000c00,
         fields: FIELDS_STR_IMM_GEN_STR_64_LDST_IMMPRE,
+        operands: OPERANDS_STR_IMM_GEN_STR_64_LDST_IMMPRE,
         asm: "STR <Xt> , [ <Xn|SP> , # <simm> ]!",
     },
     GeneratedInsnSpec {
@@ -1668,6 +2042,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffc00000,
         value: 0xb9000000,
         fields: FIELDS_STR_IMM_GEN_STR_32_LDST_POS,
+        operands: OPERANDS_STR_IMM_GEN_STR_32_LDST_POS,
         asm: "STR <Wt> , [ <Xn|SP> {, # <pimm> }]",
     },
     GeneratedInsnSpec {
@@ -1679,6 +2054,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffc00000,
         value: 0xf9000000,
         fields: FIELDS_STR_IMM_GEN_STR_64_LDST_POS,
+        operands: OPERANDS_STR_IMM_GEN_STR_64_LDST_POS,
         asm: "STR <Xt> , [ <Xn|SP> {, # <pimm> }]",
     },
     GeneratedInsnSpec {
@@ -1690,6 +2066,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffffffff,
         value: 0xd503201f,
         fields: FIELDS_NOP_NOP_HI_HINTS,
+        operands: OPERANDS_NOP_NOP_HI_HINTS,
         asm: "NOP",
     },
     GeneratedInsnSpec {
@@ -1701,6 +2078,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xfc000000,
         value: 0x94000000,
         fields: FIELDS_BL_BL_ONLY_BRANCH_IMM,
+        operands: OPERANDS_BL_BL_ONLY_BRANCH_IMM,
         asm: "BL <label>",
     },
     GeneratedInsnSpec {
@@ -1712,6 +2090,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xfffffc1f,
         value: 0xd61f0000,
         fields: FIELDS_BR_BR_64_BRANCH_REG,
+        operands: OPERANDS_BR_BR_64_BRANCH_REG,
         asm: "BR <Xn>",
     },
     GeneratedInsnSpec {
@@ -1723,6 +2102,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xfffffc1f,
         value: 0xd63f0000,
         fields: FIELDS_BLR_BLR_64_BRANCH_REG,
+        operands: OPERANDS_BLR_BLR_64_BRANCH_REG,
         asm: "BLR <Xn>",
     },
     GeneratedInsnSpec {
@@ -1734,6 +2114,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xfffffc1f,
         value: 0xd65f0000,
         fields: FIELDS_RET_RET_64R_BRANCH_REG,
+        operands: OPERANDS_RET_RET_64R_BRANCH_REG,
         asm: "RET  { <Xn> }",
     },
     GeneratedInsnSpec {
@@ -1745,6 +2126,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffe0001f,
         value: 0xd4000001,
         fields: FIELDS_SVC_SVC_EX_EXCEPTION,
+        operands: OPERANDS_SVC_SVC_EX_EXCEPTION,
         asm: "SVC  # <imm>",
     },
 ];

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import textwrap
 import tomllib
 import xml.etree.ElementTree as ET
@@ -105,6 +106,221 @@ def parse_docvars(node: ET.Element) -> dict[str, str]:
     }
 
 
+def parse_asm_operands(encoding: ET.Element) -> list[dict[str, str]]:
+    asm = encoding.find("asmtemplate")
+    if asm is None:
+        return []
+    return [
+        {
+            "text": flatten_text(anchor),
+            "link": anchor.attrib.get("link", ""),
+            "hover": anchor.attrib.get("hover", ""),
+        }
+        for anchor in asm.findall("a")
+    ]
+
+
+def parse_ps_texts(root: ET.Element, iclass: ET.Element) -> tuple[str, str]:
+    decode = " ".join(
+        flatten_text(node)
+        for node in iclass.findall(".//pstext")
+        if node.attrib.get("rep_section") == "decode"
+    )
+    execute = " ".join(
+        flatten_text(node)
+        for node in root.findall("./ps_section//pstext")
+        if node.attrib.get("rep_section") == "execute"
+    )
+    return decode, execute
+
+
+def decode_var_map(decode_text: str) -> dict[str, str]:
+    ret: dict[str, str] = {}
+    for var, field in re.findall(r"\blet\s+(\w+)\b[^=]*=\s*UInt\((\w+)\)", decode_text):
+        ret[var] = field
+    for var, field in re.findall(r"\bvar\s+(\w+)\b[^=]*=\s*UInt\((\w+)\)", decode_text):
+        ret[var] = field
+    return ret
+
+
+def normalize_role_field(value: str, fields: set[str]) -> str:
+    by_lower = {field.lower(): field for field in fields}
+    if value in {"30", "x30"}:
+        return "x30"
+    return by_lower.get(value.lower(), value)
+
+
+def operand_width(docvars: dict[str, str], operand: dict[str, str] | None = None) -> str:
+    datatype = docvars.get("datatype")
+    reg_type = docvars.get("reg-type", "")
+    hover = (operand or {}).get("hover", "").lower()
+    text = (operand or {}).get("text", "")
+    if datatype == "32" or reg_type.startswith("32-") or "32-bit" in hover or text.startswith("<W"):
+        return "W32"
+    if datatype == "64" or reg_type.startswith("64-") or "64-bit" in hover or text.startswith("<X"):
+        return "X64"
+    return "Unknown"
+
+
+def role_tuple(kind: str, field: str = "", width: str = "Unknown") -> tuple[str, str, str]:
+    return kind, field, width
+
+
+def infer_roles_from_pseudocode(
+    fields: set[str],
+    var_map: dict[str, str],
+    docvars: dict[str, str],
+    execute_text: str,
+) -> set[tuple[str, str, str]]:
+    roles: set[tuple[str, str, str]] = set()
+    reg_accessors = r"\b(?:X|W|SP)\s*(?:\{[^}]*\})?\((\w+)\)"
+    for match in re.finditer(reg_accessors, execute_text):
+        field = normalize_role_field(var_map.get(match.group(1), match.group(1)), fields)
+        if field not in fields and field != "x30":
+            continue
+        after = execute_text[match.end() : match.end() + 8]
+        kind = "RegWrite" if re.match(r"\s*=", after) else "RegRead"
+        roles.add(role_tuple(kind, field, operand_width(docvars)))
+
+    bracket_accessors = r"\b(?:X|W|SP)\[([^\],\]]+)(?:,[^\]]*)?\]"
+    for match in re.finditer(bracket_accessors, execute_text):
+        field = normalize_role_field(var_map.get(match.group(1).strip(), match.group(1).strip()), fields)
+        if field not in fields and field != "x30":
+            continue
+        after = execute_text[match.end() : match.end() + 8]
+        kind = "RegWrite" if re.match(r"\s*=", after) else "RegRead"
+        roles.add(role_tuple(kind, field, operand_width(docvars)))
+
+    if "ConditionHolds" in execute_text:
+        roles.add(role_tuple("FlagsRead"))
+    if "PSTATE.NZCV" in execute_text or ("AddWithCarry" in execute_text and "nzcv" in execute_text):
+        roles.add(role_tuple("FlagsWrite"))
+    if "BranchTo" in execute_text or "BranchNotTaken" in execute_text:
+        roles.add(role_tuple("ControlFlow"))
+    if "Mem" in execute_text:
+        roles.add(role_tuple("Memory"))
+    return roles
+
+
+def infer_roles_from_docvars_and_asm(
+    docvars: dict[str, str],
+    operands: list[dict[str, str]],
+    fields: set[str],
+) -> set[tuple[str, str, str]]:
+    roles: set[tuple[str, str, str]] = set()
+    mnemonic = docvars.get("mnemonic", "")
+    address_form = docvars.get("address-form", "")
+
+    if "branch-offset" in docvars:
+        for field in fields:
+            if field.lower().startswith("imm"):
+                roles.add(role_tuple("BranchTarget", field))
+
+    if mnemonic in {"B", "BL"}:
+        for field in fields:
+            if field.lower().startswith("imm"):
+                roles.add(role_tuple("BranchTarget", field))
+        if mnemonic == "BL":
+            roles.add(role_tuple("ImplicitRegWrite", "x30", "X64"))
+
+    if mnemonic in {"BR", "BLR", "RET"} and "Rn" in fields:
+        roles.add(role_tuple("RegRead", "Rn", "X64"))
+        if mnemonic == "BLR":
+            roles.add(role_tuple("ImplicitRegWrite", "x30", "X64"))
+
+    if mnemonic in {"CBZ", "CBNZ", "TBZ", "TBNZ"} and "Rt" in fields:
+        roles.add(role_tuple("RegRead", "Rt", operand_width(docvars)))
+        for field in fields:
+            if field.lower().startswith("imm"):
+                roles.add(role_tuple("BranchTarget", field))
+
+    if mnemonic in {"LDR", "STR"}:
+        if "Rn" in fields:
+            if address_form in {"pre-indexed", "post-indexed"}:
+                roles.add(role_tuple("RegReadWrite", "Rn", "X64"))
+            else:
+                roles.add(role_tuple("RegRead", "Rn", "X64"))
+            roles.add(role_tuple("MemBase", "Rn", "X64"))
+        if "Rt" in fields:
+            kind = "RegWrite" if mnemonic == "LDR" else "RegRead"
+            roles.add(role_tuple(kind, "Rt", operand_width(docvars)))
+        for field in fields:
+            if field.lower().startswith("imm"):
+                roles.add(role_tuple("MemOffset", field))
+
+    for operand in operands:
+        hover = operand["hover"].lower()
+        text = operand["text"]
+        encoded = re.search(r'encoded (?:as|in) (?:the )?"([^"]+)" field', hover)
+        if not encoded:
+            continue
+        field = normalize_role_field(encoded.group(1), fields)
+        width = operand_width(docvars, operand)
+        if "base register" in hover:
+            roles.add(role_tuple("MemBase", field, "X64"))
+            roles.add(role_tuple("RegRead", field, "X64"))
+        if "destination register" in hover or "written" in hover:
+            roles.add(role_tuple("RegWrite", field, width))
+        if "source register" in hover:
+            roles.add(role_tuple("RegRead", field, width))
+        if "first operand register" in hover or "second operand register" in hover:
+            roles.add(role_tuple("RegRead", field, width))
+        if "register to be tested" in hover:
+            roles.add(role_tuple("RegRead", field, width))
+        if "register to be transferred" in hover:
+            kind = "RegWrite" if mnemonic == "LDR" else "RegRead"
+            roles.add(role_tuple(kind, field, width))
+        if "program label" in hover or "<label>" in text:
+            roles.add(role_tuple("BranchTarget", field))
+
+    return roles
+
+
+def role_sort_key(role: tuple[str, str, str]) -> tuple[str, str, str]:
+    return role
+
+
+def simplify_roles(roles: set[tuple[str, str, str]]) -> set[tuple[str, str, str]]:
+    simplified = set(roles)
+    for kind, field, width in list(simplified):
+        if kind == "RegWrite" and field == "x30":
+            simplified.discard((kind, field, width))
+            simplified.add(("ImplicitRegWrite", "x30", "X64"))
+
+    for kind, field, width in list(roles):
+        if width != "Unknown":
+            simplified.discard((kind, field, "Unknown"))
+
+    read_write_fields = {
+        (field, width)
+        for kind, field, width in simplified
+        if kind == "RegReadWrite"
+    }
+    for field, width in read_write_fields:
+        simplified.discard(("RegRead", field, width))
+        simplified.discard(("RegWrite", field, width))
+    return simplified
+
+
+def infer_operand_roles(
+    docvars: dict[str, str],
+    fields: list[FieldSlice],
+    operands: list[dict[str, str]],
+    decode_text: str,
+    execute_text: str,
+) -> list[dict[str, str]]:
+    field_names = {field.name for field in fields if field.variable}
+    var_map = decode_var_map(decode_text)
+    roles = set()
+    roles |= infer_roles_from_docvars_and_asm(docvars, operands, field_names)
+    roles |= infer_roles_from_pseudocode(field_names, var_map, docvars, execute_text)
+    roles = simplify_roles(roles)
+    return [
+        {"kind": kind, "field": field, "width": width}
+        for kind, field, width in sorted(roles, key=role_sort_key)
+    ]
+
+
 def parse_instruction(path: Path) -> dict:
     root = ET.parse(path).getroot()
     section_id = root.attrib["id"]
@@ -117,12 +333,14 @@ def parse_instruction(path: Path) -> dict:
         iclass_name = iclass.attrib.get("name", "")
         base_mask, base_value, fields = parse_regdiagram(iclass.find("regdiagram"))
         iclass_docvars = parse_docvars(iclass)
+        decode_text, execute_text = parse_ps_texts(root, iclass)
         for encoding in iclass.findall("encoding"):
             enc_mask, enc_value, _ = parse_regdiagram(encoding)
             combined_mask = base_mask | enc_mask
             combined_value = base_value | enc_value
             variant_docvars = {**section_docvars, **iclass_docvars, **parse_docvars(encoding)}
             asm = flatten_text(encoding.find("asmtemplate")) if encoding.find("asmtemplate") is not None else ""
+            asm_operands = parse_asm_operands(encoding)
             variants.append(
                 {
                     "section_id": section_id,
@@ -133,6 +351,7 @@ def parse_instruction(path: Path) -> dict:
                     "encoding_label": encoding.attrib.get("label", ""),
                     "mnemonic": variant_docvars.get("mnemonic", heading.split()[0] if heading else section_id),
                     "docvars": variant_docvars,
+                    "asm_operands": asm_operands,
                     "mask": f"0x{combined_mask:08x}",
                     "value": f"0x{combined_value:08x}",
                     "fields": [
@@ -151,6 +370,13 @@ def parse_instruction(path: Path) -> dict:
                         }
                         for field in fields
                     ],
+                    "operand_roles": infer_operand_roles(
+                        variant_docvars,
+                        fields,
+                        asm_operands,
+                        decode_text,
+                        execute_text,
+                    ),
                     "asm": asm,
                 }
             )
@@ -262,6 +488,56 @@ def rust_field_type(width: int) -> str:
     return "u32"
 
 
+def rust_operand_width(width: str) -> str:
+    match width:
+        case "W32":
+            return "A64RegWidth::W32"
+        case "X64":
+            return "A64RegWidth::X64"
+        case _:
+            return "A64RegWidth::Unknown"
+
+
+def branch_role_bits(field_name: str, fields: list[dict]) -> int:
+    for field in fields:
+        if field["name"] == field_name:
+            return int(field["width"])
+    return 0
+
+
+def render_operand_role(role: dict[str, str], fields: list[dict]) -> str:
+    kind = role["kind"]
+    field = role["field"]
+    width = rust_operand_width(role["width"])
+    match kind:
+        case "RegRead":
+            return f'A64OperandRole::RegRead {{ field: "{field}", width: {width} }}'
+        case "RegWrite":
+            return f'A64OperandRole::RegWrite {{ field: "{field}", width: {width} }}'
+        case "RegReadWrite":
+            return f'A64OperandRole::RegReadWrite {{ field: "{field}", width: {width} }}'
+        case "ImplicitRegWrite":
+            reg = 30 if field == "x30" else int(field.removeprefix("x"))
+            return f"A64OperandRole::ImplicitRegWrite {{ reg: {reg}, width: {width} }}"
+        case "BranchTarget":
+            bits = branch_role_bits(field, fields)
+            return f'A64OperandRole::BranchTarget {{ field: "{field}", scale: 2, bits: {bits} }}'
+        case "MemBase":
+            return f'A64OperandRole::MemBase {{ field: "{field}" }}'
+        case "MemOffset":
+            return f'A64OperandRole::MemOffset {{ field: "{field}" }}'
+        case "FlagsRead":
+            return "A64OperandRole::FlagsRead"
+        case "FlagsWrite":
+            return "A64OperandRole::FlagsWrite"
+        case "ControlFlow":
+            return "A64OperandRole::ControlFlow"
+        case "Memory":
+            return "A64OperandRole::Memory"
+        case _:
+            raise ValueError(f"unsupported operand role: {role}")
+
+
 def render_a64_insn(specs: list[dict]) -> list[str]:
     variants: list[dict] = []
     for spec in specs:
@@ -282,6 +558,7 @@ def render_a64_insn(specs: list[dict]) -> list[str]:
                     "key": key,
                     "variant_name": rust_variant_ident(key),
                     "fields": fields,
+                    "operand_array_name": f'OPERANDS_{rust_ident(key)}',
                 }
             )
 
@@ -399,6 +676,19 @@ def render_a64_insn(specs: list[dict]) -> list[str]:
         [
             "        }",
             "    }",
+            "",
+            "    pub const fn operand_roles(&self) -> &'static [A64OperandRole] {",
+            "        match self {",
+        ]
+    )
+    for variant in variants:
+        lines.append(
+            f"            Self::{variant['variant_name']} {{ .. }} => {variant['operand_array_name']},"
+        )
+    lines.extend(
+        [
+            "        }",
+            "    }",
             "}",
             "",
             "#[allow(dead_code)]",
@@ -452,6 +742,30 @@ def render_rust(specs: list[dict]) -> str:
         "}",
         "",
         "#[allow(dead_code)]",
+        "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
+        "pub enum A64RegWidth {",
+        "    W32,",
+        "    X64,",
+        "    Unknown,",
+        "}",
+        "",
+        "#[allow(dead_code)]",
+        "#[derive(Clone, Copy, Debug, PartialEq, Eq)]",
+        "pub enum A64OperandRole {",
+        "    RegRead { field: &'static str, width: A64RegWidth },",
+        "    RegWrite { field: &'static str, width: A64RegWidth },",
+        "    RegReadWrite { field: &'static str, width: A64RegWidth },",
+        "    ImplicitRegWrite { reg: u8, width: A64RegWidth },",
+        "    BranchTarget { field: &'static str, scale: u8, bits: u8 },",
+        "    MemBase { field: &'static str },",
+        "    MemOffset { field: &'static str },",
+        "    FlagsRead,",
+        "    FlagsWrite,",
+        "    ControlFlow,",
+        "    Memory,",
+        "}",
+        "",
+        "#[allow(dead_code)]",
         "#[derive(Clone, Copy, Debug)]",
         "pub struct GeneratedInsnSpec {",
         "    pub key: &'static str,",
@@ -462,6 +776,7 @@ def render_rust(specs: list[dict]) -> str:
         "    pub mask: u32,",
         "    pub value: u32,",
         "    pub fields: &'static [GeneratedFieldSpec],",
+        "    pub operands: &'static [A64OperandRole],",
         "    pub asm: &'static str,",
         "}",
         "",
@@ -496,6 +811,7 @@ def render_rust(specs: list[dict]) -> str:
         for variant in spec["variants"]:
             key = f'{variant["section_id"]}.{variant["encoding_name"]}'
             array_name = f'FIELDS_{rust_ident(key)}'
+            operand_array_name = f'OPERANDS_{rust_ident(key)}'
             lines.append("#[allow(dead_code)]")
             lines.append(f"pub const {array_name}: &[GeneratedFieldSpec] = &[")
             for field in variant["fields"]:
@@ -505,6 +821,12 @@ def render_rust(specs: list[dict]) -> str:
                     f'width: {field["width"]}, mask: {field["mask"]} '
                     "},"
                 )
+            lines.append("];")
+            lines.append("")
+            lines.append("#[allow(dead_code)]")
+            lines.append(f"pub const {operand_array_name}: &[A64OperandRole] = &[")
+            for role in variant["operand_roles"]:
+                lines.append(f"    {render_operand_role(role, variant['fields'])},")
             lines.append("];")
             lines.append("")
             all_entries.append(
@@ -519,6 +841,7 @@ def render_rust(specs: list[dict]) -> str:
                         mask: {variant["mask"]},
                         value: {variant["value"]},
                         fields: {array_name},
+                        operands: {operand_array_name},
                         asm: {json.dumps(variant["asm"])},
                     }},"""
                 ).rstrip()

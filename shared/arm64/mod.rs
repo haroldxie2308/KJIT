@@ -5,7 +5,7 @@ use crate::shared::trans::cfg::RuntimeExitReason;
 
 mod generated;
 
-pub use generated::{A64EncodeError, A64Insn};
+pub use generated::{A64EncodeError, A64Insn, A64OperandRole, A64RegWidth};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum A64Condition {
