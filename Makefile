@@ -44,10 +44,10 @@ rust-analyzer:
 rustavailable-check:
 	$(KMAKE) rustavailable
 
-prepare: kernel-prepare kernel-build
-	rsync -a --delete shared/ userspace-harness/src/shared/
+prepare: kernel-prepare kernel-build harness-prepare
 
 harness-prepare:
+	rsync -a --delete shared/ userspace-harness/src/shared/
 	cp spec/arm64/generated/a64_subset.rs userspace-harness/src/shared/arm64/generated.rs
 
 kernel-prepare:

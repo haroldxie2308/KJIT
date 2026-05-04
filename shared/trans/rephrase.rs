@@ -59,29 +59,47 @@ pub struct RephrasedBlock {
 pub type RephrasedProgram = SharedVec<RephrasedBlock>;
 
 #[macro_export]
-macro_rules! a64seq {
-    ($out:expr $(,)?) => {{
-        let _ = &$out;
-        (|| -> $crate::shared::platform::SharedResult<(), $crate::shared::platform::SharedAllocError> {
-            Ok(())
-        })()
+macro_rules! a64_syn {
+    ($original_pc:expr $(,)?) => {{
+        let _ = &$original_pc;
+        $crate::shared::platform::SharedVec::new()
     }};
-    ($out:expr, $($insn:expr),+ $(,)?) => {{
-        $crate::a64seq!($out; $crate::shared::platform::GFP_KERNEL, $($insn),+)
-    }};
-    ($out:expr; $flags:expr $(,)?) => {{
-        let _ = &$out;
-        let _ = &$flags;
-        (|| -> $crate::shared::platform::SharedResult<(), $crate::shared::platform::SharedAllocError> {
-            Ok(())
-        })()
-    }};
-    ($out:expr; $flags:expr, $($insn:expr),+ $(,)?) => {{
-        (|| -> $crate::shared::platform::SharedResult<(), $crate::shared::platform::SharedAllocError> {
+    ($original_pc:expr, $($insn:expr),+ $(,)?) => {{
+        (|| -> $crate::shared::platform::SharedResult<
+            $crate::shared::platform::SharedVec<$crate::shared::trans::rephrase::RephrasedInsn>,
+            $crate::shared::platform::SharedAllocError,
+        > {
+            let mut out = $crate::shared::platform::SharedVec::new();
             $(
-                $out.push($insn, $flags)?;
+                out.push(
+                    $crate::shared::trans::rephrase::RephrasedInsn::synthetic($original_pc, $insn),
+                    $crate::shared::platform::GFP_KERNEL,
+                )?;
             )+
-            Ok(())
+            Ok(out)
+        })()
+    }};
+}
+
+#[macro_export]
+macro_rules! a64_ori {
+    ($original_pc:expr $(,)?) => {{
+        let _ = &$original_pc;
+        $crate::shared::platform::SharedVec::new()
+    }};
+    ($original_pc:expr, $($insn:expr),+ $(,)?) => {{
+        (|| -> $crate::shared::platform::SharedResult<
+            $crate::shared::platform::SharedVec<$crate::shared::trans::rephrase::RephrasedInsn>,
+            $crate::shared::platform::SharedAllocError,
+        > {
+            let mut out = $crate::shared::platform::SharedVec::new();
+            $(
+                out.push(
+                    $crate::shared::trans::rephrase::RephrasedInsn::original($original_pc, $insn),
+                    $crate::shared::platform::GFP_KERNEL,
+                )?;
+            )+
+            Ok(out)
         })()
     }};
 }
@@ -105,18 +123,10 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("BL must produce a BL runtime exit reason");
             };
 
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                RET_STATUS_REG,
-                RetStatus::Bl as u64,
-            )?;
+            push_mov_imm64(&mut ret, insn.pc, RET_STATUS_REG, RetStatus::Bl as u64)?;
             push_mov_imm64(&mut ret, insn.pc, RET_PARAM0_REG, target_pc)?;
             push_mov_imm64(&mut ret, insn.pc, RET_PARAM1_REG, resume_pc)?;
-            ret.push(
-                RephrasedInsn::synthetic(insn.pc, A64Insn::BUncondBOnlyBranchImm { imm26: 0 }),
-                GFP_KERNEL,
-            )?;
+            push_branch_to_stub(&mut ret, insn.pc)?;
         }
         A64Insn::BlrBlr64BranchReg { .. } => {
             let Some(RuntimeExitReason::Blr {
@@ -127,14 +137,9 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("BLR must produce a BLR runtime exit reason");
             };
 
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                RET_STATUS_REG,
-                RetStatus::Blr as u64,
-            )?;
-            ret.push(
-                RephrasedInsn::synthetic(
+            push_mov_imm64(&mut ret, insn.pc, RET_STATUS_REG, RetStatus::Blr as u64)?;
+            ret.append(
+                a64_syn!(
                     insn.pc,
                     A64Insn::OrrLogShiftOrr64LogShift {
                         shift: 0,
@@ -142,15 +147,12 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                         imm6: 0,
                         rn: 31,
                         rd: RET_PARAM0_REG,
-                    },
-                ),
+                    }
+                )?,
                 GFP_KERNEL,
             )?;
             push_mov_imm64(&mut ret, insn.pc, RET_PARAM1_REG, resume_pc)?;
-            ret.push(
-                RephrasedInsn::synthetic(insn.pc, A64Insn::BUncondBOnlyBranchImm { imm26: 0 }),
-                GFP_KERNEL,
-            )?;
+            push_branch_to_stub(&mut ret, insn.pc)?;
         }
         A64Insn::BrBr64BranchReg { .. } => {
             let Some(RuntimeExitReason::Br { target_reg }) =
@@ -159,14 +161,9 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("BR must produce a BR runtime exit reason");
             };
 
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                RET_STATUS_REG,
-                RetStatus::Br as u64,
-            )?;
-            ret.push(
-                RephrasedInsn::synthetic(
+            push_mov_imm64(&mut ret, insn.pc, RET_STATUS_REG, RetStatus::Br as u64)?;
+            ret.append(
+                a64_syn!(
                     insn.pc,
                     A64Insn::OrrLogShiftOrr64LogShift {
                         shift: 0,
@@ -174,20 +171,12 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                         imm6: 0,
                         rn: 31,
                         rd: RET_PARAM0_REG,
-                    },
-                ),
+                    }
+                )?,
                 GFP_KERNEL,
             )?;
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                RET_PARAM1_REG,
-                insn.pc.wrapping_add(4),
-            )?;
-            ret.push(
-                RephrasedInsn::synthetic(insn.pc, A64Insn::BUncondBOnlyBranchImm { imm26: 0 }),
-                GFP_KERNEL,
-            )?;
+            push_mov_imm64(&mut ret, insn.pc, RET_PARAM1_REG, insn.pc.wrapping_add(4))?;
+            push_branch_to_stub(&mut ret, insn.pc)?;
         }
         A64Insn::RetRet64rBranchReg { .. } => {
             let Some(RuntimeExitReason::Ret { lr_reg }) = insn.inner.runtime_exit_reason(insn.pc)
@@ -195,14 +184,9 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("RET must produce a RET runtime exit reason");
             };
 
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                RET_STATUS_REG,
-                RetStatus::Ret as u64,
-            )?;
-            ret.push(
-                RephrasedInsn::synthetic(
+            push_mov_imm64(&mut ret, insn.pc, RET_STATUS_REG, RetStatus::Ret as u64)?;
+            ret.append(
+                a64_syn!(
                     insn.pc,
                     A64Insn::OrrLogShiftOrr64LogShift {
                         shift: 0,
@@ -210,20 +194,12 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                         imm6: 0,
                         rn: 31,
                         rd: RET_PARAM0_REG,
-                    },
-                ),
+                    }
+                )?,
                 GFP_KERNEL,
             )?;
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                RET_PARAM1_REG,
-                insn.pc.wrapping_add(4),
-            )?;
-            ret.push(
-                RephrasedInsn::synthetic(insn.pc, A64Insn::BUncondBOnlyBranchImm { imm26: 0 }),
-                GFP_KERNEL,
-            )?;
+            push_mov_imm64(&mut ret, insn.pc, RET_PARAM1_REG, insn.pc.wrapping_add(4))?;
+            push_branch_to_stub(&mut ret, insn.pc)?;
         }
         A64Insn::SvcSvcExException { .. } => {
             let Some(RuntimeExitReason::Svc { resume_pc, .. }) =
@@ -232,14 +208,9 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("SVC must produce an SVC runtime exit reason");
             };
 
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                RET_STATUS_REG,
-                RetStatus::Svc as u64,
-            )?;
-            ret.push(
-                RephrasedInsn::synthetic(
+            push_mov_imm64(&mut ret, insn.pc, RET_STATUS_REG, RetStatus::Svc as u64)?;
+            ret.append(
+                a64_syn!(
                     insn.pc,
                     A64Insn::OrrLogShiftOrr64LogShift {
                         shift: 0,
@@ -247,17 +218,14 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                         imm6: 0,
                         rn: 31,
                         rd: RET_PARAM0_REG,
-                    },
-                ),
+                    }
+                )?,
                 GFP_KERNEL,
             )?;
             push_mov_imm64(&mut ret, insn.pc, RET_PARAM1_REG, resume_pc)?;
-            ret.push(
-                RephrasedInsn::synthetic(insn.pc, A64Insn::BUncondBOnlyBranchImm { imm26: 0 }),
-                GFP_KERNEL,
-            )?;
+            push_branch_to_stub(&mut ret, insn.pc)?;
         }
-        _ => ret.push(RephrasedInsn::original(insn.pc, insn.inner), GFP_KERNEL)?,
+        _ => ret.append(a64_ori!(insn.pc, insn.inner)?, GFP_KERNEL)?,
     }
     Ok(ret)
 }
@@ -268,38 +236,41 @@ fn push_mov_imm64(
     rd: u8,
     value: u64,
 ) -> SharedResult<(), SharedAllocError> {
-    let first = A64Insn::MovzMovz64Movewide {
-        hw: 3,
-        imm16: ((value >> 48) & 0xFFFF) as u16,
-        rd,
-    };
-    a64seq!(
-        out,
-        RephrasedInsn::synthetic(original_pc, first),
-        RephrasedInsn::synthetic(
+    out.append(
+        a64_syn!(
             original_pc,
+            A64Insn::MovzMovz64Movewide {
+                hw: 3,
+                imm16: ((value >> 48) & 0xFFFF) as u16,
+                rd,
+            },
             A64Insn::MovkMovk64Movewide {
                 hw: 2,
                 imm16: ((value >> 32) & 0xFFFF) as u16,
                 rd,
             },
-        ),
-        RephrasedInsn::synthetic(
-            original_pc,
             A64Insn::MovkMovk64Movewide {
                 hw: 1,
                 imm16: ((value >> 16) & 0xFFFF) as u16,
                 rd,
             },
-        ),
-        RephrasedInsn::synthetic(
-            original_pc,
             A64Insn::MovkMovk64Movewide {
                 hw: 0,
                 imm16: (value & 0xFFFF) as u16,
                 rd,
             },
-        ),
+        )?,
+        GFP_KERNEL,
+    )
+}
+
+fn push_branch_to_stub(
+    out: &mut SharedVec<RephrasedInsn>,
+    original_pc: u64,
+) -> SharedResult<(), SharedAllocError> {
+    out.append(
+        a64_syn!(original_pc, A64Insn::BUncondBOnlyBranchImm { imm26: 0 })?,
+        GFP_KERNEL,
     )
 }
 

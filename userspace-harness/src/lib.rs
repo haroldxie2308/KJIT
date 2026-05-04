@@ -53,6 +53,10 @@ impl MockCodeProvider {
 }
 
 impl CodeProvider for MockCodeProvider {
+    fn entry_addr(&self) -> u64 {
+        self.base_pc
+    }
+
     fn read_exact(&self, pc: u64, dst: &mut [u8]) -> Result<(), CodeReadError> {
         let offset = self.offset(pc, dst.len())?;
         dst.copy_from_slice(&self.bytes[offset..offset + dst.len()]);
