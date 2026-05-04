@@ -13,7 +13,7 @@ endif
 
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset \
-	userspace-harness-test userspace-harness-dump-cfg test-asm-pipeline arm64-spec-gen workflow-help
+	userspace-harness-test userspace-harness-dump-cfg test-asm-pipeline arm64-spec-gen arm64-spec-gen-py workflow-help
 
 default:
 	$(KMAKE) M=$$PWD
@@ -82,6 +82,10 @@ test-asm-pipeline:
 	bash ./scripts/run-asm-fixture.sh
 
 arm64-spec-gen:
+	cargo run --manifest-path specgen/Cargo.toml -- --xml-dir "$(ARM64_ISA_XML_DIR)"
+	cp spec/arm64/generated/a64_subset.rs userspace-harness/src/shared/arm64/generated.rs
+
+arm64-spec-gen-py:
 	python3 ./scripts/gen-arm64-spec.py --xml-dir "$(ARM64_ISA_XML_DIR)"
 	cp spec/arm64/generated/a64_subset.rs userspace-harness/src/shared/arm64/generated.rs
 
@@ -96,6 +100,7 @@ workflow-help:
 		'rustavailable-check Check Rust-for-Linux toolchain readiness' \
 		'module-build    Build the KJIT module' \
 		'arm64-spec-gen  Generate the checked-in ARM64 subset tables from the Arm XML bundle' \
+		'arm64-spec-gen-py Generate the ARM64 subset tables using the legacy Python generator' \
 		'userspace-harness-test Run the standalone userspace validation harness tests' \
 		'userspace-harness-dump-cfg Assemble the toy AArch64 fixture and print its basic blocks' \
 		'test-asm-pipeline Run assembly fixture through mock-reader translation comparison' \

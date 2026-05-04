@@ -13,6 +13,13 @@ Generation:
 make arm64-spec-gen
 ```
 
+This uses the Rust `specgen/` CLI. The legacy Python generator remains available
+for parity checks:
+
+```bash
+make arm64-spec-gen-py
+```
+
 By default the generator reads from:
 
 ```text
