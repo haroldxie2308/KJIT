@@ -117,7 +117,7 @@ fn encode_translated_program(program: &TranslatedProgram) -> Result<Vec<u8>, Str
 fn register_snapshot(state: &MachineState, pc: u64) -> RegisterSnapshot {
     let mut x = [0_u64; 31];
     for reg in 0..31 {
-        x[reg] = state.read_reg(reg as u8);
+        x[reg] = state.read_x(reg as u8);
     }
     RegisterSnapshot {
         x,
@@ -130,7 +130,9 @@ fn register_snapshot(state: &MachineState, pc: u64) -> RegisterSnapshot {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::arm64::{A64Condition, A64Insn};
+    use crate::shared::arm64::{
+        A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode, A64RegWidth,
+    };
 
     #[test]
     fn generated_arm64_subset_matches_sample_opcodes() {
@@ -167,25 +169,25 @@ mod tests {
             A64Insn::decode(0x9100_1441),
             Some(A64Insn::AddAddsubImmAdd64AddsubImm {
                 sh: 0,
-                imm12: 5,
-                rn: 2,
-                rd: 1,
+                imm12: A64Imm::unsigned(5, 12),
+                rn: A64Reg::x_sp(2),
+                rd: A64Reg::x_sp(1),
             })
         );
         assert_eq!(
             A64Insn::decode(0xD2A2_4685),
             Some(A64Insn::MovzMovz64Movewide {
                 hw: 1,
-                imm16: 0x1234,
-                rd: 5,
+                imm16: A64Imm::unsigned(0x1234, 16),
+                rd: A64Reg::x(5),
             })
         );
         assert_eq!(
             A64Insn::decode(0xF2D5_79A5),
             Some(A64Insn::MovkMovk64Movewide {
                 hw: 2,
-                imm16: 0xABCD,
-                rd: 5,
+                imm16: A64Imm::unsigned(0xABCD, 16),
+                rd: A64Reg::x(5),
             })
         );
         assert_eq!(
@@ -193,8 +195,8 @@ mod tests {
             Some(A64Insn::TbzTbzOnlyTestbranch {
                 b5: 0,
                 b40: 7,
-                imm14: 0,
-                rt: 6,
+                imm14: A64Imm::scaled_signed(0, 14, 2),
+                rt: A64Reg::new(6, A64RegWidth::Unknown, A64Reg31Mode::Xzr),
             })
         );
         assert_eq!(
@@ -202,24 +204,22 @@ mod tests {
             Some(A64Insn::TbnzTbnzOnlyTestbranch {
                 b5: 1,
                 b40: 1,
-                imm14: 0,
-                rt: 7,
+                imm14: A64Imm::scaled_signed(0, 14, 2),
+                rt: A64Reg::new(7, A64RegWidth::Unknown, A64Reg31Mode::Xzr),
             })
         );
         assert_eq!(
             A64Insn::decode(0xF940_0928),
             Some(A64Insn::LdrImmGenLdr64LdstPos {
-                imm12: 2,
-                rn: 9,
-                rt: 8,
+                rt: A64Reg::x(8),
+                mem: A64Mem::offset(A64Reg::x_sp(9), A64Imm::scaled_unsigned(2, 12, 3)),
             })
         );
         assert_eq!(
             A64Insn::decode(0xF900_0D6A),
             Some(A64Insn::StrImmGenStr64LdstPos {
-                imm12: 3,
-                rn: 11,
-                rt: 10,
+                rt: A64Reg::x(10),
+                mem: A64Mem::offset(A64Reg::x_sp(11), A64Imm::scaled_unsigned(3, 12, 3)),
             })
         );
     }
@@ -233,23 +233,23 @@ mod tests {
         program.extend_from_slice(
             &encode(A64Insn::MovzMovz64Movewide {
                 hw: 0,
-                imm16: 5,
-                rd: 0,
+                imm16: A64Imm::unsigned(5, 16),
+                rd: A64Reg::x(0),
             })
             .to_le_bytes(),
         );
         program.extend_from_slice(
             &encode(A64Insn::SubsAddsubImmSubs64sAddsubImm {
                 sh: 0,
-                imm12: 5,
-                rn: 0,
-                rd: 31,
+                imm12: A64Imm::unsigned(5, 12),
+                rn: A64Reg::x_sp(0),
+                rd: A64Reg::x(31),
             })
             .to_le_bytes(),
         );
         program.extend_from_slice(
             &encode(A64Insn::BCondBOnlyCondbranch {
-                imm19: branch_imm(8, 19),
+                imm19: A64Imm::scaled_signed(branch_imm(8, 19), 19, 2),
                 cond: A64Condition::Eq.bits(),
             })
             .to_le_bytes(),
@@ -257,16 +257,16 @@ mod tests {
         program.extend_from_slice(
             &encode(A64Insn::MovzMovz64Movewide {
                 hw: 0,
-                imm16: 0x1111,
-                rd: 1,
+                imm16: A64Imm::unsigned(0x1111, 16),
+                rd: A64Reg::x(1),
             })
             .to_le_bytes(),
         );
         program.extend_from_slice(
             &encode(A64Insn::MovzMovz64Movewide {
                 hw: 0,
-                imm16: 0x2222,
-                rd: 1,
+                imm16: A64Imm::unsigned(0x2222, 16),
+                rd: A64Reg::x(1),
             })
             .to_le_bytes(),
         );
@@ -314,7 +314,7 @@ mod tests {
         let mut program = Vec::new();
         program.extend_from_slice(
             &encode(A64Insn::BCondBOnlyCondbranch {
-                imm19: branch_imm(12, 19),
+                imm19: A64Imm::scaled_signed(branch_imm(12, 19), 19, 2),
                 cond: A64Condition::Eq.bits(),
             })
             .to_le_bytes(),
@@ -323,7 +323,7 @@ mod tests {
         program.extend_from_slice(&encode(A64Insn::NopNopHiHints {}).to_le_bytes());
         program.extend_from_slice(
             &encode(A64Insn::BUncondBOnlyBranchImm {
-                imm26: branch_imm(-4, 26),
+                imm26: A64Imm::scaled_signed(branch_imm(-4, 26), 26, 2),
             })
             .to_le_bytes(),
         );

@@ -26,7 +26,7 @@ fn main() {
     });
 
     let mut initial_state = MachineState::new();
-    initial_state.write_reg(10, 0x9000);
+    initial_state.write_x(10, 0x9000);
 
     match run_entry_fixture(
         "asm-fixture",

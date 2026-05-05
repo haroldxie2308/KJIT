@@ -30,6 +30,133 @@ pub enum A64RegWidth {
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum A64Reg31Mode {
+    Xzr,
+    Sp,
+    Forbidden,
+    Unknown,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct A64Reg {
+    pub enc: u8,
+    pub width: A64RegWidth,
+    pub reg31: A64Reg31Mode,
+}
+
+#[allow(dead_code)]
+impl A64Reg {
+    pub const fn new(enc: u8, width: A64RegWidth, reg31: A64Reg31Mode) -> Self {
+        Self { enc, width, reg31 }
+    }
+
+    pub const fn x(enc: u8) -> Self {
+        Self::new(enc, A64RegWidth::X64, A64Reg31Mode::Xzr)
+    }
+
+    pub const fn w(enc: u8) -> Self {
+        Self::new(enc, A64RegWidth::W32, A64Reg31Mode::Xzr)
+    }
+
+    pub const fn x_sp(enc: u8) -> Self {
+        Self::new(enc, A64RegWidth::X64, A64Reg31Mode::Sp)
+    }
+
+    pub const fn w_sp(enc: u8) -> Self {
+        Self::new(enc, A64RegWidth::W32, A64Reg31Mode::Sp)
+    }
+
+    pub const fn unknown(enc: u8) -> Self {
+        Self::new(enc, A64RegWidth::Unknown, A64Reg31Mode::Unknown)
+    }
+
+    pub const fn enc(self) -> u8 {
+        self.enc
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct A64Imm {
+    pub raw: u32,
+    pub bits: u8,
+    pub value: i64,
+}
+
+#[allow(dead_code)]
+impl A64Imm {
+    pub const fn new(raw: u32, bits: u8, value: i64) -> Self {
+        Self { raw, bits, value }
+    }
+
+    pub const fn unsigned(raw: u32, bits: u8) -> Self {
+        Self::new(raw, bits, raw as i64)
+    }
+
+    pub const fn signed(raw: u32, bits: u8) -> Self {
+        Self::new(raw, bits, sign_extend_a64(raw, bits))
+    }
+
+    pub const fn scaled_unsigned(raw: u32, bits: u8, scale: u8) -> Self {
+        Self::new(raw, bits, (raw as i64) << scale)
+    }
+
+    pub const fn scaled_signed(raw: u32, bits: u8, scale: u8) -> Self {
+        Self::new(raw, bits, sign_extend_a64(raw, bits) << scale)
+    }
+
+    pub const fn raw(self) -> u32 {
+        self.raw
+    }
+
+    pub const fn value(self) -> i64 {
+        self.value
+    }
+}
+
+const fn sign_extend_a64(value: u32, bits: u8) -> i64 {
+    let shift = 64 - bits as u32;
+    ((value as i64) << shift) >> shift
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum A64Mem {
+    Offset { base: A64Reg, offset: A64Imm },
+    PreIndex { base: A64Reg, offset: A64Imm },
+    PostIndex { base: A64Reg, offset: A64Imm },
+}
+
+#[allow(dead_code)]
+impl A64Mem {
+    pub const fn offset(base: A64Reg, offset: A64Imm) -> Self {
+        Self::Offset { base, offset }
+    }
+
+    pub const fn pre_index(base: A64Reg, offset: A64Imm) -> Self {
+        Self::PreIndex { base, offset }
+    }
+
+    pub const fn post_index(base: A64Reg, offset: A64Imm) -> Self {
+        Self::PostIndex { base, offset }
+    }
+
+    pub const fn base(self) -> A64Reg {
+        match self {
+            Self::Offset { base, .. } | Self::PreIndex { base, .. } | Self::PostIndex { base, .. } => base,
+        }
+    }
+
+    pub const fn offset_imm(self) -> A64Imm {
+        match self {
+            Self::Offset { offset, .. } | Self::PreIndex { offset, .. } | Self::PostIndex { offset, .. } => offset,
+        }
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum A64OperandRole {
     RegRead { field: &'static str, width: A64RegWidth },
     RegWrite { field: &'static str, width: A64RegWidth },
@@ -86,225 +213,207 @@ impl GeneratedInsnSpec {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum A64Insn {
     AdrAdrOnlyPcreladdr {
-        immlo: u8,
-        immhi: u32,
-        rd: u8,
+        immlo: A64Imm,
+        immhi: A64Imm,
+        rd: A64Reg,
     },
     AdrpAdrpOnlyPcreladdr {
-        immlo: u8,
-        immhi: u32,
-        rd: u8,
+        immlo: A64Imm,
+        immhi: A64Imm,
+        rd: A64Reg,
     },
     AddAddsubImmAdd32AddsubImm {
         sh: u8,
-        imm12: u16,
-        rn: u8,
-        rd: u8,
+        imm12: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
     },
     AddAddsubImmAdd64AddsubImm {
         sh: u8,
-        imm12: u16,
-        rn: u8,
-        rd: u8,
+        imm12: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
     },
     SubAddsubImmSub32AddsubImm {
         sh: u8,
-        imm12: u16,
-        rn: u8,
-        rd: u8,
+        imm12: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
     },
     SubAddsubImmSub64AddsubImm {
         sh: u8,
-        imm12: u16,
-        rn: u8,
-        rd: u8,
+        imm12: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
     },
     SubsAddsubImmSubs32sAddsubImm {
         sh: u8,
-        imm12: u16,
-        rn: u8,
-        rd: u8,
+        imm12: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
     },
     SubsAddsubImmSubs64sAddsubImm {
         sh: u8,
-        imm12: u16,
-        rn: u8,
-        rd: u8,
+        imm12: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
     },
     BUncondBOnlyBranchImm {
-        imm26: u32,
+        imm26: A64Imm,
     },
     BCondBOnlyCondbranch {
-        imm19: u32,
+        imm19: A64Imm,
         cond: u8,
     },
     CbzCbz32Compbranch {
-        imm19: u32,
-        rt: u8,
+        imm19: A64Imm,
+        rt: A64Reg,
     },
     CbzCbz64Compbranch {
-        imm19: u32,
-        rt: u8,
+        imm19: A64Imm,
+        rt: A64Reg,
     },
     CbnzCbnz32Compbranch {
-        imm19: u32,
-        rt: u8,
+        imm19: A64Imm,
+        rt: A64Reg,
     },
     CbnzCbnz64Compbranch {
-        imm19: u32,
-        rt: u8,
+        imm19: A64Imm,
+        rt: A64Reg,
     },
     MovzMovz32Movewide {
         hw: u8,
-        imm16: u16,
-        rd: u8,
+        imm16: A64Imm,
+        rd: A64Reg,
     },
     MovzMovz64Movewide {
         hw: u8,
-        imm16: u16,
-        rd: u8,
+        imm16: A64Imm,
+        rd: A64Reg,
     },
     MovkMovk32Movewide {
         hw: u8,
-        imm16: u16,
-        rd: u8,
+        imm16: A64Imm,
+        rd: A64Reg,
     },
     MovkMovk64Movewide {
         hw: u8,
-        imm16: u16,
-        rd: u8,
+        imm16: A64Imm,
+        rd: A64Reg,
     },
     OrrLogShiftOrr64LogShift {
         shift: u8,
-        rm: u8,
-        imm6: u8,
-        rn: u8,
-        rd: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
     },
     TbzTbzOnlyTestbranch {
         b5: u8,
         b40: u8,
-        imm14: u16,
-        rt: u8,
+        imm14: A64Imm,
+        rt: A64Reg,
     },
     TbnzTbnzOnlyTestbranch {
         b5: u8,
         b40: u8,
-        imm14: u16,
-        rt: u8,
+        imm14: A64Imm,
+        rt: A64Reg,
     },
     LdrImmGenLdr32LdstImmpost {
-        imm9: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     LdrImmGenLdr64LdstImmpost {
-        imm9: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     LdrImmGenLdr32LdstImmpre {
-        imm9: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     LdrImmGenLdr64LdstImmpre {
-        imm9: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     LdrImmGenLdr32LdstPos {
-        imm12: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     LdrImmGenLdr64LdstPos {
-        imm12: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     StrImmGenStr32LdstImmpost {
-        imm9: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     StrImmGenStr64LdstImmpost {
-        imm9: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     StrImmGenStr32LdstImmpre {
-        imm9: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     StrImmGenStr64LdstImmpre {
-        imm9: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     StrImmGenStr32LdstPos {
-        imm12: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     StrImmGenStr64LdstPos {
-        imm12: u16,
-        rn: u8,
-        rt: u8,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     LdpGenLdp64LdstpairPost {
-        imm7: u8,
-        rt2: u8,
-        rn: u8,
-        rt: u8,
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     LdpGenLdp64LdstpairPre {
-        imm7: u8,
-        rt2: u8,
-        rn: u8,
-        rt: u8,
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     LdpGenLdp64LdstpairOff {
-        imm7: u8,
-        rt2: u8,
-        rn: u8,
-        rt: u8,
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     StpGenStp64LdstpairPost {
-        imm7: u8,
-        rt2: u8,
-        rn: u8,
-        rt: u8,
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     StpGenStp64LdstpairPre {
-        imm7: u8,
-        rt2: u8,
-        rn: u8,
-        rt: u8,
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     StpGenStp64LdstpairOff {
-        imm7: u8,
-        rt2: u8,
-        rn: u8,
-        rt: u8,
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
     },
     NopNopHiHints {
     },
     BlBlOnlyBranchImm {
-        imm26: u32,
+        imm26: A64Imm,
     },
     BrBr64BranchReg {
-        rn: u8,
+        rn: A64Reg,
     },
     BlrBlr64BranchReg {
-        rn: u8,
+        rn: A64Reg,
     },
     RetRet64rBranchReg {
-        rn: u8,
+        rn: A64Reg,
     },
     SvcSvcExException {
-        imm16: u16,
+        imm16: A64Imm,
     },
 }
 
@@ -529,284 +638,284 @@ impl A64Insn {
         match self {
             Self::AdrAdrOnlyPcreladdr { immlo, immhi, rd } => {
                 let mut word = 0x10000000;
-                word |= encode_a64_field("ADR.ADR_only_pcreladdr", "immlo", immlo as u32, 2, 29)?;
-                word |= encode_a64_field("ADR.ADR_only_pcreladdr", "immhi", immhi as u32, 19, 5)?;
-                word |= encode_a64_field("ADR.ADR_only_pcreladdr", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("ADR.ADR_only_pcreladdr", "immlo", immlo.raw(), 2, 29)?;
+                word |= encode_a64_field("ADR.ADR_only_pcreladdr", "immhi", immhi.raw(), 19, 5)?;
+                word |= encode_a64_field("ADR.ADR_only_pcreladdr", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::AdrpAdrpOnlyPcreladdr { immlo, immhi, rd } => {
                 let mut word = 0x90000000;
-                word |= encode_a64_field("ADRP.ADRP_only_pcreladdr", "immlo", immlo as u32, 2, 29)?;
-                word |= encode_a64_field("ADRP.ADRP_only_pcreladdr", "immhi", immhi as u32, 19, 5)?;
-                word |= encode_a64_field("ADRP.ADRP_only_pcreladdr", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("ADRP.ADRP_only_pcreladdr", "immlo", immlo.raw(), 2, 29)?;
+                word |= encode_a64_field("ADRP.ADRP_only_pcreladdr", "immhi", immhi.raw(), 19, 5)?;
+                word |= encode_a64_field("ADRP.ADRP_only_pcreladdr", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::AddAddsubImmAdd32AddsubImm { sh, imm12, rn, rd } => {
                 let mut word = 0x11000000;
                 word |= encode_a64_field("ADD_addsub_imm.ADD_32_addsub_imm", "sh", sh as u32, 1, 22)?;
-                word |= encode_a64_field("ADD_addsub_imm.ADD_32_addsub_imm", "imm12", imm12 as u32, 12, 10)?;
-                word |= encode_a64_field("ADD_addsub_imm.ADD_32_addsub_imm", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("ADD_addsub_imm.ADD_32_addsub_imm", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("ADD_addsub_imm.ADD_32_addsub_imm", "imm12", imm12.raw(), 12, 10)?;
+                word |= encode_a64_field("ADD_addsub_imm.ADD_32_addsub_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADD_addsub_imm.ADD_32_addsub_imm", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::AddAddsubImmAdd64AddsubImm { sh, imm12, rn, rd } => {
                 let mut word = 0x91000000;
                 word |= encode_a64_field("ADD_addsub_imm.ADD_64_addsub_imm", "sh", sh as u32, 1, 22)?;
-                word |= encode_a64_field("ADD_addsub_imm.ADD_64_addsub_imm", "imm12", imm12 as u32, 12, 10)?;
-                word |= encode_a64_field("ADD_addsub_imm.ADD_64_addsub_imm", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("ADD_addsub_imm.ADD_64_addsub_imm", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("ADD_addsub_imm.ADD_64_addsub_imm", "imm12", imm12.raw(), 12, 10)?;
+                word |= encode_a64_field("ADD_addsub_imm.ADD_64_addsub_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADD_addsub_imm.ADD_64_addsub_imm", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::SubAddsubImmSub32AddsubImm { sh, imm12, rn, rd } => {
                 let mut word = 0x51000000;
                 word |= encode_a64_field("SUB_addsub_imm.SUB_32_addsub_imm", "sh", sh as u32, 1, 22)?;
-                word |= encode_a64_field("SUB_addsub_imm.SUB_32_addsub_imm", "imm12", imm12 as u32, 12, 10)?;
-                word |= encode_a64_field("SUB_addsub_imm.SUB_32_addsub_imm", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("SUB_addsub_imm.SUB_32_addsub_imm", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("SUB_addsub_imm.SUB_32_addsub_imm", "imm12", imm12.raw(), 12, 10)?;
+                word |= encode_a64_field("SUB_addsub_imm.SUB_32_addsub_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUB_addsub_imm.SUB_32_addsub_imm", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::SubAddsubImmSub64AddsubImm { sh, imm12, rn, rd } => {
                 let mut word = 0xd1000000;
                 word |= encode_a64_field("SUB_addsub_imm.SUB_64_addsub_imm", "sh", sh as u32, 1, 22)?;
-                word |= encode_a64_field("SUB_addsub_imm.SUB_64_addsub_imm", "imm12", imm12 as u32, 12, 10)?;
-                word |= encode_a64_field("SUB_addsub_imm.SUB_64_addsub_imm", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("SUB_addsub_imm.SUB_64_addsub_imm", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("SUB_addsub_imm.SUB_64_addsub_imm", "imm12", imm12.raw(), 12, 10)?;
+                word |= encode_a64_field("SUB_addsub_imm.SUB_64_addsub_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUB_addsub_imm.SUB_64_addsub_imm", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::SubsAddsubImmSubs32sAddsubImm { sh, imm12, rn, rd } => {
                 let mut word = 0x71000000;
                 word |= encode_a64_field("SUBS_addsub_imm.SUBS_32S_addsub_imm", "sh", sh as u32, 1, 22)?;
-                word |= encode_a64_field("SUBS_addsub_imm.SUBS_32S_addsub_imm", "imm12", imm12 as u32, 12, 10)?;
-                word |= encode_a64_field("SUBS_addsub_imm.SUBS_32S_addsub_imm", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("SUBS_addsub_imm.SUBS_32S_addsub_imm", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("SUBS_addsub_imm.SUBS_32S_addsub_imm", "imm12", imm12.raw(), 12, 10)?;
+                word |= encode_a64_field("SUBS_addsub_imm.SUBS_32S_addsub_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUBS_addsub_imm.SUBS_32S_addsub_imm", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::SubsAddsubImmSubs64sAddsubImm { sh, imm12, rn, rd } => {
                 let mut word = 0xf1000000;
                 word |= encode_a64_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "sh", sh as u32, 1, 22)?;
-                word |= encode_a64_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "imm12", imm12 as u32, 12, 10)?;
-                word |= encode_a64_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "imm12", imm12.raw(), 12, 10)?;
+                word |= encode_a64_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::BUncondBOnlyBranchImm { imm26 } => {
                 let mut word = 0x14000000;
-                word |= encode_a64_field("B_uncond.B_only_branch_imm", "imm26", imm26 as u32, 26, 0)?;
+                word |= encode_a64_field("B_uncond.B_only_branch_imm", "imm26", imm26.raw(), 26, 0)?;
                 Ok(word)
             }
             Self::BCondBOnlyCondbranch { imm19, cond } => {
                 let mut word = 0x54000000;
-                word |= encode_a64_field("B_cond.B_only_condbranch", "imm19", imm19 as u32, 19, 5)?;
+                word |= encode_a64_field("B_cond.B_only_condbranch", "imm19", imm19.raw(), 19, 5)?;
                 word |= encode_a64_field("B_cond.B_only_condbranch", "cond", cond as u32, 4, 0)?;
                 Ok(word)
             }
             Self::CbzCbz32Compbranch { imm19, rt } => {
                 let mut word = 0x34000000;
-                word |= encode_a64_field("CBZ.CBZ_32_compbranch", "imm19", imm19 as u32, 19, 5)?;
-                word |= encode_a64_field("CBZ.CBZ_32_compbranch", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("CBZ.CBZ_32_compbranch", "imm19", imm19.raw(), 19, 5)?;
+                word |= encode_a64_field("CBZ.CBZ_32_compbranch", "Rt", rt.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::CbzCbz64Compbranch { imm19, rt } => {
                 let mut word = 0xb4000000;
-                word |= encode_a64_field("CBZ.CBZ_64_compbranch", "imm19", imm19 as u32, 19, 5)?;
-                word |= encode_a64_field("CBZ.CBZ_64_compbranch", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("CBZ.CBZ_64_compbranch", "imm19", imm19.raw(), 19, 5)?;
+                word |= encode_a64_field("CBZ.CBZ_64_compbranch", "Rt", rt.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::CbnzCbnz32Compbranch { imm19, rt } => {
                 let mut word = 0x35000000;
-                word |= encode_a64_field("CBNZ.CBNZ_32_compbranch", "imm19", imm19 as u32, 19, 5)?;
-                word |= encode_a64_field("CBNZ.CBNZ_32_compbranch", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("CBNZ.CBNZ_32_compbranch", "imm19", imm19.raw(), 19, 5)?;
+                word |= encode_a64_field("CBNZ.CBNZ_32_compbranch", "Rt", rt.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::CbnzCbnz64Compbranch { imm19, rt } => {
                 let mut word = 0xb5000000;
-                word |= encode_a64_field("CBNZ.CBNZ_64_compbranch", "imm19", imm19 as u32, 19, 5)?;
-                word |= encode_a64_field("CBNZ.CBNZ_64_compbranch", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("CBNZ.CBNZ_64_compbranch", "imm19", imm19.raw(), 19, 5)?;
+                word |= encode_a64_field("CBNZ.CBNZ_64_compbranch", "Rt", rt.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::MovzMovz32Movewide { hw, imm16, rd } => {
                 let mut word = 0x52800000;
                 word |= encode_a64_field("MOVZ.MOVZ_32_movewide", "hw", hw as u32, 2, 21)?;
-                word |= encode_a64_field("MOVZ.MOVZ_32_movewide", "imm16", imm16 as u32, 16, 5)?;
-                word |= encode_a64_field("MOVZ.MOVZ_32_movewide", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("MOVZ.MOVZ_32_movewide", "imm16", imm16.raw(), 16, 5)?;
+                word |= encode_a64_field("MOVZ.MOVZ_32_movewide", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::MovzMovz64Movewide { hw, imm16, rd } => {
                 let mut word = 0xd2800000;
                 word |= encode_a64_field("MOVZ.MOVZ_64_movewide", "hw", hw as u32, 2, 21)?;
-                word |= encode_a64_field("MOVZ.MOVZ_64_movewide", "imm16", imm16 as u32, 16, 5)?;
-                word |= encode_a64_field("MOVZ.MOVZ_64_movewide", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("MOVZ.MOVZ_64_movewide", "imm16", imm16.raw(), 16, 5)?;
+                word |= encode_a64_field("MOVZ.MOVZ_64_movewide", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::MovkMovk32Movewide { hw, imm16, rd } => {
                 let mut word = 0x72800000;
                 word |= encode_a64_field("MOVK.MOVK_32_movewide", "hw", hw as u32, 2, 21)?;
-                word |= encode_a64_field("MOVK.MOVK_32_movewide", "imm16", imm16 as u32, 16, 5)?;
-                word |= encode_a64_field("MOVK.MOVK_32_movewide", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("MOVK.MOVK_32_movewide", "imm16", imm16.raw(), 16, 5)?;
+                word |= encode_a64_field("MOVK.MOVK_32_movewide", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::MovkMovk64Movewide { hw, imm16, rd } => {
                 let mut word = 0xf2800000;
                 word |= encode_a64_field("MOVK.MOVK_64_movewide", "hw", hw as u32, 2, 21)?;
-                word |= encode_a64_field("MOVK.MOVK_64_movewide", "imm16", imm16 as u32, 16, 5)?;
-                word |= encode_a64_field("MOVK.MOVK_64_movewide", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("MOVK.MOVK_64_movewide", "imm16", imm16.raw(), 16, 5)?;
+                word |= encode_a64_field("MOVK.MOVK_64_movewide", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::OrrLogShiftOrr64LogShift { shift, rm, imm6, rn, rd } => {
                 let mut word = 0xaa000000;
                 word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "shift", shift as u32, 2, 22)?;
-                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rm", rm as u32, 5, 16)?;
-                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "imm6", imm6 as u32, 6, 10)?;
-                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rd", rd as u32, 5, 0)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::TbzTbzOnlyTestbranch { b5, b40, imm14, rt } => {
                 let mut word = 0x36000000;
                 word |= encode_a64_field("TBZ.TBZ_only_testbranch", "b5", b5 as u32, 1, 31)?;
                 word |= encode_a64_field("TBZ.TBZ_only_testbranch", "b40", b40 as u32, 5, 19)?;
-                word |= encode_a64_field("TBZ.TBZ_only_testbranch", "imm14", imm14 as u32, 14, 5)?;
-                word |= encode_a64_field("TBZ.TBZ_only_testbranch", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("TBZ.TBZ_only_testbranch", "imm14", imm14.raw(), 14, 5)?;
+                word |= encode_a64_field("TBZ.TBZ_only_testbranch", "Rt", rt.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::TbnzTbnzOnlyTestbranch { b5, b40, imm14, rt } => {
                 let mut word = 0x37000000;
                 word |= encode_a64_field("TBNZ.TBNZ_only_testbranch", "b5", b5 as u32, 1, 31)?;
                 word |= encode_a64_field("TBNZ.TBNZ_only_testbranch", "b40", b40 as u32, 5, 19)?;
-                word |= encode_a64_field("TBNZ.TBNZ_only_testbranch", "imm14", imm14 as u32, 14, 5)?;
-                word |= encode_a64_field("TBNZ.TBNZ_only_testbranch", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("TBNZ.TBNZ_only_testbranch", "imm14", imm14.raw(), 14, 5)?;
+                word |= encode_a64_field("TBNZ.TBNZ_only_testbranch", "Rt", rt.enc() as u32, 5, 0)?;
                 Ok(word)
             }
-            Self::LdrImmGenLdr32LdstImmpost { imm9, rn, rt } => {
+            Self::LdrImmGenLdr32LdstImmpost { rt, mem } => {
                 let mut word = 0xb8400400;
-                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpost", "imm9", imm9 as u32, 9, 12)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpost", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpost", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
                 Ok(word)
             }
-            Self::LdrImmGenLdr64LdstImmpost { imm9, rn, rt } => {
+            Self::LdrImmGenLdr64LdstImmpost { rt, mem } => {
                 let mut word = 0xf8400400;
-                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpost", "imm9", imm9 as u32, 9, 12)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpost", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpost", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
                 Ok(word)
             }
-            Self::LdrImmGenLdr32LdstImmpre { imm9, rn, rt } => {
+            Self::LdrImmGenLdr32LdstImmpre { rt, mem } => {
                 let mut word = 0xb8400c00;
-                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpre", "imm9", imm9 as u32, 9, 12)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpre", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpre", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
                 Ok(word)
             }
-            Self::LdrImmGenLdr64LdstImmpre { imm9, rn, rt } => {
+            Self::LdrImmGenLdr64LdstImmpre { rt, mem } => {
                 let mut word = 0xf8400c00;
-                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpre", "imm9", imm9 as u32, 9, 12)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpre", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpre", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
                 Ok(word)
             }
-            Self::LdrImmGenLdr32LdstPos { imm12, rn, rt } => {
+            Self::LdrImmGenLdr32LdstPos { rt, mem } => {
                 let mut word = 0xb9400000;
-                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_pos", "imm12", imm12 as u32, 12, 10)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_pos", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_pos", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_32_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
                 Ok(word)
             }
-            Self::LdrImmGenLdr64LdstPos { imm12, rn, rt } => {
+            Self::LdrImmGenLdr64LdstPos { rt, mem } => {
                 let mut word = 0xf9400000;
-                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_pos", "imm12", imm12 as u32, 12, 10)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_pos", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_pos", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_imm_gen.LDR_64_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
                 Ok(word)
             }
-            Self::StrImmGenStr32LdstImmpost { imm9, rn, rt } => {
+            Self::StrImmGenStr32LdstImmpost { rt, mem } => {
                 let mut word = 0xb8000400;
-                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpost", "imm9", imm9 as u32, 9, 12)?;
-                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpost", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpost", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
                 Ok(word)
             }
-            Self::StrImmGenStr64LdstImmpost { imm9, rn, rt } => {
+            Self::StrImmGenStr64LdstImmpost { rt, mem } => {
                 let mut word = 0xf8000400;
-                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpost", "imm9", imm9 as u32, 9, 12)?;
-                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpost", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpost", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
                 Ok(word)
             }
-            Self::StrImmGenStr32LdstImmpre { imm9, rn, rt } => {
+            Self::StrImmGenStr32LdstImmpre { rt, mem } => {
                 let mut word = 0xb8000c00;
-                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpre", "imm9", imm9 as u32, 9, 12)?;
-                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpre", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpre", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
                 Ok(word)
             }
-            Self::StrImmGenStr64LdstImmpre { imm9, rn, rt } => {
+            Self::StrImmGenStr64LdstImmpre { rt, mem } => {
                 let mut word = 0xf8000c00;
-                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpre", "imm9", imm9 as u32, 9, 12)?;
-                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpre", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpre", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
                 Ok(word)
             }
-            Self::StrImmGenStr32LdstPos { imm12, rn, rt } => {
+            Self::StrImmGenStr32LdstPos { rt, mem } => {
                 let mut word = 0xb9000000;
-                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_pos", "imm12", imm12 as u32, 12, 10)?;
-                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_pos", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_pos", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_imm_gen.STR_32_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
                 Ok(word)
             }
-            Self::StrImmGenStr64LdstPos { imm12, rn, rt } => {
+            Self::StrImmGenStr64LdstPos { rt, mem } => {
                 let mut word = 0xf9000000;
-                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_pos", "imm12", imm12 as u32, 12, 10)?;
-                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_pos", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_pos", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_imm_gen.STR_64_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
                 Ok(word)
             }
-            Self::LdpGenLdp64LdstpairPost { imm7, rt2, rn, rt } => {
+            Self::LdpGenLdp64LdstpairPost { rt2, rt, mem } => {
                 let mut word = 0xa8c00000;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "imm7", imm7 as u32, 7, 15)?;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rt2", rt2 as u32, 5, 10)?;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
-            Self::LdpGenLdp64LdstpairPre { imm7, rt2, rn, rt } => {
+            Self::LdpGenLdp64LdstpairPre { rt2, rt, mem } => {
                 let mut word = 0xa9c00000;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "imm7", imm7 as u32, 7, 15)?;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "Rt2", rt2 as u32, 5, 10)?;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
-            Self::LdpGenLdp64LdstpairOff { imm7, rt2, rn, rt } => {
+            Self::LdpGenLdp64LdstpairOff { rt2, rt, mem } => {
                 let mut word = 0xa9400000;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "imm7", imm7 as u32, 7, 15)?;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rt2", rt2 as u32, 5, 10)?;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
-            Self::StpGenStp64LdstpairPost { imm7, rt2, rn, rt } => {
+            Self::StpGenStp64LdstpairPost { rt2, rt, mem } => {
                 let mut word = 0xa8800000;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "imm7", imm7 as u32, 7, 15)?;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "Rt2", rt2 as u32, 5, 10)?;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
-            Self::StpGenStp64LdstpairPre { imm7, rt2, rn, rt } => {
+            Self::StpGenStp64LdstpairPre { rt2, rt, mem } => {
                 let mut word = 0xa9800000;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "imm7", imm7 as u32, 7, 15)?;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "Rt2", rt2 as u32, 5, 10)?;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
-            Self::StpGenStp64LdstpairOff { imm7, rt2, rn, rt } => {
+            Self::StpGenStp64LdstpairOff { rt2, rt, mem } => {
                 let mut word = 0xa9000000;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "imm7", imm7 as u32, 7, 15)?;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rt2", rt2 as u32, 5, 10)?;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rn", rn as u32, 5, 5)?;
-                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rt", rt as u32, 5, 0)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
             Self::NopNopHiHints { } => {
@@ -815,27 +924,27 @@ impl A64Insn {
             }
             Self::BlBlOnlyBranchImm { imm26 } => {
                 let mut word = 0x94000000;
-                word |= encode_a64_field("BL.BL_only_branch_imm", "imm26", imm26 as u32, 26, 0)?;
+                word |= encode_a64_field("BL.BL_only_branch_imm", "imm26", imm26.raw(), 26, 0)?;
                 Ok(word)
             }
             Self::BrBr64BranchReg { rn } => {
                 let mut word = 0xd61f0000;
-                word |= encode_a64_field("BR.BR_64_branch_reg", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("BR.BR_64_branch_reg", "Rn", rn.enc() as u32, 5, 5)?;
                 Ok(word)
             }
             Self::BlrBlr64BranchReg { rn } => {
                 let mut word = 0xd63f0000;
-                word |= encode_a64_field("BLR.BLR_64_branch_reg", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("BLR.BLR_64_branch_reg", "Rn", rn.enc() as u32, 5, 5)?;
                 Ok(word)
             }
             Self::RetRet64rBranchReg { rn } => {
                 let mut word = 0xd65f0000;
-                word |= encode_a64_field("RET.RET_64R_branch_reg", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("RET.RET_64R_branch_reg", "Rn", rn.enc() as u32, 5, 5)?;
                 Ok(word)
             }
             Self::SvcSvcExException { imm16 } => {
                 let mut word = 0xd4000001;
-                word |= encode_a64_field("SVC.SVC_EX_exception", "imm16", imm16 as u32, 16, 5)?;
+                word |= encode_a64_field("SVC.SVC_EX_exception", "imm16", imm16.raw(), 16, 5)?;
                 Ok(word)
             }
         }
@@ -843,15 +952,15 @@ impl A64Insn {
 
     pub fn branch_target_imm(&self, field: &'static str) -> Option<u32> {
         match self {
-            Self::BUncondBOnlyBranchImm { imm26, .. } if field == "imm26" => Some(*imm26 as u32),
-            Self::BCondBOnlyCondbranch { imm19, .. } if field == "imm19" => Some(*imm19 as u32),
-            Self::CbzCbz32Compbranch { imm19, .. } if field == "imm19" => Some(*imm19 as u32),
-            Self::CbzCbz64Compbranch { imm19, .. } if field == "imm19" => Some(*imm19 as u32),
-            Self::CbnzCbnz32Compbranch { imm19, .. } if field == "imm19" => Some(*imm19 as u32),
-            Self::CbnzCbnz64Compbranch { imm19, .. } if field == "imm19" => Some(*imm19 as u32),
-            Self::TbzTbzOnlyTestbranch { imm14, .. } if field == "imm14" => Some(*imm14 as u32),
-            Self::TbnzTbnzOnlyTestbranch { imm14, .. } if field == "imm14" => Some(*imm14 as u32),
-            Self::BlBlOnlyBranchImm { imm26, .. } if field == "imm26" => Some(*imm26 as u32),
+            Self::BUncondBOnlyBranchImm { imm26, .. } if field == "imm26" => Some(imm26.raw()),
+            Self::BCondBOnlyCondbranch { imm19, .. } if field == "imm19" => Some(imm19.raw()),
+            Self::CbzCbz32Compbranch { imm19, .. } if field == "imm19" => Some(imm19.raw()),
+            Self::CbzCbz64Compbranch { imm19, .. } if field == "imm19" => Some(imm19.raw()),
+            Self::CbnzCbnz32Compbranch { imm19, .. } if field == "imm19" => Some(imm19.raw()),
+            Self::CbnzCbnz64Compbranch { imm19, .. } if field == "imm19" => Some(imm19.raw()),
+            Self::TbzTbzOnlyTestbranch { imm14, .. } if field == "imm14" => Some(imm14.raw()),
+            Self::TbnzTbnzOnlyTestbranch { imm14, .. } if field == "imm14" => Some(imm14.raw()),
+            Self::BlBlOnlyBranchImm { imm26, .. } if field == "imm26" => Some(imm26.raw()),
             _ => None,
         }
     }
@@ -865,39 +974,39 @@ impl A64Insn {
         match self {
             Self::BUncondBOnlyBranchImm { .. } if field == "imm26" => {
                 validate_a64_rewrite_field("B_uncond.B_only_branch_imm", "imm26", encoded, 26)?;
-                Ok(Self::BUncondBOnlyBranchImm { imm26: encoded as u32 })
+                Ok(Self::BUncondBOnlyBranchImm { imm26: A64Imm::scaled_signed(encoded, 26, 2) })
             }
             Self::BCondBOnlyCondbranch { cond, .. } if field == "imm19" => {
                 validate_a64_rewrite_field("B_cond.B_only_condbranch", "imm19", encoded, 19)?;
-                Ok(Self::BCondBOnlyCondbranch { imm19: encoded as u32, cond })
+                Ok(Self::BCondBOnlyCondbranch { imm19: A64Imm::scaled_signed(encoded, 19, 2), cond })
             }
             Self::CbzCbz32Compbranch { rt, .. } if field == "imm19" => {
                 validate_a64_rewrite_field("CBZ.CBZ_32_compbranch", "imm19", encoded, 19)?;
-                Ok(Self::CbzCbz32Compbranch { imm19: encoded as u32, rt })
+                Ok(Self::CbzCbz32Compbranch { imm19: A64Imm::scaled_signed(encoded, 19, 2), rt })
             }
             Self::CbzCbz64Compbranch { rt, .. } if field == "imm19" => {
                 validate_a64_rewrite_field("CBZ.CBZ_64_compbranch", "imm19", encoded, 19)?;
-                Ok(Self::CbzCbz64Compbranch { imm19: encoded as u32, rt })
+                Ok(Self::CbzCbz64Compbranch { imm19: A64Imm::scaled_signed(encoded, 19, 2), rt })
             }
             Self::CbnzCbnz32Compbranch { rt, .. } if field == "imm19" => {
                 validate_a64_rewrite_field("CBNZ.CBNZ_32_compbranch", "imm19", encoded, 19)?;
-                Ok(Self::CbnzCbnz32Compbranch { imm19: encoded as u32, rt })
+                Ok(Self::CbnzCbnz32Compbranch { imm19: A64Imm::scaled_signed(encoded, 19, 2), rt })
             }
             Self::CbnzCbnz64Compbranch { rt, .. } if field == "imm19" => {
                 validate_a64_rewrite_field("CBNZ.CBNZ_64_compbranch", "imm19", encoded, 19)?;
-                Ok(Self::CbnzCbnz64Compbranch { imm19: encoded as u32, rt })
+                Ok(Self::CbnzCbnz64Compbranch { imm19: A64Imm::scaled_signed(encoded, 19, 2), rt })
             }
             Self::TbzTbzOnlyTestbranch { b5, b40, rt, .. } if field == "imm14" => {
                 validate_a64_rewrite_field("TBZ.TBZ_only_testbranch", "imm14", encoded, 14)?;
-                Ok(Self::TbzTbzOnlyTestbranch { b5, b40, imm14: encoded as u16, rt })
+                Ok(Self::TbzTbzOnlyTestbranch { b5, b40, imm14: A64Imm::scaled_signed(encoded, 14, 2), rt })
             }
             Self::TbnzTbnzOnlyTestbranch { b5, b40, rt, .. } if field == "imm14" => {
                 validate_a64_rewrite_field("TBNZ.TBNZ_only_testbranch", "imm14", encoded, 14)?;
-                Ok(Self::TbnzTbnzOnlyTestbranch { b5, b40, imm14: encoded as u16, rt })
+                Ok(Self::TbnzTbnzOnlyTestbranch { b5, b40, imm14: A64Imm::scaled_signed(encoded, 14, 2), rt })
             }
             Self::BlBlOnlyBranchImm { .. } if field == "imm26" => {
                 validate_a64_rewrite_field("BL.BL_only_branch_imm", "imm26", encoded, 26)?;
-                Ok(Self::BlBlOnlyBranchImm { imm26: encoded as u32 })
+                Ok(Self::BlBlOnlyBranchImm { imm26: A64Imm::scaled_signed(encoded, 26, 2) })
             }
             _ => Err(A64RewriteError::UnsupportedField {
                 insn: insn_key,
@@ -961,284 +1070,266 @@ impl A64Insn {
 pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
     if (word & 0x9f000000) == 0x10000000 {
         return Some(A64Insn::AdrAdrOnlyPcreladdr {
-            immlo: ((word & 0x60000000) >> 29) as u8,
-            immhi: ((word & 0x00ffffe0) >> 5) as u32,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            immlo: A64Imm::unsigned(((word & 0x60000000) >> 29) as u32, 2),
+            immhi: A64Imm::unsigned(((word & 0x00ffffe0) >> 5) as u32, 19),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0x9f000000) == 0x90000000 {
         return Some(A64Insn::AdrpAdrpOnlyPcreladdr {
-            immlo: ((word & 0x60000000) >> 29) as u8,
-            immhi: ((word & 0x00ffffe0) >> 5) as u32,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            immlo: A64Imm::unsigned(((word & 0x60000000) >> 29) as u32, 2),
+            immhi: A64Imm::unsigned(((word & 0x00ffffe0) >> 5) as u32, 19),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xff800000) == 0x11000000 {
         return Some(A64Insn::AddAddsubImmAdd32AddsubImm {
             sh: ((word & 0x00400000) >> 22) as u8,
-            imm12: ((word & 0x003ffc00) >> 10) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            imm12: A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
         });
     }
     if (word & 0xff800000) == 0x91000000 {
         return Some(A64Insn::AddAddsubImmAdd64AddsubImm {
             sh: ((word & 0x00400000) >> 22) as u8,
-            imm12: ((word & 0x003ffc00) >> 10) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            imm12: A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
         });
     }
     if (word & 0xff800000) == 0x51000000 {
         return Some(A64Insn::SubAddsubImmSub32AddsubImm {
             sh: ((word & 0x00400000) >> 22) as u8,
-            imm12: ((word & 0x003ffc00) >> 10) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            imm12: A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
         });
     }
     if (word & 0xff800000) == 0xd1000000 {
         return Some(A64Insn::SubAddsubImmSub64AddsubImm {
             sh: ((word & 0x00400000) >> 22) as u8,
-            imm12: ((word & 0x003ffc00) >> 10) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            imm12: A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
         });
     }
     if (word & 0xff800000) == 0x71000000 {
         return Some(A64Insn::SubsAddsubImmSubs32sAddsubImm {
             sh: ((word & 0x00400000) >> 22) as u8,
-            imm12: ((word & 0x003ffc00) >> 10) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            imm12: A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xff800000) == 0xf1000000 {
         return Some(A64Insn::SubsAddsubImmSubs64sAddsubImm {
             sh: ((word & 0x00400000) >> 22) as u8,
-            imm12: ((word & 0x003ffc00) >> 10) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            imm12: A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xfc000000) == 0x14000000 {
         return Some(A64Insn::BUncondBOnlyBranchImm {
-            imm26: ((word & 0x03ffffff) >> 0) as u32,
+            imm26: A64Imm::scaled_signed(((word & 0x03ffffff) >> 0) as u32, 26, 2),
         });
     }
     if (word & 0xff000010) == 0x54000000 {
         return Some(A64Insn::BCondBOnlyCondbranch {
-            imm19: ((word & 0x00ffffe0) >> 5) as u32,
+            imm19: A64Imm::scaled_signed(((word & 0x00ffffe0) >> 5) as u32, 19, 2),
             cond: ((word & 0x0000000f) >> 0) as u8,
         });
     }
     if (word & 0xff000000) == 0x34000000 {
         return Some(A64Insn::CbzCbz32Compbranch {
-            imm19: ((word & 0x00ffffe0) >> 5) as u32,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            imm19: A64Imm::scaled_signed(((word & 0x00ffffe0) >> 5) as u32, 19, 2),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xff000000) == 0xb4000000 {
         return Some(A64Insn::CbzCbz64Compbranch {
-            imm19: ((word & 0x00ffffe0) >> 5) as u32,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            imm19: A64Imm::scaled_signed(((word & 0x00ffffe0) >> 5) as u32, 19, 2),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xff000000) == 0x35000000 {
         return Some(A64Insn::CbnzCbnz32Compbranch {
-            imm19: ((word & 0x00ffffe0) >> 5) as u32,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            imm19: A64Imm::scaled_signed(((word & 0x00ffffe0) >> 5) as u32, 19, 2),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xff000000) == 0xb5000000 {
         return Some(A64Insn::CbnzCbnz64Compbranch {
-            imm19: ((word & 0x00ffffe0) >> 5) as u32,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            imm19: A64Imm::scaled_signed(((word & 0x00ffffe0) >> 5) as u32, 19, 2),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xffc00000) == 0x52800000 {
         return Some(A64Insn::MovzMovz32Movewide {
             hw: ((word & 0x00600000) >> 21) as u8,
-            imm16: ((word & 0x001fffe0) >> 5) as u16,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            imm16: A64Imm::unsigned(((word & 0x001fffe0) >> 5) as u32, 16),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xff800000) == 0xd2800000 {
         return Some(A64Insn::MovzMovz64Movewide {
             hw: ((word & 0x00600000) >> 21) as u8,
-            imm16: ((word & 0x001fffe0) >> 5) as u16,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            imm16: A64Imm::unsigned(((word & 0x001fffe0) >> 5) as u32, 16),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xffc00000) == 0x72800000 {
         return Some(A64Insn::MovkMovk32Movewide {
             hw: ((word & 0x00600000) >> 21) as u8,
-            imm16: ((word & 0x001fffe0) >> 5) as u16,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            imm16: A64Imm::unsigned(((word & 0x001fffe0) >> 5) as u32, 16),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xff800000) == 0xf2800000 {
         return Some(A64Insn::MovkMovk64Movewide {
             hw: ((word & 0x00600000) >> 21) as u8,
-            imm16: ((word & 0x001fffe0) >> 5) as u16,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            imm16: A64Imm::unsigned(((word & 0x001fffe0) >> 5) as u32, 16),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xff200000) == 0xaa000000 {
         return Some(A64Insn::OrrLogShiftOrr64LogShift {
             shift: ((word & 0x00c00000) >> 22) as u8,
-            rm: ((word & 0x001f0000) >> 16) as u8,
-            imm6: ((word & 0x0000fc00) >> 10) as u8,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rd: ((word & 0x0000001f) >> 0) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0x7f000000) == 0x36000000 {
         return Some(A64Insn::TbzTbzOnlyTestbranch {
             b5: ((word & 0x80000000) >> 31) as u8,
             b40: ((word & 0x00f80000) >> 19) as u8,
-            imm14: ((word & 0x0007ffe0) >> 5) as u16,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            imm14: A64Imm::scaled_signed(((word & 0x0007ffe0) >> 5) as u32, 14, 2),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::Unknown, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0x7f000000) == 0x37000000 {
         return Some(A64Insn::TbnzTbnzOnlyTestbranch {
             b5: ((word & 0x80000000) >> 31) as u8,
             b40: ((word & 0x00f80000) >> 19) as u8,
-            imm14: ((word & 0x0007ffe0) >> 5) as u16,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            imm14: A64Imm::scaled_signed(((word & 0x0007ffe0) >> 5) as u32, 14, 2),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::Unknown, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xffe00c00) == 0xb8400400 {
         return Some(A64Insn::LdrImmGenLdr32LdstImmpost {
-            imm9: ((word & 0x001ff000) >> 12) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
         });
     }
     if (word & 0xffe00c00) == 0xf8400400 {
         return Some(A64Insn::LdrImmGenLdr64LdstImmpost {
-            imm9: ((word & 0x001ff000) >> 12) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
         });
     }
     if (word & 0xffe00c00) == 0xb8400c00 {
         return Some(A64Insn::LdrImmGenLdr32LdstImmpre {
-            imm9: ((word & 0x001ff000) >> 12) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
         });
     }
     if (word & 0xffe00c00) == 0xf8400c00 {
         return Some(A64Insn::LdrImmGenLdr64LdstImmpre {
-            imm9: ((word & 0x001ff000) >> 12) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
         });
     }
     if (word & 0xffc00000) == 0xb9400000 {
         return Some(A64Insn::LdrImmGenLdr32LdstPos {
-            imm12: ((word & 0x003ffc00) >> 10) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_unsigned(((word & 0x003ffc00) >> 10) as u32, 12, 2)),
         });
     }
     if (word & 0xffc00000) == 0xf9400000 {
         return Some(A64Insn::LdrImmGenLdr64LdstPos {
-            imm12: ((word & 0x003ffc00) >> 10) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_unsigned(((word & 0x003ffc00) >> 10) as u32, 12, 3)),
         });
     }
     if (word & 0xffe00c00) == 0xb8000400 {
         return Some(A64Insn::StrImmGenStr32LdstImmpost {
-            imm9: ((word & 0x001ff000) >> 12) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
         });
     }
     if (word & 0xffe00c00) == 0xf8000400 {
         return Some(A64Insn::StrImmGenStr64LdstImmpost {
-            imm9: ((word & 0x001ff000) >> 12) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
         });
     }
     if (word & 0xffe00c00) == 0xb8000c00 {
         return Some(A64Insn::StrImmGenStr32LdstImmpre {
-            imm9: ((word & 0x001ff000) >> 12) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
         });
     }
     if (word & 0xffe00c00) == 0xf8000c00 {
         return Some(A64Insn::StrImmGenStr64LdstImmpre {
-            imm9: ((word & 0x001ff000) >> 12) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
         });
     }
     if (word & 0xffc00000) == 0xb9000000 {
         return Some(A64Insn::StrImmGenStr32LdstPos {
-            imm12: ((word & 0x003ffc00) >> 10) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_unsigned(((word & 0x003ffc00) >> 10) as u32, 12, 2)),
         });
     }
     if (word & 0xffc00000) == 0xf9000000 {
         return Some(A64Insn::StrImmGenStr64LdstPos {
-            imm12: ((word & 0x003ffc00) >> 10) as u16,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_unsigned(((word & 0x003ffc00) >> 10) as u32, 12, 3)),
         });
     }
     if (word & 0xffc00000) == 0xa8c00000 {
         return Some(A64Insn::LdpGenLdp64LdstpairPost {
-            imm7: ((word & 0x003f8000) >> 15) as u8,
-            rt2: ((word & 0x00007c00) >> 10) as u8,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
         });
     }
     if (word & 0xffc00000) == 0xa9c00000 {
         return Some(A64Insn::LdpGenLdp64LdstpairPre {
-            imm7: ((word & 0x003f8000) >> 15) as u8,
-            rt2: ((word & 0x00007c00) >> 10) as u8,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
         });
     }
     if (word & 0xffc00000) == 0xa9400000 {
         return Some(A64Insn::LdpGenLdp64LdstpairOff {
-            imm7: ((word & 0x003f8000) >> 15) as u8,
-            rt2: ((word & 0x00007c00) >> 10) as u8,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
         });
     }
     if (word & 0xffc00000) == 0xa8800000 {
         return Some(A64Insn::StpGenStp64LdstpairPost {
-            imm7: ((word & 0x003f8000) >> 15) as u8,
-            rt2: ((word & 0x00007c00) >> 10) as u8,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
         });
     }
     if (word & 0xffc00000) == 0xa9800000 {
         return Some(A64Insn::StpGenStp64LdstpairPre {
-            imm7: ((word & 0x003f8000) >> 15) as u8,
-            rt2: ((word & 0x00007c00) >> 10) as u8,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
         });
     }
     if (word & 0xffc00000) == 0xa9000000 {
         return Some(A64Insn::StpGenStp64LdstpairOff {
-            imm7: ((word & 0x003f8000) >> 15) as u8,
-            rt2: ((word & 0x00007c00) >> 10) as u8,
-            rn: ((word & 0x000003e0) >> 5) as u8,
-            rt: ((word & 0x0000001f) >> 0) as u8,
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
         });
     }
     if (word & 0xffffffff) == 0xd503201f {
@@ -1246,27 +1337,27 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
     }
     if (word & 0xfc000000) == 0x94000000 {
         return Some(A64Insn::BlBlOnlyBranchImm {
-            imm26: ((word & 0x03ffffff) >> 0) as u32,
+            imm26: A64Imm::scaled_signed(((word & 0x03ffffff) >> 0) as u32, 26, 2),
         });
     }
     if (word & 0xfffffc1f) == 0xd61f0000 {
         return Some(A64Insn::BrBr64BranchReg {
-            rn: ((word & 0x000003e0) >> 5) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xfffffc1f) == 0xd63f0000 {
         return Some(A64Insn::BlrBlr64BranchReg {
-            rn: ((word & 0x000003e0) >> 5) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xfffffc1f) == 0xd65f0000 {
         return Some(A64Insn::RetRet64rBranchReg {
-            rn: ((word & 0x000003e0) >> 5) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xffe0001f) == 0xd4000001 {
         return Some(A64Insn::SvcSvcExException {
-            imm16: ((word & 0x001fffe0) >> 5) as u16,
+            imm16: A64Imm::unsigned(((word & 0x001fffe0) >> 5) as u32, 16),
         });
     }
     None

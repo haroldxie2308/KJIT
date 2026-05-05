@@ -5,7 +5,10 @@ use crate::shared::trans::cfg::RuntimeExitReason;
 
 mod generated;
 
-pub use generated::{A64EncodeError, A64Insn, A64OperandRole, A64RegWidth, A64RewriteError};
+pub use generated::{
+    A64EncodeError, A64Imm, A64Insn, A64Mem, A64OperandRole, A64Reg, A64Reg31Mode, A64RegWidth,
+    A64RewriteError,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum A64Condition {
@@ -73,11 +76,11 @@ impl A64Insn {
     pub fn pc_relative_address(self, pc: u64) -> Option<u64> {
         match self {
             Self::AdrAdrOnlyPcreladdr { immlo, immhi, .. } => {
-                let imm = (immhi << 2) | u32::from(immlo);
+                let imm = (immhi.raw() << 2) | immlo.raw();
                 Some(pc.wrapping_add_signed(sign_extend(imm, 21)))
             }
             Self::AdrpAdrpOnlyPcreladdr { immlo, immhi, .. } => {
-                let imm = (immhi << 2) | u32::from(immlo);
+                let imm = (immhi.raw() << 2) | immlo.raw();
                 let page_pc = pc & !0xFFF;
                 Some(page_pc.wrapping_add_signed(sign_extend(imm, 21) << 12))
             }
@@ -92,10 +95,10 @@ impl A64Insn {
         }
     }
 
-    pub const fn add_sub_imm(sh: u8, imm12: u16) -> Option<u64> {
+    pub const fn add_sub_imm(sh: u8, imm12: A64Imm) -> Option<u64> {
         match sh {
-            0 => Some(imm12 as u64),
-            1 => Some((imm12 as u64) << 12),
+            0 => Some(imm12.raw() as u64),
+            1 => Some((imm12.raw() as u64) << 12),
             _ => None,
         }
     }
@@ -107,13 +110,13 @@ impl A64Insn {
         }
     }
 
-    pub fn signed_imm9(imm9: u16) -> i64 {
-        sign_extend(u32::from(imm9), 9)
+    pub fn signed_imm9(imm9: A64Imm) -> i64 {
+        imm9.value()
     }
 
     pub fn direct_branch_target(self, pc: u64) -> Option<u64> {
         match self {
-            Self::BUncondBOnlyBranchImm { imm26 } => Some(pc_relative_target(pc, imm26, 26)),
+            Self::BUncondBOnlyBranchImm { imm26 } => Some(pc_relative_target(pc, imm26.raw(), 26)),
             _ => None,
         }
     }
@@ -124,10 +127,10 @@ impl A64Insn {
             | Self::CbzCbz32Compbranch { imm19, .. }
             | Self::CbzCbz64Compbranch { imm19, .. }
             | Self::CbnzCbnz32Compbranch { imm19, .. }
-            | Self::CbnzCbnz64Compbranch { imm19, .. } => pc_relative_target(pc, imm19, 19),
+            | Self::CbnzCbnz64Compbranch { imm19, .. } => pc_relative_target(pc, imm19.raw(), 19),
             Self::TbzTbzOnlyTestbranch { imm14, .. }
             | Self::TbnzTbnzOnlyTestbranch { imm14, .. } => {
-                pc_relative_target(pc, u32::from(imm14), 14)
+                pc_relative_target(pc, imm14.raw(), 14)
             }
             _ => return None,
         };
@@ -137,17 +140,19 @@ impl A64Insn {
     pub fn runtime_exit_reason(self, pc: u64) -> Option<RuntimeExitReason> {
         match self {
             Self::BlBlOnlyBranchImm { imm26 } => Some(RuntimeExitReason::Bl {
-                target_pc: pc_relative_target(pc, imm26, 26),
+                target_pc: pc_relative_target(pc, imm26.raw(), 26),
                 resume_pc: pc.wrapping_add(4),
             }),
             Self::BlrBlr64BranchReg { rn } => Some(RuntimeExitReason::Blr {
-                target_reg: rn,
+                target_reg: rn.enc(),
                 resume_pc: pc.wrapping_add(4),
             }),
-            Self::BrBr64BranchReg { rn } => Some(RuntimeExitReason::Br { target_reg: rn }),
-            Self::RetRet64rBranchReg { rn } => Some(RuntimeExitReason::Ret { lr_reg: rn }),
+            Self::BrBr64BranchReg { rn } => Some(RuntimeExitReason::Br {
+                target_reg: rn.enc(),
+            }),
+            Self::RetRet64rBranchReg { rn } => Some(RuntimeExitReason::Ret { lr_reg: rn.enc() }),
             Self::SvcSvcExException { imm16 } => Some(RuntimeExitReason::Svc {
-                imm16,
+                imm16: imm16.raw() as u16,
                 resume_pc: pc.wrapping_add(4),
             }),
             _ => None,

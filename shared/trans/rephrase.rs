@@ -1,4 +1,4 @@
-use crate::shared::arm64::{A64Insn, IrInsn};
+use crate::shared::arm64::{A64Imm, A64Insn, A64Reg, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::{Cfg, RuntimeExitReason};
 
@@ -123,9 +123,14 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("BL must produce a BL runtime exit reason");
             };
 
-            push_mov_imm64(&mut ret, insn.pc, RET_STATUS_REG, RetStatus::Bl as u64)?;
-            push_mov_imm64(&mut ret, insn.pc, RET_PARAM0_REG, target_pc)?;
-            push_mov_imm64(&mut ret, insn.pc, RET_PARAM1_REG, resume_pc)?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                A64Reg::x(RET_STATUS_REG),
+                RetStatus::Bl as u64,
+            )?;
+            push_mov_imm64(&mut ret, insn.pc, A64Reg::x(RET_PARAM0_REG), target_pc)?;
+            push_mov_imm64(&mut ret, insn.pc, A64Reg::x(RET_PARAM1_REG), resume_pc)?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
         A64Insn::BlrBlr64BranchReg { .. } => {
@@ -137,21 +142,26 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("BLR must produce a BLR runtime exit reason");
             };
 
-            push_mov_imm64(&mut ret, insn.pc, RET_STATUS_REG, RetStatus::Blr as u64)?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                A64Reg::x(RET_STATUS_REG),
+                RetStatus::Blr as u64,
+            )?;
             ret.append(
                 a64_syn!(
                     insn.pc,
                     A64Insn::OrrLogShiftOrr64LogShift {
                         shift: 0,
-                        rm: target_reg,
-                        imm6: 0,
-                        rn: 31,
-                        rd: RET_PARAM0_REG,
+                        rm: A64Reg::x(target_reg),
+                        imm6: A64Imm::unsigned(0, 6),
+                        rn: A64Reg::x(31),
+                        rd: A64Reg::x(RET_PARAM0_REG),
                     }
                 )?,
                 GFP_KERNEL,
             )?;
-            push_mov_imm64(&mut ret, insn.pc, RET_PARAM1_REG, resume_pc)?;
+            push_mov_imm64(&mut ret, insn.pc, A64Reg::x(RET_PARAM1_REG), resume_pc)?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
         A64Insn::BrBr64BranchReg { .. } => {
@@ -161,21 +171,31 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("BR must produce a BR runtime exit reason");
             };
 
-            push_mov_imm64(&mut ret, insn.pc, RET_STATUS_REG, RetStatus::Br as u64)?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                A64Reg::x(RET_STATUS_REG),
+                RetStatus::Br as u64,
+            )?;
             ret.append(
                 a64_syn!(
                     insn.pc,
                     A64Insn::OrrLogShiftOrr64LogShift {
                         shift: 0,
-                        rm: target_reg,
-                        imm6: 0,
-                        rn: 31,
-                        rd: RET_PARAM0_REG,
+                        rm: A64Reg::x(target_reg),
+                        imm6: A64Imm::unsigned(0, 6),
+                        rn: A64Reg::x(31),
+                        rd: A64Reg::x(RET_PARAM0_REG),
                     }
                 )?,
                 GFP_KERNEL,
             )?;
-            push_mov_imm64(&mut ret, insn.pc, RET_PARAM1_REG, insn.pc.wrapping_add(4))?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                A64Reg::x(RET_PARAM1_REG),
+                insn.pc.wrapping_add(4),
+            )?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
         A64Insn::RetRet64rBranchReg { .. } => {
@@ -184,21 +204,31 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("RET must produce a RET runtime exit reason");
             };
 
-            push_mov_imm64(&mut ret, insn.pc, RET_STATUS_REG, RetStatus::Ret as u64)?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                A64Reg::x(RET_STATUS_REG),
+                RetStatus::Ret as u64,
+            )?;
             ret.append(
                 a64_syn!(
                     insn.pc,
                     A64Insn::OrrLogShiftOrr64LogShift {
                         shift: 0,
-                        rm: lr_reg,
-                        imm6: 0,
-                        rn: 31,
-                        rd: RET_PARAM0_REG,
+                        rm: A64Reg::x(lr_reg),
+                        imm6: A64Imm::unsigned(0, 6),
+                        rn: A64Reg::x(31),
+                        rd: A64Reg::x(RET_PARAM0_REG),
                     }
                 )?,
                 GFP_KERNEL,
             )?;
-            push_mov_imm64(&mut ret, insn.pc, RET_PARAM1_REG, insn.pc.wrapping_add(4))?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                A64Reg::x(RET_PARAM1_REG),
+                insn.pc.wrapping_add(4),
+            )?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
         A64Insn::SvcSvcExException { .. } => {
@@ -208,21 +238,26 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("SVC must produce an SVC runtime exit reason");
             };
 
-            push_mov_imm64(&mut ret, insn.pc, RET_STATUS_REG, RetStatus::Svc as u64)?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                A64Reg::x(RET_STATUS_REG),
+                RetStatus::Svc as u64,
+            )?;
             ret.append(
                 a64_syn!(
                     insn.pc,
                     A64Insn::OrrLogShiftOrr64LogShift {
                         shift: 0,
-                        rm: 8,
-                        imm6: 0,
-                        rn: 31,
-                        rd: RET_PARAM0_REG,
+                        rm: A64Reg::x(8),
+                        imm6: A64Imm::unsigned(0, 6),
+                        rn: A64Reg::x(31),
+                        rd: A64Reg::x(RET_PARAM0_REG),
                     }
                 )?,
                 GFP_KERNEL,
             )?;
-            push_mov_imm64(&mut ret, insn.pc, RET_PARAM1_REG, resume_pc)?;
+            push_mov_imm64(&mut ret, insn.pc, A64Reg::x(RET_PARAM1_REG), resume_pc)?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
         _ => ret.append(a64_ori!(insn.pc, insn.inner)?, GFP_KERNEL)?,
@@ -233,7 +268,7 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
 fn push_mov_imm64(
     out: &mut SharedVec<RephrasedInsn>,
     original_pc: u64,
-    rd: u8,
+    rd: A64Reg,
     value: u64,
 ) -> SharedResult<(), SharedAllocError> {
     out.append(
@@ -241,22 +276,22 @@ fn push_mov_imm64(
             original_pc,
             A64Insn::MovzMovz64Movewide {
                 hw: 3,
-                imm16: ((value >> 48) & 0xFFFF) as u16,
+                imm16: A64Imm::unsigned(((value >> 48) & 0xFFFF) as u32, 16),
                 rd,
             },
             A64Insn::MovkMovk64Movewide {
                 hw: 2,
-                imm16: ((value >> 32) & 0xFFFF) as u16,
+                imm16: A64Imm::unsigned(((value >> 32) & 0xFFFF) as u32, 16),
                 rd,
             },
             A64Insn::MovkMovk64Movewide {
                 hw: 1,
-                imm16: ((value >> 16) & 0xFFFF) as u16,
+                imm16: A64Imm::unsigned(((value >> 16) & 0xFFFF) as u32, 16),
                 rd,
             },
             A64Insn::MovkMovk64Movewide {
                 hw: 0,
-                imm16: (value & 0xFFFF) as u16,
+                imm16: A64Imm::unsigned((value & 0xFFFF) as u32, 16),
                 rd,
             },
         )?,
@@ -269,7 +304,12 @@ fn push_branch_to_stub(
     original_pc: u64,
 ) -> SharedResult<(), SharedAllocError> {
     out.append(
-        a64_syn!(original_pc, A64Insn::BUncondBOnlyBranchImm { imm26: 0 })?,
+        a64_syn!(
+            original_pc,
+            A64Insn::BUncondBOnlyBranchImm {
+                imm26: A64Imm::scaled_signed(0, 26, 2)
+            }
+        )?,
         GFP_KERNEL,
     )
 }

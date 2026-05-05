@@ -1,6 +1,6 @@
 use crate::arm64::execute_insn;
 use crate::model::MachineState;
-use crate::shared::arm64::A64Insn;
+use crate::shared::arm64::{A64Imm, A64Insn};
 use crate::shared::utils::vlabel::VLabels;
 
 pub const DEFAULT_BASE_PC: u64 = 0x400000;
@@ -141,7 +141,7 @@ impl URuntime {
     }
 
     pub fn run(&mut self) -> URuntimeReport {
-        self.state.write_reg(LR_REG, self.config.return_pc);
+        self.state.write_x(LR_REG, self.config.return_pc);
         let mut pc = self.config.base_pc + self.entry_offset as u64;
         let mut steps = 0usize;
 
@@ -153,7 +153,7 @@ impl URuntime {
                             return self
                                 .report(URuntimeHalt::ExecutionError { pc, message }, steps);
                         }
-                        self.state.write_reg(LR_REG, self.config.return_pc);
+                        self.state.write_x(LR_REG, self.config.return_pc);
                         pc = self.config.base_pc + offset as u64;
                     }
                     RuntimeAction::Stop(halt) => return self.report(halt, steps),
@@ -177,10 +177,10 @@ impl URuntime {
     }
 
     fn handle_runtime_return(&mut self) -> RuntimeAction {
-        let raw_status = self.state.read_reg(RET_STATUS_REG);
+        let raw_status = self.state.read_x(RET_STATUS_REG);
         let status = URetStatus::from_reg(raw_status);
-        let param0 = self.state.read_reg(RET_PARAM0_REG);
-        let param1 = self.state.read_reg(RET_PARAM1_REG);
+        let param0 = self.state.read_x(RET_PARAM0_REG);
+        let param1 = self.state.read_x(RET_PARAM1_REG);
         let resume_offset = self.emitted_pc_to_offset(param1.wrapping_add(4));
 
         match status {
@@ -195,7 +195,7 @@ impl URuntime {
                 }
             }
             URetStatus::Bl | URetStatus::Blr => {
-                self.state.write_reg(LR_REG, param1.wrapping_add(4));
+                self.state.write_x(LR_REG, param1.wrapping_add(4));
                 self.continue_or_request_translation(status, param0, resume_offset)
             }
             URetStatus::Br => self.continue_or_request_translation(status, param0, resume_offset),
@@ -266,7 +266,7 @@ impl URuntime {
         }
 
         self.fragment.insns[index] = A64Insn::BUncondBOnlyBranchImm {
-            imm26: (imm & ((1_i128 << 26) - 1)) as u32,
+            imm26: A64Imm::scaled_signed((imm & ((1_i128 << 26) - 1)) as u32, 26, 2),
         };
         Ok(())
     }

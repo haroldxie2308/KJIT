@@ -5,10 +5,23 @@ use anyhow::{bail, Result};
 struct RenderField {
     name: String,
     width: u8,
-    shift: u8,
-    mask: String,
     rust_name: String,
-    rust_type: &'static str,
+    rust_type: String,
+    encode_lines: Vec<String>,
+    decode_value: String,
+    rewrite_value: String,
+}
+
+#[derive(Clone, Debug)]
+struct MemGroup {
+    base_field: String,
+    offset_field: String,
+    base_shift: u8,
+    offset_width: u8,
+    offset_shift: u8,
+    mode: &'static str,
+    offset_decode: String,
+    base_decode: String,
 }
 
 #[derive(Clone, Debug)]
@@ -50,6 +63,134 @@ pub fn render_rust(specs: &[InstructionSpec]) -> Result<String> {
         "    W32,".to_string(),
         "    X64,".to_string(),
         "    Unknown,".to_string(),
+        "}".to_string(),
+        "".to_string(),
+        "#[allow(dead_code)]".to_string(),
+        "#[derive(Clone, Copy, Debug, PartialEq, Eq)]".to_string(),
+        "pub enum A64Reg31Mode {".to_string(),
+        "    Xzr,".to_string(),
+        "    Sp,".to_string(),
+        "    Forbidden,".to_string(),
+        "    Unknown,".to_string(),
+        "}".to_string(),
+        "".to_string(),
+        "#[allow(dead_code)]".to_string(),
+        "#[derive(Clone, Copy, Debug, PartialEq, Eq)]".to_string(),
+        "pub struct A64Reg {".to_string(),
+        "    pub enc: u8,".to_string(),
+        "    pub width: A64RegWidth,".to_string(),
+        "    pub reg31: A64Reg31Mode,".to_string(),
+        "}".to_string(),
+        "".to_string(),
+        "#[allow(dead_code)]".to_string(),
+        "impl A64Reg {".to_string(),
+        "    pub const fn new(enc: u8, width: A64RegWidth, reg31: A64Reg31Mode) -> Self {"
+            .to_string(),
+        "        Self { enc, width, reg31 }".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn x(enc: u8) -> Self {".to_string(),
+        "        Self::new(enc, A64RegWidth::X64, A64Reg31Mode::Xzr)".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn w(enc: u8) -> Self {".to_string(),
+        "        Self::new(enc, A64RegWidth::W32, A64Reg31Mode::Xzr)".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn x_sp(enc: u8) -> Self {".to_string(),
+        "        Self::new(enc, A64RegWidth::X64, A64Reg31Mode::Sp)".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn w_sp(enc: u8) -> Self {".to_string(),
+        "        Self::new(enc, A64RegWidth::W32, A64Reg31Mode::Sp)".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn unknown(enc: u8) -> Self {".to_string(),
+        "        Self::new(enc, A64RegWidth::Unknown, A64Reg31Mode::Unknown)".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn enc(self) -> u8 {".to_string(),
+        "        self.enc".to_string(),
+        "    }".to_string(),
+        "}".to_string(),
+        "".to_string(),
+        "#[allow(dead_code)]".to_string(),
+        "#[derive(Clone, Copy, Debug, PartialEq, Eq)]".to_string(),
+        "pub struct A64Imm {".to_string(),
+        "    pub raw: u32,".to_string(),
+        "    pub bits: u8,".to_string(),
+        "    pub value: i64,".to_string(),
+        "}".to_string(),
+        "".to_string(),
+        "#[allow(dead_code)]".to_string(),
+        "impl A64Imm {".to_string(),
+        "    pub const fn new(raw: u32, bits: u8, value: i64) -> Self {".to_string(),
+        "        Self { raw, bits, value }".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn unsigned(raw: u32, bits: u8) -> Self {".to_string(),
+        "        Self::new(raw, bits, raw as i64)".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn signed(raw: u32, bits: u8) -> Self {".to_string(),
+        "        Self::new(raw, bits, sign_extend_a64(raw, bits))".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn scaled_unsigned(raw: u32, bits: u8, scale: u8) -> Self {".to_string(),
+        "        Self::new(raw, bits, (raw as i64) << scale)".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn scaled_signed(raw: u32, bits: u8, scale: u8) -> Self {".to_string(),
+        "        Self::new(raw, bits, sign_extend_a64(raw, bits) << scale)".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn raw(self) -> u32 {".to_string(),
+        "        self.raw".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn value(self) -> i64 {".to_string(),
+        "        self.value".to_string(),
+        "    }".to_string(),
+        "}".to_string(),
+        "".to_string(),
+        "const fn sign_extend_a64(value: u32, bits: u8) -> i64 {".to_string(),
+        "    let shift = 64 - bits as u32;".to_string(),
+        "    ((value as i64) << shift) >> shift".to_string(),
+        "}".to_string(),
+        "".to_string(),
+        "#[allow(dead_code)]".to_string(),
+        "#[derive(Clone, Copy, Debug, PartialEq, Eq)]".to_string(),
+        "pub enum A64Mem {".to_string(),
+        "    Offset { base: A64Reg, offset: A64Imm },".to_string(),
+        "    PreIndex { base: A64Reg, offset: A64Imm },".to_string(),
+        "    PostIndex { base: A64Reg, offset: A64Imm },".to_string(),
+        "}".to_string(),
+        "".to_string(),
+        "#[allow(dead_code)]".to_string(),
+        "impl A64Mem {".to_string(),
+        "    pub const fn offset(base: A64Reg, offset: A64Imm) -> Self {".to_string(),
+        "        Self::Offset { base, offset }".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn pre_index(base: A64Reg, offset: A64Imm) -> Self {".to_string(),
+        "        Self::PreIndex { base, offset }".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn post_index(base: A64Reg, offset: A64Imm) -> Self {".to_string(),
+        "        Self::PostIndex { base, offset }".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn base(self) -> A64Reg {".to_string(),
+        "        match self {".to_string(),
+        "            Self::Offset { base, .. } | Self::PreIndex { base, .. } | Self::PostIndex { base, .. } => base,".to_string(),
+        "        }".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn offset_imm(self) -> A64Imm {".to_string(),
+        "        match self {".to_string(),
+        "            Self::Offset { offset, .. } | Self::PreIndex { offset, .. } | Self::PostIndex { offset, .. } => offset,".to_string(),
+        "        }".to_string(),
+        "    }".to_string(),
         "}".to_string(),
         "".to_string(),
         "#[allow(dead_code)]".to_string(),
@@ -309,11 +450,18 @@ fn render_variants(specs: &[InstructionSpec]) -> Vec<RenderVariant<'_>> {
         .flat_map(|spec| &spec.variants)
         .map(|variant| {
             let key = format!("{}.{}", variant.section_id, variant.encoding_name);
+            let mem_group = memory_group(variant);
             let fields = variant
                 .fields
                 .iter()
                 .filter(|field| field.variable)
-                .map(render_field)
+                .filter(|field| {
+                    mem_group.as_ref().is_none_or(|mem| {
+                        field.name != mem.base_field && field.name != mem.offset_field
+                    })
+                })
+                .map(|field| render_field(variant, field))
+                .chain(mem_group.as_ref().map(render_mem_field))
                 .collect();
             RenderVariant {
                 spec: variant,
@@ -326,14 +474,83 @@ fn render_variants(specs: &[InstructionSpec]) -> Vec<RenderVariant<'_>> {
         .collect()
 }
 
-fn render_field(field: &FieldSpec) -> RenderField {
+fn render_field(variant: &VariantSpec, field: &FieldSpec) -> RenderField {
+    let rust_name = rust_field_ident(&field.name);
+    if is_register_field(field) {
+        let width = register_width(variant, &field.name);
+        let reg31 = register_31_mode(variant, &field.name);
+        let raw_value = format!("((word & {}) >> {}) as u8", field.mask, field.shift);
+        return RenderField {
+            name: field.name.clone(),
+            width: field.width,
+            rust_name: rust_name.clone(),
+            rust_type: "A64Reg".to_string(),
+            encode_lines: vec![format!(
+                "word |= encode_a64_field(\"{{key}}\", \"{}\", {}.enc() as u32, {}, {})?;",
+                field.name, rust_name, field.width, field.shift
+            )],
+            decode_value: format!("A64Reg::new({raw_value}, {width}, {reg31})"),
+            rewrite_value: format!("A64Reg::new(encoded as u8, {width}, {reg31})"),
+        };
+    }
+
+    if field.name.starts_with("imm") {
+        let raw_value = format!("((word & {}) >> {}) as u32", field.mask, field.shift);
+        let decode_value = render_imm_decode(variant, field, &raw_value);
+        return RenderField {
+            name: field.name.clone(),
+            width: field.width,
+            rust_name: rust_name.clone(),
+            rust_type: "A64Imm".to_string(),
+            encode_lines: vec![format!(
+                "word |= encode_a64_field(\"{{key}}\", \"{}\", {}.raw(), {}, {})?;",
+                field.name, rust_name, field.width, field.shift
+            )],
+            decode_value,
+            rewrite_value: render_imm_decode(variant, field, "encoded"),
+        };
+    }
+
     RenderField {
         name: field.name.clone(),
         width: field.width,
-        shift: field.shift,
-        mask: field.mask.clone(),
-        rust_name: rust_field_ident(&field.name),
-        rust_type: rust_field_type(field.width),
+        rust_name: rust_name.clone(),
+        rust_type: rust_field_type(field.width).to_string(),
+        encode_lines: vec![format!(
+            "word |= encode_a64_field(\"{{key}}\", \"{}\", {} as u32, {}, {})?;",
+            field.name, rust_name, field.width, field.shift
+        )],
+        decode_value: format!(
+            "((word & {}) >> {}) as {}",
+            field.mask,
+            field.shift,
+            rust_field_type(field.width)
+        ),
+        rewrite_value: format!("encoded as {}", rust_field_type(field.width)),
+    }
+}
+
+fn render_mem_field(mem: &MemGroup) -> RenderField {
+    RenderField {
+        name: "mem".to_string(),
+        width: 0,
+        rust_name: "mem".to_string(),
+        rust_type: "A64Mem".to_string(),
+        encode_lines: vec![
+            format!(
+                "word |= encode_a64_field(\"{{key}}\", \"{}\", mem.base().enc() as u32, 5, {})?;",
+                mem.base_field, mem.base_shift
+            ),
+            format!(
+                "word |= encode_a64_field(\"{{key}}\", \"{}\", mem.offset_imm().raw(), {}, {})?;",
+                mem.offset_field, mem.offset_width, mem.offset_shift
+            ),
+        ],
+        decode_value: format!(
+            "A64Mem::{}({}, {})",
+            mem.mode, mem.base_decode, mem.offset_decode
+        ),
+        rewrite_value: "mem".to_string(),
     }
 }
 
@@ -366,10 +583,12 @@ fn render_encode_arms(variants: &[RenderVariant<'_>], lines: &mut Vec<String>) {
         }
 
         for field in &variant.fields {
-            lines.push(format!(
-                "                word |= encode_a64_field(\"{}\", \"{}\", {} as u32, {}, {})?;",
-                variant.key, field.name, field.rust_name, field.width, field.shift
-            ));
+            for line in &field.encode_lines {
+                lines.push(format!(
+                    "                {}",
+                    line.replace("{key}", &variant.key)
+                ));
+            }
         }
         lines.push("                Ok(word)".to_string());
         lines.push("            }".to_string());
@@ -394,8 +613,8 @@ fn render_decode_arms(variants: &[RenderVariant<'_>], lines: &mut Vec<String>) {
             ));
             for field in &variant.fields {
                 lines.push(format!(
-                    "            {}: ((word & {}) >> {}) as {},",
-                    field.rust_name, field.mask, field.shift, field.rust_type
+                    "            {}: {},",
+                    field.rust_name, field.decode_value
                 ));
             }
             lines.push("        });".to_string());
@@ -412,11 +631,11 @@ fn render_branch_getter_arms(
         for role in branch_target_roles(variant.spec) {
             let target_field = field_by_name(&variant.fields, &role.field)?;
             lines.push(format!(
-                "            Self::{} {{ {}, .. }} if field == \"{}\" => Some(*{} as u32),",
+                "            Self::{} {{ {}, .. }} if field == \"{}\" => Some({}),",
                 variant.variant_name,
                 target_field.rust_name,
                 target_field.name,
-                target_field.rust_name
+                field_raw_expr(target_field)
             ));
         }
     }
@@ -435,10 +654,7 @@ fn render_branch_setter_arms(
 
             for field in &variant.fields {
                 if field.name == target_field.name {
-                    result_fields.push(format!(
-                        "{}: encoded as {}",
-                        field.rust_name, field.rust_type
-                    ));
+                    result_fields.push(format!("{}: {}", field.rust_name, field.rewrite_value));
                 } else {
                     pattern_fields.push(field.rust_name.clone());
                     result_fields.push(field.rust_name.clone());
@@ -612,6 +828,182 @@ fn branch_role_bits(field_name: &str, fields: &[FieldSpec]) -> u8 {
         .find(|field| field.name == field_name)
         .map(|field| field.width)
         .unwrap_or(0)
+}
+
+fn field_raw_expr(field: &RenderField) -> String {
+    match field.rust_type.as_str() {
+        "A64Imm" => format!("{}.raw()", field.rust_name),
+        "A64Reg" => format!("{}.enc() as u32", field.rust_name),
+        _ => format!("*{} as u32", field.rust_name),
+    }
+}
+
+fn memory_group(variant: &VariantSpec) -> Option<MemGroup> {
+    if !variant
+        .operand_roles
+        .iter()
+        .any(|role| role.kind == "Memory")
+    {
+        return None;
+    }
+    let base_field = variant
+        .operand_roles
+        .iter()
+        .find(|role| role.kind == "MemBase")?
+        .field
+        .clone();
+    let offset_field = variant
+        .operand_roles
+        .iter()
+        .find(|role| role.kind == "MemOffset")?
+        .field
+        .clone();
+    let base_spec = variant
+        .fields
+        .iter()
+        .find(|field| field.name == base_field)?;
+    let offset_spec = variant
+        .fields
+        .iter()
+        .find(|field| field.name == offset_field)?;
+    let base_width = register_width(variant, &base_field);
+    let base_reg31 = register_31_mode(variant, &base_field);
+    let base_raw = format!("((word & {}) >> {}) as u8", base_spec.mask, base_spec.shift);
+    let offset_raw = format!(
+        "((word & {}) >> {}) as u32",
+        offset_spec.mask, offset_spec.shift
+    );
+
+    Some(MemGroup {
+        base_field,
+        offset_field,
+        base_shift: base_spec.shift,
+        offset_width: offset_spec.width,
+        offset_shift: offset_spec.shift,
+        mode: memory_mode(&variant.asm),
+        offset_decode: render_mem_offset_decode(variant, offset_spec, &offset_raw),
+        base_decode: format!("A64Reg::new({base_raw}, {base_width}, {base_reg31})"),
+    })
+}
+
+fn memory_mode(asm: &str) -> &'static str {
+    if asm.contains("]!") {
+        "pre_index"
+    } else if asm.contains("],") {
+        "post_index"
+    } else {
+        "offset"
+    }
+}
+
+fn render_mem_offset_decode(variant: &VariantSpec, field: &FieldSpec, raw: &str) -> String {
+    let signed = immediate_operand_text(variant, &field.name)
+        .map(|text| immediate_is_signed(&text))
+        .unwrap_or_else(|| matches!(field.name.as_str(), "imm7" | "imm9"));
+    let scale = immediate_scale(variant, &field.name);
+    let ctor = match (signed, scale) {
+        (true, 0) => "A64Imm::signed",
+        (false, 0) => "A64Imm::unsigned",
+        (true, _) => "A64Imm::scaled_signed",
+        (false, _) => "A64Imm::scaled_unsigned",
+    };
+    if scale == 0 {
+        format!("{ctor}({raw}, {})", field.width)
+    } else {
+        format!("{ctor}({raw}, {}, {scale})", field.width)
+    }
+}
+
+fn render_imm_decode(variant: &VariantSpec, field: &FieldSpec, raw: &str) -> String {
+    if variant
+        .operand_roles
+        .iter()
+        .find(|role| role.kind == "BranchTarget" && role.field == field.name)
+        .is_some()
+    {
+        return format!("A64Imm::scaled_signed({raw}, {}, 2)", field.width);
+    }
+
+    let signed = immediate_operand_text(variant, &field.name)
+        .map(|text| immediate_is_signed(&text))
+        .unwrap_or(false);
+    if signed {
+        format!("A64Imm::signed({raw}, {})", field.width)
+    } else {
+        format!("A64Imm::unsigned({raw}, {})", field.width)
+    }
+}
+
+fn immediate_operand_text(variant: &VariantSpec, field: &str) -> Option<String> {
+    let encoded_in_field = format!("\"{field}\" field");
+    variant
+        .asm_operands
+        .iter()
+        .find(|operand| operand.hover.contains(&encoded_in_field))
+        .map(|operand| format!("{} {}", operand.text, operand.hover))
+}
+
+fn immediate_is_signed(text: &str) -> bool {
+    let lower = text.to_ascii_lowercase();
+    !lower.contains("unsigned") && (lower.contains("signed") || lower.contains("<simm>"))
+}
+
+fn immediate_scale(variant: &VariantSpec, field: &str) -> u8 {
+    let Some(text) = immediate_operand_text(variant, field) else {
+        return 0;
+    };
+    if text.contains("/16") {
+        4
+    } else if text.contains("/8") {
+        3
+    } else if text.contains("/4") {
+        2
+    } else if text.contains("/2") {
+        1
+    } else {
+        0
+    }
+}
+
+fn is_register_field(field: &FieldSpec) -> bool {
+    field.width == 5
+        && matches!(
+            field.name.as_str(),
+            "Rd" | "Rn" | "Rm" | "Rt" | "Rt2" | "Ra" | "Rs"
+        )
+}
+
+fn register_width(variant: &VariantSpec, field: &str) -> &'static str {
+    variant
+        .operand_roles
+        .iter()
+        .find(|role| {
+            matches!(role.kind.as_str(), "RegRead" | "RegWrite" | "RegReadWrite")
+                && role.field == field
+        })
+        .map(|role| rust_operand_width(&role.width))
+        .unwrap_or("A64RegWidth::Unknown")
+}
+
+fn register_31_mode(variant: &VariantSpec, field: &str) -> &'static str {
+    let encoded_in_field = format!("\"{field}\" field");
+    for operand in &variant.asm_operands {
+        if !operand.hover.contains(&encoded_in_field) {
+            continue;
+        }
+        if operand.text.contains("|SP")
+            || operand.text.contains("|WSP")
+            || operand.link.contains("SP_option")
+            || operand.hover.to_ascii_lowercase().contains("stack pointer")
+        {
+            return "A64Reg31Mode::Sp";
+        }
+        if operand.link.contains("OrXZR") {
+            return "A64Reg31Mode::Xzr";
+        }
+    }
+
+    "A64Reg31Mode::Xzr"
 }
 
 fn rust_operand_width(width: &str) -> &'static str {

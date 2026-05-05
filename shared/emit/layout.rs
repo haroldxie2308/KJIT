@@ -267,6 +267,7 @@ impl BranchRelocKind {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::arm64::{A64Imm, A64Reg};
     use crate::shared::trans::rephrase::{RephrasedBlock, RephrasedInsn};
 
     fn one_block(insns: SharedVec<RephrasedInsn>) -> RephrasedProgram {
@@ -291,7 +292,12 @@ mod tests {
         let mut insns = SharedVec::new();
         insns
             .push(
-                RephrasedInsn::original(0x1000, A64Insn::BUncondBOnlyBranchImm { imm26: 2 }),
+                RephrasedInsn::original(
+                    0x1000,
+                    A64Insn::BUncondBOnlyBranchImm {
+                        imm26: A64Imm::scaled_signed(2, 26, 2),
+                    },
+                ),
                 GFP_KERNEL,
             )
             .unwrap();
@@ -346,8 +352,8 @@ mod tests {
                 RephrasedInsn::original(
                     0x1008,
                     A64Insn::CbnzCbnz64Compbranch {
-                        imm19: 524286,
-                        rt: 0,
+                        imm19: A64Imm::scaled_signed(524286, 19, 2),
+                        rt: A64Reg::x(0),
                     },
                 ),
                 GFP_KERNEL,

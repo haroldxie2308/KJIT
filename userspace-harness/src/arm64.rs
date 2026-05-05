@@ -1,5 +1,5 @@
 use crate::model::{ExecutionResult, HaltReason, MachineState};
-use crate::shared::arm64::{decode_word, A64Condition, A64Insn};
+use crate::shared::arm64::{decode_word, A64Condition, A64Imm, A64Insn, A64Mem, A64Reg};
 
 pub fn execute_program(
     program: &[u8],
@@ -89,39 +89,37 @@ pub(crate) fn execute_insn(
             rn,
             rd,
         } => {
-            let shifted = shifted_reg64(state.read_reg(rm), shift, imm6)?;
+            let shifted = shifted_reg64(state.read_reg(rm), shift, imm6.raw() as u8)?;
             state.write_reg(rd, state.read_reg(rn) | shifted);
             Ok(pc + 4)
         }
 
         A64Insn::AddAddsubImmAdd32AddsubImm { sh, imm12, rn, rd } => {
-            let result =
-                read_reg_or_sp_sized(state, rn, 32).wrapping_add(add_sub_imm(sh, imm12, insn)?);
-            write_reg_or_sp_sized(state, rd, result, 32);
+            let result = read_reg_sized(state, rn, 32).wrapping_add(add_sub_imm(sh, imm12, insn)?);
+            write_reg_sized(state, rd, result, 32);
             Ok(pc + 4)
         }
         A64Insn::AddAddsubImmAdd64AddsubImm { sh, imm12, rn, rd } => {
             let result = state
-                .read_reg_or_sp(rn)
+                .read_reg(rn)
                 .wrapping_add(add_sub_imm(sh, imm12, insn)?);
-            state.write_reg_or_sp(rd, result);
+            state.write_reg(rd, result);
             Ok(pc + 4)
         }
         A64Insn::SubAddsubImmSub32AddsubImm { sh, imm12, rn, rd } => {
-            let result =
-                read_reg_or_sp_sized(state, rn, 32).wrapping_sub(add_sub_imm(sh, imm12, insn)?);
-            write_reg_or_sp_sized(state, rd, result, 32);
+            let result = read_reg_sized(state, rn, 32).wrapping_sub(add_sub_imm(sh, imm12, insn)?);
+            write_reg_sized(state, rd, result, 32);
             Ok(pc + 4)
         }
         A64Insn::SubAddsubImmSub64AddsubImm { sh, imm12, rn, rd } => {
             let result = state
-                .read_reg_or_sp(rn)
+                .read_reg(rn)
                 .wrapping_sub(add_sub_imm(sh, imm12, insn)?);
-            state.write_reg_or_sp(rd, result);
+            state.write_reg(rd, result);
             Ok(pc + 4)
         }
         A64Insn::SubsAddsubImmSubs32sAddsubImm { sh, imm12, rn, rd } => {
-            let lhs = read_reg_or_sp_sized(state, rn, 32);
+            let lhs = read_reg_sized(state, rn, 32);
             let rhs = add_sub_imm(sh, imm12, insn)?;
             let result = lhs.wrapping_sub(rhs);
             update_sub_flags_sized(state, lhs, rhs, result, 32);
@@ -129,7 +127,7 @@ pub(crate) fn execute_insn(
             Ok(pc + 4)
         }
         A64Insn::SubsAddsubImmSubs64sAddsubImm { sh, imm12, rn, rd } => {
-            let lhs = state.read_reg_or_sp(rn);
+            let lhs = state.read_reg(rn);
             let rhs = add_sub_imm(sh, imm12, insn)?;
             let result = lhs.wrapping_sub(rhs);
             state.update_sub_flags(lhs, rhs, result);
@@ -164,109 +162,101 @@ pub(crate) fn execute_insn(
             branch_on_bit(insn, pc, state, rt, bit_index(b5, b40), true)
         }
 
-        A64Insn::LdrImmGenLdr32LdstPos { imm12, rn, rt } => {
-            let addr = state.read_reg_or_sp(rn).wrapping_add((imm12 as u64) << 2);
+        A64Insn::LdrImmGenLdr32LdstPos { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_reg(rt, state.read_u32(addr) as u64);
             Ok(pc + 4)
         }
-        A64Insn::LdrImmGenLdr64LdstPos { imm12, rn, rt } => {
-            let addr = state.read_reg_or_sp(rn).wrapping_add((imm12 as u64) << 3);
+        A64Insn::LdrImmGenLdr64LdstPos { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_reg(rt, state.read_u64(addr));
             Ok(pc + 4)
         }
-        A64Insn::StrImmGenStr32LdstPos { imm12, rn, rt } => {
-            let addr = state.read_reg_or_sp(rn).wrapping_add((imm12 as u64) << 2);
+        A64Insn::StrImmGenStr32LdstPos { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_u32(addr, read_reg_sized(state, rt, 32) as u32);
             Ok(pc + 4)
         }
-        A64Insn::StrImmGenStr64LdstPos { imm12, rn, rt } => {
-            let addr = state.read_reg_or_sp(rn).wrapping_add((imm12 as u64) << 3);
+        A64Insn::StrImmGenStr64LdstPos { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_u64(addr, state.read_reg(rt));
             Ok(pc + 4)
         }
 
-        A64Insn::LdrImmGenLdr32LdstImmpre { imm9, rn, rt } => {
-            let addr = add_signed(state.read_reg_or_sp(rn), A64Insn::signed_imm9(imm9));
-            state.write_reg_or_sp(rn, addr);
+        A64Insn::LdrImmGenLdr32LdstImmpre { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_reg(rt, state.read_u32(addr) as u64);
             Ok(pc + 4)
         }
-        A64Insn::LdrImmGenLdr64LdstImmpre { imm9, rn, rt } => {
-            let addr = add_signed(state.read_reg_or_sp(rn), A64Insn::signed_imm9(imm9));
-            state.write_reg_or_sp(rn, addr);
+        A64Insn::LdrImmGenLdr64LdstImmpre { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_reg(rt, state.read_u64(addr));
             Ok(pc + 4)
         }
-        A64Insn::StrImmGenStr32LdstImmpre { imm9, rn, rt } => {
-            let addr = add_signed(state.read_reg_or_sp(rn), A64Insn::signed_imm9(imm9));
-            state.write_reg_or_sp(rn, addr);
+        A64Insn::StrImmGenStr32LdstImmpre { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_u32(addr, read_reg_sized(state, rt, 32) as u32);
             Ok(pc + 4)
         }
-        A64Insn::StrImmGenStr64LdstImmpre { imm9, rn, rt } => {
-            let addr = add_signed(state.read_reg_or_sp(rn), A64Insn::signed_imm9(imm9));
-            state.write_reg_or_sp(rn, addr);
+        A64Insn::StrImmGenStr64LdstImmpre { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_u64(addr, state.read_reg(rt));
             Ok(pc + 4)
         }
 
-        A64Insn::LdrImmGenLdr32LdstImmpost { imm9, rn, rt } => {
-            let addr = state.read_reg_or_sp(rn);
+        A64Insn::LdrImmGenLdr32LdstImmpost { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_reg(rt, state.read_u32(addr) as u64);
-            state.write_reg_or_sp(rn, add_signed(addr, A64Insn::signed_imm9(imm9)));
             Ok(pc + 4)
         }
-        A64Insn::LdrImmGenLdr64LdstImmpost { imm9, rn, rt } => {
-            let addr = state.read_reg_or_sp(rn);
+        A64Insn::LdrImmGenLdr64LdstImmpost { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_reg(rt, state.read_u64(addr));
-            state.write_reg_or_sp(rn, add_signed(addr, A64Insn::signed_imm9(imm9)));
             Ok(pc + 4)
         }
-        A64Insn::StrImmGenStr32LdstImmpost { imm9, rn, rt } => {
-            let addr = state.read_reg_or_sp(rn);
+        A64Insn::StrImmGenStr32LdstImmpost { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_u32(addr, read_reg_sized(state, rt, 32) as u32);
-            state.write_reg_or_sp(rn, add_signed(addr, A64Insn::signed_imm9(imm9)));
             Ok(pc + 4)
         }
-        A64Insn::StrImmGenStr64LdstImmpost { imm9, rn, rt } => {
-            let addr = state.read_reg_or_sp(rn);
+        A64Insn::StrImmGenStr64LdstImmpost { rt, mem } => {
+            let addr = resolve_mem_addr(state, mem);
             state.write_u64(addr, state.read_reg(rt));
-            state.write_reg_or_sp(rn, add_signed(addr, A64Insn::signed_imm9(imm9)));
             Ok(pc + 4)
         }
 
-        A64Insn::LdpGenLdp64LdstpairPost { imm7, rt2, rn, rt } => {
-            execute_ldp64(state, rn, rt, rt2, imm7, PairAddressMode::PostIndex)?;
+        A64Insn::LdpGenLdp64LdstpairPost { rt2, rt, mem } => {
+            execute_ldp64(state, mem, rt, rt2)?;
             Ok(pc + 4)
         }
-        A64Insn::LdpGenLdp64LdstpairPre { imm7, rt2, rn, rt } => {
-            execute_ldp64(state, rn, rt, rt2, imm7, PairAddressMode::PreIndex)?;
+        A64Insn::LdpGenLdp64LdstpairPre { rt2, rt, mem } => {
+            execute_ldp64(state, mem, rt, rt2)?;
             Ok(pc + 4)
         }
-        A64Insn::LdpGenLdp64LdstpairOff { imm7, rt2, rn, rt } => {
-            execute_ldp64(state, rn, rt, rt2, imm7, PairAddressMode::Offset)?;
+        A64Insn::LdpGenLdp64LdstpairOff { rt2, rt, mem } => {
+            execute_ldp64(state, mem, rt, rt2)?;
             Ok(pc + 4)
         }
-        A64Insn::StpGenStp64LdstpairPost { imm7, rt2, rn, rt } => {
-            execute_stp64(state, rn, rt, rt2, imm7, PairAddressMode::PostIndex);
+        A64Insn::StpGenStp64LdstpairPost { rt2, rt, mem } => {
+            execute_stp64(state, mem, rt, rt2);
             Ok(pc + 4)
         }
-        A64Insn::StpGenStp64LdstpairPre { imm7, rt2, rn, rt } => {
-            execute_stp64(state, rn, rt, rt2, imm7, PairAddressMode::PreIndex);
+        A64Insn::StpGenStp64LdstpairPre { rt2, rt, mem } => {
+            execute_stp64(state, mem, rt, rt2);
             Ok(pc + 4)
         }
-        A64Insn::StpGenStp64LdstpairOff { imm7, rt2, rn, rt } => {
-            execute_stp64(state, rn, rt, rt2, imm7, PairAddressMode::Offset);
+        A64Insn::StpGenStp64LdstpairOff { rt2, rt, mem } => {
+            execute_stp64(state, mem, rt, rt2);
             Ok(pc + 4)
         }
 
         A64Insn::BlBlOnlyBranchImm { imm26 } => {
-            let target = pc_relative_target(pc, imm26, 26);
-            state.write_reg(30, pc.wrapping_add(4));
+            let target = pc_relative_target(pc, imm26.raw(), 26);
+            state.write_x(30, pc.wrapping_add(4));
             Ok(target)
         }
         A64Insn::BlrBlr64BranchReg { rn } => {
-            state.write_reg(30, pc.wrapping_add(4));
+            state.write_x(30, pc.wrapping_add(4));
             Ok(state.read_reg(rn))
         }
         A64Insn::BrBr64BranchReg { rn } => Ok(state.read_reg(rn)),
@@ -277,7 +267,7 @@ pub(crate) fn execute_insn(
     }
 }
 
-fn add_sub_imm(sh: u8, imm12: u16, insn: A64Insn) -> Result<u64, String> {
+fn add_sub_imm(sh: u8, imm12: A64Imm, insn: A64Insn) -> Result<u64, String> {
     A64Insn::add_sub_imm(sh, imm12)
         .ok_or_else(|| format!("unsupported add/sub immediate shift in {}", insn.key()))
 }
@@ -285,28 +275,33 @@ fn add_sub_imm(sh: u8, imm12: u16, insn: A64Insn) -> Result<u64, String> {
 fn write_movz(
     state: &mut MachineState,
     bits: u8,
-    rd: u8,
-    imm16: u16,
+    rd: A64Reg,
+    imm16: A64Imm,
     hw: u8,
 ) -> Result<(), String> {
     let shift = A64Insn::move_wide_shift(hw)
         .ok_or_else(|| format!("unsupported MOVZ shift field: {hw}"))?;
-    write_reg_sized(state, rd, (imm16 as u64) << shift, bits);
+    write_reg_sized(state, rd, (imm16.raw() as u64) << shift, bits);
     Ok(())
 }
 
 fn write_movk(
     state: &mut MachineState,
     bits: u8,
-    rd: u8,
-    imm16: u16,
+    rd: A64Reg,
+    imm16: A64Imm,
     hw: u8,
 ) -> Result<(), String> {
     let shift = A64Insn::move_wide_shift(hw)
         .ok_or_else(|| format!("unsupported MOVK shift field: {hw}"))?;
     let old = read_reg_sized(state, rd, bits);
     let mask = !(0xFFFF_u64 << shift);
-    write_reg_sized(state, rd, (old & mask) | ((imm16 as u64) << shift), bits);
+    write_reg_sized(
+        state,
+        rd,
+        (old & mask) | ((imm16.raw() as u64) << shift),
+        bits,
+    );
     Ok(())
 }
 
@@ -320,29 +315,21 @@ fn shifted_reg64(value: u64, shift: u8, amount: u8) -> Result<u64, String> {
     }
 }
 
-#[derive(Clone, Copy)]
-enum PairAddressMode {
-    Offset,
-    PreIndex,
-    PostIndex,
-}
-
 fn execute_ldp64(
     state: &mut MachineState,
-    rn: u8,
-    rt: u8,
-    rt2: u8,
-    imm7: u8,
-    mode: PairAddressMode,
+    mem: A64Mem,
+    rt: A64Reg,
+    rt2: A64Reg,
 ) -> Result<(), String> {
-    if matches!(mode, PairAddressMode::PreIndex | PairAddressMode::PostIndex)
-        && rn != 31
-        && (rn == rt || rn == rt2)
+    let base = mem.base();
+    if mem_has_writeback(mem)
+        && base.enc() != 31
+        && (base.enc() == rt.enc() || base.enc() == rt2.enc())
     {
         return Err("writeback LDP with base/target overlap is unsupported".to_string());
     }
 
-    let addr = pair_address(state, rn, imm7, mode);
+    let addr = resolve_mem_addr(state, mem);
     let first = state.read_u64(addr);
     let second = state.read_u64(addr.wrapping_add(8));
     state.write_reg(rt, first);
@@ -350,34 +337,32 @@ fn execute_ldp64(
     Ok(())
 }
 
-fn execute_stp64(
-    state: &mut MachineState,
-    rn: u8,
-    rt: u8,
-    rt2: u8,
-    imm7: u8,
-    mode: PairAddressMode,
-) {
+fn execute_stp64(state: &mut MachineState, mem: A64Mem, rt: A64Reg, rt2: A64Reg) {
     let first = state.read_reg(rt);
     let second = state.read_reg(rt2);
-    let addr = pair_address(state, rn, imm7, mode);
+    let addr = resolve_mem_addr(state, mem);
     state.write_u64(addr, first);
     state.write_u64(addr.wrapping_add(8), second);
 }
 
-fn pair_address(state: &mut MachineState, rn: u8, imm7: u8, mode: PairAddressMode) -> u64 {
-    let base = state.read_reg_or_sp(rn);
-    let offset = sign_extend(imm7 as u32, 7) << 3;
+fn mem_has_writeback(mem: A64Mem) -> bool {
+    matches!(mem, A64Mem::PreIndex { .. } | A64Mem::PostIndex { .. })
+}
 
-    match mode {
-        PairAddressMode::Offset => add_signed(base, offset),
-        PairAddressMode::PreIndex => {
+fn resolve_mem_addr(state: &mut MachineState, mem: A64Mem) -> u64 {
+    let base_reg = mem.base();
+    let base = state.read_reg(base_reg);
+    let offset = mem.offset_imm().value();
+
+    match mem {
+        A64Mem::Offset { .. } => add_signed(base, offset),
+        A64Mem::PreIndex { .. } => {
             let addr = add_signed(base, offset);
-            state.write_reg_or_sp(rn, addr);
+            state.write_reg(base_reg, addr);
             addr
         }
-        PairAddressMode::PostIndex => {
-            state.write_reg_or_sp(rn, add_signed(base, offset));
+        A64Mem::PostIndex { .. } => {
+            state.write_reg(base_reg, add_signed(base, offset));
             base
         }
     }
@@ -387,7 +372,7 @@ fn branch_on_zero(
     insn: A64Insn,
     pc: u64,
     state: &MachineState,
-    rt: u8,
+    rt: A64Reg,
     bits: u8,
     branch_if_zero: bool,
 ) -> Result<u64, String> {
@@ -406,7 +391,7 @@ fn branch_on_bit(
     insn: A64Insn,
     pc: u64,
     state: &MachineState,
-    rt: u8,
+    rt: A64Reg,
     bit: u8,
     branch_if_set: bool,
 ) -> Result<u64, String> {
@@ -438,7 +423,7 @@ fn eval_condition(condition: A64Condition, state: &MachineState) -> bool {
     }
 }
 
-fn read_reg_sized(state: &MachineState, reg: u8, bits: u8) -> u64 {
+fn read_reg_sized(state: &MachineState, reg: A64Reg, bits: u8) -> u64 {
     match bits {
         32 => state.read_reg(reg) & 0xFFFF_FFFF,
         64 => state.read_reg(reg),
@@ -446,26 +431,10 @@ fn read_reg_sized(state: &MachineState, reg: u8, bits: u8) -> u64 {
     }
 }
 
-fn write_reg_sized(state: &mut MachineState, reg: u8, value: u64, bits: u8) {
+fn write_reg_sized(state: &mut MachineState, reg: A64Reg, value: u64, bits: u8) {
     match bits {
         32 => state.write_reg(reg, value & 0xFFFF_FFFF),
         64 => state.write_reg(reg, value),
-        _ => unreachable!("unsupported register width"),
-    }
-}
-
-fn read_reg_or_sp_sized(state: &MachineState, reg: u8, bits: u8) -> u64 {
-    match bits {
-        32 => state.read_reg_or_sp(reg) & 0xFFFF_FFFF,
-        64 => state.read_reg_or_sp(reg),
-        _ => unreachable!("unsupported register width"),
-    }
-}
-
-fn write_reg_or_sp_sized(state: &mut MachineState, reg: u8, value: u64, bits: u8) {
-    match bits {
-        32 => state.write_reg_or_sp(reg, value & 0xFFFF_FFFF),
-        64 => state.write_reg_or_sp(reg, value),
         _ => unreachable!("unsupported register width"),
     }
 }
@@ -512,44 +481,43 @@ mod tests {
         execute_insn(
             A64Insn::AddAddsubImmAdd64AddsubImm {
                 sh: 0,
-                imm12: 0x20,
-                rn: 31,
-                rd: 0,
+                imm12: A64Imm::unsigned(0x20, 12),
+                rn: A64Reg::x_sp(31),
+                rd: A64Reg::x_sp(0),
             },
             0x4000,
             &mut state,
         )
         .unwrap();
-        assert_eq!(state.read_reg(0), 0x1020);
-        assert_eq!(state.read_reg(31), 0);
-        assert_eq!(state.read_reg_or_sp(31), 0x1000);
+        assert_eq!(state.read_x(0), 0x1020);
+        assert_eq!(state.read_x(31), 0);
+        assert_eq!(state.read_reg(A64Reg::x_sp(31)), 0x1000);
 
         execute_insn(
             A64Insn::SubAddsubImmSub64AddsubImm {
                 sh: 0,
-                imm12: 0x10,
-                rn: 31,
-                rd: 31,
+                imm12: A64Imm::unsigned(0x10, 12),
+                rn: A64Reg::x_sp(31),
+                rd: A64Reg::x_sp(31),
             },
             0x4004,
             &mut state,
         )
         .unwrap();
         assert_eq!(state.sp(), 0x0ff0);
-        assert_eq!(state.read_reg(31), 0);
+        assert_eq!(state.read_x(31), 0);
     }
 
     #[test]
     fn ldr_str_use_sp_as_memory_base() {
         let mut state = MachineState::new();
         state.set_sp(0x8000);
-        state.write_reg(0, 0x1122_3344_5566_7788);
+        state.write_x(0, 0x1122_3344_5566_7788);
 
         execute_insn(
             A64Insn::StrImmGenStr64LdstPos {
-                imm12: 1,
-                rn: 31,
-                rt: 0,
+                rt: A64Reg::x(0),
+                mem: A64Mem::offset(A64Reg::x_sp(31), A64Imm::scaled_unsigned(1, 12, 3)),
             },
             0x4000,
             &mut state,
@@ -559,30 +527,31 @@ mod tests {
 
         execute_insn(
             A64Insn::LdrImmGenLdr64LdstPos {
-                imm12: 1,
-                rn: 31,
-                rt: 1,
+                rt: A64Reg::x(1),
+                mem: A64Mem::offset(A64Reg::x_sp(31), A64Imm::scaled_unsigned(1, 12, 3)),
             },
             0x4004,
             &mut state,
         )
         .unwrap();
-        assert_eq!(state.read_reg(1), 0x1122_3344_5566_7788);
+        assert_eq!(state.read_x(1), 0x1122_3344_5566_7788);
     }
 
     #[test]
     fn ldp_stp_pair_support_sp_pre_and_post_index() {
         let mut state = MachineState::new();
         state.set_sp(0x9000);
-        state.write_reg(29, 0x1111_2222_3333_4444);
-        state.write_reg(30, 0xAAAA_BBBB_CCCC_DDDD);
+        state.write_x(29, 0x1111_2222_3333_4444);
+        state.write_x(30, 0xAAAA_BBBB_CCCC_DDDD);
 
         execute_insn(
             A64Insn::StpGenStp64LdstpairPre {
-                imm7: signed_field(-2, 7),
-                rt2: 30,
-                rn: 31,
-                rt: 29,
+                rt2: A64Reg::x(30),
+                rt: A64Reg::x(29),
+                mem: A64Mem::pre_index(
+                    A64Reg::x_sp(31),
+                    A64Imm::scaled_signed(signed_field(-2, 7) as u32, 7, 3),
+                ),
             },
             0x4000,
             &mut state,
@@ -592,21 +561,23 @@ mod tests {
         assert_eq!(state.read_u64(0x8ff0), 0x1111_2222_3333_4444);
         assert_eq!(state.read_u64(0x8ff8), 0xAAAA_BBBB_CCCC_DDDD);
 
-        state.write_reg(29, 0);
-        state.write_reg(30, 0);
+        state.write_x(29, 0);
+        state.write_x(30, 0);
         execute_insn(
             A64Insn::LdpGenLdp64LdstpairPost {
-                imm7: signed_field(2, 7),
-                rt2: 30,
-                rn: 31,
-                rt: 29,
+                rt2: A64Reg::x(30),
+                rt: A64Reg::x(29),
+                mem: A64Mem::post_index(
+                    A64Reg::x_sp(31),
+                    A64Imm::scaled_signed(signed_field(2, 7) as u32, 7, 3),
+                ),
             },
             0x4004,
             &mut state,
         )
         .unwrap();
-        assert_eq!(state.read_reg(29), 0x1111_2222_3333_4444);
-        assert_eq!(state.read_reg(30), 0xAAAA_BBBB_CCCC_DDDD);
+        assert_eq!(state.read_x(29), 0x1111_2222_3333_4444);
+        assert_eq!(state.read_x(30), 0xAAAA_BBBB_CCCC_DDDD);
         assert_eq!(state.sp(), 0x9000);
     }
 

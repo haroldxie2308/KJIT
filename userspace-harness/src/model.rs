@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::shared::arm64::{A64Reg, A64Reg31Mode};
 use crate::shared::trans::cfg::RuntimeExitReason;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -65,15 +66,7 @@ impl MachineState {
         self.sp = value;
     }
 
-    pub fn read_reg(&self, reg: u8) -> u64 {
-        self.read_xzr(reg)
-    }
-
-    pub fn write_reg(&mut self, reg: u8, value: u64) {
-        self.write_xzr(reg, value);
-    }
-
-    pub fn read_xzr(&self, reg: u8) -> u64 {
+    pub fn read_x(&self, reg: u8) -> u64 {
         assert!(reg <= 31, "invalid A64 register index: {reg}");
         if reg == 31 {
             0
@@ -82,28 +75,48 @@ impl MachineState {
         }
     }
 
-    pub fn write_xzr(&mut self, reg: u8, value: u64) {
+    pub fn write_x(&mut self, reg: u8, value: u64) {
         assert!(reg <= 31, "invalid A64 register index: {reg}");
         if reg != 31 {
             self.regs[reg as usize] = value;
         }
     }
 
-    pub fn read_reg_or_sp(&self, reg: u8) -> u64 {
-        assert!(reg <= 31, "invalid A64 register index: {reg}");
-        if reg == 31 {
-            self.sp
-        } else {
-            self.regs[reg as usize]
+    pub fn read_reg(&self, reg: A64Reg) -> u64 {
+        let enc = reg.enc();
+        assert!(enc <= 31, "invalid A64 register index: {enc}");
+        match (enc, reg.reg31) {
+            (31, A64Reg31Mode::Sp) => self.sp,
+            (31, _) => 0,
+            _ => self.regs[enc as usize],
         }
     }
 
-    pub fn write_reg_or_sp(&mut self, reg: u8, value: u64) {
-        assert!(reg <= 31, "invalid A64 register index: {reg}");
-        if reg == 31 {
-            self.sp = value;
+    pub fn write_reg(&mut self, reg: A64Reg, value: u64) {
+        let enc = reg.enc();
+        assert!(enc <= 31, "invalid A64 register index: {enc}");
+        match (enc, reg.reg31) {
+            (31, A64Reg31Mode::Sp) => self.sp = value,
+            (31, _) => {}
+            _ => self.regs[enc as usize] = value,
+        }
+    }
+
+    pub fn read_xzr(&self, reg: A64Reg) -> u64 {
+        let enc = reg.enc();
+        assert!(enc <= 31, "invalid A64 register index: {enc}");
+        if enc == 31 {
+            0
         } else {
-            self.regs[reg as usize] = value;
+            self.regs[enc as usize]
+        }
+    }
+
+    pub fn write_xzr(&mut self, reg: A64Reg, value: u64) {
+        let enc = reg.enc();
+        assert!(enc <= 31, "invalid A64 register index: {enc}");
+        if enc != 31 {
+            self.regs[enc as usize] = value;
         }
     }
 
