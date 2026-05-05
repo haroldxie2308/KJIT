@@ -233,6 +233,41 @@ fn infer_roles_from_docvars_and_asm(
         }
     }
 
+    if matches!(mnemonic, "LDP" | "STP") {
+        if fields.contains("Rn") {
+            if matches!(address_form, "pre-indexed" | "post-indexed") {
+                roles.insert(role_tuple("RegReadWrite", "Rn", "X64"));
+            } else {
+                roles.insert(role_tuple("RegRead", "Rn", "X64"));
+            }
+            roles.insert(role_tuple("MemBase", "Rn", "X64"));
+        }
+        let transfer_kind = if mnemonic == "LDP" {
+            "RegWrite"
+        } else {
+            "RegRead"
+        };
+        if fields.contains("Rt") {
+            roles.insert(role_tuple(
+                transfer_kind,
+                "Rt",
+                &operand_width(docvars, None),
+            ));
+        }
+        if fields.contains("Rt2") {
+            roles.insert(role_tuple(
+                transfer_kind,
+                "Rt2",
+                &operand_width(docvars, None),
+            ));
+        }
+        for field in fields {
+            if field.to_lowercase().starts_with("imm") {
+                roles.insert(role_tuple("MemOffset", field, "Unknown"));
+            }
+        }
+    }
+
     let encoded_re = Regex::new(r#"encoded (?:as|in) (?:the )?"([^"]+)" field"#).unwrap();
     for operand in operands {
         let hover = operand.hover.to_lowercase();
@@ -257,7 +292,7 @@ fn infer_roles_from_docvars_and_asm(
             roles.insert(role_tuple("RegRead", &field, &width));
         }
         if hover.contains("register to be transferred") {
-            let kind = if mnemonic == "LDR" {
+            let kind = if matches!(mnemonic, "LDR" | "LDP") {
                 "RegWrite"
             } else {
                 "RegRead"

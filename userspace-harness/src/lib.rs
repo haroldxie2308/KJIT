@@ -121,7 +121,7 @@ fn register_snapshot(state: &MachineState, pc: u64) -> RegisterSnapshot {
     }
     RegisterSnapshot {
         x,
-        sp: 0,
+        sp: state.sp(),
         pc,
         pstate: 0,
     }
@@ -351,11 +351,14 @@ mod tests {
         assert_eq!(cfg.blocks[2].insns.len(), 1);
         assert_eq!(
             &*cfg.blocks[2].prev,
-            &[cfg.blocks[0].start_addr, base_pc + 4]
+            &[base_pc + 4, cfg.blocks[3].start_addr]
         );
         assert_eq!(&*cfg.blocks[2].next, &[base_pc + 12]);
 
-        assert_eq!(&*cfg.blocks[3].prev, &[base_pc + 8]);
+        assert_eq!(
+            &*cfg.blocks[3].prev,
+            &[cfg.blocks[0].start_addr, base_pc + 8]
+        );
         assert_eq!(&*cfg.blocks[3].next, &[base_pc + 8]);
     }
 

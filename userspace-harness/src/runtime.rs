@@ -5,6 +5,7 @@ use crate::shared::utils::vlabel::VLabels;
 
 pub const DEFAULT_BASE_PC: u64 = 0x400000;
 pub const DEFAULT_RETURN_PC: u64 = 0x123456;
+pub const DEFAULT_STACK_TOP: u64 = 0x800000;
 
 const RET_STATUS_REG: u8 = 9;
 const RET_PARAM0_REG: u8 = 10;
@@ -58,6 +59,7 @@ impl UFragment {
 pub struct URuntimeConfig {
     pub base_pc: u64,
     pub return_pc: u64,
+    pub stack_top: u64,
     pub prologue_branch_index: Option<usize>,
 }
 
@@ -66,6 +68,7 @@ impl Default for URuntimeConfig {
         Self {
             base_pc: DEFAULT_BASE_PC,
             return_pc: DEFAULT_RETURN_PC,
+            stack_top: DEFAULT_STACK_TOP,
             prologue_branch_index: None,
         }
     }
@@ -119,9 +122,12 @@ impl URuntime {
 
     pub fn with_config(
         fragment: UFragment,
-        initial_state: MachineState,
+        mut initial_state: MachineState,
         config: URuntimeConfig,
     ) -> Self {
+        if initial_state.sp() == 0 {
+            initial_state.set_sp(config.stack_top);
+        }
         Self {
             state: initial_state,
             fragment,

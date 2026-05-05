@@ -253,6 +253,42 @@ pub enum A64Insn {
         rn: u8,
         rt: u8,
     },
+    LdpGenLdp64LdstpairPost {
+        imm7: u8,
+        rt2: u8,
+        rn: u8,
+        rt: u8,
+    },
+    LdpGenLdp64LdstpairPre {
+        imm7: u8,
+        rt2: u8,
+        rn: u8,
+        rt: u8,
+    },
+    LdpGenLdp64LdstpairOff {
+        imm7: u8,
+        rt2: u8,
+        rn: u8,
+        rt: u8,
+    },
+    StpGenStp64LdstpairPost {
+        imm7: u8,
+        rt2: u8,
+        rn: u8,
+        rt: u8,
+    },
+    StpGenStp64LdstpairPre {
+        imm7: u8,
+        rt2: u8,
+        rn: u8,
+        rt: u8,
+    },
+    StpGenStp64LdstpairOff {
+        imm7: u8,
+        rt2: u8,
+        rn: u8,
+        rt: u8,
+    },
     NopNopHiHints {
     },
     BlBlOnlyBranchImm {
@@ -370,6 +406,12 @@ impl A64Insn {
             Self::StrImmGenStr64LdstImmpre { .. } => "STR_imm_gen.STR_64_ldst_immpre",
             Self::StrImmGenStr32LdstPos { .. } => "STR_imm_gen.STR_32_ldst_pos",
             Self::StrImmGenStr64LdstPos { .. } => "STR_imm_gen.STR_64_ldst_pos",
+            Self::LdpGenLdp64LdstpairPost { .. } => "LDP_gen.LDP_64_ldstpair_post",
+            Self::LdpGenLdp64LdstpairPre { .. } => "LDP_gen.LDP_64_ldstpair_pre",
+            Self::LdpGenLdp64LdstpairOff { .. } => "LDP_gen.LDP_64_ldstpair_off",
+            Self::StpGenStp64LdstpairPost { .. } => "STP_gen.STP_64_ldstpair_post",
+            Self::StpGenStp64LdstpairPre { .. } => "STP_gen.STP_64_ldstpair_pre",
+            Self::StpGenStp64LdstpairOff { .. } => "STP_gen.STP_64_ldstpair_off",
             Self::NopNopHiHints { .. } => "NOP.NOP_HI_hints",
             Self::BlBlOnlyBranchImm { .. } => "BL.BL_only_branch_imm",
             Self::BrBr64BranchReg { .. } => "BR.BR_64_branch_reg",
@@ -414,6 +456,12 @@ impl A64Insn {
             Self::StrImmGenStr64LdstImmpre { .. } => "STR",
             Self::StrImmGenStr32LdstPos { .. } => "STR",
             Self::StrImmGenStr64LdstPos { .. } => "STR",
+            Self::LdpGenLdp64LdstpairPost { .. } => "LDP",
+            Self::LdpGenLdp64LdstpairPre { .. } => "LDP",
+            Self::LdpGenLdp64LdstpairOff { .. } => "LDP",
+            Self::StpGenStp64LdstpairPost { .. } => "STP",
+            Self::StpGenStp64LdstpairPre { .. } => "STP",
+            Self::StpGenStp64LdstpairOff { .. } => "STP",
             Self::NopNopHiHints { .. } => "NOP",
             Self::BlBlOnlyBranchImm { .. } => "BL",
             Self::BrBr64BranchReg { .. } => "BR",
@@ -458,6 +506,12 @@ impl A64Insn {
             Self::StrImmGenStr64LdstImmpre { .. } => "STR <Xt> , [ <Xn|SP> , # <simm> ]!",
             Self::StrImmGenStr32LdstPos { .. } => "STR <Wt> , [ <Xn|SP> {, # <pimm> }]",
             Self::StrImmGenStr64LdstPos { .. } => "STR <Xt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::LdpGenLdp64LdstpairPost { .. } => "LDP <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>",
+            Self::LdpGenLdp64LdstpairPre { .. } => "LDP <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!",
+            Self::LdpGenLdp64LdstpairOff { .. } => "LDP <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]",
+            Self::StpGenStp64LdstpairPost { .. } => "STP <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>",
+            Self::StpGenStp64LdstpairPre { .. } => "STP <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!",
+            Self::StpGenStp64LdstpairOff { .. } => "STP <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]",
             Self::NopNopHiHints { .. } => "NOP",
             Self::BlBlOnlyBranchImm { .. } => "BL <label>",
             Self::BrBr64BranchReg { .. } => "BR <Xn>",
@@ -707,6 +761,54 @@ impl A64Insn {
                 word |= encode_a64_field("STR_imm_gen.STR_64_ldst_pos", "Rt", rt as u32, 5, 0)?;
                 Ok(word)
             }
+            Self::LdpGenLdp64LdstpairPost { imm7, rt2, rn, rt } => {
+                let mut word = 0xa8c00000;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "imm7", imm7 as u32, 7, 15)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rt2", rt2 as u32, 5, 10)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdpGenLdp64LdstpairPre { imm7, rt2, rn, rt } => {
+                let mut word = 0xa9c00000;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "imm7", imm7 as u32, 7, 15)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "Rt2", rt2 as u32, 5, 10)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdpGenLdp64LdstpairOff { imm7, rt2, rn, rt } => {
+                let mut word = 0xa9400000;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "imm7", imm7 as u32, 7, 15)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rt2", rt2 as u32, 5, 10)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StpGenStp64LdstpairPost { imm7, rt2, rn, rt } => {
+                let mut word = 0xa8800000;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "imm7", imm7 as u32, 7, 15)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "Rt2", rt2 as u32, 5, 10)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StpGenStp64LdstpairPre { imm7, rt2, rn, rt } => {
+                let mut word = 0xa9800000;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "imm7", imm7 as u32, 7, 15)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "Rt2", rt2 as u32, 5, 10)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StpGenStp64LdstpairOff { imm7, rt2, rn, rt } => {
+                let mut word = 0xa9000000;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "imm7", imm7 as u32, 7, 15)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rt2", rt2 as u32, 5, 10)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
             Self::NopNopHiHints { } => {
                 let word = 0xd503201f;
                 Ok(word)
@@ -839,6 +941,12 @@ impl A64Insn {
             Self::StrImmGenStr64LdstImmpre { .. } => OPERANDS_STR_IMM_GEN_STR_64_LDST_IMMPRE,
             Self::StrImmGenStr32LdstPos { .. } => OPERANDS_STR_IMM_GEN_STR_32_LDST_POS,
             Self::StrImmGenStr64LdstPos { .. } => OPERANDS_STR_IMM_GEN_STR_64_LDST_POS,
+            Self::LdpGenLdp64LdstpairPost { .. } => OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_POST,
+            Self::LdpGenLdp64LdstpairPre { .. } => OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_PRE,
+            Self::LdpGenLdp64LdstpairOff { .. } => OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_OFF,
+            Self::StpGenStp64LdstpairPost { .. } => OPERANDS_STP_GEN_STP_64_LDSTPAIR_POST,
+            Self::StpGenStp64LdstpairPre { .. } => OPERANDS_STP_GEN_STP_64_LDSTPAIR_PRE,
+            Self::StpGenStp64LdstpairOff { .. } => OPERANDS_STP_GEN_STP_64_LDSTPAIR_OFF,
             Self::NopNopHiHints { .. } => OPERANDS_NOP_NOP_HI_HINTS,
             Self::BlBlOnlyBranchImm { .. } => OPERANDS_BL_BL_ONLY_BRANCH_IMM,
             Self::BrBr64BranchReg { .. } => OPERANDS_BR_BR_64_BRANCH_REG,
@@ -1081,6 +1189,54 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
     if (word & 0xffc00000) == 0xf9000000 {
         return Some(A64Insn::StrImmGenStr64LdstPos {
             imm12: ((word & 0x003ffc00) >> 10) as u16,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffc00000) == 0xa8c00000 {
+        return Some(A64Insn::LdpGenLdp64LdstpairPost {
+            imm7: ((word & 0x003f8000) >> 15) as u8,
+            rt2: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffc00000) == 0xa9c00000 {
+        return Some(A64Insn::LdpGenLdp64LdstpairPre {
+            imm7: ((word & 0x003f8000) >> 15) as u8,
+            rt2: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffc00000) == 0xa9400000 {
+        return Some(A64Insn::LdpGenLdp64LdstpairOff {
+            imm7: ((word & 0x003f8000) >> 15) as u8,
+            rt2: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffc00000) == 0xa8800000 {
+        return Some(A64Insn::StpGenStp64LdstpairPost {
+            imm7: ((word & 0x003f8000) >> 15) as u8,
+            rt2: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffc00000) == 0xa9800000 {
+        return Some(A64Insn::StpGenStp64LdstpairPre {
+            imm7: ((word & 0x003f8000) >> 15) as u8,
+            rt2: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffc00000) == 0xa9000000 {
+        return Some(A64Insn::StpGenStp64LdstpairOff {
+            imm7: ((word & 0x003f8000) >> 15) as u8,
+            rt2: ((word & 0x00007c00) >> 10) as u8,
             rn: ((word & 0x000003e0) >> 5) as u8,
             rt: ((word & 0x0000001f) >> 0) as u8,
         });
@@ -1670,6 +1826,132 @@ pub const OPERANDS_STR_IMM_GEN_STR_64_LDST_POS: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
+pub const FIELDS_LDP_GEN_LDP_64_LDSTPAIR_POST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_POST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt2", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDP_GEN_LDP_64_LDSTPAIR_PRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_PRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt2", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDP_GEN_LDP_64_LDSTPAIR_OFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_OFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt2", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STP_GEN_STP_64_LDSTPAIR_POST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STP_GEN_STP_64_LDSTPAIR_POST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt2", width: A64RegWidth::X64 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STP_GEN_STP_64_LDSTPAIR_PRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STP_GEN_STP_64_LDSTPAIR_PRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt2", width: A64RegWidth::X64 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STP_GEN_STP_64_LDSTPAIR_OFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STP_GEN_STP_64_LDSTPAIR_OFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt2", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_NOP_NOP_HI_HINTS: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "CRm", hi: 11, lo: 8, width: 4, mask: 0x00000f00 },
     GeneratedFieldSpec { name: "op2", hi: 7, lo: 5, width: 3, mask: 0x000000e0 },
@@ -2153,6 +2435,78 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         fields: FIELDS_STR_IMM_GEN_STR_64_LDST_POS,
         operands: OPERANDS_STR_IMM_GEN_STR_64_LDST_POS,
         asm: "STR <Xt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDP_gen.LDP_64_ldstpair_post",
+        mnemonic: "LDP",
+        heading: "LDP",
+        title: "LDP -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0xa8c00000,
+        fields: FIELDS_LDP_GEN_LDP_64_LDSTPAIR_POST,
+        operands: OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_POST,
+        asm: "LDP <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDP_gen.LDP_64_ldstpair_pre",
+        mnemonic: "LDP",
+        heading: "LDP",
+        title: "LDP -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0xa9c00000,
+        fields: FIELDS_LDP_GEN_LDP_64_LDSTPAIR_PRE,
+        operands: OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_PRE,
+        asm: "LDP <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "LDP_gen.LDP_64_ldstpair_off",
+        mnemonic: "LDP",
+        heading: "LDP",
+        title: "LDP -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0xa9400000,
+        fields: FIELDS_LDP_GEN_LDP_64_LDSTPAIR_OFF,
+        operands: OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_OFF,
+        asm: "LDP <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STP_gen.STP_64_ldstpair_post",
+        mnemonic: "STP",
+        heading: "STP",
+        title: "STP -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0xa8800000,
+        fields: FIELDS_STP_GEN_STP_64_LDSTPAIR_POST,
+        operands: OPERANDS_STP_GEN_STP_64_LDSTPAIR_POST,
+        asm: "STP <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "STP_gen.STP_64_ldstpair_pre",
+        mnemonic: "STP",
+        heading: "STP",
+        title: "STP -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0xa9800000,
+        fields: FIELDS_STP_GEN_STP_64_LDSTPAIR_PRE,
+        operands: OPERANDS_STP_GEN_STP_64_LDSTPAIR_PRE,
+        asm: "STP <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "STP_gen.STP_64_ldstpair_off",
+        mnemonic: "STP",
+        heading: "STP",
+        title: "STP -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0xa9000000,
+        fields: FIELDS_STP_GEN_STP_64_LDSTPAIR_OFF,
+        operands: OPERANDS_STP_GEN_STP_64_LDSTPAIR_OFF,
+        asm: "STP <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]",
     },
     GeneratedInsnSpec {
         key: "NOP.NOP_HI_hints",

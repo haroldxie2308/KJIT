@@ -12,7 +12,8 @@ pub struct Flags {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct MachineState {
-    regs: [u64; 32],
+    regs: [u64; 31],
+    sp: u64,
     pub flags: Flags,
     memory: BTreeMap<u64, u8>,
 }
@@ -33,6 +34,7 @@ pub struct ExecutionResult {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct NormalizedState {
     pub regs: [u64; 31],
+    pub sp: u64,
     pub flags: Flags,
     pub memory: BTreeMap<u64, u8>,
     pub halt_reason: HaltReason,
@@ -40,10 +42,9 @@ pub struct NormalizedState {
 
 impl NormalizedState {
     pub fn from_execution(result: &ExecutionResult) -> Self {
-        let mut regs = [0_u64; 31];
-        regs.copy_from_slice(&result.state.regs[..31]);
         Self {
-            regs,
+            regs: result.state.regs,
+            sp: result.state.sp,
             flags: result.state.flags,
             memory: result.state.memory.clone(),
             halt_reason: result.halt_reason,
@@ -56,7 +57,24 @@ impl MachineState {
         Self::default()
     }
 
+    pub fn sp(&self) -> u64 {
+        self.sp
+    }
+
+    pub fn set_sp(&mut self, value: u64) {
+        self.sp = value;
+    }
+
     pub fn read_reg(&self, reg: u8) -> u64 {
+        self.read_xzr(reg)
+    }
+
+    pub fn write_reg(&mut self, reg: u8, value: u64) {
+        self.write_xzr(reg, value);
+    }
+
+    pub fn read_xzr(&self, reg: u8) -> u64 {
+        assert!(reg <= 31, "invalid A64 register index: {reg}");
         if reg == 31 {
             0
         } else {
@@ -64,8 +82,27 @@ impl MachineState {
         }
     }
 
-    pub fn write_reg(&mut self, reg: u8, value: u64) {
+    pub fn write_xzr(&mut self, reg: u8, value: u64) {
+        assert!(reg <= 31, "invalid A64 register index: {reg}");
         if reg != 31 {
+            self.regs[reg as usize] = value;
+        }
+    }
+
+    pub fn read_reg_or_sp(&self, reg: u8) -> u64 {
+        assert!(reg <= 31, "invalid A64 register index: {reg}");
+        if reg == 31 {
+            self.sp
+        } else {
+            self.regs[reg as usize]
+        }
+    }
+
+    pub fn write_reg_or_sp(&mut self, reg: u8, value: u64) {
+        assert!(reg <= 31, "invalid A64 register index: {reg}");
+        if reg == 31 {
+            self.sp = value;
+        } else {
             self.regs[reg as usize] = value;
         }
     }

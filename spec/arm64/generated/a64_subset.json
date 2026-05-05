@@ -3770,6 +3770,880 @@
     ]
   },
   {
+    "source_file": "ldp_gen.xml",
+    "section_id": "LDP_gen",
+    "heading": "LDP",
+    "title": "LDP -- A64",
+    "docvars": {
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "LDP",
+      "offset-type": "off7s_s"
+    },
+    "variants": [
+      {
+        "section_id": "LDP_gen",
+        "heading": "LDP",
+        "title": "LDP -- A64",
+        "iclass": "Post-index",
+        "encoding_name": "LDP_64_ldstpair_post",
+        "encoding_label": "64-bit",
+        "mnemonic": "LDP",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDP",
+          "offset-type": "off7s_s",
+          "address-form": "post-indexed",
+          "address-form-reg-type": "post-indexed-pair-64",
+          "atomic-ops": "LDP-pair-64",
+          "reg-type": "pair-64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt1>",
+            "link": "Xt1OrXZR",
+            "hover": "Is the 64-bit name of the first general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xt2>",
+            "link": "Xt2OrXZR",
+            "hover": "Is the 64-bit name of the second general-purpose register to be transferred, encoded in the \"Rt2\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__15",
+            "hover": "For the \"Post-index 64-bit\" and \"Pre-index 64-bit\" variants: is the signed immediate byte offset, a multiple of 8 in the range -512 to 504, encoded in the \"imm7\" field as <imm>/8."
+          }
+        ],
+        "mask": "0xffc00000",
+        "value": "0xa8c00000",
+        "fields": [
+          {
+            "name": "opc",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "imm7",
+            "hi": 21,
+            "lo": 15,
+            "width": 7,
+            "shift": 15,
+            "mask": "0x003f8000",
+            "variable": true
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm7",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt2",
+            "width": "X64"
+          }
+        ],
+        "asm": "LDP <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>"
+      },
+      {
+        "section_id": "LDP_gen",
+        "heading": "LDP",
+        "title": "LDP -- A64",
+        "iclass": "Pre-index",
+        "encoding_name": "LDP_64_ldstpair_pre",
+        "encoding_label": "64-bit",
+        "mnemonic": "LDP",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDP",
+          "offset-type": "off7s_s",
+          "address-form": "pre-indexed",
+          "address-form-reg-type": "pre-indexed-pair-64",
+          "atomic-ops": "LDP-pair-64",
+          "reg-type": "pair-64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt1>",
+            "link": "Xt1OrXZR",
+            "hover": "Is the 64-bit name of the first general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xt2>",
+            "link": "Xt2OrXZR",
+            "hover": "Is the 64-bit name of the second general-purpose register to be transferred, encoded in the \"Rt2\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__15",
+            "hover": "For the \"Post-index 64-bit\" and \"Pre-index 64-bit\" variants: is the signed immediate byte offset, a multiple of 8 in the range -512 to 504, encoded in the \"imm7\" field as <imm>/8."
+          }
+        ],
+        "mask": "0xffc00000",
+        "value": "0xa9c00000",
+        "fields": [
+          {
+            "name": "opc",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "imm7",
+            "hi": 21,
+            "lo": 15,
+            "width": 7,
+            "shift": 15,
+            "mask": "0x003f8000",
+            "variable": true
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm7",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt2",
+            "width": "X64"
+          }
+        ],
+        "asm": "LDP <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!"
+      },
+      {
+        "section_id": "LDP_gen",
+        "heading": "LDP",
+        "title": "LDP -- A64",
+        "iclass": "Signed offset",
+        "encoding_name": "LDP_64_ldstpair_off",
+        "encoding_label": "64-bit",
+        "mnemonic": "LDP",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDP",
+          "offset-type": "off7s_s",
+          "address-form": "signed-scaled-offset",
+          "address-form-reg-type": "signed-scaled-offset-pair-64",
+          "atomic-ops": "LDP-pair-64",
+          "reg-type": "pair-64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt1>",
+            "link": "Xt1OrXZR",
+            "hover": "Is the 64-bit name of the first general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xt2>",
+            "link": "Xt2OrXZR",
+            "hover": "Is the 64-bit name of the second general-purpose register to be transferred, encoded in the \"Rt2\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__5",
+            "hover": "For the \"Signed offset 64-bit\" variant: is the optional signed immediate byte offset, a multiple of 8 in the range -512 to 504, defaulting to 0 and encoded in the \"imm7\" field as <imm>/8."
+          }
+        ],
+        "mask": "0xffc00000",
+        "value": "0xa9400000",
+        "fields": [
+          {
+            "name": "opc",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "imm7",
+            "hi": 21,
+            "lo": 15,
+            "width": 7,
+            "shift": 15,
+            "mask": "0x003f8000",
+            "variable": true
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm7",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt2",
+            "width": "X64"
+          }
+        ],
+        "asm": "LDP <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]"
+      }
+    ]
+  },
+  {
+    "source_file": "stp_gen.xml",
+    "section_id": "STP_gen",
+    "heading": "STP",
+    "title": "STP -- A64",
+    "docvars": {
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "STP",
+      "offset-type": "off7s_s"
+    },
+    "variants": [
+      {
+        "section_id": "STP_gen",
+        "heading": "STP",
+        "title": "STP -- A64",
+        "iclass": "Post-index",
+        "encoding_name": "STP_64_ldstpair_post",
+        "encoding_label": "64-bit",
+        "mnemonic": "STP",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STP",
+          "offset-type": "off7s_s",
+          "address-form": "post-indexed",
+          "address-form-reg-type": "post-indexed-pair-64",
+          "atomic-ops": "STP-pair-64",
+          "reg-type": "pair-64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt1>",
+            "link": "Xt1OrXZR",
+            "hover": "Is the 64-bit name of the first general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xt2>",
+            "link": "Xt2OrXZR",
+            "hover": "Is the 64-bit name of the second general-purpose register to be transferred, encoded in the \"Rt2\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__15",
+            "hover": "For the \"Post-index 64-bit\" and \"Pre-index 64-bit\" variants: is the signed immediate byte offset, a multiple of 8 in the range -512 to 504, encoded in the \"imm7\" field as <imm>/8."
+          }
+        ],
+        "mask": "0xffc00000",
+        "value": "0xa8800000",
+        "fields": [
+          {
+            "name": "opc",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "imm7",
+            "hi": 21,
+            "lo": 15,
+            "width": 7,
+            "shift": 15,
+            "mask": "0x003f8000",
+            "variable": true
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm7",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt2",
+            "width": "X64"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          }
+        ],
+        "asm": "STP <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>"
+      },
+      {
+        "section_id": "STP_gen",
+        "heading": "STP",
+        "title": "STP -- A64",
+        "iclass": "Pre-index",
+        "encoding_name": "STP_64_ldstpair_pre",
+        "encoding_label": "64-bit",
+        "mnemonic": "STP",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STP",
+          "offset-type": "off7s_s",
+          "address-form": "pre-indexed",
+          "address-form-reg-type": "pre-indexed-pair-64",
+          "atomic-ops": "STP-pair-64",
+          "reg-type": "pair-64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt1>",
+            "link": "Xt1OrXZR",
+            "hover": "Is the 64-bit name of the first general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xt2>",
+            "link": "Xt2OrXZR",
+            "hover": "Is the 64-bit name of the second general-purpose register to be transferred, encoded in the \"Rt2\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__15",
+            "hover": "For the \"Post-index 64-bit\" and \"Pre-index 64-bit\" variants: is the signed immediate byte offset, a multiple of 8 in the range -512 to 504, encoded in the \"imm7\" field as <imm>/8."
+          }
+        ],
+        "mask": "0xffc00000",
+        "value": "0xa9800000",
+        "fields": [
+          {
+            "name": "opc",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "imm7",
+            "hi": 21,
+            "lo": 15,
+            "width": 7,
+            "shift": 15,
+            "mask": "0x003f8000",
+            "variable": true
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm7",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt2",
+            "width": "X64"
+          },
+          {
+            "kind": "RegReadWrite",
+            "field": "Rn",
+            "width": "X64"
+          }
+        ],
+        "asm": "STP <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!"
+      },
+      {
+        "section_id": "STP_gen",
+        "heading": "STP",
+        "title": "STP -- A64",
+        "iclass": "Signed offset",
+        "encoding_name": "STP_64_ldstpair_off",
+        "encoding_label": "64-bit",
+        "mnemonic": "STP",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STP",
+          "offset-type": "off7s_s",
+          "address-form": "signed-scaled-offset",
+          "address-form-reg-type": "signed-scaled-offset-pair-64",
+          "atomic-ops": "STP-pair-64",
+          "reg-type": "pair-64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt1>",
+            "link": "Xt1OrXZR",
+            "hover": "Is the 64-bit name of the first general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xt2>",
+            "link": "Xt2OrXZR",
+            "hover": "Is the 64-bit name of the second general-purpose register to be transferred, encoded in the \"Rt2\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<imm>",
+            "link": "imm__5",
+            "hover": "For the \"Signed offset 64-bit\" variant: is the optional signed immediate byte offset, a multiple of 8 in the range -512 to 504, defaulting to 0 and encoded in the \"imm7\" field as <imm>/8."
+          }
+        ],
+        "mask": "0xffc00000",
+        "value": "0xa9000000",
+        "fields": [
+          {
+            "name": "opc",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "imm7",
+            "hi": 21,
+            "lo": 15,
+            "width": 7,
+            "shift": 15,
+            "mask": "0x003f8000",
+            "variable": true
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm7",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt2",
+            "width": "X64"
+          }
+        ],
+        "asm": "STP <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]"
+      }
+    ]
+  },
+  {
     "source_file": "nop.xml",
     "section_id": "NOP",
     "heading": "NOP",
