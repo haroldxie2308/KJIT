@@ -13,7 +13,7 @@ endif
 
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset \
-	userspace-harness-test userspace-harness-dump-cfg test-asm-pipeline arm64-spec-gen arm64-spec-gen-py workflow-help
+	userspace-harness-test userspace-harness-dump-cfg test-asm-pipeline test-encoding arm64-spec-gen arm64-spec-gen-py workflow-help
 
 default:
 	$(KMAKE) M=$$PWD
@@ -81,6 +81,9 @@ userspace-harness-dump-cfg:
 test-asm-pipeline:
 	bash ./scripts/run-asm-fixture.sh
 
+test-encoding:
+	cargo test --manifest-path userspace-harness/Cargo.toml encoding_matches_llvm_for_handwritten_cases -- --ignored --nocapture
+
 arm64-spec-gen:
 	cargo run --manifest-path specgen/Cargo.toml -- --xml-dir "$(ARM64_ISA_XML_DIR)"
 	cp spec/arm64/generated/a64_subset.rs userspace-harness/src/shared/arm64/generated.rs
@@ -104,6 +107,7 @@ workflow-help:
 		'userspace-harness-test Run the standalone userspace validation harness tests' \
 		'userspace-harness-dump-cfg Assemble the toy AArch64 fixture and print its basic blocks' \
 		'test-asm-pipeline Run assembly fixture through mock-reader translation comparison' \
+		'test-encoding   Compare generated A64Insn encoding against LLVM assembler output' \
 		'qemu-run        Boot the local kernel image in QEMU (foreground)' \
 		'qemu-run-bg     Boot the local kernel image in QEMU (background)' \
 		'qemu-reset      Reset the running QEMU guest through QMP'

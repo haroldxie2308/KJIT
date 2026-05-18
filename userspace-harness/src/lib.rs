@@ -5,6 +5,9 @@ pub mod model;
 pub mod runtime;
 pub mod shared;
 
+#[cfg(test)]
+mod encoding_tests;
+
 use crate::shared::trans::input::{
     CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
 };
