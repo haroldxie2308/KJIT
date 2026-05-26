@@ -5,13 +5,15 @@ KBUILD_OUTPUT ?= $(KDIR)
 ARCH ?= arm64
 LLVM ?= 1
 ARM64_ISA_XML_DIR ?= $(CURDIR)/tmp/isa_a64_2026_03/ISA_A64_xml_A_profile-2026-03
+HARNESS_SHARED_DIR := userspace-harness/src/shared
+HARNESS_SHARED_BACKUP := userspace-harness/.shared.bak
 
 KMAKE = $(MAKE) -C $(KDIR) ARCH=$(ARCH) LLVM=$(LLVM)
 ifneq ($(abspath $(KBUILD_OUTPUT)),$(abspath $(KDIR)))
 KMAKE += O=$(KBUILD_OUTPUT)
 endif
 
-.PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-prepare module-build \
+.PHONY: default modules_install install uninstall dm test rust-analyzer prepare sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset \
 	userspace-harness-test userspace-harness-dump-cfg test-asm-pipeline test-encoding arm64-spec-gen arm64-spec-gen-py workflow-help
 
@@ -46,9 +48,16 @@ rustavailable-check:
 
 prepare: kernel-prepare kernel-build harness-prepare
 
-harness-prepare:
-	rsync -a --delete shared/ userspace-harness/src/shared/
-	cp spec/arm64/generated/a64_subset.rs userspace-harness/src/shared/arm64/generated.rs
+sync:
+	@if [ -d "$(HARNESS_SHARED_DIR)" ]; then \
+		rm -rf "$(HARNESS_SHARED_BACKUP)"; \
+		cp -a "$(HARNESS_SHARED_DIR)" "$(HARNESS_SHARED_BACKUP)"; \
+		echo "Backed up $(HARNESS_SHARED_DIR) to $(HARNESS_SHARED_BACKUP)"; \
+	fi
+	rsync -a --delete shared/ "$(HARNESS_SHARED_DIR)/"
+	cp spec/arm64/generated/a64_subset.rs "$(HARNESS_SHARED_DIR)/arm64/generated.rs"
+
+harness-prepare: sync
 
 kernel-prepare:
 	bash ./scripts/setup-kernel-build.sh
@@ -99,6 +108,7 @@ workflow-help:
 		'kernel-build    Build Image/modules into the kernel build tree' \
 		'kernel-clean    Clean the kernel build tree' \
 		'clean           Alias for kernel-clean' \
+		'sync            Copy shared/ into userspace-harness/src/shared with one backup' \
 		'rust-analyzer   Generate rust-project.json for this module' \
 		'rustavailable-check Check Rust-for-Linux toolchain readiness' \
 		'module-build    Build the KJIT module' \
