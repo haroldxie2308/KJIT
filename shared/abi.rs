@@ -1,4 +1,7 @@
-use crate::shared::arm64::{A64Imm, A64Insn, A64Mem, A64Reg};
+use crate::shared::arm64::ergo::{
+    ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, sp, uimm, x, xzr,
+};
+use crate::shared::arm64::A64Insn;
 use crate::shared::platform::{AllocFlags, SharedAllocError, SharedResult, SharedVec};
 
 pub const ABI_PT_REGS_ARG_REG: u8 = 0;
@@ -56,78 +59,342 @@ impl RetStatus {
 }
 
 pub const KJIT_PROLOGUE: &[A64Insn] = &[
-    stp_pre(29, 30, -192),
-    mov_from_sp(29),
-    str64_off(18, sp(), 88),
-    stp_off(19, 20, sp(), 96),
-    stp_off(21, 22, sp(), 112),
-    stp_off(23, 24, sp(), 128),
-    stp_off(25, 26, sp(), 144),
-    stp_off(27, 28, sp(), 160),
-    mov_x(16, ABI_PT_REGS_ARG_REG),
-    mov_x(17, ABI_EXTRA_PARAMS_ARG_REG),
-    stp_off(16, 17, sp(), 176),
-    ldp_off(0, 1, x(16), 0),
-    ldp_off(2, 3, x(16), 16),
-    ldp_off(4, 5, x(16), 32),
-    ldp_off(6, 7, x(16), 48),
-    ldp_off(8, 9, x(16), 64),
-    ldp_off(10, 11, x(16), 80),
-    ldp_off(12, 13, x(16), 96),
-    ldp_off(14, 15, x(16), 112),
-    ldp_off(18, 19, x(16), 144),
-    ldp_off(20, 21, x(16), 160),
-    ldp_off(22, 23, x(16), 176),
-    ldp_off(24, 25, x(16), 192),
-    ldp_off(26, 27, x(16), 208),
-    ldr64_off(28, x(16), 224),
-    ldr64_off(30, x(16), 240),
-    ldr64_off(17, x(16), 232),
-    str64_off(17, sp(), 64),
-    ldr64_off(17, x(16), 248),
-    str64_off(17, sp(), 72),
-    ldp_off(16, 17, x(16), 128),
-    stp_off(12, 13, sp(), 16),
-    stp_off(14, 15, sp(), 32),
-    stp_off(16, 17, sp(), 48),
-    ldp_off(16, 17, sp(), 64),
+    A64Insn::StpGenStp64LdstpairPre {
+        rt2: x(30),
+        rt: x(29),
+        mem: mem_pre(sp(), ldstpair64_offset(-192)),
+    },
+    A64Insn::AddAddsubImmAdd64AddsubImm {
+        sh: 0,
+        imm12: uimm(0, 12),
+        rn: sp(),
+        rd: x(29),
+    },
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(18),
+        mem: mem_off(sp(), ldst64_offset(88)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(20),
+        rt: x(19),
+        mem: mem_off(sp(), ldstpair64_offset(96)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(22),
+        rt: x(21),
+        mem: mem_off(sp(), ldstpair64_offset(112)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(24),
+        rt: x(23),
+        mem: mem_off(sp(), ldstpair64_offset(128)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(26),
+        rt: x(25),
+        mem: mem_off(sp(), ldstpair64_offset(144)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(28),
+        rt: x(27),
+        mem: mem_off(sp(), ldstpair64_offset(160)),
+    },
+    A64Insn::OrrLogShiftOrr64LogShift {
+        shift: 0,
+        rm: x(ABI_PT_REGS_ARG_REG),
+        imm6: uimm(0, 6),
+        rn: xzr(),
+        rd: x(16),
+    },
+    A64Insn::OrrLogShiftOrr64LogShift {
+        shift: 0,
+        rm: x(ABI_EXTRA_PARAMS_ARG_REG),
+        imm6: uimm(0, 6),
+        rn: xzr(),
+        rd: x(17),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(17),
+        rt: x(16),
+        mem: mem_off(sp(), ldstpair64_offset(176)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(1),
+        rt: x(0),
+        mem: mem_off(x(16), ldstpair64_offset(0)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(3),
+        rt: x(2),
+        mem: mem_off(x(16), ldstpair64_offset(16)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(5),
+        rt: x(4),
+        mem: mem_off(x(16), ldstpair64_offset(32)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(7),
+        rt: x(6),
+        mem: mem_off(x(16), ldstpair64_offset(48)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(9),
+        rt: x(8),
+        mem: mem_off(x(16), ldstpair64_offset(64)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(11),
+        rt: x(10),
+        mem: mem_off(x(16), ldstpair64_offset(80)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(13),
+        rt: x(12),
+        mem: mem_off(x(16), ldstpair64_offset(96)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(15),
+        rt: x(14),
+        mem: mem_off(x(16), ldstpair64_offset(112)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(19),
+        rt: x(18),
+        mem: mem_off(x(16), ldstpair64_offset(144)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(21),
+        rt: x(20),
+        mem: mem_off(x(16), ldstpair64_offset(160)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(23),
+        rt: x(22),
+        mem: mem_off(x(16), ldstpair64_offset(176)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(25),
+        rt: x(24),
+        mem: mem_off(x(16), ldstpair64_offset(192)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(27),
+        rt: x(26),
+        mem: mem_off(x(16), ldstpair64_offset(208)),
+    },
+    A64Insn::LdrImmGenLdr64LdstPos {
+        rt: x(28),
+        mem: mem_off(x(16), ldst64_offset(224)),
+    },
+    A64Insn::LdrImmGenLdr64LdstPos {
+        rt: x(30),
+        mem: mem_off(x(16), ldst64_offset(240)),
+    },
+    A64Insn::LdrImmGenLdr64LdstPos {
+        rt: x(17),
+        mem: mem_off(x(16), ldst64_offset(232)),
+    },
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(17),
+        mem: mem_off(sp(), ldst64_offset(64)),
+    },
+    A64Insn::LdrImmGenLdr64LdstPos {
+        rt: x(17),
+        mem: mem_off(x(16), ldst64_offset(248)),
+    },
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(17),
+        mem: mem_off(sp(), ldst64_offset(72)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(17),
+        rt: x(16),
+        mem: mem_off(x(16), ldstpair64_offset(128)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(13),
+        rt: x(12),
+        mem: mem_off(sp(), ldstpair64_offset(16)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(15),
+        rt: x(14),
+        mem: mem_off(sp(), ldstpair64_offset(32)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(17),
+        rt: x(16),
+        mem: mem_off(sp(), ldstpair64_offset(48)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(17),
+        rt: x(16),
+        mem: mem_off(sp(), ldstpair64_offset(64)),
+    },
     A64Insn::NopNopHiHints {},
 ];
 
 pub const KJIT_EPILOGUE: &[A64Insn] = &[
-    stp_off(16, 17, sp(), 64),
-    ldp_off(16, 17, sp(), 176),
-    stp_off(RET_PARAM0_REG, RET_PARAM1_REG, x(17), 0),
-    ldp_off(14, 15, sp(), 16),
-    stp_off(14, 15, x(16), 96),
-    ldp_off(14, 15, sp(), 32),
-    stp_off(14, 15, x(16), 112),
-    ldp_off(14, 15, sp(), 48),
-    stp_off(14, 15, x(16), 128),
-    ldr64_off(14, sp(), 64),
-    str64_off(14, x(16), 232),
-    ldr64_off(14, sp(), 72),
-    str64_off(14, x(16), 248),
-    stp_off(0, 1, x(16), 0),
-    stp_off(2, 3, x(16), 16),
-    stp_off(4, 5, x(16), 32),
-    stp_off(6, 7, x(16), 48),
-    str64_off(8, x(16), 64),
-    stp_off(18, 19, x(16), 144),
-    stp_off(20, 21, x(16), 160),
-    stp_off(22, 23, x(16), 176),
-    stp_off(24, 25, x(16), 192),
-    stp_off(26, 27, x(16), 208),
-    str64_off(28, x(16), 224),
-    str64_off(ABI_LINK_REG, x(16), 240),
-    mov_x(ABI_PT_REGS_ARG_REG, RET_STATUS_REG),
-    ldr64_off(18, sp(), 88),
-    ldp_off(19, 20, sp(), 96),
-    ldp_off(21, 22, sp(), 112),
-    ldp_off(23, 24, sp(), 128),
-    ldp_off(25, 26, sp(), 144),
-    ldp_off(27, 28, sp(), 160),
-    ldp_post(29, ABI_LINK_REG, sp(), 192),
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(17),
+        rt: x(16),
+        mem: mem_off(sp(), ldstpair64_offset(64)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(17),
+        rt: x(16),
+        mem: mem_off(sp(), ldstpair64_offset(176)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(RET_PARAM1_REG),
+        rt: x(RET_PARAM0_REG),
+        mem: mem_off(x(17), ldstpair64_offset(0)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(15),
+        rt: x(14),
+        mem: mem_off(sp(), ldstpair64_offset(16)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(15),
+        rt: x(14),
+        mem: mem_off(x(16), ldstpair64_offset(96)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(15),
+        rt: x(14),
+        mem: mem_off(sp(), ldstpair64_offset(32)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(15),
+        rt: x(14),
+        mem: mem_off(x(16), ldstpair64_offset(112)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(15),
+        rt: x(14),
+        mem: mem_off(sp(), ldstpair64_offset(48)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(15),
+        rt: x(14),
+        mem: mem_off(x(16), ldstpair64_offset(128)),
+    },
+    A64Insn::LdrImmGenLdr64LdstPos {
+        rt: x(14),
+        mem: mem_off(sp(), ldst64_offset(64)),
+    },
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(14),
+        mem: mem_off(x(16), ldst64_offset(232)),
+    },
+    A64Insn::LdrImmGenLdr64LdstPos {
+        rt: x(14),
+        mem: mem_off(sp(), ldst64_offset(72)),
+    },
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(14),
+        mem: mem_off(x(16), ldst64_offset(248)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(1),
+        rt: x(0),
+        mem: mem_off(x(16), ldstpair64_offset(0)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(3),
+        rt: x(2),
+        mem: mem_off(x(16), ldstpair64_offset(16)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(5),
+        rt: x(4),
+        mem: mem_off(x(16), ldstpair64_offset(32)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(7),
+        rt: x(6),
+        mem: mem_off(x(16), ldstpair64_offset(48)),
+    },
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(8),
+        mem: mem_off(x(16), ldst64_offset(64)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(19),
+        rt: x(18),
+        mem: mem_off(x(16), ldstpair64_offset(144)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(21),
+        rt: x(20),
+        mem: mem_off(x(16), ldstpair64_offset(160)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(23),
+        rt: x(22),
+        mem: mem_off(x(16), ldstpair64_offset(176)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(25),
+        rt: x(24),
+        mem: mem_off(x(16), ldstpair64_offset(192)),
+    },
+    A64Insn::StpGenStp64LdstpairOff {
+        rt2: x(27),
+        rt: x(26),
+        mem: mem_off(x(16), ldstpair64_offset(208)),
+    },
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(28),
+        mem: mem_off(x(16), ldst64_offset(224)),
+    },
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(ABI_LINK_REG),
+        mem: mem_off(x(16), ldst64_offset(240)),
+    },
+    A64Insn::OrrLogShiftOrr64LogShift {
+        shift: 0,
+        rm: x(RET_STATUS_REG),
+        imm6: uimm(0, 6),
+        rn: xzr(),
+        rd: x(ABI_PT_REGS_ARG_REG),
+    },
+    A64Insn::LdrImmGenLdr64LdstPos {
+        rt: x(18),
+        mem: mem_off(sp(), ldst64_offset(88)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(20),
+        rt: x(19),
+        mem: mem_off(sp(), ldstpair64_offset(96)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(22),
+        rt: x(21),
+        mem: mem_off(sp(), ldstpair64_offset(112)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(24),
+        rt: x(23),
+        mem: mem_off(sp(), ldstpair64_offset(128)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(26),
+        rt: x(25),
+        mem: mem_off(sp(), ldstpair64_offset(144)),
+    },
+    A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(28),
+        rt: x(27),
+        mem: mem_off(sp(), ldstpair64_offset(160)),
+    },
+    A64Insn::LdpGenLdp64LdstpairPost {
+        rt2: x(ABI_LINK_REG),
+        rt: x(29),
+        mem: mem_post(sp(), ldstpair64_offset(192)),
+    },
     A64Insn::RetRet64rBranchReg {
         rn: x(ABI_LINK_REG),
     },
@@ -173,88 +440,6 @@ fn copy_abi_insns(
     let mut out = SharedVec::with_capacity(insns.len(), flags)?;
     append_abi_insns(&mut out, insns, flags)?;
     Ok(out)
-}
-
-const fn x(reg: u8) -> A64Reg {
-    A64Reg::x(reg)
-}
-
-const fn sp() -> A64Reg {
-    A64Reg::x_sp(31)
-}
-
-const fn mov_x(rd: u8, rn: u8) -> A64Insn {
-    A64Insn::OrrLogShiftOrr64LogShift {
-        shift: 0,
-        rm: x(rn),
-        imm6: A64Imm::unsigned(0, 6),
-        rn: x(31),
-        rd: x(rd),
-    }
-}
-
-const fn mov_from_sp(rd: u8) -> A64Insn {
-    A64Insn::AddAddsubImmAdd64AddsubImm {
-        sh: 0,
-        imm12: A64Imm::unsigned(0, 12),
-        rn: sp(),
-        rd: x(rd),
-    }
-}
-
-const fn ldr64_off(rt: u8, base: A64Reg, offset_bytes: u32) -> A64Insn {
-    A64Insn::LdrImmGenLdr64LdstPos {
-        rt: x(rt),
-        mem: A64Mem::offset(base, unsigned_scaled_64(offset_bytes)),
-    }
-}
-
-const fn str64_off(rt: u8, base: A64Reg, offset_bytes: u32) -> A64Insn {
-    A64Insn::StrImmGenStr64LdstPos {
-        rt: x(rt),
-        mem: A64Mem::offset(base, unsigned_scaled_64(offset_bytes)),
-    }
-}
-
-const fn ldp_off(rt: u8, rt2: u8, base: A64Reg, offset_bytes: i32) -> A64Insn {
-    A64Insn::LdpGenLdp64LdstpairOff {
-        rt2: x(rt2),
-        rt: x(rt),
-        mem: A64Mem::offset(base, signed_scaled_pair(offset_bytes)),
-    }
-}
-
-const fn ldp_post(rt: u8, rt2: u8, base: A64Reg, offset_bytes: i32) -> A64Insn {
-    A64Insn::LdpGenLdp64LdstpairPost {
-        rt2: x(rt2),
-        rt: x(rt),
-        mem: A64Mem::post_index(base, signed_scaled_pair(offset_bytes)),
-    }
-}
-
-const fn stp_off(rt: u8, rt2: u8, base: A64Reg, offset_bytes: i32) -> A64Insn {
-    A64Insn::StpGenStp64LdstpairOff {
-        rt2: x(rt2),
-        rt: x(rt),
-        mem: A64Mem::offset(base, signed_scaled_pair(offset_bytes)),
-    }
-}
-
-const fn stp_pre(rt: u8, rt2: u8, offset_bytes: i32) -> A64Insn {
-    A64Insn::StpGenStp64LdstpairPre {
-        rt2: x(rt2),
-        rt: x(rt),
-        mem: A64Mem::pre_index(sp(), signed_scaled_pair(offset_bytes)),
-    }
-}
-
-const fn unsigned_scaled_64(offset_bytes: u32) -> A64Imm {
-    A64Imm::scaled_unsigned(offset_bytes / 8, 12, 3)
-}
-
-const fn signed_scaled_pair(offset_bytes: i32) -> A64Imm {
-    let scaled = offset_bytes / 8;
-    A64Imm::scaled_signed((scaled as u32) & 0x7F, 7, 3)
 }
 
 #[cfg(test)]

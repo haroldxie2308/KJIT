@@ -4,6 +4,7 @@ use crate::shared::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::RuntimeExitReason;
 
 mod generated;
+pub mod ergo;
 
 pub use generated::{
     A64EncodeError, A64Imm, A64Insn, A64Mem, A64OperandRole, A64Reg, A64Reg31Mode, A64RegWidth,
