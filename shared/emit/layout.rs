@@ -5,16 +5,20 @@ use crate::shared::trans::rephrase::{RephrasedInsnKind, RephrasedProgram};
 pub type LayoutVLabels = SharedVec<(u64, usize)>;
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct LayoutProgram {
-    pub insns: SharedVec<LayoutInsn>,
+pub struct ExecutionFragment {
+    pub insns: SharedVec<A64Insn>,
+    pub entry_offset: usize,
     pub vlabels: LayoutVLabels,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct LayoutInsn {
-    pub output_offset: usize,
-    pub original_pc: Option<u64>,
-    pub inner: A64Insn,
+impl ExecutionFragment {
+    pub fn len_bytes(&self) -> usize {
+        self.insns.len() * 4
+    }
+
+    pub fn offset_for_pc(&self, original_pc: u64) -> Option<usize> {
+        find_vlabel(&self.vlabels, original_pc)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -63,19 +67,20 @@ pub(crate) enum BranchRelocKind {
     Tbnz,
 }
 
-pub fn layout_program(program: RephrasedProgram) -> SharedResult<LayoutProgram, LayoutError> {
+pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragment, LayoutError> {
     let insn_count = program.iter().map(|block| block.insns.len()).sum::<usize>();
-    let mut layout = LayoutProgram {
+    let mut fragment = ExecutionFragment {
         insns: SharedVec::with_capacity(insn_count, GFP_KERNEL)?,
+        entry_offset: 0,
         vlabels: SharedVec::with_capacity(insn_count, GFP_KERNEL)?,
     };
     let mut relocs = SharedVec::with_capacity(insn_count, GFP_KERNEL)?;
 
     for block in &program {
         for rephrased in &block.insns {
-            let insn_index = layout.insns.len();
+            let insn_index = fragment.insns.len();
             let output_offset = insn_index * 4;
-            insert_vlabel_once(&mut layout.vlabels, rephrased.original_pc, output_offset)?;
+            insert_vlabel_once(&mut fragment.vlabels, rephrased.original_pc, output_offset)?;
 
             if rephrased.kind == RephrasedInsnKind::Original {
                 if let Some(reloc) =
@@ -85,19 +90,12 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<LayoutProgram, 
                 }
             }
 
-            layout.insns.push(
-                LayoutInsn {
-                    output_offset,
-                    original_pc: Some(rephrased.original_pc),
-                    inner: rephrased.insn,
-                },
-                GFP_KERNEL,
-            )?;
+            fragment.insns.push(rephrased.insn, GFP_KERNEL)?;
         }
     }
 
-    resolve_branch_relocs(&mut layout, &relocs)?;
-    Ok(layout)
+    resolve_branch_relocs(&mut fragment, &relocs)?;
+    Ok(fragment)
 }
 
 fn insert_vlabel_once(
@@ -150,29 +148,29 @@ fn branch_target_role(insn: A64Insn) -> Option<(&'static str, u8, u8)> {
 }
 
 fn resolve_branch_relocs(
-    layout: &mut LayoutProgram,
+    fragment: &mut ExecutionFragment,
     relocs: &SharedVec<BranchReloc>,
 ) -> SharedResult<(), LayoutError> {
     for reloc in relocs {
-        let target_offset = find_vlabel(&layout.vlabels, reloc.target_original_pc).ok_or(
+        let target_offset = find_vlabel(&fragment.vlabels, reloc.target_original_pc).ok_or(
             LayoutError::MissingLabel {
                 target_original_pc: reloc.target_original_pc,
             },
         )?;
-        let Some(insn) = layout.insns.get_mut(reloc.insn_index) else {
+        let Some(insn) = fragment.insns.get_mut(reloc.insn_index) else {
             return Err(LayoutError::BranchOutOfRange {
                 insn_index: reloc.insn_index,
                 target_original_pc: reloc.target_original_pc,
             });
         };
-        let Some((field, scale, bits)) = branch_target_role(insn.inner) else {
+        let Some((field, scale, bits)) = branch_target_role(*insn) else {
             return Err(LayoutError::UnsupportedBranchField {
                 insn_index: reloc.insn_index,
                 field: "",
             });
         };
         let encoded = encode_branch_delta(
-            insn.output_offset,
+            reloc.insn_index * 4,
             target_offset,
             scale,
             bits,
@@ -180,8 +178,7 @@ fn resolve_branch_relocs(
             reloc.target_original_pc,
         )?;
 
-        insn.inner = insn
-            .inner
+        *insn = insn
             .set_branch_target_imm(field, encoded)
             .map_err(|err| match err {
                 A64RewriteError::UnsupportedField { field, .. } => {
@@ -322,8 +319,9 @@ mod tests {
 
         let layout = layout_program(one_block(insns)).unwrap();
 
+        assert_eq!(layout.entry_offset, 0);
         assert_eq!(layout.vlabels[2], (0x1008, 12));
-        assert_eq!(layout.insns[0].inner.branch_target_imm("imm26"), Some(3));
+        assert_eq!(layout.insns[0].branch_target_imm("imm26"), Some(3));
     }
 
     #[test]
@@ -362,9 +360,6 @@ mod tests {
 
         let layout = layout_program(one_block(insns)).unwrap();
 
-        assert_eq!(
-            layout.insns[3].inner.branch_target_imm("imm19"),
-            Some(524285)
-        );
+        assert_eq!(layout.insns[3].branch_target_imm("imm19"), Some(524285));
     }
 }

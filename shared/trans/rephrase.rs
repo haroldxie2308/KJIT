@@ -1,19 +1,7 @@
+use crate::shared::abi::{RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG, RetStatus};
 use crate::shared::arm64::{A64Imm, A64Insn, A64Reg, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::{Cfg, RuntimeExitReason};
-
-const RET_STATUS_REG: u8 = 9;
-const RET_PARAM0_REG: u8 = 10;
-const RET_PARAM1_REG: u8 = 11;
-
-#[repr(u64)]
-enum RetStatus {
-    Svc = 0,
-    Bl = 1,
-    Blr = 2,
-    Br = 3,
-    Ret = 4,
-}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum RephrasedInsnKind {
@@ -127,7 +115,7 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 &mut ret,
                 insn.pc,
                 A64Reg::x(RET_STATUS_REG),
-                RetStatus::Bl as u64,
+                RetStatus::Bl.as_reg(),
             )?;
             push_mov_imm64(&mut ret, insn.pc, A64Reg::x(RET_PARAM0_REG), target_pc)?;
             push_mov_imm64(&mut ret, insn.pc, A64Reg::x(RET_PARAM1_REG), resume_pc)?;
@@ -146,7 +134,7 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 &mut ret,
                 insn.pc,
                 A64Reg::x(RET_STATUS_REG),
-                RetStatus::Blr as u64,
+                RetStatus::Blr.as_reg(),
             )?;
             ret.append(
                 a64_syn!(
@@ -175,7 +163,7 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 &mut ret,
                 insn.pc,
                 A64Reg::x(RET_STATUS_REG),
-                RetStatus::Br as u64,
+                RetStatus::Br.as_reg(),
             )?;
             ret.append(
                 a64_syn!(
@@ -208,7 +196,7 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 &mut ret,
                 insn.pc,
                 A64Reg::x(RET_STATUS_REG),
-                RetStatus::Ret as u64,
+                RetStatus::Ret.as_reg(),
             )?;
             ret.append(
                 a64_syn!(
@@ -242,7 +230,7 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 &mut ret,
                 insn.pc,
                 A64Reg::x(RET_STATUS_REG),
-                RetStatus::Svc as u64,
+                RetStatus::Svc.as_reg(),
             )?;
             ret.append(
                 a64_syn!(
