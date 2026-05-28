@@ -685,7 +685,7 @@ fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title(format!("Original  scroll={}", app.raw_scroll))
+                    .title("Original")
                     .border_style(focus_style(app, FocusPanel::Raw))
                     .borders(Borders::ALL),
             )
@@ -707,7 +707,7 @@ fn draw_rephrase(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title(format!("Translation  scroll={}", app.rephrase_scroll))
+                    .title("Translation")
                     .border_style(focus_style(app, FocusPanel::Rephrase))
                     .borders(Borders::ALL),
             )
@@ -755,7 +755,7 @@ fn draw_layout_for_pc(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect)
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title(format!("Result  scroll={}", app.layout_scroll))
+                    .title("Result")
                     .border_style(focus_style(app, FocusPanel::Layout))
                     .borders(Borders::ALL),
             )
@@ -798,7 +798,7 @@ fn draw_layout_neighborhood(frame: &mut Frame<'_>, app: &App<'_>, offset: usize,
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title(format!("Result  scroll={}", app.layout_scroll))
+                    .title("Result")
                     .border_style(focus_style(app, FocusPanel::Layout))
                     .borders(Borders::ALL),
             )
