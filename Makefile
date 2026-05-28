@@ -91,7 +91,7 @@ test-asm-pipeline:
 	bash ./scripts/run-asm-fixture.sh
 
 userspace-harness-trace-tui:
-	ASM_PATH="$(ASM)" TRACE_TUI_SELECT=1 TRACE_TUI_FLAGS= bash ./scripts/run-asm-fixture.sh
+	ASM_PATH="$(ASM)" bash ./scripts/run-trace-tui.sh
 
 tui: userspace-harness-trace-tui
 

@@ -110,6 +110,9 @@ For now the TUI workflow accepts AArch64 `.s` fixtures. The script assembles the
 fixture with LLVM tools, derives the entry PC from `ENTRY_SYMBOL` (default:
 `toy_translate_entry`), and then launches the trace UI.
 
+The interactive TUI entry point is `scripts/run-trace-tui.sh`; the
+noninteractive assembly fixture validation remains `scripts/run-asm-fixture.sh`.
+
 ### Container Dev
 
 The Linux development image is defined in `docker/dev/Dockerfile` and is intended to be used through the VS Code dev container.
