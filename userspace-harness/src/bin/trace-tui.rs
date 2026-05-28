@@ -181,7 +181,7 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
         raw_scroll: 0,
         rephrase_scroll: 0,
         layout_scroll: 0,
-        status: "Tab focus | p/o/t/r jump panels | Up/Down move or scroll | a toggles raw-only PCs"
+        status: "Tab focus | p/o/t/r jump panels | Up/Down move or scroll | a toggles cfg/all"
             .to_string(),
     };
 
@@ -269,9 +269,9 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
             KeyCode::Char('a') => {
                 app.show_raw_only = !app.show_raw_only;
                 app.status = if app.show_raw_only {
-                    "showing all decoded raw PCs".to_string()
+                    "Program view=all".to_string()
                 } else {
-                    "showing reachable CFG PCs only".to_string()
+                    "Program view=cfg".to_string()
                 };
             }
             KeyCode::Char('?') | KeyCode::F(1) => {
@@ -468,18 +468,17 @@ fn draw_header(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     let text = vec![
         Line::from(vec![
             Span::styled(
-                "KJIT trace explorer",
+                "KJIT Explorer",
                 Style::default()
                     .fg(Color::Cyan)
                     .add_modifier(Modifier::BOLD),
             ),
             Span::raw(format!(
-                "  entry={:#x} text_base={:#x} fragment_entry={:#x} view={} focus={}",
+                "  entry={:#x} text_base={:#x} fragment_entry={:#x} view={}",
                 app.trace.input.entry_pc,
                 app.trace.input.text_base,
                 app.trace.fragment.entry_offset,
-                if app.show_raw_only { "all-raw" } else { "cfg" },
-                app.focus.name(),
+                if app.show_raw_only { "all" } else { "cfg" },
             )),
         ]),
         Line::from(format!(
@@ -526,10 +525,9 @@ fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
                 Style::default()
             };
             ListItem::new(format!(
-                "{:#010x} {:<8} {:<10} {}",
+                "{:#010x} {:<8} {}",
                 entry.pc,
                 pc_stage_label(entry),
-                offsets_label(entry),
                 pc_brief(app.trace, entry.pc)
             ))
             .style(style)
@@ -562,23 +560,6 @@ fn pc_stage_label(entry: &userspace_harness::trace::PcIndexEntry) -> String {
     match entry.cfg_block {
         Some(block) => format!("cfg:b{block}"),
         None => "raw-only".to_string(),
-    }
-}
-
-fn offsets_label(entry: &userspace_harness::trace::PcIndexEntry) -> String {
-    match entry.layout_offsets.as_slice() {
-        [] => String::new(),
-        [offset] => format!("off={offset:#x}"),
-        offsets => {
-            let mut out = String::from("off=");
-            for (index, offset) in offsets.iter().enumerate() {
-                if index > 0 {
-                    out.push(',');
-                }
-                out.push_str(&format!("{offset:#x}"));
-            }
-            out
-        }
     }
 }
 
@@ -768,8 +749,12 @@ fn draw_layout_for_pc(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect)
 fn draw_offset(frame: &mut Frame<'_>, app: &App<'_>, offset: usize, area: Rect) {
     let lines = if let Some(entry) = app.trace.selected_offset(offset) {
         vec![Line::from(format!(
-            "offset={:#x} runtime_pc={:#x} insn_index={} original_pc={:?} region={:?}",
-            entry.offset, entry.runtime_pc, entry.insn_index, entry.original_pc, entry.region
+            "offset={:#x} runtime_pc={:#x} insn_index={} original_pc={} region={:?}",
+            entry.offset,
+            entry.runtime_pc,
+            entry.insn_index,
+            original_pc_label(entry.original_pc),
+            entry.region
         ))]
     } else {
         vec![Line::from(format!("offset {offset:#x} is not present"))]
@@ -826,7 +811,7 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
         vec![
             Line::from(app.status.clone()),
             Line::from(
-                "Tab focus | p Program o Original t Translation r Result | Up/Down move/scroll | PgUp/PgDn fast | q quit",
+                "Tab focus | p Program o Original t Translation r Result | a cfg/all | Up/Down move/scroll | q quit",
             ),
         ]
     };
@@ -838,9 +823,20 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
 
 fn layout_line(insn: &userspace_harness::trace::TraceLayoutInsn) -> Line<'static> {
     Line::from(format!(
-        "off={:#06x} idx={:<3} {:?} original_pc={:?} {}",
-        insn.offset, insn.index, insn.region, insn.original_pc, insn.pretty
+        "off={:#06x} idx={:<3} {:?} original_pc={} {}",
+        insn.offset,
+        insn.index,
+        insn.region,
+        original_pc_label(insn.original_pc),
+        insn.pretty
     ))
+}
+
+fn original_pc_label(original_pc: Option<u64>) -> String {
+    match original_pc {
+        Some(pc) => format!("{pc:#x}"),
+        None => "None".to_string(),
+    }
 }
 
 fn print_trace_view(trace: &PipelineTrace, selection: Selection) {

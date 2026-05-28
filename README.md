@@ -112,7 +112,7 @@ fixture with LLVM tools, derives the entry PC from `ENTRY_SYMBOL` (default:
 
 Inside the TUI, `q` quits, `Tab` cycles panel focus, `p`/`o`/`t`/`r` jump to
 Program/Original/Translation/Result, arrow keys move or scroll the focused
-panel, and `a` toggles decoded raw PCs that are outside the requested CFG.
+panel, and `a` toggles the Program panel between CFG-only and all decoded PCs.
 
 The interactive TUI entry point is `scripts/run-trace-tui.sh`; the
 noninteractive assembly fixture validation remains `scripts/run-asm-fixture.sh`.
