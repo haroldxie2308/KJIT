@@ -297,7 +297,7 @@ fn draw(frame: &mut Frame<'_>, app: &App<'_>) {
             Constraint::Min(8),
             Constraint::Length(if app.command_mode { 3 } else { 2 }),
         ])
-        .split(frame.area());
+        .split(frame.size());
 
     draw_header(frame, app, root[0]);
 

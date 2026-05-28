@@ -2,14 +2,15 @@
 name = "userspace-harness"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.85"
 
 [lib]
 name = "userspace_harness"
 path = "src/lib.rs"
 
 [dependencies]
-crossterm = "0.28"
-ratatui = "0.29"
+crossterm = "=0.27.0"
+ratatui = "=0.27.0"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(CONFIG_RUST)"] }
