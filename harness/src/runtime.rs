@@ -234,7 +234,7 @@ impl URuntime {
             .write_u64(self.config.pt_regs_addr + (reg as u64) * 8, value);
     }
 
-    fn user_state_from_pt_regs(&self) -> MachineState {
+    pub(crate) fn user_state_from_pt_regs(&self) -> MachineState {
         let ranges = self.runtime_owned_ranges();
         let mut state = self.state.without_memory_ranges(&ranges);
         for reg in 0..31 {
@@ -252,12 +252,12 @@ impl URuntime {
         state
     }
 
-    fn physical_user_state(&self) -> MachineState {
+    pub(crate) fn physical_user_state(&self) -> MachineState {
         self.state
             .without_memory_ranges(&self.runtime_owned_ranges())
     }
 
-    fn runtime_owned_ranges(&self) -> [(u64, u64); 3] {
+    pub(crate) fn runtime_owned_ranges(&self) -> [(u64, u64); 3] {
         [
             (
                 self.config.pt_regs_addr,
@@ -275,16 +275,16 @@ impl URuntime {
     }
 }
 
-pub struct URuntimeStepper<'a> {
-    runtime: &'a mut URuntime,
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct URuntimeCursor {
     pc: u64,
     steps: usize,
     stopped: bool,
     pending_entry_offset: Option<usize>,
 }
 
-impl<'a> URuntimeStepper<'a> {
-    pub fn new(runtime: &'a mut URuntime) -> Result<Self, String> {
+impl URuntimeCursor {
+    fn new(runtime: &mut URuntime) -> Result<Self, String> {
         let entry_offset = runtime.fragment.entry_offset;
         let base_pc = runtime.config.base_pc;
         runtime.prepare_entry_at(entry_offset)?;
@@ -294,7 +294,6 @@ impl<'a> URuntimeStepper<'a> {
         }
 
         Ok(Self {
-            runtime,
             pc: base_pc,
             steps: 0,
             stopped: false,
@@ -302,32 +301,30 @@ impl<'a> URuntimeStepper<'a> {
         })
     }
 
-    pub fn pc(&self) -> u64 {
+    fn pc(&self) -> u64 {
         self.pc
     }
 
-    pub fn current_offset(&self) -> Option<usize> {
-        self.runtime.emitted_pc_to_offset(self.pc)
+    fn current_offset(&self, runtime: &URuntime) -> Option<usize> {
+        runtime.emitted_pc_to_offset(self.pc)
     }
 
-    pub fn steps(&self) -> usize {
+    fn steps(&self) -> usize {
         self.steps
     }
 
-    pub fn report_for_halt(&self, halt: URuntimeHalt) -> URuntimeReport {
-        self.runtime.report(halt, self.steps)
-    }
-
-    pub fn step(&mut self) -> Result<Option<URuntimeStep>, String> {
+    fn step(&mut self, runtime: &mut URuntime) -> Result<Option<URuntimeStep>, String> {
         if self.stopped {
             return Ok(None);
         }
 
-        if self.pc == self.runtime.config.return_pc {
-            return Ok(Some(self.apply_runtime_return(None, None, None, false)?));
+        if self.pc == runtime.config.return_pc {
+            return Ok(Some(
+                self.apply_runtime_return(runtime, None, None, None, false)?,
+            ));
         }
 
-        let Some(index) = self.runtime.pc_to_index(self.pc) else {
+        let Some(index) = runtime.pc_to_index(self.pc) else {
             self.stopped = true;
             let halt = URuntimeHalt::FellOffFragment { pc: self.pc };
             return Ok(Some(URuntimeStep {
@@ -337,16 +334,16 @@ impl<'a> URuntimeStepper<'a> {
                 executed: false,
                 runtime_transition: None,
                 halt: Some(halt),
-                state: self.runtime.physical_user_state(),
+                state: runtime.physical_user_state(),
             }));
         };
 
         let offset = index * 4;
         let insn_pc = self.pc;
-        let insn = self.runtime.fragment.insns[index];
+        let insn = runtime.fragment.insns[index];
         self.steps += 1;
 
-        let mut next_pc = match execute_insn(insn, insn_pc, &mut self.runtime.state) {
+        let mut next_pc = match execute_insn(insn, insn_pc, &mut runtime.state) {
             Ok(next_pc) => next_pc,
             Err(message) => {
                 self.stopped = true;
@@ -361,7 +358,7 @@ impl<'a> URuntimeStepper<'a> {
                     executed: true,
                     runtime_transition: None,
                     halt: Some(halt),
-                    state: self.runtime.physical_user_state(),
+                    state: runtime.physical_user_state(),
                 }));
             }
         };
@@ -370,16 +367,17 @@ impl<'a> URuntimeStepper<'a> {
             let entry_offset = self
                 .pending_entry_offset
                 .take()
-                .unwrap_or(self.runtime.fragment.entry_offset);
-            next_pc = self.runtime.config.base_pc + entry_offset as u64;
+                .unwrap_or(runtime.fragment.entry_offset);
+            next_pc = runtime.config.base_pc + entry_offset as u64;
         }
 
         self.pc = next_pc;
-        if self.pc == self.runtime.config.return_pc {
+        if self.pc == runtime.config.return_pc {
             return Ok(Some(self.apply_runtime_return(
+                runtime,
                 Some(offset),
                 Some(index),
-                self.runtime.emitted_pc_to_offset(next_pc),
+                runtime.emitted_pc_to_offset(next_pc),
                 true,
             )?));
         }
@@ -387,55 +385,26 @@ impl<'a> URuntimeStepper<'a> {
         Ok(Some(URuntimeStep {
             offset: Some(offset),
             insn_index: Some(index),
-            next_offset: self.runtime.emitted_pc_to_offset(self.pc),
+            next_offset: runtime.emitted_pc_to_offset(self.pc),
             executed: true,
             runtime_transition: None,
             halt: None,
-            state: self.runtime.physical_user_state(),
+            state: runtime.physical_user_state(),
         }))
-    }
-
-    pub fn run_to_halt(&mut self) -> URuntimeReport {
-        loop {
-            match self.step() {
-                Ok(Some(step)) => {
-                    if let Some(halt) = step.halt {
-                        return self.runtime.report(halt, self.steps);
-                    }
-                }
-                Ok(None) => {
-                    return self.runtime.report(
-                        URuntimeHalt::ExecutionError {
-                            pc: self.pc,
-                            message: "runtime stepper stopped without a halt reason".to_string(),
-                        },
-                        self.steps,
-                    );
-                }
-                Err(message) => {
-                    return self.runtime.report(
-                        URuntimeHalt::ExecutionError {
-                            pc: self.pc,
-                            message,
-                        },
-                        self.steps,
-                    );
-                }
-            }
-        }
     }
 
     fn apply_runtime_return(
         &mut self,
+        runtime: &mut URuntime,
         offset: Option<usize>,
         insn_index: Option<usize>,
         next_offset: Option<usize>,
         executed: bool,
     ) -> Result<URuntimeStep, String> {
-        match self.runtime.handle_runtime_return() {
+        match runtime.handle_runtime_return() {
             RuntimeAction::ContinueAt(offset_to_enter) => {
-                self.runtime.prepare_entry_at(offset_to_enter)?;
-                self.pc = self.runtime.config.base_pc;
+                runtime.prepare_entry_at(offset_to_enter)?;
+                self.pc = runtime.config.base_pc;
                 self.pending_entry_offset = Some(offset_to_enter);
                 Ok(URuntimeStep {
                     offset,
@@ -446,7 +415,7 @@ impl<'a> URuntimeStepper<'a> {
                         offset: offset_to_enter,
                     }),
                     halt: None,
-                    state: self.runtime.user_state_from_pt_regs(),
+                    state: runtime.user_state_from_pt_regs(),
                 })
             }
             RuntimeAction::Stop(halt) => {
@@ -458,8 +427,119 @@ impl<'a> URuntimeStepper<'a> {
                     executed,
                     runtime_transition: None,
                     halt: Some(halt),
-                    state: self.runtime.user_state_from_pt_regs(),
+                    state: runtime.user_state_from_pt_regs(),
                 })
+            }
+        }
+    }
+}
+
+pub struct URuntimeStepper<'a> {
+    runtime: &'a mut URuntime,
+    cursor: URuntimeCursor,
+}
+
+impl<'a> URuntimeStepper<'a> {
+    pub fn new(runtime: &'a mut URuntime) -> Result<Self, String> {
+        let cursor = URuntimeCursor::new(runtime)?;
+        Ok(Self { runtime, cursor })
+    }
+
+    pub fn pc(&self) -> u64 {
+        self.cursor.pc()
+    }
+
+    pub fn current_offset(&self) -> Option<usize> {
+        self.cursor.current_offset(self.runtime)
+    }
+
+    pub fn steps(&self) -> usize {
+        self.cursor.steps()
+    }
+
+    pub fn report_for_halt(&self, halt: URuntimeHalt) -> URuntimeReport {
+        self.runtime.report(halt, self.cursor.steps())
+    }
+
+    pub fn step(&mut self) -> Result<Option<URuntimeStep>, String> {
+        self.cursor.step(self.runtime)
+    }
+
+    pub fn run_to_halt(&mut self) -> URuntimeReport {
+        run_cursor_to_halt(self.runtime, &mut self.cursor)
+    }
+}
+
+#[derive(Debug)]
+pub struct OwnedURuntimeStepper {
+    runtime: URuntime,
+    cursor: URuntimeCursor,
+}
+
+impl OwnedURuntimeStepper {
+    pub fn new(mut runtime: URuntime) -> Result<Self, String> {
+        let cursor = URuntimeCursor::new(&mut runtime)?;
+        Ok(Self { runtime, cursor })
+    }
+
+    pub fn pc(&self) -> u64 {
+        self.cursor.pc()
+    }
+
+    pub fn current_offset(&self) -> Option<usize> {
+        self.cursor.current_offset(&self.runtime)
+    }
+
+    pub fn steps(&self) -> usize {
+        self.cursor.steps()
+    }
+
+    pub fn current_state(&self) -> MachineState {
+        self.runtime.physical_user_state()
+    }
+
+    pub fn runtime_owned_ranges(&self) -> [(u64, u64); 3] {
+        self.runtime.runtime_owned_ranges()
+    }
+
+    pub fn report_for_halt(&self, halt: URuntimeHalt) -> URuntimeReport {
+        self.runtime.report(halt, self.cursor.steps())
+    }
+
+    pub fn step(&mut self) -> Result<Option<URuntimeStep>, String> {
+        self.cursor.step(&mut self.runtime)
+    }
+
+    pub fn run_to_halt(&mut self) -> URuntimeReport {
+        run_cursor_to_halt(&mut self.runtime, &mut self.cursor)
+    }
+}
+
+fn run_cursor_to_halt(runtime: &mut URuntime, cursor: &mut URuntimeCursor) -> URuntimeReport {
+    loop {
+        match cursor.step(runtime) {
+            Ok(Some(step)) => {
+                if let Some(halt) = step.halt {
+                    return runtime.report(halt, cursor.steps());
+                }
+            }
+            Ok(None) => {
+                return runtime.report(
+                    URuntimeHalt::ExecutionError {
+                        pc: cursor.pc(),
+                        message: "runtime stepper stopped without a halt reason".to_string(),
+                    },
+                    cursor.steps(),
+                );
+            }
+            Err(message) => {
+                return runtime.report(
+                    URuntimeHalt::ExecutionError {
+                        pc: cursor.pc(),
+                        message,
+                    },
+                    cursor.steps(),
+                );
             }
         }
     }

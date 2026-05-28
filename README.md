@@ -119,9 +119,18 @@ PC as `hot_svc_pc + 4`, and then launches the trace UI or full-pipeline check.
 The TUI header and dump output include the full-pipeline check result so a
 fixture can be inspected alongside its pass/fail metadata.
 
-Inside the TUI, `q` quits, `Tab` cycles panel focus, `p`/`o`/`t`/`r` jump to
-Program/Original/Translation/Result, arrow keys move or scroll the focused
-panel, and `a` toggles the Program panel between CFG-only and all decoded PCs.
+Inside the TUI, Explore mode opens first. `q` quits, `Tab` cycles panel focus,
+`p`/`o`/`t`/`r` jump to Program/Original/Translation/Result, arrow keys move or
+scroll the focused panel, and `a` toggles the Program panel between CFG-only and
+all decoded PCs.
+
+Press `s` to enter active step mode. Active stepping starts a fresh deterministic
+session from the translated entry. `Space` or `n` advances one original semantic
+group when possible, `j` or `Down` advances one emitted translated instruction,
+`r` shows register comparison, `m` shows memory comparison, `c` returns to the
+compact comparison pane, `R` resets the active session to entry, and `Esc` or
+`s` returns to Explore mode. Active step mode does not support reverse
+execution; reset/replay is the way to revisit earlier states.
 
 The interactive TUI entry point is `scripts/run-trace-tui.sh`; the
 noninteractive assembly fixture validation remains `scripts/run-asm-fixture.sh`.

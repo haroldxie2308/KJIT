@@ -8,7 +8,12 @@ use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use kjit_harness::a64_pretty::pretty_runtime_exit;
-use kjit_harness::model::MachineState;
+use kjit_harness::active_step::{
+    memory_comparison, register_comparison, ActiveStepEvent, ActiveStepHalt, ActiveStepOrigin,
+    ActiveStepSession, ComparisonValue, MemoryComparisonRow, OriginalSideState, StateSnapshot,
+    TranslatedSideState,
+};
+use kjit_harness::model::{Flags, MachineState};
 use kjit_harness::shared::trans::input::TranslationTrigger;
 use kjit_harness::shared::trans::rephrase::RephrasedInsnKind;
 use kjit_harness::trace::{request_for_trace, PipelineTrace};
@@ -53,7 +58,7 @@ fn main() {
         match run_entry_fixture(
             "trace-tui-check",
             config.text_base,
-            text_bytes,
+            text_bytes.clone(),
             config.entry_pc,
             &initial_state,
         ) {
@@ -70,7 +75,7 @@ fn main() {
         if config.check && check_failed {
             std::process::exit(1);
         }
-    } else if let Err(err) = run_tui(&trace, config.entry_pc, check) {
+    } else if let Err(err) = run_tui(&trace, config.entry_pc, check, text_bytes, initial_state) {
         eprintln!("trace-tui failed: {err}");
         std::process::exit(1);
     }
@@ -181,14 +186,31 @@ enum Selection {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Mode {
     Explore,
-    Step,
+    ActiveStep,
 }
 
 impl Mode {
     const fn name(self) -> &'static str {
         match self {
             Self::Explore => "explore",
-            Self::Step => "step",
+            Self::ActiveStep => "active-step",
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum StepDetailMode {
+    Compact,
+    Registers,
+    Memory,
+}
+
+impl StepDetailMode {
+    const fn name(self) -> &'static str {
+        match self {
+            Self::Compact => "compact",
+            Self::Registers => "registers",
+            Self::Memory => "memory",
         }
     }
 }
@@ -233,9 +255,12 @@ impl FocusPanel {
 struct App<'a> {
     trace: &'a PipelineTrace,
     check: PipelineCheck,
+    text_bytes: Vec<u8>,
+    initial_state: MachineState,
     mode: Mode,
     selection: Selection,
-    step_cursor: usize,
+    active_step: Option<ActiveStepSession>,
+    step_detail: StepDetailMode,
     command: String,
     command_mode: bool,
     show_raw_only: bool,
@@ -246,7 +271,13 @@ struct App<'a> {
     status: String,
 }
 
-fn run_tui(trace: &PipelineTrace, entry_pc: u64, check: PipelineCheck) -> io::Result<()> {
+fn run_tui(
+    trace: &PipelineTrace,
+    entry_pc: u64,
+    check: PipelineCheck,
+    text_bytes: Vec<u8>,
+    initial_state: MachineState,
+) -> io::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
@@ -259,7 +290,10 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64, check: PipelineCheck) -> io::Re
         trace,
         mode: Mode::Explore,
         selection,
-        step_cursor: step_cursor_for_selection(trace, selection).unwrap_or(0),
+        text_bytes,
+        initial_state,
+        active_step: None,
+        step_detail: StepDetailMode::Compact,
         command: String::new(),
         command_mode: false,
         show_raw_only: false,
@@ -309,13 +343,29 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64, check: PipelineCheck) -> io::Re
 
         match key.code {
             KeyCode::Char('q') => break,
-            KeyCode::Esc if app.mode == Mode::Step => leave_step_mode(&mut app),
+            KeyCode::Esc if app.mode == Mode::ActiveStep => leave_step_mode(&mut app),
             KeyCode::Char(':') => {
                 app.command.clear();
                 app.command_mode = true;
                 app.status = "enter command".to_string();
             }
             KeyCode::Char('s') => toggle_mode(&mut app),
+            KeyCode::Char(' ') if app.mode == Mode::ActiveStep => step_group(&mut app),
+            KeyCode::Char('n') if app.mode == Mode::ActiveStep => step_group(&mut app),
+            KeyCode::Char('j') if app.mode == Mode::ActiveStep => step_translated(&mut app),
+            KeyCode::Down if app.mode == Mode::ActiveStep => step_translated(&mut app),
+            KeyCode::Char('r') if app.mode == Mode::ActiveStep => {
+                toggle_step_detail(&mut app, StepDetailMode::Registers);
+            }
+            KeyCode::Char('m') if app.mode == Mode::ActiveStep => {
+                toggle_step_detail(&mut app, StepDetailMode::Memory);
+            }
+            KeyCode::Char('c') if app.mode == Mode::ActiveStep => {
+                app.step_detail = StepDetailMode::Compact;
+                app.status = "comparison=compact".to_string();
+            }
+            KeyCode::Char('R') if app.mode == Mode::ActiveStep => reset_step_mode(&mut app),
+            KeyCode::Up if app.mode == Mode::ActiveStep => scroll_step_detail(&mut app, -1),
             KeyCode::Tab => {
                 app.focus = app.focus.next();
                 app.status = format!("focused {}", app.focus.name());
@@ -328,12 +378,6 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64, check: PipelineCheck) -> io::Re
             KeyCode::Char('o') => set_focus(&mut app, FocusPanel::Raw),
             KeyCode::Char('t') => set_focus(&mut app, FocusPanel::Rephrase),
             KeyCode::Char('r') => set_focus(&mut app, FocusPanel::Layout),
-            KeyCode::Char(' ') if app.mode == Mode::Step => step_space(&mut app),
-            KeyCode::Char('n') if app.mode == Mode::Step => step_next_group(&mut app),
-            KeyCode::Right if app.mode == Mode::Step => step_next_group(&mut app),
-            KeyCode::Left if app.mode == Mode::Step => step_prev_group(&mut app),
-            KeyCode::Down if app.mode == Mode::Step => step_one(&mut app, 1),
-            KeyCode::Up if app.mode == Mode::Step => step_one(&mut app, -1),
             KeyCode::Char('n') if app.mode == Mode::Explore => {
                 select_next_pc(&mut app, 1);
             }
@@ -358,10 +402,18 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64, check: PipelineCheck) -> io::Re
                 }
             }
             KeyCode::PageDown | KeyCode::Char('d') => {
-                scroll_focus(&mut app, 5);
+                if app.mode == Mode::ActiveStep {
+                    scroll_step_detail(&mut app, 5);
+                } else {
+                    scroll_focus(&mut app, 5);
+                }
             }
             KeyCode::PageUp | KeyCode::Char('u') => {
-                scroll_focus(&mut app, -5);
+                if app.mode == Mode::ActiveStep {
+                    scroll_step_detail(&mut app, -5);
+                } else {
+                    scroll_focus(&mut app, -5);
+                }
             }
             KeyCode::Char('a') => {
                 app.show_raw_only = !app.show_raw_only;
@@ -376,8 +428,8 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64, check: PipelineCheck) -> io::Re
                     Mode::Explore => {
                         "Explore: s step | p/o/t/r panels | Up/Down move or scroll".to_string()
                     }
-                    Mode::Step => {
-                        "Step: Esc/s explore | Space group/one | Up/Down insn | Left/Right group"
+                    Mode::ActiveStep => {
+                        "Step: Esc/s explore | Space/n group | j/Down insn | r/m/c panes | R reset"
                             .to_string()
                     }
                 };
@@ -408,8 +460,8 @@ fn apply_command(app: &mut App<'_>, line: &str) -> Control {
     match parse_command(line, app.trace, app.selection) {
         Command::Select(next) => {
             set_selection(app, next);
-            app.status = if app.mode == Mode::Step {
-                step_status(app)
+            app.status = if app.mode == Mode::ActiveStep {
+                "selection updated; active step session remains at its live cursor".to_string()
             } else {
                 format!("selected {next:?}")
             };
@@ -439,11 +491,6 @@ fn select_next_pc(app: &mut App<'_>, delta: isize) {
 
 fn set_selection(app: &mut App<'_>, selection: Selection) {
     app.selection = selection;
-    if app.mode == Mode::Step {
-        if let Some(cursor) = step_cursor_for_selection(app.trace, selection) {
-            app.step_cursor = cursor;
-        }
-    }
     app.raw_scroll = 0;
     app.rephrase_scroll = 0;
     app.layout_scroll = 0;
@@ -478,34 +525,56 @@ fn scroll_focus(app: &mut App<'_>, delta: i16) {
     app.status = format!("{} scroll={}", panel.name(), *scroll);
 }
 
+fn scroll_step_detail(app: &mut App<'_>, delta: i16) {
+    if delta < 0 {
+        app.layout_scroll = app.layout_scroll.saturating_sub(delta.unsigned_abs());
+    } else {
+        app.layout_scroll = app.layout_scroll.saturating_add(delta as u16);
+    }
+    app.status = format!("{} scroll={}", app.step_detail.name(), app.layout_scroll);
+}
+
 fn toggle_mode(app: &mut App<'_>) {
     match app.mode {
         Mode::Explore => enter_step_mode(app),
-        Mode::Step => leave_step_mode(app),
+        Mode::ActiveStep => leave_step_mode(app),
     }
 }
 
 fn enter_step_mode(app: &mut App<'_>) {
-    let Some(execution) = app.trace.execution.as_ref() else {
-        app.status = "step mode unavailable: runtime trace was not collected".to_string();
-        return;
-    };
-    if execution.translated_steps.is_empty() {
-        app.status = "step mode unavailable: no translated steps".to_string();
-        return;
+    match ActiveStepSession::new(
+        app.trace.input.text_base,
+        app.text_bytes.clone(),
+        app.trace.input.entry_pc,
+        app.initial_state.clone(),
+        &app.trace.execution_fragment,
+        ActiveStepOrigin::from_trace_fragment(&app.trace.fragment),
+    ) {
+        Ok(session) => {
+            app.active_step = Some(session);
+            app.mode = Mode::ActiveStep;
+            app.step_detail = StepDetailMode::Compact;
+            app.raw_scroll = 0;
+            app.rephrase_scroll = 0;
+            app.layout_scroll = 0;
+            app.status =
+                "mode=active-step start=entry; selected explore PC is not replayed yet".to_string();
+        }
+        Err(message) => {
+            app.status = format!("step mode unavailable: {message}");
+        }
     }
-
-    app.step_cursor = step_cursor_for_selection(app.trace, app.selection)
-        .unwrap_or(app.step_cursor.min(execution.translated_steps.len() - 1));
-    app.mode = Mode::Step;
-    app.raw_scroll = 0;
-    app.rephrase_scroll = 0;
-    app.layout_scroll = 0;
-    app.status = step_status(app);
 }
 
 fn leave_step_mode(app: &mut App<'_>) {
-    app.selection = selection_for_step(app.trace, app.step_cursor, app.selection);
+    if let Some(session) = &app.active_step {
+        app.selection = session
+            .current_translated()
+            .and_then(|step| step.ori_pc.map(Selection::Pc))
+            .or_else(|| session.translated_offset().map(Selection::Offset))
+            .unwrap_or(app.selection);
+    }
+    app.active_step = None;
     app.mode = Mode::Explore;
     app.raw_scroll = 0;
     app.rephrase_scroll = 0;
@@ -513,158 +582,77 @@ fn leave_step_mode(app: &mut App<'_>) {
     app.status = "mode=explore".to_string();
 }
 
-fn step_space(app: &mut App<'_>) {
-    let Some(step) = current_translated_step(app) else {
-        app.status = "no translated step".to_string();
+fn step_translated(app: &mut App<'_>) {
+    let Some(session) = app.active_step.as_mut() else {
+        app.status = "step mode unavailable".to_string();
         return;
     };
-    if step.ori_pc.is_none() {
-        step_one(app, 1);
+    let event = session.step_translated();
+    app.status = active_event_status(session, &event);
+}
+
+fn step_group(app: &mut App<'_>) {
+    let Some(session) = app.active_step.as_mut() else {
+        app.status = "step mode unavailable".to_string();
+        return;
+    };
+    let event = session.step_group();
+    app.status = active_event_status(session, &event);
+}
+
+fn reset_step_mode(app: &mut App<'_>) {
+    let Some(session) = app.active_step.as_mut() else {
+        app.status = "step mode unavailable".to_string();
+        return;
+    };
+    match session.reset() {
+        Ok(()) => {
+            app.raw_scroll = 0;
+            app.rephrase_scroll = 0;
+            app.layout_scroll = 0;
+            app.status = "active step reset to entry".to_string();
+        }
+        Err(message) => {
+            app.status = format!("reset failed: {message}");
+        }
+    }
+}
+
+fn toggle_step_detail(app: &mut App<'_>, detail: StepDetailMode) {
+    app.step_detail = if app.step_detail == detail {
+        StepDetailMode::Compact
     } else {
-        step_next_group(app);
-    }
+        detail
+    };
+    app.layout_scroll = 0;
+    app.status = format!("comparison={}", app.step_detail.name());
 }
 
-fn step_one(app: &mut App<'_>, delta: isize) {
-    let Some(execution) = app.trace.execution.as_ref() else {
-        app.status = "step mode unavailable".to_string();
-        return;
-    };
-    let Some(next) = app.step_cursor.checked_add_signed(delta) else {
-        app.status = "no translated step in that direction".to_string();
-        return;
-    };
-    if next >= execution.translated_steps.len() {
-        app.status = "no translated step in that direction".to_string();
-        return;
-    }
-    app.step_cursor = next;
-    app.status = step_status(app);
-}
-
-fn step_next_group(app: &mut App<'_>) {
-    let Some(execution) = app.trace.execution.as_ref() else {
-        app.status = "step mode unavailable".to_string();
-        return;
-    };
-    let Some(group_index) = group_index_for_step(execution, app.step_cursor) else {
-        app.status = "current step is not grouped".to_string();
-        return;
-    };
-    let Some(group) = execution.groups.get(group_index + 1) else {
-        app.status = "already at final step group".to_string();
-        return;
-    };
-    let Some(next) = group.translated_steps.first().copied() else {
-        app.status = "next step group is empty".to_string();
-        return;
-    };
-    app.step_cursor = next;
-    app.status = step_status(app);
-}
-
-fn step_prev_group(app: &mut App<'_>) {
-    let Some(execution) = app.trace.execution.as_ref() else {
-        app.status = "step mode unavailable".to_string();
-        return;
-    };
-    let Some(group_index) = group_index_for_step(execution, app.step_cursor) else {
-        app.status = "current step is not grouped".to_string();
-        return;
-    };
-    let Some(prev_index) = group_index.checked_sub(1) else {
-        app.status = "already at first step group".to_string();
-        return;
-    };
-    let Some(group) = execution.groups.get(prev_index) else {
-        app.status = "previous step group is missing".to_string();
-        return;
-    };
-    let Some(next) = group.translated_steps.first().copied() else {
-        app.status = "previous step group is empty".to_string();
-        return;
-    };
-    app.step_cursor = next;
-    app.status = step_status(app);
-}
-
-fn step_status(app: &App<'_>) -> String {
-    let Some(execution) = app.trace.execution.as_ref() else {
-        return "step mode unavailable".to_string();
-    };
-    let total = execution.translated_steps.len();
-    let Some(step) = execution.translated_steps.get(app.step_cursor) else {
-        return "no translated step".to_string();
-    };
-    let group = group_index_for_step(execution, app.step_cursor)
-        .map(|index| format!(" group={}/{}", index + 1, execution.groups.len()))
+fn active_event_status(session: &ActiveStepSession, event: &ActiveStepEvent) -> String {
+    let original = event
+        .original
+        .as_ref()
+        .map(|step| format!(" original_pc={:#x}", step.pc))
+        .unwrap_or_default();
+    let mismatch = event
+        .original_mismatch
+        .map(|mismatch| {
+            format!(
+                " original_mismatch expected={:#x} actual={:#x}",
+                mismatch.expected_pc, mismatch.actual_pc
+            )
+        })
         .unwrap_or_default();
     format!(
-        "mode=step step={}/{}{} off={} ori_pc={}",
-        app.step_cursor + 1,
-        total,
-        group,
-        opt_offset_label(step.offset),
-        ori_pc_label(step.ori_pc)
+        "mode=active-step translated_steps={} original_steps={} last_translated={} group_pc={}{}{} halt={}",
+        session.translated_steps(),
+        session.original_steps(),
+        event.translated.len(),
+        ori_pc_label(event.group_pc),
+        original,
+        mismatch,
+        active_halt_label(&event.halt)
     )
-}
-
-fn current_translated_step<'a>(
-    app: &'a App<'_>,
-) -> Option<&'a kjit_harness::trace::TraceTranslatedStep> {
-    app.trace
-        .execution
-        .as_ref()?
-        .translated_steps
-        .get(app.step_cursor)
-}
-
-fn step_cursor_for_selection(trace: &PipelineTrace, selection: Selection) -> Option<usize> {
-    let execution = trace.execution.as_ref()?;
-    match selection {
-        Selection::Pc(pc) => execution
-            .groups
-            .iter()
-            .find(|group| group.ori_pc == Some(pc))
-            .and_then(|group| group.translated_steps.first().copied())
-            .or_else(|| {
-                execution
-                    .translated_steps
-                    .iter()
-                    .position(|step| step.ori_pc == Some(pc))
-            }),
-        Selection::Offset(offset) => execution
-            .translated_steps
-            .iter()
-            .position(|step| step.offset == Some(offset)),
-    }
-}
-
-fn selection_for_step(trace: &PipelineTrace, cursor: usize, fallback: Selection) -> Selection {
-    let Some(step) = trace
-        .execution
-        .as_ref()
-        .and_then(|execution| execution.translated_steps.get(cursor))
-    else {
-        return fallback;
-    };
-    if let Some(pc) = step.ori_pc {
-        Selection::Pc(pc)
-    } else if let Some(offset) = step.offset {
-        Selection::Offset(offset)
-    } else {
-        fallback
-    }
-}
-
-fn group_index_for_step(
-    execution: &kjit_harness::trace::TraceExecution,
-    cursor: usize,
-) -> Option<usize> {
-    execution
-        .groups
-        .iter()
-        .position(|group| group.translated_steps.contains(&cursor))
 }
 
 enum Command {
@@ -750,19 +738,16 @@ fn draw(frame: &mut Frame<'_>, app: &App<'_>) {
 
     draw_header(frame, app, root[0]);
 
-    let body = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(54), Constraint::Min(50)])
-        .split(root[1]);
     match app.mode {
         Mode::Explore => {
+            let body = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Length(54), Constraint::Min(50)])
+                .split(root[1]);
             draw_pc_list(frame, app, body[0]);
             draw_detail(frame, app, body[1]);
         }
-        Mode::Step => {
-            draw_step_list(frame, app, body[0]);
-            draw_step_detail(frame, app, body[1]);
-        }
+        Mode::ActiveStep => draw_active_step(frame, app, root[1]),
     }
     draw_footer(frame, app, root[2]);
 }
@@ -856,47 +841,6 @@ fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     );
 }
 
-fn draw_step_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
-    let Some(execution) = app.trace.execution.as_ref() else {
-        draw_empty(frame, "Execution", "runtime trace was not collected", area);
-        return;
-    };
-    if execution.translated_steps.is_empty() {
-        draw_empty(frame, "Execution", "no translated steps", area);
-        return;
-    }
-
-    let selected_index = app
-        .step_cursor
-        .min(execution.translated_steps.len().saturating_sub(1));
-    let visible_rows = usize::from(area.height.saturating_sub(2)).max(1);
-    let start = selected_index.saturating_sub(visible_rows / 2);
-    let end = (start + visible_rows).min(execution.translated_steps.len());
-
-    let items = (start..end)
-        .map(|index| {
-            let style = if index == selected_index {
-                Style::default().fg(Color::Black).bg(Color::Yellow)
-            } else if execution.translated_steps[index].ori_pc.is_none() {
-                Style::default().fg(Color::DarkGray)
-            } else {
-                Style::default()
-            };
-            ListItem::new(translated_step_brief(app, index)).style(style)
-        })
-        .collect::<Vec<_>>();
-
-    frame.render_widget(
-        List::new(items).block(
-            Block::default()
-                .title("Execution")
-                .border_style(focus_style(app, FocusPanel::Cfg))
-                .borders(Borders::ALL),
-        ),
-        area,
-    );
-}
-
 fn visible_pc_entries<'a>(
     trace: &'a PipelineTrace,
     show_raw_only: bool,
@@ -981,168 +925,309 @@ fn draw_detail(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     }
 }
 
-fn draw_step_detail(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
+fn draw_active_step(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
+    let Some(session) = app.active_step.as_ref() else {
+        draw_empty(
+            frame,
+            "Active Step",
+            "active session is not initialized",
+            area,
+        );
+        return;
+    };
+
     let rows = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(8),
-            Constraint::Length(12),
+            Constraint::Length(8),
             Constraint::Min(8),
         ])
         .split(area);
+    let top = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(rows[0]);
+    let state = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(rows[1]);
 
-    draw_step_original(frame, app, rows[0]);
-    draw_step_translated_group(frame, app, rows[1]);
-    draw_step_state(frame, app, rows[2]);
+    draw_active_original(frame, app, session, top[0]);
+    draw_active_translated(frame, app, session, top[1]);
+    draw_state_summary(
+        frame,
+        "Original State Summary",
+        session.original_snapshot(),
+        state[0],
+    );
+    draw_state_summary(
+        frame,
+        "Translated State Summary",
+        session.translated_snapshot(),
+        state[1],
+    );
+    draw_comparison(frame, app, session, rows[2]);
 }
 
-fn draw_step_original(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
-    let Some((_, group)) = current_step_group(app) else {
-        draw_empty(frame, "Original Step", "no execution group", area);
-        return;
-    };
-
-    let Some(original_index) = group.original_step else {
-        let lines = vec![
-            Line::from("translated-only wrapper/runtime work"),
-            Line::from(format!("ori_pc={}", ori_pc_label(group.ori_pc))),
-            Line::from(format!("translated_steps={}", group.translated_steps.len())),
-        ];
-        frame.render_widget(
-            Paragraph::new(lines)
-                .block(
-                    Block::default()
-                        .title("Original Step")
-                        .border_style(focus_style(app, FocusPanel::Raw))
-                        .borders(Borders::ALL),
-                )
-                .wrap(Wrap { trim: false }),
-            area,
-        );
-        return;
-    };
-
-    let Some(execution) = app.trace.execution.as_ref() else {
-        draw_empty(
-            frame,
-            "Original Step",
-            "runtime trace was not collected",
-            area,
-        );
-        return;
-    };
-    let Some(step) = execution.original_steps.get(original_index) else {
-        draw_empty(frame, "Original Step", "original step is missing", area);
-        return;
-    };
-
-    let mut lines = vec![Line::from(format!(
-        "original_step={} pc={:#x}",
-        original_index + 1,
-        step.pc
-    ))];
-    if let Some(raw) = app.trace.raw.iter().find(|insn| insn.pc == step.pc) {
+fn draw_active_original(
+    frame: &mut Frame<'_>,
+    app: &App<'_>,
+    session: &ActiveStepSession,
+    area: Rect,
+) {
+    let mut lines = Vec::new();
+    if let Some(step) = session.current_original() {
+        append_original_step_lines(&mut lines, app, step);
+    } else if let Some(pc) = session.current_origin_pc() {
         lines.push(Line::from(format!(
-            "raw off={:#x} word={:#010x} {}",
-            raw.text_offset, raw.word, raw.pretty
+            "pinned ori_pc={pc:#x}; original not advanced by last key"
         )));
+        append_raw_line(&mut lines, app, pc);
+    } else {
+        lines.push(Line::from("wrapper/runtime only"));
+        lines.push(Line::from(format!(
+            "original cursor pc={:#x}",
+            session.original_pc()
+        )));
+        append_raw_line(&mut lines, app, session.original_pc());
     }
-    if let Some(exit) = step.runtime_exit {
-        lines.push(Line::from(pretty_runtime_exit(exit)));
-    }
-    if let Some(halt) = step.halt_reason {
-        lines.push(Line::from(format!("halt={halt:?}")));
-    }
-    if let Some(states_match) = group.states_match {
-        lines.push(Line::from(format!("group_state_match={states_match}")));
-    }
+    lines.push(Line::from(format!(
+        "original_steps={} halt={}",
+        session.original_steps(),
+        active_halt_label(&session.halt())
+    )));
 
     frame.render_widget(
         Paragraph::new(lines)
-            .block(
-                Block::default()
-                    .title("Original Step")
-                    .border_style(focus_style(app, FocusPanel::Raw))
-                    .borders(Borders::ALL),
-            )
+            .block(Block::default().title("Original").borders(Borders::ALL))
             .scroll((app.raw_scroll, 0))
             .wrap(Wrap { trim: false }),
         area,
     );
 }
 
-fn draw_step_translated_group(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
-    let Some((group_index, group)) = current_step_group(app) else {
-        draw_empty(frame, "Translated Steps", "no execution group", area);
-        return;
-    };
-
-    let lines = group
-        .translated_steps
-        .iter()
-        .map(|index| {
-            let marker = if *index == app.step_cursor { ">" } else { " " };
-            Line::from(format!("{marker} {}", translated_step_brief(app, *index)))
-        })
-        .collect::<Vec<_>>();
+fn draw_active_translated(
+    frame: &mut Frame<'_>,
+    app: &App<'_>,
+    session: &ActiveStepSession,
+    area: Rect,
+) {
+    let mut lines = vec![Line::from(format!(
+        "cursor pc={:#x} offset={} current_ori_pc={}",
+        session.translated_pc(),
+        opt_offset_label(session.translated_offset()),
+        ori_pc_label(session.current_origin_pc())
+    ))];
+    if let Some(offset) = session.translated_offset() {
+        if let Some(insn) = layout_for_offset(app.trace, offset) {
+            lines.push(Line::from(format!(
+                "next off={:#x} idx={} {:?} {}",
+                insn.offset, insn.index, insn.region, insn.pretty
+            )));
+        }
+    }
+    if let Some(step) = session.current_translated() {
+        append_translated_step_lines(&mut lines, app, step);
+    } else {
+        lines.push(Line::from("last translated step: none"));
+    }
+    lines.push(Line::from(format!(
+        "translated_steps={} halt={}",
+        session.translated_steps(),
+        active_halt_label(&session.halt())
+    )));
 
     frame.render_widget(
         Paragraph::new(lines)
-            .block(
-                Block::default()
-                    .title(format!("Translated Steps group #{}", group_index + 1))
-                    .border_style(focus_style(app, FocusPanel::Rephrase))
-                    .borders(Borders::ALL),
-            )
+            .block(Block::default().title("Translated").borders(Borders::ALL))
             .scroll((app.rephrase_scroll, 0))
             .wrap(Wrap { trim: false }),
         area,
     );
 }
 
-fn draw_step_state(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
-    let Some(execution) = app.trace.execution.as_ref() else {
-        draw_empty(frame, "State", "runtime trace was not collected", area);
-        return;
-    };
-    let Some(step) = execution.translated_steps.get(app.step_cursor) else {
-        draw_empty(frame, "State", "no translated step", area);
-        return;
-    };
+fn append_original_step_lines(
+    lines: &mut Vec<Line<'static>>,
+    app: &App<'_>,
+    step: &OriginalSideState,
+) {
+    lines.push(Line::from(format!(
+        "last original pc={:#x} next={} executed={}",
+        step.pc,
+        ori_pc_label(step.next_pc),
+        step.executed
+    )));
+    append_raw_line(lines, app, step.pc);
+    if let Some(exit) = step.runtime_exit {
+        lines.push(Line::from(pretty_runtime_exit(exit)));
+    }
+    if let Some(resume_pc) = step.resumed_at {
+        lines.push(Line::from(format!(
+            "mocked continuation resume_pc={resume_pc:#x}"
+        )));
+    }
+    if let Some(halt) = step.halt_reason {
+        lines.push(Line::from(format!("halt={halt:?}")));
+    }
+}
 
-    let mut lines = vec![Line::from(step_status(app))];
+fn append_translated_step_lines(
+    lines: &mut Vec<Line<'static>>,
+    app: &App<'_>,
+    step: &TranslatedSideState,
+) {
+    lines.push(Line::from(format!(
+        "last off={} idx={} next={} ori_pc={} executed={}",
+        opt_offset_label(step.offset),
+        opt_usize_label(step.insn_index),
+        opt_offset_label(step.next_offset),
+        ori_pc_label(step.ori_pc),
+        step.executed
+    )));
+    if let Some(offset) = step.offset {
+        if let Some(insn) = layout_for_offset(app.trace, offset) {
+            lines.push(layout_line(insn));
+        }
+    }
     if let Some(transition) = step.runtime_transition {
         lines.push(Line::from(format!("runtime_transition={transition:?}")));
     }
     if let Some(halt) = &step.halt {
         lines.push(Line::from(format!("halt={halt:?}")));
     }
-    if let Some((_, group)) = current_step_group(app) {
-        if let Some(states_match) = group.states_match {
-            lines.push(Line::from(format!("group_state_match={states_match}")));
-        }
-    }
+}
 
-    if app.step_cursor == 0 {
-        lines.push(Line::from(
-            "before-state unavailable for first translated step",
-        ));
-    } else if let Some(previous) = execution.translated_steps.get(app.step_cursor - 1) {
-        append_state_diff_lines(&mut lines, &previous.state, &step.state);
+fn append_raw_line(lines: &mut Vec<Line<'static>>, app: &App<'_>, pc: u64) {
+    if let Some(raw) = app.trace.raw.iter().find(|insn| insn.pc == pc) {
+        lines.push(Line::from(format!(
+            "raw off={:#x} word={:#010x} {}",
+            raw.text_offset, raw.word, raw.pretty
+        )));
     }
+}
 
+fn draw_state_summary(
+    frame: &mut Frame<'_>,
+    title: &'static str,
+    snapshot: &StateSnapshot,
+    area: Rect,
+) {
+    let mut lines = Vec::new();
+    append_state_diff_lines(&mut lines, &snapshot.previous, &snapshot.current);
+    frame.render_widget(
+        Paragraph::new(lines)
+            .block(Block::default().title(title).borders(Borders::ALL))
+            .wrap(Wrap { trim: false }),
+        area,
+    );
+}
+
+fn draw_comparison(frame: &mut Frame<'_>, app: &App<'_>, session: &ActiveStepSession, area: Rect) {
+    let lines = match app.step_detail {
+        StepDetailMode::Compact => compact_comparison_lines(session),
+        StepDetailMode::Registers => register_comparison_lines(session),
+        StepDetailMode::Memory => memory_comparison_lines(app, session),
+    };
     frame.render_widget(
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title("State")
-                    .border_style(focus_style(app, FocusPanel::Layout))
+                    .title(format!("Comparison {}", app.step_detail.name()))
                     .borders(Borders::ALL),
             )
             .scroll((app.layout_scroll, 0))
             .wrap(Wrap { trim: false }),
         area,
     );
+}
+
+fn compact_comparison_lines(session: &ActiveStepSession) -> Vec<Line<'static>> {
+    let original = &session.original_snapshot().current;
+    let translated = &session.translated_snapshot().current;
+    let mut lines = vec![
+        Line::from(format!(
+            "state_equal={} halt={}",
+            original == translated,
+            active_halt_label(&session.halt())
+        )),
+        Line::from(format!(
+            "original_steps={} translated_steps={} translated_cursor_offset={} current_ori_pc={}",
+            session.original_steps(),
+            session.translated_steps(),
+            opt_offset_label(session.translated_offset()),
+            ori_pc_label(session.current_origin_pc())
+        )),
+    ];
+    let diff_count = register_comparison(original, translated)
+        .into_iter()
+        .filter(|row| !row.equal)
+        .count();
+    let memory_count = memory_comparison(
+        &session.original_snapshot().previous,
+        original,
+        translated,
+        &session.runtime_owned_ranges(),
+    )
+    .len();
+    lines.push(Line::from(format!(
+        "different_register_rows={} changed_memory_rows={}",
+        diff_count, memory_count
+    )));
+    lines
+}
+
+fn register_comparison_lines(session: &ActiveStepSession) -> Vec<Line<'static>> {
+    let mut lines = vec![Line::from(
+        "reg   original             translated           status",
+    )];
+    for row in register_comparison(
+        &session.original_snapshot().current,
+        &session.translated_snapshot().current,
+    ) {
+        lines.push(Line::from(format!(
+            "{:<5} {:<20} {:<20} {}",
+            row.name,
+            comparison_value_label(&row.original),
+            comparison_value_label(&row.translated),
+            if row.equal { "=" } else { "!" }
+        )));
+    }
+    lines
+}
+
+fn memory_comparison_lines(app: &App<'_>, session: &ActiveStepSession) -> Vec<Line<'static>> {
+    let mut lines = vec![Line::from(
+        "addr               before original translated status",
+    )];
+    let rows = memory_comparison(
+        &app.initial_state,
+        &session.original_snapshot().current,
+        &session.translated_snapshot().current,
+        &session.runtime_owned_ranges(),
+    );
+    if rows.is_empty() {
+        lines.push(Line::from("no user-memory differences"));
+        return lines;
+    }
+    for row in rows.iter().take(200) {
+        lines.push(memory_row_line(row));
+    }
+    if rows.len() > 200 {
+        lines.push(Line::from(format!("... +{} more rows", rows.len() - 200)));
+    }
+    lines
+}
+
+fn memory_row_line(row: &MemoryComparisonRow) -> Line<'static> {
+    Line::from(format!(
+        "{:#018x} {:<6} {:<8} {:<10} {}",
+        row.addr,
+        byte_label(row.before),
+        byte_label(row.original),
+        byte_label(row.translated),
+        if row.equal { "=" } else { "!" }
+    ))
 }
 
 fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
@@ -1412,8 +1497,8 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
             Mode::Explore => {
                 "Explore: s step | Tab focus | p/o/t/r panels | a cfg/all | Up/Down move/scroll | q quit"
             }
-            Mode::Step => {
-                "Step: Esc/s explore | Space group/one | Up/Down insn | Left/Right group | p/o/t/r panels | q quit"
+            Mode::ActiveStep => {
+                "Step: Esc/s explore | Space/n group | j/Down insn | r registers | m memory | c compact | R reset | q quit"
             }
         };
         vec![Line::from(app.status.clone()), Line::from(keys)]
@@ -1422,55 +1507,6 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
         Paragraph::new(lines).block(Block::default().title("keys").borders(Borders::ALL)),
         area,
     );
-}
-
-fn translated_step_brief(app: &App<'_>, index: usize) -> String {
-    let Some(step) = app
-        .trace
-        .execution
-        .as_ref()
-        .and_then(|execution| execution.translated_steps.get(index))
-    else {
-        return format!("#{:<5} <missing>", index + 1);
-    };
-    let layout = step
-        .offset
-        .and_then(|offset| layout_for_offset(app.trace, offset));
-    let pretty = layout
-        .map(|insn| insn.pretty.as_str())
-        .unwrap_or("<runtime transition>");
-    let region = layout
-        .map(|insn| format!("{:?}", insn.region))
-        .unwrap_or_else(|| "Runtime".to_string());
-    let transition = if step.runtime_transition.is_some() {
-        " transition"
-    } else if step.halt.is_some() {
-        " halt"
-    } else {
-        ""
-    };
-
-    format!(
-        "#{:<5} off={} idx={} {:<8} ori_pc={} {}{}",
-        index + 1,
-        opt_offset_label(step.offset),
-        opt_usize_label(step.insn_index),
-        region,
-        ori_pc_label(step.ori_pc),
-        pretty,
-        transition
-    )
-}
-
-fn current_step_group<'a>(
-    app: &'a App<'_>,
-) -> Option<(usize, &'a kjit_harness::trace::TraceStepGroup)> {
-    let execution = app.trace.execution.as_ref()?;
-    let group_index = group_index_for_step(execution, app.step_cursor)?;
-    execution
-        .groups
-        .get(group_index)
-        .map(|group| (group_index, group))
 }
 
 fn layout_for_offset(
@@ -1608,11 +1644,35 @@ fn byte_label(value: Option<u8>) -> String {
     }
 }
 
+fn comparison_value_label(value: &ComparisonValue) -> String {
+    match value {
+        ComparisonValue::U64(value) => format!("{value:#018x}"),
+        ComparisonValue::Flags(flags) => flags_value_label(*flags),
+    }
+}
+
 fn flags_label(state: &MachineState) -> String {
+    flags_value_label(state.flags)
+}
+
+fn flags_value_label(flags: Flags) -> String {
     format!(
         "N{}Z{}C{}V{}",
-        state.flags.n as u8, state.flags.z as u8, state.flags.c as u8, state.flags.v as u8
+        flags.n as u8, flags.z as u8, flags.c as u8, flags.v as u8
     )
+}
+
+fn active_halt_label(halt: &ActiveStepHalt) -> String {
+    match halt {
+        ActiveStepHalt::Running => "running".to_string(),
+        ActiveStepHalt::Original(reason) => format!("original:{reason:?}"),
+        ActiveStepHalt::Translated(reason) => format!("translated:{reason:?}"),
+        ActiveStepHalt::Both {
+            original,
+            translated,
+        } => format!("original:{original:?} translated:{translated:?}"),
+        ActiveStepHalt::Error(message) => format!("error:{}", first_line(message)),
+    }
 }
 
 fn print_trace_view(trace: &PipelineTrace, selection: Selection, check: &PipelineCheck) {
