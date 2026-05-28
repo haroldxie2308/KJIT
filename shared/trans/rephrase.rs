@@ -14,31 +14,31 @@ pub enum RephrasedInsnKind {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct RephrasedInsn {
     pub kind: RephrasedInsnKind,
-    pub original_pc: u64,
+    pub ori_pc: u64,
     pub insn: A64Insn,
 }
 
 impl RephrasedInsn {
-    pub const fn original(original_pc: u64, insn: A64Insn) -> Self {
+    pub const fn original(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
             kind: RephrasedInsnKind::Original,
-            original_pc,
+            ori_pc,
             insn,
         }
     }
 
-    pub const fn synthetic(original_pc: u64, insn: A64Insn) -> Self {
+    pub const fn synthetic(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
             kind: RephrasedInsnKind::Synthetic,
-            original_pc,
+            ori_pc,
             insn,
         }
     }
 
-    pub const fn runtime_exit_branch(original_pc: u64, insn: A64Insn) -> Self {
+    pub const fn runtime_exit_branch(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
             kind: RephrasedInsnKind::RuntimeExitBranch,
-            original_pc,
+            ori_pc,
             insn,
         }
     }
@@ -371,7 +371,7 @@ mod tests {
             assert!(
                 rephrased
                     .iter()
-                    .all(|insn| insn.insn.runtime_exit_reason(insn.original_pc).is_none()),
+                    .all(|insn| insn.insn.runtime_exit_reason(insn.ori_pc).is_none()),
                 "raw runtime-exit instruction survived rephrase for {}",
                 insn.key()
             );

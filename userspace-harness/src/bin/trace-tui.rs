@@ -408,7 +408,7 @@ fn parse_command(line: &str, trace: &PipelineTrace, current: Selection) -> Comma
 fn next_pc(trace: &PipelineTrace, current: Selection, delta: isize) -> Option<u64> {
     let current_pc = match current {
         Selection::Pc(pc) => pc,
-        Selection::Offset(offset) => trace.selected_offset(offset)?.original_pc?,
+        Selection::Offset(offset) => trace.selected_offset(offset)?.ori_pc?,
     };
     let index = trace
         .pc_index
@@ -426,7 +426,7 @@ fn next_visible_pc(
 ) -> Option<u64> {
     let current_pc = match current {
         Selection::Pc(pc) => pc,
-        Selection::Offset(offset) => trace.selected_offset(offset)?.original_pc?,
+        Selection::Offset(offset) => trace.selected_offset(offset)?.ori_pc?,
     };
     let visible = visible_pc_entries(trace, show_raw_only);
     let index = visible.iter().position(|entry| entry.pc == current_pc);
@@ -503,7 +503,7 @@ fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
         Selection::Offset(offset) => app
             .trace
             .selected_offset(offset)
-            .and_then(|entry| entry.original_pc),
+            .and_then(|entry| entry.ori_pc),
     };
     let entries = visible_pc_entries(app.trace, app.show_raw_only);
     let selected_index = selected_pc
@@ -575,7 +575,7 @@ fn pc_brief(trace: &PipelineTrace, pc: u64) -> String {
                 .rephrased
                 .iter()
                 .flat_map(|block| block.insns.iter())
-                .find(|insn| insn.original_pc == pc)
+                .find(|insn| insn.ori_pc == pc)
                 .map(|insn| insn.pretty.clone())
         })
         .unwrap_or_default()
@@ -632,7 +632,7 @@ fn draw_detail(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
 
 fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
     let mut lines = Vec::new();
-    lines.push(Line::from(format!("selected original pc {pc:#x}")));
+    lines.push(Line::from(format!("selected ori_pc {pc:#x}")));
     for insn in app.trace.raw.iter().filter(|insn| insn.pc == pc) {
         lines.push(Line::from(format!(
             "raw  off={:#x} word={:#010x} {}",
@@ -763,7 +763,7 @@ fn translation_rows(
     blocks
         .iter()
         .flat_map(|block| block.insns.iter())
-        .filter(|insn| insn.original_pc == pc)
+        .filter(|insn| insn.ori_pc == pc)
         .map(|insn| TranslationRow {
             block_index: insn.block_index,
             index_in_block: insn.index_in_block,
@@ -808,7 +808,7 @@ fn draw_layout_for_pc(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect)
         .fragment
         .insns
         .iter()
-        .filter(|insn| insn.original_pc == Some(pc))
+        .filter(|insn| insn.ori_pc == Some(pc))
         .map(layout_line)
         .collect::<Vec<_>>();
     let lines = if lines.is_empty() {
@@ -834,11 +834,11 @@ fn draw_layout_for_pc(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect)
 fn draw_offset(frame: &mut Frame<'_>, app: &App<'_>, offset: usize, area: Rect) {
     let lines = if let Some(entry) = app.trace.selected_offset(offset) {
         vec![Line::from(format!(
-            "offset={:#x} runtime_pc={:#x} insn_index={} original_pc={} region={:?}",
+            "offset={:#x} runtime_pc={:#x} insn_index={} ori_pc={} region={:?}",
             entry.offset,
             entry.runtime_pc,
             entry.insn_index,
-            original_pc_label(entry.original_pc),
+            ori_pc_label(entry.ori_pc),
             entry.region
         ))]
     } else {
@@ -908,17 +908,17 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
 
 fn layout_line(insn: &userspace_harness::trace::TraceLayoutInsn) -> Line<'static> {
     Line::from(format!(
-        "off={:#06x} idx={:<3} {:?} original_pc={} {}",
+        "off={:#06x} idx={:<3} {:?} ori_pc={} {}",
         insn.offset,
         insn.index,
         insn.region,
-        original_pc_label(insn.original_pc),
+        ori_pc_label(insn.ori_pc),
         insn.pretty
     ))
 }
 
-fn original_pc_label(original_pc: Option<u64>) -> String {
-    match original_pc {
+fn ori_pc_label(ori_pc: Option<u64>) -> String {
+    match ori_pc {
         Some(pc) => format!("{pc:#x}"),
         None => "None".to_string(),
     }
@@ -940,7 +940,7 @@ fn print_trace_view(trace: &PipelineTrace, selection: Selection) {
         println!("runtime: steps={} halt={:?}", run.steps, run.halt);
     }
     match selection {
-        Selection::Pc(pc) => println!("selected original pc: {pc:#x}"),
+        Selection::Pc(pc) => println!("selected ori_pc: {pc:#x}"),
         Selection::Offset(offset) => println!("selected fragment offset: {offset:#x}"),
     }
 }

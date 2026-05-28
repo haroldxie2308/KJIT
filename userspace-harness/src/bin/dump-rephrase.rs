@@ -90,13 +90,13 @@ fn main() {
             };
             match insn.insn.encode() {
                 Ok(word) => println!(
-                    "  [{insn_index:02}] kind={kind:>9} original_pc={:#x} word={word:#010x} {:?}",
-                    insn.original_pc,
+                    "  [{insn_index:02}] kind={kind:>9} ori_pc={:#x} word={word:#010x} {:?}",
+                    insn.ori_pc,
                     insn.insn
                 ),
                 Err(err) => println!(
-                    "  [{insn_index:02}] kind={kind:>9} original_pc={:#x} word=<encode error: {err:?}> {:?}",
-                    insn.original_pc,
+                    "  [{insn_index:02}] kind={kind:>9} ori_pc={:#x} word=<encode error: {err:?}> {:?}",
+                    insn.ori_pc,
                     insn.insn
                 ),
             }

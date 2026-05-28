@@ -126,11 +126,10 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
         for rephrased in &block.insns {
             let insn_index = fragment.insns.len();
             let output_offset = insn_index * 4;
-            insert_vlabel_once(&mut fragment.vlabels, rephrased.original_pc, output_offset)?;
+            insert_vlabel_once(&mut fragment.vlabels, rephrased.ori_pc, output_offset)?;
 
             if rephrased.kind == RephrasedInsnKind::Original {
-                if let Some(reloc) =
-                    branch_reloc_for(rephrased.insn, rephrased.original_pc, insn_index)?
+                if let Some(reloc) = branch_reloc_for(rephrased.insn, rephrased.ori_pc, insn_index)?
                 {
                     relocs.push(reloc, GFP_KERNEL)?;
                 }

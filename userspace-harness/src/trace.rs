@@ -77,7 +77,7 @@ pub struct TraceRephrasedBlock {
 pub struct TraceRephrasedInsn {
     pub block_index: usize,
     pub index_in_block: usize,
-    pub original_pc: u64,
+    pub ori_pc: u64,
     pub kind: RephrasedInsnKind,
     pub key: &'static str,
     pub mnemonic: &'static str,
@@ -97,7 +97,7 @@ pub struct TraceFragment {
 pub struct TraceLayoutInsn {
     pub index: usize,
     pub offset: usize,
-    pub original_pc: Option<u64>,
+    pub ori_pc: Option<u64>,
     pub region: LayoutRegion,
     pub key: &'static str,
     pub mnemonic: &'static str,
@@ -126,7 +126,7 @@ pub struct RuntimeIndexEntry {
     pub offset: usize,
     pub runtime_pc: u64,
     pub insn_index: usize,
-    pub original_pc: Option<u64>,
+    pub ori_pc: Option<u64>,
     pub region: LayoutRegion,
 }
 
@@ -304,14 +304,13 @@ fn trace_rephrased(program: &RephrasedProgram) -> Vec<TraceRephrasedBlock> {
                 .map(|(index_in_block, insn)| TraceRephrasedInsn {
                     block_index,
                     index_in_block,
-                    original_pc: insn.original_pc,
+                    ori_pc: insn.ori_pc,
                     kind: insn.kind,
                     key: insn.insn.key(),
                     mnemonic: insn.insn.mnemonic(),
                     pretty: pretty_insn(
                         insn.insn,
-                        matches!(insn.kind, RephrasedInsnKind::Original)
-                            .then_some(insn.original_pc),
+                        matches!(insn.kind, RephrasedInsnKind::Original).then_some(insn.ori_pc),
                     ),
                     debug: format!("{:?}", insn.insn),
                 })
@@ -334,7 +333,7 @@ fn trace_fragment(
             TraceLayoutInsn {
                 index,
                 offset,
-                original_pc: layout_original_pcs
+                ori_pc: layout_original_pcs
                     .get(index)
                     .copied()
                     .flatten()
@@ -368,7 +367,7 @@ fn layout_original_pcs(program: &RephrasedProgram) -> Vec<Option<u64>> {
     }
     for block in program {
         for insn in &block.insns {
-            origins.push(Some(insn.original_pc));
+            origins.push(Some(insn.ori_pc));
         }
     }
     origins
@@ -392,11 +391,11 @@ fn build_pc_index(
         &mut pcs,
         rephrased
             .iter()
-            .flat_map(|block| block.insns.iter().map(|insn| insn.original_pc)),
+            .flat_map(|block| block.insns.iter().map(|insn| insn.ori_pc)),
     );
     push_unique_pcs(
         &mut pcs,
-        fragment.insns.iter().filter_map(|insn| insn.original_pc),
+        fragment.insns.iter().filter_map(|insn| insn.ori_pc),
     );
     pcs.sort_unstable();
 
@@ -416,7 +415,7 @@ fn build_pc_index(
             layout_offsets: fragment
                 .insns
                 .iter()
-                .filter_map(|insn| (insn.original_pc == Some(pc)).then_some(insn.offset))
+                .filter_map(|insn| (insn.ori_pc == Some(pc)).then_some(insn.offset))
                 .collect(),
         })
         .collect()
@@ -430,7 +429,7 @@ fn build_runtime_index(fragment: &TraceFragment) -> Vec<RuntimeIndexEntry> {
             offset: insn.offset,
             runtime_pc: crate::runtime::DEFAULT_BASE_PC + insn.offset as u64,
             insn_index: insn.index,
-            original_pc: insn.original_pc,
+            ori_pc: insn.ori_pc,
             region: insn.region,
         })
         .collect()
@@ -508,7 +507,7 @@ mod tests {
         let offsets = trace
             .insns
             .iter()
-            .filter_map(|insn| (insn.original_pc == Some(original_pc)).then_some(insn.offset))
+            .filter_map(|insn| (insn.ori_pc == Some(original_pc)).then_some(insn.offset))
             .collect::<Vec<_>>();
 
         assert_eq!(offsets.len(), 2);
