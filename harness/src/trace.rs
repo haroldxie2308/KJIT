@@ -1,6 +1,7 @@
 use crate::a64_pretty::pretty_insn;
-use crate::model::MachineState;
-use crate::runtime::{URuntime, URuntimeHalt};
+use crate::arm64::OriginalStepper;
+use crate::model::{HaltReason, MachineState};
+use crate::runtime::{URuntime, URuntimeHalt, URuntimeStepper, URuntimeTransition};
 use crate::shared::arm64::{decode_word, A64Insn};
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::platform::{SharedVec, GFP_KERNEL};
@@ -24,6 +25,7 @@ pub struct PipelineTrace {
     pub pc_index: Vec<PcIndexEntry>,
     pub runtime_index: Vec<RuntimeIndexEntry>,
     pub run: Option<TraceRun>,
+    pub execution: Option<TraceExecution>,
 }
 
 #[derive(Debug)]
@@ -137,6 +139,39 @@ pub struct TraceRun {
     pub final_state: MachineState,
 }
 
+#[derive(Debug)]
+pub struct TraceExecution {
+    pub original_steps: Vec<TraceOriginalStep>,
+    pub translated_steps: Vec<TraceTranslatedStep>,
+    pub groups: Vec<TraceStepGroup>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TraceOriginalStep {
+    pub pc: u64,
+    pub runtime_exit: Option<RuntimeExitReason>,
+    pub halt_reason: Option<HaltReason>,
+    pub state: MachineState,
+}
+
+#[derive(Clone, Debug)]
+pub struct TraceTranslatedStep {
+    pub offset: Option<usize>,
+    pub insn_index: Option<usize>,
+    pub ori_pc: Option<u64>,
+    pub runtime_transition: Option<URuntimeTransition>,
+    pub halt: Option<URuntimeHalt>,
+    pub state: MachineState,
+}
+
+#[derive(Clone, Debug)]
+pub struct TraceStepGroup {
+    pub ori_pc: Option<u64>,
+    pub original_step: Option<usize>,
+    pub translated_steps: Vec<usize>,
+    pub states_match: Option<bool>,
+}
+
 impl PipelineTrace {
     pub fn build(
         text_base: u64,
@@ -162,20 +197,32 @@ impl PipelineTrace {
         let layout_origins = layout_original_pcs(&virtualized_program);
         let fragment = crate::shared::emit::layout::layout_program(virtualized_program)
             .map_err(|err| err.to_string())?;
+        let fragment_trace = trace_fragment(&fragment, &layout_origins);
 
-        let run = if run_runtime {
+        let (run, execution) = if run_runtime {
+            let original_steps =
+                trace_original_execution(&text_bytes, text_base, request.entry_pc, initial_state)?;
             let mut runtime = URuntime::new(copy_fragment(&fragment)?, initial_state.clone());
-            let report = runtime.run();
-            Some(TraceRun {
+            let (translated_steps, report) =
+                trace_translated_execution(&mut runtime, &fragment_trace)?;
+            let groups = build_step_groups(&original_steps, &translated_steps);
+            let run = TraceRun {
                 steps: report.steps,
                 halt: report.halt,
                 final_state: report.state,
-            })
+            };
+            (
+                Some(run),
+                Some(TraceExecution {
+                    original_steps,
+                    translated_steps,
+                    groups,
+                }),
+            )
         } else {
-            None
+            (None, None)
         };
 
-        let fragment_trace = trace_fragment(&fragment, &layout_origins);
         let pc_index = build_pc_index(&raw, &cfg_trace, &rephrased, &fragment_trace);
         let runtime_index = build_runtime_index(&fragment_trace);
 
@@ -194,6 +241,7 @@ impl PipelineTrace {
             pc_index,
             runtime_index,
             run,
+            execution,
         })
     }
 
@@ -435,6 +483,127 @@ fn build_runtime_index(fragment: &TraceFragment) -> Vec<RuntimeIndexEntry> {
         .collect()
 }
 
+fn trace_original_execution(
+    bytes: &[u8],
+    text_base: u64,
+    entry_pc: u64,
+    initial_state: &MachineState,
+) -> Result<Vec<TraceOriginalStep>, String> {
+    const MAX_ORIGINAL_STEPS: usize = 100_000;
+
+    let mut stepper = OriginalStepper::new(bytes, text_base, entry_pc, initial_state)?;
+    let mut steps = Vec::new();
+
+    for _ in 0..MAX_ORIGINAL_STEPS {
+        let Some(step) = stepper.step()? else {
+            break;
+        };
+        let runtime_exit = step.runtime_exit;
+        let halt_reason = step.halt_reason;
+        let resume_pc = match runtime_exit {
+            Some(RuntimeExitReason::Svc { resume_pc, .. }) => Some(resume_pc),
+            _ => None,
+        };
+        steps.push(TraceOriginalStep {
+            pc: step.pc,
+            runtime_exit,
+            halt_reason,
+            state: step.state,
+        });
+
+        if let Some(resume_pc) = resume_pc {
+            stepper.resume_at(resume_pc);
+        } else if halt_reason.is_some() {
+            return Ok(steps);
+        }
+    }
+
+    Err("original step trace exceeded step limit".to_string())
+}
+
+fn trace_translated_execution(
+    runtime: &mut URuntime,
+    fragment: &TraceFragment,
+) -> Result<(Vec<TraceTranslatedStep>, crate::runtime::URuntimeReport), String> {
+    const MAX_TRANSLATED_STEPS: usize = 200_000;
+
+    let mut stepper = URuntimeStepper::new(runtime)?;
+    let mut steps = Vec::new();
+
+    for _ in 0..MAX_TRANSLATED_STEPS {
+        let Some(step) = stepper.step()? else {
+            break;
+        };
+        let ori_pc = step
+            .offset
+            .and_then(|offset| fragment.insns.iter().find(|insn| insn.offset == offset))
+            .and_then(|insn| insn.ori_pc);
+        let halt = step.halt.clone();
+        steps.push(TraceTranslatedStep {
+            offset: step.offset,
+            insn_index: step.insn_index,
+            ori_pc,
+            runtime_transition: step.runtime_transition,
+            halt: step.halt,
+            state: step.state,
+        });
+
+        if let Some(halt) = halt {
+            let report = stepper.report_for_halt(halt);
+            return Ok((steps, report));
+        }
+    }
+
+    Err("translated step trace exceeded step limit".to_string())
+}
+
+fn build_step_groups(
+    original_steps: &[TraceOriginalStep],
+    translated_steps: &[TraceTranslatedStep],
+) -> Vec<TraceStepGroup> {
+    let mut groups = Vec::new();
+    let mut original_cursor = 0usize;
+    let mut translated_cursor = 0usize;
+
+    while translated_cursor < translated_steps.len() {
+        let ori_pc = translated_steps[translated_cursor].ori_pc;
+        let mut translated_group = Vec::new();
+        while translated_cursor < translated_steps.len()
+            && translated_steps[translated_cursor].ori_pc == ori_pc
+        {
+            translated_group.push(translated_cursor);
+            translated_cursor += 1;
+        }
+
+        let original_step = ori_pc.and_then(|pc| {
+            let found = original_steps[original_cursor..]
+                .iter()
+                .position(|step| step.pc == pc)
+                .map(|relative| original_cursor + relative);
+            if let Some(index) = found {
+                original_cursor = index + 1;
+            }
+            found
+        });
+
+        let states_match = original_step.map(|original_index| {
+            let translated_index = *translated_group
+                .last()
+                .expect("translated groups are never empty");
+            original_steps[original_index].state == translated_steps[translated_index].state
+        });
+
+        groups.push(TraceStepGroup {
+            ori_pc,
+            original_step,
+            translated_steps: translated_group,
+            states_match,
+        });
+    }
+
+    groups
+}
+
 fn push_unique_pcs<I>(pcs: &mut Vec<u64>, iter: I)
 where
     I: Iterator<Item = u64>,
@@ -467,8 +636,19 @@ fn layout_region(offset: usize) -> LayoutRegion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::arm64::A64Insn;
+    use crate::run_entry_fixture;
+    use crate::shared::arm64::ergo::{uimm, x};
+    use crate::shared::arm64::{A64Imm, A64Insn, A64Mem, A64Reg};
+    use crate::shared::trans::input::TranslationTrigger;
     use crate::shared::trans::rephrase::RephrasedInsn;
+
+    fn encode_insns(insns: &[A64Insn]) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(insns.len() * 4);
+        for insn in insns {
+            bytes.extend_from_slice(&insn.encode().unwrap().to_le_bytes());
+        }
+        bytes
+    }
 
     #[test]
     fn trace_fragment_keeps_origin_for_every_expanded_body_instruction() {
@@ -513,6 +693,69 @@ mod tests {
         assert_eq!(offsets.len(), 2);
         assert_eq!(offsets[0], fragment.vlabels[0].1);
         assert_eq!(offsets[1], fragment.vlabels[0].1 + 4);
+    }
+
+    #[test]
+    fn step_trace_exposes_wrapper_only_and_origin_groups() {
+        let text_base = 0x4000;
+        let entry_pc = text_base;
+        let bytes = encode_insns(&[
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(5, 16),
+                rd: x(0),
+            },
+            A64Insn::RetRet64rBranchReg { rn: x(30) },
+        ]);
+        let mut state = MachineState::new();
+        state.write_x(30, 0xfeed_0000);
+        let request = request_for_trace(entry_pc, TranslationTrigger::Manual, &state);
+
+        let trace = PipelineTrace::build(text_base, bytes, request, &state, true).unwrap();
+        let execution = trace.execution.as_ref().unwrap();
+
+        assert_eq!(execution.translated_steps.first().unwrap().ori_pc, None);
+        assert_eq!(execution.groups.first().unwrap().ori_pc, None);
+        assert!(execution.groups.iter().any(|group| {
+            group.ori_pc == Some(entry_pc)
+                && group.original_step.is_some()
+                && !group.translated_steps.is_empty()
+        }));
+    }
+
+    #[test]
+    fn step_trace_final_state_matches_fixture_and_keeps_user_memory() {
+        let text_base = 0x5000;
+        let entry_pc = text_base;
+        let bytes = encode_insns(&[
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(5, 16),
+                rd: x(0),
+            },
+            A64Insn::StrImmGenStr64LdstPos {
+                rt: x(0),
+                mem: A64Mem::offset(A64Reg::x(12), A64Imm::scaled_unsigned(2, 12, 3)),
+            },
+            A64Insn::LdrImmGenLdr64LdstPos {
+                rt: x(3),
+                mem: A64Mem::offset(A64Reg::x(12), A64Imm::scaled_unsigned(2, 12, 3)),
+            },
+            A64Insn::RetRet64rBranchReg { rn: x(30) },
+        ]);
+        let mut state = MachineState::new();
+        state.write_x(12, 0x9000);
+        state.write_x(30, 0xfeed_0000);
+        let request = request_for_trace(entry_pc, TranslationTrigger::Manual, &state);
+
+        let trace = PipelineTrace::build(text_base, bytes.clone(), request, &state, true).unwrap();
+        let report =
+            run_entry_fixture("step-trace-memory", text_base, bytes, entry_pc, &state).unwrap();
+        let run = trace.run.as_ref().unwrap();
+
+        assert_eq!(run.final_state, report.fragment_state);
+        assert_eq!(run.final_state.read_u64(0x9010), 5);
+        assert_eq!(run.final_state.read_x(3), 5);
     }
 }
 

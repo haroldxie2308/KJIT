@@ -45,14 +45,14 @@ pub struct URuntime {
     pub config: URuntimeConfig,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct URuntimeReport {
     pub state: MachineState,
     pub halt: URuntimeHalt,
     pub steps: usize,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum URuntimeHalt {
     FellOffFragment {
         pc: u64,
@@ -78,6 +78,22 @@ pub enum URuntimeHalt {
     },
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct URuntimeStep {
+    pub offset: Option<usize>,
+    pub insn_index: Option<usize>,
+    pub next_offset: Option<usize>,
+    pub executed: bool,
+    pub runtime_transition: Option<URuntimeTransition>,
+    pub halt: Option<URuntimeHalt>,
+    pub state: MachineState,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum URuntimeTransition {
+    Continued { offset: usize },
+}
+
 impl URuntime {
     pub fn new(fragment: ExecutionFragment, initial_state: MachineState) -> Self {
         Self::with_config(fragment, initial_state, URuntimeConfig::default())
@@ -101,53 +117,15 @@ impl URuntime {
     }
 
     pub fn run(&mut self) -> URuntimeReport {
-        let mut steps = 0usize;
-        let mut pc = match self.enter_fragment_at(self.fragment.entry_offset) {
-            Ok((pc, prologue_steps)) => {
-                steps += prologue_steps;
-                pc
-            }
-            Err(message) => {
-                return self.report(
-                    URuntimeHalt::ExecutionError {
-                        pc: self.config.base_pc,
-                        message,
-                    },
-                    steps,
-                );
-            }
-        };
-
-        loop {
-            if pc == self.config.return_pc {
-                match self.handle_runtime_return() {
-                    RuntimeAction::ContinueAt(offset) => match self.enter_fragment_at(offset) {
-                        Ok((next_pc, prologue_steps)) => {
-                            steps += prologue_steps;
-                            pc = next_pc;
-                        }
-                        Err(message) => {
-                            return self
-                                .report(URuntimeHalt::ExecutionError { pc, message }, steps);
-                        }
-                    },
-                    RuntimeAction::Stop(halt) => return self.report(halt, steps),
-                }
-                continue;
-            }
-
-            let Some(index) = self.pc_to_index(pc) else {
-                return self.report(URuntimeHalt::FellOffFragment { pc }, steps);
-            };
-
-            let insn = self.fragment.insns[index];
-            steps += 1;
-            match execute_insn(insn, pc, &mut self.state) {
-                Ok(next_pc) => pc = next_pc,
-                Err(message) => {
-                    return self.report(URuntimeHalt::ExecutionError { pc, message }, steps);
-                }
-            }
+        match URuntimeStepper::new(self) {
+            Ok(mut stepper) => stepper.run_to_halt(),
+            Err(message) => self.report(
+                URuntimeHalt::ExecutionError {
+                    pc: self.config.base_pc,
+                    message,
+                },
+                0,
+            ),
         }
     }
 
@@ -194,26 +172,15 @@ impl URuntime {
         }
     }
 
-    fn enter_fragment_at(&mut self, offset: usize) -> Result<(u64, usize), String> {
+    fn prepare_entry_at(&mut self, offset: usize) -> Result<(), String> {
         self.validate_offset(offset)?;
-        let prologue_branch_index = PROLOGUE_ENTRY_BRANCH_OFFSET / 4;
-        if self.fragment.insns.len() <= prologue_branch_index {
-            return Err("fragment is missing the ABI prologue".to_string());
-        }
-
         self.state
             .write_x(ABI_PT_REGS_ARG_REG, self.config.pt_regs_addr);
         self.state
             .write_x(ABI_EXTRA_PARAMS_ARG_REG, self.config.extra_params_addr);
         self.state.write_x(ABI_LINK_REG, self.config.return_pc);
         self.state.set_sp(self.config.stack_top);
-
-        let mut pc = self.config.base_pc;
-        for index in 0..prologue_branch_index {
-            pc = execute_insn(self.fragment.insns[index], pc, &mut self.state)?;
-        }
-
-        Ok((self.config.base_pc + offset as u64, prologue_branch_index))
+        Ok(())
     }
 
     fn continue_or_request_translation(
@@ -268,20 +235,7 @@ impl URuntime {
     }
 
     fn user_state_from_pt_regs(&self) -> MachineState {
-        let ranges = [
-            (
-                self.config.pt_regs_addr,
-                self.config.pt_regs_addr + PT_REGS_BYTES,
-            ),
-            (
-                self.config.extra_params_addr,
-                self.config.extra_params_addr + EXTRA_PARAMS_BYTES,
-            ),
-            (
-                self.config.stack_top.saturating_sub(RUNTIME_FRAME_BYTES),
-                self.config.stack_top,
-            ),
-        ];
+        let ranges = self.runtime_owned_ranges();
         let mut state = self.state.without_memory_ranges(&ranges);
         for reg in 0..31 {
             state.write_x(
@@ -296,6 +250,218 @@ impl URuntime {
         );
         state.flags = self.state.flags;
         state
+    }
+
+    fn physical_user_state(&self) -> MachineState {
+        self.state
+            .without_memory_ranges(&self.runtime_owned_ranges())
+    }
+
+    fn runtime_owned_ranges(&self) -> [(u64, u64); 3] {
+        [
+            (
+                self.config.pt_regs_addr,
+                self.config.pt_regs_addr + PT_REGS_BYTES,
+            ),
+            (
+                self.config.extra_params_addr,
+                self.config.extra_params_addr + EXTRA_PARAMS_BYTES,
+            ),
+            (
+                self.config.stack_top.saturating_sub(RUNTIME_FRAME_BYTES),
+                self.config.stack_top,
+            ),
+        ]
+    }
+}
+
+pub struct URuntimeStepper<'a> {
+    runtime: &'a mut URuntime,
+    pc: u64,
+    steps: usize,
+    stopped: bool,
+    pending_entry_offset: Option<usize>,
+}
+
+impl<'a> URuntimeStepper<'a> {
+    pub fn new(runtime: &'a mut URuntime) -> Result<Self, String> {
+        let entry_offset = runtime.fragment.entry_offset;
+        let base_pc = runtime.config.base_pc;
+        runtime.prepare_entry_at(entry_offset)?;
+        let prologue_branch_index = PROLOGUE_ENTRY_BRANCH_OFFSET / 4;
+        if runtime.fragment.insns.len() <= prologue_branch_index {
+            return Err("fragment is missing the ABI prologue".to_string());
+        }
+
+        Ok(Self {
+            runtime,
+            pc: base_pc,
+            steps: 0,
+            stopped: false,
+            pending_entry_offset: Some(entry_offset),
+        })
+    }
+
+    pub fn pc(&self) -> u64 {
+        self.pc
+    }
+
+    pub fn current_offset(&self) -> Option<usize> {
+        self.runtime.emitted_pc_to_offset(self.pc)
+    }
+
+    pub fn steps(&self) -> usize {
+        self.steps
+    }
+
+    pub fn report_for_halt(&self, halt: URuntimeHalt) -> URuntimeReport {
+        self.runtime.report(halt, self.steps)
+    }
+
+    pub fn step(&mut self) -> Result<Option<URuntimeStep>, String> {
+        if self.stopped {
+            return Ok(None);
+        }
+
+        if self.pc == self.runtime.config.return_pc {
+            return Ok(Some(self.apply_runtime_return(None, None, None, false)?));
+        }
+
+        let Some(index) = self.runtime.pc_to_index(self.pc) else {
+            self.stopped = true;
+            let halt = URuntimeHalt::FellOffFragment { pc: self.pc };
+            return Ok(Some(URuntimeStep {
+                offset: None,
+                insn_index: None,
+                next_offset: None,
+                executed: false,
+                runtime_transition: None,
+                halt: Some(halt),
+                state: self.runtime.physical_user_state(),
+            }));
+        };
+
+        let offset = index * 4;
+        let insn_pc = self.pc;
+        let insn = self.runtime.fragment.insns[index];
+        self.steps += 1;
+
+        let mut next_pc = match execute_insn(insn, insn_pc, &mut self.runtime.state) {
+            Ok(next_pc) => next_pc,
+            Err(message) => {
+                self.stopped = true;
+                let halt = URuntimeHalt::ExecutionError {
+                    pc: insn_pc,
+                    message,
+                };
+                return Ok(Some(URuntimeStep {
+                    offset: Some(offset),
+                    insn_index: Some(index),
+                    next_offset: None,
+                    executed: true,
+                    runtime_transition: None,
+                    halt: Some(halt),
+                    state: self.runtime.physical_user_state(),
+                }));
+            }
+        };
+
+        if offset == PROLOGUE_ENTRY_BRANCH_OFFSET {
+            let entry_offset = self
+                .pending_entry_offset
+                .take()
+                .unwrap_or(self.runtime.fragment.entry_offset);
+            next_pc = self.runtime.config.base_pc + entry_offset as u64;
+        }
+
+        self.pc = next_pc;
+        if self.pc == self.runtime.config.return_pc {
+            return Ok(Some(self.apply_runtime_return(
+                Some(offset),
+                Some(index),
+                self.runtime.emitted_pc_to_offset(next_pc),
+                true,
+            )?));
+        }
+
+        Ok(Some(URuntimeStep {
+            offset: Some(offset),
+            insn_index: Some(index),
+            next_offset: self.runtime.emitted_pc_to_offset(self.pc),
+            executed: true,
+            runtime_transition: None,
+            halt: None,
+            state: self.runtime.physical_user_state(),
+        }))
+    }
+
+    pub fn run_to_halt(&mut self) -> URuntimeReport {
+        loop {
+            match self.step() {
+                Ok(Some(step)) => {
+                    if let Some(halt) = step.halt {
+                        return self.runtime.report(halt, self.steps);
+                    }
+                }
+                Ok(None) => {
+                    return self.runtime.report(
+                        URuntimeHalt::ExecutionError {
+                            pc: self.pc,
+                            message: "runtime stepper stopped without a halt reason".to_string(),
+                        },
+                        self.steps,
+                    );
+                }
+                Err(message) => {
+                    return self.runtime.report(
+                        URuntimeHalt::ExecutionError {
+                            pc: self.pc,
+                            message,
+                        },
+                        self.steps,
+                    );
+                }
+            }
+        }
+    }
+
+    fn apply_runtime_return(
+        &mut self,
+        offset: Option<usize>,
+        insn_index: Option<usize>,
+        next_offset: Option<usize>,
+        executed: bool,
+    ) -> Result<URuntimeStep, String> {
+        match self.runtime.handle_runtime_return() {
+            RuntimeAction::ContinueAt(offset_to_enter) => {
+                self.runtime.prepare_entry_at(offset_to_enter)?;
+                self.pc = self.runtime.config.base_pc;
+                self.pending_entry_offset = Some(offset_to_enter);
+                Ok(URuntimeStep {
+                    offset,
+                    insn_index,
+                    next_offset,
+                    executed,
+                    runtime_transition: Some(URuntimeTransition::Continued {
+                        offset: offset_to_enter,
+                    }),
+                    halt: None,
+                    state: self.runtime.user_state_from_pt_regs(),
+                })
+            }
+            RuntimeAction::Stop(halt) => {
+                self.stopped = true;
+                Ok(URuntimeStep {
+                    offset,
+                    insn_index,
+                    next_offset,
+                    executed,
+                    runtime_transition: None,
+                    halt: Some(halt),
+                    state: self.runtime.user_state_from_pt_regs(),
+                })
+            }
+        }
     }
 }
 
@@ -316,6 +482,7 @@ fn seed_pt_regs(state: &mut MachineState, config: &URuntimeConfig) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::abi::PROLOGUE_ENTRY_BRANCH_OFFSET;
     use crate::shared::arm64::ergo::{uimm, x};
     use crate::shared::arm64::{A64Imm, A64Insn};
     use crate::shared::trans::input::{TranslationRequest, TranslationTrigger};
@@ -334,6 +501,91 @@ mod tests {
             regs: None,
         };
         compile_request(&request, &code).unwrap()
+    }
+
+    #[test]
+    fn runtime_stepper_executes_prologue_before_body() {
+        let base_pc = 0x3000;
+        let fragment = compile_insns(
+            base_pc,
+            &[
+                A64Insn::MovzMovz64Movewide {
+                    hw: 0,
+                    imm16: uimm(2, 16),
+                    rd: x(2),
+                },
+                A64Insn::RetRet64rBranchReg { rn: x(30) },
+            ],
+        );
+        let entry_offset = fragment.entry_offset;
+        let mut runtime = URuntime::new(fragment, MachineState::new());
+        let mut stepper = URuntimeStepper::new(&mut runtime).unwrap();
+
+        let first = stepper.step().unwrap().unwrap();
+        assert_eq!(first.offset, Some(0));
+
+        let mut branch = first;
+        for _ in 1..=PROLOGUE_ENTRY_BRANCH_OFFSET / 4 {
+            branch = stepper.step().unwrap().unwrap();
+        }
+
+        assert_eq!(branch.offset, Some(PROLOGUE_ENTRY_BRANCH_OFFSET));
+        assert_eq!(stepper.current_offset(), Some(entry_offset));
+
+        let body = stepper.step().unwrap().unwrap();
+        assert_eq!(body.offset, Some(entry_offset));
+        assert_eq!(body.state.read_x(2), 2);
+    }
+
+    #[test]
+    fn runtime_stepper_runtime_return_preserves_run_behavior() {
+        let base_pc = 0x4000;
+        let insns = [
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(172, 16),
+                rd: x(8),
+            },
+            A64Insn::SvcSvcExException {
+                imm16: A64Imm::unsigned(0, 16),
+            },
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(2, 16),
+                rd: x(2),
+            },
+            A64Insn::RetRet64rBranchReg { rn: x(30) },
+        ];
+        let fragment = compile_insns(base_pc, &insns);
+        let resume_offset = fragment.offset_for_pc(base_pc + 8).unwrap();
+        let mut initial_state = MachineState::new();
+        initial_state.write_x(30, 0xfeed_0000);
+
+        let mut stepped_runtime = URuntime::new(fragment, initial_state.clone());
+        let stepped_report = {
+            let mut stepper = URuntimeStepper::new(&mut stepped_runtime).unwrap();
+            let mut saw_svc_continue = false;
+            loop {
+                let step = stepper.step().unwrap().unwrap();
+                if step.runtime_transition
+                    == Some(URuntimeTransition::Continued {
+                        offset: resume_offset,
+                    })
+                {
+                    saw_svc_continue = true;
+                }
+                if let Some(halt) = step.halt {
+                    assert!(saw_svc_continue);
+                    break stepper.report_for_halt(halt);
+                }
+            }
+        };
+
+        let mut direct_runtime = URuntime::new(compile_insns(base_pc, &insns), initial_state);
+        let direct_report = direct_runtime.run();
+
+        assert_eq!(stepped_report.state, direct_report.state);
+        assert_eq!(stepped_report.halt, direct_report.halt);
     }
 
     #[test]

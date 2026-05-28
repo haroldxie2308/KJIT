@@ -1,5 +1,6 @@
 use crate::model::{ExecutionResult, HaltReason, MachineState};
 use crate::shared::arm64::{decode_word, A64Condition, A64Imm, A64Insn, A64Mem, A64Reg};
+use crate::shared::trans::cfg::RuntimeExitReason;
 
 pub fn execute_program(
     program: &[u8],
@@ -15,47 +16,131 @@ pub fn execute_program_from(
     entry_pc: u64,
     initial_state: &MachineState,
 ) -> Result<ExecutionResult, String> {
-    if program.len() % 4 != 0 {
-        return Err("program length must be a multiple of 4 bytes".to_string());
-    }
-
-    let mut state = initial_state.clone();
-    let mut pc = entry_pc;
-    let mut steps = 0;
+    let mut stepper = OriginalStepper::new(program, base_pc, entry_pc, initial_state)?;
+    let mut steps = 0usize;
 
     loop {
-        if pc < base_pc {
-            return Err(format!("pc moved before base address: {pc:#x}"));
+        let Some(step) = stepper.step()? else {
+            return Err("original stepper stopped without a halt reason".to_string());
+        };
+        if step.executed {
+            steps += 1;
+        }
+        if let Some(halt_reason) = step.halt_reason {
+            return Ok(ExecutionResult {
+                state: step.state,
+                halt_reason,
+                steps,
+            });
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OriginalStep {
+    pub pc: u64,
+    pub next_pc: Option<u64>,
+    pub executed: bool,
+    pub runtime_exit: Option<RuntimeExitReason>,
+    pub halt_reason: Option<HaltReason>,
+    pub state: MachineState,
+}
+
+#[derive(Debug)]
+pub struct OriginalStepper<'a> {
+    program: &'a [u8],
+    base_pc: u64,
+    pc: u64,
+    state: MachineState,
+    stopped: bool,
+}
+
+impl<'a> OriginalStepper<'a> {
+    pub fn new(
+        program: &'a [u8],
+        base_pc: u64,
+        entry_pc: u64,
+        initial_state: &MachineState,
+    ) -> Result<Self, String> {
+        if program.len() % 4 != 0 {
+            return Err("program length must be a multiple of 4 bytes".to_string());
+        }
+        Ok(Self {
+            program,
+            base_pc,
+            pc: entry_pc,
+            state: initial_state.clone(),
+            stopped: false,
+        })
+    }
+
+    pub fn pc(&self) -> u64 {
+        self.pc
+    }
+
+    pub fn state(&self) -> &MachineState {
+        &self.state
+    }
+
+    pub fn resume_at(&mut self, pc: u64) {
+        self.pc = pc;
+        self.stopped = false;
+    }
+
+    pub fn step(&mut self) -> Result<Option<OriginalStep>, String> {
+        if self.stopped {
+            return Ok(None);
         }
 
-        let offset = pc - base_pc;
+        if self.pc < self.base_pc {
+            return Err(format!("pc moved before base address: {:#x}", self.pc));
+        }
+
+        let offset = self.pc - self.base_pc;
         if offset % 4 != 0 {
-            return Err(format!("pc is not word-aligned: {pc:#x}"));
+            return Err(format!("pc is not word-aligned: {:#x}", self.pc));
         }
 
         let insn_index = (offset / 4) as usize;
-        if insn_index >= program.len() / 4 {
-            return Ok(ExecutionResult {
-                state,
-                halt_reason: HaltReason::FellOffEnd,
-                steps,
-            });
+        if insn_index >= self.program.len() / 4 {
+            self.stopped = true;
+            return Ok(Some(OriginalStep {
+                pc: self.pc,
+                next_pc: None,
+                executed: false,
+                runtime_exit: None,
+                halt_reason: Some(HaltReason::FellOffEnd),
+                state: self.state.clone(),
+            }));
         }
 
-        let chunk = &program[insn_index * 4..insn_index * 4 + 4];
+        let chunk = &self.program[insn_index * 4..insn_index * 4 + 4];
         let word = u32::from_le_bytes(chunk.try_into().unwrap());
-        let decoded = decode_word(word, pc).map_err(|err| err.to_string())?;
-        steps += 1;
+        let decoded = decode_word(word, self.pc).map_err(|err| err.to_string())?;
 
-        if let Some(reason) = decoded.inner.runtime_exit_reason(pc) {
-            return Ok(ExecutionResult {
-                state,
-                halt_reason: HaltReason::RuntimeExit { reason },
-                steps,
-            });
+        if let Some(reason) = decoded.inner.runtime_exit_reason(self.pc) {
+            self.stopped = true;
+            return Ok(Some(OriginalStep {
+                pc: self.pc,
+                next_pc: None,
+                executed: true,
+                runtime_exit: Some(reason),
+                halt_reason: Some(HaltReason::RuntimeExit { reason }),
+                state: self.state.clone(),
+            }));
         }
 
-        pc = execute_insn(decoded.inner, pc, &mut state)?;
+        let pc = self.pc;
+        let next_pc = execute_insn(decoded.inner, pc, &mut self.state)?;
+        self.pc = next_pc;
+        Ok(Some(OriginalStep {
+            pc,
+            next_pc: Some(next_pc),
+            executed: true,
+            runtime_exit: None,
+            halt_reason: None,
+            state: self.state.clone(),
+        }))
     }
 }
 
@@ -481,6 +566,121 @@ fn sign_extend(value: u32, bits: u8) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::arm64::ergo::{scaled_simm, uimm, x};
+
+    fn encode_insns(insns: &[A64Insn]) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(insns.len() * 4);
+        for insn in insns {
+            bytes.extend_from_slice(&insn.encode().unwrap().to_le_bytes());
+        }
+        bytes
+    }
+
+    #[test]
+    fn original_stepper_advances_one_arithmetic_instruction() {
+        let program = encode_insns(&[A64Insn::MovzMovz64Movewide {
+            hw: 0,
+            imm16: uimm(7, 16),
+            rd: x(0),
+        }]);
+        let state = MachineState::new();
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state).unwrap();
+
+        let step = stepper.step().unwrap().unwrap();
+
+        assert_eq!(step.pc, 0x4000);
+        assert_eq!(step.next_pc, Some(0x4004));
+        assert_eq!(step.runtime_exit, None);
+        assert_eq!(step.halt_reason, None);
+        assert_eq!(step.state.read_x(0), 7);
+        assert_eq!(stepper.pc(), 0x4004);
+    }
+
+    #[test]
+    fn original_stepper_direct_branch_updates_pc() {
+        let program = encode_insns(&[
+            A64Insn::BUncondBOnlyBranchImm {
+                imm26: scaled_simm(2, 26, 2),
+            },
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(1, 16),
+                rd: x(0),
+            },
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(2, 16),
+                rd: x(0),
+            },
+        ]);
+        let state = MachineState::new();
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state).unwrap();
+
+        let branch = stepper.step().unwrap().unwrap();
+        let target = stepper.step().unwrap().unwrap();
+
+        assert_eq!(branch.next_pc, Some(0x4008));
+        assert_eq!(target.pc, 0x4008);
+        assert_eq!(target.state.read_x(0), 2);
+    }
+
+    #[test]
+    fn original_stepper_svc_can_resume_at_resume_pc() {
+        let program = encode_insns(&[
+            A64Insn::SvcSvcExException {
+                imm16: A64Imm::unsigned(0, 16),
+            },
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(7, 16),
+                rd: x(0),
+            },
+        ]);
+        let state = MachineState::new();
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state).unwrap();
+
+        let svc = stepper.step().unwrap().unwrap();
+        assert_eq!(
+            svc.runtime_exit,
+            Some(RuntimeExitReason::Svc {
+                imm16: 0,
+                resume_pc: 0x4004
+            })
+        );
+
+        stepper.resume_at(0x4004);
+        let resumed = stepper.step().unwrap().unwrap();
+        assert_eq!(resumed.pc, 0x4004);
+        assert_eq!(resumed.state.read_x(0), 7);
+    }
+
+    #[test]
+    fn original_stepper_ret_and_br_halt_with_runtime_exit_reasons() {
+        let ret_program = encode_insns(&[A64Insn::RetRet64rBranchReg { rn: x(30) }]);
+        let mut ret_state = MachineState::new();
+        ret_state.write_x(30, 0x9000);
+        let mut ret_stepper =
+            OriginalStepper::new(&ret_program, 0x4000, 0x4000, &ret_state).unwrap();
+        let ret = ret_stepper.step().unwrap().unwrap();
+        assert_eq!(
+            ret.halt_reason,
+            Some(HaltReason::RuntimeExit {
+                reason: RuntimeExitReason::Ret { lr_reg: 30 }
+            })
+        );
+
+        let br_program = encode_insns(&[A64Insn::BrBr64BranchReg { rn: x(5) }]);
+        let mut br_state = MachineState::new();
+        br_state.write_x(5, 0x8000);
+        let mut br_stepper = OriginalStepper::new(&br_program, 0x5000, 0x5000, &br_state).unwrap();
+        let br = br_stepper.step().unwrap().unwrap();
+        assert_eq!(
+            br.halt_reason,
+            Some(HaltReason::RuntimeExit {
+                reason: RuntimeExitReason::Br { target_reg: 5 }
+            })
+        );
+    }
 
     #[test]
     fn add_sub_immediate_distinguishes_sp_from_xzr() {
