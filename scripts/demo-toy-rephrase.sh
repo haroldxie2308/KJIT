@@ -3,30 +3,20 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ASM_PATH="${1:-$ROOT_DIR/tests/arm64/toy_cfg.s}"
-ENTRY_SYMBOL="${ENTRY_SYMBOL:-toy_translate_entry}"
 TEXT_BASE="${TEXT_BASE:-0x4000}"
 OUT_DIR="$ROOT_DIR/tmp/toy-rephrase-demo"
-OBJ_PATH="$OUT_DIR/toy_rephrase.o"
-BIN_PATH="$OUT_DIR/toy_rephrase.text.bin"
 
 mkdir -p "$OUT_DIR"
 
-llvm-mc -triple=aarch64 "$ASM_PATH" -filetype=obj -o "$OBJ_PATH"
-llvm-objcopy --only-section=.text -O binary "$OBJ_PATH" "$BIN_PATH"
+eval "$(TEXT_BASE="$TEXT_BASE" bash "$ROOT_DIR/scripts/compile-asm-fixture.sh" "$ASM_PATH" "$OUT_DIR")"
 
-entry_offset="$(
-    llvm-nm --defined-only "$OBJ_PATH" \
-        | awk -v sym="$ENTRY_SYMBOL" '$3 == sym { print $1; found = 1 } END { if (!found) exit 1 }'
-)"
-
-entry_pc="$(printf '0x%x' "$((TEXT_BASE + 16#$entry_offset))")"
-
-printf 'fixture: %s\n' "$ASM_PATH"
-printf 'text_base: %s\n' "$TEXT_BASE"
-printf 'entry_symbol: %s\n' "$ENTRY_SYMBOL"
-printf 'entry_pc: %s\n' "$entry_pc"
+printf 'fixture: %s\n' "$COMPILED_ASM_PATH"
+printf 'text_base: %s\n' "$COMPILED_TEXT_BASE"
+printf 'hot_svc_symbol: %s\n' "$COMPILED_HOT_SVC_SYMBOL"
+printf 'hot_svc_pc: %s\n' "$COMPILED_HOT_SVC_PC"
+printf 'entry_pc: %s\n' "$COMPILED_ENTRY_PC"
 
 cargo run \
     --manifest-path "$ROOT_DIR/harness/Cargo.toml" \
     --bin dump-rephrase \
-    -- "$BIN_PATH" "$TEXT_BASE" "$entry_pc"
+    -- "$COMPILED_BIN_PATH" "$COMPILED_TEXT_BASE" "$COMPILED_ENTRY_PC"

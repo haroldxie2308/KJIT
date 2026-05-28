@@ -88,7 +88,7 @@ harness-dump-cfg:
 	bash ./scripts/demo-toy-cfg.sh
 
 harness-test-asm:
-	bash ./scripts/run-asm-fixture.sh
+	ASM_PATH="$(ASM)" bash ./scripts/run-asm-fixture.sh
 
 harness-tui:
 	ASM_PATH="$(ASM)" bash ./scripts/run-trace-tui.sh
@@ -118,7 +118,7 @@ help:
 		'harness-dump-cfg' 'Assemble the toy AArch64 fixture and print its basic blocks' \
 		'harness-tui' 'Open the full-pipeline trace TUI; use ASM=path/to/file.s to select a fixture' \
 		'tui' 'Alias for harness-tui' \
-		'harness-test-asm' 'Run assembly fixture through trace/full-pipeline validation' \
+		'harness-test-asm' 'Run assembly fixture validation; use ASM=path/to/file.s or select interactively' \
 		'spec-test-encoding' 'Compare generated A64Insn encoding against LLVM assembler output' \
 		'qemu-run' 'Boot the local kernel image in QEMU (foreground)' \
 		'qemu-run-bg' 'Boot the local kernel image in QEMU (background)' \

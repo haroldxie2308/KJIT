@@ -28,6 +28,10 @@ toy_cfg_demo:
 
 .global toy_translate_entry
 toy_translate_entry:
+.global hot_svc_mark
+hot_svc_mark:
+    svc #0
+
     movz x0, #200
     movz x1, #0
     movz x8, #172

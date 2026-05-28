@@ -7,18 +7,18 @@ use crossterm::execute;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
 };
+use kjit_harness::a64_pretty::pretty_runtime_exit;
+use kjit_harness::model::MachineState;
+use kjit_harness::shared::trans::input::TranslationTrigger;
+use kjit_harness::shared::trans::rephrase::RephrasedInsnKind;
+use kjit_harness::trace::{request_for_trace, PipelineTrace};
+use kjit_harness::{run_entry_fixture, CaseReport};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
 use ratatui::{Frame, Terminal};
-use kjit_harness::a64_pretty::pretty_runtime_exit;
-use kjit_harness::model::MachineState;
-use kjit_harness::run_entry_fixture;
-use kjit_harness::shared::trans::input::TranslationTrigger;
-use kjit_harness::shared::trans::rephrase::RephrasedInsnKind;
-use kjit_harness::trace::{request_for_trace, PipelineTrace};
 
 fn main() {
     let config = match CliConfig::parse(std::env::args().skip(1)) {
@@ -49,26 +49,89 @@ fn main() {
         std::process::exit(1);
     });
 
-    if config.check {
-        run_entry_fixture(
+    let check = if config.check {
+        match run_entry_fixture(
             "trace-tui-check",
             config.text_base,
             text_bytes,
             config.entry_pc,
             &initial_state,
-        )
-        .unwrap_or_else(|err| {
-            eprintln!("full-pipeline check failed:\n{err}");
-            std::process::exit(1);
-        });
-    }
+        ) {
+            Ok(report) => PipelineCheck::Passed(PipelineCheckPass::from_report(&report)),
+            Err(message) => PipelineCheck::Failed { message },
+        }
+    } else {
+        PipelineCheck::NotRun
+    };
+    let check_failed = matches!(check, PipelineCheck::Failed { .. });
 
     if config.dump {
-        print_trace_view(&trace, Selection::Pc(config.entry_pc));
-    } else if let Err(err) = run_tui(&trace, config.entry_pc) {
+        print_trace_view(&trace, Selection::Pc(config.entry_pc), &check);
+        if config.check && check_failed {
+            std::process::exit(1);
+        }
+    } else if let Err(err) = run_tui(&trace, config.entry_pc, check) {
         eprintln!("trace-tui failed: {err}");
         std::process::exit(1);
     }
+}
+
+#[derive(Clone, Debug)]
+enum PipelineCheck {
+    NotRun,
+    Passed(PipelineCheckPass),
+    Failed { message: String },
+}
+
+#[derive(Clone, Debug)]
+struct PipelineCheckPass {
+    original_steps: usize,
+    fragment_steps: usize,
+    encoded_bytes: usize,
+    halt: String,
+}
+
+impl PipelineCheckPass {
+    fn from_report(report: &CaseReport) -> Self {
+        Self {
+            original_steps: report.original.steps,
+            fragment_steps: report.fragment_steps,
+            encoded_bytes: report.encoded_fragment.len(),
+            halt: format!("{:?}", report.fragment_halt),
+        }
+    }
+}
+
+impl PipelineCheck {
+    fn metadata(&self) -> String {
+        match self {
+            Self::NotRun => "check=not-run".to_string(),
+            Self::Passed(pass) => format!(
+                "check=pass original_steps={} fragment_steps={} encoded_bytes={} halt={}",
+                pass.original_steps, pass.fragment_steps, pass.encoded_bytes, pass.halt
+            ),
+            Self::Failed { message } => {
+                format!("check=fail {}", first_line(message))
+            }
+        }
+    }
+
+    fn initial_status(&self) -> String {
+        match self {
+            Self::Failed { message } => format!("pipeline check failed: {}", first_line(message)),
+            _ => "Tab focus | p/o/t/r jump panels | Up/Down move or scroll | a toggles cfg/all"
+                .to_string(),
+        }
+    }
+}
+
+fn first_line(message: &str) -> String {
+    message
+        .lines()
+        .next()
+        .unwrap_or("no detail")
+        .trim()
+        .to_string()
 }
 
 #[derive(Debug)]
@@ -153,6 +216,7 @@ impl FocusPanel {
 
 struct App<'a> {
     trace: &'a PipelineTrace,
+    check: PipelineCheck,
     selection: Selection,
     command: String,
     command_mode: bool,
@@ -164,7 +228,7 @@ struct App<'a> {
     status: String,
 }
 
-fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
+fn run_tui(trace: &PipelineTrace, entry_pc: u64, check: PipelineCheck) -> io::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
@@ -182,8 +246,8 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
         raw_scroll: 0,
         rephrase_scroll: 0,
         layout_scroll: 0,
-        status: "Tab focus | p/o/t/r jump panels | Up/Down move or scroll | a toggles cfg/all"
-            .to_string(),
+        status: check.initial_status(),
+        check,
     };
 
     loop {
@@ -442,7 +506,7 @@ fn draw(frame: &mut Frame<'_>, app: &App<'_>) {
     let root = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(3),
+            Constraint::Length(6),
             Constraint::Min(8),
             Constraint::Length(4),
         ])
@@ -464,8 +528,8 @@ fn draw_header(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
         .trace
         .run
         .as_ref()
-        .map(|run| format!(" runtime: steps={} halt={:?}", run.steps, run.halt))
-        .unwrap_or_default();
+        .map(|run| format!("runtime: steps={} halt={:?}", run.steps, run.halt))
+        .unwrap_or_else(|| "runtime: not-run".to_string());
     let text = vec![
         Line::from(vec![
             Span::styled(
@@ -483,13 +547,14 @@ fn draw_header(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
             )),
         ]),
         Line::from(format!(
-            "raw={} cfg_blocks={} translated={} fragment_insns={}{}",
+            "raw={} cfg_blocks={} translated={} fragment_insns={}",
             app.trace.raw.len(),
             app.trace.cfg.blocks.len(),
             app.trace.translated.len(),
             app.trace.fragment.insns.len(),
-            runtime
         )),
+        Line::from(runtime),
+        Line::from(format!("pipeline_check: {}", app.check.metadata())),
     ];
     frame.render_widget(
         Paragraph::new(text).block(Block::default().borders(Borders::ALL)),
@@ -924,7 +989,7 @@ fn ori_pc_label(ori_pc: Option<u64>) -> String {
     }
 }
 
-fn print_trace_view(trace: &PipelineTrace, selection: Selection) {
+fn print_trace_view(trace: &PipelineTrace, selection: Selection, check: &PipelineCheck) {
     println!("KJIT translation trace");
     println!(
         "text_base={:#x} entry_pc={:#x} text_len={} raw_insns={} cfg_blocks={} fragment_insns={} entry_offset={:#x}",
@@ -938,6 +1003,10 @@ fn print_trace_view(trace: &PipelineTrace, selection: Selection) {
     );
     if let Some(run) = &trace.run {
         println!("runtime: steps={} halt={:?}", run.steps, run.halt);
+    }
+    println!("pipeline_check: {}", check.metadata());
+    if let PipelineCheck::Failed { message } = check {
+        println!("pipeline_check_error:\n{message}");
     }
     match selection {
         Selection::Pc(pc) => println!("selected ori_pc: {pc:#x}"),

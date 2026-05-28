@@ -16,26 +16,21 @@ select_asm_fixture() {
         exit 2
     fi
 
-    if [ "${#fixtures[@]}" -eq 1 ]; then
-        printf '%s\n' "${fixtures[0]}"
-        return
-    fi
-
     if [ ! -t 0 ]; then
-        echo "multiple .s fixtures found; set ASM_PATH or pass a fixture path:" >&2
+        echo "set ASM_PATH or pass a fixture path:" >&2
         printf '  %s\n' "${fixtures[@]}" >&2
         exit 2
     fi
 
-    echo "Select an AArch64 .s fixture:"
+    echo "Select an AArch64 .s fixture:" >&2
     local index
     for index in "${!fixtures[@]}"; do
-        printf '  %2d) %s\n' "$((index + 1))" "${fixtures[$index]}"
+        printf '  %2d) %s\n' "$((index + 1))" "${fixtures[$index]}" >&2
     done
 
     local choice
     while true; do
-        printf 'fixture> '
+        printf 'fixture> ' >&2
         read -r choice
         if [[ "$choice" =~ ^[0-9]+$ ]] \
             && [ "$choice" -ge 1 ] \
@@ -43,7 +38,7 @@ select_asm_fixture() {
             printf '%s\n' "${fixtures[$((choice - 1))]}"
             return
         fi
-        echo "enter a number from 1 to ${#fixtures[@]}"
+        echo "enter a number from 1 to ${#fixtures[@]}" >&2
     done
 }
 
@@ -55,10 +50,11 @@ eval "$(bash "$ROOT_DIR/scripts/compile-asm-fixture.sh" "$ASM_PATH" "$OUT_DIR")"
 
 printf 'fixture: %s\n' "$COMPILED_ASM_PATH"
 printf 'text_base: %s\n' "$COMPILED_TEXT_BASE"
-printf 'entry_symbol: %s\n' "$COMPILED_ENTRY_SYMBOL"
+printf 'hot_svc_symbol: %s\n' "$COMPILED_HOT_SVC_SYMBOL"
+printf 'hot_svc_pc: %s\n' "$COMPILED_HOT_SVC_PC"
 printf 'entry_pc: %s\n' "$COMPILED_ENTRY_PC"
 
 cargo run \
     --manifest-path "$ROOT_DIR/harness/Cargo.toml" \
     --bin trace-tui \
-    -- "$COMPILED_BIN_PATH" "$COMPILED_TEXT_BASE" "$COMPILED_ENTRY_PC"
+    -- --check "$COMPILED_BIN_PATH" "$COMPILED_TEXT_BASE" "$COMPILED_ENTRY_PC"

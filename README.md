@@ -94,8 +94,9 @@ includes the shared prologue and epilogue, and runtime exits return through
 `x9/x10/x11` with `x11` carrying the original resume PC.
 
 This milestone does not virtualize runtime-reserved registers yet. Assembly
-fixtures for the fragment path must avoid user-visible dependence on `x9`,
-`x10`, and `x11`.
+fixtures expected to pass must avoid user-visible dependence on `x9`, `x10`,
+and `x11`; `tests/arm64/reserved_regs.s` documents the failing regression that
+the register virtualization pass must eventually fix.
 
 The harness also exposes a trace model for debugging the full translation path.
 Use `trace-tui` for an interactive Ratatui view, or `--dump --check` for a
@@ -104,13 +105,19 @@ scriptable full-pipeline check:
 ```sh
 make harness-tui
 make harness-tui ASM=tests/arm64/toy_cfg.s
+make harness-test-asm ASM=tests/arm64/toy_cfg.s
+make harness-test-asm ASM=tests/arm64/reserved_regs.s
 ```
 
 `make tui` remains a short alias for `make harness-tui`.
 
-For now the TUI workflow accepts AArch64 `.s` fixtures. The script assembles the
-fixture with LLVM tools, derives the entry PC from `ENTRY_SYMBOL` (default:
-`toy_translate_entry`), and then launches the trace UI.
+For now the TUI and noninteractive fixture workflows accept AArch64 `.s`
+fixtures. Pass `ASM=path/to/file.s`, or run the command interactively and choose
+from the fixture prompt. The script assembles the fixture with LLVM tools,
+finds `HOT_SVC_SYMBOL` (default: `hot_svc_mark`), derives the translated entry
+PC as `hot_svc_pc + 4`, and then launches the trace UI or full-pipeline check.
+The TUI header and dump output include the full-pipeline check result so a
+fixture can be inspected alongside its pass/fail metadata.
 
 Inside the TUI, `q` quits, `Tab` cycles panel focus, `p`/`o`/`t`/`r` jump to
 Program/Original/Translation/Result, arrow keys move or scroll the focused
