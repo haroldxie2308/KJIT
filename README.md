@@ -102,9 +102,13 @@ Use `trace-tui` for an interactive Ratatui view, or `--dump --check` for a
 scriptable full-pipeline check:
 
 ```sh
-cargo run --manifest-path userspace-harness/Cargo.toml --bin trace-tui -- \
-  tmp/asm-fixture/fixture.text.bin 0x4000 0x4034
+make tui
+make tui ASM=tests/arm64/toy_cfg.s
 ```
+
+For now the TUI workflow accepts AArch64 `.s` fixtures. The script assembles the
+fixture with LLVM tools, derives the entry PC from `ENTRY_SYMBOL` (default:
+`toy_translate_entry`), and then launches the trace UI.
 
 ### Container Dev
 

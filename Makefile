@@ -15,7 +15,7 @@ endif
 
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset \
-	userspace-harness-test userspace-harness-dump-cfg userspace-harness-trace-tui test-asm-pipeline test-encoding arm64-spec-gen arm64-spec-gen-py workflow-help
+	userspace-harness-test userspace-harness-dump-cfg userspace-harness-trace-tui tui test-asm-pipeline test-encoding arm64-spec-gen arm64-spec-gen-py workflow-help
 
 default:
 	$(KMAKE) M=$$PWD
@@ -91,7 +91,9 @@ test-asm-pipeline:
 	bash ./scripts/run-asm-fixture.sh
 
 userspace-harness-trace-tui:
-	TRACE_TUI_FLAGS= bash ./scripts/run-asm-fixture.sh
+	ASM_PATH="$(ASM)" TRACE_TUI_SELECT=1 TRACE_TUI_FLAGS= bash ./scripts/run-asm-fixture.sh
+
+tui: userspace-harness-trace-tui
 
 test-encoding:
 	cargo test --manifest-path userspace-harness/Cargo.toml encoding_matches_llvm_for_handwritten_cases -- --ignored --nocapture
@@ -119,7 +121,8 @@ workflow-help:
 		'arm64-spec-gen-py Generate the ARM64 subset tables using the legacy Python generator' \
 		'userspace-harness-test Run the standalone userspace validation harness tests' \
 		'userspace-harness-dump-cfg Assemble the toy AArch64 fixture and print its basic blocks' \
-		'userspace-harness-trace-tui Open the full-pipeline translation trace TUI for the toy fixture' \
+		'userspace-harness-trace-tui Open the full-pipeline trace TUI; use ASM=path/to/file.s to select a fixture' \
+		'tui             Alias for userspace-harness-trace-tui' \
 		'test-asm-pipeline Run assembly fixture through trace/full-pipeline validation' \
 		'test-encoding   Compare generated A64Insn encoding against LLVM assembler output' \
 		'qemu-run        Boot the local kernel image in QEMU (foreground)' \
