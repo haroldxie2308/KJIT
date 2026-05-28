@@ -4,6 +4,7 @@ pub mod arm64;
 pub mod model;
 pub mod runtime;
 pub mod shared;
+pub mod trace;
 
 #[cfg(test)]
 mod encoding_tests;

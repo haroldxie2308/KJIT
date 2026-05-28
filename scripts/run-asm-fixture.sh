@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ASM_PATH="${1:-$ROOT_DIR/tests/arm64/toy_cfg.s}"
 ENTRY_SYMBOL="${ENTRY_SYMBOL:-toy_translate_entry}"
 TEXT_BASE="${TEXT_BASE:-0x4000}"
+TRACE_TUI_FLAGS="${TRACE_TUI_FLAGS:---check --dump}"
 OUT_DIR="$ROOT_DIR/tmp/asm-fixture"
 OBJ_PATH="$OUT_DIR/fixture.o"
 BIN_PATH="$OUT_DIR/fixture.text.bin"
@@ -28,5 +29,5 @@ printf 'entry_pc: %s\n' "$entry_pc"
 
 cargo run \
     --manifest-path "$ROOT_DIR/userspace-harness/Cargo.toml" \
-    --bin asm-fixture \
-    -- "$BIN_PATH" "$TEXT_BASE" "$entry_pc"
+    --bin trace-tui \
+    -- $TRACE_TUI_FLAGS "$BIN_PATH" "$TEXT_BASE" "$entry_pc"

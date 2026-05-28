@@ -97,6 +97,15 @@ This milestone does not virtualize runtime-reserved registers yet. Assembly
 fixtures for the fragment path must avoid user-visible dependence on `x9`,
 `x10`, and `x11`.
 
+The harness also exposes a trace model for debugging the full translation path.
+Use `trace-tui` for an interactive Ratatui view, or `--dump --check` for a
+scriptable full-pipeline check:
+
+```sh
+cargo run --manifest-path userspace-harness/Cargo.toml --bin trace-tui -- \
+  tmp/asm-fixture/fixture.text.bin 0x4000 0x4034
+```
+
 ### Container Dev
 
 The Linux development image is defined in `docker/dev/Dockerfile` and is intended to be used through the VS Code dev container.
