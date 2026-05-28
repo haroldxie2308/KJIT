@@ -1,3 +1,7 @@
+use crate::shared::abi::{
+    append_epilogue, append_prologue, EPILOGUE_LEN_BYTES, EPILOGUE_OFFSET,
+    PROLOGUE_ENTRY_BRANCH_OFFSET, PROLOGUE_LEN_BYTES,
+};
 use crate::shared::arm64::{A64Insn, A64OperandRole, A64RewriteError};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::rephrase::{RephrasedInsnKind, RephrasedProgram};
@@ -24,6 +28,7 @@ impl ExecutionFragment {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LayoutError {
     Alloc(SharedAllocError),
+    EmptyProgram,
     MissingLabel {
         target_original_pc: u64,
     },
@@ -44,6 +49,39 @@ pub enum LayoutError {
 impl From<SharedAllocError> for LayoutError {
     fn from(err: SharedAllocError) -> Self {
         Self::Alloc(err)
+    }
+}
+
+impl core::fmt::Display for LayoutError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Alloc(err) => write!(f, "allocation failed during layout: {err:?}"),
+            Self::EmptyProgram => write!(f, "cannot layout an empty rephrased program"),
+            Self::MissingLabel { target_original_pc } => {
+                write!(
+                    f,
+                    "missing layout label for original pc {target_original_pc:#x}"
+                )
+            }
+            Self::BranchOutOfRange {
+                insn_index,
+                target_original_pc,
+            } => write!(
+                f,
+                "branch at instruction {insn_index} cannot reach target {target_original_pc:#x}"
+            ),
+            Self::UnalignedBranchTarget {
+                insn_index,
+                target_original_pc,
+            } => write!(
+                f,
+                "branch at instruction {insn_index} has unaligned target {target_original_pc:#x}"
+            ),
+            Self::UnsupportedBranchField { insn_index, field } => write!(
+                f,
+                "unsupported branch field `{field}` at instruction {insn_index}"
+            ),
+        }
     }
 }
 
@@ -69,12 +107,20 @@ pub(crate) enum BranchRelocKind {
 
 pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragment, LayoutError> {
     let insn_count = program.iter().map(|block| block.insns.len()).sum::<usize>();
+    let entry_pc = program.first().ok_or(LayoutError::EmptyProgram)?.start_addr;
     let mut fragment = ExecutionFragment {
-        insns: SharedVec::with_capacity(insn_count, GFP_KERNEL)?,
+        insns: SharedVec::with_capacity(
+            insn_count + (PROLOGUE_LEN_BYTES + EPILOGUE_LEN_BYTES) / 4,
+            GFP_KERNEL,
+        )?,
         entry_offset: 0,
         vlabels: SharedVec::with_capacity(insn_count, GFP_KERNEL)?,
     };
     let mut relocs = SharedVec::with_capacity(insn_count, GFP_KERNEL)?;
+    let mut runtime_exit_branches = SharedVec::with_capacity(insn_count, GFP_KERNEL)?;
+
+    append_prologue(&mut fragment.insns, GFP_KERNEL)?;
+    append_epilogue(&mut fragment.insns, GFP_KERNEL)?;
 
     for block in &program {
         for rephrased in &block.insns {
@@ -88,12 +134,21 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
                 {
                     relocs.push(reloc, GFP_KERNEL)?;
                 }
+            } else if rephrased.kind == RephrasedInsnKind::RuntimeExitBranch {
+                runtime_exit_branches.push(insn_index, GFP_KERNEL)?;
             }
 
             fragment.insns.push(rephrased.insn, GFP_KERNEL)?;
         }
     }
 
+    fragment.entry_offset =
+        find_vlabel(&fragment.vlabels, entry_pc).ok_or(LayoutError::MissingLabel {
+            target_original_pc: entry_pc,
+        })?;
+
+    resolve_prologue_entry_branch(&mut fragment)?;
+    resolve_runtime_exit_branches(&mut fragment, &runtime_exit_branches)?;
     resolve_branch_relocs(&mut fragment, &relocs)?;
     Ok(fragment)
 }
@@ -157,42 +212,75 @@ fn resolve_branch_relocs(
                 target_original_pc: reloc.target_original_pc,
             },
         )?;
-        let Some(insn) = fragment.insns.get_mut(reloc.insn_index) else {
-            return Err(LayoutError::BranchOutOfRange {
-                insn_index: reloc.insn_index,
-                target_original_pc: reloc.target_original_pc,
-            });
-        };
-        let Some((field, scale, bits)) = branch_target_role(*insn) else {
-            return Err(LayoutError::UnsupportedBranchField {
-                insn_index: reloc.insn_index,
-                field: "",
-            });
-        };
-        let encoded = encode_branch_delta(
-            reloc.insn_index * 4,
-            target_offset,
-            scale,
-            bits,
+        rewrite_branch_to_offset(
+            fragment,
             reloc.insn_index,
+            target_offset,
             reloc.target_original_pc,
         )?;
-
-        *insn = insn
-            .set_branch_target_imm(field, encoded)
-            .map_err(|err| match err {
-                A64RewriteError::UnsupportedField { field, .. } => {
-                    LayoutError::UnsupportedBranchField {
-                        insn_index: reloc.insn_index,
-                        field,
-                    }
-                }
-                A64RewriteError::FieldOutOfRange { .. } => LayoutError::BranchOutOfRange {
-                    insn_index: reloc.insn_index,
-                    target_original_pc: reloc.target_original_pc,
-                },
-            })?;
     }
+    Ok(())
+}
+
+fn resolve_prologue_entry_branch(
+    fragment: &mut ExecutionFragment,
+) -> SharedResult<(), LayoutError> {
+    rewrite_branch_to_offset(
+        fragment,
+        PROLOGUE_ENTRY_BRANCH_OFFSET / 4,
+        fragment.entry_offset,
+        u64::MAX,
+    )
+}
+
+fn resolve_runtime_exit_branches(
+    fragment: &mut ExecutionFragment,
+    branches: &SharedVec<usize>,
+) -> SharedResult<(), LayoutError> {
+    for insn_index in branches {
+        rewrite_branch_to_offset(fragment, *insn_index, EPILOGUE_OFFSET, u64::MAX)?;
+    }
+    Ok(())
+}
+
+fn rewrite_branch_to_offset(
+    fragment: &mut ExecutionFragment,
+    insn_index: usize,
+    target_offset: usize,
+    target_original_pc: u64,
+) -> SharedResult<(), LayoutError> {
+    let Some(insn) = fragment.insns.get_mut(insn_index) else {
+        return Err(LayoutError::BranchOutOfRange {
+            insn_index,
+            target_original_pc,
+        });
+    };
+    let Some((field, scale, bits)) = branch_target_role(*insn) else {
+        return Err(LayoutError::UnsupportedBranchField {
+            insn_index,
+            field: "",
+        });
+    };
+    let encoded = encode_branch_delta(
+        insn_index * 4,
+        target_offset,
+        scale,
+        bits,
+        insn_index,
+        target_original_pc,
+    )?;
+
+    *insn = insn
+        .set_branch_target_imm(field, encoded)
+        .map_err(|err| match err {
+            A64RewriteError::UnsupportedField { field, .. } => {
+                LayoutError::UnsupportedBranchField { insn_index, field }
+            }
+            A64RewriteError::FieldOutOfRange { .. } => LayoutError::BranchOutOfRange {
+                insn_index,
+                target_original_pc,
+            },
+        })?;
     Ok(())
 }
 
@@ -284,6 +372,10 @@ mod tests {
         program
     }
 
+    fn body_start_offset() -> usize {
+        PROLOGUE_LEN_BYTES + EPILOGUE_LEN_BYTES
+    }
+
     #[test]
     fn rewrites_forward_branch_to_layout_offset() {
         let mut insns = SharedVec::new();
@@ -318,10 +410,15 @@ mod tests {
             .unwrap();
 
         let layout = layout_program(one_block(insns)).unwrap();
+        let body_index = body_start_offset() / 4;
 
-        assert_eq!(layout.entry_offset, 0);
-        assert_eq!(layout.vlabels[2], (0x1008, 12));
-        assert_eq!(layout.insns[0].branch_target_imm("imm26"), Some(3));
+        assert_eq!(layout.entry_offset, body_start_offset());
+        assert_eq!(layout.vlabels[2], (0x1008, body_start_offset() + 12));
+        assert_eq!(layout.insns[body_index].branch_target_imm("imm26"), Some(3));
+        assert_eq!(
+            layout.insns[body_index].direct_branch_target(body_start_offset() as u64),
+            Some((body_start_offset() + 12) as u64)
+        );
     }
 
     #[test]
@@ -359,7 +456,72 @@ mod tests {
             .unwrap();
 
         let layout = layout_program(one_block(insns)).unwrap();
+        let body_index = body_start_offset() / 4;
 
-        assert_eq!(layout.insns[3].branch_target_imm("imm19"), Some(524285));
+        assert_eq!(
+            layout.insns[body_index + 3].branch_target_imm("imm19"),
+            Some(524285)
+        );
+    }
+
+    #[test]
+    fn wraps_body_with_prologue_and_epilogue() {
+        let mut insns = SharedVec::new();
+        insns
+            .push(
+                RephrasedInsn::original(0x1000, A64Insn::NopNopHiHints {}),
+                GFP_KERNEL,
+            )
+            .unwrap();
+
+        let layout = layout_program(one_block(insns)).unwrap();
+
+        assert_eq!(layout.insns.len(), (body_start_offset() / 4) + 1);
+        assert_eq!(layout.entry_offset, body_start_offset());
+        assert_eq!(layout.vlabels[0], (0x1000, body_start_offset()));
+    }
+
+    #[test]
+    fn resolves_prologue_entry_branch_to_entry_offset() {
+        let mut insns = SharedVec::new();
+        insns
+            .push(
+                RephrasedInsn::original(0x1000, A64Insn::NopNopHiHints {}),
+                GFP_KERNEL,
+            )
+            .unwrap();
+
+        let layout = layout_program(one_block(insns)).unwrap();
+        let prologue_branch_index = PROLOGUE_ENTRY_BRANCH_OFFSET / 4;
+
+        assert_eq!(
+            layout.insns[prologue_branch_index]
+                .direct_branch_target(PROLOGUE_ENTRY_BRANCH_OFFSET as u64),
+            Some(layout.entry_offset as u64)
+        );
+    }
+
+    #[test]
+    fn resolves_runtime_exit_branch_to_epilogue() {
+        let mut insns = SharedVec::new();
+        insns
+            .push(
+                RephrasedInsn::runtime_exit_branch(
+                    0x1000,
+                    A64Insn::BUncondBOnlyBranchImm {
+                        imm26: A64Imm::scaled_signed(0, 26, 2),
+                    },
+                ),
+                GFP_KERNEL,
+            )
+            .unwrap();
+
+        let layout = layout_program(one_block(insns)).unwrap();
+        let runtime_branch_index = body_start_offset() / 4;
+
+        assert_eq!(
+            layout.insns[runtime_branch_index].direct_branch_target(body_start_offset() as u64),
+            Some(EPILOGUE_OFFSET as u64)
+        );
     }
 }

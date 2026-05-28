@@ -85,6 +85,18 @@ The repo now includes a local kernel/QEMU workflow so the Rust module, kernel so
 - You can still override `KDIR` or `KBUILD_OUTPUT` in `.kjit.env` if you want a different kernel tree or separate output tree, but the default workflow now builds the upstream Linux submodule in place
 - `kernel-build` now builds `Image` and modules only; `dtbs` are skipped by default because the QEMU `virt` machine does not need them
 
+### Userspace Harness
+
+The userspace harness now exercises the executable-fragment path through
+`compile_request`: CFG construction, rephrase, the current no-op register
+virtualization pass, wrapped layout, and `URuntime`. The wrapper includes the
+shared prologue and epilogue, and runtime exits return through `x9/x10/x11`
+with `x11` carrying the original resume PC.
+
+This milestone does not virtualize runtime-reserved registers yet. Assembly
+fixtures for the fragment path must avoid user-visible dependence on `x9`,
+`x10`, and `x11`.
+
 ### Container Dev
 
 The Linux development image is defined in `docker/dev/Dockerfile` and is intended to be used through the VS Code dev container.

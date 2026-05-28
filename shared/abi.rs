@@ -1,5 +1,5 @@
 use crate::shared::arm64::ergo::{
-    ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, sp, uimm, x, xzr,
+    ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, scaled_simm, sp, uimm, x, xzr,
 };
 use crate::shared::arm64::A64Insn;
 use crate::shared::platform::{AllocFlags, SharedAllocError, SharedResult, SharedVec};
@@ -232,7 +232,9 @@ pub const KJIT_PROLOGUE: &[A64Insn] = &[
         rt: x(16),
         mem: mem_off(sp(), ldstpair64_offset(64)),
     },
-    A64Insn::NopNopHiHints {},
+    A64Insn::BUncondBOnlyBranchImm {
+        imm26: scaled_simm(0, 26, 2),
+    },
 ];
 
 pub const KJIT_EPILOGUE: &[A64Insn] = &[

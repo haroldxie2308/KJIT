@@ -26,7 +26,7 @@ fn main() {
     });
 
     let mut initial_state = MachineState::new();
-    initial_state.write_x(10, 0x9000);
+    initial_state.write_x(12, 0x9000);
 
     match run_entry_fixture(
         "asm-fixture",
@@ -37,9 +37,10 @@ fn main() {
     ) {
         Ok(report) => {
             println!(
-                "PASS asm-fixture\tentry_pc={entry_pc:#x}\ttranslated_insns={}\tencoded_bytes={}",
-                report.translated_program.len(),
-                report.encoded_program.len()
+                "PASS asm-fixture\tentry_pc={entry_pc:#x}\tfragment_insns={}\tentry_offset={:#x}\tfinal_halt={:?}",
+                report.fragment.insns.len(),
+                report.fragment.entry_offset,
+                report.fragment_halt,
             );
         }
         Err(err) => {

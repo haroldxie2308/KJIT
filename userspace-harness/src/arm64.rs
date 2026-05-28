@@ -6,12 +6,21 @@ pub fn execute_program(
     base_pc: u64,
     initial_state: &MachineState,
 ) -> Result<ExecutionResult, String> {
+    execute_program_from(program, base_pc, base_pc, initial_state)
+}
+
+pub fn execute_program_from(
+    program: &[u8],
+    base_pc: u64,
+    entry_pc: u64,
+    initial_state: &MachineState,
+) -> Result<ExecutionResult, String> {
     if program.len() % 4 != 0 {
         return Err("program length must be a multiple of 4 bytes".to_string());
     }
 
     let mut state = initial_state.clone();
-    let mut pc = base_pc;
+    let mut pc = entry_pc;
     let mut steps = 0;
 
     loop {

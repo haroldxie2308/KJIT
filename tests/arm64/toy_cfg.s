@@ -19,8 +19,8 @@ toy_cfg_demo:
     movz x2, #0x4444
 
 .Ljoin:
-    str x1, [x10, #16]
-    ldr x3, [x10, #16]
+    str x1, [x12, #16]
+    ldr x3, [x12, #16]
     b .Lexit
 
 .Lexit:
@@ -38,6 +38,6 @@ toy_translate_entry:
     subs x0, x0, #1
     cbnz x0, .Ltranslate_loop
 
-    str x1, [x10, #16]
-    ldr x3, [x10, #16]
+    str x1, [x12, #16]
+    ldr x3, [x12, #16]
     ret

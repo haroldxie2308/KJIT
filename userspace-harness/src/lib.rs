@@ -8,19 +8,24 @@ pub mod shared;
 #[cfg(test)]
 mod encoding_tests;
 
+use crate::shared::emit::layout::ExecutionFragment;
+use crate::shared::trans::cfg::RuntimeExitReason;
 use crate::shared::trans::input::{
     CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
 };
-use crate::shared::trans::translate::{translate_request, TranslatedProgram};
-use model::{MachineState, NormalizedState};
+use crate::shared::trans::translate::{compile_request, translate_request, TranslatedProgram};
+use model::{ExecutionResult, HaltReason, MachineState};
+use runtime::{URuntime, URuntimeHalt};
 
 #[derive(Debug)]
 pub struct CaseReport {
     pub name: &'static str,
-    pub translated_program: TranslatedProgram,
-    pub encoded_program: Vec<u8>,
-    pub original_state: NormalizedState,
-    pub encoded_state: NormalizedState,
+    pub fragment: ExecutionFragment,
+    pub encoded_fragment: Vec<u8>,
+    pub original: ExecutionResult,
+    pub fragment_state: MachineState,
+    pub fragment_halt: URuntimeHalt,
+    pub fragment_steps: usize,
 }
 
 pub struct MockCodeProvider {
@@ -74,44 +79,140 @@ pub fn run_entry_fixture(
     entry_pc: u64,
     initial_state: &MachineState,
 ) -> Result<CaseReport, String> {
+    let original_bytes = text_bytes.clone();
     let code = MockCodeProvider::new(text_base, text_bytes);
-    let original_program = code.slice_from(entry_pc)?;
-    let original = arm64::execute_program(original_program, entry_pc, initial_state)?;
+    let original =
+        execute_original_with_mocked_svc(&original_bytes, text_base, entry_pc, initial_state)?;
 
     let request = TranslationRequest {
         entry_pc,
         trigger: TranslationTrigger::HotSvc,
         regs: Some(register_snapshot(initial_state, entry_pc)),
     };
-    let translated_program = translate_request(&request, &code).map_err(|err| err.to_string())?;
-    let encoded_program = encode_translated_program(&translated_program)?;
-    let encoded = arm64::execute_program(&encoded_program, entry_pc, initial_state)?;
+    let fragment = compile_request(&request, &code).map_err(|err| err.to_string())?;
+    let mut runtime = URuntime::new(fragment, initial_state.clone());
+    let report = runtime.run();
+    let encoded_fragment = encode_fragment(&runtime.fragment)?;
 
-    let original_state = NormalizedState::from_execution(&original);
-    let encoded_state = NormalizedState::from_execution(&encoded);
-
-    if original_state != encoded_state {
+    if original.state != report.state {
         return Err(format!(
-            "original vs encoded mismatch for `{name}`\noriginal: {original_state:#?}\nencoded: {encoded_state:#?}",
+            "original vs fragment state mismatch for `{name}`\noriginal: {:#?}\nfragment: {:#?}",
+            original.state, report.state,
+        ));
+    }
+    if !runtime_halt_matches_original(&original, &report.halt) {
+        return Err(format!(
+            "original vs fragment halt mismatch for `{name}`\noriginal: {:#?}\nfragment: {:#?}",
+            original.halt_reason, report.halt,
         ));
     }
 
     Ok(CaseReport {
         name,
-        translated_program,
-        encoded_program,
-        original_state,
-        encoded_state,
+        fragment: runtime.fragment,
+        encoded_fragment,
+        original,
+        fragment_state: report.state,
+        fragment_halt: report.halt,
+        fragment_steps: report.steps,
     })
 }
 
-fn encode_translated_program(program: &TranslatedProgram) -> Result<Vec<u8>, String> {
+pub fn run_legacy_flattened_fixture(
+    text_base: u64,
+    text_bytes: Vec<u8>,
+    entry_pc: u64,
+    initial_state: &MachineState,
+) -> Result<TranslatedProgram, String> {
+    let code = MockCodeProvider::new(text_base, text_bytes);
+    let request = TranslationRequest {
+        entry_pc,
+        trigger: TranslationTrigger::HotSvc,
+        regs: Some(register_snapshot(initial_state, entry_pc)),
+    };
+    translate_request(&request, &code).map_err(|err| err.to_string())
+}
+
+fn execute_original_with_mocked_svc(
+    program: &[u8],
+    text_base: u64,
+    entry_pc: u64,
+    initial_state: &MachineState,
+) -> Result<ExecutionResult, String> {
+    const MAX_RUNTIME_EXITS: usize = 10_000;
+
+    let mut state = initial_state.clone();
+    let mut pc = entry_pc;
+    let mut steps = 0usize;
+
+    for _ in 0..MAX_RUNTIME_EXITS {
+        let result = arm64::execute_program_from(program, text_base, pc, &state)?;
+        steps += result.steps;
+
+        match result.halt_reason {
+            HaltReason::RuntimeExit {
+                reason: RuntimeExitReason::Svc { resume_pc, .. },
+            } => {
+                state = result.state;
+                pc = resume_pc;
+            }
+            halt_reason => {
+                return Ok(ExecutionResult {
+                    state: result.state,
+                    halt_reason,
+                    steps,
+                });
+            }
+        }
+    }
+
+    Err("original fixture exceeded runtime-exit continuation limit".to_string())
+}
+
+fn runtime_halt_matches_original(original: &ExecutionResult, halt: &URuntimeHalt) -> bool {
+    match (original.halt_reason, halt) {
+        (
+            HaltReason::RuntimeExit {
+                reason: RuntimeExitReason::Ret { lr_reg },
+            },
+            URuntimeHalt::ReturnedToUserspace {
+                status: crate::shared::abi::RetStatus::Ret,
+                target_pc,
+            },
+        ) => original.state.read_x(lr_reg) == *target_pc,
+        (
+            HaltReason::RuntimeExit {
+                reason: RuntimeExitReason::Br { target_reg },
+            },
+            URuntimeHalt::NeedsTranslation {
+                status: crate::shared::abi::RetStatus::Br,
+                target_pc,
+                ..
+            },
+        ) => original.state.read_x(target_reg) == *target_pc,
+        (HaltReason::FellOffEnd, URuntimeHalt::FellOffFragment { .. }) => true,
+        _ => false,
+    }
+}
+
+pub fn encode_legacy_translated_program(program: &TranslatedProgram) -> Result<Vec<u8>, String> {
     let mut bytes = Vec::with_capacity(program.len() * 4);
     for insn in program {
         let word = insn
             .inner
             .encode()
             .map_err(|err| format!("failed to encode {}: {err:?}", insn.inner.key()))?;
+        bytes.extend_from_slice(&word.to_le_bytes());
+    }
+    Ok(bytes)
+}
+
+fn encode_fragment(fragment: &ExecutionFragment) -> Result<Vec<u8>, String> {
+    let mut bytes = Vec::with_capacity(fragment.insns.len() * 4);
+    for insn in &fragment.insns {
+        let word = insn
+            .encode()
+            .map_err(|err| format!("failed to encode {}: {err:?}", insn.key()))?;
         bytes.extend_from_slice(&word.to_le_bytes());
     }
     Ok(bytes)

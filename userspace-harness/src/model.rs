@@ -160,6 +160,16 @@ impl MachineState {
         self.write_u64(addr, value);
     }
 
+    pub fn without_memory_ranges(&self, ranges: &[(u64, u64)]) -> Self {
+        let mut cloned = self.clone();
+        cloned.memory.retain(|addr, _| {
+            !ranges
+                .iter()
+                .any(|(start, end)| *start <= *addr && *addr < *end)
+        });
+        cloned
+    }
+
     pub fn update_sub_flags(&mut self, lhs: u64, rhs: u64, result: u64) {
         self.flags.n = (result >> 63) != 0;
         self.flags.z = result == 0;

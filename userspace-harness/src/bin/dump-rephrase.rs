@@ -86,6 +86,7 @@ fn main() {
             let kind = match insn.kind {
                 RephrasedInsnKind::Original => "original",
                 RephrasedInsnKind::Synthetic => "synthetic",
+                RephrasedInsnKind::RuntimeExitBranch => "rt-exit",
             };
             match insn.insn.encode() {
                 Ok(word) => println!(
