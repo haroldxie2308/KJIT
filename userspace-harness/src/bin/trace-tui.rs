@@ -17,6 +17,7 @@ use userspace_harness::a64_pretty::pretty_runtime_exit;
 use userspace_harness::model::MachineState;
 use userspace_harness::run_entry_fixture;
 use userspace_harness::shared::trans::input::TranslationTrigger;
+use userspace_harness::shared::trans::rephrase::RephrasedInsnKind;
 use userspace_harness::trace::{request_for_trace, PipelineTrace};
 
 fn main() {
@@ -677,44 +678,128 @@ fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
 }
 
 fn draw_rephrase(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
-    let mut lines = Vec::new();
-    lines.push(Line::from("rephrased"));
-    push_rephrased_lines(&mut lines, &app.trace.rephrased, pc);
-    lines.push(Line::from(""));
-    lines.push(Line::from("virtualized"));
-    push_rephrased_lines(&mut lines, &app.trace.virtualized, pc);
+    let outer = Block::default()
+        .title("Translation")
+        .border_style(focus_style(app, FocusPanel::Rephrase))
+        .borders(Borders::ALL);
+    let inner = outer.inner(area);
+    frame.render_widget(outer, area);
 
-    frame.render_widget(
-        Paragraph::new(lines)
-            .block(
-                Block::default()
-                    .title("Translation")
-                    .border_style(focus_style(app, FocusPanel::Rephrase))
-                    .borders(Borders::ALL),
-            )
-            .scroll((app.rephrase_scroll, 0))
-            .wrap(Wrap { trim: false }),
-        area,
+    let columns = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
+        .split(inner);
+
+    let (rephrased, virtualized) = aligned_translation_lines(app, pc);
+    render_translation_column(
+        frame,
+        "Rephrased",
+        rephrased,
+        app.rephrase_scroll,
+        columns[0],
+    );
+    render_translation_column(
+        frame,
+        "Virtualized",
+        virtualized,
+        app.rephrase_scroll,
+        columns[1],
     );
 }
 
-fn push_rephrased_lines(
-    lines: &mut Vec<Line<'_>>,
-    blocks: &[userspace_harness::trace::TraceRephrasedBlock],
-    pc: u64,
-) {
-    let len_before = lines.len();
-    for block in blocks {
-        for insn in block.insns.iter().filter(|insn| insn.original_pc == pc) {
-            lines.push(Line::from(format!(
-                "  b#{} i#{} {:?} {}",
-                insn.block_index, insn.index_in_block, insn.kind, insn.pretty
-            )));
+#[derive(Clone)]
+struct TranslationRow {
+    block_index: usize,
+    index_in_block: usize,
+    text: String,
+}
+
+fn aligned_translation_lines(app: &App<'_>, pc: u64) -> (Vec<Line<'static>>, Vec<Line<'static>>) {
+    let rephrased = translation_rows(&app.trace.rephrased, pc);
+    let virtualized = translation_rows(&app.trace.virtualized, pc);
+    if rephrased.is_empty() && virtualized.is_empty() {
+        return (vec![Line::from("none")], vec![Line::from("none")]);
+    }
+
+    let mut keys = rephrased
+        .iter()
+        .map(|row| (row.block_index, row.index_in_block))
+        .collect::<Vec<_>>();
+    for row in &virtualized {
+        let key = (row.block_index, row.index_in_block);
+        if !keys.contains(&key) {
+            keys.push(key);
         }
     }
-    if lines.len() == len_before {
-        lines.push(Line::from("  none"));
+    keys.sort_unstable();
+
+    let left = keys
+        .iter()
+        .map(|key| {
+            rephrased
+                .iter()
+                .find(|row| (row.block_index, row.index_in_block) == *key)
+                .map(|row| Line::from(row.text.clone()))
+                .unwrap_or_else(|| Line::from(""))
+        })
+        .collect();
+    let right = keys
+        .iter()
+        .map(|key| {
+            virtualized
+                .iter()
+                .find(|row| (row.block_index, row.index_in_block) == *key)
+                .map(|row| Line::from(row.text.clone()))
+                .unwrap_or_else(|| Line::from(""))
+        })
+        .collect();
+    (left, right)
+}
+
+fn translation_rows(
+    blocks: &[userspace_harness::trace::TraceRephrasedBlock],
+    pc: u64,
+) -> Vec<TranslationRow> {
+    blocks
+        .iter()
+        .flat_map(|block| block.insns.iter())
+        .filter(|insn| insn.original_pc == pc)
+        .map(|insn| TranslationRow {
+            block_index: insn.block_index,
+            index_in_block: insn.index_in_block,
+            text: format!(
+                "b#{} i#{} {} {}",
+                insn.block_index,
+                insn.index_in_block,
+                rephrased_kind_label(insn.kind),
+                insn.pretty
+            ),
+        })
+        .collect()
+}
+
+fn rephrased_kind_label(kind: RephrasedInsnKind) -> &'static str {
+    match kind {
+        RephrasedInsnKind::Original => "ORI",
+        RephrasedInsnKind::Synthetic => "SYN",
+        RephrasedInsnKind::RuntimeExitBranch => "REB",
     }
+}
+
+fn render_translation_column(
+    frame: &mut Frame<'_>,
+    title: &'static str,
+    lines: Vec<Line<'static>>,
+    scroll: u16,
+    area: Rect,
+) {
+    frame.render_widget(
+        Paragraph::new(lines)
+            .block(Block::default().title(title).borders(Borders::ALL))
+            .scroll((scroll, 0))
+            .wrap(Wrap { trim: false }),
+        area,
+    );
 }
 
 fn draw_layout_for_pc(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
