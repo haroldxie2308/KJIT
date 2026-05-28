@@ -13,6 +13,7 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
 use ratatui::{Frame, Terminal};
+use userspace_harness::a64_pretty::pretty_runtime_exit;
 use userspace_harness::model::MachineState;
 use userspace_harness::run_entry_fixture;
 use userspace_harness::shared::trans::input::TranslationTrigger;
@@ -117,6 +118,7 @@ struct App<'a> {
     selection: Selection,
     command: String,
     command_mode: bool,
+    show_raw_only: bool,
     status: String,
 }
 
@@ -133,7 +135,9 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
         selection: Selection::Pc(entry_pc),
         command: String::new(),
         command_mode: false,
-        status: "n/p or arrows move, :pc 0xADDR, :off 0xOFFSET, q quits".to_string(),
+        show_raw_only: false,
+        status: "q quit | arrows/n/p move | a toggles raw-only PCs | :pc 0xADDR | :off 0xOFFSET"
+            .to_string(),
     };
 
     loop {
@@ -185,8 +189,18 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
             KeyCode::Char('p') | KeyCode::Up | KeyCode::Left => {
                 select_next_pc(&mut app, -1);
             }
+            KeyCode::Char('a') => {
+                app.show_raw_only = !app.show_raw_only;
+                app.status = if app.show_raw_only {
+                    "showing all decoded raw PCs".to_string()
+                } else {
+                    "showing reachable CFG PCs only".to_string()
+                };
+            }
             KeyCode::Char('?') | KeyCode::F(1) => {
-                app.status = "commands: n/p, :pc <addr>, :off <offset>, :q".to_string();
+                app.status =
+                    "q quit | arrows/n/p move | a raw-only toggle | :pc <addr> | :off <offset>"
+                        .to_string();
             }
             _ => {}
         }
@@ -230,7 +244,7 @@ fn apply_command(app: &mut App<'_>, line: &str) -> Control {
 }
 
 fn select_next_pc(app: &mut App<'_>, delta: isize) {
-    if let Some(pc) = next_pc(app.trace, app.selection, delta) {
+    if let Some(pc) = next_visible_pc(app.trace, app.selection, delta, app.show_raw_only) {
         app.selection = Selection::Pc(pc);
         app.status = format!("selected pc {pc:#x}");
     } else {
@@ -289,6 +303,26 @@ fn next_pc(trace: &PipelineTrace, current: Selection, delta: isize) -> Option<u6
     trace.pc_index.get(next).map(|entry| entry.pc)
 }
 
+fn next_visible_pc(
+    trace: &PipelineTrace,
+    current: Selection,
+    delta: isize,
+    show_raw_only: bool,
+) -> Option<u64> {
+    let current_pc = match current {
+        Selection::Pc(pc) => pc,
+        Selection::Offset(offset) => trace.selected_offset(offset)?.original_pc?,
+    };
+    let visible = visible_pc_entries(trace, show_raw_only);
+    let index = visible.iter().position(|entry| entry.pc == current_pc);
+    let next = match index {
+        Some(index) => index.checked_add_signed(delta)?,
+        None if delta >= 0 => visible.iter().position(|entry| entry.pc > current_pc)?,
+        None => visible.iter().rposition(|entry| entry.pc < current_pc)?,
+    };
+    visible.get(next).map(|entry| entry.pc)
+}
+
 fn draw(frame: &mut Frame<'_>, app: &App<'_>) {
     let root = Layout::default()
         .direction(Direction::Vertical)
@@ -303,7 +337,7 @@ fn draw(frame: &mut Frame<'_>, app: &App<'_>) {
 
     let body = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Length(34), Constraint::Min(50)])
+        .constraints([Constraint::Length(54), Constraint::Min(50)])
         .split(root[1]);
     draw_pc_list(frame, app, body[0]);
     draw_detail(frame, app, body[1]);
@@ -326,10 +360,11 @@ fn draw_header(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
                     .add_modifier(Modifier::BOLD),
             ),
             Span::raw(format!(
-                "  entry={:#x} text_base={:#x} fragment_entry={:#x}",
+                "  entry={:#x} text_base={:#x} fragment_entry={:#x} view={}",
                 app.trace.input.entry_pc,
                 app.trace.input.text_base,
-                app.trace.fragment.entry_offset
+                app.trace.fragment.entry_offset,
+                if app.show_raw_only { "all-raw" } else { "cfg" },
             )),
         ]),
         Line::from(format!(
@@ -355,21 +390,24 @@ fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
             .selected_offset(offset)
             .and_then(|entry| entry.original_pc),
     };
-    let items = app
-        .trace
-        .pc_index
+    let items = visible_pc_entries(app.trace, app.show_raw_only)
         .iter()
         .map(|entry| {
             let style = if Some(entry.pc) == selected_pc {
                 Style::default().fg(Color::Black).bg(Color::Yellow)
             } else if entry.pc == app.trace.input.entry_pc {
                 Style::default().fg(Color::Green)
+            } else if entry.cfg_block.is_none() {
+                Style::default().fg(Color::DarkGray)
             } else {
                 Style::default()
             };
             ListItem::new(format!(
-                "{:#010x}  cfg={:?} off={:?}",
-                entry.pc, entry.cfg_block, entry.layout_offsets
+                "{:#010x} {:<8} {:<10} {}",
+                entry.pc,
+                pc_stage_label(entry),
+                offsets_label(entry),
+                pc_brief(app.trace, entry.pc)
             ))
             .style(style)
         })
@@ -378,11 +416,63 @@ fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     frame.render_widget(
         List::new(items).block(
             Block::default()
-                .title("original PC index")
+                .title("CFG / original PC index")
                 .borders(Borders::ALL),
         ),
         area,
     );
+}
+
+fn visible_pc_entries<'a>(
+    trace: &'a PipelineTrace,
+    show_raw_only: bool,
+) -> Vec<&'a userspace_harness::trace::PcIndexEntry> {
+    trace
+        .pc_index
+        .iter()
+        .filter(|entry| show_raw_only || entry.cfg_block.is_some())
+        .collect()
+}
+
+fn pc_stage_label(entry: &userspace_harness::trace::PcIndexEntry) -> String {
+    match entry.cfg_block {
+        Some(block) => format!("cfg:b{block}"),
+        None => "raw-only".to_string(),
+    }
+}
+
+fn offsets_label(entry: &userspace_harness::trace::PcIndexEntry) -> String {
+    match entry.layout_offsets.as_slice() {
+        [] => String::new(),
+        [offset] => format!("off={offset:#x}"),
+        offsets => {
+            let mut out = String::from("off=");
+            for (index, offset) in offsets.iter().enumerate() {
+                if index > 0 {
+                    out.push(',');
+                }
+                out.push_str(&format!("{offset:#x}"));
+            }
+            out
+        }
+    }
+}
+
+fn pc_brief(trace: &PipelineTrace, pc: u64) -> String {
+    trace
+        .raw
+        .iter()
+        .find(|insn| insn.pc == pc)
+        .map(|insn| insn.pretty.clone())
+        .or_else(|| {
+            trace
+                .rephrased
+                .iter()
+                .flat_map(|block| block.insns.iter())
+                .find(|insn| insn.original_pc == pc)
+                .map(|insn| insn.pretty.clone())
+        })
+        .unwrap_or_default()
 }
 
 fn draw_detail(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
@@ -419,11 +509,11 @@ fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
     lines.push(Line::from(format!("selected original pc {pc:#x}")));
     for insn in app.trace.raw.iter().filter(|insn| insn.pc == pc) {
         lines.push(Line::from(format!(
-            "raw  off={:#x} word={:#010x} {} {}",
-            insn.text_offset, insn.word, insn.mnemonic, insn.debug
+            "raw  off={:#x} word={:#010x} {}",
+            insn.text_offset, insn.word, insn.pretty
         )));
         if let Some(exit) = insn.runtime_exit {
-            lines.push(Line::from(format!("     runtime_exit={exit:?}")));
+            lines.push(Line::from(format!("     {}", pretty_runtime_exit(exit))));
         }
         if let Some((taken, fallthrough)) = insn.conditional_targets {
             lines.push(Line::from(format!(
@@ -435,6 +525,11 @@ fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
         lines.push(Line::from(format!(
             "cfg  block #{} [{:#x}, {:#x}) prev={:?} next={:?}",
             block.index, block.start_pc, block.end_pc, block.prev, block.next
+        )));
+    } else {
+        lines.push(Line::from(format!(
+            "cfg  raw-only: not reachable from entry {:#x}",
+            app.trace.input.entry_pc
         )));
     }
 
@@ -479,8 +574,8 @@ fn push_rephrased_lines(
     for block in blocks {
         for insn in block.insns.iter().filter(|insn| insn.original_pc == pc) {
             lines.push(Line::from(format!(
-                "  b#{} i#{} {:?} {} {}",
-                insn.block_index, insn.index_in_block, insn.kind, insn.mnemonic, insn.debug
+                "  b#{} i#{} {:?} {}",
+                insn.block_index, insn.index_in_block, insn.kind, insn.pretty
             )));
         }
     }
@@ -577,8 +672,8 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
 
 fn layout_line(insn: &userspace_harness::trace::TraceLayoutInsn) -> Line<'static> {
     Line::from(format!(
-        "off={:#06x} idx={:<3} {:?} original_pc={:?} {} {}",
-        insn.offset, insn.index, insn.region, insn.original_pc, insn.mnemonic, insn.debug
+        "off={:#06x} idx={:<3} {:?} original_pc={:?} {}",
+        insn.offset, insn.index, insn.region, insn.original_pc, insn.pretty
     ))
 }
 

@@ -110,6 +110,9 @@ For now the TUI workflow accepts AArch64 `.s` fixtures. The script assembles the
 fixture with LLVM tools, derives the entry PC from `ENTRY_SYMBOL` (default:
 `toy_translate_entry`), and then launches the trace UI.
 
+Inside the TUI, `q` quits, arrow keys move through reachable CFG PCs, and `a`
+toggles decoded raw PCs that are outside the requested CFG.
+
 The interactive TUI entry point is `scripts/run-trace-tui.sh`; the
 noninteractive assembly fixture validation remains `scripts/run-asm-fixture.sh`.
 

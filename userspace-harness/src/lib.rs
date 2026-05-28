@@ -1,5 +1,6 @@
 extern crate alloc;
 
+pub mod a64_pretty;
 pub mod arm64;
 pub mod model;
 pub mod runtime;

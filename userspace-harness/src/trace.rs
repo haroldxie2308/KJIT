@@ -1,3 +1,4 @@
+use crate::a64_pretty::pretty_insn;
 use crate::model::MachineState;
 use crate::runtime::{URuntime, URuntimeHalt};
 use crate::shared::arm64::{decode_word, A64Insn};
@@ -39,6 +40,7 @@ pub struct TraceInsn {
     pub word: u32,
     pub key: &'static str,
     pub mnemonic: &'static str,
+    pub pretty: String,
     pub debug: String,
     pub direct_branch_target: Option<u64>,
     pub conditional_targets: Option<(u64, u64)>,
@@ -79,6 +81,7 @@ pub struct TraceRephrasedInsn {
     pub kind: RephrasedInsnKind,
     pub key: &'static str,
     pub mnemonic: &'static str,
+    pub pretty: String,
     pub debug: String,
 }
 
@@ -98,6 +101,7 @@ pub struct TraceLayoutInsn {
     pub region: LayoutRegion,
     pub key: &'static str,
     pub mnemonic: &'static str,
+    pub pretty: String,
     pub debug: String,
 }
 
@@ -244,6 +248,7 @@ fn trace_insn(pc: u64, text_offset: usize, word: u32, insn: A64Insn) -> TraceIns
         word,
         key: insn.key(),
         mnemonic: insn.mnemonic(),
+        pretty: pretty_insn(insn, Some(pc)),
         debug: format!("{insn:?}"),
         direct_branch_target: insn.direct_branch_target(pc),
         conditional_targets: insn.conditional_targets(pc),
@@ -302,6 +307,11 @@ fn trace_rephrased(program: &RephrasedProgram) -> Vec<TraceRephrasedBlock> {
                     kind: insn.kind,
                     key: insn.insn.key(),
                     mnemonic: insn.insn.mnemonic(),
+                    pretty: pretty_insn(
+                        insn.insn,
+                        matches!(insn.kind, RephrasedInsnKind::Original)
+                            .then_some(insn.original_pc),
+                    ),
                     debug: format!("{:?}", insn.insn),
                 })
                 .collect(),
@@ -316,6 +326,7 @@ fn trace_fragment(fragment: &ExecutionFragment) -> TraceFragment {
         .enumerate()
         .map(|(index, insn)| {
             let offset = index * 4;
+            let runtime_pc = crate::runtime::DEFAULT_BASE_PC + offset as u64;
             TraceLayoutInsn {
                 index,
                 offset,
@@ -323,6 +334,7 @@ fn trace_fragment(fragment: &ExecutionFragment) -> TraceFragment {
                 region: layout_region(offset),
                 key: insn.key(),
                 mnemonic: insn.mnemonic(),
+                pretty: pretty_insn(*insn, Some(runtime_pc)),
                 debug: format!("{insn:?}"),
             }
         })
