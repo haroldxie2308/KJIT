@@ -160,6 +160,10 @@ impl MachineState {
         self.write_u64(addr, value);
     }
 
+    pub fn memory(&self) -> &BTreeMap<u64, u8> {
+        &self.memory
+    }
+
     pub fn without_memory_ranges(&self, ranges: &[(u64, u64)]) -> Self {
         let mut cloned = self.clone();
         cloned.memory.retain(|addr, _| {
