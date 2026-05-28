@@ -113,12 +113,53 @@ enum Selection {
     Offset(usize),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FocusPanel {
+    Cfg,
+    Raw,
+    Rephrase,
+    Layout,
+}
+
+impl FocusPanel {
+    const fn next(self) -> Self {
+        match self {
+            Self::Cfg => Self::Raw,
+            Self::Raw => Self::Rephrase,
+            Self::Rephrase => Self::Layout,
+            Self::Layout => Self::Cfg,
+        }
+    }
+
+    const fn prev(self) -> Self {
+        match self {
+            Self::Cfg => Self::Layout,
+            Self::Raw => Self::Cfg,
+            Self::Rephrase => Self::Raw,
+            Self::Layout => Self::Rephrase,
+        }
+    }
+
+    const fn name(self) -> &'static str {
+        match self {
+            Self::Cfg => "CFG",
+            Self::Raw => "raw",
+            Self::Rephrase => "translated",
+            Self::Layout => "layout",
+        }
+    }
+}
+
 struct App<'a> {
     trace: &'a PipelineTrace,
     selection: Selection,
     command: String,
     command_mode: bool,
     show_raw_only: bool,
+    focus: FocusPanel,
+    raw_scroll: u16,
+    rephrase_scroll: u16,
+    layout_scroll: u16,
     status: String,
 }
 
@@ -136,7 +177,11 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
         command: String::new(),
         command_mode: false,
         show_raw_only: false,
-        status: "q quit | arrows/n/p move | a toggles raw-only PCs | :pc 0xADDR | :off 0xOFFSET"
+        focus: FocusPanel::Cfg,
+        raw_scroll: 0,
+        rephrase_scroll: 0,
+        layout_scroll: 0,
+        status: "Tab focus | 1-4 jump panels | Up/Down move or scroll | a toggles raw-only PCs"
             .to_string(),
     };
 
@@ -183,11 +228,43 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
                 app.command_mode = true;
                 app.status = "enter command".to_string();
             }
-            KeyCode::Char('n') | KeyCode::Down | KeyCode::Right => {
+            KeyCode::Tab => {
+                app.focus = app.focus.next();
+                app.status = format!("focused {}", app.focus.name());
+            }
+            KeyCode::BackTab => {
+                app.focus = app.focus.prev();
+                app.status = format!("focused {}", app.focus.name());
+            }
+            KeyCode::Char('1') => set_focus(&mut app, FocusPanel::Cfg),
+            KeyCode::Char('2') => set_focus(&mut app, FocusPanel::Raw),
+            KeyCode::Char('3') => set_focus(&mut app, FocusPanel::Rephrase),
+            KeyCode::Char('4') => set_focus(&mut app, FocusPanel::Layout),
+            KeyCode::Char('n') | KeyCode::Right => {
                 select_next_pc(&mut app, 1);
             }
-            KeyCode::Char('p') | KeyCode::Up | KeyCode::Left => {
+            KeyCode::Char('p') | KeyCode::Left => {
                 select_next_pc(&mut app, -1);
+            }
+            KeyCode::Down => {
+                if app.focus == FocusPanel::Cfg {
+                    select_next_pc(&mut app, 1);
+                } else {
+                    scroll_focus(&mut app, 1);
+                }
+            }
+            KeyCode::Up => {
+                if app.focus == FocusPanel::Cfg {
+                    select_next_pc(&mut app, -1);
+                } else {
+                    scroll_focus(&mut app, -1);
+                }
+            }
+            KeyCode::PageDown | KeyCode::Char('d') => {
+                scroll_focus(&mut app, 5);
+            }
+            KeyCode::PageUp | KeyCode::Char('u') => {
+                scroll_focus(&mut app, -5);
             }
             KeyCode::Char('a') => {
                 app.show_raw_only = !app.show_raw_only;
@@ -199,7 +276,7 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
             }
             KeyCode::Char('?') | KeyCode::F(1) => {
                 app.status =
-                    "q quit | arrows/n/p move | a raw-only toggle | :pc <addr> | :off <offset>"
+                    "Tab focus | 1 CFG 2 raw 3 translated 4 layout | Up/Down move or scroll"
                         .to_string();
             }
             _ => {}
@@ -227,12 +304,13 @@ enum Control {
 fn apply_command(app: &mut App<'_>, line: &str) -> Control {
     match parse_command(line, app.trace, app.selection) {
         Command::Select(next) => {
-            app.selection = next;
+            set_selection(app, next);
             app.status = format!("selected {next:?}");
             Control::Continue
         }
         Command::Help => {
-            app.status = "commands: :pc <addr>, :off <offset>, :q".to_string();
+            app.status =
+                "commands: :pc <addr>, :off <offset>, :q; keys: Tab, 1-4, Up/Down".to_string();
             Control::Continue
         }
         Command::Quit => Control::Quit,
@@ -245,11 +323,47 @@ fn apply_command(app: &mut App<'_>, line: &str) -> Control {
 
 fn select_next_pc(app: &mut App<'_>, delta: isize) {
     if let Some(pc) = next_visible_pc(app.trace, app.selection, delta, app.show_raw_only) {
-        app.selection = Selection::Pc(pc);
+        set_selection(app, Selection::Pc(pc));
         app.status = format!("selected pc {pc:#x}");
     } else {
         app.status = "no PC in that direction".to_string();
     }
+}
+
+fn set_selection(app: &mut App<'_>, selection: Selection) {
+    app.selection = selection;
+    app.raw_scroll = 0;
+    app.rephrase_scroll = 0;
+    app.layout_scroll = 0;
+}
+
+fn set_focus(app: &mut App<'_>, focus: FocusPanel) {
+    app.focus = focus;
+    app.status = format!("focused {}", app.focus.name());
+}
+
+fn scroll_focus(app: &mut App<'_>, delta: i16) {
+    let panel = app.focus;
+    let scroll = match panel {
+        FocusPanel::Cfg => {
+            if delta >= 0 {
+                select_next_pc(app, 1);
+            } else {
+                select_next_pc(app, -1);
+            }
+            return;
+        }
+        FocusPanel::Raw => &mut app.raw_scroll,
+        FocusPanel::Rephrase => &mut app.rephrase_scroll,
+        FocusPanel::Layout => &mut app.layout_scroll,
+    };
+
+    if delta < 0 {
+        *scroll = scroll.saturating_sub(delta.unsigned_abs());
+    } else {
+        *scroll = scroll.saturating_add(delta as u16);
+    }
+    app.status = format!("{} scroll={}", panel.name(), *scroll);
 }
 
 enum Command {
@@ -329,7 +443,7 @@ fn draw(frame: &mut Frame<'_>, app: &App<'_>) {
         .constraints([
             Constraint::Length(3),
             Constraint::Min(8),
-            Constraint::Length(if app.command_mode { 3 } else { 2 }),
+            Constraint::Length(4),
         ])
         .split(frame.size());
 
@@ -360,11 +474,12 @@ fn draw_header(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
                     .add_modifier(Modifier::BOLD),
             ),
             Span::raw(format!(
-                "  entry={:#x} text_base={:#x} fragment_entry={:#x} view={}",
+                "  entry={:#x} text_base={:#x} fragment_entry={:#x} view={} focus={}",
                 app.trace.input.entry_pc,
                 app.trace.input.text_base,
                 app.trace.fragment.entry_offset,
                 if app.show_raw_only { "all-raw" } else { "cfg" },
+                app.focus.name(),
             )),
         ]),
         Line::from(format!(
@@ -390,7 +505,15 @@ fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
             .selected_offset(offset)
             .and_then(|entry| entry.original_pc),
     };
-    let items = visible_pc_entries(app.trace, app.show_raw_only)
+    let entries = visible_pc_entries(app.trace, app.show_raw_only);
+    let selected_index = selected_pc
+        .and_then(|pc| entries.iter().position(|entry| entry.pc == pc))
+        .unwrap_or(0);
+    let visible_rows = usize::from(area.height.saturating_sub(2)).max(1);
+    let start = selected_index.saturating_sub(visible_rows / 2);
+    let end = (start + visible_rows).min(entries.len());
+
+    let items = entries[start..end]
         .iter()
         .map(|entry| {
             let style = if Some(entry.pc) == selected_pc {
@@ -416,7 +539,8 @@ fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     frame.render_widget(
         List::new(items).block(
             Block::default()
-                .title("CFG / original PC index")
+                .title("1 CFG / original PC index")
+                .border_style(focus_style(app, FocusPanel::Cfg))
                 .borders(Borders::ALL),
         ),
         area,
@@ -475,6 +599,26 @@ fn pc_brief(trace: &PipelineTrace, pc: u64) -> String {
         .unwrap_or_default()
 }
 
+fn addr_list(addrs: &[u64]) -> String {
+    let mut out = String::from("[");
+    for (index, addr) in addrs.iter().enumerate() {
+        if index > 0 {
+            out.push_str(", ");
+        }
+        out.push_str(&format!("{addr:#x}"));
+    }
+    out.push(']');
+    out
+}
+
+fn focus_style(app: &App<'_>, panel: FocusPanel) -> Style {
+    if app.focus == panel {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default()
+    }
+}
+
 fn draw_detail(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     let rows = Layout::default()
         .direction(Direction::Vertical)
@@ -523,8 +667,12 @@ fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
     }
     if let Some(block) = app.trace.cfg_block_for_pc(pc) {
         lines.push(Line::from(format!(
-            "cfg  block #{} [{:#x}, {:#x}) prev={:?} next={:?}",
-            block.index, block.start_pc, block.end_pc, block.prev, block.next
+            "cfg  block #{} [{:#x}, {:#x}) prev={} next={}",
+            block.index,
+            block.start_pc,
+            block.end_pc,
+            addr_list(&block.prev),
+            addr_list(&block.next)
         )));
     } else {
         lines.push(Line::from(format!(
@@ -537,9 +685,11 @@ fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title("raw / A64Insn / CFG")
+                    .title(format!("2 raw / A64Insn / CFG  scroll={}", app.raw_scroll))
+                    .border_style(focus_style(app, FocusPanel::Raw))
                     .borders(Borders::ALL),
             )
+            .scroll((app.raw_scroll, 0))
             .wrap(Wrap { trim: false }),
         area,
     );
@@ -557,9 +707,14 @@ fn draw_rephrase(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title("translated / rephrased / virtualized")
+                    .title(format!(
+                        "3 translated / rephrased / virtualized  scroll={}",
+                        app.rephrase_scroll
+                    ))
+                    .border_style(focus_style(app, FocusPanel::Rephrase))
                     .borders(Borders::ALL),
             )
+            .scroll((app.rephrase_scroll, 0))
             .wrap(Wrap { trim: false }),
         area,
     );
@@ -601,7 +756,13 @@ fn draw_layout_for_pc(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect)
 
     frame.render_widget(
         Paragraph::new(lines)
-            .block(Block::default().title("final layout").borders(Borders::ALL))
+            .block(
+                Block::default()
+                    .title(format!("4 final layout  scroll={}", app.layout_scroll))
+                    .border_style(focus_style(app, FocusPanel::Layout))
+                    .borders(Borders::ALL),
+            )
+            .scroll((app.layout_scroll, 0))
             .wrap(Wrap { trim: false }),
         area,
     );
@@ -620,6 +781,7 @@ fn draw_offset(frame: &mut Frame<'_>, app: &App<'_>, offset: usize, area: Rect) 
         Paragraph::new(lines).block(
             Block::default()
                 .title("runtime offset")
+                .border_style(focus_style(app, FocusPanel::Raw))
                 .borders(Borders::ALL),
         ),
         area,
@@ -639,9 +801,14 @@ fn draw_layout_neighborhood(frame: &mut Frame<'_>, app: &App<'_>, offset: usize,
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title("layout neighborhood")
+                    .title(format!(
+                        "4 layout neighborhood  scroll={}",
+                        app.layout_scroll
+                    ))
+                    .border_style(focus_style(app, FocusPanel::Layout))
                     .borders(Borders::ALL),
             )
+            .scroll((app.layout_scroll, 0))
             .wrap(Wrap { trim: false }),
         area,
     );
@@ -659,13 +826,18 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     let lines = if app.command_mode {
         vec![
             Line::from(format!(":{}", app.command)),
-            Line::from("enter submits, esc cancels"),
+            Line::from("Enter submit | Esc cancel"),
         ]
     } else {
-        vec![Line::from(app.status.clone())]
+        vec![
+            Line::from(app.status.clone()),
+            Line::from(
+                "Tab focus | 1 CFG 2 raw 3 translated 4 layout | Up/Down move/scroll | PgUp/PgDn fast | q quit",
+            ),
+        ]
     };
     frame.render_widget(
-        Paragraph::new(lines).block(Block::default().borders(Borders::ALL)),
+        Paragraph::new(lines).block(Block::default().title("keys").borders(Borders::ALL)),
         area,
     );
 }
