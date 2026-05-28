@@ -10,15 +10,10 @@ Current contents:
 Generation:
 
 ```bash
-make arm64-spec-gen
+make spec-gen
 ```
 
-This uses the Rust `specgen/` CLI. The legacy Python generator remains available
-for parity checks:
-
-```bash
-make arm64-spec-gen-py
-```
+This uses the Rust `specgen/` CLI.
 
 By default the generator reads from:
 
@@ -29,11 +24,11 @@ By default the generator reads from:
 You can override the source bundle path with:
 
 ```bash
-make arm64-spec-gen ARM64_ISA_XML_DIR=/path/to/ISA_A64_xml_A_profile-2026-03
+make spec-gen ARM64_ISA_XML_DIR=/path/to/ISA_A64_xml_A_profile-2026-03
 ```
 
 Notes:
 
 - The checked-in artifacts are intentionally narrow and are not yet wired into the kernel translator.
 - The intended next use is as generated decode/field tables for the future shared translation core.
-- The current subset is biased toward the instruction families already used in the userspace harness.
+- The current subset is biased toward the instruction families already used in the harness.

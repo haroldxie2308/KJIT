@@ -13,12 +13,12 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
 use ratatui::{Frame, Terminal};
-use userspace_harness::a64_pretty::pretty_runtime_exit;
-use userspace_harness::model::MachineState;
-use userspace_harness::run_entry_fixture;
-use userspace_harness::shared::trans::input::TranslationTrigger;
-use userspace_harness::shared::trans::rephrase::RephrasedInsnKind;
-use userspace_harness::trace::{request_for_trace, PipelineTrace};
+use kjit_harness::a64_pretty::pretty_runtime_exit;
+use kjit_harness::model::MachineState;
+use kjit_harness::run_entry_fixture;
+use kjit_harness::shared::trans::input::TranslationTrigger;
+use kjit_harness::shared::trans::rephrase::RephrasedInsnKind;
+use kjit_harness::trace::{request_for_trace, PipelineTrace};
 
 fn main() {
     let config = match CliConfig::parse(std::env::args().skip(1)) {
@@ -549,7 +549,7 @@ fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
 fn visible_pc_entries<'a>(
     trace: &'a PipelineTrace,
     show_raw_only: bool,
-) -> Vec<&'a userspace_harness::trace::PcIndexEntry> {
+) -> Vec<&'a kjit_harness::trace::PcIndexEntry> {
     trace
         .pc_index
         .iter()
@@ -557,7 +557,7 @@ fn visible_pc_entries<'a>(
         .collect()
 }
 
-fn pc_stage_label(entry: &userspace_harness::trace::PcIndexEntry) -> String {
+fn pc_stage_label(entry: &kjit_harness::trace::PcIndexEntry) -> String {
     match entry.cfg_block {
         Some(block) => format!("cfg:b{block}"),
         None => "raw-only".to_string(),
@@ -757,7 +757,7 @@ fn aligned_translation_lines(app: &App<'_>, pc: u64) -> (Vec<Line<'static>>, Vec
 }
 
 fn translation_rows(
-    blocks: &[userspace_harness::trace::TraceRephrasedBlock],
+    blocks: &[kjit_harness::trace::TraceRephrasedBlock],
     pc: u64,
 ) -> Vec<TranslationRow> {
     blocks
@@ -906,7 +906,7 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     );
 }
 
-fn layout_line(insn: &userspace_harness::trace::TraceLayoutInsn) -> Line<'static> {
+fn layout_line(insn: &kjit_harness::trace::TraceLayoutInsn) -> Line<'static> {
     Line::from(format!(
         "off={:#06x} idx={:<3} {:?} ori_pc={} {}",
         insn.offset,

@@ -1,9 +1,9 @@
 use std::fs;
 use std::path::PathBuf;
 
-use userspace_harness::shared::trans::cfg::build_cfg;
-use userspace_harness::shared::trans::input::{TranslationRequest, TranslationTrigger};
-use userspace_harness::MockCodeProvider;
+use kjit_harness::shared::trans::cfg::build_cfg;
+use kjit_harness::shared::trans::input::{TranslationRequest, TranslationTrigger};
+use kjit_harness::MockCodeProvider;
 
 fn parse_base_pc(text: &str) -> Result<u64, String> {
     if let Some(hex) = text.strip_prefix("0x").or_else(|| text.strip_prefix("0X")) {

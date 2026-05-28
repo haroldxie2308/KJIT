@@ -16,4 +16,4 @@ llvm-objcopy -O binary "$OBJ_PATH" "$BIN_PATH"
 printf 'fixture: %s\n' "$ASM_PATH"
 printf 'base_pc: %s\n' "$BASE_PC"
 
-cargo run --manifest-path "$ROOT_DIR/userspace-harness/Cargo.toml" --bin dump-cfg -- "$BIN_PATH" "$BASE_PC"
+cargo run --manifest-path "$ROOT_DIR/harness/Cargo.toml" --bin dump-cfg -- "$BIN_PATH" "$BASE_PC"

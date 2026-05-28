@@ -17,8 +17,8 @@ raw userspace bytes -> generated typed A64Insn -> raw kernel-safe bytes
 
 The current development strategy is to validate as much as possible in
 userspace before doing kernel-specific execution work. Kernel debugging was the
-main historical pain point, so the userspace harness is not a side project: it
-is the primary proving ground for translation correctness.
+main historical pain point, so the harness is not a side project: it is the
+primary userspace proving ground for translation correctness.
 
 Current non-goals:
 
@@ -37,7 +37,7 @@ Current non-goals:
 - `spec/arm64/subset.toml`: canonical supported Arm XML subset.
 - `specgen/`: Rust generator for instruction metadata/code derived from Arm XML.
 - `shared/`: code intended to be usable from both userspace and kernel space.
-- `userspace-harness/`: userspace validation harness for translated fragments.
+- `harness/`: userspace validation harness for translated fragments.
 
 ## Working Style
 
@@ -70,12 +70,12 @@ Rules:
 - Keep allocation and ownership policy easy to audit.
 - Keep interfaces agnostic to execution environment.
 
-The root `shared/` directory is the source of truth. `userspace-harness/src/shared/`
+The root `shared/` directory is the source of truth. `harness/src/shared/`
 is a synced copy used by the standalone harness. Edit root `shared/` first, then
-run `make sync` or `make harness-prepare`. Do not make durable changes only in
+run `make harness-sync` or `make harness-prepare`. Do not make durable changes only in
 the harness copy because they can be overwritten.
 
-### `userspace-harness/`
+### `harness/`
 
 The harness may use `std`, files, fixtures, CLI helpers, and deterministic
 mocking. It should consume `shared/` as the compiler/runtime core and should not
@@ -123,7 +123,7 @@ raw user-controlled target in kernel space.
 
 `shared/abi.rs` is the canonical ABI contract. It owns the shared function
 boundary constants, return-status registers, prologue, epilogue, instruction
-size, and wrapper offsets. Keep the userspace harness and future kernel executor
+size, and wrapper offsets. Keep the harness and future kernel executor
 aligned with that file instead of duplicating ABI facts elsewhere.
 
 Function-boundary behavior is part of correctness. Translation tests must model
@@ -140,17 +140,17 @@ Normal flow:
 
 1. Add or adjust exact forms in `spec/arm64/subset.toml`.
 2. Update `specgen/` if the generator needs more metadata.
-3. Run `make arm64-spec-gen`.
+3. Run `make spec-gen`.
 4. Keep checked-in generated artifacts in sync:
    - `spec/arm64/generated/a64_subset.rs`
    - `spec/arm64/generated/a64_subset.json`
-   - `userspace-harness/src/shared/arm64/generated.rs`
+   - `harness/src/shared/arm64/generated.rs`
 
-Use the legacy Python generator only for parity checks or historical reference.
-Do not hand-edit `spec/arm64/generated/*` or the harness copy of generated A64
-code. Change `spec/arm64/subset.toml` or `specgen/`, regenerate, then inspect the
-diff. The root `shared/arm64/generated.rs` should remain a thin include wrapper
-for the generated subset unless there is a deliberate build-layout change.
+The Rust `specgen/` generator is the canonical generation path. Do not hand-edit
+`spec/arm64/generated/*` or the harness copy of generated A64 code. Change
+`spec/arm64/subset.toml` or `specgen/`, regenerate, then inspect the diff. The
+root `shared/arm64/generated.rs` should remain a thin include wrapper for the
+generated subset unless there is a deliberate build-layout change.
 
 ## Old Version Policy
 
@@ -170,14 +170,14 @@ Correctness is layered. Use the lowest relevant layer first.
 Common commands:
 
 ```sh
-make userspace-harness-test
-make userspace-harness-dump-cfg
-make test-asm-pipeline
-make test-encoding
-make arm64-spec-gen
+make harness-test
+make harness-dump-cfg
+make harness-test-asm
+make spec-test-encoding
+make spec-gen
 ```
 
-`make test-encoding` compares generated encoding against LLVM assembler output
+`make spec-test-encoding` compares generated encoding against LLVM assembler output
 and is marked ignored inside the Rust test suite. Use it when touching encoding
 or generated instruction forms.
 
@@ -195,11 +195,11 @@ as the first debugging tool for translator logic.
 
 Definition of done by change type:
 
-- Shared translation/runtime logic: run `make userspace-harness-test`.
-- CFG or rephrase behavior: run `make userspace-harness-dump-cfg` or
-  `make test-asm-pipeline`, whichever matches the touched path.
-- Generated instruction or encoding changes: run `make arm64-spec-gen` and
-  `make test-encoding`.
+- Shared translation/runtime logic: run `make harness-test`.
+- CFG or rephrase behavior: run `make harness-dump-cfg` or
+  `make harness-test-asm`, whichever matches the touched path.
+- Generated instruction or encoding changes: run `make spec-gen` and
+  `make spec-test-encoding`.
 - Architecture or workflow changes: update `tmp/pipeline.md` and, when
   user-facing, `README.md`.
 

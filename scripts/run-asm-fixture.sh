@@ -14,6 +14,6 @@ printf 'entry_symbol: %s\n' "$COMPILED_ENTRY_SYMBOL"
 printf 'entry_pc: %s\n' "$COMPILED_ENTRY_PC"
 
 cargo run \
-    --manifest-path "$ROOT_DIR/userspace-harness/Cargo.toml" \
+    --manifest-path "$ROOT_DIR/harness/Cargo.toml" \
     --bin trace-tui \
     -- --check --dump "$COMPILED_BIN_PATH" "$COMPILED_TEXT_BASE" "$COMPILED_ENTRY_PC"

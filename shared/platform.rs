@@ -1,7 +1,7 @@
 //! Shared platform boundary.
 //!
 //! Keep this module small. It is the place for compatibility types that are
-//! valid in both the userspace harness and the kernel module.
+//! valid in both the harness and the kernel module.
 
 use core::ops::{Deref, DerefMut};
 

@@ -27,6 +27,6 @@ printf 'entry_symbol: %s\n' "$ENTRY_SYMBOL"
 printf 'entry_pc: %s\n' "$entry_pc"
 
 cargo run \
-    --manifest-path "$ROOT_DIR/userspace-harness/Cargo.toml" \
+    --manifest-path "$ROOT_DIR/harness/Cargo.toml" \
     --bin dump-rephrase \
     -- "$BIN_PATH" "$TEXT_BASE" "$entry_pc"
