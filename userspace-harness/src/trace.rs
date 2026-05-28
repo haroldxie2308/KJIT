@@ -159,6 +159,7 @@ impl PipelineTrace {
         )
         .map_err(|err| format!("{err:?}"))?;
         let virtualized = trace_rephrased(&virtualized_program);
+        let layout_origins = layout_original_pcs(&virtualized_program);
         let fragment = crate::shared::emit::layout::layout_program(virtualized_program)
             .map_err(|err| err.to_string())?;
 
@@ -174,7 +175,7 @@ impl PipelineTrace {
             None
         };
 
-        let fragment_trace = trace_fragment(&fragment);
+        let fragment_trace = trace_fragment(&fragment, &layout_origins);
         let pc_index = build_pc_index(&raw, &cfg_trace, &rephrased, &fragment_trace);
         let runtime_index = build_runtime_index(&fragment_trace);
 
@@ -319,7 +320,10 @@ fn trace_rephrased(program: &RephrasedProgram) -> Vec<TraceRephrasedBlock> {
         .collect()
 }
 
-fn trace_fragment(fragment: &ExecutionFragment) -> TraceFragment {
+fn trace_fragment(
+    fragment: &ExecutionFragment,
+    layout_original_pcs: &[Option<u64>],
+) -> TraceFragment {
     let insns = fragment
         .insns
         .iter()
@@ -330,7 +334,11 @@ fn trace_fragment(fragment: &ExecutionFragment) -> TraceFragment {
             TraceLayoutInsn {
                 index,
                 offset,
-                original_pc: original_pc_for_offset(&fragment.vlabels, offset),
+                original_pc: layout_original_pcs
+                    .get(index)
+                    .copied()
+                    .flatten()
+                    .or_else(|| original_pc_for_offset(&fragment.vlabels, offset)),
                 region: layout_region(offset),
                 key: insn.key(),
                 mnemonic: insn.mnemonic(),
@@ -346,6 +354,24 @@ fn trace_fragment(fragment: &ExecutionFragment) -> TraceFragment {
         vlabels: fragment.vlabels.iter().copied().collect(),
         insns,
     }
+}
+
+fn layout_original_pcs(program: &RephrasedProgram) -> Vec<Option<u64>> {
+    use crate::shared::abi::{EPILOGUE_LEN_BYTES, PROLOGUE_LEN_BYTES};
+
+    let wrapper_insns = (PROLOGUE_LEN_BYTES + EPILOGUE_LEN_BYTES) / 4;
+    let body_insns = program.iter().map(|block| block.insns.len()).sum::<usize>();
+    let mut origins = Vec::with_capacity(wrapper_insns + body_insns);
+
+    for _ in 0..wrapper_insns {
+        origins.push(None);
+    }
+    for block in program {
+        for insn in &block.insns {
+            origins.push(Some(insn.original_pc));
+        }
+    }
+    origins
 }
 
 fn build_pc_index(
@@ -368,7 +394,10 @@ fn build_pc_index(
             .iter()
             .flat_map(|block| block.insns.iter().map(|insn| insn.original_pc)),
     );
-    push_unique_pcs(&mut pcs, fragment.vlabels.iter().map(|(pc, _)| *pc));
+    push_unique_pcs(
+        &mut pcs,
+        fragment.insns.iter().filter_map(|insn| insn.original_pc),
+    );
     pcs.sort_unstable();
 
     pcs.into_iter()
@@ -385,9 +414,9 @@ fn build_pc_index(
                 .find(|block| block.start_pc <= pc && pc < block.end_pc)
                 .map(|block| block.index),
             layout_offsets: fragment
-                .vlabels
+                .insns
                 .iter()
-                .filter_map(|(label_pc, offset)| (*label_pc == pc).then_some(*offset))
+                .filter_map(|insn| (insn.original_pc == Some(pc)).then_some(insn.offset))
                 .collect(),
         })
         .collect()
@@ -433,6 +462,58 @@ fn layout_region(offset: usize) -> LayoutRegion {
         LayoutRegion::Epilogue
     } else {
         LayoutRegion::Body
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shared::arm64::A64Insn;
+    use crate::shared::trans::rephrase::RephrasedInsn;
+
+    #[test]
+    fn trace_fragment_keeps_origin_for_every_expanded_body_instruction() {
+        let original_pc = 0x1000;
+        let mut insns = SharedVec::new();
+        insns
+            .push(
+                RephrasedInsn::synthetic(original_pc, A64Insn::NopNopHiHints {}),
+                GFP_KERNEL,
+            )
+            .unwrap();
+        insns
+            .push(
+                RephrasedInsn::synthetic(original_pc, A64Insn::NopNopHiHints {}),
+                GFP_KERNEL,
+            )
+            .unwrap();
+
+        let mut program = SharedVec::new();
+        program
+            .push(
+                RephrasedBlock {
+                    start_addr: original_pc,
+                    end_addr: original_pc + 4,
+                    prev: SharedVec::new(),
+                    next: SharedVec::new(),
+                    insns,
+                },
+                GFP_KERNEL,
+            )
+            .unwrap();
+
+        let layout_origins = layout_original_pcs(&program);
+        let fragment = crate::shared::emit::layout::layout_program(program).unwrap();
+        let trace = trace_fragment(&fragment, &layout_origins);
+        let offsets = trace
+            .insns
+            .iter()
+            .filter_map(|insn| (insn.original_pc == Some(original_pc)).then_some(insn.offset))
+            .collect::<Vec<_>>();
+
+        assert_eq!(offsets.len(), 2);
+        assert_eq!(offsets[0], fragment.vlabels[0].1);
+        assert_eq!(offsets[1], fragment.vlabels[0].1 + 4);
     }
 }
 
