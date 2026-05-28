@@ -142,10 +142,10 @@ impl FocusPanel {
 
     const fn name(self) -> &'static str {
         match self {
-            Self::Cfg => "CFG",
-            Self::Raw => "raw",
-            Self::Rephrase => "translated",
-            Self::Layout => "layout",
+            Self::Cfg => "Program",
+            Self::Raw => "Original",
+            Self::Rephrase => "Translation",
+            Self::Layout => "Result",
         }
     }
 }
@@ -181,7 +181,7 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
         raw_scroll: 0,
         rephrase_scroll: 0,
         layout_scroll: 0,
-        status: "Tab focus | 1-4 jump panels | Up/Down move or scroll | a toggles raw-only PCs"
+        status: "Tab focus | p/o/t/r jump panels | Up/Down move or scroll | a toggles raw-only PCs"
             .to_string(),
     };
 
@@ -236,14 +236,14 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
                 app.focus = app.focus.prev();
                 app.status = format!("focused {}", app.focus.name());
             }
-            KeyCode::Char('1') => set_focus(&mut app, FocusPanel::Cfg),
-            KeyCode::Char('2') => set_focus(&mut app, FocusPanel::Raw),
-            KeyCode::Char('3') => set_focus(&mut app, FocusPanel::Rephrase),
-            KeyCode::Char('4') => set_focus(&mut app, FocusPanel::Layout),
+            KeyCode::Char('p') => set_focus(&mut app, FocusPanel::Cfg),
+            KeyCode::Char('o') => set_focus(&mut app, FocusPanel::Raw),
+            KeyCode::Char('t') => set_focus(&mut app, FocusPanel::Rephrase),
+            KeyCode::Char('r') => set_focus(&mut app, FocusPanel::Layout),
             KeyCode::Char('n') | KeyCode::Right => {
                 select_next_pc(&mut app, 1);
             }
-            KeyCode::Char('p') | KeyCode::Left => {
+            KeyCode::Left => {
                 select_next_pc(&mut app, -1);
             }
             KeyCode::Down => {
@@ -276,7 +276,7 @@ fn run_tui(trace: &PipelineTrace, entry_pc: u64) -> io::Result<()> {
             }
             KeyCode::Char('?') | KeyCode::F(1) => {
                 app.status =
-                    "Tab focus | 1 CFG 2 raw 3 translated 4 layout | Up/Down move or scroll"
+                    "Tab focus | p Program o Original t Translation r Result | Up/Down move or scroll"
                         .to_string();
             }
             _ => {}
@@ -310,7 +310,7 @@ fn apply_command(app: &mut App<'_>, line: &str) -> Control {
         }
         Command::Help => {
             app.status =
-                "commands: :pc <addr>, :off <offset>, :q; keys: Tab, 1-4, Up/Down".to_string();
+                "commands: :pc <addr>, :off <offset>, :q; keys: Tab, p/o/t/r, Up/Down".to_string();
             Control::Continue
         }
         Command::Quit => Control::Quit,
@@ -539,7 +539,7 @@ fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     frame.render_widget(
         List::new(items).block(
             Block::default()
-                .title("1 CFG / original PC index")
+                .title("Program")
                 .border_style(focus_style(app, FocusPanel::Cfg))
                 .borders(Borders::ALL),
         ),
@@ -685,7 +685,7 @@ fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title(format!("2 raw / A64Insn / CFG  scroll={}", app.raw_scroll))
+                    .title(format!("Original  scroll={}", app.raw_scroll))
                     .border_style(focus_style(app, FocusPanel::Raw))
                     .borders(Borders::ALL),
             )
@@ -707,10 +707,7 @@ fn draw_rephrase(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title(format!(
-                        "3 translated / rephrased / virtualized  scroll={}",
-                        app.rephrase_scroll
-                    ))
+                    .title(format!("Translation  scroll={}", app.rephrase_scroll))
                     .border_style(focus_style(app, FocusPanel::Rephrase))
                     .borders(Borders::ALL),
             )
@@ -758,7 +755,7 @@ fn draw_layout_for_pc(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect)
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title(format!("4 final layout  scroll={}", app.layout_scroll))
+                    .title(format!("Result  scroll={}", app.layout_scroll))
                     .border_style(focus_style(app, FocusPanel::Layout))
                     .borders(Borders::ALL),
             )
@@ -801,10 +798,7 @@ fn draw_layout_neighborhood(frame: &mut Frame<'_>, app: &App<'_>, offset: usize,
         Paragraph::new(lines)
             .block(
                 Block::default()
-                    .title(format!(
-                        "4 layout neighborhood  scroll={}",
-                        app.layout_scroll
-                    ))
+                    .title(format!("Result  scroll={}", app.layout_scroll))
                     .border_style(focus_style(app, FocusPanel::Layout))
                     .borders(Borders::ALL),
             )
@@ -832,7 +826,7 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
         vec![
             Line::from(app.status.clone()),
             Line::from(
-                "Tab focus | 1 CFG 2 raw 3 translated 4 layout | Up/Down move/scroll | PgUp/PgDn fast | q quit",
+                "Tab focus | p Program o Original t Translation r Result | Up/Down move/scroll | PgUp/PgDn fast | q quit",
             ),
         ]
     };
