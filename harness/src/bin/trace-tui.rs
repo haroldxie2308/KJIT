@@ -351,7 +351,7 @@ fn run_tui(
             }
             KeyCode::Char('s') => toggle_mode(&mut app),
             KeyCode::Char(' ') if app.mode == Mode::ActiveStep => step_group(&mut app),
-            KeyCode::Char('n') if app.mode == Mode::ActiveStep => step_group(&mut app),
+            KeyCode::Char('n') if app.mode == Mode::ActiveStep => step_translated(&mut app),
             KeyCode::Char('j') if app.mode == Mode::ActiveStep => step_translated(&mut app),
             KeyCode::Down if app.mode == Mode::ActiveStep => active_step_down(&mut app),
             KeyCode::Char('r') if app.mode == Mode::ActiveStep => {
@@ -429,7 +429,7 @@ fn run_tui(
                         "Explore: s step | p/o/t/r panels | Up/Down move or scroll".to_string()
                     }
                     Mode::ActiveStep => {
-                        "Step: Esc/s explore | Space/n group | j/Down insn | r/m/c panes | R reset"
+                        "Step: Esc/s explore | Space group | n/j insn | r/m/c panes | R reset"
                             .to_string()
                     }
                 };
@@ -620,7 +620,10 @@ fn reset_step_mode(app: &mut App<'_>) {
 
 fn active_step_down(app: &mut App<'_>) {
     match app.step_detail {
-        StepDetailMode::Compact => step_translated(app),
+        StepDetailMode::Compact => {
+            app.status =
+                "Down is disabled in compact mode; use n or j for one instruction".to_string();
+        }
         StepDetailMode::Registers | StepDetailMode::Memory => scroll_step_detail(app, 1),
     }
 }
@@ -1516,10 +1519,10 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
             Mode::ActiveStep => {
                 match app.step_detail {
                     StepDetailMode::Compact => {
-                        "Step: Esc/s explore | Space/n group | j/Down insn | r registers | m memory | R reset | q quit"
+                        "Step: Esc/s explore | Space group | n/j insn | r registers | m memory | R reset | q quit"
                     }
                     StepDetailMode::Registers | StepDetailMode::Memory => {
-                        "Step: Up/Down scroll comparison | d/u page | j insn | Space/n group | c compact | R reset | q quit"
+                        "Step: Up/Down scroll comparison | d/u page | n/j insn | Space group | c compact | R reset | q quit"
                     }
                 }
             }
