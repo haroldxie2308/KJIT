@@ -126,10 +126,10 @@ all decoded PCs.
 
 Press `s` to enter active step mode. Active stepping starts a fresh deterministic
 session from the translated entry. `Space` advances one original semantic group
-when possible; `n` or `j` advances one emitted translated instruction. `r`
-shows register comparison, `m` shows memory comparison, `c` returns to the
-compact comparison pane, `R` resets the active session to entry, and `Esc` or
-`s` returns to Explore mode. In register or memory comparison mode, `Up`/`Down`
+when possible; `j` advances one emitted translated instruction. `r` shows
+register comparison, `m` shows memory comparison, `c` returns to the compact
+comparison pane, `R` resets the active session to entry, and `Esc` or `s`
+returns to Explore mode. In register or memory comparison mode, `Up`/`Down`
 scroll the comparison pane. Active step mode does not support reverse execution;
 reset/replay is the way to revisit earlier states.
 
