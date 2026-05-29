@@ -353,7 +353,7 @@ fn run_tui(
             KeyCode::Char(' ') if app.mode == Mode::ActiveStep => step_group(&mut app),
             KeyCode::Char('n') if app.mode == Mode::ActiveStep => step_group(&mut app),
             KeyCode::Char('j') if app.mode == Mode::ActiveStep => step_translated(&mut app),
-            KeyCode::Down if app.mode == Mode::ActiveStep => step_translated(&mut app),
+            KeyCode::Down if app.mode == Mode::ActiveStep => active_step_down(&mut app),
             KeyCode::Char('r') if app.mode == Mode::ActiveStep => {
                 toggle_step_detail(&mut app, StepDetailMode::Registers);
             }
@@ -365,7 +365,7 @@ fn run_tui(
                 app.status = "comparison=compact".to_string();
             }
             KeyCode::Char('R') if app.mode == Mode::ActiveStep => reset_step_mode(&mut app),
-            KeyCode::Up if app.mode == Mode::ActiveStep => scroll_step_detail(&mut app, -1),
+            KeyCode::Up if app.mode == Mode::ActiveStep => active_step_up(&mut app),
             KeyCode::Tab => {
                 app.focus = app.focus.next();
                 app.status = format!("focused {}", app.focus.name());
@@ -615,6 +615,22 @@ fn reset_step_mode(app: &mut App<'_>) {
         Err(message) => {
             app.status = format!("reset failed: {message}");
         }
+    }
+}
+
+fn active_step_down(app: &mut App<'_>) {
+    match app.step_detail {
+        StepDetailMode::Compact => step_translated(app),
+        StepDetailMode::Registers | StepDetailMode::Memory => scroll_step_detail(app, 1),
+    }
+}
+
+fn active_step_up(app: &mut App<'_>) {
+    match app.step_detail {
+        StepDetailMode::Compact => {
+            app.status = "reverse execution is not supported; use R to reset".to_string();
+        }
+        StepDetailMode::Registers | StepDetailMode::Memory => scroll_step_detail(app, -1),
     }
 }
 
@@ -1498,7 +1514,14 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
                 "Explore: s step | Tab focus | p/o/t/r panels | a cfg/all | Up/Down move/scroll | q quit"
             }
             Mode::ActiveStep => {
-                "Step: Esc/s explore | Space/n group | j/Down insn | r registers | m memory | c compact | R reset | q quit"
+                match app.step_detail {
+                    StepDetailMode::Compact => {
+                        "Step: Esc/s explore | Space/n group | j/Down insn | r registers | m memory | R reset | q quit"
+                    }
+                    StepDetailMode::Registers | StepDetailMode::Memory => {
+                        "Step: Up/Down scroll comparison | d/u page | j insn | Space/n group | c compact | R reset | q quit"
+                    }
+                }
             }
         };
         vec![Line::from(app.status.clone()), Line::from(keys)]
