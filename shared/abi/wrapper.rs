@@ -1,67 +1,18 @@
+use super::{
+    ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG, RET_PARAM0_REG, RET_PARAM1_REG,
+    RET_STATUS_REG,
+};
 use crate::shared::arm64::ergo::{
     ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, scaled_simm, sp, uimm, x, xzr,
 };
 use crate::shared::arm64::A64Insn;
 use crate::shared::platform::{AllocFlags, SharedAllocError, SharedResult, SharedVec};
 
-pub const ABI_PT_REGS_ARG_REG: u8 = 0;
-pub const ABI_EXTRA_PARAMS_ARG_REG: u8 = 1;
-pub const ABI_LINK_REG: u8 = 30;
-
-pub const RET_STATUS_REG: u8 = 9;
-pub const RET_PARAM0_REG: u8 = 10;
-pub const RET_PARAM1_REG: u8 = 11;
-
-pub const REG_VIRT_SCRATCH_GPR_LIMIT: usize = 4;
-pub const REG_VIRT_STACK_BACKED_REG_START: u8 = 12;
-pub const REG_VIRT_STACK_BACKED_REG_END: u8 = 17;
-pub const REG_VIRT_STABLE_MAPPED_X29_REG: u8 = 29;
-
 pub const ABI_INSN_SIZE: usize = 4;
 pub const PROLOGUE_LEN_BYTES: usize = KJIT_PROLOGUE.len() * ABI_INSN_SIZE;
 pub const PROLOGUE_ENTRY_BRANCH_OFFSET: usize = PROLOGUE_LEN_BYTES - ABI_INSN_SIZE;
 pub const EPILOGUE_OFFSET: usize = PROLOGUE_LEN_BYTES;
 pub const EPILOGUE_LEN_BYTES: usize = KJIT_EPILOGUE.len() * ABI_INSN_SIZE;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RetStatus {
-    Svc,
-    Bl,
-    Blr,
-    Br,
-    Ret,
-    Mem,
-    Debug,
-    Invalid(u64),
-}
-
-impl RetStatus {
-    pub const fn as_reg(self) -> u64 {
-        match self {
-            Self::Svc => 0,
-            Self::Bl => 1,
-            Self::Blr => 2,
-            Self::Br => 3,
-            Self::Ret => 4,
-            Self::Mem => 5,
-            Self::Debug => 8,
-            Self::Invalid(value) => value,
-        }
-    }
-
-    pub fn from_reg(value: u64) -> Self {
-        match value & 0xFFFF {
-            0 => Self::Svc,
-            1 => Self::Bl,
-            2 => Self::Blr,
-            3 => Self::Br,
-            4 => Self::Ret,
-            5 => Self::Mem,
-            8 => Self::Debug,
-            other => Self::Invalid(other),
-        }
-    }
-}
 
 pub const KJIT_PROLOGUE: &[A64Insn] = &[
     A64Insn::StpGenStp64LdstpairPre {
