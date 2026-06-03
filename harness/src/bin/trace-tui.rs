@@ -1398,7 +1398,9 @@ fn translation_rows(
 fn rephrased_kind_label(kind: RephrasedInsnKind) -> &'static str {
     match kind {
         RephrasedInsnKind::Original => "ORI",
-        RephrasedInsnKind::Synthetic => "SYN",
+        RephrasedInsnKind::UserSynthetic => "USY",
+        RephrasedInsnKind::RegVirtHelper => "RVH",
+        RephrasedInsnKind::RuntimeExitPayload => "RTP",
         RephrasedInsnKind::RuntimeExitBranch => "REB",
     }
 }

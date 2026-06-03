@@ -85,8 +85,10 @@ fn main() {
         for (insn_index, insn) in block.insns.iter().enumerate() {
             let kind = match insn.kind {
                 RephrasedInsnKind::Original => "original",
-                RephrasedInsnKind::Synthetic => "synthetic",
-                RephrasedInsnKind::RuntimeExitBranch => "rt-exit",
+                RephrasedInsnKind::UserSynthetic => "user-syn",
+                RephrasedInsnKind::RegVirtHelper => "rv-helper",
+                RephrasedInsnKind::RuntimeExitPayload => "rt-payload",
+                RephrasedInsnKind::RuntimeExitBranch => "rt-branch",
             };
             match insn.insn.encode() {
                 Ok(word) => println!(

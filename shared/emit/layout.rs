@@ -4,7 +4,7 @@ use crate::shared::abi::{
 };
 use crate::shared::arm64::{A64Insn, A64OperandRole, A64RewriteError};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
-use crate::shared::trans::rephrase::{RephrasedInsnKind, RephrasedProgram};
+use crate::shared::trans::rephrase::RephrasedProgram;
 
 pub type LayoutVLabels = SharedVec<(u64, usize)>;
 
@@ -128,12 +128,12 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
             let output_offset = insn_index * 4;
             insert_vlabel_once(&mut fragment.vlabels, rephrased.ori_pc, output_offset)?;
 
-            if rephrased.kind == RephrasedInsnKind::Original {
+            if rephrased.kind.is_user_semantic() {
                 if let Some(reloc) = branch_reloc_for(rephrased.insn, rephrased.ori_pc, insn_index)?
                 {
                     relocs.push(reloc, GFP_KERNEL)?;
                 }
-            } else if rephrased.kind == RephrasedInsnKind::RuntimeExitBranch {
+            } else if rephrased.kind.is_runtime_exit_branch() {
                 runtime_exit_branches.push(insn_index, GFP_KERNEL)?;
             }
 
@@ -460,6 +460,43 @@ mod tests {
         assert_eq!(
             layout.insns[body_index + 3].branch_target_imm("imm19"),
             Some(524285)
+        );
+    }
+
+    #[test]
+    fn rewrites_user_synthetic_branch_to_layout_offset() {
+        let mut insns = SharedVec::new();
+        insns
+            .push(
+                RephrasedInsn::user_synthetic(
+                    0x1000,
+                    A64Insn::BUncondBOnlyBranchImm {
+                        imm26: A64Imm::scaled_signed(2, 26, 2),
+                    },
+                ),
+                GFP_KERNEL,
+            )
+            .unwrap();
+        insns
+            .push(
+                RephrasedInsn::original(0x1004, A64Insn::NopNopHiHints {}),
+                GFP_KERNEL,
+            )
+            .unwrap();
+        insns
+            .push(
+                RephrasedInsn::original(0x1008, A64Insn::NopNopHiHints {}),
+                GFP_KERNEL,
+            )
+            .unwrap();
+
+        let layout = layout_program(one_block(insns)).unwrap();
+        let body_index = body_start_offset() / 4;
+
+        assert_eq!(layout.insns[body_index].branch_target_imm("imm26"), Some(2));
+        assert_eq!(
+            layout.insns[body_index].direct_branch_target(body_start_offset() as u64),
+            Some((body_start_offset() + 8) as u64)
         );
     }
 

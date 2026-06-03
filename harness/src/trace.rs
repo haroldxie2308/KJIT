@@ -360,7 +360,7 @@ fn trace_rephrased(program: &RephrasedProgram) -> Vec<TraceRephrasedBlock> {
                     mnemonic: insn.insn.mnemonic(),
                     pretty: pretty_insn(
                         insn.insn,
-                        matches!(insn.kind, RephrasedInsnKind::Original).then_some(insn.ori_pc),
+                        insn.kind.is_user_semantic().then_some(insn.ori_pc),
                     ),
                     debug: format!("{:?}", insn.insn),
                 })

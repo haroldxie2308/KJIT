@@ -6,9 +6,35 @@ use crate::shared::trans::cfg::{Cfg, RuntimeExitReason};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RephrasedInsnKind {
-    Synthetic,
-    RuntimeExitBranch,
     Original,
+    UserSynthetic,
+    RegVirtHelper,
+    RuntimeExitPayload,
+    RuntimeExitBranch,
+}
+
+impl RephrasedInsnKind {
+    pub const fn is_user_semantic(self) -> bool {
+        match self {
+            Self::Original | Self::UserSynthetic => true,
+            Self::RegVirtHelper | Self::RuntimeExitPayload | Self::RuntimeExitBranch => false,
+        }
+    }
+
+    pub const fn is_runtime_exit(self) -> bool {
+        match self {
+            Self::RuntimeExitPayload | Self::RuntimeExitBranch => true,
+            Self::Original | Self::UserSynthetic | Self::RegVirtHelper => false,
+        }
+    }
+
+    pub const fn is_runtime_exit_payload(self) -> bool {
+        matches!(self, Self::RuntimeExitPayload)
+    }
+
+    pub const fn is_runtime_exit_branch(self) -> bool {
+        matches!(self, Self::RuntimeExitBranch)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -27,9 +53,29 @@ impl RephrasedInsn {
         }
     }
 
-    pub const fn synthetic(ori_pc: u64, insn: A64Insn) -> Self {
+    pub const fn user_synthetic(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
-            kind: RephrasedInsnKind::Synthetic,
+            kind: RephrasedInsnKind::UserSynthetic,
+            ori_pc,
+            insn,
+        }
+    }
+
+    pub const fn synthetic(ori_pc: u64, insn: A64Insn) -> Self {
+        Self::user_synthetic(ori_pc, insn)
+    }
+
+    pub const fn reg_virt_helper(ori_pc: u64, insn: A64Insn) -> Self {
+        Self {
+            kind: RephrasedInsnKind::RegVirtHelper,
+            ori_pc,
+            insn,
+        }
+    }
+
+    pub const fn runtime_exit_payload(ori_pc: u64, insn: A64Insn) -> Self {
+        Self {
+            kind: RephrasedInsnKind::RuntimeExitPayload,
             ori_pc,
             insn,
         }
@@ -70,7 +116,10 @@ macro_rules! a64_syn {
             let mut out = $crate::shared::platform::SharedVec::new();
             $(
                 out.push(
-                    $crate::shared::trans::rephrase::RephrasedInsn::synthetic($original_pc, $insn),
+                    $crate::shared::trans::rephrase::RephrasedInsn::user_synthetic(
+                        $original_pc,
+                        $insn,
+                    ),
                     $crate::shared::platform::GFP_KERNEL,
                 )?;
             )+
@@ -110,7 +159,7 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 .inner
                 .pc_relative_address(insn.pc)
                 .expect("ADR/ADRP must have a PC-relative address");
-            push_mov_imm64(&mut ret, insn.pc, rd, value)?;
+            push_mov_imm64(&mut ret, insn.pc, rd, value, RephrasedInsnKind::UserSynthetic)?;
         }
         A64Insn::BlBlOnlyBranchImm { .. } => {
             let Some(RuntimeExitReason::Bl {
@@ -121,9 +170,27 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("BL must produce a BL runtime exit reason");
             };
 
-            push_mov_imm64(&mut ret, insn.pc, x(RET_STATUS_REG), RetStatus::Bl.as_reg())?;
-            push_mov_imm64(&mut ret, insn.pc, x(RET_PARAM0_REG), target_pc)?;
-            push_mov_imm64(&mut ret, insn.pc, x(RET_PARAM1_REG), resume_pc)?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                x(RET_STATUS_REG),
+                RetStatus::Bl.as_reg(),
+                RephrasedInsnKind::RuntimeExitPayload,
+            )?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                x(RET_PARAM0_REG),
+                target_pc,
+                RephrasedInsnKind::RuntimeExitPayload,
+            )?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                x(RET_PARAM1_REG),
+                resume_pc,
+                RephrasedInsnKind::RuntimeExitPayload,
+            )?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
         A64Insn::BlrBlr64BranchReg { .. } => {
@@ -140,21 +207,26 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 insn.pc,
                 x(RET_STATUS_REG),
                 RetStatus::Blr.as_reg(),
+                RephrasedInsnKind::RuntimeExitPayload,
             )?;
-            ret.append(
-                a64_syn!(
-                    insn.pc,
-                    A64Insn::OrrLogShiftOrr64LogShift {
-                        shift: 0,
-                        rm: x(target_reg),
-                        imm6: uimm(0, 6),
-                        rn: xzr(),
-                        rd: x(RET_PARAM0_REG),
-                    }
-                )?,
-                GFP_KERNEL,
+            push_runtime_exit_payload(
+                &mut ret,
+                insn.pc,
+                A64Insn::OrrLogShiftOrr64LogShift {
+                    shift: 0,
+                    rm: x(target_reg),
+                    imm6: uimm(0, 6),
+                    rn: xzr(),
+                    rd: x(RET_PARAM0_REG),
+                },
             )?;
-            push_mov_imm64(&mut ret, insn.pc, x(RET_PARAM1_REG), resume_pc)?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                x(RET_PARAM1_REG),
+                resume_pc,
+                RephrasedInsnKind::RuntimeExitPayload,
+            )?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
         A64Insn::BrBr64BranchReg { .. } => {
@@ -164,25 +236,30 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("BR must produce a BR runtime exit reason");
             };
 
-            push_mov_imm64(&mut ret, insn.pc, x(RET_STATUS_REG), RetStatus::Br.as_reg())?;
-            ret.append(
-                a64_syn!(
-                    insn.pc,
-                    A64Insn::OrrLogShiftOrr64LogShift {
-                        shift: 0,
-                        rm: x(target_reg),
-                        imm6: uimm(0, 6),
-                        rn: xzr(),
-                        rd: x(RET_PARAM0_REG),
-                    }
-                )?,
-                GFP_KERNEL,
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                x(RET_STATUS_REG),
+                RetStatus::Br.as_reg(),
+                RephrasedInsnKind::RuntimeExitPayload,
+            )?;
+            push_runtime_exit_payload(
+                &mut ret,
+                insn.pc,
+                A64Insn::OrrLogShiftOrr64LogShift {
+                    shift: 0,
+                    rm: x(target_reg),
+                    imm6: uimm(0, 6),
+                    rn: xzr(),
+                    rd: x(RET_PARAM0_REG),
+                },
             )?;
             push_mov_imm64(
                 &mut ret,
                 insn.pc,
                 x(RET_PARAM1_REG),
                 insn.pc.wrapping_add(4),
+                RephrasedInsnKind::RuntimeExitPayload,
             )?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
@@ -197,25 +274,25 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 insn.pc,
                 x(RET_STATUS_REG),
                 RetStatus::Ret.as_reg(),
+                RephrasedInsnKind::RuntimeExitPayload,
             )?;
-            ret.append(
-                a64_syn!(
-                    insn.pc,
-                    A64Insn::OrrLogShiftOrr64LogShift {
-                        shift: 0,
-                        rm: x(lr_reg),
-                        imm6: uimm(0, 6),
-                        rn: xzr(),
-                        rd: x(RET_PARAM0_REG),
-                    }
-                )?,
-                GFP_KERNEL,
+            push_runtime_exit_payload(
+                &mut ret,
+                insn.pc,
+                A64Insn::OrrLogShiftOrr64LogShift {
+                    shift: 0,
+                    rm: x(lr_reg),
+                    imm6: uimm(0, 6),
+                    rn: xzr(),
+                    rd: x(RET_PARAM0_REG),
+                },
             )?;
             push_mov_imm64(
                 &mut ret,
                 insn.pc,
                 x(RET_PARAM1_REG),
                 insn.pc.wrapping_add(4),
+                RephrasedInsnKind::RuntimeExitPayload,
             )?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
@@ -231,21 +308,26 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 insn.pc,
                 x(RET_STATUS_REG),
                 RetStatus::Svc.as_reg(),
+                RephrasedInsnKind::RuntimeExitPayload,
             )?;
-            ret.append(
-                a64_syn!(
-                    insn.pc,
-                    A64Insn::OrrLogShiftOrr64LogShift {
-                        shift: 0,
-                        rm: x(8),
-                        imm6: uimm(0, 6),
-                        rn: xzr(),
-                        rd: x(RET_PARAM0_REG),
-                    }
-                )?,
-                GFP_KERNEL,
+            push_runtime_exit_payload(
+                &mut ret,
+                insn.pc,
+                A64Insn::OrrLogShiftOrr64LogShift {
+                    shift: 0,
+                    rm: x(8),
+                    imm6: uimm(0, 6),
+                    rn: xzr(),
+                    rd: x(RET_PARAM0_REG),
+                },
             )?;
-            push_mov_imm64(&mut ret, insn.pc, x(RET_PARAM1_REG), resume_pc)?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                x(RET_PARAM1_REG),
+                resume_pc,
+                RephrasedInsnKind::RuntimeExitPayload,
+            )?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
         _ => ret.append(a64_ori!(insn.pc, insn.inner)?, GFP_KERNEL)?,
@@ -258,31 +340,65 @@ fn push_mov_imm64(
     original_pc: u64,
     rd: A64Reg,
     value: u64,
+    kind: RephrasedInsnKind,
 ) -> SharedResult<(), SharedAllocError> {
-    out.append(
-        a64_syn!(
-            original_pc,
-            A64Insn::MovzMovz64Movewide {
+    out.push(
+        RephrasedInsn {
+            kind,
+            ori_pc: original_pc,
+            insn: A64Insn::MovzMovz64Movewide {
                 hw: 3,
                 imm16: uimm(((value >> 48) & 0xFFFF) as u32, 16),
                 rd,
             },
-            A64Insn::MovkMovk64Movewide {
+        },
+        GFP_KERNEL,
+    )?;
+    out.push(
+        RephrasedInsn {
+            kind,
+            ori_pc: original_pc,
+            insn: A64Insn::MovkMovk64Movewide {
                 hw: 2,
                 imm16: uimm(((value >> 32) & 0xFFFF) as u32, 16),
                 rd,
             },
-            A64Insn::MovkMovk64Movewide {
+        },
+        GFP_KERNEL,
+    )?;
+    out.push(
+        RephrasedInsn {
+            kind,
+            ori_pc: original_pc,
+            insn: A64Insn::MovkMovk64Movewide {
                 hw: 1,
                 imm16: uimm(((value >> 16) & 0xFFFF) as u32, 16),
                 rd,
             },
-            A64Insn::MovkMovk64Movewide {
+        },
+        GFP_KERNEL,
+    )?;
+    out.push(
+        RephrasedInsn {
+            kind,
+            ori_pc: original_pc,
+            insn: A64Insn::MovkMovk64Movewide {
                 hw: 0,
                 imm16: uimm((value & 0xFFFF) as u32, 16),
                 rd,
             },
-        )?,
+        },
+        GFP_KERNEL,
+    )
+}
+
+fn push_runtime_exit_payload(
+    out: &mut SharedVec<RephrasedInsn>,
+    original_pc: u64,
+    insn: A64Insn,
+) -> SharedResult<(), SharedAllocError> {
+    out.push(
+        RephrasedInsn::runtime_exit_payload(original_pc, insn),
         GFP_KERNEL,
     )
 }
@@ -362,7 +478,7 @@ mod tests {
             assert_eq!(
                 rephrased
                     .iter()
-                    .filter(|insn| insn.kind == RephrasedInsnKind::RuntimeExitBranch)
+                    .filter(|insn| insn.kind.is_runtime_exit_branch())
                     .count(),
                 1,
                 "expected one runtime-exit branch for {}",
@@ -371,8 +487,60 @@ mod tests {
             assert!(
                 rephrased
                     .iter()
+                    .filter(|insn| !insn.kind.is_runtime_exit_branch())
+                    .all(|insn| insn.kind.is_runtime_exit_payload()),
+                "expected all non-branch runtime-exit lowering instructions to be payload for {}",
+                insn.key()
+            );
+            assert!(
+                rephrased.iter().all(|insn| insn.kind.is_runtime_exit()),
+                "expected only runtime-exit lowering instructions for {}",
+                insn.key()
+            );
+            assert!(
+                rephrased
+                    .iter()
                     .all(|insn| insn.insn.runtime_exit_reason(insn.ori_pc).is_none()),
                 "raw runtime-exit instruction survived rephrase for {}",
+                insn.key()
+            );
+        }
+    }
+
+    #[test]
+    fn adr_expansions_are_user_synthetic() {
+        let cases = [
+            A64Insn::AdrAdrOnlyPcreladdr {
+                immlo: A64Imm::unsigned(0, 2),
+                immhi: A64Imm::unsigned(1, 19),
+                rd: x(3),
+            },
+            A64Insn::AdrpAdrpOnlyPcreladdr {
+                immlo: A64Imm::unsigned(0, 2),
+                immhi: A64Imm::unsigned(0, 19),
+                rd: x(4),
+            },
+        ];
+
+        for insn in cases {
+            let rephrased = rephrase_insn(IrInsn {
+                pc: 0x1000,
+                word: 0,
+                inner: insn,
+            })
+            .unwrap();
+
+            assert_eq!(rephrased.len(), 4);
+            assert!(
+                rephrased
+                    .iter()
+                    .all(|insn| insn.kind == RephrasedInsnKind::UserSynthetic),
+                "expected ADR/ADRP expansion to be user synthetic for {}",
+                insn.key()
+            );
+            assert!(
+                rephrased.iter().all(|insn| insn.kind.is_user_semantic()),
+                "expected ADR/ADRP expansion to stay user-semantic for {}",
                 insn.key()
             );
         }
