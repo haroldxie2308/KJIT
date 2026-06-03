@@ -119,6 +119,7 @@ impl<'a> OriginalStepper<'a> {
         let decoded = decode_word(word, self.pc).map_err(|err| err.to_string())?;
 
         if let Some(reason) = decoded.inner.runtime_exit_reason(self.pc) {
+            apply_runtime_exit_side_effect(decoded.inner, self.pc, &mut self.state);
             self.stopped = true;
             return Ok(Some(OriginalStep {
                 pc: self.pc,
@@ -350,14 +351,24 @@ pub(crate) fn execute_insn(
             Ok(target)
         }
         A64Insn::BlrBlr64BranchReg { rn } => {
+            let target = state.read_reg(rn);
             state.write_x(30, pc.wrapping_add(4));
-            Ok(state.read_reg(rn))
+            Ok(target)
         }
         A64Insn::BrBr64BranchReg { rn } => Ok(state.read_reg(rn)),
         A64Insn::RetRet64rBranchReg { rn } => Ok(state.read_reg(rn)),
         A64Insn::SvcSvcExException { .. } => {
             Err("raw SVC is not executable inside the userspace runtime fragment".to_string())
         }
+    }
+}
+
+fn apply_runtime_exit_side_effect(insn: A64Insn, pc: u64, state: &mut MachineState) {
+    match insn {
+        A64Insn::BlBlOnlyBranchImm { .. } | A64Insn::BlrBlr64BranchReg { .. } => {
+            state.write_x(30, pc.wrapping_add(4));
+        }
+        _ => {}
     }
 }
 
@@ -680,6 +691,41 @@ mod tests {
                 reason: RuntimeExitReason::Br { target_reg: 5 }
             })
         );
+    }
+
+    #[test]
+    fn original_stepper_blr_updates_lr_before_runtime_exit() {
+        let program = encode_insns(&[A64Insn::BlrBlr64BranchReg { rn: x(10) }]);
+        let mut state = MachineState::new();
+        state.write_x(10, 0x9000);
+        state.write_x(30, 0x7777);
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state).unwrap();
+
+        let blr = stepper.step().unwrap().unwrap();
+
+        assert_eq!(
+            blr.halt_reason,
+            Some(HaltReason::RuntimeExit {
+                reason: RuntimeExitReason::Blr {
+                    target_reg: 10,
+                    resume_pc: 0x4004,
+                }
+            })
+        );
+        assert_eq!(blr.state.read_x(10), 0x9000);
+        assert_eq!(blr.state.read_x(30), 0x4004);
+    }
+
+    #[test]
+    fn execute_blr_x30_branches_to_old_lr_and_then_updates_lr() {
+        let mut state = MachineState::new();
+        state.write_x(30, 0x9000);
+
+        let next_pc =
+            execute_insn(A64Insn::BlrBlr64BranchReg { rn: x(30) }, 0x4000, &mut state).unwrap();
+
+        assert_eq!(next_pc, 0x9000);
+        assert_eq!(state.read_x(30), 0x4004);
     }
 
     #[test]

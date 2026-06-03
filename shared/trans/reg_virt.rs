@@ -151,7 +151,7 @@ fn virtualize_runtime_exit_group(
         }
 
         match insn.kind {
-            RephrasedInsnKind::RuntimeExitPayload => end += 1,
+            RephrasedInsnKind::RuntimeExitPayload | RephrasedInsnKind::UserSynthetic => end += 1,
             RephrasedInsnKind::RuntimeExitBranch => {
                 emit_runtime_exit_group(pc, &insns[start..end], insn, out)?;
                 return Ok(end + 1);
@@ -187,9 +187,17 @@ fn emit_runtime_exit_group(
     }
 
     for payload in payloads {
-        if runtime_param0_capture_source(payload.insn).is_none() {
-            validate_runtime_exit_payload(*payload)?;
-            push_rephrased(out, *payload)?;
+        match payload.kind {
+            RephrasedInsnKind::RuntimeExitPayload
+                if runtime_param0_capture_source(payload.insn).is_some() => {}
+            RephrasedInsnKind::RuntimeExitPayload => {
+                validate_runtime_exit_payload(*payload)?;
+                push_rephrased(out, *payload)?;
+            }
+            RephrasedInsnKind::UserSynthetic => {
+                rewrite_user_semantic(*payload, out)?;
+            }
+            _ => return Err(RegVirtError::MalformedRuntimeExitGroup { pc }),
         }
     }
 
@@ -1214,6 +1222,57 @@ mod tests {
                 RephrasedInsn::runtime_exit_payload(0x1000, copy_param0_from(x(9))),
                 RephrasedInsn::runtime_exit_payload(0x1000, status),
                 RephrasedInsn::runtime_exit_payload(0x1000, resume),
+                RephrasedInsn::runtime_exit_branch(0x1000, runtime_branch()),
+            ]
+        );
+    }
+
+    #[test]
+    fn blr_x30_runtime_exit_captures_old_lr_before_link_update() {
+        let link_update = movz(x(30));
+        let status = movz(x(RET_STATUS_REG));
+        let program = virtualize_registers(program_from_insns(&[
+            RephrasedInsn::runtime_exit_payload(0x1000, copy_param0_from(x(30))),
+            RephrasedInsn::user_synthetic(0x1000, link_update),
+            RephrasedInsn::runtime_exit_payload(0x1000, status),
+            RephrasedInsn::runtime_exit_branch(0x1000, runtime_branch()),
+        ]))
+        .unwrap();
+
+        assert_eq!(
+            &program[0].insns[..],
+            [
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(176),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(9),
+                        mem: pt_regs_slot(9),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(10),
+                        mem: pt_regs_slot(10),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(11),
+                        mem: pt_regs_slot(11),
+                    },
+                ),
+                RephrasedInsn::runtime_exit_payload(0x1000, copy_param0_from(x(30))),
+                RephrasedInsn::user_synthetic(0x1000, link_update),
+                RephrasedInsn::runtime_exit_payload(0x1000, status),
                 RephrasedInsn::runtime_exit_branch(0x1000, runtime_branch()),
             ]
         );

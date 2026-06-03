@@ -100,6 +100,9 @@ to `pt_regs` before those physical registers become the runtime return channel.
 Dynamic exit targets such as `br x9`, stack-backed branch registers, and
 stable-mapped return registers are captured through the register-virtualization
 mapping before branching to the shared epilogue.
+`BL` and `BLR` link-register side effects are rephrased as user-semantic
+updates to `x30`, so the epilogue writes user LR back to `pt_regs` without a
+runtime-side patch.
 
 The harness also exposes a trace model for debugging the full translation path.
 Use `trace-tui` for an interactive Ratatui view, or `--dump --check` for a

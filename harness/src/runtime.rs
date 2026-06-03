@@ -149,7 +149,6 @@ impl URuntime {
                 }
             }
             RetStatus::Bl | RetStatus::Blr => {
-                self.write_user_x(ABI_LINK_REG, resume_pc);
                 self.continue_or_request_translation(status, param0, resume_offset)
             }
             RetStatus::Br => self.continue_or_request_translation(status, param0, resume_offset),
@@ -227,11 +226,6 @@ impl URuntime {
             halt,
             steps,
         }
-    }
-
-    fn write_user_x(&mut self, reg: u8, value: u64) {
-        self.state
-            .write_u64(self.config.pt_regs_addr + (reg as u64) * 8, value);
     }
 
     pub(crate) fn user_state_from_pt_regs(&self) -> MachineState {
@@ -617,6 +611,33 @@ mod tests {
         let body = stepper.step().unwrap().unwrap();
         assert_eq!(body.offset, Some(entry_offset));
         assert_eq!(body.state.read_x(2), 2);
+    }
+
+    #[test]
+    fn bl_runtime_exit_writes_user_lr_before_epilogue() {
+        let base_pc = 0x3000;
+        let fragment = compile_insns(
+            base_pc,
+            &[
+                A64Insn::BlBlOnlyBranchImm {
+                    imm26: A64Imm::scaled_signed(2, 26, 2),
+                },
+                A64Insn::NopNopHiHints {},
+                A64Insn::NopNopHiHints {},
+            ],
+        );
+        let mut runtime = URuntime::new(fragment, MachineState::new());
+        let report = runtime.run();
+
+        assert_eq!(report.state.read_x(30), base_pc + 4);
+        assert_eq!(
+            report.halt,
+            URuntimeHalt::NeedsTranslation {
+                status: RetStatus::Bl,
+                target_pc: base_pc + 8,
+                resume_offset: None,
+            }
+        );
     }
 
     #[test]

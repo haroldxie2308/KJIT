@@ -193,6 +193,29 @@ fn runtime_halt_matches_original(original: &ExecutionResult, halt: &URuntimeHalt
                 ..
             },
         ) => original.state.read_x(target_reg) == *target_pc,
+        (
+            HaltReason::RuntimeExit {
+                reason: RuntimeExitReason::Bl { target_pc, .. },
+            },
+            URuntimeHalt::NeedsTranslation {
+                status: crate::shared::abi::RetStatus::Bl,
+                target_pc: runtime_target_pc,
+                ..
+            },
+        ) => target_pc == *runtime_target_pc,
+        (
+            HaltReason::RuntimeExit {
+                reason: RuntimeExitReason::Blr { target_reg, .. },
+            },
+            URuntimeHalt::NeedsTranslation {
+                status: crate::shared::abi::RetStatus::Blr,
+                target_pc,
+                ..
+            },
+        ) => {
+            target_reg == crate::shared::abi::ABI_LINK_REG
+                || original.state.read_x(target_reg) == *target_pc
+        }
         (HaltReason::FellOffEnd, URuntimeHalt::FellOffFragment { .. }) => true,
         _ => false,
     }

@@ -1,4 +1,4 @@
-use crate::shared::abi::{RetStatus, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG};
+use crate::shared::abi::{RetStatus, ABI_LINK_REG, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG};
 use crate::shared::arm64::ergo::{scaled_simm, uimm, x, xzr};
 use crate::shared::arm64::{A64Insn, A64Reg, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
@@ -159,7 +159,13 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 .inner
                 .pc_relative_address(insn.pc)
                 .expect("ADR/ADRP must have a PC-relative address");
-            push_mov_imm64(&mut ret, insn.pc, rd, value, RephrasedInsnKind::UserSynthetic)?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                rd,
+                value,
+                RephrasedInsnKind::UserSynthetic,
+            )?;
         }
         A64Insn::BlBlOnlyBranchImm { .. } => {
             let Some(RuntimeExitReason::Bl {
@@ -170,6 +176,13 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("BL must produce a BL runtime exit reason");
             };
 
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                x(ABI_LINK_REG),
+                resume_pc,
+                RephrasedInsnKind::UserSynthetic,
+            )?;
             push_mov_imm64(
                 &mut ret,
                 insn.pc,
@@ -202,13 +215,7 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                 unreachable!("BLR must produce a BLR runtime exit reason");
             };
 
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                x(RET_STATUS_REG),
-                RetStatus::Blr.as_reg(),
-                RephrasedInsnKind::RuntimeExitPayload,
-            )?;
+            // BLR X30 must capture the old LR target before the user-visible link update.
             push_runtime_exit_payload(
                 &mut ret,
                 insn.pc,
@@ -219,6 +226,20 @@ fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedA
                     rn: xzr(),
                     rd: x(RET_PARAM0_REG),
                 },
+            )?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                x(ABI_LINK_REG),
+                resume_pc,
+                RephrasedInsnKind::UserSynthetic,
+            )?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                x(RET_STATUS_REG),
+                RetStatus::Blr.as_reg(),
+                RephrasedInsnKind::RuntimeExitPayload,
             )?;
             push_mov_imm64(
                 &mut ret,
@@ -488,13 +509,18 @@ mod tests {
                 rephrased
                     .iter()
                     .filter(|insn| !insn.kind.is_runtime_exit_branch())
-                    .all(|insn| insn.kind.is_runtime_exit_payload()),
-                "expected all non-branch runtime-exit lowering instructions to be payload for {}",
+                    .all(|insn| matches!(
+                        insn.kind,
+                        RephrasedInsnKind::RuntimeExitPayload | RephrasedInsnKind::UserSynthetic
+                    )),
+                "expected runtime-exit lowering instructions to be payload or user-synthetic for {}",
                 insn.key()
             );
             assert!(
-                rephrased.iter().all(|insn| insn.kind.is_runtime_exit()),
-                "expected only runtime-exit lowering instructions for {}",
+                rephrased
+                    .iter()
+                    .all(|insn| insn.kind.is_runtime_exit() || insn.kind.is_user_semantic()),
+                "expected only runtime-exit or user-semantic lowering instructions for {}",
                 insn.key()
             );
             assert!(
@@ -505,6 +531,66 @@ mod tests {
                 insn.key()
             );
         }
+    }
+
+    #[test]
+    fn bl_and_blr_emit_user_semantic_link_update() {
+        let cases = [
+            A64Insn::BlBlOnlyBranchImm {
+                imm26: scaled_simm(2, 26, 2),
+            },
+            A64Insn::BlrBlr64BranchReg { rn: x(4) },
+        ];
+
+        for insn in cases {
+            let rephrased = rephrase_insn(IrInsn {
+                pc: 0x1000,
+                word: 0,
+                inner: insn,
+            })
+            .unwrap();
+
+            assert!(
+                rephrased.iter().any(|insn| {
+                    insn.kind == RephrasedInsnKind::UserSynthetic
+                        && matches!(
+                            insn.insn,
+                            A64Insn::MovzMovz64Movewide { rd, .. }
+                                | A64Insn::MovkMovk64Movewide { rd, .. }
+                                if rd.enc == ABI_LINK_REG
+                        )
+                }),
+                "expected {} to write user LR as user-semantic code",
+                insn.key()
+            );
+        }
+    }
+
+    #[test]
+    fn blr_x30_captures_old_lr_before_link_update() {
+        let rephrased = rephrase_insn(IrInsn {
+            pc: 0x1000,
+            word: 0,
+            inner: A64Insn::BlrBlr64BranchReg {
+                rn: x(ABI_LINK_REG),
+            },
+        })
+        .unwrap();
+
+        assert_eq!(
+            rephrased[0],
+            RephrasedInsn::runtime_exit_payload(
+                0x1000,
+                A64Insn::OrrLogShiftOrr64LogShift {
+                    shift: 0,
+                    rm: x(ABI_LINK_REG),
+                    imm6: uimm(0, 6),
+                    rn: xzr(),
+                    rd: x(RET_PARAM0_REG),
+                },
+            )
+        );
+        assert_eq!(rephrased[1].kind, RephrasedInsnKind::UserSynthetic);
     }
 
     #[test]
