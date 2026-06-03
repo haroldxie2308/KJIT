@@ -2,7 +2,10 @@ mod frame;
 mod regs;
 mod wrapper;
 
-pub use frame::reg_virt_stack_backed_slot_offset;
+pub use frame::{
+    pt_regs_x_slot_offset, reg_virt_stack_backed_slot_offset, RUNTIME_FRAME_PT_REGS_PTR_OFFSET,
+    RUNTIME_FRAME_SIZE_BYTES,
+};
 pub use regs::{
     reg_virt_scratch_gpr, RetStatus, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
     REG_VIRT_SCRATCH_GPR_END, REG_VIRT_SCRATCH_GPR_LIMIT, REG_VIRT_SCRATCH_GPR_START,

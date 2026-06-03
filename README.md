@@ -95,10 +95,11 @@ through `x9/x10/x11` with `x11` carrying the original resume PC.
 
 Register virtualization now rewrites ordinary user-semantic uses of
 stack-backed `x12..x17`, stable-mapped user `x29`, and stable-mapped user `SP`.
-This milestone does not preserve runtime-reserved writes to `x9`, `x10`, or
-`x11` across runtime exits yet. Assembly fixtures expected to pass must avoid
-user-visible writes to those registers; `tests/arm64/reserved_regs.s` documents
-the remaining runtime-exit sequencing regression.
+Runtime-exit sequencing now preserves user-visible `x9`, `x10`, and `x11`
+to `pt_regs` before those physical registers become the runtime return channel.
+Dynamic exit targets such as `br x9`, stack-backed branch registers, and
+stable-mapped return registers are captured through the register-virtualization
+mapping before branching to the shared epilogue.
 
 The harness also exposes a trace model for debugging the full translation path.
 Use `trace-tui` for an interactive Ratatui view, or `--dump --check` for a

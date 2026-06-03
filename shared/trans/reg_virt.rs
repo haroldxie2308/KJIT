@@ -1,10 +1,11 @@
 use crate::shared::abi::{
-    reg_virt_scratch_gpr, reg_virt_stack_backed_slot_offset, REG_VIRT_SCRATCH_GPR_LIMIT,
-    REG_VIRT_STABLE_MAPPED_SP_PHYS_REG, REG_VIRT_STABLE_MAPPED_X29_PHYS_REG,
-    REG_VIRT_STABLE_MAPPED_X29_REG, REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START,
-    RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
+    pt_regs_x_slot_offset, reg_virt_scratch_gpr, reg_virt_stack_backed_slot_offset,
+    REG_VIRT_SCRATCH_GPR_LIMIT, REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
+    REG_VIRT_STABLE_MAPPED_X29_PHYS_REG, REG_VIRT_STABLE_MAPPED_X29_REG,
+    REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START, RET_PARAM0_REG, RET_PARAM1_REG,
+    RET_STATUS_REG, RUNTIME_FRAME_PT_REGS_PTR_OFFSET,
 };
-use crate::shared::arm64::ergo::{ldst64_offset, mem_off, sp, x};
+use crate::shared::arm64::ergo::{ldst64_offset, mem_off, sp, uimm, x, xzr};
 use crate::shared::arm64::{A64Insn, A64OperandRole, A64Reg, A64Reg31Mode, A64RegWidth};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::rephrase::{RephrasedInsn, RephrasedInsnKind, RephrasedProgram};
@@ -13,6 +14,16 @@ use crate::shared::trans::rephrase::{RephrasedInsn, RephrasedInsnKind, Rephrased
 pub enum RegVirtError {
     Allocation(SharedAllocError),
     UnexpectedRegVirtHelper {
+        pc: u64,
+    },
+    MalformedRuntimeExitGroup {
+        pc: u64,
+    },
+    RuntimeExitPcMismatch {
+        expected_pc: u64,
+        actual_pc: u64,
+    },
+    MultipleRuntimeExitParam0Captures {
         pc: u64,
     },
     MissingRegisterAccessor {
@@ -47,11 +58,6 @@ pub enum RegVirtError {
         reg: A64Reg,
     },
     StableMappedRewriteNotImplemented {
-        pc: u64,
-        insn: &'static str,
-        reg: A64Reg,
-    },
-    RuntimeReservedRegNotPreserved {
         pc: u64,
         insn: &'static str,
         reg: A64Reg,
@@ -93,8 +99,15 @@ pub fn virtualize_registers(
         let mut rewritten = SharedVec::with_capacity(original_insns.len(), GFP_KERNEL)
             .map_err(RegVirtError::Allocation)?;
 
-        for insn in &original_insns {
-            virtualize_insn(*insn, &mut rewritten)?;
+        let mut index = 0;
+        while index < original_insns.len() {
+            let insn = original_insns[index];
+            if insn.kind.is_runtime_exit_payload() {
+                index = virtualize_runtime_exit_group(&original_insns, index, &mut rewritten)?;
+            } else {
+                virtualize_insn(insn, &mut rewritten)?;
+                index += 1;
+            }
         }
 
         block.insns = rewritten;
@@ -119,6 +132,181 @@ fn virtualize_insn(
         }),
         RephrasedInsnKind::Original | RephrasedInsnKind::UserSynthetic => unreachable!(),
     }
+}
+
+fn virtualize_runtime_exit_group(
+    insns: &[RephrasedInsn],
+    start: usize,
+    out: &mut SharedVec<RephrasedInsn>,
+) -> SharedResult<usize, RegVirtError> {
+    let pc = insns[start].ori_pc;
+    let mut end = start;
+    while end < insns.len() {
+        let insn = insns[end];
+        if insn.ori_pc != pc {
+            return Err(RegVirtError::RuntimeExitPcMismatch {
+                expected_pc: pc,
+                actual_pc: insn.ori_pc,
+            });
+        }
+
+        match insn.kind {
+            RephrasedInsnKind::RuntimeExitPayload => end += 1,
+            RephrasedInsnKind::RuntimeExitBranch => {
+                emit_runtime_exit_group(pc, &insns[start..end], insn, out)?;
+                return Ok(end + 1);
+            }
+            _ => return Err(RegVirtError::MalformedRuntimeExitGroup { pc }),
+        }
+    }
+
+    Err(RegVirtError::MalformedRuntimeExitGroup { pc })
+}
+
+fn emit_runtime_exit_group(
+    pc: u64,
+    payloads: &[RephrasedInsn],
+    branch: RephrasedInsn,
+    out: &mut SharedVec<RephrasedInsn>,
+) -> SharedResult<(), RegVirtError> {
+    // Capture writes through x10, so preserve user x9/x10/x11 before any payload setup.
+    emit_preserve_runtime_reserved_user_regs(pc, out)?;
+
+    let mut capture = None;
+    for payload in payloads {
+        if let Some(source) = runtime_param0_capture_source(payload.insn) {
+            if capture.is_some() {
+                return Err(RegVirtError::MultipleRuntimeExitParam0Captures { pc });
+            }
+            capture = Some(source);
+        }
+    }
+
+    if let Some(source) = capture {
+        emit_runtime_param0_capture(pc, source, out)?;
+    }
+
+    for payload in payloads {
+        if runtime_param0_capture_source(payload.insn).is_none() {
+            validate_runtime_exit_payload(*payload)?;
+            push_rephrased(out, *payload)?;
+        }
+    }
+
+    push_rephrased(out, branch)
+}
+
+fn emit_preserve_runtime_reserved_user_regs(
+    pc: u64,
+    out: &mut SharedVec<RephrasedInsn>,
+) -> SharedResult<(), RegVirtError> {
+    let ptr_scratch = reg_virt_scratch_gpr(0).ok_or(RegVirtError::TooManyStackBackedRegs {
+        pc,
+        insn: "runtime_exit_preserve",
+        limit: REG_VIRT_SCRATCH_GPR_LIMIT,
+    })?;
+
+    push_rephrased(
+        out,
+        RephrasedInsn::reg_virt_helper(
+            pc,
+            A64Insn::LdrImmGenLdr64LdstPos {
+                rt: x(ptr_scratch),
+                mem: mem_off(sp(), ldst64_offset(RUNTIME_FRAME_PT_REGS_PTR_OFFSET)),
+            },
+        ),
+    )?;
+
+    for reg in [RET_STATUS_REG, RET_PARAM0_REG, RET_PARAM1_REG] {
+        let offset =
+            pt_regs_x_slot_offset(reg).ok_or(RegVirtError::StackBackedRewriteNotImplemented {
+                pc,
+                insn: "runtime_exit_preserve",
+                reg: x(reg),
+            })?;
+        push_rephrased(
+            out,
+            RephrasedInsn::reg_virt_helper(
+                pc,
+                A64Insn::StrImmGenStr64LdstPos {
+                    rt: x(reg),
+                    mem: mem_off(x(ptr_scratch), ldst64_offset(offset)),
+                },
+            ),
+        )?;
+    }
+
+    Ok(())
+}
+
+fn runtime_param0_capture_source(insn: A64Insn) -> Option<A64Reg> {
+    match insn {
+        A64Insn::OrrLogShiftOrr64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } if shift == 0 && imm6.raw() == 0 && is_zero_reg(rn) && rd.enc == RET_PARAM0_REG => {
+            Some(rm)
+        }
+        _ => None,
+    }
+}
+
+fn emit_runtime_param0_capture(
+    pc: u64,
+    source: A64Reg,
+    out: &mut SharedVec<RephrasedInsn>,
+) -> SharedResult<(), RegVirtError> {
+    match classify_reg(source) {
+        RegClass::StackBacked => {
+            let offset = reg_virt_stack_backed_slot_offset(source.enc).ok_or(
+                RegVirtError::StackBackedRewriteNotImplemented {
+                    pc,
+                    insn: "runtime_param0_capture",
+                    reg: source,
+                },
+            )?;
+            push_rephrased(
+                out,
+                RephrasedInsn::runtime_exit_payload(
+                    pc,
+                    A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(RET_PARAM0_REG),
+                        mem: mem_off(sp(), ldst64_offset(offset)),
+                    },
+                ),
+            )
+        }
+        RegClass::StableMapped => {
+            push_runtime_param0_copy(pc, x(REG_VIRT_STABLE_MAPPED_X29_PHYS_REG), out)
+        }
+        RegClass::Sp => push_runtime_param0_copy(pc, x(REG_VIRT_STABLE_MAPPED_SP_PHYS_REG), out),
+        RegClass::Zero | RegClass::Direct | RegClass::RuntimeReserved => {
+            push_runtime_param0_copy(pc, source, out)
+        }
+    }
+}
+
+fn push_runtime_param0_copy(
+    pc: u64,
+    source: A64Reg,
+    out: &mut SharedVec<RephrasedInsn>,
+) -> SharedResult<(), RegVirtError> {
+    push_rephrased(
+        out,
+        RephrasedInsn::runtime_exit_payload(
+            pc,
+            A64Insn::OrrLogShiftOrr64LogShift {
+                shift: 0,
+                rm: A64Reg::new(source.enc, A64RegWidth::X64, source.reg31),
+                imm6: uimm(0, 6),
+                rn: xzr(),
+                rd: x(RET_PARAM0_REG),
+            },
+        ),
+    )
 }
 
 fn rewrite_user_semantic(
@@ -194,7 +382,6 @@ struct RewritePlan {
     insn: &'static str,
     stack_backed: [StackRegMapping; REG_VIRT_SCRATCH_GPR_LIMIT],
     stack_backed_len: usize,
-    runtime_reserved_write: Option<A64Reg>,
 }
 
 impl RewritePlan {
@@ -209,7 +396,6 @@ impl RewritePlan {
                 write: false,
             }; REG_VIRT_SCRATCH_GPR_LIMIT],
             stack_backed_len: 0,
-            runtime_reserved_write: None,
         }
     }
 
@@ -248,14 +434,6 @@ impl RewritePlan {
             }
         }
 
-        if let Some(reg) = plan.runtime_reserved_write {
-            return Err(RegVirtError::RuntimeReservedRegNotPreserved {
-                pc: plan.pc,
-                insn: plan.insn,
-                reg,
-            });
-        }
-
         Ok(plan)
     }
 
@@ -273,12 +451,7 @@ impl RewritePlan {
 
         match classify_reg(reg) {
             RegClass::Zero | RegClass::Direct => Ok(()),
-            RegClass::RuntimeReserved => {
-                if access.writes() && self.runtime_reserved_write.is_none() {
-                    self.runtime_reserved_write = Some(reg);
-                }
-                Ok(())
-            }
+            RegClass::RuntimeReserved => Ok(()),
             RegClass::StableMapped | RegClass::Sp => {
                 require_setter(rephrased, field, reg)?;
                 Ok(())
@@ -626,14 +799,21 @@ mod tests {
     use crate::shared::trans::rephrase::{RephrasedBlock, RephrasedInsn};
 
     fn one_insn(insn: RephrasedInsn) -> RephrasedProgram {
+        program_from_insns(&[insn])
+    }
+
+    fn program_from_insns(raw: &[RephrasedInsn]) -> RephrasedProgram {
         let mut insns = SharedVec::new();
-        insns.push(insn, GFP_KERNEL).unwrap();
+        for insn in raw {
+            insns.push(*insn, GFP_KERNEL).unwrap();
+        }
+        let first_pc = raw.first().map(|insn| insn.ori_pc).unwrap_or(0);
         let mut program = SharedVec::new();
         program
             .push(
                 RephrasedBlock {
-                    start_addr: insn.ori_pc,
-                    end_addr: insn.ori_pc + 4,
+                    start_addr: first_pc,
+                    end_addr: first_pc + 4,
                     prev: SharedVec::new(),
                     next: SharedVec::new(),
                     insns,
@@ -663,6 +843,29 @@ mod tests {
         )
     }
 
+    fn pt_regs_slot(reg: u8) -> A64Mem {
+        A64Mem::offset(
+            x(12),
+            A64Imm::scaled_unsigned(((reg as u32) * 8) / 8, 12, 3),
+        )
+    }
+
+    fn runtime_branch() -> A64Insn {
+        A64Insn::BUncondBOnlyBranchImm {
+            imm26: A64Imm::scaled_signed(0, 26, 2),
+        }
+    }
+
+    fn copy_param0_from(reg: A64Reg) -> A64Insn {
+        A64Insn::OrrLogShiftOrr64LogShift {
+            shift: 0,
+            rm: reg,
+            imm6: uimm(0, 6),
+            rn: xzr(),
+            rd: x(RET_PARAM0_REG),
+        }
+    }
+
     #[test]
     fn direct_user_semantic_registers_pass_validation() {
         let program = validate_one(RephrasedInsn::original(
@@ -684,18 +887,20 @@ mod tests {
 
     #[test]
     fn runtime_payload_can_write_return_channel_registers() {
-        validate_one(RephrasedInsn::runtime_exit_payload(0x1000, movz(x(9)))).unwrap();
+        virtualize_registers(program_from_insns(&[
+            RephrasedInsn::runtime_exit_payload(0x1000, movz(x(9))),
+            RephrasedInsn::runtime_exit_branch(0x1000, runtime_branch()),
+        ]))
+        .unwrap();
     }
 
     #[test]
-    fn rejects_user_semantic_runtime_reserved_registers_until_preserved() {
+    fn runtime_reserved_user_semantic_registers_remain_direct_until_runtime_exit() {
+        let program = validate_one(RephrasedInsn::original(0x1000, movz(x(9)))).unwrap();
+
         assert_eq!(
-            validate_one(RephrasedInsn::original(0x1000, movz(x(9)))),
-            Err(RegVirtError::RuntimeReservedRegNotPreserved {
-                pc: 0x1000,
-                insn: "MOVZ.MOVZ_64_movewide",
-                reg: x(9),
-            })
+            &program[0].insns[..],
+            [RephrasedInsn::original(0x1000, movz(x(9)))]
         );
     }
 
@@ -904,9 +1109,9 @@ mod tests {
     }
 
     #[test]
-    fn rejects_runtime_exit_sources_that_need_capture() {
-        assert_eq!(
-            validate_one(RephrasedInsn::runtime_exit_payload(
+    fn stack_backed_runtime_exit_source_captures_from_frame_slot() {
+        let program = virtualize_registers(program_from_insns(&[
+            RephrasedInsn::runtime_exit_payload(
                 0x1000,
                 A64Insn::OrrLogShiftOrr64LogShift {
                     shift: 0,
@@ -915,13 +1120,102 @@ mod tests {
                     rn: xzr(),
                     rd: x(10),
                 },
-            )),
-            Err(RegVirtError::UnsupportedRuntimeExitSource {
-                pc: 0x1000,
-                insn: "ORR_log_shift.ORR_64_log_shift",
-                field: "Rm",
-                reg: x(16),
-            })
+            ),
+            RephrasedInsn::runtime_exit_branch(0x1000, runtime_branch()),
+        ]))
+        .unwrap();
+
+        assert_eq!(
+            &program[0].insns[..],
+            [
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(176),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(9),
+                        mem: pt_regs_slot(9),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(10),
+                        mem: pt_regs_slot(10),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(11),
+                        mem: pt_regs_slot(11),
+                    },
+                ),
+                RephrasedInsn::runtime_exit_payload(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(10),
+                        mem: frame_slot(48),
+                    },
+                ),
+                RephrasedInsn::runtime_exit_branch(0x1000, runtime_branch()),
+            ]
+        );
+    }
+
+    #[test]
+    fn br_x9_runtime_exit_preserves_user_regs_and_captures_before_status() {
+        let status = movz(x(RET_STATUS_REG));
+        let resume = movz(x(RET_PARAM1_REG));
+        let program = virtualize_registers(program_from_insns(&[
+            RephrasedInsn::runtime_exit_payload(0x1000, status),
+            RephrasedInsn::runtime_exit_payload(0x1000, copy_param0_from(x(9))),
+            RephrasedInsn::runtime_exit_payload(0x1000, resume),
+            RephrasedInsn::runtime_exit_branch(0x1000, runtime_branch()),
+        ]))
+        .unwrap();
+
+        assert_eq!(
+            &program[0].insns[..],
+            [
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(176),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(9),
+                        mem: pt_regs_slot(9),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(10),
+                        mem: pt_regs_slot(10),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(11),
+                        mem: pt_regs_slot(11),
+                    },
+                ),
+                RephrasedInsn::runtime_exit_payload(0x1000, copy_param0_from(x(9))),
+                RephrasedInsn::runtime_exit_payload(0x1000, status),
+                RephrasedInsn::runtime_exit_payload(0x1000, resume),
+                RephrasedInsn::runtime_exit_branch(0x1000, runtime_branch()),
+            ]
         );
     }
 

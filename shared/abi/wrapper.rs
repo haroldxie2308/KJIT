@@ -1,6 +1,6 @@
 use super::{
     ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG, RET_PARAM0_REG, RET_PARAM1_REG,
-    RET_STATUS_REG,
+    RET_STATUS_REG, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
 };
 use crate::shared::arm64::ergo::{
     ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, scaled_simm, sp, uimm, x, xzr,
@@ -18,7 +18,7 @@ pub const KJIT_PROLOGUE: &[A64Insn] = &[
     A64Insn::StpGenStp64LdstpairPre {
         rt2: x(30),
         rt: x(29),
-        mem: mem_pre(sp(), ldstpair64_offset(-192)),
+        mem: mem_pre(sp(), ldstpair64_offset(-(RUNTIME_FRAME_SIZE_BYTES as i32))),
     },
     A64Insn::AddAddsubImmAdd64AddsubImm {
         sh: 0,
@@ -72,7 +72,10 @@ pub const KJIT_PROLOGUE: &[A64Insn] = &[
     A64Insn::StpGenStp64LdstpairOff {
         rt2: x(17),
         rt: x(16),
-        mem: mem_off(sp(), ldstpair64_offset(176)),
+        mem: mem_off(
+            sp(),
+            ldstpair64_offset(RUNTIME_FRAME_PT_REGS_PTR_OFFSET as i32),
+        ),
     },
     A64Insn::LdpGenLdp64LdstpairOff {
         rt2: x(1),
@@ -202,7 +205,10 @@ pub const KJIT_EPILOGUE: &[A64Insn] = &[
     A64Insn::LdpGenLdp64LdstpairOff {
         rt2: x(17),
         rt: x(16),
-        mem: mem_off(sp(), ldstpair64_offset(176)),
+        mem: mem_off(
+            sp(),
+            ldstpair64_offset(RUNTIME_FRAME_PT_REGS_PTR_OFFSET as i32),
+        ),
     },
     A64Insn::StpGenStp64LdstpairOff {
         rt2: x(RET_PARAM1_REG),
@@ -351,7 +357,7 @@ pub const KJIT_EPILOGUE: &[A64Insn] = &[
     A64Insn::LdpGenLdp64LdstpairPost {
         rt2: x(ABI_LINK_REG),
         rt: x(29),
-        mem: mem_post(sp(), ldstpair64_offset(192)),
+        mem: mem_post(sp(), ldstpair64_offset(RUNTIME_FRAME_SIZE_BYTES as i32)),
     },
     A64Insn::RetRet64rBranchReg {
         rn: x(ABI_LINK_REG),

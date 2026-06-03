@@ -3,6 +3,7 @@ use crate::model::MachineState;
 use crate::shared::abi::{
     RetStatus, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
     PROLOGUE_ENTRY_BRANCH_OFFSET, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
+    RUNTIME_FRAME_SIZE_BYTES,
 };
 use crate::shared::emit::layout::ExecutionFragment;
 
@@ -15,7 +16,6 @@ pub const DEFAULT_STACK_TOP: u64 = 0x800000;
 const PT_REGS_BYTES: u64 = 256;
 const PT_REGS_SP_OFFSET: u64 = 31 * 8;
 const EXTRA_PARAMS_BYTES: u64 = 16;
-const RUNTIME_FRAME_BYTES: u64 = 192;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct URuntimeConfig {
@@ -268,7 +268,9 @@ impl URuntime {
                 self.config.extra_params_addr + EXTRA_PARAMS_BYTES,
             ),
             (
-                self.config.stack_top.saturating_sub(RUNTIME_FRAME_BYTES),
+                self.config
+                    .stack_top
+                    .saturating_sub(RUNTIME_FRAME_SIZE_BYTES as u64),
                 self.config.stack_top,
             ),
         ]
