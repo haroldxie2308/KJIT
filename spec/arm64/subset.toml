@@ -56,28 +56,3 @@ forms = [
   "RET.RET_64R_branch_reg",
   "SVC.SVC_EX_exception",
 ]
-
-[translate]
-# Current translator support is narrower than decode support. Extra operand
-# restrictions, such as 64-bit only or no shifted immediate, are still enforced
-# in Rust until the generator grows predicate support.
-forms = [
-  "ADR.ADR_only_pcreladdr",
-  "ADRP.ADRP_only_pcreladdr",
-  "ADD_addsub_imm.ADD_64_addsub_imm",
-  "SUB_addsub_imm.SUB_64_addsub_imm",
-  "SUBS_addsub_imm.SUBS_64S_addsub_imm",
-  "B_uncond.B_only_branch_imm",
-  "B_cond.B_only_condbranch",
-  "CBZ.CBZ_64_compbranch",
-  "CBNZ.CBNZ_64_compbranch",
-  "MOVZ.MOVZ_64_movewide",
-  "ORR_log_shift.ORR_64_log_shift",
-  "LDR_imm_gen.LDR_64_ldst_pos",
-  "STR_imm_gen.STR_64_ldst_pos",
-  "BL.BL_only_branch_imm",
-  "BR.BR_64_branch_reg",
-  "BLR.BLR_64_branch_reg",
-  "RET.RET_64R_branch_reg",
-  "SVC.SVC_EX_exception",
-]
