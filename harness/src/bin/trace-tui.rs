@@ -349,6 +349,7 @@ fn run_tui(
                 app.command_mode = true;
                 app.status = "enter command".to_string();
             }
+            KeyCode::Char('y') => export_panel_text(&mut app),
             KeyCode::Char('s') => toggle_mode(&mut app),
             KeyCode::Char(' ') if app.mode == Mode::ActiveStep => step_group(&mut app),
             KeyCode::Char('j') if app.mode == Mode::ActiveStep => step_translated(&mut app),
@@ -425,10 +426,11 @@ fn run_tui(
             KeyCode::Char('?') | KeyCode::F(1) => {
                 app.status = match app.mode {
                     Mode::Explore => {
-                        "Explore: s step | p/o/t/r panels | Up/Down move or scroll".to_string()
+                        "Explore: s step | p/o/t/r panels | y export panel | Up/Down move or scroll"
+                            .to_string()
                     }
                     Mode::ActiveStep => {
-                        "Step: Esc/s explore | Space group | j insn | r/m/c panes | R reset"
+                        "Step: Esc/s explore | Space group | j insn | r/m/c panes | y export | R reset"
                             .to_string()
                     }
                 };
@@ -531,6 +533,100 @@ fn scroll_step_detail(app: &mut App<'_>, delta: i16) {
         app.layout_scroll = app.layout_scroll.saturating_add(delta as u16);
     }
     app.status = format!("{} scroll={}", app.step_detail.name(), app.layout_scroll);
+}
+
+fn export_panel_text(app: &mut App<'_>) {
+    match current_panel_export(app).and_then(write_panel_export) {
+        Ok(status) => app.status = status,
+        Err(message) => app.status = format!("export failed: {message}"),
+    }
+}
+
+struct PanelExport {
+    title: String,
+    lines: Vec<String>,
+}
+
+fn current_panel_export(app: &App<'_>) -> Result<PanelExport, String> {
+    match app.mode {
+        Mode::Explore => explore_panel_export(app),
+        Mode::ActiveStep => active_step_panel_export(app),
+    }
+}
+
+fn explore_panel_export(app: &App<'_>) -> Result<PanelExport, String> {
+    let title = app.focus.name().to_string();
+    let lines = match app.focus {
+        FocusPanel::Cfg => program_lines(app),
+        FocusPanel::Raw => match app.selection {
+            Selection::Pc(pc) => raw_cfg_lines(app, pc),
+            Selection::Offset(offset) => offset_lines(app, offset),
+        },
+        FocusPanel::Rephrase => match app.selection {
+            Selection::Pc(pc) => translation_export_lines(app, pc),
+            Selection::Offset(_) => vec![Line::from("select an original PC to inspect rephrase")],
+        },
+        FocusPanel::Layout => match app.selection {
+            Selection::Pc(pc) => layout_for_pc_lines(app, pc),
+            Selection::Offset(offset) => layout_neighborhood_lines(app, offset),
+        },
+    };
+
+    Ok(PanelExport {
+        title,
+        lines: plain_lines(lines),
+    })
+}
+
+fn active_step_panel_export(app: &App<'_>) -> Result<PanelExport, String> {
+    let Some(session) = app.active_step.as_ref() else {
+        return Err("active session is not initialized".to_string());
+    };
+    let title = format!("Comparison {}", app.step_detail.name());
+    let lines = match app.step_detail {
+        StepDetailMode::Compact => compact_comparison_lines(session),
+        StepDetailMode::Registers => register_comparison_lines(session),
+        StepDetailMode::Memory => memory_comparison_lines(app, session),
+    };
+
+    Ok(PanelExport {
+        title,
+        lines: plain_lines(lines),
+    })
+}
+
+fn write_panel_export(export: PanelExport) -> Result<String, String> {
+    let path = copy_export_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+    }
+    let mut text = export.lines.join("\n");
+    text.push('\n');
+    std::fs::write(&path, text).map_err(|err| err.to_string())?;
+    Ok(format!(
+        "exported {} panel to {}",
+        export.title,
+        path.display()
+    ))
+}
+
+fn copy_export_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("harness crate has a parent repo directory")
+        .join("tmp/trace-copy.txt")
+}
+
+fn plain_lines(lines: Vec<Line<'static>>) -> Vec<String> {
+    lines.into_iter().map(plain_line).collect()
+}
+
+fn plain_line(line: Line<'_>) -> String {
+    line.spans
+        .iter()
+        .map(|span| span.content.as_ref())
+        .collect::<Vec<_>>()
+        .join("")
 }
 
 fn toggle_mode(app: &mut App<'_>) {
@@ -810,14 +906,8 @@ fn draw_header(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
 }
 
 fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
-    let selected_pc = match app.selection {
-        Selection::Pc(pc) => Some(pc),
-        Selection::Offset(offset) => app
-            .trace
-            .selected_offset(offset)
-            .and_then(|entry| entry.ori_pc),
-    };
     let entries = visible_pc_entries(app.trace, app.show_raw_only);
+    let selected_pc = selected_pc(app);
     let selected_index = selected_pc
         .and_then(|pc| entries.iter().position(|entry| entry.pc == pc))
         .unwrap_or(0);
@@ -856,6 +946,36 @@ fn draw_pc_list(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
         ),
         area,
     );
+}
+
+fn program_lines(app: &App<'_>) -> Vec<Line<'static>> {
+    let selected_pc = selected_pc(app);
+    visible_pc_entries(app.trace, app.show_raw_only)
+        .into_iter()
+        .map(|entry| {
+            let marker = if Some(entry.pc) == selected_pc {
+                ">"
+            } else {
+                " "
+            };
+            Line::from(format!(
+                "{marker} {:#010x} {:<8} {}",
+                entry.pc,
+                pc_stage_label(entry),
+                pc_brief(app.trace, entry.pc)
+            ))
+        })
+        .collect()
+}
+
+fn selected_pc(app: &App<'_>) -> Option<u64> {
+    match app.selection {
+        Selection::Pc(pc) => Some(pc),
+        Selection::Offset(offset) => app
+            .trace
+            .selected_offset(offset)
+            .and_then(|entry| entry.ori_pc),
+    }
 }
 
 fn visible_pc_entries<'a>(
@@ -1248,6 +1368,22 @@ fn memory_row_line(row: &MemoryComparisonRow) -> Line<'static> {
 }
 
 fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
+    let lines = raw_cfg_lines(app, pc);
+    frame.render_widget(
+        Paragraph::new(lines)
+            .block(
+                Block::default()
+                    .title("Original")
+                    .border_style(focus_style(app, FocusPanel::Raw))
+                    .borders(Borders::ALL),
+            )
+            .scroll((app.raw_scroll, 0))
+            .wrap(Wrap { trim: false }),
+        area,
+    );
+}
+
+fn raw_cfg_lines(app: &App<'_>, pc: u64) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
     lines.push(Line::from(format!("selected ori_pc {pc:#x}")));
     for insn in app.trace.raw.iter().filter(|insn| insn.pc == pc) {
@@ -1279,19 +1415,7 @@ fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
             app.trace.input.entry_pc
         )));
     }
-
-    frame.render_widget(
-        Paragraph::new(lines)
-            .block(
-                Block::default()
-                    .title("Original")
-                    .border_style(focus_style(app, FocusPanel::Raw))
-                    .borders(Borders::ALL),
-            )
-            .scroll((app.raw_scroll, 0))
-            .wrap(Wrap { trim: false }),
-        area,
-    );
+    lines
 }
 
 fn draw_rephrase(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
@@ -1373,6 +1497,17 @@ fn aligned_translation_lines(app: &App<'_>, pc: u64) -> (Vec<Line<'static>>, Vec
     (left, right)
 }
 
+fn translation_export_lines(app: &App<'_>, pc: u64) -> Vec<Line<'static>> {
+    let (rephrased, virtualized) = aligned_translation_lines(app, pc);
+    let mut lines = Vec::with_capacity(rephrased.len() + virtualized.len() + 3);
+    lines.push(Line::from("Rephrased"));
+    lines.extend(rephrased);
+    lines.push(Line::from(""));
+    lines.push(Line::from("Virtualized"));
+    lines.extend(virtualized);
+    lines
+}
+
 fn translation_rows(
     blocks: &[kjit_harness::trace::TraceRephrasedBlock],
     pc: u64,
@@ -1422,22 +1557,8 @@ fn render_translation_column(
 }
 
 fn draw_layout_for_pc(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
-    let lines = app
-        .trace
-        .fragment
-        .insns
-        .iter()
-        .filter(|insn| insn.ori_pc == Some(pc))
-        .map(layout_line)
-        .collect::<Vec<_>>();
-    let lines = if lines.is_empty() {
-        vec![Line::from("no layout instruction with this original PC")]
-    } else {
-        lines
-    };
-
     frame.render_widget(
-        Paragraph::new(lines)
+        Paragraph::new(layout_for_pc_lines(app, pc))
             .block(
                 Block::default()
                     .title("Result")
@@ -1450,8 +1571,36 @@ fn draw_layout_for_pc(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect)
     );
 }
 
+fn layout_for_pc_lines(app: &App<'_>, pc: u64) -> Vec<Line<'static>> {
+    let lines = app
+        .trace
+        .fragment
+        .insns
+        .iter()
+        .filter(|insn| insn.ori_pc == Some(pc))
+        .map(layout_line)
+        .collect::<Vec<_>>();
+    if lines.is_empty() {
+        vec![Line::from("no layout instruction with this original PC")]
+    } else {
+        lines
+    }
+}
+
 fn draw_offset(frame: &mut Frame<'_>, app: &App<'_>, offset: usize, area: Rect) {
-    let lines = if let Some(entry) = app.trace.selected_offset(offset) {
+    frame.render_widget(
+        Paragraph::new(offset_lines(app, offset)).block(
+            Block::default()
+                .title("runtime offset")
+                .border_style(focus_style(app, FocusPanel::Raw))
+                .borders(Borders::ALL),
+        ),
+        area,
+    );
+}
+
+fn offset_lines(app: &App<'_>, offset: usize) -> Vec<Line<'static>> {
+    if let Some(entry) = app.trace.selected_offset(offset) {
         vec![Line::from(format!(
             "offset={:#x} runtime_pc={:#x} insn_index={} ori_pc={} region={:?}",
             entry.offset,
@@ -1462,29 +1611,12 @@ fn draw_offset(frame: &mut Frame<'_>, app: &App<'_>, offset: usize, area: Rect) 
         ))]
     } else {
         vec![Line::from(format!("offset {offset:#x} is not present"))]
-    };
-    frame.render_widget(
-        Paragraph::new(lines).block(
-            Block::default()
-                .title("runtime offset")
-                .border_style(focus_style(app, FocusPanel::Raw))
-                .borders(Borders::ALL),
-        ),
-        area,
-    );
+    }
 }
 
 fn draw_layout_neighborhood(frame: &mut Frame<'_>, app: &App<'_>, offset: usize, area: Rect) {
-    let center = offset / 4;
-    let start = center.saturating_sub(8);
-    let end = (center + 9).min(app.trace.fragment.insns.len());
-    let lines = app.trace.fragment.insns[start..end]
-        .iter()
-        .map(layout_line)
-        .collect::<Vec<_>>();
-
     frame.render_widget(
-        Paragraph::new(lines)
+        Paragraph::new(layout_neighborhood_lines(app, offset))
             .block(
                 Block::default()
                     .title("Result")
@@ -1495,6 +1627,16 @@ fn draw_layout_neighborhood(frame: &mut Frame<'_>, app: &App<'_>, offset: usize,
             .wrap(Wrap { trim: false }),
         area,
     );
+}
+
+fn layout_neighborhood_lines(app: &App<'_>, offset: usize) -> Vec<Line<'static>> {
+    let center = offset / 4;
+    let start = center.saturating_sub(8);
+    let end = (center + 9).min(app.trace.fragment.insns.len());
+    app.trace.fragment.insns[start..end]
+        .iter()
+        .map(layout_line)
+        .collect()
 }
 
 fn draw_empty(frame: &mut Frame<'_>, title: &'static str, message: &'static str, area: Rect) {
@@ -1514,15 +1656,15 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     } else {
         let keys = match app.mode {
             Mode::Explore => {
-                "Explore: s step | Tab focus | p/o/t/r panels | a cfg/all | Up/Down move/scroll | q quit"
+                "Explore: s step | Tab focus | p/o/t/r panels | y export | a cfg/all | Up/Down move/scroll | q quit"
             }
             Mode::ActiveStep => {
                 match app.step_detail {
                     StepDetailMode::Compact => {
-                        "Step: Esc/s explore | Space group | j insn | r registers | m memory | R reset | q quit"
+                        "Step: Esc/s explore | Space group | j insn | y export | r registers | m memory | R reset | q quit"
                     }
                     StepDetailMode::Registers | StepDetailMode::Memory => {
-                        "Step: Up/Down scroll comparison | d/u page | j insn | Space group | c compact | R reset | q quit"
+                        "Step: Up/Down scroll comparison | d/u page | y export | j insn | Space group | c compact | R reset | q quit"
                     }
                 }
             }
