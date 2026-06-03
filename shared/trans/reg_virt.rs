@@ -1,13 +1,17 @@
 use crate::shared::abi::{
-    REG_VIRT_SCRATCH_GPR_LIMIT, REG_VIRT_STABLE_MAPPED_X29_REG, REG_VIRT_STACK_BACKED_REG_END,
-    REG_VIRT_STACK_BACKED_REG_START, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
+    reg_virt_scratch_gpr, reg_virt_stack_backed_slot_offset, REG_VIRT_SCRATCH_GPR_LIMIT,
+    REG_VIRT_STABLE_MAPPED_SP_PHYS_REG, REG_VIRT_STABLE_MAPPED_X29_PHYS_REG,
+    REG_VIRT_STABLE_MAPPED_X29_REG, REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START,
+    RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
 };
-use crate::shared::arm64::{A64Insn, A64OperandRole, A64Reg, A64RegWidth};
-use crate::shared::platform::SharedResult;
+use crate::shared::arm64::ergo::{ldst64_offset, mem_off, sp, x};
+use crate::shared::arm64::{A64Insn, A64OperandRole, A64Reg, A64Reg31Mode, A64RegWidth};
+use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::rephrase::{RephrasedInsn, RephrasedInsnKind, RephrasedProgram};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RegVirtError {
+    Allocation(SharedAllocError),
     UnexpectedRegVirtHelper {
         pc: u64,
     },
@@ -82,26 +86,34 @@ pub enum RegVirtError {
 }
 
 pub fn virtualize_registers(
-    program: RephrasedProgram,
+    mut program: RephrasedProgram,
 ) -> SharedResult<RephrasedProgram, RegVirtError> {
-    validate_program(&program)?;
+    for block in program.iter_mut() {
+        let original_insns = core::mem::replace(&mut block.insns, SharedVec::new());
+        let mut rewritten = SharedVec::with_capacity(original_insns.len(), GFP_KERNEL)
+            .map_err(RegVirtError::Allocation)?;
+
+        for insn in &original_insns {
+            virtualize_insn(*insn, &mut rewritten)?;
+        }
+
+        block.insns = rewritten;
+    }
+
     Ok(program)
 }
 
-fn validate_program(program: &RephrasedProgram) -> SharedResult<(), RegVirtError> {
-    for block in program {
-        for insn in &block.insns {
-            validate_insn(*insn)?;
-        }
-    }
-    Ok(())
-}
-
-fn validate_insn(rephrased: RephrasedInsn) -> SharedResult<(), RegVirtError> {
+fn virtualize_insn(
+    rephrased: RephrasedInsn,
+    out: &mut SharedVec<RephrasedInsn>,
+) -> SharedResult<(), RegVirtError> {
     match rephrased.kind {
-        kind if kind.is_user_semantic() => validate_user_semantic(rephrased),
-        RephrasedInsnKind::RuntimeExitPayload => validate_runtime_exit_payload(rephrased),
-        RephrasedInsnKind::RuntimeExitBranch => Ok(()),
+        kind if kind.is_user_semantic() => rewrite_user_semantic(rephrased, out),
+        RephrasedInsnKind::RuntimeExitPayload => {
+            validate_runtime_exit_payload(rephrased)?;
+            push_rephrased(out, rephrased)
+        }
+        RephrasedInsnKind::RuntimeExitBranch => push_rephrased(out, rephrased),
         RephrasedInsnKind::RegVirtHelper => Err(RegVirtError::UnexpectedRegVirtHelper {
             pc: rephrased.ori_pc,
         }),
@@ -109,61 +121,326 @@ fn validate_insn(rephrased: RephrasedInsn) -> SharedResult<(), RegVirtError> {
     }
 }
 
-fn validate_user_semantic(rephrased: RephrasedInsn) -> SharedResult<(), RegVirtError> {
-    let insn = rephrased.insn;
-    let insn_key = insn.key();
-    if is_pair_op(insn) {
-        return Err(RegVirtError::UnsupportedPairOp {
-            pc: rephrased.ori_pc,
-            insn: insn_key,
-        });
-    }
-    if is_writeback_memory_op(insn) {
-        return Err(RegVirtError::UnsupportedWritebackMemory {
-            pc: rephrased.ori_pc,
-            insn: insn_key,
-        });
+fn rewrite_user_semantic(
+    rephrased: RephrasedInsn,
+    out: &mut SharedVec<RephrasedInsn>,
+) -> SharedResult<(), RegVirtError> {
+    let plan = RewritePlan::build(rephrased)?;
+    let rewritten = plan.rewrite_insn(rephrased)?;
+
+    plan.emit_fills(rephrased.ori_pc, out)?;
+    push_rephrased(
+        out,
+        RephrasedInsn {
+            insn: rewritten,
+            ..rephrased
+        },
+    )?;
+    plan.emit_spills(rephrased.ori_pc, out)
+}
+
+fn push_rephrased(
+    out: &mut SharedVec<RephrasedInsn>,
+    insn: RephrasedInsn,
+) -> SharedResult<(), RegVirtError> {
+    out.push(insn, GFP_KERNEL).map_err(RegVirtError::Allocation)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AccessMode {
+    Read,
+    Write,
+    ReadWrite,
+}
+
+impl AccessMode {
+    const fn reads(self) -> bool {
+        matches!(self, Self::Read | Self::ReadWrite)
     }
 
-    let mut access = AccessSummary::new(rephrased.ori_pc, insn_key);
-    for role in insn.operand_roles() {
-        match *role {
-            A64OperandRole::RegRead { field, width } => {
-                let reg = require_reg(rephrased, field)?;
-                validate_user_reg(rephrased, &mut access, field, reg, width, false)?;
-            }
-            A64OperandRole::RegWrite { field, width } => {
-                let reg = require_reg(rephrased, field)?;
-                require_setter(rephrased, field, reg)?;
-                validate_user_reg(rephrased, &mut access, field, reg, width, true)?;
-            }
-            A64OperandRole::RegReadWrite { field, width } => {
-                let reg = require_reg(rephrased, field)?;
-                require_setter(rephrased, field, reg)?;
-                validate_user_reg(rephrased, &mut access, field, reg, width, true)?;
-            }
-            A64OperandRole::ImplicitRegWrite { reg, width } => {
-                return Err(RegVirtError::UnsupportedImplicitRegWrite {
-                    pc: rephrased.ori_pc,
-                    insn: insn_key,
-                    reg,
-                    width,
-                });
-            }
-            A64OperandRole::MemBase { field } => {
-                let reg = require_reg(rephrased, field)?;
-                validate_user_reg(rephrased, &mut access, field, reg, A64RegWidth::X64, false)?;
-            }
-            A64OperandRole::MemOffset { .. }
-            | A64OperandRole::BranchTarget { .. }
-            | A64OperandRole::FlagsRead
-            | A64OperandRole::FlagsWrite
-            | A64OperandRole::ControlFlow
-            | A64OperandRole::Memory => {}
+    const fn writes(self) -> bool {
+        matches!(self, Self::Write | Self::ReadWrite)
+    }
+}
+
+fn access_mode_from_role(role: A64OperandRole) -> Option<(&'static str, A64RegWidth, AccessMode)> {
+    match role {
+        A64OperandRole::RegRead { field, width } => Some((field, width, AccessMode::Read)),
+        A64OperandRole::RegWrite { field, width } => Some((field, width, AccessMode::Write)),
+        A64OperandRole::RegReadWrite { field, width } => {
+            Some((field, width, AccessMode::ReadWrite))
+        }
+        A64OperandRole::MemBase { field } => Some((field, A64RegWidth::X64, AccessMode::Read)),
+        A64OperandRole::ImplicitRegWrite { .. }
+        | A64OperandRole::MemOffset { .. }
+        | A64OperandRole::BranchTarget { .. }
+        | A64OperandRole::FlagsRead
+        | A64OperandRole::FlagsWrite
+        | A64OperandRole::ControlFlow
+        | A64OperandRole::Memory => None,
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct StackRegMapping {
+    virt: u8,
+    scratch: u8,
+    read: bool,
+    write: bool,
+}
+
+struct RewritePlan {
+    pc: u64,
+    insn: &'static str,
+    stack_backed: [StackRegMapping; REG_VIRT_SCRATCH_GPR_LIMIT],
+    stack_backed_len: usize,
+    runtime_reserved_write: Option<A64Reg>,
+}
+
+impl RewritePlan {
+    const fn new(pc: u64, insn: &'static str) -> Self {
+        Self {
+            pc,
+            insn,
+            stack_backed: [StackRegMapping {
+                virt: 0,
+                scratch: 0,
+                read: false,
+                write: false,
+            }; REG_VIRT_SCRATCH_GPR_LIMIT],
+            stack_backed_len: 0,
+            runtime_reserved_write: None,
         }
     }
 
-    access.reject_unimplemented_virtual_regs()
+    fn build(rephrased: RephrasedInsn) -> SharedResult<Self, RegVirtError> {
+        let insn = rephrased.insn;
+        let insn_key = insn.key();
+        if is_pair_op(insn) {
+            return Err(RegVirtError::UnsupportedPairOp {
+                pc: rephrased.ori_pc,
+                insn: insn_key,
+            });
+        }
+        if is_writeback_memory_op(insn) {
+            return Err(RegVirtError::UnsupportedWritebackMemory {
+                pc: rephrased.ori_pc,
+                insn: insn_key,
+            });
+        }
+
+        let mut plan = Self::new(rephrased.ori_pc, insn_key);
+        for role in insn.operand_roles() {
+            match *role {
+                A64OperandRole::ImplicitRegWrite { reg, width } => {
+                    return Err(RegVirtError::UnsupportedImplicitRegWrite {
+                        pc: rephrased.ori_pc,
+                        insn: insn_key,
+                        reg,
+                        width,
+                    });
+                }
+                role => {
+                    if let Some((field, width, access)) = access_mode_from_role(role) {
+                        plan.add_field_access(rephrased, field, width, access)?;
+                    }
+                }
+            }
+        }
+
+        if let Some(reg) = plan.runtime_reserved_write {
+            return Err(RegVirtError::RuntimeReservedRegNotPreserved {
+                pc: plan.pc,
+                insn: plan.insn,
+                reg,
+            });
+        }
+
+        Ok(plan)
+    }
+
+    fn add_field_access(
+        &mut self,
+        rephrased: RephrasedInsn,
+        field: &'static str,
+        width: A64RegWidth,
+        access: AccessMode,
+    ) -> SharedResult<(), RegVirtError> {
+        let reg = require_reg(rephrased, field)?;
+        if access.writes() {
+            require_setter(rephrased, field, reg)?;
+        }
+
+        match classify_reg(reg) {
+            RegClass::Zero | RegClass::Direct => Ok(()),
+            RegClass::RuntimeReserved => {
+                if access.writes() && self.runtime_reserved_write.is_none() {
+                    self.runtime_reserved_write = Some(reg);
+                }
+                Ok(())
+            }
+            RegClass::StableMapped | RegClass::Sp => {
+                require_setter(rephrased, field, reg)?;
+                Ok(())
+            }
+            RegClass::StackBacked => {
+                require_setter(rephrased, field, reg)?;
+                if access.writes() && width == A64RegWidth::Unknown {
+                    return Err(RegVirtError::UnsupportedStackBackedWriteWidth {
+                        pc: rephrased.ori_pc,
+                        insn: rephrased.insn.key(),
+                        field,
+                        reg,
+                        width,
+                    });
+                }
+                self.add_stack_backed(reg, access)
+            }
+        }
+    }
+
+    fn add_stack_backed(
+        &mut self,
+        reg: A64Reg,
+        access: AccessMode,
+    ) -> SharedResult<(), RegVirtError> {
+        for mapping in &mut self.stack_backed[..self.stack_backed_len] {
+            if mapping.virt == reg.enc {
+                mapping.read |= access.reads();
+                mapping.write |= access.writes();
+                return Ok(());
+            }
+        }
+
+        if self.stack_backed_len == REG_VIRT_SCRATCH_GPR_LIMIT {
+            return Err(RegVirtError::TooManyStackBackedRegs {
+                pc: self.pc,
+                insn: self.insn,
+                limit: REG_VIRT_SCRATCH_GPR_LIMIT,
+            });
+        }
+
+        let scratch = reg_virt_scratch_gpr(self.stack_backed_len).ok_or(
+            RegVirtError::TooManyStackBackedRegs {
+                pc: self.pc,
+                insn: self.insn,
+                limit: REG_VIRT_SCRATCH_GPR_LIMIT,
+            },
+        )?;
+        self.stack_backed[self.stack_backed_len] = StackRegMapping {
+            virt: reg.enc,
+            scratch,
+            read: access.reads(),
+            write: access.writes(),
+        };
+        self.stack_backed_len += 1;
+        Ok(())
+    }
+
+    fn rewrite_insn(&self, rephrased: RephrasedInsn) -> SharedResult<A64Insn, RegVirtError> {
+        let mut rewritten = rephrased.insn;
+        for role in rephrased.insn.operand_roles() {
+            let Some((field, _, _)) = access_mode_from_role(*role) else {
+                continue;
+            };
+            let reg = require_reg(rephrased, field)?;
+            let Some(physical) = self.physical_reg(reg) else {
+                continue;
+            };
+            rewritten = rewritten.set_reg(field, physical).map_err(|_| {
+                RegVirtError::MissingRegisterSetter {
+                    pc: rephrased.ori_pc,
+                    insn: rephrased.insn.key(),
+                    field,
+                }
+            })?;
+        }
+        Ok(rewritten)
+    }
+
+    fn physical_reg(&self, reg: A64Reg) -> Option<A64Reg> {
+        match classify_reg(reg) {
+            RegClass::StackBacked => self
+                .stack_mapping(reg.enc)
+                .map(|mapping| A64Reg::new(mapping.scratch, reg.width, A64Reg31Mode::Xzr)),
+            RegClass::StableMapped => Some(A64Reg::new(
+                REG_VIRT_STABLE_MAPPED_X29_PHYS_REG,
+                reg.width,
+                A64Reg31Mode::Xzr,
+            )),
+            RegClass::Sp => Some(A64Reg::new(
+                REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
+                reg.width,
+                A64Reg31Mode::Xzr,
+            )),
+            RegClass::Zero | RegClass::Direct | RegClass::RuntimeReserved => None,
+        }
+    }
+
+    fn stack_mapping(&self, reg: u8) -> Option<StackRegMapping> {
+        self.stack_backed[..self.stack_backed_len]
+            .iter()
+            .copied()
+            .find(|mapping| mapping.virt == reg)
+    }
+
+    fn emit_fills(
+        &self,
+        ori_pc: u64,
+        out: &mut SharedVec<RephrasedInsn>,
+    ) -> SharedResult<(), RegVirtError> {
+        for mapping in &self.stack_backed[..self.stack_backed_len] {
+            if mapping.read {
+                push_rephrased(
+                    out,
+                    RephrasedInsn::reg_virt_helper(ori_pc, self.load_slot(*mapping)?),
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    fn emit_spills(
+        &self,
+        ori_pc: u64,
+        out: &mut SharedVec<RephrasedInsn>,
+    ) -> SharedResult<(), RegVirtError> {
+        for mapping in &self.stack_backed[..self.stack_backed_len] {
+            if mapping.write {
+                push_rephrased(
+                    out,
+                    RephrasedInsn::reg_virt_helper(ori_pc, self.store_slot(*mapping)?),
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    fn load_slot(&self, mapping: StackRegMapping) -> SharedResult<A64Insn, RegVirtError> {
+        let offset = self.stack_slot_offset(mapping)?;
+        Ok(A64Insn::LdrImmGenLdr64LdstPos {
+            rt: x(mapping.scratch),
+            mem: mem_off(sp(), ldst64_offset(offset)),
+        })
+    }
+
+    fn store_slot(&self, mapping: StackRegMapping) -> SharedResult<A64Insn, RegVirtError> {
+        let offset = self.stack_slot_offset(mapping)?;
+        Ok(A64Insn::StrImmGenStr64LdstPos {
+            rt: x(mapping.scratch),
+            mem: mem_off(sp(), ldst64_offset(offset)),
+        })
+    }
+
+    fn stack_slot_offset(&self, mapping: StackRegMapping) -> SharedResult<u32, RegVirtError> {
+        reg_virt_stack_backed_slot_offset(mapping.virt).ok_or(
+            RegVirtError::StackBackedRewriteNotImplemented {
+                pc: self.pc,
+                insn: self.insn,
+                reg: x(mapping.virt),
+            },
+        )
+    }
 }
 
 fn validate_runtime_exit_payload(rephrased: RephrasedInsn) -> SharedResult<(), RegVirtError> {
@@ -256,49 +533,6 @@ fn require_setter(
     })
 }
 
-fn validate_user_reg(
-    rephrased: RephrasedInsn,
-    access: &mut AccessSummary,
-    field: &'static str,
-    reg: A64Reg,
-    width: A64RegWidth,
-    is_write: bool,
-) -> SharedResult<(), RegVirtError> {
-    match classify_reg(reg) {
-        RegClass::Zero | RegClass::Direct => Ok(()),
-        RegClass::Sp => Err(RegVirtError::UnsupportedSpOperand {
-            pc: rephrased.ori_pc,
-            insn: rephrased.insn.key(),
-            field,
-            reg,
-        }),
-        RegClass::RuntimeReserved => {
-            access.add_runtime_reserved(reg);
-            Ok(())
-        }
-        RegClass::StableMapped => {
-            access.add_stable_mapped(reg);
-            Ok(())
-        }
-        RegClass::StackBacked => {
-            access.add_stack_backed(reg)?;
-            if is_write && width != A64RegWidth::X64 {
-                return Err(RegVirtError::UnsupportedStackBackedWriteWidth {
-                    pc: rephrased.ori_pc,
-                    insn: rephrased.insn.key(),
-                    field,
-                    reg,
-                    width,
-                });
-            }
-            if is_write || reg.enc >= 16 {
-                access.add_stack_backed_rewrite_required(reg);
-            }
-            Ok(())
-        }
-    }
-}
-
 fn runtime_field_is_owned_by_payload(insn: A64Insn, field: &'static str, reg: A64Reg) -> bool {
     is_runtime_return_reg(reg) && field_has_write_role(insn, field)
 }
@@ -355,89 +589,6 @@ fn classify_reg(reg: A64Reg) -> RegClass {
         return RegClass::StableMapped;
     }
     RegClass::Direct
-}
-
-struct AccessSummary {
-    pc: u64,
-    insn: &'static str,
-    stack_backed: [u8; REG_VIRT_SCRATCH_GPR_LIMIT],
-    stack_backed_len: usize,
-    stack_backed_rewrite_required: Option<A64Reg>,
-    runtime_reserved: Option<A64Reg>,
-    stable_mapped: Option<A64Reg>,
-}
-
-impl AccessSummary {
-    const fn new(pc: u64, insn: &'static str) -> Self {
-        Self {
-            pc,
-            insn,
-            stack_backed: [0; REG_VIRT_SCRATCH_GPR_LIMIT],
-            stack_backed_len: 0,
-            stack_backed_rewrite_required: None,
-            runtime_reserved: None,
-            stable_mapped: None,
-        }
-    }
-
-    fn add_stack_backed(&mut self, reg: A64Reg) -> SharedResult<(), RegVirtError> {
-        if self.stack_backed[..self.stack_backed_len].contains(&reg.enc) {
-            return Ok(());
-        }
-        if self.stack_backed_len == REG_VIRT_SCRATCH_GPR_LIMIT {
-            return Err(RegVirtError::TooManyStackBackedRegs {
-                pc: self.pc,
-                insn: self.insn,
-                limit: REG_VIRT_SCRATCH_GPR_LIMIT,
-            });
-        }
-        self.stack_backed[self.stack_backed_len] = reg.enc;
-        self.stack_backed_len += 1;
-        Ok(())
-    }
-
-    fn add_stack_backed_rewrite_required(&mut self, reg: A64Reg) {
-        if self.stack_backed_rewrite_required.is_none() {
-            self.stack_backed_rewrite_required = Some(reg);
-        }
-    }
-
-    fn add_runtime_reserved(&mut self, reg: A64Reg) {
-        if self.runtime_reserved.is_none() {
-            self.runtime_reserved = Some(reg);
-        }
-    }
-
-    fn add_stable_mapped(&mut self, reg: A64Reg) {
-        if self.stable_mapped.is_none() {
-            self.stable_mapped = Some(reg);
-        }
-    }
-
-    fn reject_unimplemented_virtual_regs(self) -> SharedResult<(), RegVirtError> {
-        if let Some(reg) = self.runtime_reserved {
-            return Err(RegVirtError::RuntimeReservedRegNotPreserved {
-                pc: self.pc,
-                insn: self.insn,
-                reg,
-            });
-        }
-        if let Some(reg) = self.stack_backed_rewrite_required {
-            return Err(RegVirtError::StackBackedRewriteNotImplemented {
-                pc: self.pc,
-                insn: self.insn,
-                reg,
-            });
-        }
-        if let Some(reg) = self.stable_mapped {
-            return Err(RegVirtError::StableMappedRewriteNotImplemented {
-                pc: self.pc,
-                insn: self.insn,
-                reg,
-            });
-        }
-        Ok(())
-    }
 }
 
 fn is_writeback_memory_op(insn: A64Insn) -> bool {
@@ -505,6 +656,13 @@ mod tests {
         }
     }
 
+    fn frame_slot(offset_bytes: u32) -> A64Mem {
+        A64Mem::offset(
+            A64Reg::x_sp(31),
+            A64Imm::scaled_unsigned(offset_bytes / 8, 12, 3),
+        )
+    }
+
     #[test]
     fn direct_user_semantic_registers_pass_validation() {
         let program = validate_one(RephrasedInsn::original(
@@ -542,101 +700,153 @@ mod tests {
     }
 
     #[test]
-    fn rejects_stack_backed_registers_until_rewrite_templates_exist() {
+    fn stack_backed_write_spills_to_frame_slot() {
+        let program = validate_one(RephrasedInsn::original(0x1000, movz(x(12)))).unwrap();
+
         assert_eq!(
-            validate_one(RephrasedInsn::original(0x1000, movz(x(12)))),
-            Err(RegVirtError::StackBackedRewriteNotImplemented {
-                pc: 0x1000,
-                insn: "MOVZ.MOVZ_64_movewide",
-                reg: x(12),
-            })
+            &program[0].insns[..],
+            [
+                RephrasedInsn::original(0x1000, movz(x(12))),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(16),
+                    },
+                ),
+            ]
         );
     }
 
     #[test]
-    fn read_only_shadowed_stack_backed_registers_pass_for_current_no_helper_path() {
-        validate_one(RephrasedInsn::original(
+    fn stack_backed_read_fills_from_frame_slot() {
+        let original = A64Insn::StrImmGenStr64LdstPos {
+            rt: x(12),
+            mem: A64Mem::offset(x(1), A64Imm::scaled_unsigned(0, 12, 3)),
+        };
+        let program = validate_one(RephrasedInsn::original(0x1000, original)).unwrap();
+
+        assert_eq!(
+            &program[0].insns[..],
+            [
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(16),
+                    },
+                ),
+                RephrasedInsn::original(0x1000, original),
+            ]
+        );
+    }
+
+    #[test]
+    fn stack_backed_registers_without_current_physical_shadow_use_scratch() {
+        let program = validate_one(RephrasedInsn::original(
             0x1000,
-            A64Insn::StrImmGenStr64LdstPos {
-                rt: x(12),
-                mem: A64Mem::offset(x(1), A64Imm::scaled_unsigned(0, 12, 3)),
+            A64Insn::OrrLogShiftOrr64LogShift {
+                shift: 0,
+                rm: x(16),
+                imm6: uimm(0, 6),
+                rn: xzr(),
+                rd: x(0),
             },
         ))
         .unwrap();
-    }
 
-    #[test]
-    fn rejects_stack_backed_registers_without_current_physical_shadow() {
         assert_eq!(
-            validate_one(RephrasedInsn::original(
-                0x1000,
-                A64Insn::OrrLogShiftOrr64LogShift {
-                    shift: 0,
-                    rm: x(16),
-                    imm6: uimm(0, 6),
-                    rn: xzr(),
-                    rd: x(0),
-                },
-            )),
-            Err(RegVirtError::StackBackedRewriteNotImplemented {
-                pc: 0x1000,
-                insn: "ORR_log_shift.ORR_64_log_shift",
-                reg: x(16),
-            })
+            &program[0].insns[..],
+            [
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(48),
+                    },
+                ),
+                RephrasedInsn::original(
+                    0x1000,
+                    A64Insn::OrrLogShiftOrr64LogShift {
+                        shift: 0,
+                        rm: x(12),
+                        imm6: uimm(0, 6),
+                        rn: xzr(),
+                        rd: x(0),
+                    },
+                ),
+            ]
         );
     }
 
     #[test]
-    fn rejects_32_bit_writes_to_stack_backed_registers() {
+    fn stack_backed_32_bit_writes_spill_zero_extended_physical_register() {
+        let program = validate_one(RephrasedInsn::original(
+            0x1000,
+            A64Insn::MovzMovz32Movewide {
+                hw: 0,
+                imm16: uimm(1, 16),
+                rd: A64Reg::w(12),
+            },
+        ))
+        .unwrap();
+
         assert_eq!(
-            validate_one(RephrasedInsn::original(
-                0x1000,
-                A64Insn::MovzMovz32Movewide {
-                    hw: 0,
-                    imm16: uimm(1, 16),
-                    rd: A64Reg::w(12),
-                },
-            )),
-            Err(RegVirtError::UnsupportedStackBackedWriteWidth {
-                pc: 0x1000,
-                insn: "MOVZ.MOVZ_32_movewide",
-                field: "Rd",
-                reg: A64Reg::w(12),
-                width: A64RegWidth::W32,
-            })
+            &program[0].insns[..],
+            [
+                RephrasedInsn::original(
+                    0x1000,
+                    A64Insn::MovzMovz32Movewide {
+                        hw: 0,
+                        imm16: uimm(1, 16),
+                        rd: A64Reg::w(12),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(16),
+                    },
+                ),
+            ]
         );
     }
 
     #[test]
-    fn rejects_stable_mapped_x29_until_rewrite_templates_exist() {
+    fn stable_mapped_x29_rewrites_to_physical_x16() {
+        let program = validate_one(RephrasedInsn::original(0x1000, movz(x(29)))).unwrap();
+
         assert_eq!(
-            validate_one(RephrasedInsn::original(0x1000, movz(x(29)))),
-            Err(RegVirtError::StableMappedRewriteNotImplemented {
-                pc: 0x1000,
-                insn: "MOVZ.MOVZ_64_movewide",
-                reg: x(29),
-            })
+            &program[0].insns[..],
+            [RephrasedInsn::original(0x1000, movz(x(16)))]
         );
     }
 
     #[test]
-    fn rejects_sp_operands_until_stable_mapping_is_implemented() {
+    fn stable_mapped_sp_rewrites_to_physical_x17() {
+        let program = validate_one(RephrasedInsn::original(
+            0x1000,
+            A64Insn::AddAddsubImmAdd64AddsubImm {
+                sh: 0,
+                imm12: uimm(1, 12),
+                rn: A64Reg::x_sp(31),
+                rd: x(0),
+            },
+        ))
+        .unwrap();
+
         assert_eq!(
-            validate_one(RephrasedInsn::original(
+            &program[0].insns[..],
+            [RephrasedInsn::original(
                 0x1000,
                 A64Insn::AddAddsubImmAdd64AddsubImm {
                     sh: 0,
                     imm12: uimm(1, 12),
-                    rn: A64Reg::x_sp(31),
+                    rn: A64Reg::new(17, A64RegWidth::X64, A64Reg31Mode::Sp),
                     rd: x(0),
                 },
-            )),
-            Err(RegVirtError::UnsupportedSpOperand {
-                pc: 0x1000,
-                insn: "ADD_addsub_imm.ADD_64_addsub_imm",
-                field: "Rn",
-                reg: A64Reg::x_sp(31),
-            })
+            )]
         );
     }
 
@@ -717,13 +927,13 @@ mod tests {
 
     #[test]
     fn rejects_more_than_four_stack_backed_registers() {
-        let mut access = AccessSummary::new(0x1000, "test");
+        let mut plan = RewritePlan::new(0x1000, "test");
         for reg in 12..=15 {
-            access.add_stack_backed(x(reg)).unwrap();
+            plan.add_stack_backed(x(reg), AccessMode::Read).unwrap();
         }
 
         assert_eq!(
-            access.add_stack_backed(x(16)),
+            plan.add_stack_backed(x(16), AccessMode::Read),
             Err(RegVirtError::TooManyStackBackedRegs {
                 pc: 0x1000,
                 insn: "test",

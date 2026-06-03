@@ -88,15 +88,17 @@ The repo now includes a local kernel/QEMU workflow so the Rust module, kernel so
 ### Harness
 
 The `harness/` crate is userspace-only and exercises the executable-fragment
-path through `compile_request`: CFG construction, rephrase, the current no-op
-register virtualization pass, wrapped layout, and `URuntime`. The wrapper
-includes the shared prologue and epilogue, and runtime exits return through
-`x9/x10/x11` with `x11` carrying the original resume PC.
+path through `compile_request`: CFG construction, rephrase, ordinary
+user-semantic register virtualization, wrapped layout, and `URuntime`. The
+wrapper includes the shared prologue and epilogue, and runtime exits return
+through `x9/x10/x11` with `x11` carrying the original resume PC.
 
-This milestone does not virtualize runtime-reserved registers yet. Assembly
-fixtures expected to pass must avoid user-visible dependence on `x9`, `x10`,
-and `x11`; `tests/arm64/reserved_regs.s` documents the failing regression that
-the register virtualization pass must eventually fix.
+Register virtualization now rewrites ordinary user-semantic uses of
+stack-backed `x12..x17`, stable-mapped user `x29`, and stable-mapped user `SP`.
+This milestone does not preserve runtime-reserved writes to `x9`, `x10`, or
+`x11` across runtime exits yet. Assembly fixtures expected to pass must avoid
+user-visible writes to those registers; `tests/arm64/reserved_regs.s` documents
+the remaining runtime-exit sequencing regression.
 
 The harness also exposes a trace model for debugging the full translation path.
 Use `trace-tui` for an interactive Ratatui view, or `--dump --check` for a

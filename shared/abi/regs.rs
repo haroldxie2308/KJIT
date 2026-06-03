@@ -7,9 +7,21 @@ pub const RET_PARAM0_REG: u8 = 10;
 pub const RET_PARAM1_REG: u8 = 11;
 
 pub const REG_VIRT_SCRATCH_GPR_LIMIT: usize = 4;
+pub const REG_VIRT_SCRATCH_GPR_START: u8 = 12;
+pub const REG_VIRT_SCRATCH_GPR_END: u8 = 15;
 pub const REG_VIRT_STACK_BACKED_REG_START: u8 = 12;
 pub const REG_VIRT_STACK_BACKED_REG_END: u8 = 17;
 pub const REG_VIRT_STABLE_MAPPED_X29_REG: u8 = 29;
+pub const REG_VIRT_STABLE_MAPPED_X29_PHYS_REG: u8 = 16;
+pub const REG_VIRT_STABLE_MAPPED_SP_PHYS_REG: u8 = 17;
+
+pub const fn reg_virt_scratch_gpr(index: usize) -> Option<u8> {
+    if index >= REG_VIRT_SCRATCH_GPR_LIMIT {
+        return None;
+    }
+
+    Some(REG_VIRT_SCRATCH_GPR_START + index as u8)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RetStatus {
