@@ -126,7 +126,7 @@ The TUI header and dump output include the full-pipeline check result so a
 fixture can be inspected alongside its pass/fail metadata.
 
 Inside the TUI, Explore mode opens first. `q` quits, `Tab` cycles panel focus,
-`p`/`o`/`t`/`r` jump to Program/Original/Translation/Result, arrow keys move or
+`p`/`t`/`r` jump to Program/Translation/Result, arrow keys move or
 scroll the focused panel, `y` exports the focused panel's logical text to
 `tmp/trace-copy.txt`, and `a` toggles the Program panel between CFG-only and all
 decoded PCs.

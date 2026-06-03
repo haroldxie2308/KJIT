@@ -124,9 +124,7 @@ impl PipelineCheck {
     fn initial_status(&self) -> String {
         match self {
             Self::Failed { message } => format!("pipeline check failed: {}", first_line(message)),
-            _ => {
-                "s step mode | Tab focus | p/o/t/r jump panels | Up/Down move or scroll".to_string()
-            }
+            _ => "s step mode | Tab focus | p/t/r jump panels | Up/Down move or scroll".to_string(),
         }
     }
 }
@@ -218,7 +216,6 @@ impl StepDetailMode {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum FocusPanel {
     Cfg,
-    Raw,
     Rephrase,
     Layout,
 }
@@ -226,8 +223,7 @@ enum FocusPanel {
 impl FocusPanel {
     const fn next(self) -> Self {
         match self {
-            Self::Cfg => Self::Raw,
-            Self::Raw => Self::Rephrase,
+            Self::Cfg => Self::Rephrase,
             Self::Rephrase => Self::Layout,
             Self::Layout => Self::Cfg,
         }
@@ -236,8 +232,7 @@ impl FocusPanel {
     const fn prev(self) -> Self {
         match self {
             Self::Cfg => Self::Layout,
-            Self::Raw => Self::Cfg,
-            Self::Rephrase => Self::Raw,
+            Self::Rephrase => Self::Cfg,
             Self::Layout => Self::Rephrase,
         }
     }
@@ -245,7 +240,6 @@ impl FocusPanel {
     const fn name(self) -> &'static str {
         match self {
             Self::Cfg => "Program",
-            Self::Raw => "Original",
             Self::Rephrase => "Translation",
             Self::Layout => "Result",
         }
@@ -375,7 +369,6 @@ fn run_tui(
                 app.status = format!("focused {}", app.focus.name());
             }
             KeyCode::Char('p') => set_focus(&mut app, FocusPanel::Cfg),
-            KeyCode::Char('o') => set_focus(&mut app, FocusPanel::Raw),
             KeyCode::Char('t') => set_focus(&mut app, FocusPanel::Rephrase),
             KeyCode::Char('r') => set_focus(&mut app, FocusPanel::Layout),
             KeyCode::Char('n') if app.mode == Mode::Explore => {
@@ -426,7 +419,7 @@ fn run_tui(
             KeyCode::Char('?') | KeyCode::F(1) => {
                 app.status = match app.mode {
                     Mode::Explore => {
-                        "Explore: s step | p/o/t/r panels | y export panel | Up/Down move or scroll"
+                        "Explore: s step | p/t/r panels | y export panel | Up/Down move or scroll"
                             .to_string()
                     }
                     Mode::ActiveStep => {
@@ -470,7 +463,7 @@ fn apply_command(app: &mut App<'_>, line: &str) -> Control {
         }
         Command::Help => {
             app.status =
-                "commands: :pc <addr>, :off <offset>, :q; keys: Tab, p/o/t/r, Up/Down".to_string();
+                "commands: :pc <addr>, :off <offset>, :q; keys: Tab, p/t/r, Up/Down".to_string();
             Control::Continue
         }
         Command::Quit => Control::Quit,
@@ -513,7 +506,6 @@ fn scroll_focus(app: &mut App<'_>, delta: i16) {
             }
             return;
         }
-        FocusPanel::Raw => &mut app.raw_scroll,
         FocusPanel::Rephrase => &mut app.rephrase_scroll,
         FocusPanel::Layout => &mut app.layout_scroll,
     };
@@ -558,10 +550,6 @@ fn explore_panel_export(app: &App<'_>) -> Result<PanelExport, String> {
     let title = app.focus.name().to_string();
     let lines = match app.focus {
         FocusPanel::Cfg => program_lines(app),
-        FocusPanel::Raw => match app.selection {
-            Selection::Pc(pc) => raw_cfg_lines(app, pc),
-            Selection::Offset(offset) => offset_lines(app, offset),
-        },
         FocusPanel::Rephrase => match app.selection {
             Selection::Pc(pc) => translation_export_lines(app, pc),
             Selection::Offset(_) => vec![Line::from("select an original PC to inspect rephrase")],
@@ -1013,18 +1001,6 @@ fn pc_brief(trace: &PipelineTrace, pc: u64) -> String {
         .unwrap_or_default()
 }
 
-fn addr_list(addrs: &[u64]) -> String {
-    let mut out = String::from("[");
-    for (index, addr) in addrs.iter().enumerate() {
-        if index > 0 {
-            out.push_str(", ");
-        }
-        out.push_str(&format!("{addr:#x}"));
-    }
-    out.push(']');
-    out
-}
-
 fn focus_style(app: &App<'_>, panel: FocusPanel) -> Style {
     if app.focus == panel {
         Style::default().fg(Color::Yellow)
@@ -1036,28 +1012,22 @@ fn focus_style(app: &App<'_>, panel: FocusPanel) -> Style {
 fn draw_detail(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     let rows = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(8),
-            Constraint::Length(10),
-            Constraint::Min(8),
-        ])
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
         .split(area);
 
     match app.selection {
         Selection::Pc(pc) => {
-            draw_raw_cfg(frame, app, pc, rows[0]);
-            draw_rephrase(frame, app, pc, rows[1]);
-            draw_layout_for_pc(frame, app, pc, rows[2]);
+            draw_rephrase(frame, app, pc, rows[0]);
+            draw_layout_for_pc(frame, app, pc, rows[1]);
         }
         Selection::Offset(offset) => {
-            draw_offset(frame, app, offset, rows[0]);
             draw_empty(
                 frame,
-                "synced stages",
+                "Translation",
                 "select an original PC to inspect rephrase",
-                rows[1],
+                rows[0],
             );
-            draw_layout_neighborhood(frame, app, offset, rows[2]);
+            draw_layout_neighborhood(frame, app, offset, rows[1]);
         }
     }
 }
@@ -1367,57 +1337,6 @@ fn memory_row_line(row: &MemoryComparisonRow) -> Line<'static> {
     ))
 }
 
-fn draw_raw_cfg(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
-    let lines = raw_cfg_lines(app, pc);
-    frame.render_widget(
-        Paragraph::new(lines)
-            .block(
-                Block::default()
-                    .title("Original")
-                    .border_style(focus_style(app, FocusPanel::Raw))
-                    .borders(Borders::ALL),
-            )
-            .scroll((app.raw_scroll, 0))
-            .wrap(Wrap { trim: false }),
-        area,
-    );
-}
-
-fn raw_cfg_lines(app: &App<'_>, pc: u64) -> Vec<Line<'static>> {
-    let mut lines = Vec::new();
-    lines.push(Line::from(format!("selected ori_pc {pc:#x}")));
-    for insn in app.trace.raw.iter().filter(|insn| insn.pc == pc) {
-        lines.push(Line::from(format!(
-            "raw  off={:#x} word={:#010x} {}",
-            insn.text_offset, insn.word, insn.pretty
-        )));
-        if let Some(exit) = insn.runtime_exit {
-            lines.push(Line::from(format!("     {}", pretty_runtime_exit(exit))));
-        }
-        if let Some((taken, fallthrough)) = insn.conditional_targets {
-            lines.push(Line::from(format!(
-                "     conditional taken={taken:#x} fallthrough={fallthrough:#x}"
-            )));
-        }
-    }
-    if let Some(block) = app.trace.cfg_block_for_pc(pc) {
-        lines.push(Line::from(format!(
-            "cfg  block #{} [{:#x}, {:#x}) prev={} next={}",
-            block.index,
-            block.start_pc,
-            block.end_pc,
-            addr_list(&block.prev),
-            addr_list(&block.next)
-        )));
-    } else {
-        lines.push(Line::from(format!(
-            "cfg  raw-only: not reachable from entry {:#x}",
-            app.trace.input.entry_pc
-        )));
-    }
-    lines
-}
-
 fn draw_rephrase(frame: &mut Frame<'_>, app: &App<'_>, pc: u64, area: Rect) {
     let outer = Block::default()
         .title("Translation")
@@ -1587,33 +1506,6 @@ fn layout_for_pc_lines(app: &App<'_>, pc: u64) -> Vec<Line<'static>> {
     }
 }
 
-fn draw_offset(frame: &mut Frame<'_>, app: &App<'_>, offset: usize, area: Rect) {
-    frame.render_widget(
-        Paragraph::new(offset_lines(app, offset)).block(
-            Block::default()
-                .title("runtime offset")
-                .border_style(focus_style(app, FocusPanel::Raw))
-                .borders(Borders::ALL),
-        ),
-        area,
-    );
-}
-
-fn offset_lines(app: &App<'_>, offset: usize) -> Vec<Line<'static>> {
-    if let Some(entry) = app.trace.selected_offset(offset) {
-        vec![Line::from(format!(
-            "offset={:#x} runtime_pc={:#x} insn_index={} ori_pc={} region={:?}",
-            entry.offset,
-            entry.runtime_pc,
-            entry.insn_index,
-            ori_pc_label(entry.ori_pc),
-            entry.region
-        ))]
-    } else {
-        vec![Line::from(format!("offset {offset:#x} is not present"))]
-    }
-}
-
 fn draw_layout_neighborhood(frame: &mut Frame<'_>, app: &App<'_>, offset: usize, area: Rect) {
     frame.render_widget(
         Paragraph::new(layout_neighborhood_lines(app, offset))
@@ -1656,7 +1548,7 @@ fn draw_footer(frame: &mut Frame<'_>, app: &App<'_>, area: Rect) {
     } else {
         let keys = match app.mode {
             Mode::Explore => {
-                "Explore: s step | Tab focus | p/o/t/r panels | y export | a cfg/all | Up/Down move/scroll | q quit"
+                "Explore: s step | Tab focus | p/t/r panels | y export | a cfg/all | Up/Down move/scroll | q quit"
             }
             Mode::ActiveStep => {
                 match app.step_detail {
