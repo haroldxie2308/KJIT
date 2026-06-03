@@ -1,37 +1,10 @@
+use crate::shared::abi::{
+    REG_VIRT_SCRATCH_GPR_LIMIT, REG_VIRT_STABLE_MAPPED_X29_REG, REG_VIRT_STACK_BACKED_REG_END,
+    REG_VIRT_STACK_BACKED_REG_START, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
+};
 use crate::shared::arm64::{A64Insn, A64OperandRole, A64Reg, A64RegWidth};
 use crate::shared::platform::SharedResult;
 use crate::shared::trans::rephrase::{RephrasedInsn, RephrasedInsnKind, RephrasedProgram};
-
-const SCRATCH_GPR_LIMIT: usize = 4;
-const STACK_BACKED_REG_START: u8 = 12;
-const STACK_BACKED_REG_END: u8 = 17;
-const STABLE_MAPPED_X29: u8 = 29;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct RuntimeRegConvention {
-    pub status_reg: u8,
-    pub param0_reg: u8,
-    pub param1_reg: u8,
-}
-
-impl RuntimeRegConvention {
-    pub const KJIT_DEFAULT: Self = Self {
-        status_reg: 9,
-        param0_reg: 10,
-        param1_reg: 11,
-    };
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct RegVirtConfig {
-    pub convention: RuntimeRegConvention,
-}
-
-impl RegVirtConfig {
-    pub const KJIT_DEFAULT: Self = Self {
-        convention: RuntimeRegConvention::KJIT_DEFAULT,
-    };
-}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RegVirtError {
@@ -110,31 +83,24 @@ pub enum RegVirtError {
 
 pub fn virtualize_registers(
     program: RephrasedProgram,
-    config: &RegVirtConfig,
 ) -> SharedResult<RephrasedProgram, RegVirtError> {
-    validate_program(&program, config)?;
+    validate_program(&program)?;
     Ok(program)
 }
 
-fn validate_program(
-    program: &RephrasedProgram,
-    config: &RegVirtConfig,
-) -> SharedResult<(), RegVirtError> {
+fn validate_program(program: &RephrasedProgram) -> SharedResult<(), RegVirtError> {
     for block in program {
         for insn in &block.insns {
-            validate_insn(*insn, config)?;
+            validate_insn(*insn)?;
         }
     }
     Ok(())
 }
 
-fn validate_insn(
-    rephrased: RephrasedInsn,
-    config: &RegVirtConfig,
-) -> SharedResult<(), RegVirtError> {
+fn validate_insn(rephrased: RephrasedInsn) -> SharedResult<(), RegVirtError> {
     match rephrased.kind {
-        kind if kind.is_user_semantic() => validate_user_semantic(rephrased, config),
-        RephrasedInsnKind::RuntimeExitPayload => validate_runtime_exit_payload(rephrased, config),
+        kind if kind.is_user_semantic() => validate_user_semantic(rephrased),
+        RephrasedInsnKind::RuntimeExitPayload => validate_runtime_exit_payload(rephrased),
         RephrasedInsnKind::RuntimeExitBranch => Ok(()),
         RephrasedInsnKind::RegVirtHelper => Err(RegVirtError::UnexpectedRegVirtHelper {
             pc: rephrased.ori_pc,
@@ -143,10 +109,7 @@ fn validate_insn(
     }
 }
 
-fn validate_user_semantic(
-    rephrased: RephrasedInsn,
-    config: &RegVirtConfig,
-) -> SharedResult<(), RegVirtError> {
+fn validate_user_semantic(rephrased: RephrasedInsn) -> SharedResult<(), RegVirtError> {
     let insn = rephrased.insn;
     let insn_key = insn.key();
     if is_pair_op(insn) {
@@ -167,17 +130,17 @@ fn validate_user_semantic(
         match *role {
             A64OperandRole::RegRead { field, width } => {
                 let reg = require_reg(rephrased, field)?;
-                validate_user_reg(rephrased, config, &mut access, field, reg, width, false)?;
+                validate_user_reg(rephrased, &mut access, field, reg, width, false)?;
             }
             A64OperandRole::RegWrite { field, width } => {
                 let reg = require_reg(rephrased, field)?;
                 require_setter(rephrased, field, reg)?;
-                validate_user_reg(rephrased, config, &mut access, field, reg, width, true)?;
+                validate_user_reg(rephrased, &mut access, field, reg, width, true)?;
             }
             A64OperandRole::RegReadWrite { field, width } => {
                 let reg = require_reg(rephrased, field)?;
                 require_setter(rephrased, field, reg)?;
-                validate_user_reg(rephrased, config, &mut access, field, reg, width, true)?;
+                validate_user_reg(rephrased, &mut access, field, reg, width, true)?;
             }
             A64OperandRole::ImplicitRegWrite { reg, width } => {
                 return Err(RegVirtError::UnsupportedImplicitRegWrite {
@@ -189,15 +152,7 @@ fn validate_user_semantic(
             }
             A64OperandRole::MemBase { field } => {
                 let reg = require_reg(rephrased, field)?;
-                validate_user_reg(
-                    rephrased,
-                    config,
-                    &mut access,
-                    field,
-                    reg,
-                    A64RegWidth::X64,
-                    false,
-                )?;
+                validate_user_reg(rephrased, &mut access, field, reg, A64RegWidth::X64, false)?;
             }
             A64OperandRole::MemOffset { .. }
             | A64OperandRole::BranchTarget { .. }
@@ -211,19 +166,16 @@ fn validate_user_semantic(
     access.reject_unimplemented_virtual_regs()
 }
 
-fn validate_runtime_exit_payload(
-    rephrased: RephrasedInsn,
-    config: &RegVirtConfig,
-) -> SharedResult<(), RegVirtError> {
+fn validate_runtime_exit_payload(rephrased: RephrasedInsn) -> SharedResult<(), RegVirtError> {
     let insn = rephrased.insn;
     for role in insn.operand_roles() {
         match *role {
             A64OperandRole::RegRead { field, .. } => {
                 let reg = require_reg(rephrased, field)?;
-                if runtime_field_is_owned_by_payload(insn, field, reg, config) || is_zero_reg(reg) {
+                if runtime_field_is_owned_by_payload(insn, field, reg) || is_zero_reg(reg) {
                     continue;
                 }
-                if !classify_reg(reg, config).is_direct() {
+                if !classify_reg(reg).is_direct() {
                     return Err(RegVirtError::UnsupportedRuntimeExitSource {
                         pc: rephrased.ori_pc,
                         insn: insn.key(),
@@ -234,7 +186,7 @@ fn validate_runtime_exit_payload(
             }
             A64OperandRole::RegReadWrite { field, .. } => {
                 let reg = require_reg(rephrased, field)?;
-                if !runtime_field_is_owned_by_payload(insn, field, reg, config) {
+                if !runtime_field_is_owned_by_payload(insn, field, reg) {
                     return Err(RegVirtError::UnsupportedRuntimeExitSource {
                         pc: rephrased.ori_pc,
                         insn: insn.key(),
@@ -256,7 +208,7 @@ fn validate_runtime_exit_payload(
             }
             A64OperandRole::MemBase { field } => {
                 let reg = require_reg(rephrased, field)?;
-                if !classify_reg(reg, config).is_direct() {
+                if !classify_reg(reg).is_direct() {
                     return Err(RegVirtError::UnsupportedRuntimeExitSource {
                         pc: rephrased.ori_pc,
                         insn: insn.key(),
@@ -306,14 +258,13 @@ fn require_setter(
 
 fn validate_user_reg(
     rephrased: RephrasedInsn,
-    config: &RegVirtConfig,
     access: &mut AccessSummary,
     field: &'static str,
     reg: A64Reg,
     width: A64RegWidth,
     is_write: bool,
 ) -> SharedResult<(), RegVirtError> {
-    match classify_reg(reg, config) {
+    match classify_reg(reg) {
         RegClass::Zero | RegClass::Direct => Ok(()),
         RegClass::Sp => Err(RegVirtError::UnsupportedSpOperand {
             pc: rephrased.ori_pc,
@@ -348,13 +299,8 @@ fn validate_user_reg(
     }
 }
 
-fn runtime_field_is_owned_by_payload(
-    insn: A64Insn,
-    field: &'static str,
-    reg: A64Reg,
-    config: &RegVirtConfig,
-) -> bool {
-    is_runtime_return_reg(reg, config) && field_has_write_role(insn, field)
+fn runtime_field_is_owned_by_payload(insn: A64Insn, field: &'static str, reg: A64Reg) -> bool {
+    is_runtime_return_reg(reg) && field_has_write_role(insn, field)
 }
 
 fn field_has_write_role(insn: A64Insn, field: &'static str) -> bool {
@@ -368,10 +314,8 @@ fn field_has_write_role(insn: A64Insn, field: &'static str) -> bool {
     })
 }
 
-fn is_runtime_return_reg(reg: A64Reg, config: &RegVirtConfig) -> bool {
-    reg.enc == config.convention.status_reg
-        || reg.enc == config.convention.param0_reg
-        || reg.enc == config.convention.param1_reg
+fn is_runtime_return_reg(reg: A64Reg) -> bool {
+    reg.enc == RET_STATUS_REG || reg.enc == RET_PARAM0_REG || reg.enc == RET_PARAM1_REG
 }
 
 fn is_zero_reg(reg: A64Reg) -> bool {
@@ -394,20 +338,20 @@ impl RegClass {
     }
 }
 
-fn classify_reg(reg: A64Reg, config: &RegVirtConfig) -> RegClass {
+fn classify_reg(reg: A64Reg) -> RegClass {
     if reg.enc == 31 {
         if reg.reg31 == crate::shared::arm64::A64Reg31Mode::Sp {
             return RegClass::Sp;
         }
         return RegClass::Zero;
     }
-    if is_runtime_return_reg(reg, config) {
+    if is_runtime_return_reg(reg) {
         return RegClass::RuntimeReserved;
     }
-    if (STACK_BACKED_REG_START..=STACK_BACKED_REG_END).contains(&reg.enc) {
+    if (REG_VIRT_STACK_BACKED_REG_START..=REG_VIRT_STACK_BACKED_REG_END).contains(&reg.enc) {
         return RegClass::StackBacked;
     }
-    if reg.enc == STABLE_MAPPED_X29 {
+    if reg.enc == REG_VIRT_STABLE_MAPPED_X29_REG {
         return RegClass::StableMapped;
     }
     RegClass::Direct
@@ -416,7 +360,7 @@ fn classify_reg(reg: A64Reg, config: &RegVirtConfig) -> RegClass {
 struct AccessSummary {
     pc: u64,
     insn: &'static str,
-    stack_backed: [u8; SCRATCH_GPR_LIMIT],
+    stack_backed: [u8; REG_VIRT_SCRATCH_GPR_LIMIT],
     stack_backed_len: usize,
     stack_backed_rewrite_required: Option<A64Reg>,
     runtime_reserved: Option<A64Reg>,
@@ -428,7 +372,7 @@ impl AccessSummary {
         Self {
             pc,
             insn,
-            stack_backed: [0; SCRATCH_GPR_LIMIT],
+            stack_backed: [0; REG_VIRT_SCRATCH_GPR_LIMIT],
             stack_backed_len: 0,
             stack_backed_rewrite_required: None,
             runtime_reserved: None,
@@ -440,11 +384,11 @@ impl AccessSummary {
         if self.stack_backed[..self.stack_backed_len].contains(&reg.enc) {
             return Ok(());
         }
-        if self.stack_backed_len == SCRATCH_GPR_LIMIT {
+        if self.stack_backed_len == REG_VIRT_SCRATCH_GPR_LIMIT {
             return Err(RegVirtError::TooManyStackBackedRegs {
                 pc: self.pc,
                 insn: self.insn,
-                limit: SCRATCH_GPR_LIMIT,
+                limit: REG_VIRT_SCRATCH_GPR_LIMIT,
             });
         }
         self.stack_backed[self.stack_backed_len] = reg.enc;
@@ -550,7 +494,7 @@ mod tests {
     }
 
     fn validate_one(insn: RephrasedInsn) -> Result<RephrasedProgram, RegVirtError> {
-        virtualize_registers(one_insn(insn), &RegVirtConfig::KJIT_DEFAULT)
+        virtualize_registers(one_insn(insn))
     }
 
     fn movz(rd: A64Reg) -> A64Insn {
@@ -783,7 +727,7 @@ mod tests {
             Err(RegVirtError::TooManyStackBackedRegs {
                 pc: 0x1000,
                 insn: "test",
-                limit: SCRATCH_GPR_LIMIT,
+                limit: REG_VIRT_SCRATCH_GPR_LIMIT,
             })
         );
     }
@@ -803,10 +747,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            classify_reg(
-                A64Reg::new(31, A64RegWidth::X64, A64Reg31Mode::Xzr),
-                &RegVirtConfig::KJIT_DEFAULT,
-            ),
+            classify_reg(A64Reg::new(31, A64RegWidth::X64, A64Reg31Mode::Xzr)),
             RegClass::Zero
         );
     }

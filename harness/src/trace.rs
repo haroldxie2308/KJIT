@@ -7,7 +7,7 @@ use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::platform::{SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::{build_cfg, Cfg, RuntimeExitReason};
 use crate::shared::trans::input::{RegisterSnapshot, TranslationRequest};
-use crate::shared::trans::reg_virt::{virtualize_registers, RegVirtConfig};
+use crate::shared::trans::reg_virt::virtualize_registers;
 use crate::shared::trans::rephrase::{
     rephrase, RephrasedBlock, RephrasedInsnKind, RephrasedProgram,
 };
@@ -189,11 +189,8 @@ impl PipelineTrace {
 
         let rephrased_program = rephrase(cfg).map_err(|err| format!("{err:?}"))?;
         let rephrased = trace_rephrased(&rephrased_program);
-        let virtualized_program = virtualize_registers(
-            copy_rephrased_program(&rephrased_program)?,
-            &RegVirtConfig::KJIT_DEFAULT,
-        )
-        .map_err(|err| format!("{err:?}"))?;
+        let virtualized_program = virtualize_registers(copy_rephrased_program(&rephrased_program)?)
+            .map_err(|err| format!("{err:?}"))?;
         let virtualized = trace_rephrased(&virtualized_program);
         let layout_origins = layout_original_pcs(&virtualized_program);
         let fragment = crate::shared::emit::layout::layout_program(virtualized_program)

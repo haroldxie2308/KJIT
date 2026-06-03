@@ -12,6 +12,11 @@ pub const RET_STATUS_REG: u8 = 9;
 pub const RET_PARAM0_REG: u8 = 10;
 pub const RET_PARAM1_REG: u8 = 11;
 
+pub const REG_VIRT_SCRATCH_GPR_LIMIT: usize = 4;
+pub const REG_VIRT_STACK_BACKED_REG_START: u8 = 12;
+pub const REG_VIRT_STACK_BACKED_REG_END: u8 = 17;
+pub const REG_VIRT_STABLE_MAPPED_X29_REG: u8 = 29;
+
 pub const ABI_INSN_SIZE: usize = 4;
 pub const PROLOGUE_LEN_BYTES: usize = KJIT_PROLOGUE.len() * ABI_INSN_SIZE;
 pub const PROLOGUE_ENTRY_BRANCH_OFFSET: usize = PROLOGUE_LEN_BYTES - ABI_INSN_SIZE;

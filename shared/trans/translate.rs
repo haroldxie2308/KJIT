@@ -3,7 +3,7 @@ use crate::shared::emit::layout::{layout_program, ExecutionFragment, LayoutError
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::{build_cfg, CfgError};
 use crate::shared::trans::input::{CodeProvider, TranslationRequest};
-use crate::shared::trans::reg_virt::{virtualize_registers, RegVirtConfig, RegVirtError};
+use crate::shared::trans::reg_virt::{virtualize_registers, RegVirtError};
 use crate::shared::trans::rephrase::rephrase;
 
 /// Legacy shallow CFG flattening output.
@@ -79,8 +79,7 @@ pub fn compile_request<P: CodeProvider>(
 ) -> SharedResult<ExecutionFragment, CompileError> {
     let cfg = build_cfg(request, code).map_err(CompileError::Cfg)?;
     let rephrased = rephrase(cfg).map_err(CompileError::Rephrase)?;
-    let virtualized = virtualize_registers(rephrased, &RegVirtConfig::KJIT_DEFAULT)
-        .map_err(CompileError::RegVirt)?;
+    let virtualized = virtualize_registers(rephrased).map_err(CompileError::RegVirt)?;
     layout_program(virtualized).map_err(CompileError::Layout)
 }
 
