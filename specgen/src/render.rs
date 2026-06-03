@@ -7,6 +7,8 @@ struct RenderField {
     width: u8,
     rust_name: String,
     rust_type: String,
+    reg_width: Option<&'static str>,
+    reg31: Option<&'static str>,
     encode_lines: Vec<String>,
     decode_value: String,
     rewrite_value: String,
@@ -17,6 +19,9 @@ struct MemGroup {
     base_field: String,
     offset_field: String,
     base_shift: u8,
+    base_width: u8,
+    base_reg_width: &'static str,
+    base_reg31: &'static str,
     offset_width: u8,
     offset_shift: u8,
     mode: &'static str,
@@ -30,6 +35,7 @@ struct RenderVariant<'a> {
     key: String,
     variant_name: String,
     fields: Vec<RenderField>,
+    mem_group: Option<MemGroup>,
     operand_array_name: String,
 }
 
@@ -183,6 +189,14 @@ pub fn render_rust(specs: &[InstructionSpec]) -> Result<String> {
         "    pub const fn base(self) -> A64Reg {".to_string(),
         "        match self {".to_string(),
         "            Self::Offset { base, .. } | Self::PreIndex { base, .. } | Self::PostIndex { base, .. } => base,".to_string(),
+        "        }".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub const fn with_base(self, base: A64Reg) -> Self {".to_string(),
+        "        match self {".to_string(),
+        "            Self::Offset { offset, .. } => Self::Offset { base, offset },".to_string(),
+        "            Self::PreIndex { offset, .. } => Self::PreIndex { base, offset },".to_string(),
+        "            Self::PostIndex { offset, .. } => Self::PostIndex { base, offset },".to_string(),
         "        }".to_string(),
         "    }".to_string(),
         "".to_string(),
@@ -392,6 +406,35 @@ fn render_a64_insn(specs: &[InstructionSpec]) -> Result<Vec<String>> {
         "        }".to_string(),
         "    }".to_string(),
         "".to_string(),
+        "    pub fn get_reg(&self, field: &str) -> Option<A64Reg> {".to_string(),
+        "        match self {".to_string(),
+    ]);
+    render_reg_getter_arms(&variants, &mut lines);
+
+    lines.extend([
+        "            _ => None,".to_string(),
+        "        }".to_string(),
+        "    }".to_string(),
+        "".to_string(),
+        "    pub fn set_reg(".to_string(),
+        "        self,".to_string(),
+        "        field: &'static str,".to_string(),
+        "        reg: A64Reg,".to_string(),
+        "    ) -> Result<Self, A64RewriteError> {".to_string(),
+        "        let insn_key = self.key();".to_string(),
+        "        let encoded = reg.enc() as u32;".to_string(),
+        "        match self {".to_string(),
+    ]);
+    render_reg_setter_arms(&variants, &mut lines);
+
+    lines.extend([
+        "            _ => Err(A64RewriteError::UnsupportedField {".to_string(),
+        "                insn: insn_key,".to_string(),
+        "                field,".to_string(),
+        "            }),".to_string(),
+        "        }".to_string(),
+        "    }".to_string(),
+        "".to_string(),
         "    pub fn branch_target_imm(&self, field: &'static str) -> Option<u32> {".to_string(),
         "        match self {".to_string(),
     ]);
@@ -469,6 +512,7 @@ fn render_variants(specs: &[InstructionSpec]) -> Vec<RenderVariant<'_>> {
                 operand_array_name: format!("OPERANDS_{}", rust_ident(&key)),
                 key,
                 fields,
+                mem_group,
             }
         })
         .collect()
@@ -485,6 +529,8 @@ fn render_field(variant: &VariantSpec, field: &FieldSpec) -> RenderField {
             width: field.width,
             rust_name: rust_name.clone(),
             rust_type: "A64Reg".to_string(),
+            reg_width: Some(width),
+            reg31: Some(reg31),
             encode_lines: vec![format!(
                 "word |= encode_a64_field(\"{{key}}\", \"{}\", {}.enc() as u32, {}, {})?;",
                 field.name, rust_name, field.width, field.shift
@@ -502,6 +548,8 @@ fn render_field(variant: &VariantSpec, field: &FieldSpec) -> RenderField {
             width: field.width,
             rust_name: rust_name.clone(),
             rust_type: "A64Imm".to_string(),
+            reg_width: None,
+            reg31: None,
             encode_lines: vec![format!(
                 "word |= encode_a64_field(\"{{key}}\", \"{}\", {}.raw(), {}, {})?;",
                 field.name, rust_name, field.width, field.shift
@@ -516,6 +564,8 @@ fn render_field(variant: &VariantSpec, field: &FieldSpec) -> RenderField {
         width: field.width,
         rust_name: rust_name.clone(),
         rust_type: rust_field_type(field.width).to_string(),
+        reg_width: None,
+        reg31: None,
         encode_lines: vec![format!(
             "word |= encode_a64_field(\"{{key}}\", \"{}\", {} as u32, {}, {})?;",
             field.name, rust_name, field.width, field.shift
@@ -536,6 +586,8 @@ fn render_mem_field(mem: &MemGroup) -> RenderField {
         width: 0,
         rust_name: "mem".to_string(),
         rust_type: "A64Mem".to_string(),
+        reg_width: None,
+        reg31: None,
         encode_lines: vec![
             format!(
                 "word |= encode_a64_field(\"{{key}}\", \"{}\", mem.base().enc() as u32, 5, {})?;",
@@ -551,6 +603,108 @@ fn render_mem_field(mem: &MemGroup) -> RenderField {
             mem.mode, mem.base_decode, mem.offset_decode
         ),
         rewrite_value: "mem".to_string(),
+    }
+}
+
+fn render_reg_getter_arms(variants: &[RenderVariant<'_>], lines: &mut Vec<String>) {
+    for variant in variants {
+        for field in &variant.fields {
+            if field.reg_width.is_none() {
+                continue;
+            }
+            lines.push(format!(
+                "            Self::{} {{ {}, .. }} if field == \"{}\" => Some(*{}),",
+                variant.variant_name, field.rust_name, field.name, field.rust_name
+            ));
+        }
+
+        if let Some(mem) = &variant.mem_group {
+            lines.push(format!(
+                "            Self::{} {{ mem, .. }} if field == \"{}\" => Some(mem.base()),",
+                variant.variant_name, mem.base_field
+            ));
+        }
+    }
+}
+
+fn render_reg_setter_arms(variants: &[RenderVariant<'_>], lines: &mut Vec<String>) {
+    for variant in variants {
+        for target in &variant.fields {
+            let (Some(reg_width), Some(reg31)) = (target.reg_width, target.reg31) else {
+                continue;
+            };
+            let mut pattern_fields = Vec::new();
+            let mut result_fields = Vec::new();
+
+            for field in &variant.fields {
+                if field.name == target.name {
+                    result_fields.push(format!(
+                        "{}: A64Reg::new(encoded as u8, {}, {})",
+                        field.rust_name, reg_width, reg31
+                    ));
+                } else {
+                    pattern_fields.push(field.rust_name.clone());
+                    result_fields.push(field.rust_name.clone());
+                }
+            }
+
+            let pattern = if pattern_fields.is_empty() {
+                "..".to_string()
+            } else {
+                format!("{}, ..", pattern_fields.join(", "))
+            };
+            lines.push(format!(
+                "            Self::{} {{ {} }} if field == \"{}\" => {{",
+                variant.variant_name, pattern, target.name
+            ));
+            lines.push(format!(
+                "                validate_a64_rewrite_field(\"{}\", \"{}\", encoded, {})?;",
+                variant.key, target.name, target.width
+            ));
+            lines.push(format!(
+                "                Ok(Self::{} {{ {} }})",
+                variant.variant_name,
+                result_fields.join(", ")
+            ));
+            lines.push("            }".to_string());
+        }
+
+        if let Some(mem) = &variant.mem_group {
+            let mut pattern_fields = Vec::new();
+            let mut result_fields = Vec::new();
+
+            for field in &variant.fields {
+                pattern_fields.push(field.rust_name.clone());
+                if field.rust_name == "mem" {
+                    result_fields.push(format!(
+                        "mem: mem.with_base(A64Reg::new(encoded as u8, {}, {}))",
+                        mem.base_reg_width, mem.base_reg31
+                    ));
+                } else {
+                    result_fields.push(field.rust_name.clone());
+                }
+            }
+
+            let pattern = if pattern_fields.is_empty() {
+                "..".to_string()
+            } else {
+                format!("{}, ..", pattern_fields.join(", "))
+            };
+            lines.push(format!(
+                "            Self::{} {{ {} }} if field == \"{}\" => {{",
+                variant.variant_name, pattern, mem.base_field
+            ));
+            lines.push(format!(
+                "                validate_a64_rewrite_field(\"{}\", \"{}\", encoded, {})?;",
+                variant.key, mem.base_field, mem.base_width
+            ));
+            lines.push(format!(
+                "                Ok(Self::{} {{ {} }})",
+                variant.variant_name,
+                result_fields.join(", ")
+            ));
+            lines.push("            }".to_string());
+        }
     }
 }
 
@@ -878,6 +1032,9 @@ fn memory_group(variant: &VariantSpec) -> Option<MemGroup> {
         base_field,
         offset_field,
         base_shift: base_spec.shift,
+        base_width: base_spec.width,
+        base_reg_width: base_width,
+        base_reg31,
         offset_width: offset_spec.width,
         offset_shift: offset_spec.shift,
         mode: memory_mode(&variant.asm),

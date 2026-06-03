@@ -5,7 +5,7 @@ use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::shared::arm64::{
-    A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode, A64RegWidth,
+    A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode, A64RegWidth, A64RewriteError,
 };
 
 const SUBSET_TOML: &str = include_str!("../../spec/arm64/subset.toml");
@@ -38,6 +38,143 @@ fn encoding_matches_llvm_for_handwritten_cases() {
             println!("WARN: decode form has no encoding test: {form}");
         }
     }
+}
+
+#[test]
+fn reg_accessors_get_and_set_top_level_fields() {
+    let insn = A64Insn::OrrLogShiftOrr64LogShift {
+        shift: 0,
+        rm: A64Reg::x(2),
+        imm6: A64Imm::unsigned(0, 6),
+        rn: A64Reg::x(3),
+        rd: A64Reg::x(4),
+    };
+
+    assert_eq!(insn.get_reg("Rm"), Some(A64Reg::x(2)));
+    assert_eq!(insn.get_reg("Rn"), Some(A64Reg::x(3)));
+    assert_eq!(insn.get_reg("Rd"), Some(A64Reg::x(4)));
+
+    let rewritten = insn.set_reg("Rm", A64Reg::w_sp(9)).unwrap();
+    assert_eq!(rewritten.get_reg("Rm"), Some(A64Reg::x(9)));
+    assert_eq!(rewritten.get_reg("Rn"), Some(A64Reg::x(3)));
+    assert_eq!(rewritten.get_reg("Rd"), Some(A64Reg::x(4)));
+}
+
+#[test]
+fn reg_accessors_get_and_set_memory_base_preserving_mode_and_offset() {
+    let post_offset = A64Imm::signed(4, 9);
+    let post = A64Insn::LdrImmGenLdr64LdstImmpost {
+        rt: A64Reg::x(1),
+        mem: A64Mem::post_index(A64Reg::x_sp(31), post_offset),
+    };
+    assert_eq!(post.get_reg("Rn"), Some(A64Reg::x_sp(31)));
+    assert_eq!(
+        post.set_reg("Rn", A64Reg::w(8)).unwrap(),
+        A64Insn::LdrImmGenLdr64LdstImmpost {
+            rt: A64Reg::x(1),
+            mem: A64Mem::post_index(A64Reg::x_sp(8), post_offset),
+        }
+    );
+
+    let pre_offset = A64Imm::signed(signed_field(-8, 9), 9);
+    let pre = A64Insn::StrImmGenStr64LdstImmpre {
+        rt: A64Reg::x(2),
+        mem: A64Mem::pre_index(A64Reg::x_sp(31), pre_offset),
+    };
+    assert_eq!(
+        pre.set_reg("Rn", A64Reg::unknown(7)).unwrap(),
+        A64Insn::StrImmGenStr64LdstImmpre {
+            rt: A64Reg::x(2),
+            mem: A64Mem::pre_index(A64Reg::x_sp(7), pre_offset),
+        }
+    );
+
+    let scaled_offset = A64Imm::scaled_unsigned(3, 12, 3);
+    let offset = A64Insn::LdrImmGenLdr64LdstPos {
+        rt: A64Reg::x(3),
+        mem: A64Mem::offset(A64Reg::x_sp(31), scaled_offset),
+    };
+    assert_eq!(
+        offset.set_reg("Rn", A64Reg::w_sp(6)).unwrap(),
+        A64Insn::LdrImmGenLdr64LdstPos {
+            rt: A64Reg::x(3),
+            mem: A64Mem::offset(A64Reg::x_sp(6), scaled_offset),
+        }
+    );
+}
+
+#[test]
+fn set_reg_rejects_unsupported_field() {
+    let insn = A64Insn::AddAddsubImmAdd32AddsubImm {
+        sh: 0,
+        imm12: A64Imm::unsigned(1, 12),
+        rn: A64Reg::w_sp(1),
+        rd: A64Reg::w_sp(2),
+    };
+
+    assert_eq!(insn.get_reg("Rm"), None);
+    assert_eq!(
+        insn.set_reg("Rm", A64Reg::w(3)),
+        Err(A64RewriteError::UnsupportedField {
+            insn: "ADD_addsub_imm.ADD_32_addsub_imm",
+            field: "Rm",
+        })
+    );
+}
+
+#[test]
+fn set_reg_rejects_invalid_register_encoding() {
+    let insn = A64Insn::MovzMovz32Movewide {
+        hw: 0,
+        imm16: A64Imm::unsigned(0, 16),
+        rd: A64Reg::w(0),
+    };
+
+    assert_eq!(
+        insn.set_reg("Rd", A64Reg::new(32, A64RegWidth::X64, A64Reg31Mode::Sp)),
+        Err(A64RewriteError::FieldOutOfRange {
+            insn: "MOVZ.MOVZ_32_movewide",
+            field: "Rd",
+            value: 32,
+            width: 5,
+        })
+    );
+}
+
+#[test]
+fn set_reg_canonicalizes_target_width_and_reg31_mode() {
+    let add = A64Insn::AddAddsubImmAdd64AddsubImm {
+        sh: 0,
+        imm12: A64Imm::unsigned(16, 12),
+        rn: A64Reg::x_sp(31),
+        rd: A64Reg::x_sp(0),
+    };
+    let rewritten_add = add.set_reg("Rd", A64Reg::w(31)).unwrap();
+    assert_eq!(rewritten_add.get_reg("Rd"), Some(A64Reg::x_sp(31)));
+
+    let movz = A64Insn::MovzMovz32Movewide {
+        hw: 0,
+        imm16: A64Imm::unsigned(0, 16),
+        rd: A64Reg::w(0),
+    };
+    let rewritten_movz = movz.set_reg("Rd", A64Reg::x_sp(31)).unwrap();
+    assert_eq!(rewritten_movz.get_reg("Rd"), Some(A64Reg::w(31)));
+}
+
+#[test]
+fn reg_accessors_do_not_expose_implicit_bl_link_register() {
+    let insn = A64Insn::BlBlOnlyBranchImm {
+        imm26: A64Imm::scaled_signed(branch_imm(4, 26), 26, 2),
+    };
+
+    assert_eq!(insn.get_reg("x30"), None);
+    assert_eq!(
+        insn.set_reg("x30", A64Reg::x(0)),
+        Err(A64RewriteError::UnsupportedField {
+            insn: "BL.BL_only_branch_imm",
+            field: "x30",
+        })
+    );
 }
 
 fn assert_case_matches_llvm(case: &EncodingCase) {

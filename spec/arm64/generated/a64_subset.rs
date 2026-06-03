@@ -148,6 +148,14 @@ impl A64Mem {
         }
     }
 
+    pub const fn with_base(self, base: A64Reg) -> Self {
+        match self {
+            Self::Offset { offset, .. } => Self::Offset { base, offset },
+            Self::PreIndex { offset, .. } => Self::PreIndex { base, offset },
+            Self::PostIndex { offset, .. } => Self::PostIndex { base, offset },
+        }
+    }
+
     pub const fn offset_imm(self) -> A64Imm {
         match self {
             Self::Offset { offset, .. } | Self::PreIndex { offset, .. } | Self::PostIndex { offset, .. } => offset,
@@ -947,6 +955,387 @@ impl A64Insn {
                 word |= encode_a64_field("SVC.SVC_EX_exception", "imm16", imm16.raw(), 16, 5)?;
                 Ok(word)
             }
+        }
+    }
+
+    pub fn get_reg(&self, field: &str) -> Option<A64Reg> {
+        match self {
+            Self::AdrAdrOnlyPcreladdr { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AdrpAdrpOnlyPcreladdr { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddAddsubImmAdd32AddsubImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddAddsubImmAdd32AddsubImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddAddsubImmAdd64AddsubImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddAddsubImmAdd64AddsubImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubAddsubImmSub32AddsubImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubAddsubImmSub32AddsubImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubAddsubImmSub64AddsubImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubAddsubImmSub64AddsubImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubsAddsubImmSubs32sAddsubImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubsAddsubImmSubs32sAddsubImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubsAddsubImmSubs64sAddsubImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubsAddsubImmSubs64sAddsubImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::CbzCbz32Compbranch { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CbzCbz64Compbranch { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CbnzCbnz32Compbranch { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CbnzCbnz64Compbranch { rt, .. } if field == "Rt" => Some(*rt),
+            Self::MovzMovz32Movewide { rd, .. } if field == "Rd" => Some(*rd),
+            Self::MovzMovz64Movewide { rd, .. } if field == "Rd" => Some(*rd),
+            Self::MovkMovk32Movewide { rd, .. } if field == "Rd" => Some(*rd),
+            Self::MovkMovk64Movewide { rd, .. } if field == "Rd" => Some(*rd),
+            Self::OrrLogShiftOrr64LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::OrrLogShiftOrr64LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::OrrLogShiftOrr64LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::TbzTbzOnlyTestbranch { rt, .. } if field == "Rt" => Some(*rt),
+            Self::TbnzTbnzOnlyTestbranch { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrImmGenLdr32LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrImmGenLdr32LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrImmGenLdr64LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrImmGenLdr64LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrImmGenLdr32LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrImmGenLdr32LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrImmGenLdr64LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrImmGenLdr64LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrImmGenLdr32LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrImmGenLdr32LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrImmGenLdr64LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrImmGenLdr64LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrImmGenStr32LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrImmGenStr32LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrImmGenStr64LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrImmGenStr64LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrImmGenStr32LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrImmGenStr32LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrImmGenStr64LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrImmGenStr64LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrImmGenStr32LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrImmGenStr32LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrImmGenStr64LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrImmGenStr64LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdpGenLdp64LdstpairPost { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::LdpGenLdp64LdstpairPost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdpGenLdp64LdstpairPost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdpGenLdp64LdstpairPre { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::LdpGenLdp64LdstpairPre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdpGenLdp64LdstpairPre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdpGenLdp64LdstpairOff { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::LdpGenLdp64LdstpairOff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdpGenLdp64LdstpairOff { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StpGenStp64LdstpairPost { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::StpGenStp64LdstpairPost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StpGenStp64LdstpairPost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StpGenStp64LdstpairPre { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::StpGenStp64LdstpairPre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StpGenStp64LdstpairPre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StpGenStp64LdstpairOff { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::StpGenStp64LdstpairOff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StpGenStp64LdstpairOff { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::BrBr64BranchReg { rn, .. } if field == "Rn" => Some(*rn),
+            Self::BlrBlr64BranchReg { rn, .. } if field == "Rn" => Some(*rn),
+            Self::RetRet64rBranchReg { rn, .. } if field == "Rn" => Some(*rn),
+            _ => None,
+        }
+    }
+
+    pub fn set_reg(
+        self,
+        field: &'static str,
+        reg: A64Reg,
+    ) -> Result<Self, A64RewriteError> {
+        let insn_key = self.key();
+        let encoded = reg.enc() as u32;
+        match self {
+            Self::AdrAdrOnlyPcreladdr { immlo, immhi, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADR.ADR_only_pcreladdr", "Rd", encoded, 5)?;
+                Ok(Self::AdrAdrOnlyPcreladdr { immlo, immhi, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AdrpAdrpOnlyPcreladdr { immlo, immhi, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADRP.ADRP_only_pcreladdr", "Rd", encoded, 5)?;
+                Ok(Self::AdrpAdrpOnlyPcreladdr { immlo, immhi, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AddAddsubImmAdd32AddsubImm { sh, imm12, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADD_addsub_imm.ADD_32_addsub_imm", "Rn", encoded, 5)?;
+                Ok(Self::AddAddsubImmAdd32AddsubImm { sh, imm12, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp), rd })
+            }
+            Self::AddAddsubImmAdd32AddsubImm { sh, imm12, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADD_addsub_imm.ADD_32_addsub_imm", "Rd", encoded, 5)?;
+                Ok(Self::AddAddsubImmAdd32AddsubImm { sh, imm12, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp) })
+            }
+            Self::AddAddsubImmAdd64AddsubImm { sh, imm12, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADD_addsub_imm.ADD_64_addsub_imm", "Rn", encoded, 5)?;
+                Ok(Self::AddAddsubImmAdd64AddsubImm { sh, imm12, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rd })
+            }
+            Self::AddAddsubImmAdd64AddsubImm { sh, imm12, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADD_addsub_imm.ADD_64_addsub_imm", "Rd", encoded, 5)?;
+                Ok(Self::AddAddsubImmAdd64AddsubImm { sh, imm12, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp) })
+            }
+            Self::SubAddsubImmSub32AddsubImm { sh, imm12, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUB_addsub_imm.SUB_32_addsub_imm", "Rn", encoded, 5)?;
+                Ok(Self::SubAddsubImmSub32AddsubImm { sh, imm12, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp), rd })
+            }
+            Self::SubAddsubImmSub32AddsubImm { sh, imm12, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUB_addsub_imm.SUB_32_addsub_imm", "Rd", encoded, 5)?;
+                Ok(Self::SubAddsubImmSub32AddsubImm { sh, imm12, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp) })
+            }
+            Self::SubAddsubImmSub64AddsubImm { sh, imm12, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUB_addsub_imm.SUB_64_addsub_imm", "Rn", encoded, 5)?;
+                Ok(Self::SubAddsubImmSub64AddsubImm { sh, imm12, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rd })
+            }
+            Self::SubAddsubImmSub64AddsubImm { sh, imm12, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUB_addsub_imm.SUB_64_addsub_imm", "Rd", encoded, 5)?;
+                Ok(Self::SubAddsubImmSub64AddsubImm { sh, imm12, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp) })
+            }
+            Self::SubsAddsubImmSubs32sAddsubImm { sh, imm12, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUBS_addsub_imm.SUBS_32S_addsub_imm", "Rn", encoded, 5)?;
+                Ok(Self::SubsAddsubImmSubs32sAddsubImm { sh, imm12, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp), rd })
+            }
+            Self::SubsAddsubImmSubs32sAddsubImm { sh, imm12, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUBS_addsub_imm.SUBS_32S_addsub_imm", "Rd", encoded, 5)?;
+                Ok(Self::SubsAddsubImmSubs32sAddsubImm { sh, imm12, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SubsAddsubImmSubs64sAddsubImm { sh, imm12, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "Rn", encoded, 5)?;
+                Ok(Self::SubsAddsubImmSubs64sAddsubImm { sh, imm12, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rd })
+            }
+            Self::SubsAddsubImmSubs64sAddsubImm { sh, imm12, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "Rd", encoded, 5)?;
+                Ok(Self::SubsAddsubImmSubs64sAddsubImm { sh, imm12, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CbzCbz32Compbranch { imm19, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CBZ.CBZ_32_compbranch", "Rt", encoded, 5)?;
+                Ok(Self::CbzCbz32Compbranch { imm19, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CbzCbz64Compbranch { imm19, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CBZ.CBZ_64_compbranch", "Rt", encoded, 5)?;
+                Ok(Self::CbzCbz64Compbranch { imm19, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CbnzCbnz32Compbranch { imm19, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CBNZ.CBNZ_32_compbranch", "Rt", encoded, 5)?;
+                Ok(Self::CbnzCbnz32Compbranch { imm19, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CbnzCbnz64Compbranch { imm19, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CBNZ.CBNZ_64_compbranch", "Rt", encoded, 5)?;
+                Ok(Self::CbnzCbnz64Compbranch { imm19, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::MovzMovz32Movewide { hw, imm16, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("MOVZ.MOVZ_32_movewide", "Rd", encoded, 5)?;
+                Ok(Self::MovzMovz32Movewide { hw, imm16, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::MovzMovz64Movewide { hw, imm16, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("MOVZ.MOVZ_64_movewide", "Rd", encoded, 5)?;
+                Ok(Self::MovzMovz64Movewide { hw, imm16, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::MovkMovk32Movewide { hw, imm16, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("MOVK.MOVK_32_movewide", "Rd", encoded, 5)?;
+                Ok(Self::MovkMovk32Movewide { hw, imm16, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::MovkMovk64Movewide { hw, imm16, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("MOVK.MOVK_64_movewide", "Rd", encoded, 5)?;
+                Ok(Self::MovkMovk64Movewide { hw, imm16, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::OrrLogShiftOrr64LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ORR_log_shift.ORR_64_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::OrrLogShiftOrr64LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::OrrLogShiftOrr64LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ORR_log_shift.ORR_64_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::OrrLogShiftOrr64LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::OrrLogShiftOrr64LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ORR_log_shift.ORR_64_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::OrrLogShiftOrr64LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::TbzTbzOnlyTestbranch { b5, b40, imm14, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("TBZ.TBZ_only_testbranch", "Rt", encoded, 5)?;
+                Ok(Self::TbzTbzOnlyTestbranch { b5, b40, imm14, rt: A64Reg::new(encoded as u8, A64RegWidth::Unknown, A64Reg31Mode::Xzr) })
+            }
+            Self::TbnzTbnzOnlyTestbranch { b5, b40, imm14, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("TBNZ.TBNZ_only_testbranch", "Rt", encoded, 5)?;
+                Ok(Self::TbnzTbnzOnlyTestbranch { b5, b40, imm14, rt: A64Reg::new(encoded as u8, A64RegWidth::Unknown, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrImmGenLdr32LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_32_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr32LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrImmGenLdr32LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_32_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr32LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrImmGenLdr64LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_64_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr64LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrImmGenLdr64LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_64_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr64LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrImmGenLdr32LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_32_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr32LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrImmGenLdr32LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_32_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr32LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrImmGenLdr64LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_64_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr64LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrImmGenLdr64LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_64_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr64LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrImmGenLdr32LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_32_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr32LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrImmGenLdr32LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_32_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr32LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrImmGenLdr64LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_64_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr64LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrImmGenLdr64LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_imm_gen.LDR_64_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::LdrImmGenLdr64LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrImmGenStr32LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_32_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::StrImmGenStr32LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrImmGenStr32LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_32_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::StrImmGenStr32LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrImmGenStr64LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_64_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::StrImmGenStr64LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrImmGenStr64LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_64_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::StrImmGenStr64LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrImmGenStr32LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_32_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::StrImmGenStr32LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrImmGenStr32LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_32_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::StrImmGenStr32LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrImmGenStr64LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_64_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::StrImmGenStr64LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrImmGenStr64LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_64_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::StrImmGenStr64LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrImmGenStr32LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_32_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::StrImmGenStr32LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrImmGenStr32LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_32_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::StrImmGenStr32LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrImmGenStr64LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_64_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::StrImmGenStr64LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrImmGenStr64LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_imm_gen.STR_64_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::StrImmGenStr64LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdpGenLdp64LdstpairPost { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_post", "Rt2", encoded, 5)?;
+                Ok(Self::LdpGenLdp64LdstpairPost { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::LdpGenLdp64LdstpairPost { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_post", "Rt", encoded, 5)?;
+                Ok(Self::LdpGenLdp64LdstpairPost { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdpGenLdp64LdstpairPost { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_post", "Rn", encoded, 5)?;
+                Ok(Self::LdpGenLdp64LdstpairPost { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdpGenLdp64LdstpairPre { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_pre", "Rt2", encoded, 5)?;
+                Ok(Self::LdpGenLdp64LdstpairPre { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::LdpGenLdp64LdstpairPre { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_pre", "Rt", encoded, 5)?;
+                Ok(Self::LdpGenLdp64LdstpairPre { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdpGenLdp64LdstpairPre { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_pre", "Rn", encoded, 5)?;
+                Ok(Self::LdpGenLdp64LdstpairPre { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdpGenLdp64LdstpairOff { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_off", "Rt2", encoded, 5)?;
+                Ok(Self::LdpGenLdp64LdstpairOff { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::LdpGenLdp64LdstpairOff { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_off", "Rt", encoded, 5)?;
+                Ok(Self::LdpGenLdp64LdstpairOff { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdpGenLdp64LdstpairOff { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_off", "Rn", encoded, 5)?;
+                Ok(Self::LdpGenLdp64LdstpairOff { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StpGenStp64LdstpairPost { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_post", "Rt2", encoded, 5)?;
+                Ok(Self::StpGenStp64LdstpairPost { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::StpGenStp64LdstpairPost { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_post", "Rt", encoded, 5)?;
+                Ok(Self::StpGenStp64LdstpairPost { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StpGenStp64LdstpairPost { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_post", "Rn", encoded, 5)?;
+                Ok(Self::StpGenStp64LdstpairPost { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StpGenStp64LdstpairPre { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_pre", "Rt2", encoded, 5)?;
+                Ok(Self::StpGenStp64LdstpairPre { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::StpGenStp64LdstpairPre { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_pre", "Rt", encoded, 5)?;
+                Ok(Self::StpGenStp64LdstpairPre { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StpGenStp64LdstpairPre { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_pre", "Rn", encoded, 5)?;
+                Ok(Self::StpGenStp64LdstpairPre { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StpGenStp64LdstpairOff { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_off", "Rt2", encoded, 5)?;
+                Ok(Self::StpGenStp64LdstpairOff { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::StpGenStp64LdstpairOff { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_off", "Rt", encoded, 5)?;
+                Ok(Self::StpGenStp64LdstpairOff { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StpGenStp64LdstpairOff { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_off", "Rn", encoded, 5)?;
+                Ok(Self::StpGenStp64LdstpairOff { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::BrBr64BranchReg { .. } if field == "Rn" => {
+                validate_a64_rewrite_field("BR.BR_64_branch_reg", "Rn", encoded, 5)?;
+                Ok(Self::BrBr64BranchReg { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::BlrBlr64BranchReg { .. } if field == "Rn" => {
+                validate_a64_rewrite_field("BLR.BLR_64_branch_reg", "Rn", encoded, 5)?;
+                Ok(Self::BlrBlr64BranchReg { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::RetRet64rBranchReg { .. } if field == "Rn" => {
+                validate_a64_rewrite_field("RET.RET_64R_branch_reg", "Rn", encoded, 5)?;
+                Ok(Self::RetRet64rBranchReg { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            _ => Err(A64RewriteError::UnsupportedField {
+                insn: insn_key,
+                field,
+            }),
         }
     }
 
