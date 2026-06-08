@@ -210,6 +210,7 @@ Definition of done by change type:
 - Keep `README.md` aligned with the actual architecture and workflow.
 - Prefer concrete contracts over aspirational prose.
 - If a design is deferred, state the invariant that lets it remain deferred.
+- Keep general discussion results and actions log in `tmp/thoughts.md`.
 
 ## Code Preferences
 
