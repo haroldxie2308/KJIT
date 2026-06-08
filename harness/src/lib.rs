@@ -2,6 +2,7 @@ extern crate alloc;
 
 pub mod a64_pretty;
 pub mod active_step;
+pub mod explorer;
 pub mod arm64;
 pub mod model;
 pub mod runtime;
