@@ -4,6 +4,17 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ASM_PATH="${1:-${ASM_PATH:-}}"
 OUT_DIR="$ROOT_DIR/tmp/trace-tui"
+if [ -z "${KJIT_OPENTUI_LIB_PATH:-}" ]; then
+    for candidate in \
+        "$ROOT_DIR/../opentui/packages/core/node_modules/@opentui/core-darwin-arm64/libopentui.dylib" \
+        "$ROOT_DIR/../opentui/node_modules/@opentui/core-darwin-arm64/libopentui.dylib"
+    do
+        if [ -f "$candidate" ]; then
+            export KJIT_OPENTUI_LIB_PATH="$candidate"
+            break
+        fi
+    done
+fi
 
 select_asm_fixture() {
     local fixtures=()

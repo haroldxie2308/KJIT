@@ -1,8 +1,9 @@
-use std::io::{self, Stdout};
+use std::io::{self, Stdout, Write};
 use std::path::PathBuf;
+use std::process::{Command as ProcessCommand, Stdio};
 use std::time::Duration;
 
-use crossterm::event::{self, Event, KeyCode, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind, MouseButton, MouseEventKind};
 use crossterm::execute;
 use crossterm::terminal::{
     disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
@@ -24,6 +25,9 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph, Wrap};
 use ratatui::{Frame, Terminal};
+
+mod opentui_backend;
+use opentui_backend::{OpenTuiBackend, OpenTuiLoadError};
 
 fn main() {
     let config = match CliConfig::parse(std::env::args().skip(1)) {
@@ -75,7 +79,7 @@ fn main() {
         if config.check && check_failed {
             std::process::exit(1);
         }
-    } else if let Err(err) = run_tui(&trace, config.entry_pc, check, text_bytes, initial_state) {
+    } else if let Err(err) = run_tui_opentui(&trace, config.entry_pc, check, text_bytes, initial_state) {
         eprintln!("trace-tui failed: {err}");
         std::process::exit(1);
     }
@@ -152,7 +156,6 @@ impl CliConfig {
         let mut dump = false;
         let mut check = false;
         let mut positional = Vec::new();
-
         for arg in args {
             match arg.as_str() {
                 "--dump" => dump = true,
@@ -246,6 +249,37 @@ impl FocusPanel {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MousePanel {
+    Program,
+    Translation,
+    Result,
+    ActiveOriginal,
+    ActiveTranslated,
+    ActiveStateOriginal,
+    ActiveStateTranslated,
+    ActiveComparison,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct MouseAnchor {
+    panel: MousePanel,
+    row: usize,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct MouseSelection {
+    panel: MousePanel,
+    start: usize,
+    end: usize,
+}
+
+impl MouseSelection {
+    fn contains(self, panel: MousePanel, row: usize) -> bool {
+        self.panel == panel && row >= self.start.min(self.end) && row <= self.start.max(self.end)
+    }
+}
+
 struct App<'a> {
     trace: &'a PipelineTrace,
     check: PipelineCheck,
@@ -259,6 +293,8 @@ struct App<'a> {
     command_mode: bool,
     show_raw_only: bool,
     focus: FocusPanel,
+    mouse_anchor: Option<MouseAnchor>,
+    mouse_selection: Option<MouseSelection>,
     raw_scroll: u16,
     rephrase_scroll: u16,
     layout_scroll: u16,
@@ -292,6 +328,8 @@ fn run_tui(
         command_mode: false,
         show_raw_only: false,
         focus: FocusPanel::Cfg,
+        mouse_anchor: None,
+        mouse_selection: None,
         raw_scroll: 0,
         rephrase_scroll: 0,
         layout_scroll: 0,
@@ -307,132 +345,1133 @@ fn run_tui(
         let Event::Key(key) = event::read()? else {
             continue;
         };
-        if key.kind != KeyEventKind::Press {
+        if handle_key_event(&mut app, key) {
+            break;
+        }
+    }
+
+    Ok(())
+}
+
+fn run_tui_opentui(
+    trace: &PipelineTrace,
+    entry_pc: u64,
+    check: PipelineCheck,
+    text_bytes: Vec<u8>,
+    initial_state: MachineState,
+) -> io::Result<()> {
+    enable_raw_mode()?;
+    let size = crossterm::terminal::size()?;
+    let backend = OpenTuiBackend::load(u32::from(size.0), u32::from(size.1)).map_err(|err| {
+        io::Error::other(match err {
+            OpenTuiLoadError::MissingPath => format!(
+                "{err}; set KJIT_OPENTUI_LIB_PATH or KJIT_OPENTUI_ROOT to a libopentui.dylib path"
+            ),
+            _ => err.to_string(),
+        })
+    })?;
+    backend.setup_terminal();
+    backend.set_title("KJIT Explorer");
+    let _guard = OpenTuiGuard { backend };
+
+    let selection = Selection::Pc(entry_pc);
+    let mut app = App {
+        trace,
+        mode: Mode::Explore,
+        selection,
+        text_bytes,
+        initial_state,
+        active_step: None,
+        step_detail: StepDetailMode::Compact,
+        command: String::new(),
+        command_mode: false,
+        show_raw_only: false,
+        focus: FocusPanel::Cfg,
+        mouse_anchor: None,
+        mouse_selection: None,
+        raw_scroll: 0,
+        rephrase_scroll: 0,
+        layout_scroll: 0,
+        status: check.initial_status(),
+        check,
+    };
+
+    loop {
+        let current = crossterm::terminal::size()?;
+        _guard.backend.resize(u32::from(current.0), u32::from(current.1));
+        draw_opentui_modern(&_guard.backend, &app);
+
+        if !event::poll(Duration::from_millis(200))? {
             continue;
         }
 
-        if app.command_mode {
-            match key.code {
-                KeyCode::Esc => {
-                    app.command.clear();
-                    app.command_mode = false;
-                    app.status = "command cancelled".to_string();
-                }
-                KeyCode::Enter => {
-                    let command = app.command.clone();
-                    app.command.clear();
-                    app.command_mode = false;
-                    if matches!(apply_command(&mut app, &command), Control::Quit) {
-                        break;
-                    }
-                }
-                KeyCode::Backspace => {
-                    app.command.pop();
-                }
-                KeyCode::Char(ch) => app.command.push(ch),
-                _ => {}
+        match event::read()? {
+            Event::Key(key) if key.kind == KeyEventKind::Press && handle_key_event(&mut app, key) => {
+                break;
             }
-            continue;
-        }
-
-        match key.code {
-            KeyCode::Char('q') => break,
-            KeyCode::Esc if app.mode == Mode::ActiveStep => leave_step_mode(&mut app),
-            KeyCode::Char(':') => {
-                app.command.clear();
-                app.command_mode = true;
-                app.status = "enter command".to_string();
+            Event::Mouse(mouse) => {
+                handle_mouse_event(&mut app, mouse, crossterm::terminal::size()?);
             }
-            KeyCode::Char('y') => export_panel_text(&mut app),
-            KeyCode::Char('s') => toggle_mode(&mut app),
-            KeyCode::Char(' ') if app.mode == Mode::ActiveStep => step_group(&mut app),
-            KeyCode::Char('j') if app.mode == Mode::ActiveStep => step_translated(&mut app),
-            KeyCode::Down if app.mode == Mode::ActiveStep => active_step_down(&mut app),
-            KeyCode::Char('r') if app.mode == Mode::ActiveStep => {
-                toggle_step_detail(&mut app, StepDetailMode::Registers);
-            }
-            KeyCode::Char('m') if app.mode == Mode::ActiveStep => {
-                toggle_step_detail(&mut app, StepDetailMode::Memory);
-            }
-            KeyCode::Char('c') if app.mode == Mode::ActiveStep => {
-                app.step_detail = StepDetailMode::Compact;
-                app.status = "comparison=compact".to_string();
-            }
-            KeyCode::Char('R') if app.mode == Mode::ActiveStep => reset_step_mode(&mut app),
-            KeyCode::Up if app.mode == Mode::ActiveStep => active_step_up(&mut app),
-            KeyCode::Tab => {
-                app.focus = app.focus.next();
-                app.status = format!("focused {}", app.focus.name());
-            }
-            KeyCode::BackTab => {
-                app.focus = app.focus.prev();
-                app.status = format!("focused {}", app.focus.name());
-            }
-            KeyCode::Char('p') => set_focus(&mut app, FocusPanel::Cfg),
-            KeyCode::Char('t') => set_focus(&mut app, FocusPanel::Rephrase),
-            KeyCode::Char('r') => set_focus(&mut app, FocusPanel::Layout),
-            KeyCode::Char('n') if app.mode == Mode::Explore => {
-                select_next_pc(&mut app, 1);
-            }
-            KeyCode::Right if app.mode == Mode::Explore => {
-                select_next_pc(&mut app, 1);
-            }
-            KeyCode::Left if app.mode == Mode::Explore => {
-                select_next_pc(&mut app, -1);
-            }
-            KeyCode::Down if app.mode == Mode::Explore => {
-                if app.focus == FocusPanel::Cfg {
-                    select_next_pc(&mut app, 1);
-                } else {
-                    scroll_focus(&mut app, 1);
-                }
-            }
-            KeyCode::Up if app.mode == Mode::Explore => {
-                if app.focus == FocusPanel::Cfg {
-                    select_next_pc(&mut app, -1);
-                } else {
-                    scroll_focus(&mut app, -1);
-                }
-            }
-            KeyCode::PageDown | KeyCode::Char('d') => {
-                if app.mode == Mode::ActiveStep {
-                    scroll_step_detail(&mut app, 5);
-                } else {
-                    scroll_focus(&mut app, 5);
-                }
-            }
-            KeyCode::PageUp | KeyCode::Char('u') => {
-                if app.mode == Mode::ActiveStep {
-                    scroll_step_detail(&mut app, -5);
-                } else {
-                    scroll_focus(&mut app, -5);
-                }
-            }
-            KeyCode::Char('a') => {
-                app.show_raw_only = !app.show_raw_only;
-                app.status = if app.show_raw_only {
-                    "Program view=all".to_string()
-                } else {
-                    "Program view=cfg".to_string()
-                };
-            }
-            KeyCode::Char('?') | KeyCode::F(1) => {
-                app.status = match app.mode {
-                    Mode::Explore => {
-                        "Explore: s step | p/t/r panels | y export panel | Up/Down move or scroll"
-                            .to_string()
-                    }
-                    Mode::ActiveStep => {
-                        "Step: Esc/s explore | Space group | j insn | r/m/c panes | y export | R reset"
-                            .to_string()
-                    }
-                };
+            Event::Resize(width, height) => {
+                _guard.backend.resize(u32::from(width), u32::from(height));
             }
             _ => {}
         }
     }
 
     Ok(())
+}
+
+fn handle_key_event(app: &mut App<'_>, key: crossterm::event::KeyEvent) -> bool {
+    if key.kind != KeyEventKind::Press {
+        return false;
+    }
+
+    if app.command_mode {
+        match key.code {
+            KeyCode::Esc => {
+                app.command.clear();
+                app.command_mode = false;
+                app.status = "command cancelled".to_string();
+            }
+            KeyCode::Enter => {
+                let command = app.command.clone();
+                app.command.clear();
+                app.command_mode = false;
+                if matches!(apply_command(app, &command), Control::Quit) {
+                    return true;
+                }
+            }
+            KeyCode::Backspace => {
+                app.command.pop();
+            }
+            KeyCode::Char(ch) => app.command.push(ch),
+            _ => {}
+        }
+        return false;
+    }
+
+    match key.code {
+        KeyCode::Char('q') => return true,
+        KeyCode::Esc if app.mode == Mode::ActiveStep => leave_step_mode(app),
+        KeyCode::Char(':') => {
+            app.command.clear();
+            app.command_mode = true;
+            app.status = "enter command".to_string();
+        }
+        KeyCode::Char('y') => export_panel_text(app),
+        KeyCode::Char('s') => toggle_mode(app),
+        KeyCode::Char(' ') if app.mode == Mode::ActiveStep => step_group(app),
+        KeyCode::Char('j') if app.mode == Mode::ActiveStep => step_translated(app),
+        KeyCode::Down if app.mode == Mode::ActiveStep => active_step_down(app),
+        KeyCode::Char('r') if app.mode == Mode::ActiveStep => {
+            toggle_step_detail(app, StepDetailMode::Registers);
+        }
+        KeyCode::Char('m') if app.mode == Mode::ActiveStep => {
+            toggle_step_detail(app, StepDetailMode::Memory);
+        }
+        KeyCode::Char('c') if app.mode == Mode::ActiveStep => {
+            app.step_detail = StepDetailMode::Compact;
+            app.status = "comparison=compact".to_string();
+        }
+        KeyCode::Char('R') if app.mode == Mode::ActiveStep => reset_step_mode(app),
+        KeyCode::Up if app.mode == Mode::ActiveStep => active_step_up(app),
+        KeyCode::Tab => {
+            app.focus = app.focus.next();
+            app.status = format!("focused {}", app.focus.name());
+        }
+        KeyCode::BackTab => {
+            app.focus = app.focus.prev();
+            app.status = format!("focused {}", app.focus.name());
+        }
+        KeyCode::Char('p') => set_focus(app, FocusPanel::Cfg),
+        KeyCode::Char('t') => set_focus(app, FocusPanel::Rephrase),
+        KeyCode::Char('r') => set_focus(app, FocusPanel::Layout),
+        KeyCode::Char('n') if app.mode == Mode::Explore => {
+            select_next_pc(app, 1);
+        }
+        KeyCode::Right if app.mode == Mode::Explore => {
+            select_next_pc(app, 1);
+        }
+        KeyCode::Left if app.mode == Mode::Explore => {
+            select_next_pc(app, -1);
+        }
+        KeyCode::Down if app.mode == Mode::Explore => {
+            if app.focus == FocusPanel::Cfg {
+                select_next_pc(app, 1);
+            } else {
+                scroll_focus(app, 1);
+            }
+        }
+        KeyCode::Up if app.mode == Mode::Explore => {
+            if app.focus == FocusPanel::Cfg {
+                select_next_pc(app, -1);
+            } else {
+                scroll_focus(app, -1);
+            }
+        }
+        KeyCode::PageDown | KeyCode::Char('d') => {
+            if app.mode == Mode::ActiveStep {
+                scroll_step_detail(app, 5);
+            } else {
+                scroll_focus(app, 5);
+            }
+        }
+        KeyCode::PageUp | KeyCode::Char('u') => {
+            if app.mode == Mode::ActiveStep {
+                scroll_step_detail(app, -5);
+            } else {
+                scroll_focus(app, -5);
+            }
+        }
+        KeyCode::Char('a') => {
+            app.show_raw_only = !app.show_raw_only;
+            app.status = if app.show_raw_only {
+                "Program view=all".to_string()
+            } else {
+                "Program view=cfg".to_string()
+            };
+        }
+        KeyCode::Char('?') | KeyCode::F(1) => {
+            app.status = match app.mode {
+                Mode::Explore => {
+                    "Explore: s step | p/t/r panels | y export panel | Up/Down move or scroll"
+                        .to_string()
+                }
+                Mode::ActiveStep => {
+                    "Step: Esc/s explore | Space group | j insn | r/m/c panes | y export | R reset"
+                        .to_string()
+                }
+            };
+        }
+        _ => {}
+    }
+    false
+}
+
+fn handle_mouse_event(
+    app: &mut App<'_>,
+    mouse: crossterm::event::MouseEvent,
+    size: (u16, u16),
+) {
+    let layout = opentui_layout(usize::from(size.0), usize::from(size.1));
+    let x = usize::from(mouse.column);
+    let y = usize::from(mouse.row);
+    if let Some(scroll_target) = mouse_scroll_target(app, &layout, x, y) {
+        match mouse.kind {
+            MouseEventKind::ScrollUp => {
+                scroll_mouse_target(app, scroll_target, -3);
+                return;
+            }
+            MouseEventKind::ScrollDown => {
+                scroll_mouse_target(app, scroll_target, 3);
+                return;
+            }
+            _ => {}
+        }
+    }
+
+    let Some((panel, row)) = hit_mouse_target(app, &layout, x, y) else {
+        if matches!(mouse.kind, MouseEventKind::Down(MouseButton::Left)) {
+            clear_mouse_selection(app);
+        }
+        return;
+    };
+
+    match mouse.kind {
+        MouseEventKind::Down(MouseButton::Left) => {
+            let absolute = panel_absolute_row(app, panel, row);
+            set_mouse_anchor(app, panel, absolute);
+            update_selection_for_panel(app, panel, absolute);
+            set_focus_for_panel(app, panel);
+        }
+        MouseEventKind::Drag(MouseButton::Left) => {
+            let absolute = panel_absolute_row(app, panel, row);
+            update_mouse_selection(app, panel, absolute);
+            update_selection_for_panel(app, panel, absolute);
+            set_focus_for_panel(app, panel);
+        }
+        MouseEventKind::Up(MouseButton::Left) => {
+            let absolute = panel_absolute_row(app, panel, row);
+            update_mouse_selection(app, panel, absolute);
+            update_selection_for_panel(app, panel, absolute);
+            set_focus_for_panel(app, panel);
+            copy_panel_text(app);
+        }
+        _ => {}
+    }
+}
+
+fn set_focus_for_panel(app: &mut App<'_>, panel: MousePanel) {
+    match panel {
+        MousePanel::Program => set_focus(app, FocusPanel::Cfg),
+        MousePanel::Translation => set_focus(app, FocusPanel::Rephrase),
+        MousePanel::Result => set_focus(app, FocusPanel::Layout),
+        MousePanel::ActiveOriginal
+        | MousePanel::ActiveTranslated
+        | MousePanel::ActiveStateOriginal
+        | MousePanel::ActiveStateTranslated
+        | MousePanel::ActiveComparison => set_focus(app, FocusPanel::Layout),
+    }
+}
+
+fn clear_in_panel_selection(app: &mut App<'_>) {
+    clear_mouse_selection(app);
+}
+
+fn clear_mouse_selection(app: &mut App<'_>) {
+    app.mouse_anchor = None;
+    app.mouse_selection = None;
+}
+
+fn set_mouse_anchor(app: &mut App<'_>, panel: MousePanel, row: usize) {
+    app.mouse_anchor = Some(MouseAnchor { panel, row });
+    app.mouse_selection = Some(MouseSelection {
+        panel,
+        start: row,
+        end: row,
+    });
+}
+
+fn update_mouse_selection(app: &mut App<'_>, panel: MousePanel, row: usize) {
+    match app.mouse_anchor {
+        Some(anchor) if anchor.panel == panel => {
+            app.mouse_selection = Some(MouseSelection {
+                panel,
+                start: anchor.row,
+                end: row,
+            });
+        }
+        _ => set_mouse_anchor(app, panel, row),
+    }
+}
+
+fn update_selection_for_panel(app: &mut App<'_>, panel: MousePanel, absolute_row: usize) {
+    if panel == MousePanel::Program {
+        if let Some(pc) = program_pc_at_row(app, absolute_row) {
+            app.selection = Selection::Pc(pc);
+            app.raw_scroll = 0;
+            app.rephrase_scroll = 0;
+            app.layout_scroll = 0;
+        }
+    }
+}
+
+fn mouse_scroll_target(app: &App<'_>, layout: &OpenTuiLayout, x: usize, y: usize) -> Option<MousePanel> {
+    let _ = app;
+    if layout.program.is_some_and(|rect| rect.contains(x, y)) {
+        return Some(MousePanel::Program);
+    }
+    if layout.translation.is_some_and(|rect| rect.contains(x, y)) {
+        return Some(MousePanel::Translation);
+    }
+    if layout.result.is_some_and(|rect| rect.contains(x, y)) {
+        return Some(MousePanel::Result);
+    }
+    if layout.active_original.is_some_and(|rect| rect.contains(x, y)) {
+        return Some(MousePanel::ActiveOriginal);
+    }
+    if layout.active_translated.is_some_and(|rect| rect.contains(x, y)) {
+        return Some(MousePanel::ActiveTranslated);
+    }
+    if layout.active_state_original.is_some_and(|rect| rect.contains(x, y)) {
+        return Some(MousePanel::ActiveStateOriginal);
+    }
+    if layout.active_state_translated.is_some_and(|rect| rect.contains(x, y)) {
+        return Some(MousePanel::ActiveStateTranslated);
+    }
+    if layout.active_comparison.is_some_and(|rect| rect.contains(x, y)) {
+        return Some(MousePanel::ActiveComparison);
+    }
+    None
+}
+
+fn scroll_mouse_target(app: &mut App<'_>, target: MousePanel, delta: i16) {
+    match target {
+        MousePanel::Program => scroll_focus(app, delta),
+        MousePanel::Translation => {
+            app.focus = FocusPanel::Rephrase;
+            scroll_focus(app, delta);
+        }
+        MousePanel::Result => {
+            app.focus = FocusPanel::Layout;
+            scroll_focus(app, delta);
+        }
+        MousePanel::ActiveOriginal => {
+            app.raw_scroll = scroll_delta(app.raw_scroll, delta);
+            app.status = format!("Program scroll={}", app.raw_scroll);
+        }
+        MousePanel::ActiveTranslated => {
+            app.rephrase_scroll = scroll_delta(app.rephrase_scroll, delta);
+            app.status = format!("Translation scroll={}", app.rephrase_scroll);
+        }
+        MousePanel::ActiveStateOriginal | MousePanel::ActiveStateTranslated => {
+            app.status = "state summaries do not scroll".to_string();
+        }
+        MousePanel::ActiveComparison => scroll_step_detail(app, delta),
+    }
+}
+
+fn scroll_delta(current: u16, delta: i16) -> u16 {
+    if delta < 0 {
+        current.saturating_sub(delta.unsigned_abs())
+    } else {
+        current.saturating_add(delta as u16)
+    }
+}
+
+fn panel_absolute_row(app: &App<'_>, panel: MousePanel, row: usize) -> usize {
+    match panel {
+        MousePanel::Program => app.raw_scroll as usize + row,
+        MousePanel::Translation => app.rephrase_scroll as usize + row,
+        MousePanel::Result => app.layout_scroll as usize + row,
+        MousePanel::ActiveOriginal => app.raw_scroll as usize + row,
+        MousePanel::ActiveTranslated => app.rephrase_scroll as usize + row,
+        MousePanel::ActiveStateOriginal | MousePanel::ActiveStateTranslated => row,
+        MousePanel::ActiveComparison => app.layout_scroll as usize + row,
+    }
+}
+
+fn program_pc_at_row(app: &App<'_>, absolute_row: usize) -> Option<u64> {
+    visible_pc_entries(app.trace, app.show_raw_only)
+        .get(absolute_row)
+        .map(|entry| entry.pc)
+}
+
+fn panel_row_from_mouse(panel: PanelRect, y: usize) -> Option<usize> {
+    let top = panel.y.saturating_add(1);
+    let bottom = panel.y.saturating_add(panel.height.saturating_sub(1));
+    if y < top || y >= bottom {
+        None
+    } else {
+        Some(y - top)
+    }
+}
+
+fn hit_mouse_target(
+    app: &App<'_>,
+    layout: &OpenTuiLayout,
+    x: usize,
+    y: usize,
+) -> Option<(MousePanel, usize)> {
+    if let Some(panel) = layout.program {
+        if panel.contains(x, y) {
+            return panel_row_from_mouse(panel, y).map(|row| {
+                let _ = app;
+                (MousePanel::Program, row)
+            });
+        }
+    }
+    if let Some(panel) = layout.translation {
+        if panel.contains(x, y) {
+            return panel_row_from_mouse(panel, y).map(|row| {
+                let _ = app;
+                (MousePanel::Translation, row)
+            });
+        }
+    }
+    if let Some(panel) = layout.result {
+        if panel.contains(x, y) {
+            return panel_row_from_mouse(panel, y).map(|row| {
+                let _ = app;
+                (MousePanel::Result, row)
+            });
+        }
+    }
+    if let Some(panel) = layout.active_original {
+        if panel.contains(x, y) {
+            return panel_row_from_mouse(panel, y).map(|row| {
+                let _ = app;
+                (MousePanel::ActiveOriginal, row)
+            });
+        }
+    }
+    if let Some(panel) = layout.active_translated {
+        if panel.contains(x, y) {
+            return panel_row_from_mouse(panel, y).map(|row| {
+                let _ = app;
+                (MousePanel::ActiveTranslated, row)
+            });
+        }
+    }
+    if let Some(panel) = layout.active_state_original {
+        if panel.contains(x, y) {
+            return panel_row_from_mouse(panel, y).map(|row| {
+                let _ = app;
+                (MousePanel::ActiveStateOriginal, row)
+            });
+        }
+    }
+    if let Some(panel) = layout.active_state_translated {
+        if panel.contains(x, y) {
+            return panel_row_from_mouse(panel, y).map(|row| {
+                let _ = app;
+                (MousePanel::ActiveStateTranslated, row)
+            });
+        }
+    }
+    if let Some(panel) = layout.active_comparison {
+        if panel.contains(x, y) {
+            return panel_row_from_mouse(panel, y).map(|row| {
+                let _ = app;
+                (MousePanel::ActiveComparison, row)
+            });
+        }
+    }
+    None
+}
+
+#[derive(Clone, Copy)]
+struct PanelRect {
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+}
+
+impl PanelRect {
+    fn contains(self, x: usize, y: usize) -> bool {
+        x >= self.x
+            && y >= self.y
+            && x < self.x.saturating_add(self.width)
+            && y < self.y.saturating_add(self.height)
+    }
+}
+
+struct OpenTuiLayout {
+    program: Option<PanelRect>,
+    translation: Option<PanelRect>,
+    result: Option<PanelRect>,
+    active_original: Option<PanelRect>,
+    active_translated: Option<PanelRect>,
+    active_state_original: Option<PanelRect>,
+    active_state_translated: Option<PanelRect>,
+    active_comparison: Option<PanelRect>,
+}
+
+fn opentui_layout(width: usize, height: usize) -> OpenTuiLayout {
+    let header_h = 6.min(height.max(1));
+    let footer_h = 4.min(height.saturating_sub(header_h).max(1));
+    let body_h = height.saturating_sub(header_h + footer_h);
+    if body_h == 0 || width == 0 {
+        return OpenTuiLayout {
+            program: None,
+            translation: None,
+            result: None,
+            active_original: None,
+            active_translated: None,
+            active_state_original: None,
+            active_state_translated: None,
+            active_comparison: None,
+        };
+    }
+
+    let program = PanelRect {
+        x: 0,
+        y: header_h,
+        width: width.saturating_mul(28) / 100,
+        height: body_h,
+    };
+    let left_w = program.width.clamp(24, width.saturating_sub(20).max(24));
+    let right_x = left_w;
+    let right_w = width.saturating_sub(left_w);
+    let top_h = body_h
+        .saturating_mul(58)
+        / 100;
+    let top_h = top_h.clamp(10, body_h.saturating_sub(8).max(10));
+    let translation = PanelRect {
+        x: right_x,
+        y: header_h,
+        width: right_w,
+        height: top_h,
+    };
+    let result = PanelRect {
+        x: right_x,
+        y: header_h + top_h,
+        width: right_w,
+        height: body_h.saturating_sub(top_h),
+    };
+    let half = width / 2;
+    let state_h = 8.min(body_h.saturating_sub(top_h).max(1));
+    let active_original = PanelRect {
+        x: 0,
+        y: header_h,
+        width: half,
+        height: top_h,
+    };
+    let active_translated = PanelRect {
+        x: half,
+        y: header_h,
+        width: width.saturating_sub(half),
+        height: top_h,
+    };
+    let active_state_original = PanelRect {
+        x: 0,
+        y: header_h + top_h,
+        width: half,
+        height: state_h,
+    };
+    let active_state_translated = PanelRect {
+        x: half,
+        y: header_h + top_h,
+        width: width.saturating_sub(half),
+        height: state_h,
+    };
+    let active_comparison = PanelRect {
+        x: 0,
+        y: header_h + top_h + state_h,
+        width,
+        height: body_h.saturating_sub(top_h + state_h),
+    };
+
+    OpenTuiLayout {
+        program: Some(program),
+        translation: Some(translation),
+        result: Some(result),
+        active_original: Some(active_original),
+        active_translated: Some(active_translated),
+        active_state_original: Some(active_state_original),
+        active_state_translated: Some(active_state_translated),
+        active_comparison: Some(active_comparison),
+    }
+}
+
+struct OpenTuiGuard {
+    backend: OpenTuiBackend,
+}
+
+impl Drop for OpenTuiGuard {
+    fn drop(&mut self) {
+        self.backend.restore_terminal_modes();
+        let _ = disable_raw_mode();
+    }
+}
+
+fn draw_opentui_modern(ui: &OpenTuiBackend, app: &App<'_>) {
+    let buffer = ui.next_buffer();
+    ui.clear(buffer);
+
+    let (width, height) = crossterm::terminal::size().unwrap_or((120, 40));
+    let width = usize::from(width);
+    let height = usize::from(height);
+    let header_h = 6.min(height.max(1));
+    let footer_h = 4.min(height.saturating_sub(header_h).max(1));
+    let body_h = height.saturating_sub(header_h + footer_h);
+
+    draw_opentui_header(ui, buffer, app, 0, 0, width, header_h);
+
+    match app.mode {
+        Mode::Explore => draw_opentui_explore(ui, buffer, app, 0, header_h, width, body_h),
+        Mode::ActiveStep => draw_opentui_active_step(ui, buffer, app, 0, header_h, width, body_h),
+    }
+
+    draw_opentui_footer(ui, buffer, app, 0, header_h + body_h, width, footer_h);
+    ui.render(true);
+}
+
+fn draw_opentui_header(
+    ui: &OpenTuiBackend,
+    buffer: opentui_backend::NativeHandle,
+    app: &App<'_>,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+) {
+    let lines = header_text_lines(app);
+    draw_opentui_panel(
+        ui,
+        buffer,
+        x,
+        y,
+        width,
+        height,
+        "KJIT Explorer",
+        &lines,
+        0,
+        None,
+        MousePanel::Program,
+        true,
+        false,
+    );
+}
+
+fn draw_opentui_explore(
+    ui: &OpenTuiBackend,
+    buffer: opentui_backend::NativeHandle,
+    app: &App<'_>,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+) {
+    let left_w = width.saturating_mul(28) / 100;
+    let left_w = left_w.clamp(24, width.saturating_sub(20).max(24));
+    let right_w = width.saturating_sub(left_w);
+    let top_h = height.saturating_mul(58) / 100;
+    let top_h = top_h.clamp(10, height.saturating_sub(8).max(10));
+    let bottom_h = height.saturating_sub(top_h);
+
+    let program = program_text_lines(app);
+    let selected_index = selected_program_index(app, &program);
+    let program_selection = app.mouse_selection.or_else(|| {
+        selected_index.map(|row| MouseSelection {
+            panel: MousePanel::Program,
+            start: row,
+            end: row,
+        })
+    });
+    draw_opentui_panel(
+        ui,
+        buffer,
+        x,
+        y,
+        left_w,
+        height,
+        "Program",
+        &program,
+        app.raw_scroll as usize,
+        program_selection,
+        MousePanel::Program,
+        app.focus == FocusPanel::Cfg,
+        false,
+    );
+
+    let detail_x = x + left_w;
+    let pc = selected_pc(app);
+    match pc {
+        Some(pc) => {
+            let (rephrased, virtualized) = translation_text_columns(app, pc);
+            draw_opentui_split_panel(
+                ui,
+                buffer,
+                detail_x,
+                y,
+                right_w,
+                top_h,
+                "Translation",
+                "Rephrased",
+                "Virtualized",
+                &rephrased,
+                &virtualized,
+                app.rephrase_scroll as usize,
+                app.mouse_selection,
+                MousePanel::Translation,
+                app.focus == FocusPanel::Rephrase,
+            );
+            let result_lines = layout_for_pc_text_lines(app, pc);
+            draw_opentui_panel(
+                ui,
+                buffer,
+                detail_x,
+                y + top_h,
+                right_w,
+                bottom_h,
+                "Result",
+                &result_lines,
+                app.layout_scroll as usize,
+                app.mouse_selection,
+                MousePanel::Result,
+                app.focus == FocusPanel::Layout,
+                false,
+            );
+        }
+        None => {
+            let empty = vec!["select an original PC to inspect translation".to_string()];
+            draw_opentui_panel(
+                ui,
+                buffer,
+                detail_x,
+                y,
+                right_w,
+                top_h,
+                "Translation",
+                &empty,
+                0,
+                app.mouse_selection,
+                MousePanel::Translation,
+                app.focus == FocusPanel::Rephrase,
+                false,
+            );
+            let layout_lines = layout_neighborhood_text_lines(app, 0);
+            draw_opentui_panel(
+                ui,
+                buffer,
+                detail_x,
+                y + top_h,
+                right_w,
+                bottom_h,
+                "Result",
+                &layout_lines,
+                app.layout_scroll as usize,
+                app.mouse_selection,
+                MousePanel::Result,
+                app.focus == FocusPanel::Layout,
+                false,
+            );
+        }
+    }
+}
+
+fn draw_opentui_active_step(
+    ui: &OpenTuiBackend,
+    buffer: opentui_backend::NativeHandle,
+    app: &App<'_>,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+) {
+    let Some(session) = app.active_step.as_ref() else {
+        let empty = vec!["active session is not initialized".to_string()];
+        draw_opentui_panel(ui, buffer, x, y, width, height, "Active Step", &empty, 0, None, MousePanel::ActiveComparison, true, false);
+        return;
+    };
+
+    let top_h = height.saturating_mul(36) / 100;
+    let top_h = top_h.clamp(10, height.saturating_sub(10).max(10));
+    let state_h = 8.min(height.saturating_sub(top_h));
+    let bottom_h = height.saturating_sub(top_h + state_h);
+    let half = width / 2;
+
+    let original = active_original_text_lines(app, session);
+    let translated = active_translated_text_lines(app, session);
+    draw_opentui_panel(
+        ui,
+        buffer,
+        x,
+        y,
+        half,
+        top_h,
+        "Original",
+        &original,
+        app.raw_scroll as usize,
+        app.mouse_selection,
+        MousePanel::ActiveOriginal,
+        false,
+        false,
+    );
+    draw_opentui_panel(
+        ui,
+        buffer,
+        x + half,
+        y,
+        width - half,
+        top_h,
+        "Translated",
+        &translated,
+        app.rephrase_scroll as usize,
+        app.mouse_selection,
+        MousePanel::ActiveTranslated,
+        false,
+        false,
+    );
+
+    let original_state = state_summary_text_lines("Original State Summary", session.original_snapshot());
+    let translated_state = state_summary_text_lines("Translated State Summary", session.translated_snapshot());
+    draw_opentui_panel(
+        ui,
+        buffer,
+        x,
+        y + top_h,
+        half,
+        state_h,
+        "Original State Summary",
+        &original_state,
+        0,
+        app.mouse_selection,
+        MousePanel::ActiveStateOriginal,
+        false,
+        false,
+    );
+    draw_opentui_panel(
+        ui,
+        buffer,
+        x + half,
+        y + top_h,
+        width - half,
+        state_h,
+        "Translated State Summary",
+        &translated_state,
+        0,
+        app.mouse_selection,
+        MousePanel::ActiveStateTranslated,
+        false,
+        false,
+    );
+
+    let comparison = comparison_text_lines(app, session);
+    draw_opentui_panel(
+        ui,
+        buffer,
+        x,
+        y + top_h + state_h,
+        width,
+        bottom_h,
+        &format!("Comparison {}", app.step_detail.name()),
+        &comparison,
+        app.layout_scroll as usize,
+        app.mouse_selection,
+        MousePanel::ActiveComparison,
+        false,
+        false,
+    );
+}
+
+fn draw_opentui_footer(
+    ui: &OpenTuiBackend,
+    buffer: opentui_backend::NativeHandle,
+    app: &App<'_>,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+) {
+    let lines = if app.command_mode {
+        vec![format!(":{}", app.command), "Enter submit | Esc cancel".to_string()]
+    } else {
+        vec![
+            app.status.clone(),
+            match app.mode {
+                Mode::Explore => "Explore: wheel scrolls pane under pointer | drag selects rows | release copies | s step | Tab focus | p/t/r panels | y export | a cfg/all | Up/Down move/scroll | q quit".to_string(),
+                Mode::ActiveStep => match app.step_detail {
+                    StepDetailMode::Compact => "Step: wheel scrolls pane under pointer | drag selects rows | release copies | Esc/s explore | Space group | j insn | y export | r registers | m memory | R reset | q quit".to_string(),
+                    StepDetailMode::Registers | StepDetailMode::Memory => "Step: wheel scrolls pane under pointer | drag selects rows | release copies | Up/Down scroll comparison | d/u page | y export | j insn | Space group | c compact | R reset | q quit".to_string(),
+                },
+            },
+        ]
+    };
+    draw_opentui_panel(
+        ui,
+        buffer,
+        x,
+        y,
+        width,
+        height,
+        "keys",
+        &lines,
+        0,
+        None,
+        MousePanel::Program,
+        false,
+        false,
+    );
+}
+
+fn draw_opentui_split_panel(
+    ui: &OpenTuiBackend,
+    buffer: opentui_backend::NativeHandle,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+    title: &str,
+    left_title: &str,
+    right_title: &str,
+    left_lines: &[String],
+    right_lines: &[String],
+    scroll: usize,
+    selection: Option<MouseSelection>,
+    panel: MousePanel,
+    focused: bool,
+) {
+    if width < 4 || height < 4 {
+        return;
+    }
+    let border = if focused { ui.palette().yellow() } else { ui.palette().cyan() };
+    ui.draw_box(buffer, x as i32, y as i32, width as u32, height as u32, title, "", true, border, ui.palette().black(), border);
+    let inner_w = width.saturating_sub(2);
+    let inner_h = height.saturating_sub(2);
+    let half = inner_w / 2;
+    ui.draw_text(buffer, left_title, (x + 1) as u32, (y + 1) as u32, ui.palette().white(), Some(ui.palette().black()));
+    ui.draw_text(buffer, right_title, (x + 1 + half) as u32, (y + 1) as u32, ui.palette().white(), Some(ui.palette().black()));
+    for row in 0..inner_h.saturating_sub(1) {
+        let row_index = scroll + row;
+        let left = left_lines.get(scroll + row).map(|s| truncate_to_width(s, half.saturating_sub(1))).unwrap_or_default();
+        let right = right_lines.get(scroll + row).map(|s| truncate_to_width(s, inner_w.saturating_sub(half + 1))).unwrap_or_default();
+        if selection.is_some_and(|sel| sel.contains(panel, row_index)) {
+            ui.fill_rect(buffer, (x + 1) as u32, (y + 2 + row) as u32, inner_w as u32, 1, ui.palette().yellow());
+            ui.draw_text(buffer, &left, (x + 1) as u32, (y + 2 + row) as u32, ui.palette().black(), Some(ui.palette().yellow()));
+            ui.draw_text(buffer, &right, (x + 1 + half) as u32, (y + 2 + row) as u32, ui.palette().black(), Some(ui.palette().yellow()));
+        } else {
+            ui.draw_text(buffer, &left, (x + 1) as u32, (y + 2 + row) as u32, ui.palette().white(), Some(ui.palette().black()));
+            ui.draw_text(buffer, &right, (x + 1 + half) as u32, (y + 2 + row) as u32, ui.palette().white(), Some(ui.palette().black()));
+        }
+    }
+}
+
+fn draw_opentui_panel(
+    ui: &OpenTuiBackend,
+    buffer: opentui_backend::NativeHandle,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+    title: &str,
+    lines: &[String],
+    scroll: usize,
+    selection: Option<MouseSelection>,
+    panel: MousePanel,
+    focused: bool,
+    show_row_numbers: bool,
+) {
+    if width < 4 || height < 4 {
+        return;
+    }
+    let border = if focused { ui.palette().yellow() } else { ui.palette().cyan() };
+    ui.draw_box(buffer, x as i32, y as i32, width as u32, height as u32, title, "", true, border, ui.palette().black(), border);
+    let inner_w = width.saturating_sub(2);
+    let inner_h = height.saturating_sub(2);
+    let visible = inner_h.min(lines.len().saturating_sub(scroll));
+    for row in 0..visible {
+        let absolute = scroll + row;
+        let mut text = lines.get(absolute).cloned().unwrap_or_default();
+        if show_row_numbers {
+            text = format!("{absolute:>4} {text}");
+        }
+        if selection.is_some_and(|sel| sel.contains(panel, absolute)) {
+            ui.fill_rect(buffer, (x + 1) as u32, (y + 1 + row) as u32, inner_w as u32, 1, ui.palette().yellow());
+            ui.draw_text(buffer, &truncate_to_width(&text, inner_w), (x + 1) as u32, (y + 1 + row) as u32, ui.palette().black(), Some(ui.palette().yellow()));
+            continue;
+        }
+        ui.draw_text(buffer, &truncate_to_width(&text, inner_w), (x + 1) as u32, (y + 1 + row) as u32, ui.palette().white(), Some(ui.palette().black()));
+    }
+}
+
+fn header_text_lines(app: &App<'_>) -> Vec<String> {
+    let runtime = app
+        .trace
+        .run
+        .as_ref()
+        .map(|run| format!("runtime: steps={} halt={:?}", run.steps, run.halt))
+        .unwrap_or_else(|| "runtime: not-run".to_string());
+    vec![
+        format!(
+            "mode={} entry={:#x} text_base={:#x} fragment_entry={:#x} view={}",
+            app.mode.name(),
+            app.trace.input.entry_pc,
+            app.trace.input.text_base,
+            app.trace.fragment.entry_offset,
+            if app.show_raw_only { "all" } else { "cfg" }
+        ),
+        format!(
+            "raw={} cfg_blocks={} translated={} fragment_insns={}",
+            app.trace.raw.len(),
+            app.trace.cfg.blocks.len(),
+            app.trace.translated.len(),
+            app.trace.fragment.insns.len()
+        ),
+        runtime,
+        format!("pipeline_check: {}", app.check.metadata()),
+    ]
+}
+
+fn program_text_lines(app: &App<'_>) -> Vec<String> {
+    plain_lines(program_lines(app))
+}
+
+fn selected_program_index(app: &App<'_>, lines: &[String]) -> Option<usize> {
+    let selected_pc = selected_pc(app)?;
+    visible_pc_entries(app.trace, app.show_raw_only)
+        .iter()
+        .position(|entry| entry.pc == selected_pc)
+        .filter(|index| *index < lines.len())
+}
+
+fn translation_text_columns(app: &App<'_>, pc: u64) -> (Vec<String>, Vec<String>) {
+    let (left, right) = aligned_translation_lines(app, pc);
+    (plain_lines(left), plain_lines(right))
+}
+
+fn layout_for_pc_text_lines(app: &App<'_>, pc: u64) -> Vec<String> {
+    plain_lines(layout_for_pc_lines(app, pc))
+}
+
+fn layout_neighborhood_text_lines(app: &App<'_>, offset: usize) -> Vec<String> {
+    plain_lines(layout_neighborhood_lines(app, offset))
+}
+
+fn active_original_text_lines(app: &App<'_>, session: &ActiveStepSession) -> Vec<String> {
+    let mut lines = Vec::new();
+    if let Some(step) = session.current_original() {
+        append_original_step_lines(&mut lines, app, step);
+    } else if let Some(pc) = session.current_origin_pc() {
+        lines.push(Line::from(format!(
+            "pinned ori_pc={pc:#x}; original not advanced by last key"
+        )));
+        append_raw_line(&mut lines, app, pc);
+    } else {
+        lines.push(Line::from("wrapper/runtime only"));
+        lines.push(Line::from(format!(
+            "original cursor pc={:#x}",
+            session.original_pc()
+        )));
+        append_raw_line(&mut lines, app, session.original_pc());
+    }
+    lines.push(Line::from(format!(
+        "original_steps={} halt={}",
+        session.original_steps(),
+        active_halt_label(&session.halt())
+    )));
+    plain_lines(lines)
+}
+
+fn active_translated_text_lines(app: &App<'_>, session: &ActiveStepSession) -> Vec<String> {
+    let mut lines = vec![Line::from(format!(
+        "cursor pc={:#x} offset={} current_ori_pc={}",
+        session.translated_pc(),
+        opt_offset_label(session.translated_offset()),
+        ori_pc_label(session.current_origin_pc())
+    ))];
+    if let Some(offset) = session.translated_offset() {
+        if let Some(insn) = layout_for_offset(app.trace, offset) {
+            lines.push(Line::from(format!(
+                "next off={:#x} idx={} {:?} {}",
+                insn.offset, insn.index, insn.region, insn.pretty
+            )));
+        }
+    }
+    if let Some(step) = session.current_translated() {
+        append_translated_step_lines(&mut lines, app, step);
+    } else {
+        lines.push(Line::from("last translated step: none"));
+    }
+    lines.push(Line::from(format!(
+        "translated_steps={} halt={}",
+        session.translated_steps(),
+        active_halt_label(&session.halt())
+    )));
+    plain_lines(lines)
+}
+
+fn state_summary_text_lines(title: &str, snapshot: &StateSnapshot) -> Vec<String> {
+    let mut lines = Vec::new();
+    append_state_diff_lines(&mut lines, &snapshot.previous, &snapshot.current);
+    let mut out = vec![title.to_string()];
+    out.extend(plain_lines(lines));
+    out
+}
+
+fn comparison_text_lines(app: &App<'_>, session: &ActiveStepSession) -> Vec<String> {
+    plain_lines(match app.step_detail {
+        StepDetailMode::Compact => compact_comparison_lines(session),
+        StepDetailMode::Registers => register_comparison_lines(session),
+        StepDetailMode::Memory => memory_comparison_lines(app, session),
+    })
+}
+
+fn truncate_to_width(text: &str, width: usize) -> String {
+    if width == 0 {
+        return String::new();
+    }
+    let mut out = String::new();
+    for ch in text.chars() {
+        if out.chars().count() >= width {
+            break;
+        }
+        out.push(ch);
+    }
+    out
 }
 
 struct TerminalGuard;
@@ -485,6 +1524,7 @@ fn select_next_pc(app: &mut App<'_>, delta: isize) {
 
 fn set_selection(app: &mut App<'_>, selection: Selection) {
     app.selection = selection;
+    clear_in_panel_selection(app);
     app.raw_scroll = 0;
     app.rephrase_scroll = 0;
     app.layout_scroll = 0;
@@ -528,9 +1568,64 @@ fn scroll_step_detail(app: &mut App<'_>, delta: i16) {
 }
 
 fn export_panel_text(app: &mut App<'_>) {
-    match current_panel_export(app).and_then(write_panel_export) {
+    match current_panel_export(app).and_then(copy_and_export_panel_text) {
         Ok(status) => app.status = status,
         Err(message) => app.status = format!("export failed: {message}"),
+    }
+}
+
+fn copy_panel_text(app: &mut App<'_>) {
+    match current_panel_export(app).and_then(copy_and_export_panel_text) {
+        Ok(status) => app.status = status,
+        Err(message) => app.status = format!("copy failed: {message}"),
+    }
+}
+
+fn copy_and_export_panel_text(export: PanelExport) -> Result<String, String> {
+    let text = export.lines.join("\n");
+    let clipboard_status = copy_text_to_clipboard(&text);
+    let export_status = write_panel_export(export)?;
+    Ok(match clipboard_status {
+        Ok(()) => format!("{export_status} | copied to clipboard"),
+        Err(message) => format!("{export_status} | clipboard unavailable: {message}"),
+    })
+}
+
+fn copy_text_to_clipboard(text: &str) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        return copy_text_with_command("pbcopy", &[], text);
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        return copy_text_with_command("wl-copy", &[], text)
+            .or_else(|_| copy_text_with_command("xclip", &["-selection", "clipboard"], text))
+            .or_else(|_| copy_text_with_command("xsel", &["--clipboard", "--input"], text));
+    }
+
+    #[cfg(not(any(unix, target_os = "macos")))]
+    {
+        Err("clipboard copying is not supported on this platform".to_string())
+    }
+}
+
+fn copy_text_with_command(command: &str, args: &[&str], text: &str) -> Result<(), String> {
+    let mut child = ProcessCommand::new(command)
+        .args(args)
+        .stdin(Stdio::piped())
+        .spawn()
+        .map_err(|err| format!("{command}: {err}"))?;
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(text.as_bytes())
+            .map_err(|err| format!("{command}: {err}"))?;
+    }
+    let status = child.wait().map_err(|err| format!("{command}: {err}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("{command} exited with {status}"))
     }
 }
 
@@ -549,20 +1644,20 @@ fn current_panel_export(app: &App<'_>) -> Result<PanelExport, String> {
 fn explore_panel_export(app: &App<'_>) -> Result<PanelExport, String> {
     let title = app.focus.name().to_string();
     let lines = match app.focus {
-        FocusPanel::Cfg => program_lines(app),
+        FocusPanel::Cfg => export_program_lines(app),
         FocusPanel::Rephrase => match app.selection {
-            Selection::Pc(pc) => translation_export_lines(app, pc),
-            Selection::Offset(_) => vec![Line::from("select an original PC to inspect rephrase")],
+            Selection::Pc(pc) => export_translation_lines(app, pc),
+            Selection::Offset(_) => vec!["select an original PC to inspect rephrase".to_string()],
         },
         FocusPanel::Layout => match app.selection {
-            Selection::Pc(pc) => layout_for_pc_lines(app, pc),
-            Selection::Offset(offset) => layout_neighborhood_lines(app, offset),
+            Selection::Pc(pc) => export_layout_for_pc_lines(app, pc),
+            Selection::Offset(offset) => export_layout_neighborhood_lines(app, offset),
         },
     };
 
     Ok(PanelExport {
         title,
-        lines: plain_lines(lines),
+        lines,
     })
 }
 
@@ -570,17 +1665,112 @@ fn active_step_panel_export(app: &App<'_>) -> Result<PanelExport, String> {
     let Some(session) = app.active_step.as_ref() else {
         return Err("active session is not initialized".to_string());
     };
-    let title = format!("Comparison {}", app.step_detail.name());
-    let lines = match app.step_detail {
-        StepDetailMode::Compact => compact_comparison_lines(session),
-        StepDetailMode::Registers => register_comparison_lines(session),
-        StepDetailMode::Memory => memory_comparison_lines(app, session),
+    let (title, lines) = match app.mouse_selection.map(|sel| sel.panel) {
+        Some(MousePanel::ActiveOriginal) => (
+            "Original".to_string(),
+            export_selected_lines(active_original_text_lines(app, session), panel_selection_range(app, MousePanel::ActiveOriginal)),
+        ),
+        Some(MousePanel::ActiveTranslated) => (
+            "Translated".to_string(),
+            export_selected_lines(active_translated_text_lines(app, session), panel_selection_range(app, MousePanel::ActiveTranslated)),
+        ),
+        Some(MousePanel::ActiveStateOriginal) => (
+            "Original State Summary".to_string(),
+            export_selected_lines(state_summary_text_lines("Original State Summary", session.original_snapshot()), panel_selection_range(app, MousePanel::ActiveStateOriginal)),
+        ),
+        Some(MousePanel::ActiveStateTranslated) => (
+            "Translated State Summary".to_string(),
+            export_selected_lines(state_summary_text_lines("Translated State Summary", session.translated_snapshot()), panel_selection_range(app, MousePanel::ActiveStateTranslated)),
+        ),
+        Some(MousePanel::ActiveComparison) | None => {
+            let lines = match app.step_detail {
+                StepDetailMode::Compact => compact_comparison_lines(session),
+                StepDetailMode::Registers => register_comparison_lines(session),
+                StepDetailMode::Memory => memory_comparison_lines(app, session),
+            };
+            (
+                format!("Comparison {}", app.step_detail.name()),
+                export_selected_lines(
+                    plain_lines(lines),
+                    panel_selection_range(app, MousePanel::ActiveComparison),
+                ),
+            )
+        }
+        Some(MousePanel::Program)
+        | Some(MousePanel::Translation)
+        | Some(MousePanel::Result) => {
+            let lines = match app.step_detail {
+                StepDetailMode::Compact => compact_comparison_lines(session),
+                StepDetailMode::Registers => register_comparison_lines(session),
+                StepDetailMode::Memory => memory_comparison_lines(app, session),
+            };
+            (
+                format!("Comparison {}", app.step_detail.name()),
+                plain_lines(lines),
+            )
+        }
     };
 
     Ok(PanelExport {
         title,
-        lines: plain_lines(lines),
+        lines,
     })
+}
+
+fn export_program_lines(app: &App<'_>) -> Vec<String> {
+    export_selected_lines(plain_lines(program_lines(app)), panel_selection_range(app, MousePanel::Program))
+}
+
+fn export_translation_lines(app: &App<'_>, pc: u64) -> Vec<String> {
+    if let Some((start, end)) = panel_selection_range(app, MousePanel::Translation) {
+        return translation_selected_lines(app, pc, start, end);
+    }
+    plain_lines(translation_export_lines(app, pc))
+}
+
+fn export_layout_for_pc_lines(app: &App<'_>, pc: u64) -> Vec<String> {
+    export_selected_lines(plain_lines(layout_for_pc_lines(app, pc)), panel_selection_range(app, MousePanel::Result))
+}
+
+fn export_layout_neighborhood_lines(app: &App<'_>, offset: usize) -> Vec<String> {
+    export_selected_lines(plain_lines(layout_neighborhood_lines(app, offset)), panel_selection_range(app, MousePanel::Result))
+}
+
+fn translation_selected_lines(app: &App<'_>, pc: u64, start: usize, end: usize) -> Vec<String> {
+    let (left, right) = translation_text_columns(app, pc);
+    let start = start.min(left.len().saturating_sub(1));
+    let end = end.min(left.len().saturating_sub(1));
+    let range_start = start.min(end);
+    let range_end = start.max(end);
+    (range_start..=range_end)
+        .map(|idx| {
+            let left = left.get(idx).cloned().unwrap_or_default();
+            let right = right.get(idx).cloned().unwrap_or_default();
+            format!("{left}\t|\t{right}")
+        })
+        .collect()
+}
+
+fn export_selected_lines(lines: Vec<String>, selection: Option<(usize, usize)>) -> Vec<String> {
+    let Some((start, end)) = selection else {
+        return lines;
+    };
+    if lines.is_empty() {
+        return lines;
+    }
+    let start = start.min(lines.len() - 1);
+    let end = end.min(lines.len() - 1);
+    let (start, end) = (start.min(end), start.max(end));
+    lines[start..=end].to_vec()
+}
+
+fn panel_selection_range(app: &App<'_>, panel: MousePanel) -> Option<(usize, usize)> {
+    let selection = app.mouse_selection?;
+    if selection.panel == panel {
+        Some((selection.start, selection.end))
+    } else {
+        None
+    }
 }
 
 fn write_panel_export(export: PanelExport) -> Result<String, String> {
@@ -637,6 +1827,7 @@ fn enter_step_mode(app: &mut App<'_>) {
             app.active_step = Some(session);
             app.mode = Mode::ActiveStep;
             app.step_detail = StepDetailMode::Compact;
+            clear_in_panel_selection(app);
             app.raw_scroll = 0;
             app.rephrase_scroll = 0;
             app.layout_scroll = 0;
@@ -659,6 +1850,7 @@ fn leave_step_mode(app: &mut App<'_>) {
     }
     app.active_step = None;
     app.mode = Mode::Explore;
+    clear_in_panel_selection(app);
     app.raw_scroll = 0;
     app.rephrase_scroll = 0;
     app.layout_scroll = 0;
