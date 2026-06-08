@@ -105,8 +105,8 @@ updates to `x30`, so the epilogue writes user LR back to `pt_regs` without a
 runtime-side patch.
 
 The harness also exposes a trace model for debugging the full translation path.
-Use `trace-tui` for an interactive Ratatui view, or `--dump --check` for a
-scriptable full-pipeline check:
+Use `trace-tui` for an interactive OpenTUI-backed view, or `--dump --check`
+for a scriptable full-pipeline check:
 
 ```sh
 make harness-tui
@@ -128,8 +128,10 @@ fixture can be inspected alongside its pass/fail metadata.
 Inside the TUI, Explore mode opens first. `q` quits, `Tab` cycles panel focus,
 `p`/`t`/`r` jump to Program/Translation/Result, arrow keys move or
 scroll the focused panel, `y` exports the focused panel's logical text to
-`tmp/trace-copy.txt`, and `a` toggles the Program panel between CFG-only and all
-decoded PCs.
+`tmp/trace-copy.txt` and the system clipboard, mouse wheel scrolls the pane
+under the pointer, mouse drag selects rows inside a pane, and releasing the
+mouse copies the selected rows automatically. `a` toggles the Program panel
+between CFG-only and all decoded PCs.
 
 Press `s` to enter active step mode. Active stepping starts a fresh deterministic
 session from the translated entry. `Space` advances one original semantic group
@@ -138,10 +140,11 @@ register comparison, `m` shows memory comparison, `c` returns to the compact
 comparison pane, `R` resets the active session to entry, and `Esc` or `s`
 returns to Explore mode. In register or memory comparison mode, `Up`/`Down`
 scroll the comparison pane, and `y` exports the current comparison pane to
-`tmp/trace-copy.txt`. Active step mode does not support reverse execution;
+`tmp/trace-copy.txt` and the system clipboard. Active step mode does not support reverse execution;
 reset/replay is the way to revisit earlier states.
 
-The interactive TUI entry point is `scripts/run-trace-tui.sh`; the
+The interactive TUI entry point is `scripts/run-trace-tui.sh`; it defaults to
+OpenTUI and will auto-detect a local `opentui` checkout when available. The
 noninteractive assembly fixture validation remains `scripts/run-asm-fixture.sh`.
 
 ### Container Dev
