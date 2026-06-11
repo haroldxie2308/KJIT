@@ -36,15 +36,15 @@ After you've watched loads of videos and read through lines of code online, it's
 
 The idea of UCA module came from [Userspace Bypass: Accelerating Syscall-intensive Applications](https://www.usenix.org/conference/osdi23/presentation/zhou-zhe). Please refer to Zhe ZHOU et al.'s paper for more detail of the design and a workable kernel module for x86-64 platform.
 
-![diagramme](./pics/diagramme.png)
+![diagramme](.old-version/pics/diagramme.png)
 
 ### The design of the Control Flow Analysis method of `struct Translator`.
 
-![cfa_diagram](./pics/cfa_diagram.png)
+![cfa_diagram](.old-version/pics/cfa_diagram.png)
 
 ### Original code compared to JITed code
 
-![cmp1](./pics/code_cmp.png)
+![cmp1](.old-version/pics/code_cmp.png)
 
 ## Usage
 
