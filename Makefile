@@ -14,7 +14,7 @@ KMAKE += O=$(KBUILD_OUTPUT)
 endif
 
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
-    rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset \
+    rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
 	harness-test harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen help
 
 default:
@@ -79,6 +79,9 @@ qemu-run-bg:
 qemu-reset:
 	bash ./scripts/qemu-reset.sh
 
+pack:
+	bash ./scripts/pack.sh
+
 module-build: default
 
 harness-test:
@@ -122,4 +125,5 @@ help:
 		'spec-test-encoding' 'Compare generated A64Insn encoding against LLVM assembler output' \
 		'qemu-run' 'Boot the local kernel image in QEMU (foreground)' \
 		'qemu-run-bg' 'Boot the local kernel image in QEMU (background)' \
-		'qemu-reset' 'Reset the running QEMU guest through QMP'
+		'qemu-reset' 'Reset the running QEMU guest through QMP' \
+		'pack' 'Create a tar.gz of tracked files under tmp/pack/'
