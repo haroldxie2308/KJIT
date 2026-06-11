@@ -79,6 +79,7 @@ The repo now includes a local kernel/QEMU workflow so the Rust module, kernel so
 - The default kernel profile is `tiny-qemu-debug`, built from the fragments under `kernel-config/`
 - `scripts/qemu-run.sh` expects a built ARM64 `Image` at `dep/linux/arch/arm64/boot/Image`
 - QEMU rootfs and initramfs paths are configured through `.kjit.env`
+- `make pack` writes a tar.gz of tracked files to `tmp/pack/` by default; override `OUT=...` if you want a different destination
 - The Rust-for-Linux out-of-tree flow expects Rust metadata and proc-macro artifacts from a kernel build, so `kernel-build` is the prerequisite for `rust-analyzer` quality and external Rust module builds
 - `rust-project.json` should be generated inside the Linux dev container so rust-analyzer sees the same toolchain and proc-macro environment as the kernel build
 - Build-oriented `make` targets are intended to run inside the Linux dev container, not on the macOS host
