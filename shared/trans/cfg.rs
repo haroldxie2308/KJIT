@@ -5,12 +5,29 @@ use crate::shared::trans::reg_virt::{admit_insn, RegVirtError};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeExitReason {
-    Bl { target_pc: u64, resume_pc: u64 },
-    Blr { target_reg: u8, resume_pc: u64 },
-    Br { target_reg: u8 },
-    Ret { lr_reg: u8 },
-    Svc { imm16: u16, resume_pc: u64 },
-    Unsupported { pc: u64, word: u32 },
+    Bl {
+        target_pc: u64,
+        resume_pc: u64,
+    },
+    Blr {
+        target_reg: u8,
+        resume_pc: u64,
+    },
+    Br {
+        target_reg: u8,
+    },
+    Ret {
+        lr_reg: u8,
+    },
+    Svc {
+        imm16: u16,
+        resume_pc: u64,
+    },
+    /// `word` is `None` when `pc` is past the readable text (`UnsupportedExit::Unreadable`).
+    Unsupported {
+        pc: u64,
+        word: Option<u32>,
+    },
 }
 
 /// Reachable instruction word that userspace must execute natively: either the
@@ -23,11 +40,39 @@ pub struct UnsupportedInsn {
     pub word: u32,
 }
 
+/// Why a block ends in a native-resume `Unsupported` exit: userspace resumes at
+/// `pc` and executes whatever is there itself.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UnsupportedExit {
+    /// The word at `pc` is outside the subset or reg-virt rejects it.
+    Insn(UnsupportedInsn),
+    /// `pc` is past the readable text: there is no word to translate. Natively the
+    /// CPU fetches (or faults) there, which is exactly what resuming at `pc` gives.
+    Unreadable { pc: u64 },
+}
+
+impl UnsupportedExit {
+    pub const fn pc(self) -> u64 {
+        match self {
+            Self::Insn(insn) => insn.pc,
+            Self::Unreadable { pc } => pc,
+        }
+    }
+
+    /// The raw word, if one could be read.
+    pub const fn word(self) -> Option<u32> {
+        match self {
+            Self::Insn(insn) => Some(insn.word),
+            Self::Unreadable { .. } => None,
+        }
+    }
+}
+
 /// Basic block over a half-open PC range: [start_addr, end_addr).
 ///
 /// When `unsupported_exit` is `Some(u)`, the block ends with a runtime exit to
-/// userspace at `u.pc`: `u.pc == end_addr`, the unsupported instruction is not in
-/// `insns`, `next` is empty, and `insns` may be empty.
+/// userspace at `u.pc()`: `u.pc() == end_addr`, the unsupported instruction is not
+/// in `insns`, `next` is empty, and `insns` may be empty.
 #[derive(Debug, PartialEq, Eq)]
 pub struct BasicBlock {
     pub start_addr: u64,
@@ -35,7 +80,7 @@ pub struct BasicBlock {
     pub insns: SharedVec<IrInsn>,
     pub prev: SharedVec<u64>,
     pub next: SharedVec<u64>,
-    pub unsupported_exit: Option<UnsupportedInsn>,
+    pub unsupported_exit: Option<UnsupportedExit>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -73,6 +118,10 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
     let mut blocks = SharedVec::new();
     let mut pending = SharedVec::new();
 
+    // An unreadable entry is a translation request for code that does not exist.
+    // Every other unreadable PC is an `Unreadable` exit (`admit_at`).
+    code.read_exact(request.entry_pc, &mut [0_u8; 4])
+        .map_err(CfgError::CodeRead)?;
     enqueue_block(request.entry_pc, &mut pending)?;
 
     let mut pending_index = 0usize;
@@ -96,16 +145,12 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
                 }
             }
 
-            let insn = match read_insn(code, pc) {
-                Ok(Ok(insn)) => insn,
-                Ok(Err(unsupported)) => {
+            let insn = match admit_at(code, pc)? {
+                Ok(insn) => insn,
+                Err(unsupported) => {
                     unsupported_exit = Some(unsupported);
                     break SharedVec::new();
                 }
-                Err(CfgError::CodeRead(_)) if !insns.is_empty() => {
-                    break SharedVec::new();
-                }
-                Err(err) => return Err(err),
             };
             pc = pc.wrapping_add(4);
 
@@ -175,14 +220,19 @@ fn next_from_two(first: u64, second: u64) -> Result<SharedVec<u64>, CfgError> {
     Ok(next)
 }
 
-fn read_insn<P: CodeProvider>(
+/// The single decision on what translation does at `pc`: `admit_word` on the word
+/// there, or an `Unreadable` exit when `pc` is past the readable text. Shared with
+/// the harness original-code interpreters, so running off the end of the text
+/// stops them exactly where the translated code exits.
+pub fn admit_at<P: CodeProvider>(
     code: &P,
     pc: u64,
-) -> Result<Result<IrInsn, UnsupportedInsn>, CfgError> {
+) -> Result<Result<IrInsn, UnsupportedExit>, CfgError> {
     let mut bytes = [0_u8; 4];
-    code.read_exact(pc, &mut bytes)
-        .map_err(CfgError::CodeRead)?;
-    admit_word(u32::from_le_bytes(bytes), pc)
+    match code.read_exact(pc, &mut bytes) {
+        Ok(()) => Ok(admit_word(u32::from_le_bytes(bytes), pc)?.map_err(UnsupportedExit::Insn)),
+        Err(CodeReadError::Unmapped { .. }) => Ok(Err(UnsupportedExit::Unreadable { pc })),
+    }
 }
 
 /// Final layout order of a program's blocks, as indices into the sequence of their
@@ -370,10 +420,10 @@ mod tests {
         assert!(block.next.is_empty());
         assert_eq!(
             block.unsupported_exit,
-            Some(UnsupportedInsn {
+            Some(UnsupportedExit::Insn(UnsupportedInsn {
                 pc: BASE,
                 word: UNDECODABLE
-            })
+            }))
         );
     }
 
@@ -393,10 +443,10 @@ mod tests {
         assert!(block.next.is_empty());
         assert_eq!(
             block.unsupported_exit,
-            Some(UnsupportedInsn {
+            Some(UnsupportedExit::Insn(UnsupportedInsn {
                 pc: BASE + 4,
                 word: UNDECODABLE
-            })
+            }))
         );
     }
 
@@ -436,10 +486,10 @@ mod tests {
         assert_eq!(&*tail.prev, &[BASE + 4, BASE + 16]);
         assert_eq!(
             tail.unsupported_exit,
-            Some(UnsupportedInsn {
+            Some(UnsupportedExit::Insn(UnsupportedInsn {
                 pc: BASE + 12,
                 word: UNDECODABLE
-            })
+            }))
         );
     }
 
@@ -461,10 +511,10 @@ mod tests {
         assert!(block.next.is_empty());
         assert_eq!(
             block.unsupported_exit,
-            Some(UnsupportedInsn {
+            Some(UnsupportedExit::Insn(UnsupportedInsn {
                 pc: BASE + 4,
                 word: rejected
-            })
+            }))
         );
 
         let code = SliceCode {
@@ -472,6 +522,63 @@ mod tests {
             bytes: &bytes,
         };
         compile_request(&request(), &code).unwrap();
+    }
+
+    #[test]
+    fn running_off_the_text_ends_the_block_with_an_unreadable_exit() {
+        let movz = enc(A64Insn::MovzMovz64Movewide {
+            hw: 0,
+            imm16: uimm(1, 16),
+            rd: x(0),
+        });
+        let cfg = cfg_for(&assemble(&[movz]));
+
+        assert_eq!(cfg.blocks.len(), 1);
+        let block = &cfg.blocks[0];
+        assert_eq!((block.start_addr, block.end_addr), (BASE, BASE + 4));
+        assert!(block.next.is_empty());
+        assert_eq!(
+            block.unsupported_exit,
+            Some(UnsupportedExit::Unreadable { pc: BASE + 4 })
+        );
+    }
+
+    /// A branch whose fall-through is past the text: that successor is an empty
+    /// block holding only the `Unreadable` exit.
+    #[test]
+    fn unreadable_successor_is_an_empty_exit_block() {
+        let cbz = enc(A64Insn::CbzCbz64Compbranch {
+            imm19: scaled_simm(0, 19, 2),
+            rt: x(0),
+        });
+        let cfg = cfg_for(&assemble(&[cbz]));
+
+        let tail = cfg
+            .blocks
+            .iter()
+            .find(|block| block.start_addr == BASE + 4)
+            .unwrap();
+        assert_eq!(tail.end_addr, BASE + 4);
+        assert!(tail.insns.is_empty());
+        assert_eq!(
+            tail.unsupported_exit,
+            Some(UnsupportedExit::Unreadable { pc: BASE + 4 })
+        );
+    }
+
+    #[test]
+    fn unreadable_entry_is_a_hard_error() {
+        let code = SliceCode {
+            base: BASE,
+            bytes: &[],
+        };
+        assert_eq!(
+            build_cfg(&request(), &code),
+            Err(CfgError::CodeRead(CodeReadError::Unmapped {
+                pc: BASE,
+                len: 4
+            }))
+        );
     }
 
     #[test]

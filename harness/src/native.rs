@@ -896,10 +896,9 @@ fn describe_event(event: &Event) -> String {
 pub enum NativeStop {
     /// The hardware executed the branch exit at `pc` and arrived at `target_pc`.
     Branch { pc: u64, target_pc: u64 },
-    /// Stopped before the word at `pc` that `admit_word` rejects.
+    /// Stopped before the word at `pc` that `admit_at` rejects, or at the first
+    /// word past the text (an `Unreadable` exit).
     Unsupported { pc: u64 },
-    /// Execution reached the first word past the text.
-    FellOffEnd { pc: u64 },
     /// The instruction at `pc` took a data abort at `addr` and did not retire.
     Fault { pc: u64, addr: u64 },
     /// Stopped before the `InstanceCap`'s execution of the branch at `pc`.
@@ -1021,10 +1020,11 @@ pub fn run_original(
                     session, &text_map, &words, text_base, snapshot, initial, &memory,
                 );
             }
-            (SIGTRAP, Some(BRK_FILL)) if pc == text_end => {
+            // Past the text: where the translated code takes its `Unreadable` exit.
+            (SIGTRAP, Some(BRK_FILL)) if pc >= text_end && text_map.contains(pc) => {
                 return Ok(NativeOriginal {
                     state: native_state(initial, &snapshot, &memory),
-                    stop: NativeStop::FellOffEnd { pc },
+                    stop: NativeStop::Unsupported { pc },
                 });
             }
             // A data abort from an instruction in the text: precise, so the
@@ -1181,7 +1181,6 @@ pub fn original_halt_matches(
         )
     };
     match (original.halt_reason, *native) {
-        (HaltReason::FellOffEnd, NativeStop::FellOffEnd { .. }) => Ok(()),
         (
             HaltReason::RuntimeExit {
                 reason: RuntimeExitReason::Unsupported { pc, .. },

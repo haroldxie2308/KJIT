@@ -5,9 +5,9 @@
 //! loops are `movz xC, #n; head: <body not writing xC>; sub[s] xC, xC, #1;
 //! cbnz xC, head | b.ne head`; forward branches never enter a loop from
 //! outside or skip a loop's decrement; a few percent of branches go backward
-//! unstructured and rely on the step limit. The last slot is a register exit
-//! (mostly `ret x30`), BL out of the text, an undecodable word, or nothing
-//! (fall off the end).
+//! unstructured and rely on the back-edge budget. Branches may target the first
+//! PC past the text. The last slot is a register exit (mostly `ret x30`), BL out
+//! of the text, an undecodable word, or nothing (fall off the end).
 
 use super::forms::{BranchField, Catalog, FieldKind, Form, FormClass};
 use super::program::{branch_field_value, slot_pc, Program, Slot, TEXT_BASE};
@@ -23,8 +23,6 @@ pub struct GenConfig {
     /// Chance, per mille and per memory instruction, that its base is the
     /// fault pointer (a register aimed at a read-only or unmapped page).
     pub fault_per_mille: u32,
-    /// Whether a program may end by falling off the end of the text.
-    pub fall_off: bool,
     /// Keep SP 16-byte aligned: no ALU writes to SP and SP writeback only by
     /// multiples of 16. Linux enables SP alignment checking at EL0, which the
     /// interpreter does not model and the translated code (SP lives in x17)
@@ -37,7 +35,6 @@ impl Default for GenConfig {
         Self {
             max_len: 64,
             fault_per_mille: 10,
-            fall_off: true,
             sp_aligned: false,
         }
     }
@@ -596,13 +593,6 @@ impl Gen<'_> {
 
     fn push_terminal(&mut self) {
         let index = self.slots.len();
-        let last_falls_through_cleanly = matches!(
-            self.slots.last(),
-            Some(Pending::Word(word)) if self
-                .catalog
-                .form_for_word(*word)
-                .is_some_and(|form| matches!(form.class, FormClass::Straight | FormClass::Memory))
-        );
         let pick = self.rng.below(100);
         let slot = if pick < 15 {
             let forms = self.catalog.of_class(FormClass::ExitImm);
@@ -611,7 +601,7 @@ impl Gen<'_> {
                 .expect("exit-imm forms are admitted")
         } else if pick < 27 {
             Pending::Word(self.undecodable_word())
-        } else if pick < 37 && last_falls_through_cleanly && self.config.fall_off {
+        } else if pick < 37 && index > 0 {
             return; // fall off the end
         } else {
             let forms = self.catalog.of_class(FormClass::ExitReg);
@@ -664,7 +654,8 @@ impl Gen<'_> {
             let target = if self.rng.chance(BACKWARD_PER_MILLE) {
                 self.rng.below(index as u64 + 1) as usize
             } else {
-                let candidates = (index + 1..len)
+                // `len` is the first PC past the text: an `Unreadable` exit.
+                let candidates = (index + 1..=len)
                     .filter(|&to| self.forward_allowed(index, to))
                     .collect::<Vec<_>>();
                 assert!(

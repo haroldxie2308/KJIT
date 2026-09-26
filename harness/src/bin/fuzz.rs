@@ -2,7 +2,7 @@
 //!
 //!   fuzz --seed S --iters N [--max-len L] [--start I] [--fault-per-mille F]
 //!        [--regress-dir DIR] [--max-minimize K] [--minimize-budget B]
-//!        [--progress P] [--no-fall-off] [--sp-aligned] [--native]
+//!        [--progress P] [--sp-aligned] [--native]
 //!
 //! Prints stats and per-form coverage. Every failure is reported; the first K
 //! (at most 3 per failure kind) are minimized and written as `.s` regression
@@ -28,7 +28,7 @@ use kjit_harness::shared::arm64::A64Insn;
 
 const USAGE: &str = "usage: fuzz --seed S --iters N [--max-len L] [--start I] \
 [--fault-per-mille F] [--regress-dir DIR] [--max-minimize K] [--minimize-budget B] \
-[--progress P] [--no-fall-off] [--sp-aligned] [--native]";
+[--progress P] [--sp-aligned] [--native]";
 
 struct Args {
     config: FuzzConfig,
@@ -112,13 +112,12 @@ fn run(args: &Args) -> Result<u64, String> {
     };
 
     println!(
-        "fuzz: seed={:#x} start={} iters={} max_len={} fault_per_mille={} fall_off={} sp_aligned={} native={}",
+        "fuzz: seed={:#x} start={} iters={} max_len={} fault_per_mille={} sp_aligned={} native={}",
         args.config.seed,
         args.config.start,
         args.config.iters,
         args.config.gen.max_len,
         args.config.gen.fault_per_mille,
-        args.config.gen.fall_off,
         args.config.gen.sp_aligned,
         checker.native_enabled()
     );
@@ -251,10 +250,6 @@ fn parse_args(raw: Vec<String>) -> Result<Args, String> {
     while let Some(flag) = iter.next() {
         if flag == "--native" {
             native = true;
-            continue;
-        }
-        if flag == "--no-fall-off" {
-            gen.fall_off = false;
             continue;
         }
         if flag == "--sp-aligned" {

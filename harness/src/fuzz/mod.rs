@@ -234,7 +234,7 @@ fn exit_target(halt: &HaltReason, pre_regs: &[u64; 32]) -> Option<u64> {
             RuntimeExitReason::Bl { target_pc, .. } => Some(target_pc),
             RuntimeExitReason::Svc { .. } | RuntimeExitReason::Unsupported { .. } => None,
         },
-        HaltReason::FellOffEnd | HaltReason::Fault(_) | HaltReason::InstanceCap { .. } => None,
+        HaltReason::Fault(_) | HaltReason::InstanceCap { .. } => None,
     }
 }
 
@@ -389,7 +389,6 @@ pub fn fuzz(
 
 pub fn halt_label(halt: &HaltReason) -> &'static str {
     match halt {
-        HaltReason::FellOffEnd => "fell-off-end",
         HaltReason::Fault(_) => "fault",
         HaltReason::InstanceCap { .. } => "budget",
         HaltReason::RuntimeExit { reason } => match reason {
@@ -398,6 +397,7 @@ pub fn halt_label(halt: &HaltReason) -> &'static str {
             RuntimeExitReason::Br { .. } => "br",
             RuntimeExitReason::Ret { .. } => "ret",
             RuntimeExitReason::Svc { .. } => "svc",
+            RuntimeExitReason::Unsupported { word: None, .. } => "unreadable",
             RuntimeExitReason::Unsupported { .. } => "unsupported",
         },
     }

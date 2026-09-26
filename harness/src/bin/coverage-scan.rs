@@ -258,8 +258,9 @@ fn cfg_exits(cfg: &Cfg) -> Vec<SiteExit> {
         if let Some(unsupported) = block.unsupported_exit {
             exits.push(SiteExit {
                 kind: ExitKind::Unsupported,
-                pc: unsupported.pc,
-                word: Some(unsupported.word),
+                pc: unsupported.pc(),
+                // `None`: the text ended there (no word to report).
+                word: unsupported.word(),
             });
             continue;
         }

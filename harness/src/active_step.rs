@@ -7,8 +7,9 @@ use crate::runtime::{
 };
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::platform::{SharedVec, GFP_KERNEL};
-use crate::shared::trans::cfg::{admit_word, RuntimeExitReason, UnsupportedInsn};
+use crate::shared::trans::cfg::{admit_at, RuntimeExitReason};
 use crate::trace::TraceFragment;
+use crate::MockCodeProvider;
 
 const MAX_GROUP_TRANSLATED_STEPS: usize = 100_000;
 
@@ -503,37 +504,18 @@ impl ActiveOriginalStepper {
             return Ok(None);
         }
 
-        if self.pc < self.base_pc {
-            return Err(format!("pc moved before base address: {:#x}", self.pc));
-        }
-
-        let offset = self.pc - self.base_pc;
-        if offset % 4 != 0 {
-            return Err(format!("pc is not word-aligned: {:#x}", self.pc));
-        }
-
-        let insn_index = (offset / 4) as usize;
-        if insn_index >= self.program.len() / 4 {
-            self.stopped = true;
-            return Ok(Some(ActiveOriginalStep {
-                pc: self.pc,
-                next_pc: None,
-                executed: false,
-                runtime_exit: None,
-                halt_reason: Some(HaltReason::FellOffEnd),
-                state: self.state.clone(),
-            }));
-        }
-
-        let chunk = &self.program[insn_index * 4..insn_index * 4 + 4];
-        let word = u32::from_le_bytes(chunk.try_into().unwrap());
-        let decoded = match admit_word(word, self.pc).map_err(|err| err.to_string())? {
+        // The translator's own decision at this PC, running off the text included.
+        let text = MockCodeProvider::new(self.base_pc, &self.program[..]);
+        let decoded = match admit_at(&text, self.pc).map_err(|err| err.to_string())? {
             Ok(decoded) => decoded,
-            Err(UnsupportedInsn { pc, word }) => {
-                let reason = RuntimeExitReason::Unsupported { pc, word };
+            Err(exit) => {
+                let reason = RuntimeExitReason::Unsupported {
+                    pc: exit.pc(),
+                    word: exit.word(),
+                };
                 self.stopped = true;
                 return Ok(Some(ActiveOriginalStep {
-                    pc,
+                    pc: exit.pc(),
                     next_pc: None,
                     executed: false,
                     runtime_exit: Some(reason),

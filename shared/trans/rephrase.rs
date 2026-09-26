@@ -1,11 +1,11 @@
 use crate::shared::abi::{
     RetStatus, ABI_LINK_REG, REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG,
-    RET_STATUS_REG, RUNTIME_FRAME_BUDGET_OFFSET,
+    RET_STATUS_REG, RUNTIME_FRAME_BUDGET_OFFSET, UNSUPPORTED_WORD_UNREADABLE,
 };
 use crate::shared::arm64::ergo::{ldst64_offset, mem_off, scaled_simm, sp, uimm, x, xzr};
 use crate::shared::arm64::{A64Insn, A64Reg, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
-use crate::shared::trans::cfg::{layout_block_order, Cfg, RuntimeExitReason, UnsupportedInsn};
+use crate::shared::trans::cfg::{layout_block_order, Cfg, RuntimeExitReason};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RephrasedInsnKind {
@@ -489,14 +489,15 @@ fn push_branch_to_stub(
     )
 }
 
-/// Exit group that returns to userspace at `pc` so the instruction `word` executes
-/// natively there: `Unsupported` (undecodable or rejected), `Mem` (fault stub) and
-/// `Budget` (budget stub).
+/// Exit group that returns to userspace at `pc` so the instruction there executes
+/// natively: `Unsupported` (undecodable, rejected or unreadable), `Mem` (fault
+/// stub) and `Budget` (budget stub). `param0` is the raw word, or
+/// `UNSUPPORTED_WORD_UNREADABLE`.
 fn push_native_resume_exit(
     out: &mut SharedVec<RephrasedInsn>,
     status: RetStatus,
     pc: u64,
-    word: u32,
+    param0: u64,
 ) -> SharedResult<(), SharedAllocError> {
     push_mov_imm64(
         out,
@@ -509,7 +510,7 @@ fn push_native_resume_exit(
         out,
         pc,
         x(RET_PARAM0_REG),
-        u64::from(word),
+        param0,
         RephrasedInsnKind::RuntimeExitPayload,
     )?;
     push_mov_imm64(
@@ -622,17 +623,23 @@ pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
                 for check in budget_check(insn.pc) {
                     insns.push(check, GFP_KERNEL)?;
                 }
-                push_native_resume_exit(&mut cold, RetStatus::Budget, insn.pc, insn.word)?;
+                push_native_resume_exit(
+                    &mut cold,
+                    RetStatus::Budget,
+                    insn.pc,
+                    u64::from(insn.word),
+                )?;
             }
             insns.append(lowered, GFP_KERNEL)?;
             if insn.inner.accesses_memory() {
                 // Fault stub: userspace re-executes the instruction and takes the fault.
-                push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, insn.word)?;
+                push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, u64::from(insn.word))?;
             }
         }
-        if let Some(UnsupportedInsn { pc, word }) = block.unsupported_exit {
-            placed.push(pc, GFP_KERNEL)?;
-            push_native_resume_exit(&mut insns, RetStatus::Unsupported, pc, word)?;
+        if let Some(exit) = block.unsupported_exit {
+            placed.push(exit.pc(), GFP_KERNEL)?;
+            let param0 = exit.word().map_or(UNSUPPORTED_WORD_UNREADABLE, u64::from);
+            push_native_resume_exit(&mut insns, RetStatus::Unsupported, exit.pc(), param0)?;
         }
 
         rephrased[index] = Some(RephrasedBlock {

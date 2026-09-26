@@ -27,10 +27,20 @@ translation/runtime harness untouched.
 ## Unsupported-instruction exit
 
 - An undecodable word no longer fails translation. `build_cfg` ends the block
-  before it and records `BasicBlock.unsupported_exit = Some(UnsupportedInsn { pc, word })`.
+  before it and records `BasicBlock.unsupported_exit = Some(UnsupportedExit::Insn(..))`.
   Invariant: `pc == end_addr`, `next` is empty, `insns` may be empty (entry
-  itself undecodable). Only `DecodeError::UnsupportedWord` converts; code-read
-  failures keep their old behavior.
+  itself undecodable).
+- A PC past the readable text is the same exit: `UnsupportedExit::Unreadable { pc }`
+  (V2 fuzzer finding: before, a block that ran into the end of the text got no
+  successor and no exit, so the fragment ran off its end). No word exists, so
+  `x10` carries the sentinel `UNSUPPORTED_WORD_UNREADABLE = u64::MAX`; a real
+  word is always <= `u32::MAX`. Userspace resumes at that PC and fetches (or
+  faults) natively, which is exact. This covers falling through the last word
+  and a branch or conditional fall-through to a PC past the text (an empty
+  block holding only the exit). An unreadable **entry** stays a hard
+  `CfgError::CodeRead`: there is no code to translate.
+- `cfg::admit_at(code, pc)` is the single decision per PC: read the word, then
+  `admit_word`; a read that fails is `Unreadable`.
 - The same exit covers a word that decodes but that reg-virt rejects for an
   instruction-intrinsic reason (e.g. `UnpredictableMemoryOp` for
   `ldr x1, [x1], #8`). `cfg::admit_word` is the single decision point: decode,
@@ -44,11 +54,13 @@ translation/runtime harness untouched.
 - Invariant this rests on: reg-virt rewrites each original instruction
   independently of its neighbours. A context-sensitive allocator would have to
   move admission to block level.
-- The harness original-code interpreters and the raw trace view call
-  `admit_word` too, so they stop exactly where the translated code exits.
+- The harness original-code interpreters call `admit_at` (the raw trace view
+  `admit_word`), so they stop exactly where the translated code exits, running
+  off the end of the text included. There is no separate "fell off the end"
+  halt any more.
 - Rephrase stays the only producer of the exit; reg-virt never synthesizes it.
 - Rephrase lowers it to an exit group: `x9 = RetStatus::Unsupported (6)`,
-  `x10 = raw word`, `x11 = pc`. The runtime always resumes userspace at `x11`
+  `x10 = raw word` (or `UNSUPPORTED_WORD_UNREADABLE`), `x11 = pc`. The runtime always resumes userspace at `x11`
   and never re-enters the fragment at that PC for this status.
 - Why it's exact: userspace executes the instruction natively, including taking
   SIGILL itself for a truly undefined word.
@@ -95,7 +107,8 @@ translation/runtime harness untouched.
   and compare every byte of those pages. Initial memory outside them fails.
 - Native original: stop points come from the interpreter's own halting rule
   (`admit_word`) applied to every text word (SVC -> mock trap; rejected word or
-  non-SVC runtime exit -> stop trap; first word past the text -> fell off). A
+  non-SVC runtime exit -> stop trap; a word past the text -> the `Unreadable`
+  Unsupported stop). A
   data abort stops too and must match the interpreter's `Fault` halt (same pc,
   fault address inside the access). A branch exit is then executed by the
   hardware alone, in a text copy where every other word traps, so BL/BLR link
