@@ -87,6 +87,7 @@ fn main() {
                 RephrasedInsnKind::Original => "original",
                 RephrasedInsnKind::UserSynthetic => "user-syn",
                 RephrasedInsnKind::RegVirtHelper => "rv-helper",
+                RephrasedInsnKind::UserAccess => "user-access",
                 RephrasedInsnKind::RuntimeExitPayload => "rt-payload",
                 RephrasedInsnKind::RuntimeExitBranch => "rt-branch",
             };

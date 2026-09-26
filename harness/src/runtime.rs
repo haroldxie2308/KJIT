@@ -1,5 +1,5 @@
-use crate::arm64::{access_in_ranges, execute_insn, AccessContext, InsnError};
-use crate::model::{MachineState, MemAccess, Privilege, PAGE_SIZE};
+use crate::arm64::{execute_insn, AccessContext, InsnError, LoggedAccess, UserAccessCounter};
+use crate::model::{MachineState, PAGE_SIZE};
 use crate::shared::abi::{
     RetStatus, ABI_ENTRY_ARG_REG, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
     PROLOGUE_LEN_BYTES, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG, RUNTIME_FRAME_SIZE_BYTES,
@@ -42,6 +42,10 @@ pub struct URuntime {
     pub state: MachineState,
     pub fragment: ExecutionFragment,
     pub config: URuntimeConfig,
+    /// Numbers the fragment's user accesses (`LDTR`/`STTR`) across the whole run,
+    /// runtime-loop continuations included; optionally fails one.
+    user_accesses: UserAccessCounter,
+    access_log: Option<Vec<LoggedAccess>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -90,7 +94,15 @@ pub struct URuntimeStep {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum URuntimeTransition {
-    Continued { offset: usize },
+    Continued {
+        offset: usize,
+    },
+    /// A user access at `access_offset` faulted; execution resumes at its fault
+    /// stub, as the kernel's exception fixup does.
+    FaultRedirect {
+        access_offset: usize,
+        stub_offset: usize,
+    },
 }
 
 impl URuntime {
@@ -112,7 +124,31 @@ impl URuntime {
             state: initial_state,
             fragment,
             config,
+            user_accesses: UserAccessCounter::default(),
+            access_log: None,
         }
+    }
+
+    /// Fails the `k`-th dynamic user access (`LDTR`/`STTR`) of the run (1-based)
+    /// regardless of permissions.
+    pub fn fail_user_access(mut self, k: u64) -> Self {
+        self.user_accesses = UserAccessCounter::failing_at(k);
+        self
+    }
+
+    /// Records every attempted fragment access (user and runtime) of the run.
+    pub fn record_accesses(mut self) -> Self {
+        self.access_log = Some(Vec::new());
+        self
+    }
+
+    pub fn access_log(&self) -> Option<&[LoggedAccess]> {
+        self.access_log.as_deref()
+    }
+
+    /// User accesses performed (or attempted, for a faulting one) so far.
+    pub fn user_accesses(&self) -> u64 {
+        self.user_accesses.seen()
     }
 
     pub fn run(&mut self) -> URuntimeReport {
@@ -301,16 +337,35 @@ impl URuntimeCursor {
         let runtime_ranges = runtime.runtime_owned_ranges();
         let mut ctx = AccessContext::Fragment {
             runtime_ranges: &runtime_ranges,
+            counter: &mut runtime.user_accesses,
+            log: runtime.access_log.as_mut(),
         };
         let next_pc = match execute_insn(insn, insn_pc, &mut runtime.state, &mut ctx) {
             Ok(next_pc) => next_pc,
             Err(err) => {
                 let message = match err {
-                    // A5 replaces this with a jump to the fault stub from the
-                    // fragment's fault-site table.
-                    InsnError::Fault(fault) => {
-                        format!("{fault} inside the fragment: no fault-site table exists yet")
-                    }
+                    // The faulting access did not retire. Like the kernel's fixup,
+                    // only the PC changes: to the site's Mem stub.
+                    InsnError::Fault(fault) => match runtime.fragment.fault_site(offset) {
+                        Some(site) => {
+                            self.pc = runtime.config.base_pc + site.stub_offset as u64;
+                            return Ok(Some(URuntimeStep {
+                                offset: Some(offset),
+                                insn_index: Some(index),
+                                next_offset: Some(site.stub_offset),
+                                executed: false,
+                                runtime_transition: Some(URuntimeTransition::FaultRedirect {
+                                    access_offset: offset,
+                                    stub_offset: site.stub_offset,
+                                }),
+                                halt: None,
+                                state: runtime.physical_user_state(),
+                            }));
+                        }
+                        None => format!(
+                            "{fault} at fragment offset {offset:#x}, which has no fault-site entry"
+                        ),
+                    },
                     InsnError::Error(message) => message,
                 };
                 self.stopped = true;
@@ -510,23 +565,6 @@ pub(crate) enum RuntimeAction {
     Stop(URuntimeHalt),
 }
 
-/// Privilege of a fragment memory access: runtime iff it lies entirely inside
-/// runtime-owned memory, user otherwise.
-///
-/// A4 stopgap. Delete when A5 lands: A5 classifies by instruction instead
-/// (`LDTR`/`STTR` = user access, every other load/store = runtime access,
-/// PAN-checked), never by address.
-pub(crate) fn fragment_access_privilege(
-    runtime_ranges: &[(u64, u64)],
-    access: MemAccess,
-) -> Privilege {
-    if access_in_ranges(runtime_ranges, access) {
-        Privilege::Runtime
-    } else {
-        Privilege::User
-    }
-}
-
 /// The runtime's continue/stop decision for one fragment return. Shared by
 /// `URuntime` and the native runner so both drive a fragment identically; the
 /// caller reads `raw_status`/`param0`/`param1` from wherever its ABI boundary
@@ -575,17 +613,19 @@ pub(crate) fn decide_runtime_return(
             }
         }
         // Never continue inside the fragment: resuming at this PC would re-enter
-        // the same exit. Userspace executes the instruction natively.
-        RetStatus::Unsupported => RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
-            status,
-            target_pc: param1,
-        }),
+        // the same exit. Userspace executes the instruction natively: for
+        // Unsupported that runs it, for Mem it re-executes the faulting memory
+        // instruction and takes the fault (and any signal) itself.
+        RetStatus::Unsupported | RetStatus::Mem => {
+            RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
+                status,
+                target_pc: param1,
+            })
+        }
         RetStatus::Invalid(_) => {
             RuntimeAction::Stop(URuntimeHalt::InvalidReturnStatus { raw: raw_status })
         }
-        RetStatus::Mem | RetStatus::Debug => {
-            RuntimeAction::Stop(URuntimeHalt::UnsupportedRuntimeExit { status })
-        }
+        RetStatus::Debug => RuntimeAction::Stop(URuntimeHalt::UnsupportedRuntimeExit { status }),
     }
 }
 
@@ -620,6 +660,7 @@ mod tests {
     use crate::shared::abi::PROLOGUE_LEN_BYTES;
     use crate::shared::arm64::ergo::{uimm, x};
     use crate::shared::arm64::{A64Imm, A64Insn, A64Mem, A64Reg};
+    use crate::shared::platform::SharedVec;
     use crate::shared::trans::input::{TranslationRequest, TranslationTrigger};
     use crate::shared::trans::translate::compile_request;
     use crate::MockCodeProvider;
@@ -849,19 +890,120 @@ mod tests {
         }
     }
 
+    fn encode(insns: &[A64Insn]) -> Vec<u8> {
+        insns
+            .iter()
+            .flat_map(|insn| insn.encode().unwrap().to_le_bytes())
+            .collect()
+    }
+
     #[test]
-    fn user_access_fault_inside_fragment_is_a_hard_error_until_fault_sites_exist() {
-        let fragment = compile_insns(
+    fn user_access_fault_inside_fragment_exits_through_its_mem_stub() {
+        let insns = [
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(7, 16),
+                rd: x(2),
+            },
+            ldr_x0_from_x1(),
+            A64Insn::RetRet64rBranchReg { rn: x(30) },
+        ];
+        let mut state = MachineState::new();
+        state.write_x(0, 0x55);
+        state.write_x(1, 0x9000); // unmapped
+        let mut runtime = URuntime::new(compile_insns(0x4000, &insns), state.clone());
+        let report = runtime.run();
+
+        assert_eq!(
+            report.halt,
+            URuntimeHalt::ReturnedToUserspace {
+                status: RetStatus::Mem,
+                target_pc: 0x4004,
+            }
+        );
+        // The state userspace resumes with is the state before the faulting LDR.
+        let mut expected = state;
+        expected.write_x(2, 7);
+        assert_eq!(report.state, expected);
+        assert_eq!(runtime.user_accesses(), 1);
+    }
+
+    #[test]
+    fn store_to_read_only_page_matches_the_original_fault_end_to_end() {
+        let insns = [
+            A64Insn::StrImmGenStr64LdstPos {
+                rt: x(0),
+                mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_unsigned(1, 12, 3)),
+            },
+            A64Insn::RetRet64rBranchReg { rn: x(30) },
+        ];
+        let mut state = MachineState::new();
+        state
+            .map_user_range(0x9000, 0xa000, PagePerm::ReadOnly)
+            .unwrap();
+        state.seed_memory_u64(0x9008, 0x1122);
+        state.write_x(0, 0x3344);
+        state.write_x(1, 0x9000);
+
+        // Compares state and halt against the original interpreter, which faults.
+        let report =
+            crate::run_entry_fixture("ro-store", 0x4000, encode(&insns), 0x4000, &state).unwrap();
+        assert!(matches!(report.original.halt_reason, HaltReason::Fault(_)));
+        assert_eq!(
+            report.fragment_halt,
+            URuntimeHalt::ReturnedToUserspace {
+                status: RetStatus::Mem,
+                target_pc: 0x4000,
+            }
+        );
+        assert_eq!(report.fragment_state.read_u64(0x9008), 0x1122);
+    }
+
+    #[test]
+    fn user_access_fault_without_fault_site_is_a_hard_error() {
+        let mut fragment = compile_insns(
             0x4000,
             &[ldr_x0_from_x1(), A64Insn::RetRet64rBranchReg { rn: x(30) }],
         );
+        fragment.fault_sites = SharedVec::new();
         let mut state = MachineState::new();
         state.write_x(1, 0x9000);
         let report = URuntime::new(fragment, state).run();
         match report.halt {
             URuntimeHalt::ExecutionError { message, .. } => {
                 assert!(message.contains("user read fault"), "{message}");
-                assert!(message.contains("no fault-site table"), "{message}");
+                assert!(message.contains("no fault-site entry"), "{message}");
+            }
+            other => panic!("expected an execution error, got {other:?}"),
+        }
+    }
+
+    /// Privilege follows the instruction, not the address: a plain LDR from a
+    /// readable user page is still a runtime access, so it is a PAN violation.
+    #[test]
+    fn plain_load_of_user_memory_in_a_fragment_is_a_pan_violation() {
+        let mut fragment = compile_insns(
+            0x4000,
+            &[ldr_x0_from_x1(), A64Insn::RetRet64rBranchReg { rn: x(30) }],
+        );
+        let site = fragment.fault_sites[0];
+        let A64Insn::LdtrLdtr64LdstUnpriv { rt, mem } = fragment.insns[site.access_offset / 4]
+        else {
+            panic!("fault site is not an LDTR");
+        };
+        fragment.insns[site.access_offset / 4] = A64Insn::LdrImmGenLdr64LdstPos {
+            rt,
+            mem: A64Mem::offset(mem.base(), A64Imm::scaled_unsigned(0, 12, 3)),
+        };
+        let mut state = MachineState::new();
+        state
+            .map_user_range(0x9000, 0xa000, PagePerm::ReadWrite)
+            .unwrap();
+        state.write_x(1, 0x9000);
+        let report = URuntime::new(fragment, state).run();
+        match report.halt {
+            URuntimeHalt::ExecutionError { message, .. } => {
+                assert!(message.contains("PAN violation"), "{message}");
             }
             other => panic!("expected an execution error, got {other:?}"),
         }

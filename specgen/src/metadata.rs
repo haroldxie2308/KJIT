@@ -210,7 +210,10 @@ fn infer_roles_from_docvars_and_asm(
         }
     }
 
-    if matches!(mnemonic, "LDR" | "STR") {
+    // LDTR/STTR share the single-register immediate shape; they are emitted by the
+    // translator only (never admitted from user code), but their metadata must still
+    // say which field is written so reg-virt and the harness treat them uniformly.
+    if matches!(mnemonic, "LDR" | "STR" | "LDTR" | "STTR") {
         if fields.contains("Rn") {
             if matches!(address_form, "pre-indexed" | "post-indexed") {
                 roles.insert(role_tuple("RegReadWrite", "Rn", "X64"));
@@ -220,7 +223,7 @@ fn infer_roles_from_docvars_and_asm(
             roles.insert(role_tuple("MemBase", "Rn", "X64"));
         }
         if fields.contains("Rt") {
-            let kind = if mnemonic == "LDR" {
+            let kind = if matches!(mnemonic, "LDR" | "LDTR") {
                 "RegWrite"
             } else {
                 "RegRead"
@@ -293,7 +296,7 @@ fn infer_roles_from_docvars_and_asm(
             roles.insert(role_tuple("RegRead", &field, &width));
         }
         if hover.contains("register to be transferred") {
-            let kind = if matches!(mnemonic, "LDR" | "LDP") {
+            let kind = if matches!(mnemonic, "LDR" | "LDP" | "LDTR") {
                 "RegWrite"
             } else {
                 "RegRead"

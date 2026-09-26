@@ -440,6 +440,12 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
         | StrImmGenStr64LdstPos { rt, mem } => {
             format!("str {}, {}", reg_name(rt), mem_operand(mem))
         }
+        LdtrLdtr32LdstUnpriv { rt, mem } | LdtrLdtr64LdstUnpriv { rt, mem } => {
+            format!("ldtr {}, {}", reg_name(rt), mem_operand(mem))
+        }
+        SttrSttr32LdstUnpriv { rt, mem } | SttrSttr64LdstUnpriv { rt, mem } => {
+            format!("sttr {}, {}", reg_name(rt), mem_operand(mem))
+        }
         LdpGenLdp64LdstpairPost { rt2, rt, mem }
         | LdpGenLdp64LdstpairPre { rt2, rt, mem }
         | LdpGenLdp64LdstpairOff { rt2, rt, mem } => {

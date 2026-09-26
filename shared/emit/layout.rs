@@ -3,15 +3,28 @@ use crate::shared::abi::{
 };
 use crate::shared::arm64::{A64Insn, A64OperandRole, A64RewriteError};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
-use crate::shared::trans::rephrase::RephrasedProgram;
+use crate::shared::trans::rephrase::{RephrasedInsnKind, RephrasedProgram};
 
 pub type LayoutVLabels = SharedVec<(u64, usize)>;
+
+/// One user access (`LDTR`/`STTR`) of the fragment. A fault on the instruction at
+/// `access_offset` resumes at `stub_offset`: the out-of-line `RetStatus::Mem` exit
+/// group of the original memory instruction at `ori_pc`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FaultSite {
+    pub access_offset: usize,
+    pub stub_offset: usize,
+    pub ori_pc: u64,
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ExecutionFragment {
     pub insns: SharedVec<A64Insn>,
     pub entry_offset: usize,
+    /// Body-entry map keyed by original PC. Never points into the cold region.
     pub vlabels: LayoutVLabels,
+    /// Every user access, sorted by `access_offset` (strictly increasing).
+    pub fault_sites: SharedVec<FaultSite>,
 }
 
 impl ExecutionFragment {
@@ -21,6 +34,13 @@ impl ExecutionFragment {
 
     pub fn offset_for_pc(&self, original_pc: u64) -> Option<usize> {
         find_vlabel(&self.vlabels, original_pc)
+    }
+
+    pub fn fault_site(&self, access_offset: usize) -> Option<FaultSite> {
+        self.fault_sites
+            .binary_search_by_key(&access_offset, |site| site.access_offset)
+            .ok()
+            .map(|index| self.fault_sites[index])
     }
 }
 
@@ -42,6 +62,20 @@ pub enum LayoutError {
     UnsupportedBranchField {
         insn_index: usize,
         field: &'static str,
+    },
+    /// A user access whose original instruction has no fault stub.
+    MissingFaultStub {
+        insn_index: usize,
+        ori_pc: u64,
+    },
+    /// `UserAccess` kind and `LDTR`/`STTR` instruction disagree: a user access the
+    /// fault table would miss, or a fault site that is not a user access.
+    UntaggedUserAccess {
+        insn_index: usize,
+    },
+    /// Two cold exit groups for the same original instruction.
+    DuplicateFaultStub {
+        ori_pc: u64,
     },
 }
 
@@ -80,6 +114,17 @@ impl core::fmt::Display for LayoutError {
                 f,
                 "unsupported branch field `{field}` at instruction {insn_index}"
             ),
+            Self::MissingFaultStub { insn_index, ori_pc } => write!(
+                f,
+                "user access at instruction {insn_index} has no fault stub for pc {ori_pc:#x}"
+            ),
+            Self::UntaggedUserAccess { insn_index } => write!(
+                f,
+                "instruction {insn_index}: user-access tag and LDTR/STTR form disagree"
+            ),
+            Self::DuplicateFaultStub { ori_pc } => {
+                write!(f, "duplicate fault stub for pc {ori_pc:#x}")
+            }
         }
     }
 }
@@ -104,8 +149,14 @@ pub(crate) enum BranchRelocKind {
     Tbnz,
 }
 
+/// Layout order: prologue, epilogue, every block body in block order, then the cold
+/// region (every block's `cold` exit groups, in block order). Each cold group ends in
+/// its runtime-exit branch, so nothing falls through into or out of the region.
 pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragment, LayoutError> {
-    let insn_count = program.iter().map(|block| block.insns.len()).sum::<usize>();
+    let insn_count = program
+        .iter()
+        .map(|block| block.insns.len() + block.cold.len())
+        .sum::<usize>();
     let entry_pc = program.first().ok_or(LayoutError::EmptyProgram)?.start_addr;
     let mut fragment = ExecutionFragment {
         insns: SharedVec::with_capacity(
@@ -114,9 +165,13 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
         )?,
         entry_offset: 0,
         vlabels: SharedVec::with_capacity(insn_count, GFP_KERNEL)?,
+        fault_sites: SharedVec::new(),
     };
     let mut relocs = SharedVec::with_capacity(insn_count, GFP_KERNEL)?;
     let mut runtime_exit_branches = SharedVec::with_capacity(insn_count, GFP_KERNEL)?;
+    // Stub labels: original PC -> offset of its cold `Mem` exit group. Their own label
+    // kind, never merged into `vlabels`.
+    let mut stub_labels: LayoutVLabels = SharedVec::new();
 
     append_prologue(&mut fragment.insns, GFP_KERNEL)?;
     append_epilogue(&mut fragment.insns, GFP_KERNEL)?;
@@ -127,7 +182,21 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
             let output_offset = insn_index * 4;
             insert_vlabel_once(&mut fragment.vlabels, rephrased.ori_pc, output_offset)?;
 
-            if rephrased.kind.is_user_semantic() {
+            let user_access = rephrased.kind == RephrasedInsnKind::UserAccess;
+            if user_access != rephrased.insn.is_unprivileged_access() {
+                return Err(LayoutError::UntaggedUserAccess { insn_index });
+            }
+            if user_access {
+                // Stub offset resolved once the cold region is placed.
+                fragment.fault_sites.push(
+                    FaultSite {
+                        access_offset: output_offset,
+                        stub_offset: 0,
+                        ori_pc: rephrased.ori_pc,
+                    },
+                    GFP_KERNEL,
+                )?;
+            } else if rephrased.kind.is_user_semantic() {
                 if let Some(reloc) = branch_reloc_for(rephrased.insn, rephrased.ori_pc, insn_index)?
                 {
                     relocs.push(reloc, GFP_KERNEL)?;
@@ -138,6 +207,36 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
 
             fragment.insns.push(rephrased.insn, GFP_KERNEL)?;
         }
+    }
+
+    // Reg-virt guarantees each cold group is one PC and ends in its exit branch.
+    let mut group_start = true;
+    for rephrased in program.iter().flat_map(|block| block.cold.iter()) {
+        let insn_index = fragment.insns.len();
+        if group_start {
+            if find_vlabel(&stub_labels, rephrased.ori_pc).is_some() {
+                return Err(LayoutError::DuplicateFaultStub {
+                    ori_pc: rephrased.ori_pc,
+                });
+            }
+            stub_labels.push((rephrased.ori_pc, insn_index * 4), GFP_KERNEL)?;
+        }
+        if rephrased.insn.is_unprivileged_access() {
+            return Err(LayoutError::UntaggedUserAccess { insn_index });
+        }
+        group_start = rephrased.kind.is_runtime_exit_branch();
+        if group_start {
+            runtime_exit_branches.push(insn_index, GFP_KERNEL)?;
+        }
+        fragment.insns.push(rephrased.insn, GFP_KERNEL)?;
+    }
+
+    for site in fragment.fault_sites.iter_mut() {
+        site.stub_offset =
+            find_vlabel(&stub_labels, site.ori_pc).ok_or(LayoutError::MissingFaultStub {
+                insn_index: site.access_offset / 4,
+                ori_pc: site.ori_pc,
+            })?;
     }
 
     fragment.entry_offset =
@@ -360,6 +459,7 @@ mod tests {
                     prev: SharedVec::new(),
                     next: SharedVec::new(),
                     insns,
+                    cold: SharedVec::new(),
                 },
                 GFP_KERNEL,
             )
@@ -534,6 +634,108 @@ mod tests {
         assert_eq!(
             layout.insns[runtime_branch_index].direct_branch_target(body_start_offset() as u64),
             Some(EPILOGUE_OFFSET as u64)
+        );
+    }
+
+    fn exit_branch(pc: u64) -> RephrasedInsn {
+        RephrasedInsn::runtime_exit_branch(
+            pc,
+            A64Insn::BUncondBOnlyBranchImm {
+                imm26: A64Imm::scaled_signed(0, 26, 2),
+            },
+        )
+    }
+
+    fn ldtr(pc: u64) -> RephrasedInsn {
+        RephrasedInsn::user_access(
+            pc,
+            A64Insn::LdtrLdtr64LdstUnpriv {
+                rt: A64Reg::x(0),
+                mem: crate::shared::arm64::A64Mem::offset(A64Reg::x_sp(1), A64Imm::signed(0, 9)),
+            },
+        )
+    }
+
+    fn vec_of(insns: &[RephrasedInsn]) -> SharedVec<RephrasedInsn> {
+        let mut out = SharedVec::new();
+        for insn in insns {
+            out.push(*insn, GFP_KERNEL).unwrap();
+        }
+        out
+    }
+
+    #[test]
+    fn places_fault_stubs_after_the_body_and_records_sorted_fault_sites() {
+        let nop = A64Insn::NopNopHiHints {};
+        let mut program = one_block(vec_of(&[
+            ldtr(0x1000),
+            ldtr(0x1000),
+            RephrasedInsn::original(0x1004, nop),
+            ldtr(0x1008),
+        ]));
+        program[0].cold = vec_of(&[
+            RephrasedInsn::runtime_exit_payload(0x1000, nop),
+            exit_branch(0x1000),
+            RephrasedInsn::runtime_exit_payload(0x1008, nop),
+            exit_branch(0x1008),
+        ]);
+
+        let layout = layout_program(program).unwrap();
+        let body = body_start_offset();
+        let cold = body + 16;
+
+        // vlabels map only body entries.
+        assert_eq!(
+            &layout.vlabels[..],
+            [(0x1000, body), (0x1004, body + 8), (0x1008, body + 12)]
+        );
+        assert_eq!(
+            &layout.fault_sites[..],
+            [
+                FaultSite {
+                    access_offset: body,
+                    stub_offset: cold,
+                    ori_pc: 0x1000,
+                },
+                FaultSite {
+                    access_offset: body + 4,
+                    stub_offset: cold,
+                    ori_pc: 0x1000,
+                },
+                FaultSite {
+                    access_offset: body + 12,
+                    stub_offset: cold + 8,
+                    ori_pc: 0x1008,
+                },
+            ]
+        );
+        assert_eq!(layout.fault_site(body + 12).unwrap().stub_offset, cold + 8);
+        assert_eq!(layout.fault_site(body + 8), None);
+        // Stub exit branches go to the epilogue like every other exit.
+        assert_eq!(
+            layout.insns[(cold + 4) / 4].direct_branch_target((cold + 4) as u64),
+            Some(EPILOGUE_OFFSET as u64)
+        );
+    }
+
+    #[test]
+    fn rejects_user_accesses_without_stub_or_tag() {
+        assert_eq!(
+            layout_program(one_block(vec_of(&[ldtr(0x1000)]))),
+            Err(LayoutError::MissingFaultStub {
+                insn_index: body_start_offset() / 4,
+                ori_pc: 0x1000,
+            })
+        );
+        let untagged = RephrasedInsn {
+            kind: RephrasedInsnKind::Original,
+            ..ldtr(0x1000)
+        };
+        assert_eq!(
+            layout_program(one_block(vec_of(&[untagged]))),
+            Err(LayoutError::UntaggedUserAccess {
+                insn_index: body_start_offset() / 4,
+            })
         );
     }
 }

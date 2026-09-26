@@ -556,7 +556,10 @@ impl ActiveOriginalStepper {
         }
 
         let pc = self.pc;
-        let mut ctx = AccessContext::Original { counter: None };
+        let mut ctx = AccessContext::Original {
+            counter: None,
+            log: None,
+        };
         let next_pc = match execute_insn(decoded.inner, pc, &mut self.state, &mut ctx) {
             Ok(next_pc) => next_pc,
             Err(InsnError::Fault(fault)) => {
@@ -703,10 +706,18 @@ fn copy_fragment(fragment: &ExecutionFragment) -> Result<ExecutionFragment, Stri
             .push(*label, GFP_KERNEL)
             .map_err(|err| format!("{err:?}"))?;
     }
+    let mut fault_sites = SharedVec::with_capacity(fragment.fault_sites.len(), GFP_KERNEL)
+        .map_err(|err| format!("{err:?}"))?;
+    for site in &fragment.fault_sites {
+        fault_sites
+            .push(*site, GFP_KERNEL)
+            .map_err(|err| format!("{err:?}"))?;
+    }
     Ok(ExecutionFragment {
         insns,
         entry_offset: fragment.entry_offset,
         vlabels,
+        fault_sites,
     })
 }
 

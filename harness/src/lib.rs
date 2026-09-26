@@ -27,7 +27,7 @@ use crate::shared::trans::input::{
 };
 use crate::shared::trans::translate::{compile_request, translate_request, TranslatedProgram};
 use arm64::OriginalStepper;
-use model::{ExecutionResult, HaltReason, MachineState, PagePerm};
+use model::{ExecutionResult, HaltReason, MachineState, PagePerm, PAGE_SIZE};
 use runtime::{URuntime, URuntimeHalt};
 
 #[derive(Debug)]
@@ -93,11 +93,15 @@ pub const FIXTURE_DATA_BASE: u64 = 0x20000;
 pub const FIXTURE_DATA_LEN: u64 = 0x4000;
 /// TPIDR_EL0 of fixture cases: a TLS block in the last page of the data window.
 pub const FIXTURE_TLS_BASE: u64 = FIXTURE_DATA_BASE + 0x3000;
+/// One read-only page right after the data window (x12 + 0x4000), so fixtures
+/// can fault on a store to it. The page after it (x12 + 0x5000) is unmapped.
+pub const FIXTURE_RO_BASE: u64 = FIXTURE_DATA_BASE + FIXTURE_DATA_LEN;
 
 /// Initial machine state for `.s` fixture cases. Shared by `trace-tui --check`
 /// and the fixture suite so both check the same starting point: x12 points at
-/// the fixture data window, which is the only user memory and is read-write,
-/// and TPIDR_EL0 at `FIXTURE_TLS_BASE` inside it. Everything else is unmapped.
+/// the fixture data window, which is read-write, followed by one read-only page
+/// (`FIXTURE_RO_BASE`); TPIDR_EL0 is `FIXTURE_TLS_BASE` inside the window.
+/// Everything else is unmapped.
 pub fn default_fixture_state() -> MachineState {
     let mut state = MachineState::new();
     state.write_x(12, FIXTURE_DATA_BASE);
@@ -110,6 +114,13 @@ pub fn default_fixture_state() -> MachineState {
         )
         .expect("fixture data window is page-aligned");
     state
+        .map_user_range(
+            FIXTURE_RO_BASE,
+            FIXTURE_RO_BASE + PAGE_SIZE,
+            PagePerm::ReadOnly,
+        )
+        .expect("fixture read-only page is page-aligned");
+    state
 }
 
 pub fn run_entry_fixture(
@@ -119,17 +130,10 @@ pub fn run_entry_fixture(
     entry_pc: u64,
     initial_state: &MachineState,
 ) -> Result<CaseReport, String> {
-    let original_bytes = text_bytes.clone();
-    let code = MockCodeProvider::new(text_base, text_bytes);
     let original =
-        execute_original_with_mocked_svc(&original_bytes, text_base, entry_pc, initial_state)?;
+        execute_original_with_mocked_svc(&text_bytes, text_base, entry_pc, initial_state)?;
 
-    let request = TranslationRequest {
-        entry_pc,
-        trigger: TranslationTrigger::HotSvc,
-        regs: Some(register_snapshot(initial_state, entry_pc)),
-    };
-    let fragment = compile_request(&request, &code).map_err(|err| err.to_string())?;
+    let fragment = compile_fixture_fragment(text_base, text_bytes, entry_pc, initial_state)?;
     let mut runtime = URuntime::new(fragment, initial_state.clone());
     let report = runtime.run();
     let encoded_fragment = encode_fragment(&runtime.fragment)?;
@@ -156,6 +160,22 @@ pub fn run_entry_fixture(
         fragment_halt: report.halt,
         fragment_steps: report.steps,
     })
+}
+
+/// Translates a fixture case exactly as `run_entry_fixture` does.
+pub(crate) fn compile_fixture_fragment(
+    text_base: u64,
+    text_bytes: Vec<u8>,
+    entry_pc: u64,
+    initial_state: &MachineState,
+) -> Result<ExecutionFragment, String> {
+    let code = MockCodeProvider::new(text_base, text_bytes);
+    let request = TranslationRequest {
+        entry_pc,
+        trigger: TranslationTrigger::HotSvc,
+        regs: Some(register_snapshot(initial_state, entry_pc)),
+    };
+    compile_request(&request, &code).map_err(|err| err.to_string())
 }
 
 pub fn run_legacy_flattened_fixture(
@@ -192,7 +212,8 @@ fn execute_original_with_mocked_svc(
 /// Runs original code to a halt, resuming after every SVC as if the syscall
 /// returned without side effects. `fail_user_access = Some(k)` faults the k-th
 /// dynamic user access of the whole run (1-based, SVC continuations included)
-/// regardless of permissions. `before_step` sees the stepper before each step.
+/// regardless of permissions. `before_step` sees the stepper before each step;
+/// the stepper records its accesses (`OriginalStepper::access_log`).
 pub(crate) fn run_original_with_mocked_svc(
     program: &[u8],
     text_base: u64,
@@ -203,7 +224,8 @@ pub(crate) fn run_original_with_mocked_svc(
 ) -> Result<ExecutionResult, String> {
     const MAX_RUNTIME_EXITS: usize = 10_000;
 
-    let mut stepper = OriginalStepper::new(program, text_base, entry_pc, initial_state)?;
+    let mut stepper =
+        OriginalStepper::new(program, text_base, entry_pc, initial_state)?.record_accesses();
     if let Some(k) = fail_user_access {
         stepper = stepper.fail_user_access(k);
     }
@@ -295,6 +317,15 @@ pub(crate) fn runtime_halt_matches_original(original: &ExecutionResult, halt: &U
                 target_pc,
             },
         ) => pc == *target_pc,
+        // The original faulted; the fragment must leave through that instruction's
+        // Mem stub so userspace re-executes it and takes the fault itself.
+        (
+            HaltReason::Fault(fault),
+            URuntimeHalt::ReturnedToUserspace {
+                status: crate::shared::abi::RetStatus::Mem,
+                target_pc,
+            },
+        ) => fault.pc == *target_pc,
         (HaltReason::FellOffEnd, URuntimeHalt::FellOffFragment { .. }) => true,
         _ => false,
     }
