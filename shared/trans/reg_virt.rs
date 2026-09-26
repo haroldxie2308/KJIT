@@ -6,9 +6,11 @@ use crate::shared::abi::{
     RET_STATUS_REG, RUNTIME_FRAME_PT_REGS_PTR_OFFSET,
 };
 use crate::shared::arm64::ergo::{ldst64_offset, mem_off, sp, uimm, x, xzr};
-use crate::shared::arm64::{A64Insn, A64OperandRole, A64Reg, A64Reg31Mode, A64RegWidth};
+use crate::shared::arm64::{A64Insn, A64OperandRole, A64Reg, A64Reg31Mode, A64RegWidth, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
-use crate::shared::trans::rephrase::{RephrasedInsn, RephrasedInsnKind, RephrasedProgram};
+use crate::shared::trans::rephrase::{
+    rephrase_insn, RephrasedInsn, RephrasedInsnKind, RephrasedProgram,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RegVirtError {
@@ -85,6 +87,54 @@ pub enum RegVirtError {
         field: &'static str,
         reg: A64Reg,
     },
+}
+
+impl RegVirtError {
+    /// `true`: the rejection is a property of the user instruction and its registers,
+    /// so executing it natively in userspace (an Unsupported exit) is exact.
+    /// `false`: a bug in rephrase, generated metadata, or ABI tables; must fail hard.
+    pub const fn is_instruction_intrinsic(&self) -> bool {
+        match self {
+            Self::UnpredictableMemoryOp { .. }
+            | Self::TooManyStackBackedRegs { .. }
+            | Self::UnsupportedImplicitRegWrite { .. }
+            | Self::UnsupportedStackBackedWriteWidth { .. }
+            | Self::UnsupportedSpOperand { .. }
+            | Self::StableMappedRewriteNotImplemented { .. }
+            | Self::UnsupportedOperandRole { .. } => true,
+            Self::Allocation(_)
+            | Self::UnexpectedRegVirtHelper { .. }
+            | Self::MalformedRuntimeExitGroup { .. }
+            | Self::RuntimeExitPcMismatch { .. }
+            | Self::MultipleRuntimeExitParam0Captures { .. }
+            | Self::MissingRegisterAccessor { .. }
+            | Self::MissingRegisterSetter { .. }
+            // Only raised when an ABI slot table has no entry for a register that
+            // `classify_reg` already mapped (or for the fixed x9-x11): table mismatch.
+            | Self::StackBackedRewriteNotImplemented { .. }
+            // Payload sources are synthesized by rephrase; the one user-chosen source
+            // (the param0 capture) accepts every register class and is never validated.
+            | Self::UnsupportedRuntimeExitSource { .. } => false,
+        }
+    }
+}
+
+/// Admission check for one decoded instruction, run by `build_cfg` before the
+/// instruction joins a block. It applies `RewritePlan::build` -- the same check
+/// `rewrite_user_semantic` runs -- to every user-semantic instruction rephrase
+/// lowers `insn` into, so admission and rewriting cannot drift. Invariant: reg-virt
+/// rewrites each original instruction independently of its neighbours.
+///
+/// Runtime-exit payloads are not checked: they are synthesized from fixed return
+/// registers plus the param0 capture, which accepts every register class, so they
+/// cannot reject for an instruction-intrinsic reason. A failure there is a translator
+/// bug and still surfaces from `virtualize_registers`.
+pub fn admit_insn(insn: IrInsn) -> SharedResult<(), RegVirtError> {
+    let lowered = rephrase_insn(insn).map_err(RegVirtError::Allocation)?;
+    for rephrased in lowered.iter().filter(|r| r.kind.is_user_semantic()) {
+        RewritePlan::build(*rephrased)?;
+    }
+    Ok(())
 }
 
 pub fn virtualize_registers(
@@ -1466,5 +1516,67 @@ mod tests {
             classify_reg(A64Reg::new(31, A64RegWidth::X64, A64Reg31Mode::Xzr)),
             RegClass::Zero
         );
+    }
+
+    fn ir(inner: A64Insn) -> IrInsn {
+        IrInsn {
+            pc: 0x1000,
+            word: inner.encode().unwrap(),
+            inner,
+        }
+    }
+
+    #[test]
+    fn admission_rejects_what_rewrite_rejects_as_intrinsic() {
+        let unpredictable = A64Insn::LdrImmGenLdr64LdstImmpost {
+            rt: x(1),
+            mem: A64Mem::post_index(A64Reg::x_sp(1), A64Imm::signed(8, 9)),
+        };
+        let err = admit_insn(ir(unpredictable)).unwrap_err();
+
+        assert_eq!(
+            err,
+            RegVirtError::UnpredictableMemoryOp {
+                pc: 0x1000,
+                insn: "LDR_imm_gen.LDR_64_ldst_immpost",
+            }
+        );
+        assert!(err.is_instruction_intrinsic());
+        assert_eq!(
+            validate_one(RephrasedInsn::original(0x1000, unpredictable)),
+            Err(err)
+        );
+    }
+
+    #[test]
+    fn admission_accepts_runtime_exits_and_expansions_on_virtualized_registers() {
+        for inner in [
+            A64Insn::BrBr64BranchReg { rn: x(12) },
+            A64Insn::BlrBlr64BranchReg { rn: x(29) },
+            A64Insn::RetRet64rBranchReg { rn: x(9) },
+            A64Insn::BlBlOnlyBranchImm {
+                imm26: A64Imm::scaled_signed(1, 26, 2),
+            },
+            A64Insn::SvcSvcExException {
+                imm16: A64Imm::unsigned(0, 16),
+            },
+            A64Insn::AdrAdrOnlyPcreladdr {
+                immlo: A64Imm::unsigned(0, 2),
+                immhi: A64Imm::unsigned(1, 19),
+                rd: x(13),
+            },
+        ] {
+            admit_insn(ir(inner)).unwrap();
+        }
+    }
+
+    #[test]
+    fn internal_errors_still_fail_virtualization() {
+        let err =
+            virtualize_registers(one_insn(RephrasedInsn::reg_virt_helper(0x1000, movz(x(0)))))
+                .unwrap_err();
+
+        assert_eq!(err, RegVirtError::UnexpectedRegVirtHelper { pc: 0x1000 });
+        assert!(!err.is_instruction_intrinsic());
     }
 }

@@ -5,7 +5,7 @@ use crate::runtime::{URuntime, URuntimeHalt, URuntimeStepper, URuntimeTransition
 use crate::shared::arm64::{decode_word, A64Insn, DecodeError};
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::platform::{SharedVec, GFP_KERNEL};
-use crate::shared::trans::cfg::{build_cfg, Cfg, RuntimeExitReason};
+use crate::shared::trans::cfg::{admit_word, build_cfg, Cfg, RuntimeExitReason, UnsupportedInsn};
 use crate::shared::trans::input::{RegisterSnapshot, TranslationRequest};
 use crate::shared::trans::reg_virt::virtualize_registers;
 use crate::shared::trans::rephrase::{
@@ -283,14 +283,11 @@ fn decode_raw(bytes: &[u8], text_base: u64) -> Result<Vec<TraceInsn>, String> {
     for (index, chunk) in bytes.chunks_exact(4).enumerate() {
         let pc = text_base + (index as u64) * 4;
         let word = u32::from_le_bytes(chunk.try_into().unwrap());
-        let insn = match decode_word(word, pc) {
+        let insn = match admit_word(word, pc).map_err(|err| err.to_string())? {
             Ok(decoded) => trace_insn(pc, index * 4, word, decoded.inner),
-            // Undecodable words are valid text: the translator ends the block with an
+            // Unsupported words are valid text: the translator ends the block with an
             // unsupported runtime exit there, so the raw view must still show them.
-            Err(DecodeError::UnsupportedWord { pc, word }) => {
-                undecoded_trace_insn(pc, index * 4, word)
-            }
-            Err(err) => return Err(err.to_string()),
+            Err(unsupported) => unsupported_trace_insn(index * 4, unsupported)?,
         };
         raw.push(insn);
     }
@@ -312,18 +309,34 @@ fn trace_insn(pc: u64, text_offset: usize, word: u32, insn: A64Insn) -> TraceIns
     }
 }
 
-fn undecoded_trace_insn(pc: u64, text_offset: usize, word: u32) -> TraceInsn {
-    TraceInsn {
-        pc,
-        text_offset,
-        word,
-        key: "UNDECODED",
-        mnemonic: ".inst",
-        pretty: format!(".inst {word:#010x}"),
-        debug: format!("{:?}", DecodeError::UnsupportedWord { pc, word }),
-        direct_branch_target: None,
-        conditional_targets: None,
-        runtime_exit: Some(RuntimeExitReason::Unsupported { pc, word }),
+/// A word reg-virt rejects still decodes, so it keeps its disassembly; the exit
+/// replaces its own control-flow facts either way.
+fn unsupported_trace_insn(
+    text_offset: usize,
+    unsupported: UnsupportedInsn,
+) -> Result<TraceInsn, String> {
+    let UnsupportedInsn { pc, word } = unsupported;
+    let runtime_exit = Some(RuntimeExitReason::Unsupported { pc, word });
+    match decode_word(word, pc) {
+        Ok(decoded) => Ok(TraceInsn {
+            direct_branch_target: None,
+            conditional_targets: None,
+            runtime_exit,
+            ..trace_insn(pc, text_offset, word, decoded.inner)
+        }),
+        Err(err @ DecodeError::UnsupportedWord { .. }) => Ok(TraceInsn {
+            pc,
+            text_offset,
+            word,
+            key: "UNDECODED",
+            mnemonic: ".inst",
+            pretty: format!(".inst {word:#010x}"),
+            debug: format!("{err:?}"),
+            direct_branch_target: None,
+            conditional_targets: None,
+            runtime_exit,
+        }),
+        Err(err) => Err(err.to_string()),
     }
 }
 

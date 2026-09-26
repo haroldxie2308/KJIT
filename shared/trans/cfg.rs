@@ -1,6 +1,7 @@
 use crate::shared::arm64::{decode_word, DecodeError, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
 use crate::shared::trans::input::{CodeProvider, CodeReadError, TranslationRequest};
+use crate::shared::trans::reg_virt::{admit_insn, RegVirtError};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeExitReason {
@@ -12,7 +13,10 @@ pub enum RuntimeExitReason {
     Unsupported { pc: u64, word: u32 },
 }
 
-/// Reachable instruction word the generated subset decoder rejects.
+/// Reachable instruction word that userspace must execute natively: either the
+/// generated subset decoder rejects it, or it decodes but reg-virt rejects it for an
+/// instruction-intrinsic reason (see `admit_word`). `word` is the exact raw word in
+/// both cases, so the two are told apart by decoding it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct UnsupportedInsn {
     pub pc: u64,
@@ -22,7 +26,7 @@ pub struct UnsupportedInsn {
 /// Basic block over a half-open PC range: [start_addr, end_addr).
 ///
 /// When `unsupported_exit` is `Some(u)`, the block ends with a runtime exit to
-/// userspace at `u.pc`: `u.pc == end_addr`, the undecodable instruction is not in
+/// userspace at `u.pc`: `u.pc == end_addr`, the unsupported instruction is not in
 /// `insns`, `next` is empty, and `insns` may be empty.
 #[derive(Debug, PartialEq, Eq)]
 pub struct BasicBlock {
@@ -44,6 +48,7 @@ pub struct Cfg {
 pub enum CfgError {
     CodeRead(CodeReadError),
     Decode(DecodeError),
+    RegVirt(RegVirtError),
     Alloc(SharedAllocError),
     EmptyBlock { start_addr: u64 },
 }
@@ -53,6 +58,9 @@ impl core::fmt::Display for CfgError {
         match self {
             Self::CodeRead(err) => write!(f, "{err}"),
             Self::Decode(err) => write!(f, "{err}"),
+            Self::RegVirt(err) => {
+                write!(f, "reg-virt admission failed: {err:?}")
+            }
             Self::Alloc(err) => write!(f, "allocation failed while building CFG: {err:?}"),
             Self::EmptyBlock { start_addr } => {
                 write!(f, "no instructions decoded for block at pc {start_addr:#x}")
@@ -89,12 +97,12 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
             }
 
             let insn = match read_insn(code, pc) {
-                Ok(insn) => insn,
-                Err(CfgError::CodeRead(_)) if !insns.is_empty() => {
+                Ok(Ok(insn)) => insn,
+                Ok(Err(unsupported)) => {
+                    unsupported_exit = Some(unsupported);
                     break SharedVec::new();
                 }
-                Err(CfgError::Decode(DecodeError::UnsupportedWord { pc, word })) => {
-                    unsupported_exit = Some(UnsupportedInsn { pc, word });
+                Err(CfgError::CodeRead(_)) if !insns.is_empty() => {
                     break SharedVec::new();
                 }
                 Err(err) => return Err(err),
@@ -167,12 +175,33 @@ fn next_from_two(first: u64, second: u64) -> Result<SharedVec<u64>, CfgError> {
     Ok(next)
 }
 
-fn read_insn<P: CodeProvider>(code: &P, pc: u64) -> Result<IrInsn, CfgError> {
+fn read_insn<P: CodeProvider>(
+    code: &P,
+    pc: u64,
+) -> Result<Result<IrInsn, UnsupportedInsn>, CfgError> {
     let mut bytes = [0_u8; 4];
     code.read_exact(pc, &mut bytes)
         .map_err(CfgError::CodeRead)?;
-    let word = u32::from_le_bytes(bytes);
-    decode_word(word, pc).map_err(CfgError::Decode)
+    admit_word(u32::from_le_bytes(bytes), pc)
+}
+
+/// The single decision on whether the word at `pc` joins a translated block.
+/// `Ok(Ok(insn))`: translate it. `Ok(Err(u))`: end the block before it with an
+/// Unsupported exit. `Err`: translator bug. Shared with the harness original-code
+/// interpreters so they stop exactly where the translated code exits.
+pub fn admit_word(word: u32, pc: u64) -> Result<Result<IrInsn, UnsupportedInsn>, CfgError> {
+    let insn = match decode_word(word, pc) {
+        Ok(insn) => insn,
+        Err(DecodeError::UnsupportedWord { pc, word }) => {
+            return Ok(Err(UnsupportedInsn { pc, word }));
+        }
+        Err(err) => return Err(CfgError::Decode(err)),
+    };
+    match admit_insn(insn) {
+        Ok(()) => Ok(Ok(insn)),
+        Err(err) if err.is_instruction_intrinsic() => Ok(Err(UnsupportedInsn { pc, word })),
+        Err(err) => Err(CfgError::RegVirt(err)),
+    }
 }
 
 fn ensure_block_boundary(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Result<bool, CfgError> {
@@ -250,8 +279,9 @@ fn populate_prev(blocks: &mut SharedVec<BasicBlock>) -> Result<(), CfgError> {
 mod tests {
     use super::*;
     use crate::shared::arm64::ergo::{scaled_simm, uimm, x};
-    use crate::shared::arm64::A64Insn;
+    use crate::shared::arm64::{A64Imm, A64Insn, A64Mem, A64Reg};
     use crate::shared::trans::input::TranslationTrigger;
+    use crate::shared::trans::translate::compile_request;
 
     const BASE: u64 = 0x1000;
     // `mrs x0, tpidr_el0`: outside the decoded subset.
@@ -285,14 +315,25 @@ mod tests {
         insn.encode().unwrap()
     }
 
-    fn cfg_for(bytes: &[u8]) -> Cfg {
-        let code = SliceCode { base: BASE, bytes };
-        let request = TranslationRequest {
+    fn request() -> TranslationRequest {
+        TranslationRequest {
             entry_pc: BASE,
             trigger: TranslationTrigger::Manual,
             regs: None,
-        };
-        build_cfg(&request, &code).unwrap()
+        }
+    }
+
+    fn cfg_for(bytes: &[u8]) -> Cfg {
+        let code = SliceCode { base: BASE, bytes };
+        build_cfg(&request(), &code).unwrap()
+    }
+
+    /// `ldr x1, [x1], #8`: decodes, but writeback base == Rt is CONSTRAINED UNPREDICTABLE.
+    fn unpredictable_ldr() -> u32 {
+        enc(A64Insn::LdrImmGenLdr64LdstImmpost {
+            rt: x(1),
+            mem: A64Mem::post_index(A64Reg::x_sp(1), A64Imm::signed(8, 9)),
+        })
     }
 
     #[test]
@@ -376,6 +417,60 @@ mod tests {
                 pc: BASE + 12,
                 word: UNDECODABLE
             })
+        );
+    }
+
+    #[test]
+    fn reg_virt_rejected_insn_ends_block_with_unsupported_exit() {
+        let movz = enc(A64Insn::MovzMovz64Movewide {
+            hw: 0,
+            imm16: uimm(1, 16),
+            rd: x(0),
+        });
+        let rejected = unpredictable_ldr();
+        let bytes = assemble(&[movz, rejected, movz]);
+        let cfg = cfg_for(&bytes);
+
+        assert_eq!(cfg.blocks.len(), 1);
+        let block = &cfg.blocks[0];
+        assert_eq!((block.start_addr, block.end_addr), (BASE, BASE + 4));
+        assert_eq!(block.insns.len(), 1);
+        assert!(block.next.is_empty());
+        assert_eq!(
+            block.unsupported_exit,
+            Some(UnsupportedInsn {
+                pc: BASE + 4,
+                word: rejected
+            })
+        );
+
+        let code = SliceCode {
+            base: BASE,
+            bytes: &bytes,
+        };
+        compile_request(&request(), &code).unwrap();
+    }
+
+    #[test]
+    fn admit_word_distinguishes_translate_exit_and_undecodable() {
+        let admitted = enc(A64Insn::LdrImmGenLdr64LdstImmpost {
+            rt: x(0),
+            mem: A64Mem::post_index(A64Reg::x_sp(1), A64Imm::signed(8, 9)),
+        });
+        assert!(matches!(admit_word(admitted, BASE), Ok(Ok(insn)) if insn.word == admitted));
+        assert_eq!(
+            admit_word(unpredictable_ldr(), BASE),
+            Ok(Err(UnsupportedInsn {
+                pc: BASE,
+                word: unpredictable_ldr()
+            }))
+        );
+        assert_eq!(
+            admit_word(UNDECODABLE, BASE),
+            Ok(Err(UnsupportedInsn {
+                pc: BASE,
+                word: UNDECODABLE
+            }))
         );
     }
 }
