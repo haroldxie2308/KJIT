@@ -1,8 +1,11 @@
-use crate::shared::abi::{RetStatus, ABI_LINK_REG, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG};
-use crate::shared::arm64::ergo::{scaled_simm, uimm, x, xzr};
+use crate::shared::abi::{
+    RetStatus, ABI_LINK_REG, REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG,
+    RET_STATUS_REG, RUNTIME_FRAME_BUDGET_OFFSET,
+};
+use crate::shared::arm64::ergo::{ldst64_offset, mem_off, scaled_simm, sp, uimm, x, xzr};
 use crate::shared::arm64::{A64Insn, A64Reg, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
-use crate::shared::trans::cfg::{Cfg, RuntimeExitReason, UnsupportedInsn};
+use crate::shared::trans::cfg::{layout_block_order, Cfg, RuntimeExitReason, UnsupportedInsn};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RephrasedInsnKind {
@@ -13,6 +16,10 @@ pub enum RephrasedInsnKind {
     /// a fault on it resumes at the `Mem` stub of the same `ori_pc` (one stub per
     /// original instruction, so `ori_pc` alone names the stub; no extra field).
     UserAccess,
+    /// One instruction of the back-edge budget check (`budget_check`) that rephrase
+    /// puts before a back-edge's lowered sequence. Runtime-owned: reg-virt passes it
+    /// through unchanged; its `CBZ` targets the `Budget` stub of the same `ori_pc`.
+    BudgetCheck,
     RuntimeExitPayload,
     RuntimeExitBranch,
 }
@@ -23,6 +30,7 @@ impl RephrasedInsnKind {
             Self::Original | Self::UserSynthetic => true,
             Self::RegVirtHelper
             | Self::UserAccess
+            | Self::BudgetCheck
             | Self::RuntimeExitPayload
             | Self::RuntimeExitBranch => false,
         }
@@ -31,7 +39,11 @@ impl RephrasedInsnKind {
     pub const fn is_runtime_exit(self) -> bool {
         match self {
             Self::RuntimeExitPayload | Self::RuntimeExitBranch => true,
-            Self::Original | Self::UserSynthetic | Self::RegVirtHelper | Self::UserAccess => false,
+            Self::Original
+            | Self::UserSynthetic
+            | Self::RegVirtHelper
+            | Self::UserAccess
+            | Self::BudgetCheck => false,
         }
     }
 
@@ -88,6 +100,14 @@ impl RephrasedInsn {
         }
     }
 
+    pub const fn budget_check(ori_pc: u64, insn: A64Insn) -> Self {
+        Self {
+            kind: RephrasedInsnKind::BudgetCheck,
+            ori_pc,
+            insn,
+        }
+    }
+
     pub const fn runtime_exit_payload(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
             kind: RephrasedInsnKind::RuntimeExitPayload,
@@ -107,9 +127,11 @@ impl RephrasedInsn {
 
 /// Basic block after rephrasing, still over the original half-open PC range.
 ///
-/// `cold` holds out-of-line runtime-exit groups: one `RetStatus::Mem` fault stub per
-/// original memory instruction of this block, in instruction order. Layout places
-/// every block's `cold` after all block bodies, so nothing falls through into it.
+/// `cold` holds out-of-line runtime-exit groups, in instruction order: one
+/// `RetStatus::Mem` fault stub per original memory instruction and one
+/// `RetStatus::Budget` stub per back-edge of this block. A branch never accesses
+/// memory, so each original instruction has at most one stub. Layout places every
+/// block's `cold` after all block bodies, so nothing falls through into it.
 #[derive(Debug, PartialEq, Eq)]
 pub struct RephrasedBlock {
     pub start_addr: u64,
@@ -462,7 +484,8 @@ fn push_branch_to_stub(
 }
 
 /// Exit group that returns to userspace at `pc` so the instruction `word` executes
-/// natively there: `Unsupported` (undecodable or rejected) and `Mem` (fault stub).
+/// natively there: `Unsupported` (undecodable or rejected), `Mem` (fault stub) and
+/// `Budget` (budget stub).
 fn push_native_resume_exit(
     out: &mut SharedVec<RephrasedInsn>,
     status: RetStatus,
@@ -493,33 +516,134 @@ fn push_native_resume_exit(
     push_branch_to_stub(out, pc)
 }
 
+/// Scratch register of the budget check. Reg-virt scratch is dead at every original
+/// instruction boundary, which is where the check runs (before the back-edge's fills).
+const BUDGET_CHECK_SCRATCH_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
+
+/// The back-edge budget check (tmp/pipeline.md, "Execution budget (A6)"):
+///
+/// ```text
+/// ldr x12, [sp, #RUNTIME_FRAME_BUDGET_OFFSET]
+/// sub x12, x12, #1
+/// str x12, [sp, #RUNTIME_FRAME_BUDGET_OFFSET]
+/// cbz x12, <Budget stub of pc>
+/// ```
+///
+/// Plain `LDR`/`STR` on `sp` are runtime accesses to the frame. `SUB` (not `SUBS`)
+/// and `CBZ` leave NZCV, which is user state here, untouched. The `CBZ` offset is 0
+/// until layout resolves it to the stub.
+pub fn budget_check(pc: u64) -> [RephrasedInsn; 4] {
+    let scratch = x(BUDGET_CHECK_SCRATCH_REG);
+    let slot = mem_off(sp(), ldst64_offset(RUNTIME_FRAME_BUDGET_OFFSET));
+    [
+        RephrasedInsn::budget_check(
+            pc,
+            A64Insn::LdrImmGenLdr64LdstPos {
+                rt: scratch,
+                mem: slot,
+            },
+        ),
+        RephrasedInsn::budget_check(
+            pc,
+            A64Insn::SubAddsubImmSub64AddsubImm {
+                sh: 0,
+                imm12: uimm(1, 12),
+                rn: A64Reg::x_sp(BUDGET_CHECK_SCRATCH_REG),
+                rd: A64Reg::x_sp(BUDGET_CHECK_SCRATCH_REG),
+            },
+        ),
+        RephrasedInsn::budget_check(
+            pc,
+            A64Insn::StrImmGenStr64LdstPos {
+                rt: scratch,
+                mem: slot,
+            },
+        ),
+        RephrasedInsn::budget_check(
+            pc,
+            A64Insn::CbzCbz64Compbranch {
+                imm19: scaled_simm(0, 19, 2),
+                rt: scratch,
+            },
+        ),
+    ]
+}
+
+/// Target of a user branch (B, B.cond, CBZ/CBNZ, TBZ/TBNZ): the forms layout
+/// relocates as user branches. BL never reaches here as a user instruction; rephrase
+/// lowers it to a runtime exit.
+fn user_branch_target(insn: A64Insn, pc: u64) -> Option<u64> {
+    insn.direct_branch_target(pc)
+        .or_else(|| insn.conditional_targets(pc).map(|(taken, _)| taken))
+}
+
+/// Whether the lowered sequence of one original instruction contains a back-edge: a
+/// user-semantic branch whose target label is at or before it in layout order
+/// (`layout_block_order`). A PC's label is its first emitted instruction, so that is
+/// exactly "the target PC is in `placed`" (every PC emitted so far in layout order,
+/// this instruction's own included). Layout re-checks it on final offsets
+/// (`LayoutError::UnguardedBackEdge`).
+fn is_back_edge(lowered: &[RephrasedInsn], placed: &[u64]) -> bool {
+    lowered
+        .iter()
+        .filter(|insn| insn.kind.is_user_semantic())
+        .filter_map(|insn| user_branch_target(insn.insn, insn.ori_pc))
+        .any(|target| placed.contains(&target))
+}
+
+/// Rephrases every block. The output keeps the CFG's block order (the entry block
+/// first); blocks are visited in layout order only to find back-edges.
 pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
-    let mut blocks = SharedVec::with_capacity(cfg.blocks.len(), GFP_KERNEL)?;
-    for block in &cfg.blocks {
+    let order = layout_block_order(cfg.blocks.iter().map(|block| block.start_addr))?;
+    let mut rephrased: SharedVec<Option<RephrasedBlock>> =
+        SharedVec::with_capacity(cfg.blocks.len(), GFP_KERNEL)?;
+    for _ in 0..cfg.blocks.len() {
+        rephrased.push(None, GFP_KERNEL)?;
+    }
+    // Original PCs whose body label is placed so far, in layout order.
+    let mut placed = SharedVec::new();
+    for &index in order.iter() {
+        let block = &cfg.blocks[index];
         let mut insns = SharedVec::with_capacity(block.insns.len() * 10, GFP_KERNEL)?;
         let mut cold = SharedVec::new();
         for insn in &block.insns {
-            insns.append(rephrase_insn(*insn)?, GFP_KERNEL)?;
+            placed.push(insn.pc, GFP_KERNEL)?;
+            let lowered = rephrase_insn(*insn)?;
+            if is_back_edge(&lowered, &placed) {
+                // The check precedes the whole lowered sequence, so the Budget exit
+                // leaves with the state before the instruction and userspace
+                // re-executes the branch natively.
+                for check in budget_check(insn.pc) {
+                    insns.push(check, GFP_KERNEL)?;
+                }
+                push_native_resume_exit(&mut cold, RetStatus::Budget, insn.pc, insn.word)?;
+            }
+            insns.append(lowered, GFP_KERNEL)?;
             if insn.inner.accesses_memory() {
                 // Fault stub: userspace re-executes the instruction and takes the fault.
                 push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, insn.word)?;
             }
         }
         if let Some(UnsupportedInsn { pc, word }) = block.unsupported_exit {
+            placed.push(pc, GFP_KERNEL)?;
             push_native_resume_exit(&mut insns, RetStatus::Unsupported, pc, word)?;
         }
 
-        blocks.push(
-            RephrasedBlock {
-                start_addr: block.start_addr,
-                end_addr: block.end_addr,
-                prev: copy_u64_vec(&block.prev)?,
-                next: copy_u64_vec(&block.next)?,
-                insns,
-                cold,
-            },
-            GFP_KERNEL,
-        )?;
+        rephrased[index] = Some(RephrasedBlock {
+            start_addr: block.start_addr,
+            end_addr: block.end_addr,
+            prev: copy_u64_vec(&block.prev)?,
+            next: copy_u64_vec(&block.next)?,
+            insns,
+            cold,
+        });
+    }
+
+    let mut blocks = SharedVec::with_capacity(rephrased.len(), GFP_KERNEL)?;
+    for block in rephrased.iter_mut() {
+        // `order` is a permutation of the block indices, so every slot is filled.
+        let block = block.take().expect("layout order visits every block once");
+        blocks.push(block, GFP_KERNEL)?;
     }
     Ok(blocks)
 }
@@ -761,5 +885,226 @@ mod tests {
         assert_eq!(value(0), RetStatus::Mem.as_reg());
         assert_eq!(value(1), u64::from(ldp.encode().unwrap()));
         assert_eq!(value(2), 0x1004);
+    }
+
+    fn branch_forms(delta: i64) -> [A64Insn; 8] {
+        let words = delta / 4;
+        let imm = |bits: u8| scaled_simm((words as u32) & ((1 << bits) - 1), bits, 2);
+        [
+            A64Insn::BUncondBOnlyBranchImm { imm26: imm(26) },
+            A64Insn::BCondBOnlyCondbranch {
+                imm19: imm(19),
+                cond: 1,
+            },
+            A64Insn::CbzCbz32Compbranch {
+                imm19: imm(19),
+                rt: crate::shared::arm64::ergo::w(1),
+            },
+            A64Insn::CbzCbz64Compbranch {
+                imm19: imm(19),
+                rt: x(1),
+            },
+            A64Insn::CbnzCbnz32Compbranch {
+                imm19: imm(19),
+                rt: crate::shared::arm64::ergo::w(1),
+            },
+            A64Insn::CbnzCbnz64Compbranch {
+                imm19: imm(19),
+                rt: x(1),
+            },
+            A64Insn::TbzTbzOnlyTestbranch {
+                b5: 0,
+                b40: 3,
+                imm14: imm(14),
+                rt: x(1),
+            },
+            A64Insn::TbnzTbnzOnlyTestbranch {
+                b5: 1,
+                b40: 3,
+                imm14: imm(14),
+                rt: x(1),
+            },
+        ]
+    }
+
+    /// One CFG block per slice, in the given (layout) order.
+    fn cfg_of(blocks: &[&[(u64, A64Insn)]]) -> Cfg {
+        use crate::shared::trans::cfg::BasicBlock;
+
+        let mut out = SharedVec::new();
+        for block in blocks {
+            let mut insns = SharedVec::new();
+            for &(pc, inner) in *block {
+                insns
+                    .push(
+                        IrInsn {
+                            pc,
+                            word: inner.encode().unwrap(),
+                            inner,
+                        },
+                        GFP_KERNEL,
+                    )
+                    .unwrap();
+            }
+            out.push(
+                BasicBlock {
+                    start_addr: block[0].0,
+                    end_addr: block[block.len() - 1].0 + 4,
+                    insns,
+                    prev: SharedVec::new(),
+                    next: SharedVec::new(),
+                    unsupported_exit: None,
+                },
+                GFP_KERNEL,
+            )
+            .unwrap();
+        }
+        Cfg {
+            entry_pc: blocks[0][0].0,
+            blocks: out,
+        }
+    }
+
+    /// The four MOVZ/MOVK x3 values of a native-resume exit group:
+    /// (status, x10 = word, x11 = pc).
+    fn native_resume_values(group: &[RephrasedInsn]) -> (u64, u64, u64) {
+        assert_eq!(group.len(), 13);
+        assert!(group[12].kind.is_runtime_exit_branch());
+        let imm = |index: usize| match group[index].insn {
+            A64Insn::MovzMovz64Movewide { imm16, .. }
+            | A64Insn::MovkMovk64Movewide { imm16, .. } => {
+                u64::from(imm16.raw()) << (16 * (3 - index % 4))
+            }
+            other => panic!("unexpected payload {other:?}"),
+        };
+        let value = |g: usize| (0..4).map(|i| imm(g * 4 + i)).sum::<u64>();
+        (value(0), value(1), value(2))
+    }
+
+    fn assert_budget_checked(block: &RephrasedBlock, branch: A64Insn, pc: u64) {
+        let check = budget_check(pc);
+        assert_eq!(
+            &block.insns[block.insns.len() - 5..block.insns.len() - 1],
+            &check
+        );
+        assert_eq!(
+            block.insns[block.insns.len() - 1],
+            RephrasedInsn::original(pc, branch)
+        );
+        assert_eq!(
+            native_resume_values(&block.cold),
+            (
+                RetStatus::Budget.as_reg(),
+                u64::from(branch.encode().unwrap()),
+                pc
+            ),
+            "{}",
+            branch.key()
+        );
+        assert!(block.cold.iter().all(|insn| insn.ori_pc == pc));
+    }
+
+    fn assert_not_budget_checked(block: &RephrasedBlock) {
+        assert!(block
+            .insns
+            .iter()
+            .all(|insn| insn.kind != RephrasedInsnKind::BudgetCheck));
+        assert!(block.cold.is_empty());
+    }
+
+    #[test]
+    fn every_user_branch_form_to_itself_gets_the_budget_check() {
+        for branch in branch_forms(0) {
+            let program = rephrase(cfg_of(&[&[(0x1000, branch)]])).unwrap();
+            assert_budget_checked(&program[0], branch, 0x1000);
+        }
+    }
+
+    #[test]
+    fn every_user_branch_form_to_an_earlier_block_gets_the_budget_check() {
+        let nop = A64Insn::NopNopHiHints {};
+        for branch in branch_forms(-8) {
+            let program = rephrase(cfg_of(&[
+                &[(0x1000, nop)],
+                &[(0x1004, nop), (0x1008, branch)],
+            ]))
+            .unwrap();
+            assert_not_budget_checked(&program[0]);
+            assert_budget_checked(&program[1], branch, 0x1008);
+        }
+    }
+
+    #[test]
+    fn forward_user_branches_get_no_budget_check() {
+        let nop = A64Insn::NopNopHiHints {};
+        for branch in branch_forms(8) {
+            let program = rephrase(cfg_of(&[
+                &[(0x1000, branch)],
+                &[(0x1004, nop)],
+                &[(0x1008, nop)],
+            ]))
+            .unwrap();
+            for block in program.iter() {
+                assert_not_budget_checked(block);
+            }
+        }
+    }
+
+    /// Back-edge means "at or before in layout order" (`layout_block_order`: ascending
+    /// block start), whatever order the CFG discovered the blocks in.
+    #[test]
+    fn back_edges_follow_layout_order_not_cfg_discovery_order() {
+        let nop = A64Insn::NopNopHiHints {};
+        // Target block discovered later but laid out first: back-edge.
+        for branch in branch_forms(-8) {
+            let program = rephrase(cfg_of(&[&[(0x1008, branch)], &[(0x1000, nop)]])).unwrap();
+            // The output keeps CFG order (entry block first).
+            assert_eq!(program[0].start_addr, 0x1008);
+            assert_budget_checked(&program[0], branch, 0x1008);
+            assert_not_budget_checked(&program[1]);
+        }
+        // Target block discovered first but laid out later: forward.
+        for branch in branch_forms(0x10) {
+            let program = rephrase(cfg_of(&[&[(0x1010, nop)], &[(0x1000, branch)]])).unwrap();
+            assert_not_budget_checked(&program[0]);
+            assert_not_budget_checked(&program[1]);
+        }
+    }
+
+    #[test]
+    fn branch_inside_a_user_synthetic_sequence_is_a_back_edge_too() {
+        let mov = A64Insn::MovzMovz64Movewide {
+            hw: 0,
+            imm16: uimm(1, 16),
+            rd: x(3),
+        };
+        let lowered = [
+            RephrasedInsn::user_synthetic(0x1004, mov),
+            RephrasedInsn::user_synthetic(0x1004, branch_forms(-4)[0]),
+        ];
+        assert!(is_back_edge(&lowered, &[0x1000, 0x1004]));
+        assert!(!is_back_edge(&lowered, &[0x1004]));
+        // Runtime-exit branches are never user branches.
+        let exit = [RephrasedInsn::runtime_exit_branch(
+            0x1004,
+            branch_forms(0)[0],
+        )];
+        assert!(!is_back_edge(&exit, &[0x1004]));
+    }
+
+    #[test]
+    fn budget_check_is_runtime_owned_and_leaves_nzcv_alone() {
+        use crate::shared::arm64::A64OperandRole;
+
+        let check = budget_check(0x1000);
+        for insn in &check {
+            assert_eq!(insn.kind, RephrasedInsnKind::BudgetCheck);
+            assert!(!insn.kind.is_user_semantic() && !insn.kind.is_runtime_exit());
+            assert!(!insn.insn.operand_roles().iter().any(|role| matches!(
+                role,
+                A64OperandRole::FlagsWrite | A64OperandRole::FlagsRead
+            )));
+            insn.insn.encode().unwrap();
+        }
     }
 }

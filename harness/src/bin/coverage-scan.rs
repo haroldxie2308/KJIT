@@ -500,6 +500,17 @@ fn layout_err_info(err: LayoutError) -> ErrInfo {
         LayoutError::DuplicateFaultStub { ori_pc } => {
             ("DuplicateFaultStub", format!("pc={ori_pc:#x}"))
         }
+        LayoutError::MissingBudgetStub { insn_index, ori_pc } => (
+            "MissingBudgetStub",
+            format!("insn_index={insn_index} pc={ori_pc:#x}"),
+        ),
+        LayoutError::UnguardedBackEdge {
+            insn_index,
+            target_original_pc,
+        } => (
+            "UnguardedBackEdge",
+            format!("insn_index={insn_index} target={target_original_pc:#x}"),
+        ),
     };
     ErrInfo {
         variant: format!("Layout::{name}"),

@@ -451,13 +451,17 @@ fn layout_original_pcs(program: &RephrasedProgram) -> Vec<Option<u64>> {
     for _ in 0..wrapper_insns {
         origins.push(None);
     }
-    for block in program {
+    // Same block order as `layout_program`.
+    let order =
+        crate::shared::trans::cfg::layout_block_order(program.iter().map(|block| block.start_addr))
+            .expect("allocation of the layout order");
+    for block in order.iter().map(|&index| &program[index]) {
         for insn in &block.insns {
             origins.push(Some(insn.ori_pc));
         }
     }
     // Layout places every block's cold region after all bodies.
-    for block in program {
+    for block in order.iter().map(|&index| &program[index]) {
         for insn in &block.cold {
             origins.push(Some(insn.ori_pc));
         }

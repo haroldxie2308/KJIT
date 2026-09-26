@@ -174,7 +174,7 @@ pub fn virtualize_registers(
     Ok(program)
 }
 
-/// `cold`: the region holds only runtime-exit groups (fault stubs).
+/// `cold`: the region holds only runtime-exit groups (fault and budget stubs).
 fn virtualize_insns(
     insns: &[RephrasedInsn],
     cold: bool,
@@ -208,6 +208,9 @@ fn virtualize_insn(
             push_rephrased(out, rephrased)
         }
         RephrasedInsnKind::RuntimeExitBranch => push_rephrased(out, rephrased),
+        // Runtime-owned (frame counter + branch to its stub) and placed at an
+        // instruction boundary, where every scratch register is dead: nothing to map.
+        RephrasedInsnKind::BudgetCheck => push_rephrased(out, rephrased),
         // Both kinds are reg-virt output; seeing one on its input is a pipeline bug.
         RephrasedInsnKind::RegVirtHelper | RephrasedInsnKind::UserAccess => {
             Err(RegVirtError::UnexpectedRegVirtHelper {
@@ -2251,6 +2254,36 @@ mod tests {
             .cold
             .push(RephrasedInsn::original(0x1000, movz(x(1))), GFP_KERNEL)
             .unwrap();
+        assert_eq!(
+            virtualize_registers(program).unwrap_err(),
+            RegVirtError::MalformedRuntimeExitGroup { pc: 0x1000 }
+        );
+    }
+
+    /// The budget check passes through unchanged and stays before the back-edge's
+    /// fills, so its scratch use cannot clash with them.
+    #[test]
+    fn budget_check_precedes_the_back_edge_fills_and_is_not_rewritten() {
+        use crate::shared::trans::rephrase::budget_check;
+
+        let cbnz = A64Insn::CbnzCbnz64Compbranch {
+            imm19: A64Imm::scaled_signed(0, 19, 2),
+            rt: x(12),
+        };
+        let check = budget_check(0x1000);
+        let mut raw = check.to_vec();
+        raw.push(RephrasedInsn::original(0x1000, cbnz));
+        let program = virtualize_registers(program_from_insns(&raw)).unwrap();
+
+        let insns = &program[0].insns;
+        assert_eq!(&insns[..4], &check);
+        assert_eq!(insns[4], fill(12, 12));
+        assert_eq!(insns[5], RephrasedInsn::original(0x1000, cbnz));
+        assert_eq!(insns.len(), 6);
+
+        // Never inside an exit group or the cold region.
+        let mut program = one_insn(RephrasedInsn::original(0x1000, movz(x(0))));
+        program[0].cold.push(check[0], GFP_KERNEL).unwrap();
         assert_eq!(
             virtualize_registers(program).unwrap_err(),
             RegVirtError::MalformedRuntimeExitGroup { pc: 0x1000 }

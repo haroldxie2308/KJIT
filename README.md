@@ -162,6 +162,15 @@ instruction and takes the fault itself. The harness classifies fragment
 accesses by instruction: `LDTR`/`STTR` check user page permissions, any other
 load/store must stay in runtime-owned memory. User code that contains
 `LDTR`/`STTR` itself takes the `Unsupported` exit.
+
+Every back-edge (a user branch whose target is at or before it in layout order,
+i.e. block order) is preceded by a budget check on a runtime-frame counter that
+the prologue resets to `KJIT_BACKEDGE_BUDGET` (4096) on every entry. The
+budget-th back-edge execution of one entry leaves through an out-of-line
+`Budget` exit stub (`x10` = the branch word, `x11` = its PC), so a user tight
+loop never pins the CPU in the kernel; userspace resumes natively at the
+branch. The harness stops the original interpreter (and the native original)
+at the same dynamic instance of that branch before comparing state.
 Runtime-exit sequencing now preserves user-visible `x9`, `x10`, and `x11`
 to `pt_regs` before those physical registers become the runtime return channel.
 Dynamic exit targets such as `br x9`, stack-backed branch registers, and

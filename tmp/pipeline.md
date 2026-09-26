@@ -233,8 +233,9 @@ Implementation decisions (A5):
 ## Execution budget (A6)
 
 - A back-edge is any branch whose target is at or before it in the final
-  layout order. Layout order is the block order, so this is known before
-  offsets and can be checked on the final bytes without a CFG.
+  layout order. Layout order is a block order (`cfg::layout_block_order`), so
+  this is known before offsets and can be checked on the final bytes without a
+  CFG.
 - The prologue stores `KJIT_BACKEDGE_BUDGET` (an ABI constant) in a runtime
   frame slot. Before each back-edge's lowered sequence the fragment runs:
   load slot → `SUB #1` → store slot → `CBZ` to a budget stub. The sequence
@@ -245,6 +246,89 @@ Implementation decisions (A5):
   Userspace resumes natively at the branch.
 - Verifier rule (V3): every backward in-fragment branch is immediately
   preceded by exactly this sequence.
+
+Implementation decisions (A6):
+
+- Status: `RetStatus::Budget = 7`, x10 = the branch's raw word, x11 = its PC.
+  `decide_runtime_return` stops with `ReturnedToUserspace { Budget, x11 }`, like
+  `Unsupported`/`Mem` (URuntime and the native runner share it).
+- ABI (`shared/abi/frame.rs`): `KJIT_BACKEDGE_BUDGET = 4096` (why: one entry runs
+  at most 4096 x the longest acyclic path before the runtime re-checks signals
+  and `need_resched`; loops under 4096 iterations never pay a round trip).
+  Frame grows 192 -> 208 bytes: `RUNTIME_FRAME_BUDGET_OFFSET = 192` (8-byte
+  counter), 200..208 padding for 16-byte alignment; every other slot is
+  unchanged. The prologue's tail is now
+  `movz x12, #4096; str x12, [sp, #192]; ldr x12, [sp, #80]; br x12`
+  (prologue 0x98 -> 0xa0 bytes, so `EPILOGUE_OFFSET` = 0xa0).
+- Layout order has one definition, `cfg::layout_block_order`: ascending block
+  start address (blocks partition the PC space, so a fall-through successor is
+  the next block). Rephrase (back-edges), layout (bodies, then cold regions) and
+  the harness trace all iterate blocks through it. The program vector itself
+  keeps CFG order, so `program[0]` stays the entry block. (Before A6 layout
+  emitted CFG discovery order; the concurrent fall-through fix sorts by start
+  address too -- it must go through this function, not a second sort.)
+- Pass placement: **rephrase**. It already owns semantic exits and the cold
+  stubs (A5), sees the whole CFG, and runs before reg-virt, so the Budget stub
+  is virtualized like every other exit group and reg-virt never learns about
+  branches or budgets. Back-edge test: visiting blocks in layout order, a
+  lowered original instruction contains a user-semantic
+  B/B.cond/CBZ/CBNZ/TBZ/TBNZ whose target PC is already placed (every PC
+  emitted so far in layout order, the instruction's own included) -- exactly
+  "the target's vlabel is at or before the branch". Forward branches into the
+  cold region (fault/alignment guards, budget `CBZ`) are not user branches and
+  never back-edges. BL is never user-semantic after rephrase. A branch inside a
+  UserSynthetic sequence counts; the check then precedes the whole lowered
+  sequence of its original instruction (none exist today). Layout only resolves
+  the `CBZ` immediate to the stub label, so branch-immediate rewriting stays in
+  layout.
+- Layout self-check: a user branch that resolves to `target_offset <= offset`
+  without a budget check earlier in its original instruction's run of
+  instructions fails with `LayoutError::UnguardedBackEdge`; a check whose PC has
+  no stub fails with `MissingBudgetStub`. Budget and Mem stubs share the stub
+  label map (one stub per original PC: a branch never accesses memory;
+  `DuplicateFaultStub` still catches two).
+- Kind: `RephrasedInsnKind::BudgetCheck` on all four instructions (not
+  user-semantic, not a runtime exit). Reg-virt passes it through unchanged; in
+  the cold region or inside an exit group it is `MalformedRuntimeExitGroup`.
+- Exact emitted sequence (encodings independent of the PC, except the CBZ
+  offset), with nothing between it and the branch except that branch's own
+  reg-virt fills (`ldr x12..x15, [sp, #16..#56]`, at most one for today's
+  branch forms):
+
+  ```text
+  f94063ec  ldr x12, [sp, #192]
+  d100058c  sub x12, x12, #1
+  f90063ec  str x12, [sp, #192]
+  b4xxxxxc  cbz x12, <Budget stub of this PC>     // imm19 -> cold region
+            [fills of the branch's stack-backed register]
+            <the back-edge branch>
+  ```
+
+  So V3's rule is: every in-fragment branch with a non-positive displacement is
+  preceded by these four words, then only sp-relative `LDR (imm, 64)` fills of
+  the stack-backed slots, then the branch; the CBZ targets a cold-region group
+  that sets x9 = 7 and ends in `b` to the epilogue.
+- Budget stub: `push_native_resume_exit(Budget, pc, word)` in the block's
+  `cold`, in instruction order -- the same 13-instruction group as a Mem stub
+  (after reg-virt: x9..x11 preserved to pt_regs first).
+- Count semantics: the prologue stores N; each back-edge execution (taken or
+  not) decrements first and exits at zero, so executions 1..N-1 of one entry
+  run and the N-th exits before the branch. Any fragment entry (SVC resume,
+  chaining) restarts at N.
+- Harness differential: the fragment runs first
+  (`run_fragment_counting_instances`); on a `Budget` exit at pc P the dynamic
+  instance k is the number of executions of P's body label (every entry,
+  branch and fall-through into P lands there, and for a back-edge it is the
+  check's first instruction). The original runs with `InstanceCap { P, k }`
+  and halts with `HaltReason::InstanceCap` before executing P for the k-th
+  time; `runtime_halt_matches_original` pairs it with `Budget` at P. The cap
+  is derived from the fragment, so the differential proves precision, not the
+  count; the count is pinned by the harness runtime unit tests (exit on
+  exactly the N-th execution, N-1 completes, re-entry restarts).
+- Native original: the capped branch word becomes a trap; each earlier arrival
+  lets the hardware execute the branch once (in place with every other word
+  trapping; a self-branch runs from a scratch page with displacement +8 so the
+  hardware only picks taken/not-taken), then the trap is reinstalled.
 
 ## Validation order
 
