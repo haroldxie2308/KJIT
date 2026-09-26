@@ -644,6 +644,29 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
             index_operand(rm, option, if s == 1 { 3 } else { 0 })
         ),
         NopNopHiHints {} => "nop".to_string(),
+        DmbDmbBoBarriers { crm } => format!("dmb {}", barrier_option(crm)),
+        DsbDsbBoBarriers { crm: 0b0000 } => "ssbb".to_string(),
+        DsbDsbBoBarriers { crm: 0b0100 } => "pssbb".to_string(),
+        DsbDsbBoBarriers { crm } => format!("dsb {}", barrier_option(crm)),
+        IsbIsbBiBarriers { crm: 0b1111 } => "isb".to_string(),
+        IsbIsbBiBarriers { crm } => format!("isb #{crm}"),
+        LdarLdarLr32Ldstord { rn, rt }
+        | LdarLdarLr64Ldstord { rn, rt }
+        | LdarbLdarbLr32Ldstord { rn, rt }
+        | LdarhLdarhLr32Ldstord { rn, rt }
+        | StlrStlrSl32Ldstord { rn, rt }
+        | StlrStlrSl64Ldstord { rn, rt }
+        | StlrbStlrbSl32Ldstord { rn, rt }
+        | StlrhStlrhSl32Ldstord { rn, rt }
+        | LdaprLdapr32lMemop { rn, rt }
+        | LdaprLdapr64lMemop { rn, rt }
+        | LdaprbLdaprb32lMemop { rn, rt }
+        | LdaprhLdaprh32lMemop { rn, rt } => format!(
+            "{} {}, [{}]",
+            insn.mnemonic().to_lowercase(),
+            reg_name(rt),
+            reg_name(rn)
+        ),
         BlBlOnlyBranchImm { imm26 } => pretty_branch("bl", pc, imm26),
         BrBr64BranchReg { rn } => format!("br {}", reg_name(rn)),
         BlrBlr64BranchReg { rn } => format!("blr {}", reg_name(rn)),
@@ -951,6 +974,26 @@ fn mem_operand(mem: A64Mem) -> String {
         A64Mem::PreIndex { .. } => format!("[{base}, {}]!", imm(offset)),
         A64Mem::PostIndex { .. } => format!("[{base}], {}", imm(offset)),
     }
+}
+
+/// DMB/DSB `<option>` name of a CRm value; reserved values print as `#imm`.
+fn barrier_option(crm: u8) -> String {
+    let name = match crm {
+        0b0001 => "oshld",
+        0b0010 => "oshst",
+        0b0011 => "osh",
+        0b0101 => "nshld",
+        0b0110 => "nshst",
+        0b0111 => "nsh",
+        0b1001 => "ishld",
+        0b1010 => "ishst",
+        0b1011 => "ish",
+        0b1101 => "ld",
+        0b1110 => "st",
+        0b1111 => "sy",
+        _ => return format!("#{crm}"),
+    };
+    name.to_string()
 }
 
 fn bit_index(b5: u8, b40: u8) -> u8 {

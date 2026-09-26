@@ -501,6 +501,26 @@ impl A64Insn {
             | Self::LdtrLdtr64LdstUnpriv { .. }
             | Self::SttrSttr32LdstUnpriv { .. }
             | Self::SttrSttr64LdstUnpriv { .. }
+            // A7c. Barriers: every CRm value decodes (reserved options behave as
+            // SY; DSB CRm 0000/0100 are SSBB/PSSBB). Acquire/release: no value rule
+            // (their should-be-one Rs/Rt2 are pinned in subset.toml). LDAPR's only
+            // UNDEFINED case is a missing FEAT_LRCPC, a CPU property, not an
+            // encoding one (tmp/pipeline.md, A7c).
+            | Self::DmbDmbBoBarriers { .. }
+            | Self::DsbDsbBoBarriers { .. }
+            | Self::IsbIsbBiBarriers { .. }
+            | Self::LdarLdarLr32Ldstord { .. }
+            | Self::LdarLdarLr64Ldstord { .. }
+            | Self::LdarbLdarbLr32Ldstord { .. }
+            | Self::LdarhLdarhLr32Ldstord { .. }
+            | Self::StlrStlrSl32Ldstord { .. }
+            | Self::StlrStlrSl64Ldstord { .. }
+            | Self::StlrbStlrbSl32Ldstord { .. }
+            | Self::StlrhStlrhSl32Ldstord { .. }
+            | Self::LdaprLdapr32lMemop { .. }
+            | Self::LdaprLdapr64lMemop { .. }
+            | Self::LdaprbLdaprb32lMemop { .. }
+            | Self::LdaprhLdaprh32lMemop { .. }
             | Self::NopNopHiHints {}
             | Self::BlBlOnlyBranchImm { .. }
             | Self::BrBr64BranchReg { .. }
@@ -678,24 +698,30 @@ mod tests {
         assert_eq!(unprivileged, 13);
     }
 
-    /// Exclusive, acquire/release, atomic and FP/SIMD memory forms stay outside the
-    /// subset: they must not decode, so they take the Unsupported exit.
+    /// Exclusive, atomic and FP/SIMD memory forms, and the acquire/release forms
+    /// beyond A7c's base-register ones (FEAT_LRCPC2 unscaled, FEAT_LRCPC3
+    /// writeback, non-canonical should-be-one fields), stay outside the subset:
+    /// they must not decode, so they take the Unsupported exit.
     #[test]
     fn exclusive_atomic_and_fp_memory_forms_stay_undecodable() {
-        let words: [(u32, &str); 22] = [
+        let words: [(u32, &str); 26] = [
             (0xc85f_7c20, "ldxr x0, [x1]"),
             (0xc802_7c20, "stxr w2, x0, [x1]"),
             (0x885f_fc20, "ldaxr w0, [x1]"),
             (0x8802_fc20, "stlxr w2, w0, [x1]"),
-            (0xc8df_fc20, "ldar x0, [x1]"),
-            (0x889f_fc20, "stlr w0, [x1]"),
+            (0xc8c0_fc20, "ldar x0, [x1] with Rs = 0"),
+            (0x889f_8020, "stlr w0, [x1] with Rt2 = 0"),
+            (0xf8a0_c020, "ldapr x0, [x1] with Rs = 0"),
+            (0xd9c0_0820, "ldapr x0, [x1], #8 (FEAT_LRCPC3)"),
+            (0xd980_0820, "stlr x0, [x1, #-8]! (FEAT_LRCPC3)"),
+            (0xd940_8020, "ldapur x0, [x1, #8] (FEAT_LRCPC2)"),
+            (0x991f_c020, "stlur w0, [x1, #-4] (FEAT_LRCPC2)"),
             (0xc87f_0440, "ldxp x0, x1, [x2]"),
             (0xc8a0_7c41, "cas x0, x1, [x2]"),
             (0x88e0_fc41, "casal w0, w1, [x2]"),
             (0xf820_0041, "ldadd x0, x1, [x2]"),
             (0xb8e0_0041, "ldaddal w0, w1, [x2]"),
             (0xf820_8041, "swp x0, x1, [x2]"),
-            (0xf8bf_c020, "ldapr x0, [x1]"),
             (0x3dc0_0020, "ldr q0, [x1]"),
             (0xfd40_0420, "ldr d0, [x1, #8]"),
             (0xbc40_4420, "ldr s0, [x1], #4"),
@@ -712,6 +738,29 @@ mod tests {
                 Err(DecodeError::UnsupportedWord { pc: 0x40, word }),
                 "{what}"
             );
+        }
+    }
+
+    /// A7c: the barriers and base-register acquire/release forms decode as
+    /// themselves.
+    #[test]
+    fn barriers_and_acquire_release_forms_decode() {
+        let words: [(u32, &str); 11] = [
+            (0xd503_3bbf, "DMB.DMB_BO_barriers"),
+            (0xd503_30bf, "DMB.DMB_BO_barriers"),
+            (0xd503_3f9f, "DSB.DSB_BO_barriers"),
+            (0xd503_309f, "DSB.DSB_BO_barriers"),
+            (0xd503_3fdf, "ISB.ISB_BI_barriers"),
+            (0xc8df_fc20, "LDAR.LDAR_LR64_ldstord"),
+            (0x889f_fc20, "STLR.STLR_SL32_ldstord"),
+            (0x08df_ffe0, "LDARB.LDARB_LR32_ldstord"),
+            (0x489f_fc83, "STLRH.STLRH_SL32_ldstord"),
+            (0xb8bf_c0c5, "LDAPR.LDAPR_32L_memop"),
+            (0x78bf_c107, "LDAPRH.LDAPRH_32L_memop"),
+        ];
+        for (word, key) in words {
+            let insn = decode_word(word, 0x40).unwrap_or_else(|_| panic!("{word:#010x}"));
+            assert_eq!(insn.inner.key(), key, "{word:#010x}");
         }
     }
 }

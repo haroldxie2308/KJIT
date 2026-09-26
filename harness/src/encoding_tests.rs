@@ -23,6 +23,7 @@ fn encoding_matches_llvm_for_handwritten_cases() {
     cases.extend(alu_encoding_cases());
     cases.extend(condition_code_cases());
     cases.extend(mem_encoding_cases());
+    cases.extend(barrier_acqrel_encoding_cases());
     let decode_forms = decode_forms_from_subset_toml(SUBSET_TOML);
     let decode_form_set = decode_forms.iter().cloned().collect::<BTreeSet<_>>();
     let covered_forms = cases.iter().map(|case| case.form).collect::<BTreeSet<_>>();
@@ -2770,6 +2771,115 @@ fn mem_encoding_cases() -> Vec<EncodingCase> {
             },
         ),
     ]
+}
+
+/// A7c: every CRm value of DMB/DSB/ISB (named options and the reserved `#imm`
+/// ones; DSB 0000/0100 are SSBB/PSSBB) and every acquire/release form.
+fn barrier_acqrel_encoding_cases() -> Vec<EncodingCase> {
+    const OPTIONS: [&str; 16] = [
+        "#0", "oshld", "oshst", "osh", "#4", "nshld", "nshst", "nsh", "#8", "ishld", "ishst",
+        "ish", "#12", "ld", "st", "sy",
+    ];
+    let mut cases = Vec::new();
+    for (crm, option) in OPTIONS.iter().enumerate() {
+        let crm = crm as u8;
+        cases.push(case(
+            "DMB.DMB_BO_barriers",
+            format!("    dmb {option}"),
+            A64Insn::DmbDmbBoBarriers { crm },
+        ));
+        let dsb = match crm {
+            0b0000 => "    ssbb".to_string(),
+            0b0100 => "    pssbb".to_string(),
+            _ => format!("    dsb {option}"),
+        };
+        cases.push(case(
+            "DSB.DSB_BO_barriers",
+            dsb,
+            A64Insn::DsbDsbBoBarriers { crm },
+        ));
+        let isb = if crm == 0b1111 {
+            "    isb".to_string()
+        } else {
+            format!("    isb #{crm}")
+        };
+        cases.push(case(
+            "ISB.ISB_BI_barriers",
+            isb,
+            A64Insn::IsbIsbBiBarriers { crm },
+        ));
+    }
+    cases.extend([
+        case("DSB.DSB_BO_barriers", "    dsb ish", A64Insn::DsbDsbBoBarriers { crm: 0b1011 }),
+        case("DSB.DSB_BO_barriers", "    dsb sy", A64Insn::DsbDsbBoBarriers { crm: 0b1111 }),
+        case("ISB.ISB_BI_barriers", "    isb sy", A64Insn::IsbIsbBiBarriers { crm: 0b1111 }),
+        case(
+            "LDAR.LDAR_LR32_ldstord",
+            "    ldar w0, [x1]",
+            A64Insn::LdarLdarLr32Ldstord { rn: xsp(1), rt: w(0) },
+        ),
+        case(
+            "LDAR.LDAR_LR64_ldstord",
+            "    ldar x30, [sp, #0]",
+            A64Insn::LdarLdarLr64Ldstord { rn: xsp(31), rt: x(30) },
+        ),
+        case(
+            "LDAR.LDAR_LR64_ldstord",
+            "    ldar xzr, [x17]",
+            A64Insn::LdarLdarLr64Ldstord { rn: xsp(17), rt: x(31) },
+        ),
+        case(
+            "LDARB.LDARB_LR32_ldstord",
+            "    ldarb w2, [x3]",
+            A64Insn::LdarbLdarbLr32Ldstord { rn: xsp(3), rt: w(2) },
+        ),
+        case(
+            "LDARH.LDARH_LR32_ldstord",
+            "    ldarh w4, [sp]",
+            A64Insn::LdarhLdarhLr32Ldstord { rn: xsp(31), rt: w(4) },
+        ),
+        case(
+            "STLR.STLR_SL32_ldstord",
+            "    stlr wzr, [x5]",
+            A64Insn::StlrStlrSl32Ldstord { rn: xsp(5), rt: w(31) },
+        ),
+        case(
+            "STLR.STLR_SL64_ldstord",
+            "    stlr x6, [sp]",
+            A64Insn::StlrStlrSl64Ldstord { rn: xsp(31), rt: x(6) },
+        ),
+        case(
+            "STLRB.STLRB_SL32_ldstord",
+            "    stlrb w7, [x8]",
+            A64Insn::StlrbStlrbSl32Ldstord { rn: xsp(8), rt: w(7) },
+        ),
+        case(
+            "STLRH.STLRH_SL32_ldstord",
+            "    stlrh w9, [x10]",
+            A64Insn::StlrhStlrhSl32Ldstord { rn: xsp(10), rt: w(9) },
+        ),
+        case(
+            "LDAPR.LDAPR_32L_memop",
+            "    .arch_extension rcpc\n    ldapr w11, [x12]",
+            A64Insn::LdaprLdapr32lMemop { rn: xsp(12), rt: w(11) },
+        ),
+        case(
+            "LDAPR.LDAPR_64L_memop",
+            "    .arch_extension rcpc\n    ldapr x13, [sp]",
+            A64Insn::LdaprLdapr64lMemop { rn: xsp(31), rt: x(13) },
+        ),
+        case(
+            "LDAPRB.LDAPRB_32L_memop",
+            "    .arch_extension rcpc\n    ldaprb w14, [x15]",
+            A64Insn::LdaprbLdaprb32lMemop { rn: xsp(15), rt: w(14) },
+        ),
+        case(
+            "LDAPRH.LDAPRH_32L_memop",
+            "    .arch_extension rcpc\n    ldaprh wzr, [x16, #0]",
+            A64Insn::LdaprhLdaprh32lMemop { rn: xsp(16), rt: w(31) },
+        ),
+    ]);
+    cases
 }
 
 fn simm9(value: i64) -> A64Imm {

@@ -16,6 +16,11 @@ pub(super) enum Form {
     /// Pure register data processing: reads/writes general registers and NZCV only.
     Alu,
     Nop,
+    /// `DMB`/`DSB`/`ISB` (every generated CRm value; DSB without nXS): the one
+    /// system-instruction group besides NOP and MRS TPIDR_EL0. Same effect at EL1
+    /// as at EL0 for every observer of user memory; no register, memory or PSTATE
+    /// effect. Every other barrier-like or system instruction is undecodable.
+    Barrier,
     /// `MRS Xt, TPIDR_EL0`: the generated form is constrained to that one register.
     MrsTpidrEl0,
     /// `ADR`/`ADRP`: would put a kernel (fragment) address in a user register.
@@ -31,7 +36,9 @@ pub(super) enum Form {
     },
     /// A user-code load/store/prefetch form the translator only ever lowers (to
     /// `LDTR*`/`STTR*`, or a `NOP` for PRFM): never valid in a fragment, not even on
-    /// runtime memory, because it has no role there.
+    /// runtime memory, because it has no role there. Includes the acquire/release
+    /// forms (LDAR*, STLR*, LDAPR*): a privileged ordered access at EL1 would
+    /// bypass the EL0 permission check.
     UserOnly,
     /// Every other load/store: allowed only on the runtime frame or `pt_regs`.
     /// `bytes` is the whole contiguous footprint (16 for a 64-bit pair).
@@ -135,7 +142,20 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         | A64Insn::LdrswLitLdrsw64Loadlit { .. }
         | A64Insn::PrfmImmPrfmPLdstPos { .. }
         | A64Insn::PrfmLitPrfmPLoadlit { .. }
-        | A64Insn::PrfmRegPrfmPLdstRegoff { .. } => Form::UserOnly,
+        | A64Insn::PrfmRegPrfmPLdstRegoff { .. }
+        // Acquire/release (A7c): lowered to `dmb ish; LDTR*/STTR*; dmb ish`.
+        | A64Insn::LdarLdarLr32Ldstord { .. }
+        | A64Insn::LdarLdarLr64Ldstord { .. }
+        | A64Insn::LdarbLdarbLr32Ldstord { .. }
+        | A64Insn::LdarhLdarhLr32Ldstord { .. }
+        | A64Insn::StlrStlrSl32Ldstord { .. }
+        | A64Insn::StlrStlrSl64Ldstord { .. }
+        | A64Insn::StlrbStlrbSl32Ldstord { .. }
+        | A64Insn::StlrhStlrhSl32Ldstord { .. }
+        | A64Insn::LdaprLdapr32lMemop { .. }
+        | A64Insn::LdaprLdapr64lMemop { .. }
+        | A64Insn::LdaprbLdaprb32lMemop { .. }
+        | A64Insn::LdaprhLdaprh32lMemop { .. } => Form::UserOnly,
 
         A64Insn::LdrImmGenLdr32LdstImmpost { mem, .. }
         | A64Insn::LdrImmGenLdr32LdstImmpre { mem, .. }
@@ -184,6 +204,9 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         }
         A64Insn::MrsMrsRsSystemmove { .. } => Form::MrsTpidrEl0,
         A64Insn::NopNopHiHints {} => Form::Nop,
+        A64Insn::DmbDmbBoBarriers { .. }
+        | A64Insn::DsbDsbBoBarriers { .. }
+        | A64Insn::IsbIsbBiBarriers { .. } => Form::Barrier,
 
         A64Insn::AddAddsubImmAdd32AddsubImm { .. }
         | A64Insn::AddAddsubImmAdd64AddsubImm { .. }

@@ -213,7 +213,8 @@ to it is a design change and gets recorded here first.
   For every user access whose base is SP (immediate and register-offset forms)
   reg-virt emits, before anything else of the instruction,
   `and xS, x17, #15; cbnz xS, <Mem stub of that instruction>` (kind
-  `SpAlignCheck`; layout resolves the `CBNZ` like a budget check's `CBZ`).
+  `AlignCheck`, shared with the A7c acquire/release alignment check; layout
+  resolves the `CBNZ` like a budget check's `CBZ`).
   Flags are untouched. `xS` comes from the same scratch pool (so admission
   accounts for it); it shares the address or pair first-load scratch when the
   instruction has one, both being written only after the check. The `Mem` exit
@@ -455,10 +456,11 @@ address.
      base is not SP. The table is strictly increasing and every entry is on a
      user access.
    - never a user-code memory form of the subset (A7b: byte/half/signed
-     immediate, unscaled, register offset, literal, 32-bit pairs, LDPSW, PRFM):
-     translation only lowers them, so one in a fragment is `UserOnlyForm`, even
-     on runtime memory and even with a fault-site entry
-     (`FaultSiteNotUserAccess`). PRFM is emitted as `NOP`.
+     immediate, unscaled, register offset, literal, 32-bit pairs, LDPSW, PRFM;
+     A7c: LDAR*, STLR*, LDAPR*): translation only lowers them, so one in a
+     fragment is `UserOnlyForm`, even on runtime memory and even with a
+     fault-site entry (`FaultSiteNotUserAccess`). PRFM is emitted as `NOP`. An
+     acquire/release form at EL1 would be a privileged access to user memory.
    - a runtime access, offset addressing only (no writeback), either
      - SP-based inside the user-state frame slots `[16, 80)` (stack-backed
        x12..x17, user x29, user sp), or the single kernel-slot read
@@ -484,10 +486,14 @@ address.
      epilogue's `ret` are covered by the byte-exact check.
    - The last word is an unconditional `B` (nothing falls off the end).
    - Entry offsets: non-empty, aligned, in the body and before the cold region.
-5. System: only `MRS Xt, TPIDR_EL0` (the only MRS the generated subset decodes)
-   and NOP. SVC and ADR/ADRP (a kernel address into a user register) are
-   rejected; MSR, HVC, SMC, BRK, HLT, ERET, barriers and cache maintenance do
-   not decode.
+5. System: only `MRS Xt, TPIDR_EL0` (the only MRS the generated subset decodes),
+   NOP, and (A7c) `DMB`/`DSB`/`ISB` with any CRm (`DSB` without nXS;
+   `Form::Barrier`): allowed anywhere, exit groups included. SVC and ADR/ADRP (a
+   kernel address into a user register) are rejected; MSR, HVC, SMC, BRK, HLT,
+   ERET, SB, CLREX, DSB nXS, WFE/WFI and other hints, and cache/TLB maintenance
+   do not decode. A barrier cannot confuse rules 6/7: it is not a fill (so one
+   between a budget `cbz` and its back-edge is rejected) and not a branch, user
+   access or runtime access.
 6. Budget (A6): every back-edge (a direct branch to a body word at or before
    itself; offset order is layout order) is preceded by
    `ldr x12, [sp, #192]; sub x12, x12, #1; str x12, [sp, #192]; cbz x12, <stub>`
@@ -867,8 +873,8 @@ Added to the subset (exact XML names in `spec/arm64/subset.toml`):
   `LDTRSB_{32,64}`, `LDTRSH_{32,64}`, `LDTRSW_64` (`_ldst_unpriv`).
 
 Still out, so undecodable and an Unsupported exit (unit test + fixture cases):
-exclusives, acquire/release, LSE atomics, LDNP/STNP, PRFUM, RPRFM (excluded from
-`PRFM_reg` by its diagram), and every FP/SIMD load/store.
+exclusives, LSE atomics, LDNP/STNP, PRFUM, RPRFM (excluded from `PRFM_reg` by
+its diagram), and every FP/SIMD load/store. (Acquire/release: A7c.)
 
 ## Lowering (one path: `MemShape` -> `plan_mem` -> `emit_mem_lowering`)
 
@@ -985,3 +991,168 @@ size and extension, so the loaded value needs no fix-up.
      (A5)", SP alignment check.
 - The fixed-seed slice in `make harness-test` (2000 programs) must have no
   failure.
+
+# Barriers and acquire/release (A7c, 2026-09-27)
+
+Why: a static scan of glibc 2.36 (redis's libc) has 493/510 syscall sites fully
+translatable; `dmb ishld` (5) and `ldar w` (2) are among the first blockers, and
+malloc, stdio locks and refcounts use both throughout.
+
+## Forms
+
+Added (exact XML names, `spec/arm64/subset.toml`):
+
+- barriers: `DMB.DMB_BO_barriers`, `DSB.DSB_BO_barriers`, `ISB.ISB_BI_barriers`,
+  every CRm value: the named options and the reserved ones, which the XML
+  defines as behaving like SY (DSB CRm 0000/0100 are SSBB/PSSBB). The nXS DSB
+  (`DSB_BOn_barriers`, FEAT_XS) stays out.
+- acquire/release, base register only: `LDAR.LDAR_LR{32,64}_ldstord`,
+  `LDARB.LDARB_LR32_ldstord`, `LDARH.LDARH_LR32_ldstord`,
+  `STLR.STLR_SL{32,64}_ldstord`, `STLRB.STLRB_SL32_ldstord`,
+  `STLRH.STLRH_SL32_ldstord`, `LDAPR.LDAPR_{32,64}L_memop`,
+  `LDAPRB.LDAPRB_32L_memop`, `LDAPRH.LDAPRH_32L_memop` (12 forms).
+- Their should-be-one fields are pinned in `[decode.field_constraints]`
+  (`Rs = 31, Rt2 = 31`; LDAPR `Rs = 31`), like SMULH's `Ra`: other values are
+  CONSTRAINED UNPREDICTABLE and stay undecodable.
+- Still out: exclusives (LDXR/STXR/LDAXR/STLXR/...), LSE atomics (LDADD, CAS,
+  SWP, ...), FEAT_LRCPC2 `LDAPUR`/`STLUR`, FEAT_LRCPC3 writeback `LDAPR`/`STLR`,
+  FP/SIMD (unit test, `unsupported_exit.s`, mutation words).
+- `is_decode_undefined`: none of the new forms has a value rule. LDAPR's
+  decode is UNDEFINED only without FEAT_LRCPC, a CPU property (see
+  assumptions).
+
+## Barriers: emitted unchanged
+
+- They are user-semantic instructions with no operand roles; reg-virt rewrites
+  nothing, so the word reaches the fragment unchanged.
+- Same effect at EL1 as at EL0 for every observer of user memory: DMB/DSB order
+  the fragment's memory accesses (the `LDTR*`/`STTR*` are the user's accesses)
+  the same way; DSB additionally waits for maintenance operations, which the
+  fragment has none of; the DSB pseudocode's FEAT_XS `nXS` rule treats EL0 and
+  EL1 alike; ISB is a context synchronization with nothing EL-specific.
+- Interpreter: no-ops. The model has one observer (a single thread, no caches,
+  no speculation), where every access is already in program order, so no
+  barrier can change an outcome. Ordering is not differentially tested; see
+  the mapping argument below.
+
+## Acquire/release lowering
+
+No unprivileged ordered access exists without FEAT_LSUI, so reg-virt lowers
+every ordered form through the one memory path (`MemShape { ordered: true,
+addr: MemAddr::Base }` -> `plan_mem` -> `emit_mem_lowering`):
+
+| user form | emitted (after fills) |
+| --- | --- |
+| `LDAR{,B,H} / LDAPR{,B,H} Rt, [Xn]`, `STLR{,B,H} Rt, [Xn]`, Xn not SP | [alignment check]; `dmb ish`; `LDTR*/STTR* Rt, [Xn, #0]`; `dmb ish` |
+| same, Xn = SP | SP check (`and xS, x17, #15; cbnz xS`); `dmb ish`; access via x17; `dmb ish` |
+
+- Op per form: the same element size and extension as the plain load/store
+  (`LDAR W`/`LDAPR W` -> `LDTR W`, `LDAR X`/`LDAPR X` -> `LDTR X`,
+  `LDARB`/`LDAPRB` -> `LDTRB`, `LDARH`/`LDAPRH` -> `LDTRH`, `STLR W/X` ->
+  `STTR W/X`, `STLRB` -> `STTRB`, `STLRH` -> `STTRH`).
+- The fences are `RegVirtHelper` instructions: runtime-owned, no registers.
+  The access is the usual `UserAccess` fault site with the instruction's `Mem`
+  stub; commit-after-last-access holds unchanged (the trailing fence writes
+  nothing; a load-acquire into a stack-backed register spills after it).
+  A fault on the access leaves after the leading fence: an extra barrier, no
+  effect.
+- Scratch: stack-backed `Rt`/`Rn` plus one for the alignment check: at most 3.
+
+### Why the full-fence mapping is correct
+
+`DMB ISH` (CRm 1011, reads and writes both sides) orders every memory access
+before it in program order before every access after it, for every observer in
+the Inner Shareable domain, which holds every CPU that can run the process
+(Linux's `smp_mb()`).
+
+- Acquire (LDAR, and LDAPR's weaker RCpc acquire): the access must be observed
+  before every later access. The trailing fence gives exactly that.
+- Release (STLR): every earlier access must be observed before the store. The
+  leading fence gives exactly that.
+- RCsc (LDAR): a store-release followed in program order by a load-acquire must
+  be observed in that order. The fence after the STTR (and the one before the
+  LDTR) sits between them.
+- Multi-copy atomicity: Armv8 is other-multi-copy-atomic for every store, not
+  only STLR, so the `STTR` of a store-release becomes visible to all other
+  observers at once, as the STLR would. Single-copy atomicity of the access
+  itself is that of an access of the same size and address; LDAR/STLR are only
+  more atomic for misaligned-within-16-byte addresses under FEAT_LSE2 (see "Not
+  verified").
+- The mapping is strictly stronger (it also orders earlier accesses before a
+  load-acquire and a store-release before later accesses), so every execution
+  it allows is one the original allows. Weaker (one-sided) mappings are a
+  later optimization, not a correctness need.
+- Dropping a fence is a correctness bug but not a safety one: the verifier
+  (V3) checks safety, not ordering, and accepts a fragment without them.
+
+### Alignment
+
+- `LDTR*`/`STTR*` never alignment-fault (SCTLR_EL1.A = 0). An ordered access
+  does: `AArch64_UnalignedAccessFaults` with `acqsc`/`acqpc`/`relsc` faults a
+  misaligned access iff SCTLR_ELx.nAA == 0 and it crosses a 16-byte boundary.
+  Linux leaves nAA clear. Probed on the native host (Apple M1 Max, FEAT_LSE2,
+  Linux container): `ldar x` at block offsets 1..8 runs, 9..15 SIGBUS
+  (BUS_ADRALN); `ldar w` faults from 13, `ldarh` at 15; `stlr`/`ldapr` alike.
+- So for every ordered access wider than a byte whose base is not SP, reg-virt
+  emits before the fences (kind `AlignCheck`, flags untouched):
+  `and xS, xN, #15; add xS, xS, #(size - 1); and xS, xS, #16; cbnz xS, <Mem stub>`
+  (bit 4 of `(addr & 15) + size - 1` is set iff the access crosses). The Mem exit
+  returns to userspace at the instruction, which re-executes natively and takes
+  the SIGBUS itself: exact. `CBNZ` (imm19), not `TBNZ` (imm14, +-32 KiB), so a
+  large fragment cannot put the cold region out of range. An SP base needs no
+  such check: the SP check already requires SP 16-byte aligned and the access is
+  at SP. Bytes are always aligned.
+- Interpreter: an ordered access that crosses a 16-byte boundary is a
+  `FaultCause::Alignment` fault before any access (after the SP check, as in the
+  pseudocode), on the untagged address; the native original reports it as a
+  SIGBUS at the instruction, which the generic fault match accepts.
+
+### Kernel assumptions (pin in K-tasks)
+
+- FEAT_LSE2 with SCTLR_EL1.nAA == 0. On a CPU without FEAT_LSE2 every misaligned
+  ordered access faults natively, while a fragment runs a misaligned one that
+  stays inside a 16-byte block: more permissive than native (never unsafe:
+  still an EL0-permission `LDTR*`/`STTR*`). The kernel should require
+  `ID_AA64MMFR2_EL1.AT != 0`, or the translator would need the stricter check
+  (`and xS, xN, #(size - 1); cbnz`).
+- FEAT_LRCPC for LDAPR: without it user LDAPR is UNDEFINED (SIGILL natively)
+  but the fragment would run it. The kernel should require
+  `ID_AA64ISAR1_EL1.LRCPC != 0`, or LDAPR must leave the subset on such CPUs.
+
+## Verifier (V3) changes
+
+- `rules::classify`: DMB/DSB/ISB -> `Form::Barrier` (allowed like NOP, in the
+  body and in exit groups); the 12 ordered forms -> `Form::UserOnly`. Rule 5
+  above lists the allowlist. The random-word cross-check treats a barrier like
+  an ALU word (no memory/control roles).
+- Mutation suite: new classes "insert acquire/release user form (A7c)" and
+  "insert non-allowlisted barrier-like system op (A7c)" (DSB nXS, SB, CLREX,
+  WFE, WFI, YIELD, ESB); `ldaxr`, `stlxr`, `cas` and the LRCPC2/3 forms joined
+  the foreign words. Removing a fence is deliberately not a mutation class.
+
+## specgen changes
+
+- `CreateAccDescAcqRel(MemOp_LOAD|STORE, ...)` and `CreateAccDescLDAcqPC(...)`
+  (load) are load/store access descriptors for role inference; exclusive and
+  atomic descriptors still are not.
+- A register field of a load/store is an operand only if its decode or
+  postdecode pseudocode binds it (`UInt(Rt2)`): LDAR's `Rs`/`Rt2` get no role
+  and can be pinned.
+- A load/store's register roles come from the load/store inference alone, not
+  from the generic `X(n)`/`X(t) =` scan: the execute pseudocode is shared by a
+  section's encodings (STLR's ldstord form shares the LRCPC3 writeback form's
+  `X{64}(n) = address`). No existing form's metadata changed (checked by
+  regenerating before adding the forms).
+- A base-register-only form has no `MemOffset`, so it keeps plain `rn`/`rt`
+  fields (no `A64Mem`); reg-virt builds `MemAddr::Base(rn)` and the fuzzer
+  derives the base from the `MemBase` role as for register-offset forms.
+
+## Not verified
+
+- Ordering. The interpreter is single-threaded and the native oracle runs one
+  thread; no test observes a reordering. The mapping rests on the argument
+  above.
+- Single-copy atomicity of a misaligned-within-16-byte `LDTR*`/`STTR*` under
+  FEAT_LSE2 (LDAR/STLR/LDAPR are single-copy atomic there; aligned accesses are
+  single-copy atomic either way).
+

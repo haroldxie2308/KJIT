@@ -29215,6 +29215,1861 @@
     ]
   },
   {
+    "source_file": "dmb.xml",
+    "section_id": "DMB",
+    "heading": "DMB",
+    "title": "DMB -- A64",
+    "docvars": {
+      "instr-class": "system",
+      "isa": "A64",
+      "mnemonic": "DMB"
+    },
+    "variants": [
+      {
+        "section_id": "DMB",
+        "heading": "DMB",
+        "title": "DMB -- A64",
+        "iclass": "System",
+        "encoding_name": "DMB_BO_barriers",
+        "encoding_label": "",
+        "mnemonic": "DMB",
+        "docvars": {
+          "instr-class": "system",
+          "isa": "A64",
+          "mnemonic": "DMB"
+        },
+        "asm_operands": [
+          {
+            "text": "<option>",
+            "link": "CRm_option__3",
+            "hover": "Specifies the limitation on the Memory Effects ordered by the barrier operation, and is encoded in \"CRm\".  For more information on whether a Memory Effect is before or after a barrier instruction, see x[Data Memory Barrier (DMB)](BEIIECBH)."
+          },
+          {
+            "text": "<imm>",
+            "link": "option__2",
+            "hover": "Is a 4-bit unsigned immediate, in the range 0 to 15, encoded in the \"CRm\" field."
+          }
+        ],
+        "mask": "0xfffff0ff",
+        "value": "0xd50330bf",
+        "fields": [
+          {
+            "name": "CRm",
+            "hi": 11,
+            "lo": 8,
+            "width": 4,
+            "shift": 8,
+            "mask": "0x00000f00",
+            "variable": true
+          },
+          {
+            "name": "opc",
+            "hi": 6,
+            "lo": 5,
+            "width": 2,
+            "shift": 5,
+            "mask": "0x00000060",
+            "variable": false
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": false
+          }
+        ],
+        "operand_roles": [],
+        "asm": "DMB  ( <option> |# <imm> )"
+      }
+    ]
+  },
+  {
+    "source_file": "dsb.xml",
+    "section_id": "DSB",
+    "heading": "DSB",
+    "title": "DSB -- A64",
+    "docvars": {
+      "instr-class": "system",
+      "isa": "A64",
+      "mnemonic": "DSB"
+    },
+    "variants": [
+      {
+        "section_id": "DSB",
+        "heading": "DSB",
+        "title": "DSB -- A64",
+        "iclass": "Memory barrier",
+        "encoding_name": "DSB_BO_barriers",
+        "encoding_label": "",
+        "mnemonic": "DSB",
+        "docvars": {
+          "instr-class": "system",
+          "isa": "A64",
+          "mnemonic": "DSB",
+          "dsb-variants": "dsb-memory"
+        },
+        "asm_operands": [
+          {
+            "text": "<option>",
+            "link": "CRm_option__2",
+            "hover": "For the \"Memory barrier\" variant: specifies the limitation on the Memory Effects and maintenance operations ordered by"
+          },
+          {
+            "text": "<imm>",
+            "link": "option__2",
+            "hover": "Is a 4-bit unsigned immediate, in the range 0 to 15, encoded in the \"CRm\" field."
+          }
+        ],
+        "mask": "0xfffff0ff",
+        "value": "0xd503309f",
+        "fields": [
+          {
+            "name": "CRm",
+            "hi": 11,
+            "lo": 8,
+            "width": 4,
+            "shift": 8,
+            "mask": "0x00000f00",
+            "variable": true
+          },
+          {
+            "name": "opc",
+            "hi": 6,
+            "lo": 5,
+            "width": 2,
+            "shift": 5,
+            "mask": "0x00000060",
+            "variable": false
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": false
+          }
+        ],
+        "operand_roles": [],
+        "asm": "DSB  ( <option> |# <imm> )"
+      }
+    ]
+  },
+  {
+    "source_file": "isb.xml",
+    "section_id": "ISB",
+    "heading": "ISB",
+    "title": "ISB -- A64",
+    "docvars": {
+      "instr-class": "system",
+      "isa": "A64",
+      "mnemonic": "ISB"
+    },
+    "variants": [
+      {
+        "section_id": "ISB",
+        "heading": "ISB",
+        "title": "ISB -- A64",
+        "iclass": "System",
+        "encoding_name": "ISB_BI_barriers",
+        "encoding_label": "",
+        "mnemonic": "ISB",
+        "docvars": {
+          "instr-class": "system",
+          "isa": "A64",
+          "mnemonic": "ISB"
+        },
+        "asm_operands": [
+          {
+            "text": "<option>",
+            "link": "CRm_SY__2",
+            "hover": "Specifies an optional limitation on the barrier operation. Values are:   SY : Full system barrier operation, encoded as CRm = 0b1111. Can be omitted.   All other encodings of \"CRm\" are reserved. The corresponding instructions execute as full system barrier operations, but must not be relied upon by software."
+          },
+          {
+            "text": "<imm>",
+            "link": "option",
+            "hover": "Is an optional 4-bit unsigned immediate, in the range 0 to 15, defaulting to 15 and encoded in the \"CRm\" field."
+          }
+        ],
+        "mask": "0xfffff0ff",
+        "value": "0xd50330df",
+        "fields": [
+          {
+            "name": "CRm",
+            "hi": 11,
+            "lo": 8,
+            "width": 4,
+            "shift": 8,
+            "mask": "0x00000f00",
+            "variable": true
+          },
+          {
+            "name": "opc",
+            "hi": 6,
+            "lo": 5,
+            "width": 2,
+            "shift": 5,
+            "mask": "0x00000060",
+            "variable": false
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": false
+          }
+        ],
+        "operand_roles": [],
+        "asm": "ISB  { <option> |# <imm> }"
+      }
+    ]
+  },
+  {
+    "source_file": "ldar.xml",
+    "section_id": "LDAR",
+    "heading": "LDAR",
+    "title": "LDAR -- A64",
+    "docvars": {
+      "address-form": "base-register",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "LDAR"
+    },
+    "variants": [
+      {
+        "section_id": "LDAR",
+        "heading": "LDAR",
+        "title": "LDAR -- A64",
+        "iclass": "No offset",
+        "encoding_name": "LDAR_LR32_ldstord",
+        "encoding_label": "32-bit",
+        "mnemonic": "LDAR",
+        "docvars": {
+          "address-form": "base-register",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDAR",
+          "address-form-reg-type": "base-register-32-reg",
+          "atomic-ops": "LDAR-32-reg",
+          "reg-type": "32-reg"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0x88dffc00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o0",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "LDAR <Wt> , [ <Xn|SP> {, #0}]"
+      },
+      {
+        "section_id": "LDAR",
+        "heading": "LDAR",
+        "title": "LDAR -- A64",
+        "iclass": "No offset",
+        "encoding_name": "LDAR_LR64_ldstord",
+        "encoding_label": "64-bit",
+        "mnemonic": "LDAR",
+        "docvars": {
+          "address-form": "base-register",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDAR",
+          "address-form-reg-type": "base-register-64-reg",
+          "atomic-ops": "LDAR-64-reg",
+          "reg-type": "64-reg"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__11",
+            "hover": "Is the 64-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0xc8dffc00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o0",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
+        "asm": "LDAR <Xt> , [ <Xn|SP> {, #0}]"
+      }
+    ]
+  },
+  {
+    "source_file": "ldarb.xml",
+    "section_id": "LDARB",
+    "heading": "LDARB",
+    "title": "LDARB -- A64",
+    "docvars": {
+      "address-form": "base-register",
+      "address-form-reg-type": "base-register-32-reg",
+      "atomic-ops": "LDARB-32-reg",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "LDARB",
+      "reg-type": "32-reg"
+    },
+    "variants": [
+      {
+        "section_id": "LDARB",
+        "heading": "LDARB",
+        "title": "LDARB -- A64",
+        "iclass": "No offset",
+        "encoding_name": "LDARB_LR32_ldstord",
+        "encoding_label": "",
+        "mnemonic": "LDARB",
+        "docvars": {
+          "address-form": "base-register",
+          "address-form-reg-type": "base-register-32-reg",
+          "atomic-ops": "LDARB-32-reg",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDARB",
+          "reg-type": "32-reg"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0x08dffc00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o0",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "LDARB <Wt> , [ <Xn|SP> {, #0}]"
+      }
+    ]
+  },
+  {
+    "source_file": "ldarh.xml",
+    "section_id": "LDARH",
+    "heading": "LDARH",
+    "title": "LDARH -- A64",
+    "docvars": {
+      "address-form": "base-register",
+      "address-form-reg-type": "base-register-32-reg",
+      "atomic-ops": "LDARH-32-reg",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "LDARH",
+      "reg-type": "32-reg"
+    },
+    "variants": [
+      {
+        "section_id": "LDARH",
+        "heading": "LDARH",
+        "title": "LDARH -- A64",
+        "iclass": "No offset",
+        "encoding_name": "LDARH_LR32_ldstord",
+        "encoding_label": "",
+        "mnemonic": "LDARH",
+        "docvars": {
+          "address-form": "base-register",
+          "address-form-reg-type": "base-register-32-reg",
+          "atomic-ops": "LDARH-32-reg",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDARH",
+          "reg-type": "32-reg"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0x48dffc00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o0",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "LDARH <Wt> , [ <Xn|SP> {, #0}]"
+      }
+    ]
+  },
+  {
+    "source_file": "stlr.xml",
+    "section_id": "STLR",
+    "heading": "STLR",
+    "title": "STLR -- A64",
+    "docvars": {
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "STLR"
+    },
+    "variants": [
+      {
+        "section_id": "STLR",
+        "heading": "STLR",
+        "title": "STLR -- A64",
+        "iclass": "No offset",
+        "encoding_name": "STLR_SL32_ldstord",
+        "encoding_label": "32-bit",
+        "mnemonic": "STLR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STLR",
+          "address-form": "base-register",
+          "address-form-reg-type": "base-register-32-reg",
+          "atomic-ops": "STLR-32-reg",
+          "reg-type": "32-reg"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0x889ffc00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o0",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "STLR <Wt> , [ <Xn|SP> {, #0}]"
+      },
+      {
+        "section_id": "STLR",
+        "heading": "STLR",
+        "title": "STLR -- A64",
+        "iclass": "No offset",
+        "encoding_name": "STLR_SL64_ldstord",
+        "encoding_label": "64-bit",
+        "mnemonic": "STLR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STLR",
+          "address-form": "base-register",
+          "address-form-reg-type": "base-register-64-reg",
+          "atomic-ops": "STLR-64-reg",
+          "reg-type": "64-reg"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__11",
+            "hover": "Is the 64-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0xc89ffc00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o0",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
+        "asm": "STLR <Xt> , [ <Xn|SP> {, #0}]"
+      }
+    ]
+  },
+  {
+    "source_file": "stlrb.xml",
+    "section_id": "STLRB",
+    "heading": "STLRB",
+    "title": "STLRB -- A64",
+    "docvars": {
+      "address-form": "base-register",
+      "address-form-reg-type": "base-register-32-reg",
+      "atomic-ops": "STLRB-32-reg",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "STLRB",
+      "reg-type": "32-reg"
+    },
+    "variants": [
+      {
+        "section_id": "STLRB",
+        "heading": "STLRB",
+        "title": "STLRB -- A64",
+        "iclass": "No offset",
+        "encoding_name": "STLRB_SL32_ldstord",
+        "encoding_label": "",
+        "mnemonic": "STLRB",
+        "docvars": {
+          "address-form": "base-register",
+          "address-form-reg-type": "base-register-32-reg",
+          "atomic-ops": "STLRB-32-reg",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STLRB",
+          "reg-type": "32-reg"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0x089ffc00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o0",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "STLRB <Wt> , [ <Xn|SP> {, #0}]"
+      }
+    ]
+  },
+  {
+    "source_file": "stlrh.xml",
+    "section_id": "STLRH",
+    "heading": "STLRH",
+    "title": "STLRH -- A64",
+    "docvars": {
+      "address-form": "base-register",
+      "address-form-reg-type": "base-register-32-reg",
+      "atomic-ops": "STLRH-32-reg",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "STLRH",
+      "reg-type": "32-reg"
+    },
+    "variants": [
+      {
+        "section_id": "STLRH",
+        "heading": "STLRH",
+        "title": "STLRH -- A64",
+        "iclass": "No offset",
+        "encoding_name": "STLRH_SL32_ldstord",
+        "encoding_label": "",
+        "mnemonic": "STLRH",
+        "docvars": {
+          "address-form": "base-register",
+          "address-form-reg-type": "base-register-32-reg",
+          "atomic-ops": "STLRH-32-reg",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STLRH",
+          "reg-type": "32-reg"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0x489ffc00",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "L",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o0",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "Rt2",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "STLRH <Wt> , [ <Xn|SP> {, #0}]"
+      }
+    ]
+  },
+  {
+    "source_file": "ldapr.xml",
+    "section_id": "LDAPR",
+    "heading": "LDAPR",
+    "title": "LDAPR -- A64",
+    "docvars": {
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "LDAPR"
+    },
+    "variants": [
+      {
+        "section_id": "LDAPR",
+        "heading": "LDAPR",
+        "title": "LDAPR -- A64",
+        "iclass": "No offset",
+        "encoding_name": "LDAPR_32L_memop",
+        "encoding_label": "32-bit",
+        "mnemonic": "LDAPR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDAPR",
+          "address-form": "base-register",
+          "address-form-reg-type": "base-register-32-reg",
+          "atomic-ops": "LDAPR-32-reg",
+          "reg-type": "32-reg"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose register to be loaded, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0xb8bfc000",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "A",
+            "hi": 23,
+            "lo": 23,
+            "width": 1,
+            "shift": 23,
+            "mask": "0x00800000",
+            "variable": false
+          },
+          {
+            "name": "R",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o3",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "opc",
+            "hi": 14,
+            "lo": 12,
+            "width": 3,
+            "shift": 12,
+            "mask": "0x00007000",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "LDAPR <Wt> , [ <Xn|SP> {, #0}]"
+      },
+      {
+        "section_id": "LDAPR",
+        "heading": "LDAPR",
+        "title": "LDAPR -- A64",
+        "iclass": "No offset",
+        "encoding_name": "LDAPR_64L_memop",
+        "encoding_label": "64-bit",
+        "mnemonic": "LDAPR",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDAPR",
+          "address-form": "base-register",
+          "address-form-reg-type": "base-register-64-reg",
+          "atomic-ops": "LDAPR-64-reg",
+          "reg-type": "64-reg"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__8",
+            "hover": "Is the 64-bit name of the general-purpose register to be loaded, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0xf8bfc000",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "A",
+            "hi": 23,
+            "lo": 23,
+            "width": 1,
+            "shift": 23,
+            "mask": "0x00800000",
+            "variable": false
+          },
+          {
+            "name": "R",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o3",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "opc",
+            "hi": 14,
+            "lo": 12,
+            "width": 3,
+            "shift": 12,
+            "mask": "0x00007000",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
+        "asm": "LDAPR <Xt> , [ <Xn|SP> {, #0}]"
+      }
+    ]
+  },
+  {
+    "source_file": "ldaprb.xml",
+    "section_id": "LDAPRB",
+    "heading": "LDAPRB",
+    "title": "LDAPRB -- A64",
+    "docvars": {
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "LDAPRB"
+    },
+    "variants": [
+      {
+        "section_id": "LDAPRB",
+        "heading": "LDAPRB",
+        "title": "LDAPRB -- A64",
+        "iclass": "Integer",
+        "encoding_name": "LDAPRB_32L_memop",
+        "encoding_label": "",
+        "mnemonic": "LDAPRB",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDAPRB"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose register to be loaded, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0x38bfc000",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "A",
+            "hi": 23,
+            "lo": 23,
+            "width": 1,
+            "shift": 23,
+            "mask": "0x00800000",
+            "variable": false
+          },
+          {
+            "name": "R",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o3",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "opc",
+            "hi": 14,
+            "lo": 12,
+            "width": 3,
+            "shift": 12,
+            "mask": "0x00007000",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "LDAPRB <Wt> , [ <Xn|SP> {, #0}]"
+      }
+    ]
+  },
+  {
+    "source_file": "ldaprh.xml",
+    "section_id": "LDAPRH",
+    "heading": "LDAPRH",
+    "title": "LDAPRH -- A64",
+    "docvars": {
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "LDAPRH"
+    },
+    "variants": [
+      {
+        "section_id": "LDAPRH",
+        "heading": "LDAPRH",
+        "title": "LDAPRH -- A64",
+        "iclass": "Integer",
+        "encoding_name": "LDAPRH_32L_memop",
+        "encoding_label": "",
+        "mnemonic": "LDAPRH",
+        "docvars": {
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDAPRH"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose register to be loaded, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          }
+        ],
+        "mask": "0xfffffc00",
+        "value": "0x78bfc000",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "A",
+            "hi": 23,
+            "lo": 23,
+            "width": 1,
+            "shift": 23,
+            "mask": "0x00800000",
+            "variable": false
+          },
+          {
+            "name": "R",
+            "hi": 22,
+            "lo": 22,
+            "width": 1,
+            "shift": 22,
+            "mask": "0x00400000",
+            "variable": false
+          },
+          {
+            "name": "Rs",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": false
+          },
+          {
+            "name": "o3",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "opc",
+            "hi": 14,
+            "lo": 12,
+            "width": 3,
+            "shift": 12,
+            "mask": "0x00007000",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "LDAPRH <Wt> , [ <Xn|SP> {, #0}]"
+      }
+    ]
+  },
+  {
     "source_file": "bl.xml",
     "section_id": "BL",
     "heading": "BL",

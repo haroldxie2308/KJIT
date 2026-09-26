@@ -33,7 +33,7 @@ use std::panic::{self, AssertUnwindSafe};
 
 use crate::arm64::OriginalStepper;
 use crate::asm_fixture::panic_message;
-use crate::model::{HaltReason, MachineState};
+use crate::model::{FaultCause, HaltReason, MachineState};
 use crate::runtime::URuntimeHalt;
 use crate::shared::trans::cfg::RuntimeExitReason;
 use crate::{
@@ -388,7 +388,11 @@ pub fn fuzz(
 
 pub fn halt_label(halt: &HaltReason) -> &'static str {
     match halt {
-        HaltReason::Fault(_) => "fault",
+        HaltReason::Fault(fault) => match fault.cause {
+            FaultCause::Permission => "fault",
+            FaultCause::SpAlignment => "fault-sp-align",
+            FaultCause::Alignment => "fault-align",
+        },
         HaltReason::InstanceCap { .. } => "budget",
         HaltReason::RuntimeExit { reason } => match reason {
             RuntimeExitReason::Bl { .. } => "bl",

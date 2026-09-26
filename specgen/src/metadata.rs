@@ -10,6 +10,7 @@ pub fn infer_operand_roles(
     fields: &[FieldSlice],
     operands: &[AsmOperand],
     decode_text: &str,
+    postdecode_text: &str,
     execute_text: &str,
 ) -> Vec<OperandRoleSpec> {
     let field_names = fields
@@ -29,14 +30,22 @@ pub fn infer_operand_roles(
         docvars,
         operands,
         &field_names,
+        &bound_fields(&format!("{decode_text} {postdecode_text}")),
         execute_text,
     ));
-    roles.extend(infer_roles_from_pseudocode(
-        &field_names,
-        &var_map,
-        docvars,
-        execute_text,
-    ));
+    // A general-purpose load/store's register roles come from
+    // `infer_load_store_roles` alone. Its execute pseudocode is shared by every
+    // encoding of the section (STLR's ldstord form shares the FEAT_LRCPC3
+    // writeback form's `X{64}(n) = address`), so a register access there does not
+    // hold for each form.
+    let load_store = gpr_mem_op(execute_text).is_some();
+    roles.extend(
+        infer_roles_from_pseudocode(&field_names, &var_map, docvars, execute_text)
+            .into_iter()
+            .filter(|(kind, _, _)| {
+                !(load_store && matches!(kind.as_str(), "RegRead" | "RegWrite" | "RegReadWrite"))
+            }),
+    );
 
     simplify_roles(roles)
         .into_iter()
@@ -56,6 +65,16 @@ fn decode_var_map(decode_text: &str) -> BTreeMap<String, String> {
         ret.insert(captures[1].to_string(), captures[2].to_string());
     }
     ret
+}
+
+/// Encoding fields the decode/postdecode pseudocode reads as a register number
+/// (`UInt(Rt2)`).
+fn bound_fields(decode_text: &str) -> BTreeSet<String> {
+    Regex::new(r"\bUInt\((\w+)\)")
+        .unwrap()
+        .captures_iter(decode_text)
+        .map(|captures| captures[1].to_string())
+        .collect()
 }
 
 fn normalize_role_field(value: &str, fields: &BTreeSet<String>) -> String {
@@ -242,13 +261,21 @@ fn infer_roles_from_docvars_and_asm(
 
 /// Direction of a general-purpose load/store, read from the access descriptor its
 /// execute pseudocode builds: `CreateAccDescGPR(MemOp_LOAD | MemOp_STORE |
-/// MemOp_PREFETCH, ...)`. `None` for anything else, or if the text names more than
-/// one direction.
+/// MemOp_PREFETCH, ...)`, the ordered `CreateAccDescAcqRel(MemOp_LOAD |
+/// MemOp_STORE, ...)` (LDAR/STLR), or `CreateAccDescLDAcqPC(...)`, which is
+/// load-only (LDAPR). Exclusive and atomic descriptors are not matched. `None` for
+/// anything else, or if the text names more than one direction.
 fn gpr_mem_op(execute_text: &str) -> Option<String> {
-    let re = Regex::new(r"CreateAccDescGPR\s*\(\s*MemOp_(LOAD|STORE|PREFETCH)\b").unwrap();
+    let re = Regex::new(
+        r"CreateAccDesc(?:GPR|AcqRel)\s*\(\s*MemOp_(LOAD|STORE|PREFETCH)\b|CreateAccDesc(LDAcqPC)\s*\(",
+    )
+    .unwrap();
     let ops = re
         .captures_iter(execute_text)
-        .map(|captures| captures[1].to_string())
+        .map(|captures| match captures.get(1) {
+            Some(op) => op.as_str().to_string(),
+            None => "LOAD".to_string(),
+        })
         .collect::<BTreeSet<_>>();
     if ops.len() == 1 {
         ops.into_iter().next()
@@ -266,16 +293,26 @@ fn gpr_mem_op(execute_text: &str) -> Option<String> {
 ///   then narrows (as for ADD/SUB extended register);
 /// - every `imm*` field is the address offset (`MemOffset`); with no `Rn` the offset
 ///   is from the PC (literal loads).
+///
+/// A register field (`R*`) is an operand only if the decode or postdecode
+/// pseudocode binds it (`let t2 = UInt(Rt2)`): LDAR/STLR carry `Rs`/`Rt2` as
+/// should-be-one fields their decode never reads.
 fn infer_load_store_roles(
     docvars: &IndexMap<String, String>,
     operands: &[AsmOperand],
-    fields: &BTreeSet<String>,
+    diagram_fields: &BTreeSet<String>,
+    bound: &BTreeSet<String>,
     execute_text: &str,
 ) -> BTreeSet<RoleTuple> {
     let mut roles = BTreeSet::new();
     let Some(mem_op) = gpr_mem_op(execute_text) else {
         return roles;
     };
+    let fields = diagram_fields
+        .iter()
+        .filter(|field| !field.starts_with('R') || bound.contains(*field))
+        .cloned()
+        .collect::<BTreeSet<_>>();
     let writeback = matches!(
         docvars.get("address-form").map(String::as_str),
         Some("pre-indexed" | "post-indexed")
@@ -302,7 +339,7 @@ fn infer_load_store_roles(
             }
         }
     }
-    for field in fields {
+    for field in &fields {
         if field.to_lowercase().starts_with("imm") {
             roles.insert(role_tuple("MemOffset", field, "Unknown"));
         }
@@ -386,6 +423,14 @@ mod tests {
         assert_eq!(gpr_mem_op(store).as_deref(), Some("STORE"));
         assert_eq!(gpr_mem_op(prefetch).as_deref(), Some("PREFETCH"));
         assert_eq!(gpr_mem_op(&format!("{load} {store}")), None);
+        let acquire = "let accdesc = CreateAccDescAcqRel(MemOp_LOAD, tagchecked, acquire, t);";
+        let release = "let accdesc = CreateAccDescAcqRel(MemOp_STORE, tagchecked, acquire, t);";
+        let acquire_pc = "let accdesc = CreateAccDescLDAcqPC(tagchecked, acquirepc, t);";
+        let exclusive = "let accdesc = CreateAccDescExLDST(MemOp_LOAD, acquire, tagchecked, t);";
+        assert_eq!(gpr_mem_op(acquire).as_deref(), Some("LOAD"));
+        assert_eq!(gpr_mem_op(release).as_deref(), Some("STORE"));
+        assert_eq!(gpr_mem_op(acquire_pc).as_deref(), Some("LOAD"));
+        assert_eq!(gpr_mem_op(exclusive), None);
         assert_eq!(gpr_mem_op("X(d) = result;"), None);
     }
 

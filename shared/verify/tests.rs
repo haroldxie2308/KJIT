@@ -338,6 +338,19 @@ fn user_only_memory_forms_are_rejected_anywhere() {
             rn: xs(2),
             rt: 0,
         },
+        // A7c acquire/release: a privileged ordered access, even on the frame.
+        A64Insn::LdarLdarLr64Ldstord { rn: sp(), rt: x(0) },
+        A64Insn::LdarLdarLr32Ldstord { rn: xs(1), rt: w0 },
+        A64Insn::LdarbLdarbLr32Ldstord { rn: xs(1), rt: w0 },
+        A64Insn::LdarhLdarhLr32Ldstord { rn: xs(1), rt: w0 },
+        A64Insn::StlrStlrSl64Ldstord { rn: sp(), rt: x(0) },
+        A64Insn::StlrStlrSl32Ldstord { rn: xs(1), rt: w0 },
+        A64Insn::StlrbStlrbSl32Ldstord { rn: xs(1), rt: w0 },
+        A64Insn::StlrhStlrhSl32Ldstord { rn: xs(1), rt: w0 },
+        A64Insn::LdaprLdapr64lMemop { rn: xs(1), rt: x(0) },
+        A64Insn::LdaprLdapr32lMemop { rn: xs(1), rt: w0 },
+        A64Insn::LdaprbLdaprb32lMemop { rn: xs(1), rt: w0 },
+        A64Insn::LdaprhLdaprh32lMemop { rn: xs(1), rt: w0 },
     ];
     for insn in cases {
         let frag = Frag::new(&[insn, b_epi(1)]);
@@ -355,6 +368,54 @@ fn user_only_memory_forms_are_rejected_anywhere() {
             frag.rule(),
             Some(VerifyRule::FaultSiteNotUserAccess),
             "{insn:?}"
+        );
+    }
+}
+
+/// Rule 5 (A7c): DMB/DSB/ISB are allowlisted with every CRm value, in the body
+/// and in an exit group; nothing else of the barrier/hint/system space decodes.
+#[test]
+fn barriers_are_the_only_allowed_system_instructions_besides_mrs_tpidr() {
+    for crm in 0..16 {
+        for barrier in [
+            A64Insn::DmbDmbBoBarriers { crm },
+            A64Insn::DsbDsbBoBarriers { crm },
+            A64Insn::IsbIsbBiBarriers { crm },
+        ] {
+            assert_eq!(
+                Frag::new(&[barrier, movz(0, 1), b_epi(2)]).rule(),
+                None,
+                "{barrier:?}"
+            );
+            // Around a user access, as the acquire/release lowering emits it, and
+            // inside an exit group.
+            let fenced = Frag::new(&[barrier, ldtr(0, 1), barrier, b_epi(3), barrier, b_epi(5)])
+                .site(1, 4);
+            assert_eq!(fenced.rule(), None, "{barrier:?}");
+        }
+    }
+
+    let words = [
+        0xd503_323f_u32, // dsb ishnxs (FEAT_XS): not in the subset
+        0xd503_30ff,     // sb
+        0xd503_305f,     // clrex
+        0xd503_201f | (0b0010 << 5), // hint #2 (wfe)
+        0xd503_207f,     // wfi
+        0xd503_233f,     // paciasp
+        0xd500_40bf,     // msr spsel, #0
+        0xd503_41df,     // msr daifset, #1
+        0xd508_7500,     // ic ialluis
+        0xd50b_7520,     // ic ivau, x0
+        0xd50b_7420,     // dc zva, x0
+        0xd508_871f,     // tlbi vmalle1is
+    ];
+    for word in words {
+        let mut frag = Frag::new(&[movz(0, 1), b_epi(1)]);
+        frag.code[BODY_OFFSET..BODY_OFFSET + 4].copy_from_slice(&word.to_le_bytes());
+        assert_eq!(
+            frag.rule(),
+            Some(VerifyRule::Undecodable { word }),
+            "{word:#010x}"
         );
     }
 }
@@ -700,7 +761,10 @@ fn classification_agrees_with_generated_roles() {
             )
         });
         match rules::classify(insn) {
-            rules::Form::Alu | rules::Form::Nop | rules::Form::MrsTpidrEl0 => {
+            rules::Form::Alu
+            | rules::Form::Nop
+            | rules::Form::Barrier
+            | rules::Form::MrsTpidrEl0 => {
                 assert!(!memory && !control, "{}", insn.key());
                 assert!(!insn.key().starts_with("SVC"), "{}", insn.key());
             }

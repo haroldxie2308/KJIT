@@ -1443,6 +1443,40 @@ pub(crate) fn execute_insn(
         | A64Insn::PrfmLitPrfmPLoadlit { .. }
         | A64Insn::PrfmRegPrfmPLdstRegoff { .. } => Ok(pc + 4),
 
+        // Barriers only order memory effects between observers. The model has one
+        // observer (a single thread, no caches or speculation), where every access
+        // is already in program order, so they are no-ops here.
+        A64Insn::DmbDmbBoBarriers { .. }
+        | A64Insn::DsbDsbBoBarriers { .. }
+        | A64Insn::IsbIsbBiBarriers { .. } => Ok(pc + 4),
+
+        // Acquire/release: the plain access plus the ordered-access alignment rule
+        // (`Addr::Ordered`); the ordering itself is invisible to one thread.
+        A64Insn::LdarLdarLr32Ldstord { rn, rt } | A64Insn::LdaprLdapr32lMemop { rn, rt } => {
+            execute_mem(ctx, state, pc, insn, zx(4, 32), rt, None, Addr::Ordered(rn))
+        }
+        A64Insn::LdarLdarLr64Ldstord { rn, rt } | A64Insn::LdaprLdapr64lMemop { rn, rt } => {
+            execute_mem(ctx, state, pc, insn, zx(8, 64), rt, None, Addr::Ordered(rn))
+        }
+        A64Insn::LdarbLdarbLr32Ldstord { rn, rt } | A64Insn::LdaprbLdaprb32lMemop { rn, rt } => {
+            execute_mem(ctx, state, pc, insn, zx(1, 32), rt, None, Addr::Ordered(rn))
+        }
+        A64Insn::LdarhLdarhLr32Ldstord { rn, rt } | A64Insn::LdaprhLdaprh32lMemop { rn, rt } => {
+            execute_mem(ctx, state, pc, insn, zx(2, 32), rt, None, Addr::Ordered(rn))
+        }
+        A64Insn::StlrStlrSl32Ldstord { rn, rt } => {
+            execute_mem(ctx, state, pc, insn, st(4), rt, None, Addr::Ordered(rn))
+        }
+        A64Insn::StlrStlrSl64Ldstord { rn, rt } => {
+            execute_mem(ctx, state, pc, insn, st(8), rt, None, Addr::Ordered(rn))
+        }
+        A64Insn::StlrbStlrbSl32Ldstord { rn, rt } => {
+            execute_mem(ctx, state, pc, insn, st(1), rt, None, Addr::Ordered(rn))
+        }
+        A64Insn::StlrhStlrhSl32Ldstord { rn, rt } => {
+            execute_mem(ctx, state, pc, insn, st(2), rt, None, Addr::Ordered(rn))
+        }
+
         A64Insn::BlBlOnlyBranchImm { imm26 } => {
             let target = pc_relative_target(pc, imm26.raw(), 26);
             state.write_x(30, pc.wrapping_add(4));
@@ -2037,6 +2071,12 @@ enum Addr {
     },
     /// `pc + imm19 * 4`.
     Literal(u64),
+    /// `[base]` of an acquire/release form (LDAR, STLR, LDAPR). Such an access
+    /// that crosses a 16-byte boundary is an Alignment fault: the XML's
+    /// `AArch64_UnalignedAccessFaults` for `acqsc`/`acqpc`/`relsc` with
+    /// SCTLR_EL1.nAA == 0 (Linux leaves it clear), which is what FEAT_LSE2
+    /// hardware (the native oracle's) does.
+    Ordered(A64Reg),
 }
 
 impl Addr {
@@ -2085,6 +2125,7 @@ fn execute_mem(
             (state.read_reg(base).wrapping_add(offset), None)
         }
         Addr::Literal(address) => (address, None),
+        Addr::Ordered(base) => (state.read_reg(base), None),
     };
     let address = untagged(address);
     if let (Addr::Imm(mem), Some(_), Elem::Load { .. }, Some(rt2)) = (addr, writeback, elem, rt2) {
@@ -2121,7 +2162,7 @@ fn execute_mem(
     let is_sp = |reg: A64Reg| reg.enc() == 31 && reg.reg31 == A64Reg31Mode::Sp;
     let sp_based = match addr {
         Addr::Imm(mem) => is_sp(mem.base()),
-        Addr::Reg { base, .. } => is_sp(base),
+        Addr::Reg { base, .. } | Addr::Ordered(base) => is_sp(base),
         Addr::Literal(_) => false,
     };
     if matches!(ctx, AccessContext::Original { .. }) && sp_based && state.sp() % 16 != 0 {
@@ -2129,6 +2170,16 @@ fn execute_mem(
             pc,
             access: accesses[0],
             cause: FaultCause::SpAlignment,
+        }));
+    }
+    // Ordered-access alignment (`Addr::Ordered`): checked after the SP check and
+    // before translation, as in the `Mem` accessor. Fragments never contain
+    // ordered forms (the verifier rejects them).
+    if matches!(addr, Addr::Ordered(_)) && (address % 16) + u64::from(size) > 16 {
+        return Err(InsnError::Fault(MemFault {
+            pc,
+            access: accesses[0],
+            cause: FaultCause::Alignment,
         }));
     }
     check_accesses(ctx, state, pc, &accesses, insn.is_unprivileged_access())?;
@@ -2969,6 +3020,114 @@ mod tests {
         exec_user(ldr(A64Reg::x_sp(1)), 0x4000, &mut state).unwrap();
         state.set_sp(0x9010);
         exec_user(ldr(A64Reg::x_sp(31)), 0x4000, &mut state).unwrap();
+    }
+
+    /// A7c: an acquire/release access faults (Alignment) iff it crosses a 16-byte
+    /// boundary; misaligned inside one block it runs (as on the FEAT_LSE2 host,
+    /// probed natively: `ldar x` at +8 runs, at +9 faults). SP alignment first.
+    #[test]
+    fn acquire_release_alignment_faults_only_across_16_byte_blocks() {
+        let mut state = rw_page_at_0x9000();
+        let ldar_x = A64Insn::LdarLdarLr64Ldstord {
+            rn: A64Reg::x_sp(1),
+            rt: x(0),
+        };
+        let stlr_w = A64Insn::StlrStlrSl32Ldstord {
+            rn: A64Reg::x_sp(1),
+            rt: A64Reg::w(2),
+        };
+        let ldaprh = A64Insn::LdaprhLdaprh32lMemop {
+            rn: A64Reg::x_sp(1),
+            rt: A64Reg::w(0),
+        };
+        let ldarb = A64Insn::LdarbLdarbLr32Ldstord {
+            rn: A64Reg::x_sp(1),
+            rt: A64Reg::w(0),
+        };
+        for (insn, size) in [(ldar_x, 8u64), (stlr_w, 4), (ldaprh, 2), (ldarb, 1)] {
+            for offset in 0..16u64 {
+                state.write_x(1, 0x9020 + offset);
+                if offset + size > 16 {
+                    let fault = expect_fault(insn, &state, None);
+                    assert_eq!(fault.cause, FaultCause::Alignment, "{insn:?} +{offset}");
+                    assert_eq!(fault.access.addr, 0x9020 + offset);
+                } else {
+                    exec_user(insn, 0x4000, &mut state)
+                        .unwrap_or_else(|err| panic!("{insn:?} +{offset}: {err:?}"));
+                }
+            }
+        }
+        // A tagged base is aligned on its untagged address.
+        state.write_x(1, 0x5a00_0000_0000_9028);
+        exec_user(ldar_x, 0x4000, &mut state).unwrap();
+
+        // SP base: the SP alignment check comes first.
+        state.set_sp(0x9008);
+        let ldar_sp = A64Insn::LdarLdarLr64Ldstord {
+            rn: A64Reg::x_sp(31),
+            rt: x(0),
+        };
+        assert_eq!(
+            expect_fault(ldar_sp, &state, None).cause,
+            FaultCause::SpAlignment
+        );
+    }
+
+    #[test]
+    fn barriers_are_no_ops_and_acquire_release_move_data() {
+        let mut state = rw_page_at_0x9000();
+        state.write_x(1, 0x9040);
+        state.write_x(2, 0x1122_3344_5566_7788);
+        let before = state.clone();
+        for crm in 0..16 {
+            for barrier in [
+                A64Insn::DmbDmbBoBarriers { crm },
+                A64Insn::DsbDsbBoBarriers { crm },
+                A64Insn::IsbIsbBiBarriers { crm },
+            ] {
+                assert_eq!(exec_user(barrier, 0x4000, &mut state).unwrap(), 0x4004);
+            }
+        }
+        assert_eq!(state, before);
+
+        let rn = A64Reg::x_sp(1);
+        exec_user(A64Insn::StlrStlrSl64Ldstord { rn, rt: x(2) }, 0x4000, &mut state).unwrap();
+        exec_user(
+            A64Insn::LdarhLdarhLr32Ldstord {
+                rn,
+                rt: A64Reg::w(3),
+            },
+            0x4000,
+            &mut state,
+        )
+        .unwrap();
+        assert_eq!(state.read_x(3), 0x7788);
+        exec_user(
+            A64Insn::StlrbStlrbSl32Ldstord {
+                rn,
+                rt: A64Reg::w(31),
+            },
+            0x4000,
+            &mut state,
+        )
+        .unwrap();
+        exec_user(
+            A64Insn::LdaprLdapr64lMemop { rn, rt: x(4) },
+            0x4000,
+            &mut state,
+        )
+        .unwrap();
+        assert_eq!(state.read_x(4), 0x1122_3344_5566_7700);
+        exec_user(
+            A64Insn::LdarLdarLr32Ldstord {
+                rn,
+                rt: A64Reg::w(5),
+            },
+            0x4000,
+            &mut state,
+        )
+        .unwrap();
+        assert_eq!(state.read_x(5), 0x5566_7700);
     }
 
     #[test]

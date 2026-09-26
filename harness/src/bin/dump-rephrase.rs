@@ -89,7 +89,7 @@ fn main() {
                 RephrasedInsnKind::RegVirtHelper => "rv-helper",
                 RephrasedInsnKind::UserAccess => "user-access",
                 RephrasedInsnKind::BudgetCheck => "budget-check",
-                RephrasedInsnKind::SpAlignCheck => "sp-align-check",
+                RephrasedInsnKind::AlignCheck => "align-check",
                 RephrasedInsnKind::RuntimeExitPayload => "rt-payload",
                 RephrasedInsnKind::RuntimeExitBranch => "rt-branch",
             };

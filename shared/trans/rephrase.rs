@@ -20,12 +20,16 @@ pub enum RephrasedInsnKind {
     /// puts before a back-edge's lowered sequence. Runtime-owned: reg-virt passes it
     /// through unchanged; its `CBZ` targets the `Budget` stub of the same `ori_pc`.
     BudgetCheck,
-    /// One instruction of the SP alignment check reg-virt puts before a user
-    /// access based on SP: `and xS, x17, #15; cbnz xS, <Mem stub of ori_pc>`. EL0
-    /// SP alignment checking faults such an access natively when SP is not
-    /// 16-byte aligned; the mapped SP (x17) is never checked, so the fragment
-    /// leaves through the Mem stub and userspace takes the fault itself.
-    SpAlignCheck,
+    /// One instruction of an alignment check reg-virt puts before a user access
+    /// that faults natively on alignment where its `LDTR*`/`STTR*` would not. It
+    /// ends in a `CBNZ` to the Mem stub of the same `ori_pc`, so the fragment
+    /// leaves and userspace takes the fault itself:
+    /// - SP base: `and xS, x17, #15; cbnz xS` (EL0 SP alignment checking; the
+    ///   mapped SP in x17 is never checked);
+    /// - acquire/release wider than a byte: `and xS, xN, #15; add xS, xS,
+    ///   #(size - 1); and xS, xS, #16; cbnz xS` (the access crosses a 16-byte
+    ///   boundary, which alignment-faults natively).
+    AlignCheck,
     RuntimeExitPayload,
     RuntimeExitBranch,
 }
@@ -37,7 +41,7 @@ impl RephrasedInsnKind {
             Self::RegVirtHelper
             | Self::UserAccess
             | Self::BudgetCheck
-            | Self::SpAlignCheck
+            | Self::AlignCheck
             | Self::RuntimeExitPayload
             | Self::RuntimeExitBranch => false,
         }
@@ -51,7 +55,7 @@ impl RephrasedInsnKind {
             | Self::RegVirtHelper
             | Self::UserAccess
             | Self::BudgetCheck
-            | Self::SpAlignCheck => false,
+            | Self::AlignCheck => false,
         }
     }
 
@@ -116,9 +120,9 @@ impl RephrasedInsn {
         }
     }
 
-    pub const fn sp_align_check(ori_pc: u64, insn: A64Insn) -> Self {
+    pub const fn align_check(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
-            kind: RephrasedInsnKind::SpAlignCheck,
+            kind: RephrasedInsnKind::AlignCheck,
             ori_pc,
             insn,
         }
