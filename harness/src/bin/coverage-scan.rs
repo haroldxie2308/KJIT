@@ -322,6 +322,13 @@ fn cfg_err_info(err: CfgError) -> ErrInfo {
             insn_key: None,
             detail: String::new(),
         },
+        CfgError::RegVirt(e) => {
+            let info = reg_virt_err_info(e);
+            ErrInfo {
+                variant: format!("Cfg::{}", info.variant),
+                ..info
+            }
+        }
     }
 }
 
