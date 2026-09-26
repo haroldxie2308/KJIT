@@ -58,7 +58,7 @@ The repo now includes a local kernel/QEMU workflow so the Rust module, kernel so
 
 - `dep/linux/`: canonical upstream Linux kernel source tree submodule
 - `linux-w-capstone/`: historical Capstone-enabled kernel fork kept as a reference during migration
-- `kernel-config/`: tiny ARM64/QEMU kernel config fragments used by the local workflow
+- `kernel-config/`: ARM64/QEMU kernel config fragments (tiny K0 profiles, guest profiles, K1 invariants)
 - `.kjit.env`: optional local overrides for build and QEMU settings
 - `.kjit/qemu/`: QEMU runtime state such as PID, QMP socket, and serial log
 
@@ -74,16 +74,14 @@ The repo now includes a local kernel/QEMU workflow so the Rust module, kernel so
 ### Notes
 
 - Docker is intended for development and build tooling. QEMU remains the target for actual in-kernel execution, deployment, and debug
-- The build helpers now use `dep/linux/` as the canonical source-and-build tree by default. Native kernel config/build steps still require Linux, but the Docker wrapper provides a Linux userspace for those steps
-- `make` and `make rust-analyzer` now use `KDIR=$(CURDIR)/dep/linux` and `KBUILD_OUTPUT=$(CURDIR)/dep/linux` by default
-- The default kernel profile is `tiny-qemu-debug`, built from the fragments under `kernel-config/`
-- `scripts/qemu-run.sh` expects a built ARM64 `Image` at `dep/linux/arch/arm64/boot/Image`
-- QEMU rootfs and initramfs paths are configured through `.kjit.env`
+- Kernels build out of tree only. `dep/linux/` (`KDIR`) is the source tree and stays git-clean; the selected profile `KJIT_KERNEL_PROFILE` (default `tiny-qemu-debug`, fragments under `kernel-config/`) builds in `KBUILD_OUTPUT=$KJIT_BUILD_ROOT/$KJIT_KERNEL_PROFILE`. `KJIT_BUILD_ROOT` defaults to `.kjit/build`. Native kernel config/build steps still require Linux, but the Docker wrapper provides a Linux userspace for those steps
+- `kernel-prepare`, `kernel-build`, `module-build` (`kjit.ko` in `<build dir>/kjit-module/`), `initramfs`, `rust-analyzer` and `qemu-run` all use the selected profile's build dir; pass `KJIT_KERNEL_PROFILE=...` to switch
+- `scripts/qemu-run.sh` boots `<build dir>/arch/arm64/boot/Image` with the profile's golden initramfs by default (`QEMU_INITRAMFS=` boots without one)
 - `make pack` writes a tar.gz of tracked files to `tmp/pack/` by default; override `OUT=...` if you want a different destination
 - The Rust-for-Linux out-of-tree flow expects Rust metadata and proc-macro artifacts from a kernel build, so `kernel-build` is the prerequisite for `rust-analyzer` quality and external Rust module builds
 - `rust-project.json` should be generated inside the Linux dev container so rust-analyzer sees the same toolchain and proc-macro environment as the kernel build
 - Build-oriented `make` targets are intended to run inside the Linux dev container, not on the macOS host
-- You can still override `KDIR` or `KBUILD_OUTPUT` in `.kjit.env` if you want a different kernel tree or separate output tree, but the default workflow now builds the upstream Linux submodule in place
+- A leftover in-tree build in `dep/linux` makes kbuild reject `O=` builds; remove it with `make -C dep/linux ARCH=arm64 mrproper` (in the container)
 - `kernel-build` now builds `Image` and modules only; `dtbs` are skipped by default because the QEMU `virt` machine does not need them
 
 ### Kernel bring-up (K0 golden check)
@@ -100,15 +98,15 @@ Build steps (Docker Desktop on an Apple Silicon Mac; the image is native arm64):
 ./scripts/docker-dev.sh --build-image -- true            # dev image
 ./scripts/docker-dev.sh -- make kernel-clean             # optional, for a clean rebuild
 ./scripts/docker-dev.sh -- make kernel-prepare
-./scripts/docker-dev.sh -- make kernel-build             # runs make at -j1; slow
-./scripts/docker-dev.sh -- make module-build             # kjit.ko
-./scripts/docker-dev.sh -- bash scripts/mk-initramfs.sh  # .kjit/initramfs/kjit-initramfs.cpio
+./scripts/docker-dev.sh -- make kernel-build             # make -j$(nproc)
+./scripts/docker-dev.sh -- make module-build             # <build dir>/kjit-module/kjit.ko
+./scripts/docker-dev.sh -- make initramfs                # <build dir>/kjit-initramfs/kjit-initramfs.cpio
 ```
 
-Boot on the macOS host with HVF:
+Boot on the macOS host with HVF (same `KJIT_BUILD_ROOT` as the container):
 
 ```sh
-QEMU_INITRAMFS=$PWD/.kjit/initramfs/kjit-initramfs.cpio make qemu-run
+make qemu-run
 ```
 
 The initramfs has a single static `/init` (`scripts/qemu-initramfs/init.c`). It
@@ -124,6 +122,69 @@ kjit-init: insmod kjit.ko ok
 If translator output changes on purpose, regenerate the golden on the host with
 `make kernel-golden`. The harness test `kernel_golden_matches_harness_output`
 fails while the checked-in golden is stale.
+
+### Guest (Debian userland, redis, E0 baseline)
+
+Kernel profiles are fragment lists in `scripts/setup-kernel-build.sh`. All start
+from `tinyconfig` and end with `kernel-config/kjit-invariants.conf` (K1: shadow
+call stack, kCFI, kernel BTI and SW TTBR0 PAN off; `MODULES`, `RUST` on; see
+`tmp/pipeline.md`). The setup script fails, naming each option, when any option
+a fragment requests is missing from the final `.config` with the requested value.
+
+| Profile | Fragments | Use |
+|---|---|---|
+| `tiny-qemu`, `tiny-qemu-debug` | `tiny-qemu-base` + `tiny-qemu-rust` (+ `tiny-qemu-debug`: debug info) | K0 golden boot |
+| `kjit-guest` | tiny-qemu-debug + `kjit-guest.conf` | Debian bookworm + redis in an initramfs, E0 |
+| `kjit-guest-debug` | kjit-guest + `kjit-guest-debug.conf` | + generic KASAN, lockdep, `DEBUG_ATOMIC_SLEEP`, `DEBUG_LIST` |
+
+`kjit-guest` starts from tinyconfig rather than defconfig because a defconfig
+build with debug info needs several GB per profile and much longer builds; every
+userland dependency (futex, epoll, eventfd, timerfd, signalfd, tmpfs, unix/inet
+sockets, virtio-pci/9p/rng, ...) is listed explicitly and checked. It uses full
+`PREEMPT`, since fragments will run preemptible, and a distro-like entry path
+(KPTI, Spectre-BHB mitigation, kernel pointer auth) so E0 measures a realistic
+mode switch.
+
+Like every profile, the guest profiles build in `$KJIT_BUILD_ROOT/<profile>`
+with `kjit.ko` in `<build dir>/kjit-module/` (Kbuild `MO=`), so a module always
+stays with the kernel it was built for. To share builds between worktrees, export
+`KJIT_BUILD_ROOT` to a directory outside the repo; it must be on a case-sensitive
+filesystem. `scripts/docker-dev.sh` mounts it at the same absolute path, so the
+container and the host see the same paths.
+
+Build (container) and run (host):
+
+```sh
+export KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/kjit-build   # optional
+./scripts/docker-dev.sh -- make guest-kernel         # kernel + kjit.ko
+./scripts/docker-dev.sh -- make guest-kernel-debug   # KASAN/lockdep
+make guest-rootfs          # host: docker export of debian:bookworm + redis -> $KJIT_BUILD_ROOT/guest-rootfs/rootfs.cpio
+make guest-run GUEST_PROFILE=kjit-guest CMD='redis-server --daemonize yes --save "" --appendonly no; sleep 1; redis-benchmark -q -n 10000'
+make e0-bench GUEST_PROFILE=kjit-guest
+```
+
+`guest-run` (`scripts/guest-run.sh`) creates a run directory
+`$KJIT_BUILD_ROOT/runs/<profile>-<time>/` with `kjit-run.sh` (the command),
+a copy of the profile's `kjit.ko`, and `serial.log`. It shares that directory
+over virtio-9p and boots QEMU through `scripts/qemu-run.sh` (HVF/KVM,
+`-cpu host`, 4 GiB, no NIC, virtio-rng, `-no-reboot`). The initramfs `/init`
+(`scripts/guest/init`) mounts proc/sys/devtmpfs/tmpfs, brings up `lo`, mounts
+the share at `/kjit`, insmods `/kjit/kjit.ko`, runs `kjit-run.sh` in `/kjit`,
+rmmods the module, prints `kjit-init: run exit=N`, and powers off. Pass
+`--module none` to the script to skip the module, and use `CMD=sh` for an
+interactive shell on the serial console. `guest-run` fails if the run did not
+exit 0, if QEMU hit the timeout, if `CPU features: detected: Privileged Access
+Never` is missing (K1: hardware PAN), or if any timestamped kernel line reports
+`BUG:`, `WARNING:`, an oops, a panic, `Call trace:` or a lockdep `INFO:`.
+
+`make e0-bench` (`scripts/e0-bench.sh`, `tools/e0/syscall_bench.c`) builds a
+static benchmark in the dev image. It runs the benchmark in a plain
+`debian:bookworm` container on the Docker VM and in the guest without
+`kjit.ko`. It reports ns/op from `CNTVCT_EL0` for a raw-`svc` `getppid`, a
+1-byte `write` to `/dev/null`, and a 1-byte pipe write+read pair in one
+thread, plus the kernel version, CPU features and
+`/sys/devices/system/cpu/vulnerabilities/*`. Results go to
+`$KJIT_BUILD_ROOT/e0/<profile>-<time>/{docker,guest}.txt`.
 
 ### Harness
 
@@ -290,7 +351,7 @@ noninteractive assembly fixture validation remains `scripts/run-asm-fixture.sh`.
 The Linux development image is defined in `docker/dev/Dockerfile` and is intended to be used through the VS Code dev container.
 
 - `make prepare`: prepare and build the tiny ARM64/QEMU kernel profile
-- `make clean`: clean the in-tree kernel build state
+- `make clean`: clean the selected profile's kernel build dir
 - `make rustavailable-check`: run the upstream Rust toolchain readiness check
 - `make rust-analyzer`: generate `rust-project.json`
 - `make module-build`: build the KJIT out-of-tree module

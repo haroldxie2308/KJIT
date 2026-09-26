@@ -72,28 +72,32 @@ if [[ "$KJIT_ENABLE_CAPSTONE_STUB" == "1" ]]; then
     bash "$ROOT_DIR/scripts/ensure-kernel-capstone-stub.sh" "$KDIR"
 fi
 
-kernel_make=(make -C "$KDIR" ARCH="$ARCH" LLVM="$LLVM")
-if [[ "$KBUILD_OUTPUT" != "$KDIR" ]]; then
-    mkdir -p "$KBUILD_OUTPUT"
-    kernel_make+=(O="$KBUILD_OUTPUT")
+if [[ "$(realpath -m "$KBUILD_OUTPUT")" == "$(realpath -m "$KDIR")" ]]; then
+    echo "KBUILD_OUTPUT must not be the kernel source tree ($KDIR); kernels build out of tree only." >&2
+    exit 1
 fi
+mkdir -p "$KBUILD_OUTPUT"
+kernel_make=(make -C "$KDIR" ARCH="$ARCH" LLVM="$LLVM" O="$KBUILD_OUTPUT" -j"$(nproc)")
 
 profile_stamp="$KBUILD_OUTPUT/$profile_stamp_name"
 profile="$KJIT_KERNEL_PROFILE"
 
+cfg="$ROOT_DIR/kernel-config"
 case "$profile" in
     tiny-qemu)
-        profile_fragments=(
-            "$ROOT_DIR/kernel-config/tiny-qemu-base.conf"
-            "$ROOT_DIR/kernel-config/tiny-qemu-rust.conf"
-        )
+        profile_fragments=("$cfg/tiny-qemu-base.conf" "$cfg/tiny-qemu-rust.conf")
         ;;
     tiny-qemu-debug)
-        profile_fragments=(
-            "$ROOT_DIR/kernel-config/tiny-qemu-base.conf"
-            "$ROOT_DIR/kernel-config/tiny-qemu-rust.conf"
-            "$ROOT_DIR/kernel-config/tiny-qemu-debug.conf"
-        )
+        profile_fragments=("$cfg/tiny-qemu-base.conf" "$cfg/tiny-qemu-rust.conf"
+            "$cfg/tiny-qemu-debug.conf")
+        ;;
+    kjit-guest)
+        profile_fragments=("$cfg/tiny-qemu-base.conf" "$cfg/tiny-qemu-rust.conf"
+            "$cfg/tiny-qemu-debug.conf" "$cfg/kjit-guest.conf")
+        ;;
+    kjit-guest-debug)
+        profile_fragments=("$cfg/tiny-qemu-base.conf" "$cfg/tiny-qemu-rust.conf"
+            "$cfg/tiny-qemu-debug.conf" "$cfg/kjit-guest.conf" "$cfg/kjit-guest-debug.conf")
         ;;
     none|"")
         profile_fragments=()
@@ -103,6 +107,55 @@ case "$profile" in
         exit 1
         ;;
 esac
+# The K1 invariants are merged last so no profile fragment can override them.
+if [[ ${#profile_fragments[@]} -gt 0 ]]; then
+    profile_fragments+=("$cfg/kjit-invariants.conf")
+fi
+
+# Every option the merged fragments request must reach the final .config with
+# the requested value; Kconfig silently drops options whose dependencies are
+# unmet. Later fragments win, as in merge_config.sh. "is not set" is satisfied
+# by "is not set" or by the symbol being absent (dependencies unmet => n).
+verify_requested_config() {
+    local config="$1"
+    shift
+    local -A requested=() actual=()
+    local line key failed=()
+
+    for fragment in "$@"; do
+        while IFS= read -r line; do
+            if [[ "$line" =~ ^(CONFIG_[A-Za-z0-9_]+)=(.*)$ ]]; then
+                requested["${BASH_REMATCH[1]}"]="${BASH_REMATCH[2]}"
+            elif [[ "$line" =~ ^#\ (CONFIG_[A-Za-z0-9_]+)\ is\ not\ set$ ]]; then
+                requested["${BASH_REMATCH[1]}"]="n"
+            fi
+        done < "$fragment"
+    done
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^(CONFIG_[A-Za-z0-9_]+)=(.*)$ ]]; then
+            actual["${BASH_REMATCH[1]}"]="${BASH_REMATCH[2]}"
+        elif [[ "$line" =~ ^#\ (CONFIG_[A-Za-z0-9_]+)\ is\ not\ set$ ]]; then
+            actual["${BASH_REMATCH[1]}"]="n"
+        fi
+    done < "$config"
+
+    for key in $(printf '%s\n' "${!requested[@]}" | sort); do
+        local want="${requested[$key]}" got="${actual[$key]-<absent>}"
+        if [[ "$want" == "n" && ( "$got" == "n" || "$got" == "<absent>" ) ]]; then
+            continue
+        fi
+        if [[ "$got" != "$want" ]]; then
+            failed+=("$key: requested $want, got $got")
+        fi
+    done
+    if [[ ${#failed[@]} -gt 0 ]]; then
+        echo "error: ${#failed[@]} requested option(s) did not survive in $config:" >&2
+        printf '  %s\n' "${failed[@]}" >&2
+        echo "Add the missing parent options to the profile fragments or drop the request." >&2
+        return 1
+    fi
+    echo "Config check: all ${#requested[@]} requested options present in $config"
+}
 
 if (( clean_first )); then
     "${kernel_make[@]}" clean
@@ -137,6 +190,9 @@ elif [[ ! -f "$KBUILD_OUTPUT/.config" ]]; then
 fi
 
 "${kernel_make[@]}" olddefconfig
+if [[ ${#profile_fragments[@]} -gt 0 ]]; then
+    verify_requested_config "$KBUILD_OUTPUT/.config" "${profile_fragments[@]}"
+fi
 "${kernel_make[@]}" prepare modules_prepare
 
 if (( build_image )); then
@@ -146,5 +202,5 @@ fi
 cat <<EOF
 Kernel source: $KDIR
 Kernel build:  $KBUILD_OUTPUT
-Kernel image:  $QEMU_KERNEL_IMAGE
+Kernel image:  $KBUILD_OUTPUT/arch/$ARCH/boot/Image
 EOF

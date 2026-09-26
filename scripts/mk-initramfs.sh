@@ -3,7 +3,8 @@ set -euo pipefail
 
 # Build the QEMU bring-up initramfs: a static /init that insmods /kjit.ko,
 # rmmods it, and powers off. Run inside the Linux dev container after
-# `make kernel-build` and `make module-build`.
+# `make kernel-build` and `make module-build` for the same profile
+# (`make initramfs`). Written next to that profile's kernel build.
 
 # shellcheck disable=SC1091
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/kjit-env.sh"
@@ -12,9 +13,9 @@ ensure_linux_host
 require_cmd cc
 
 gen_init_cpio="$KBUILD_OUTPUT/usr/gen_init_cpio"
-module="$ROOT_DIR/kjit.ko"
-out_dir="$ROOT_DIR/.kjit/initramfs"
-out="$out_dir/kjit-initramfs.cpio"
+module="$KJIT_MODULE_DIR/kjit.ko"
+out="$KJIT_INITRAMFS"
+out_dir="$(dirname "$out")"
 
 if [[ ! -x "$gen_init_cpio" ]]; then
     echo "Missing $gen_init_cpio; run make kernel-build first." >&2

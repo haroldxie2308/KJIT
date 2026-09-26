@@ -27,10 +27,7 @@ require_cmd rustc
 : "${RUSTC:=rustc}"
 export RUSTC
 
-rust_obj_dir="$KDIR/rust"
-if [[ "$KBUILD_OUTPUT" != "$KDIR" && -f "$KBUILD_OUTPUT/rust/libmacros.so" ]]; then
-    rust_obj_dir="$KBUILD_OUTPUT/rust"
-fi
+rust_obj_dir="$KBUILD_OUTPUT/rust"
 
 if [[ ! -f "$KBUILD_OUTPUT/include/generated/rustc_cfg" ]]; then
     echo "Missing generated Rust cfgs under $KBUILD_OUTPUT/include/generated/rustc_cfg" >&2
