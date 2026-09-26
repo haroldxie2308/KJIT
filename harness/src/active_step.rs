@@ -5,7 +5,7 @@ use crate::model::{Flags, HaltReason, MachineState};
 use crate::runtime::{
     OwnedURuntimeStepper, URuntime, URuntimeHalt, URuntimeStep, URuntimeTransition,
 };
-use crate::shared::arm64::decode_word;
+use crate::shared::arm64::{decode_word, DecodeError};
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::platform::{SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::RuntimeExitReason;
@@ -528,7 +528,22 @@ impl ActiveOriginalStepper {
 
         let chunk = &self.program[insn_index * 4..insn_index * 4 + 4];
         let word = u32::from_le_bytes(chunk.try_into().unwrap());
-        let decoded = decode_word(word, self.pc).map_err(|err| err.to_string())?;
+        let decoded = match decode_word(word, self.pc) {
+            Ok(decoded) => decoded,
+            Err(DecodeError::UnsupportedWord { pc, word }) => {
+                let reason = RuntimeExitReason::Unsupported { pc, word };
+                self.stopped = true;
+                return Ok(Some(ActiveOriginalStep {
+                    pc,
+                    next_pc: None,
+                    executed: false,
+                    runtime_exit: Some(reason),
+                    halt_reason: Some(HaltReason::RuntimeExit { reason }),
+                    state: self.state.clone(),
+                }));
+            }
+            Err(err) => return Err(err.to_string()),
+        };
 
         if let Some(reason) = decoded.inner.runtime_exit_reason(self.pc) {
             self.stopped = true;

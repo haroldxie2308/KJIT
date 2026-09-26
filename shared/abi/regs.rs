@@ -31,6 +31,9 @@ pub enum RetStatus {
     Br,
     Ret,
     Mem,
+    /// Undecodable instruction; userspace resumes natively at it.
+    /// RET_PARAM0 = raw word (zero-extended), RET_PARAM1 = its PC.
+    Unsupported,
     Debug,
     Invalid(u64),
 }
@@ -44,6 +47,7 @@ impl RetStatus {
             Self::Br => 3,
             Self::Ret => 4,
             Self::Mem => 5,
+            Self::Unsupported => 6,
             Self::Debug => 8,
             Self::Invalid(value) => value,
         }
@@ -57,6 +61,7 @@ impl RetStatus {
             3 => Self::Br,
             4 => Self::Ret,
             5 => Self::Mem,
+            6 => Self::Unsupported,
             8 => Self::Debug,
             other => Self::Invalid(other),
         }

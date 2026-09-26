@@ -1,5 +1,7 @@
 use crate::model::{ExecutionResult, HaltReason, MachineState};
-use crate::shared::arm64::{decode_word, A64Condition, A64Imm, A64Insn, A64Mem, A64Reg};
+use crate::shared::arm64::{
+    decode_word, A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, DecodeError,
+};
 use crate::shared::trans::cfg::RuntimeExitReason;
 
 pub fn execute_program(
@@ -116,7 +118,22 @@ impl<'a> OriginalStepper<'a> {
 
         let chunk = &self.program[insn_index * 4..insn_index * 4 + 4];
         let word = u32::from_le_bytes(chunk.try_into().unwrap());
-        let decoded = decode_word(word, self.pc).map_err(|err| err.to_string())?;
+        let decoded = match decode_word(word, self.pc) {
+            Ok(decoded) => decoded,
+            Err(DecodeError::UnsupportedWord { pc, word }) => {
+                let reason = RuntimeExitReason::Unsupported { pc, word };
+                self.stopped = true;
+                return Ok(Some(OriginalStep {
+                    pc,
+                    next_pc: None,
+                    executed: false,
+                    runtime_exit: Some(reason),
+                    halt_reason: Some(HaltReason::RuntimeExit { reason }),
+                    state: self.state.clone(),
+                }));
+            }
+            Err(err) => return Err(err.to_string()),
+        };
 
         if let Some(reason) = decoded.inner.runtime_exit_reason(self.pc) {
             apply_runtime_exit_side_effect(decoded.inner, self.pc, &mut self.state);
