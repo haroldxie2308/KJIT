@@ -439,21 +439,6 @@ impl fmt::Display for Stats {
 mod tests {
     use super::*;
 
-    /// Failures the smoke seed produces on the current translator. Every one is
-    /// an instance of the two open translator bugs parked in
-    /// `tests/arm64/fuzz-pending/`:
-    /// - `fuzz_regress_3d74ff35501da143.s`: layout emits blocks in CFG discovery
-    ///   order, so a conditional branch's fallthrough block is not always next;
-    /// - `fuzz_regress_4d8286952cad317f.s`: a block that ends at the end of the
-    ///   readable text gets no exit, so the fragment runs off its end.
-    /// (Checked by laying blocks out in address order in a scratch copy: only
-    /// the fall-off-the-end failures remain, and none without fall-off.)
-    ///
-    /// Any change to generation, the catalog or the translator moves this
-    /// number. Update it only after checking the new failures are these bugs
-    /// (`make fuzz SEED=0x5eed0ff022 ITERS=2000`); set it to 0 once both are fixed.
-    const OPEN_BUG_FAILURES: u64 = 423;
-
     /// Deterministic slice of the fuzzer inside `make harness-test`.
     #[test]
     fn fixed_seed_programs_agree() {
@@ -486,23 +471,7 @@ mod tests {
             })
             .collect::<Vec<_>>()
             .join("\n");
-        // The open bugs only ever show up as the fragment diverging; an
-        // interpreter error, a translation error or a panic is something new.
-        let harness_side = failures.iter().filter(|report| {
-            matches!(
-                report.failure.kind,
-                FailureKind::OriginalError | FailureKind::Translate | FailureKind::Panic
-            )
-        });
-        assert_eq!(
-            harness_side.count(),
-            0,
-            "unexpected failure kinds:\n{listed}"
-        );
-        assert_eq!(
-            stats.failed, OPEN_BUG_FAILURES,
-            "fuzz failures changed (see OPEN_BUG_FAILURES):\n{listed}"
-        );
+        assert!(failures.is_empty(), "{} fuzz failure(s):\n{listed}", failures.len());
         // The generator must reach every generated form and produce verdicts.
         for (key, count) in &stats.generated_by_form {
             assert!(*count > 0, "form {key} was never generated");
