@@ -273,8 +273,12 @@ Implementation decisions (A6):
   the next block). Rephrase (back-edges), layout (bodies, then cold regions) and
   the harness trace all iterate blocks through it. The program vector itself
   keeps CFG order, so `program[0]` stays the entry block. (Before A6 layout
-  emitted CFG discovery order; the concurrent fall-through fix sorts by start
-  address too -- it must go through this function, not a second sort.)
+  emitted CFG discovery order, which broke physical fall-through -- found by
+  the V2 fuzzer.) Layout checks the invariant it relies on: a block with a
+  successor at its own end (`next` contains `end_addr`) must be followed by that
+  block in layout order, else `LayoutError::FallthroughNotAdjacent`. Lowering
+  never adds explicit fall-through branches (they would be extra back-edge
+  candidates for the budget).
 - Pass placement: **rephrase**. It already owns semantic exits and the cold
   stubs (A5), sees the whole CFG, and runs before reg-virt, so the Budget stub
   is virtualized like every other exit group and reg-virt never learns about
