@@ -8,7 +8,7 @@ pub mod ergo;
 
 pub use generated::{
     A64EncodeError, A64Imm, A64Insn, A64Mem, A64OperandRole, A64Reg, A64Reg31Mode, A64RegWidth,
-    A64RewriteError,
+    A64RewriteError, GeneratedFieldSpec, GeneratedInsnSpec, GENERATED_A64_SUBSET,
 };
 
 /// A64 condition code (`cond` field), all 16 encodings. `Nv` (0b1111) is kept

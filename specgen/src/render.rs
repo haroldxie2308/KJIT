@@ -429,6 +429,21 @@ fn render_a64_insn(specs: &[InstructionSpec]) -> Result<Vec<String>> {
         "        }".to_string(),
         "    }".to_string(),
         "".to_string(),
+        "    pub const fn mem_operand(&self) -> Option<A64Mem> {".to_string(),
+        "        match self {".to_string(),
+    ]);
+    for variant in variants.iter().filter(|variant| variant.mem_group.is_some()) {
+        lines.push(format!(
+            "            Self::{} {{ mem, .. }} => Some(*mem),",
+            variant.variant_name
+        ));
+    }
+
+    lines.extend([
+        "            _ => None,".to_string(),
+        "        }".to_string(),
+        "    }".to_string(),
+        "".to_string(),
         "    pub fn set_reg(".to_string(),
         "        self,".to_string(),
         "        field: &'static str,".to_string(),

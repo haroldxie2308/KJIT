@@ -886,3 +886,42 @@ size and extension, so the loaded value needs no fix-up.
   page map covers the data window only. `mem_literal.s` targets the data window
   through `.Ltext + (DATA_BASE - TEXT_BASE)` and so assumes the default text
   base.
+
+# V2 contract: differential fuzzer (2026-09-27)
+
+- One oracle. `run_differential` runs both sides (original through the
+  interpreter, fragment through `URuntime`); `compare_differential` is the only
+  state/halt check, used by `run_entry_fixture` (fixture suite, `trace-tui
+  --check`) and the fuzzer. It translates, verifies (V3), runs the fragment
+  (a `Budget` exit caps the original at the same instance), then the original.
+  Bounded runs (`StepLimits`, the fuzzer): a program where neither side halts
+  (an SVC in an endless loop restarts the budget) is discarded; one side
+  halting alone is a failure. A verifier rejection is its own failure class. A
+  fault matches `ReturnedToUserspace { Mem }` at the same PC (the A5 contract)
+  and is a verdict like every other halt.
+- Generation is driven by the generated metadata only: `GENERATED_A64_SUBSET`
+  (fixed mask/value, fields), operand roles, `get_reg` (SP/ZR mode), the
+  generated `mem_operand()` accessor (offset signedness and scale are read back
+  from the decoder) and `literal_address`. No per-form tables in the fuzzer.
+  Register-offset forms read their index from registers holding small values;
+  literal loads target the data window. Instances `admit_word` rejects are
+  kept for 3% of slots (they exercise the Unsupported exit).
+- Non-verdicts are counted, never passed: original did not halt (discarded);
+  `chained` (the original stopped at a BL/BLR/BR/RET whose
+  target the fragment translated; the runtime continues there, the interpreter
+  does not). Deferred: model chaining in the original runner (continue at a
+  translated exit target, as `decide_runtime_return` does) instead of skipping.
+- Minimizer signature: failure kind + how the original halted, so deleting an
+  exit cannot turn one bug into another (a fall-off-the-end program).
+- Open bugs found (fixtures in `tests/arm64/fuzz-pending/`, excluded from the
+  suite until fixed):
+  1. Layout emits blocks in CFG discovery order and relies on physical
+     fallthrough; a conditional branch's not-taken successor is not always the
+     next block (`fuzz_regress_3d74ff35501da143.s`).
+  2. A block that ends because the next word is past the readable text has no
+     exit; the fragment runs past it (`fuzz_regress_4d8286952cad317f.s`).
+  3. Native only: EL0 SP alignment checking (SCTLR_EL1.SA0) faults SP-based
+     accesses with a misaligned SP; neither the interpreter nor the translated
+     code (SP in x17) reproduces it (`fuzz_regress_bf938844fc6f2fe6.s`).
+- The fixed-seed slice in `make harness-test` pins its failure count to these
+  bugs (`OPEN_BUG_FAILURES`); it goes to 0 when 1 and 2 are fixed.
