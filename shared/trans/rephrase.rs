@@ -2,7 +2,7 @@ use crate::shared::abi::{RetStatus, ABI_LINK_REG, RET_PARAM0_REG, RET_PARAM1_REG
 use crate::shared::arm64::ergo::{scaled_simm, uimm, x, xzr};
 use crate::shared::arm64::{A64Insn, A64Reg, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
-use crate::shared::trans::cfg::{Cfg, RuntimeExitReason};
+use crate::shared::trans::cfg::{Cfg, RuntimeExitReason, UnsupportedInsn};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RephrasedInsnKind {
@@ -439,12 +439,45 @@ fn push_branch_to_stub(
     )
 }
 
+/// Return to userspace at the undecodable instruction so it executes natively there.
+fn push_unsupported_exit(
+    out: &mut SharedVec<RephrasedInsn>,
+    unsupported: UnsupportedInsn,
+) -> SharedResult<(), SharedAllocError> {
+    let UnsupportedInsn { pc, word } = unsupported;
+    push_mov_imm64(
+        out,
+        pc,
+        x(RET_STATUS_REG),
+        RetStatus::Unsupported.as_reg(),
+        RephrasedInsnKind::RuntimeExitPayload,
+    )?;
+    push_mov_imm64(
+        out,
+        pc,
+        x(RET_PARAM0_REG),
+        u64::from(word),
+        RephrasedInsnKind::RuntimeExitPayload,
+    )?;
+    push_mov_imm64(
+        out,
+        pc,
+        x(RET_PARAM1_REG),
+        pc,
+        RephrasedInsnKind::RuntimeExitPayload,
+    )?;
+    push_branch_to_stub(out, pc)
+}
+
 pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
     let mut blocks = SharedVec::with_capacity(cfg.blocks.len(), GFP_KERNEL)?;
     for block in &cfg.blocks {
         let mut insns = SharedVec::with_capacity(block.insns.len() * 10, GFP_KERNEL)?;
         for insn in &block.insns {
             insns.append(rephrase_insn(*insn)?, GFP_KERNEL)?;
+        }
+        if let Some(unsupported) = block.unsupported_exit {
+            push_unsupported_exit(&mut insns, unsupported)?;
         }
 
         blocks.push(

@@ -73,6 +73,12 @@ fn main() {
         for insn in &block.insns {
             println!("  {:#06x}: {:#010x} {:?}", insn.pc, insn.word, insn.inner);
         }
+        if let Some(exit) = block.unsupported_exit {
+            println!(
+                "  unsupported_exit: pc={:#x} word={:#010x}",
+                exit.pc, exit.word
+            );
+        }
         print!("  prev:");
         for pc in &block.prev {
             print!(" {pc:#x}");

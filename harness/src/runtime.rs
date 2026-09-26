@@ -162,6 +162,12 @@ impl URuntime {
                     })
                 }
             }
+            // Never continue inside the fragment: resuming at this PC would re-enter
+            // the same exit. Userspace executes the instruction natively.
+            RetStatus::Unsupported => RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
+                status,
+                target_pc: param1,
+            }),
             RetStatus::Invalid(_) => {
                 RuntimeAction::Stop(URuntimeHalt::InvalidReturnStatus { raw: raw_status })
             }

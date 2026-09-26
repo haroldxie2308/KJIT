@@ -2,7 +2,7 @@ use crate::a64_pretty::pretty_insn;
 use crate::arm64::OriginalStepper;
 use crate::model::{HaltReason, MachineState};
 use crate::runtime::{URuntime, URuntimeHalt, URuntimeStepper, URuntimeTransition};
-use crate::shared::arm64::{decode_word, A64Insn};
+use crate::shared::arm64::{decode_word, A64Insn, DecodeError};
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::platform::{SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::{build_cfg, Cfg, RuntimeExitReason};
@@ -283,8 +283,16 @@ fn decode_raw(bytes: &[u8], text_base: u64) -> Result<Vec<TraceInsn>, String> {
     for (index, chunk) in bytes.chunks_exact(4).enumerate() {
         let pc = text_base + (index as u64) * 4;
         let word = u32::from_le_bytes(chunk.try_into().unwrap());
-        let decoded = decode_word(word, pc).map_err(|err| err.to_string())?;
-        raw.push(trace_insn(pc, index * 4, word, decoded.inner));
+        let insn = match decode_word(word, pc) {
+            Ok(decoded) => trace_insn(pc, index * 4, word, decoded.inner),
+            // Undecodable words are valid text: the translator ends the block with an
+            // unsupported runtime exit there, so the raw view must still show them.
+            Err(DecodeError::UnsupportedWord { pc, word }) => {
+                undecoded_trace_insn(pc, index * 4, word)
+            }
+            Err(err) => return Err(err.to_string()),
+        };
+        raw.push(insn);
     }
     Ok(raw)
 }
@@ -301,6 +309,21 @@ fn trace_insn(pc: u64, text_offset: usize, word: u32, insn: A64Insn) -> TraceIns
         direct_branch_target: insn.direct_branch_target(pc),
         conditional_targets: insn.conditional_targets(pc),
         runtime_exit: insn.runtime_exit_reason(pc),
+    }
+}
+
+fn undecoded_trace_insn(pc: u64, text_offset: usize, word: u32) -> TraceInsn {
+    TraceInsn {
+        pc,
+        text_offset,
+        word,
+        key: "UNDECODED",
+        mnemonic: ".inst",
+        pretty: format!(".inst {word:#010x}"),
+        debug: format!("{:?}", DecodeError::UnsupportedWord { pc, word }),
+        direct_branch_target: None,
+        conditional_targets: None,
+        runtime_exit: Some(RuntimeExitReason::Unsupported { pc, word }),
     }
 }
 

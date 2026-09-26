@@ -217,6 +217,15 @@ fn runtime_halt_matches_original(original: &ExecutionResult, halt: &URuntimeHalt
             target_reg == crate::shared::abi::ABI_LINK_REG
                 || original.state.read_x(target_reg) == *target_pc
         }
+        (
+            HaltReason::RuntimeExit {
+                reason: RuntimeExitReason::Unsupported { pc, .. },
+            },
+            URuntimeHalt::ReturnedToUserspace {
+                status: crate::shared::abi::RetStatus::Unsupported,
+                target_pc,
+            },
+        ) => pc == *target_pc,
         (HaltReason::FellOffEnd, URuntimeHalt::FellOffFragment { .. }) => true,
         _ => false,
     }

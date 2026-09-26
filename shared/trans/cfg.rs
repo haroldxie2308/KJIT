@@ -9,10 +9,21 @@ pub enum RuntimeExitReason {
     Br { target_reg: u8 },
     Ret { lr_reg: u8 },
     Svc { imm16: u16, resume_pc: u64 },
-    Unsupported,
+    Unsupported { pc: u64, word: u32 },
+}
+
+/// Reachable instruction word the generated subset decoder rejects.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UnsupportedInsn {
+    pub pc: u64,
+    pub word: u32,
 }
 
 /// Basic block over a half-open PC range: [start_addr, end_addr).
+///
+/// When `unsupported_exit` is `Some(u)`, the block ends with a runtime exit to
+/// userspace at `u.pc`: `u.pc == end_addr`, the undecodable instruction is not in
+/// `insns`, `next` is empty, and `insns` may be empty.
 #[derive(Debug, PartialEq, Eq)]
 pub struct BasicBlock {
     pub start_addr: u64,
@@ -20,6 +31,7 @@ pub struct BasicBlock {
     pub insns: SharedVec<IrInsn>,
     pub prev: SharedVec<u64>,
     pub next: SharedVec<u64>,
+    pub unsupported_exit: Option<UnsupportedInsn>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -66,6 +78,7 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
 
         let mut pc = start_addr;
         let mut insns = SharedVec::new();
+        let mut unsupported_exit = None;
 
         let next = loop {
             if !insns.is_empty() {
@@ -78,6 +91,10 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
             let insn = match read_insn(code, pc) {
                 Ok(insn) => insn,
                 Err(CfgError::CodeRead(_)) if !insns.is_empty() => {
+                    break SharedVec::new();
+                }
+                Err(CfgError::Decode(DecodeError::UnsupportedWord { pc, word })) => {
+                    unsupported_exit = Some(UnsupportedInsn { pc, word });
                     break SharedVec::new();
                 }
                 Err(err) => return Err(err),
@@ -103,7 +120,7 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
             }
         };
 
-        if insns.is_empty() {
+        if insns.is_empty() && unsupported_exit.is_none() {
             return Err(CfgError::EmptyBlock { start_addr });
         }
 
@@ -115,6 +132,7 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
                     insns,
                     prev: SharedVec::new(),
                     next,
+                    unsupported_exit,
                 },
                 GFP_KERNEL,
             )
@@ -175,6 +193,7 @@ fn split_existing_block_at(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Resul
         let split_offset = ((pc - block_start) / 4) as usize;
         let tail_end_addr = blocks[index].end_addr;
         let tail_next = core::mem::replace(&mut blocks[index].next, SharedVec::new());
+        let tail_unsupported_exit = blocks[index].unsupported_exit.take();
         let tail_insns = blocks[index]
             .insns
             .split_off_copy(split_offset, GFP_KERNEL)
@@ -195,6 +214,7 @@ fn split_existing_block_at(pc: u64, blocks: &mut SharedVec<BasicBlock>) -> Resul
                     insns: tail_insns,
                     prev: SharedVec::new(),
                     next: tail_next,
+                    unsupported_exit: tail_unsupported_exit,
                 },
                 GFP_KERNEL,
             )
@@ -224,4 +244,138 @@ fn populate_prev(blocks: &mut SharedVec<BasicBlock>) -> Result<(), CfgError> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shared::arm64::ergo::{scaled_simm, uimm, x};
+    use crate::shared::arm64::A64Insn;
+    use crate::shared::trans::input::TranslationTrigger;
+
+    const BASE: u64 = 0x1000;
+    // `mrs x0, tpidr_el0`: outside the decoded subset.
+    const UNDECODABLE: u32 = 0xd53b_d040;
+
+    struct SliceCode<'a> {
+        base: u64,
+        bytes: &'a [u8],
+    }
+
+    impl CodeProvider for SliceCode<'_> {
+        fn entry_addr(&self) -> u64 {
+            self.base
+        }
+
+        fn read_exact(&self, pc: u64, dst: &mut [u8]) -> Result<(), CodeReadError> {
+            let unmapped = CodeReadError::Unmapped { pc, len: dst.len() };
+            let start = pc.checked_sub(self.base).ok_or(unmapped)? as usize;
+            let src = self.bytes.get(start..start + dst.len()).ok_or(unmapped)?;
+            dst.copy_from_slice(src);
+            Ok(())
+        }
+    }
+
+    fn assemble(words: &[u32]) -> alloc::vec::Vec<u8> {
+        assert!(A64Insn::decode(UNDECODABLE).is_none());
+        words.iter().flat_map(|word| word.to_le_bytes()).collect()
+    }
+
+    fn enc(insn: A64Insn) -> u32 {
+        insn.encode().unwrap()
+    }
+
+    fn cfg_for(bytes: &[u8]) -> Cfg {
+        let code = SliceCode { base: BASE, bytes };
+        let request = TranslationRequest {
+            entry_pc: BASE,
+            trigger: TranslationTrigger::Manual,
+            regs: None,
+        };
+        build_cfg(&request, &code).unwrap()
+    }
+
+    #[test]
+    fn undecodable_entry_yields_empty_block_with_unsupported_exit() {
+        let cfg = cfg_for(&assemble(&[UNDECODABLE]));
+
+        assert_eq!(cfg.blocks.len(), 1);
+        let block = &cfg.blocks[0];
+        assert_eq!((block.start_addr, block.end_addr), (BASE, BASE));
+        assert!(block.insns.is_empty());
+        assert!(block.next.is_empty());
+        assert_eq!(
+            block.unsupported_exit,
+            Some(UnsupportedInsn {
+                pc: BASE,
+                word: UNDECODABLE
+            })
+        );
+    }
+
+    #[test]
+    fn undecodable_word_mid_block_ends_block_before_it() {
+        let movz = enc(A64Insn::MovzMovz64Movewide {
+            hw: 0,
+            imm16: uimm(1, 16),
+            rd: x(0),
+        });
+        let cfg = cfg_for(&assemble(&[movz, UNDECODABLE, movz]));
+
+        assert_eq!(cfg.blocks.len(), 1);
+        let block = &cfg.blocks[0];
+        assert_eq!((block.start_addr, block.end_addr), (BASE, BASE + 4));
+        assert_eq!(block.insns.len(), 1);
+        assert!(block.next.is_empty());
+        assert_eq!(
+            block.unsupported_exit,
+            Some(UnsupportedInsn {
+                pc: BASE + 4,
+                word: UNDECODABLE
+            })
+        );
+    }
+
+    #[test]
+    fn split_keeps_unsupported_exit_on_tail_block() {
+        let nop = enc(A64Insn::NopNopHiHints {});
+        let cfg = cfg_for(&assemble(&[
+            // BASE: cbz x0, BASE+16
+            enc(A64Insn::CbzCbz64Compbranch {
+                imm19: scaled_simm(4, 19, 2),
+                rt: x(0),
+            }),
+            nop,
+            nop,
+            UNDECODABLE,
+            // BASE+16: b BASE+8 (into the middle of the fallthrough block)
+            enc(A64Insn::BUncondBOnlyBranchImm {
+                imm26: scaled_simm((-2_i32) as u32 & 0x3ff_ffff, 26, 2),
+            }),
+        ]));
+
+        let find = |start| {
+            cfg.blocks
+                .iter()
+                .find(|block| block.start_addr == start)
+                .unwrap()
+        };
+        let head = find(BASE + 4);
+        assert_eq!(head.end_addr, BASE + 8);
+        assert_eq!(&*head.next, &[BASE + 8]);
+        assert_eq!(head.unsupported_exit, None);
+
+        let tail = find(BASE + 8);
+        assert_eq!(tail.end_addr, BASE + 12);
+        assert_eq!(tail.insns.len(), 1);
+        assert!(tail.next.is_empty());
+        assert_eq!(&*tail.prev, &[BASE + 4, BASE + 16]);
+        assert_eq!(
+            tail.unsupported_exit,
+            Some(UnsupportedInsn {
+                pc: BASE + 12,
+                word: UNDECODABLE
+            })
+        );
+    }
 }
