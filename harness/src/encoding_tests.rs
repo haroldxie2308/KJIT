@@ -24,6 +24,7 @@ fn encoding_matches_llvm_for_handwritten_cases() {
     cases.extend(condition_code_cases());
     cases.extend(mem_encoding_cases());
     cases.extend(barrier_acqrel_encoding_cases());
+    cases.extend(bti_carry_crc_encoding_cases());
     let decode_forms = decode_forms_from_subset_toml(SUBSET_TOML);
     let decode_form_set = decode_forms.iter().cloned().collect::<BTreeSet<_>>();
     let covered_forms = cases.iter().map(|case| case.form).collect::<BTreeSet<_>>();
@@ -2879,6 +2880,186 @@ fn barrier_acqrel_encoding_cases() -> Vec<EncodingCase> {
             A64Insn::LdaprhLdaprh32lMemop { rn: xsp(16), rt: w(31) },
         ),
     ]);
+    cases
+}
+
+/// A7d: BTI (every target), ADC/ADCS/SBC/SBCS (+ NGC/NGCS), SMSUBL/UMSUBL
+/// (+ SMNEGL/UMNEGL), CRC32*/CRC32C*.
+fn bti_carry_crc_encoding_cases() -> Vec<EncodingCase> {
+    let mut cases = Vec::new();
+    for (op2, targets) in [(0b000, ""), (0b010, " c"), (0b100, " j"), (0b110, " jc")] {
+        cases.push(case(
+            "BTI.BTI_HB_hints",
+            // BTI is in the HINT space: llvm-mc accepts it without an extension.
+            format!("    bti{targets}"),
+            A64Insn::BtiBtiHbHints { op2 },
+        ));
+    }
+    cases.extend([
+        case(
+            "ADC.ADC_32_addsub_carry",
+            "    adc w0, w1, wzr",
+            A64Insn::AdcAdc32AddsubCarry {
+                rm: w(31),
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "ADC.ADC_64_addsub_carry",
+            "    adc x30, xzr, x2",
+            A64Insn::AdcAdc64AddsubCarry {
+                rm: x(2),
+                rn: x(31),
+                rd: x(30),
+            },
+        ),
+        case(
+            "ADCS.ADCS_32_addsub_carry",
+            "    adcs w3, w4, w5",
+            A64Insn::AdcsAdcs32AddsubCarry {
+                rm: w(5),
+                rn: w(4),
+                rd: w(3),
+            },
+        ),
+        case(
+            "ADCS.ADCS_64_addsub_carry",
+            "    adcs xzr, x17, x18",
+            A64Insn::AdcsAdcs64AddsubCarry {
+                rm: x(18),
+                rn: x(17),
+                rd: x(31),
+            },
+        ),
+        case(
+            "SBC.SBC_32_addsub_carry",
+            "    sbc w6, w7, w8",
+            A64Insn::SbcSbc32AddsubCarry {
+                rm: w(8),
+                rn: w(7),
+                rd: w(6),
+            },
+        ),
+        case(
+            "SBC.SBC_64_addsub_carry",
+            "    ngc x9, x10",
+            A64Insn::SbcSbc64AddsubCarry {
+                rm: x(10),
+                rn: x(31),
+                rd: x(9),
+            },
+        ),
+        case(
+            "SBCS.SBCS_32_addsub_carry",
+            "    ngcs w11, w12",
+            A64Insn::SbcsSbcs32AddsubCarry {
+                rm: w(12),
+                rn: w(31),
+                rd: w(11),
+            },
+        ),
+        case(
+            "SBCS.SBCS_64_addsub_carry",
+            "    sbcs x13, x14, x15",
+            A64Insn::SbcsSbcs64AddsubCarry {
+                rm: x(15),
+                rn: x(14),
+                rd: x(13),
+            },
+        ),
+        case(
+            "SMSUBL.SMSUBL_64WA_dp_3src",
+            "    smsubl x0, w1, w2, x3",
+            A64Insn::SmsublSmsubl64waDp3src {
+                rm: w(2),
+                ra: x(3),
+                rn: w(1),
+                rd: x(0),
+            },
+        ),
+        case(
+            "SMSUBL.SMSUBL_64WA_dp_3src",
+            "    smnegl x4, w5, w6",
+            A64Insn::SmsublSmsubl64waDp3src {
+                rm: w(6),
+                ra: x(31),
+                rn: w(5),
+                rd: x(4),
+            },
+        ),
+        case(
+            "UMSUBL.UMSUBL_64WA_dp_3src",
+            "    umsubl x7, w8, w9, x10",
+            A64Insn::UmsublUmsubl64waDp3src {
+                rm: w(9),
+                ra: x(10),
+                rn: w(8),
+                rd: x(7),
+            },
+        ),
+        case(
+            "UMSUBL.UMSUBL_64WA_dp_3src",
+            "    umnegl x11, wzr, w12",
+            A64Insn::UmsublUmsubl64waDp3src {
+                rm: w(12),
+                ra: x(31),
+                rn: w(31),
+                rd: x(11),
+            },
+        ),
+    ]);
+    type Crc = fn(A64Reg, A64Reg, A64Reg) -> A64Insn;
+    let crc: [(&'static str, &str, bool, Crc); 8] = [
+        ("CRC32.CRC32B_32C_dp_2src", "crc32b", false, |rm, rn, rd| {
+            A64Insn::Crc32Crc32b32cDp2src { rm, rn, rd }
+        }),
+        ("CRC32.CRC32H_32C_dp_2src", "crc32h", false, |rm, rn, rd| {
+            A64Insn::Crc32Crc32h32cDp2src { rm, rn, rd }
+        }),
+        ("CRC32.CRC32W_32C_dp_2src", "crc32w", false, |rm, rn, rd| {
+            A64Insn::Crc32Crc32w32cDp2src { rm, rn, rd }
+        }),
+        ("CRC32.CRC32X_64C_dp_2src", "crc32x", true, |rm, rn, rd| {
+            A64Insn::Crc32Crc32x64cDp2src { rm, rn, rd }
+        }),
+        (
+            "CRC32C.CRC32CB_32C_dp_2src",
+            "crc32cb",
+            false,
+            |rm, rn, rd| A64Insn::Crc32cCrc32cb32cDp2src { rm, rn, rd },
+        ),
+        (
+            "CRC32C.CRC32CH_32C_dp_2src",
+            "crc32ch",
+            false,
+            |rm, rn, rd| A64Insn::Crc32cCrc32ch32cDp2src { rm, rn, rd },
+        ),
+        (
+            "CRC32C.CRC32CW_32C_dp_2src",
+            "crc32cw",
+            false,
+            |rm, rn, rd| A64Insn::Crc32cCrc32cw32cDp2src { rm, rn, rd },
+        ),
+        (
+            "CRC32C.CRC32CX_64C_dp_2src",
+            "crc32cx",
+            true,
+            |rm, rn, rd| A64Insn::Crc32cCrc32cx64cDp2src { rm, rn, rd },
+        ),
+    ];
+    for (form, mnemonic, x_data, insn) in crc {
+        let (rm, rm_name) = if x_data {
+            (x(18), "x18")
+        } else {
+            (w(18), "w18")
+        };
+        cases.push(case(
+            form,
+            format!("    .arch_extension crc\n    {mnemonic} w16, wzr, {rm_name}"),
+            insn(rm, w(31), w(16)),
+        ));
+    }
     cases
 }
 

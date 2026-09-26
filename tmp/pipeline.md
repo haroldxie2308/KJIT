@@ -461,6 +461,8 @@ address.
      fragment is `UserOnlyForm`, even on runtime memory and even with a
      fault-site entry (`FaultSiteNotUserAccess`). PRFM is emitted as `NOP`. An
      acquire/release form at EL1 would be a privileged access to user memory.
+     BTI (A7d) is in the same class: rephrase emits it as `NOP`, so one in a
+     fragment is `UserOnlyForm` too.
    - a runtime access, offset addressing only (no writeback), either
      - SP-based inside the user-state frame slots `[16, 80)` (stack-backed
        x12..x17, user x29, user sp), or the single kernel-slot read
@@ -489,9 +491,9 @@ address.
 5. System: only `MRS Xt, TPIDR_EL0` (the only MRS the generated subset decodes),
    NOP, and (A7c) `DMB`/`DSB`/`ISB` with any CRm (`DSB` without nXS;
    `Form::Barrier`): allowed anywhere, exit groups included. SVC and ADR/ADRP (a
-   kernel address into a user register) are rejected; MSR, HVC, SMC, BRK, HLT,
-   ERET, SB, CLREX, DSB nXS, WFE/WFI and other hints, and cache/TLB maintenance
-   do not decode. A barrier cannot confuse rules 6/7: it is not a fill (so one
+   kernel address into a user register) are rejected; BTI decodes but is
+   `UserOnlyForm` (rule 3); MSR, HVC, SMC, BRK, HLT, ERET, SB, CLREX, DSB nXS,
+   WFE/WFI, PAC and every other hint, and cache/TLB maintenance do not decode. A barrier cannot confuse rules 6/7: it is not a fill (so one
    between a budget `cbz` and its back-edge is rejected) and not a branch, user
    access or runtime access.
 6. Budget (A6): every back-edge (a direct branch to a body word at or before
@@ -562,6 +564,9 @@ Written before implementation. Facts checked against `dep/linux` 7.1-rc1:
   does not; FEAT_LRCPC (sanitised `ID_AA64ISAR1_EL1.LRCPC != 0`), because
   without it user LDAPR is UNDEFINED natively but would run in a fragment.
   (`SCTLR_EL1.nAA` is read on the loading CPU; Linux never sets it.)
+  FEAT_CRC32 (sanitised `ID_AA64ISAR0_EL1.CRC32 != 0`, A7d): without it user
+  CRC32*/CRC32C* are UNDEFINED natively and would be an undefined instruction
+  at EL1 in a fragment.
 
 ## Patch series (`kernel-patches/`, applied by the setup script)
 
@@ -915,7 +920,9 @@ mode"), `runtime/exec.rs`, `runtime/translate.rs`, `runtime/stats.rs`,
   fragment, or resuming userspace at the target with the syscall's BTYPE (0),
   skips the landing-pad check that a native indirect branch to a non-`BTI`
   instruction in a guarded page would fail (SIGILL). Only programs with broken
-  control flow are affected. (Present since K2 chaining.)
+  control flow are affected. (Present since K2 chaining.) Since A7d a `BTI`
+  inside translated code is a `NOP`, which is what it is when executed in
+  sequence; its landing-pad check is the same unmodelled BTYPE path.
 - The first eligible syscall of every mm registers an mmu notifier
   (`mm_take_all_locks`); every process pays it once in auto mode.
 - Per-mm table and negative cache are per mm, not per executable: every
@@ -936,7 +943,8 @@ mode"), `runtime/exec.rs`, `runtime/translate.rs`, `runtime/stats.rs`,
   syscalls in the kernel; with A7c's LDAR, every path ends at a `bti c` entry
   (~1.59M entry stops, no Unsupported exits). Before A7c the second blocker
   was `ldar x1, [x0]` (0xc8dffc01, ~0.7M exits). Translating `bti` (a NOP
-  outside guarded pages; see the BTI limitation) is the next coverage step.
+  outside guarded pages; see the BTI limitation) is the next coverage step:
+  done in A7d, together with `adc`; not re-measured in the guest yet.
 - Speed: not a goal yet. Fragment entry and exit cost more than the mode
   switches they save when a path chains through many short fragments
   (`dd bs=1`: 100% in kernel and ~40% slower).
@@ -979,6 +987,9 @@ mode"), `runtime/exec.rs`, `runtime/translate.rs`, `runtime/stats.rs`,
   execute pseudocode (ADDS/SUBS, ANDS/BICS, CCMP/CCMN). The earlier heuristic
   (`AddWithCarry` + `nzcv`) missed ANDS/BICS and CCMP/CCMN. No pass consumes
   flag roles yet.
+- `FlagsRead`: `ConditionHolds`, or (A7d) a read of a single flag that is not
+  an assignment to it (ADC/SBC's `AddWithCarry(.., PSTATE.C)`; the flattened
+  XML text may read `PSTATE .C`).
 
 ## K1 kernel config invariants (2026-09-27)
 
@@ -1010,7 +1021,8 @@ mode"), `runtime/exec.rs`, `runtime/translate.rs`, `runtime/stats.rs`,
   (privileged accesses only; LDTR/STTR are unprivileged), `ARM64_MTE` (LDTR/STTR
   are checked with TCF0, as in copy_from_user), `ARM64_PTR_AUTH_KERNEL`
   (this is safe only while PAC hints stay outside the decoded subset: they take
-  the Unsupported exit and run in userspace).
+  the Unsupported exit and run in userspace; pinned by
+  `hint_space_decodes_only_nop_and_bti`, A7d).
 - Profiles: `tiny-qemu[-debug]` (K0), `kjit-guest` (Debian/redis userland,
   E0 baseline) and `kjit-guest-debug` (+ generic KASAN, lockdep,
   DEBUG_ATOMIC_SLEEP, DEBUG_LIST). All start from tinyconfig. The guest profiles
@@ -1330,3 +1342,100 @@ the Inner Shareable domain, which holds every CPU that can run the process
   FEAT_LSE2 (LDAR/STLR/LDAPR are single-copy atomic there; aligned accesses are
   single-copy atomic either way).
 
+
+# BTI, carry arithmetic, CRC32 (A7d, 2026-09-27)
+
+Why: in the K3 guest runs every redis path stopped at `bti c` (0xd503245f) at
+function entries (~1.58M entry stops), and busybox/coreutils at `adc`.
+
+## Forms
+
+Added (exact XML names, `spec/arm64/subset.toml`):
+
+- `BTI.BTI_HB_hints` (targets none/c/j/jc). The diagram fixes CRm = 0100 and
+  op2<0> = 0, so only the four BTI words match; every other HINT-space word
+  (PACIASP/AUTIASP/PACIBSP/AUTIBSP/XPACLRI, YIELD, WFE, SEV, CSDB, CHKFEAT, the
+  odd op2 values next to BTI) stays undecodable (unit test over all 128 hint
+  immediates; mutation class "insert non-subset hint / PAC (A7d)").
+- `ADC.ADC_{32,64}_addsub_carry`, `ADCS.ADCS_{32,64}_addsub_carry`,
+  `SBC.SBC_{32,64}_addsub_carry`, `SBCS.SBCS_{32,64}_addsub_carry` (NGC/NGCS are
+  SBC/SBCS with Rn = 31).
+- `SMSUBL.SMSUBL_64WA_dp_3src`, `UMSUBL.UMSUBL_64WA_dp_3src` (SMNEGL/UMNEGL:
+  Ra = 31).
+- `CRC32.CRC32{B,H,W}_32C_dp_2src`, `CRC32.CRC32X_64C_dp_2src`,
+  `CRC32C.CRC32C{B,H,W}_32C_dp_2src`, `CRC32C.CRC32CX_64C_dp_2src`. Generated
+  without specgen work beyond the width fix below; their `sf`/`sz` UNDEFINED
+  combinations are fixed by each form's diagram.
+- `is_decode_undefined`: no new value rule. BTI without FEAT_BTI is
+  `Decode_NOP`; CRC32's remaining UNDEFINED case is a missing FEAT_CRC32, a
+  CPU property the module checks at init (see "K2 contract", Preconditions).
+
+## BTI is rephrased to NOP
+
+- Executed in sequence, BTI is a NOP. Its only effect is the landing-pad check
+  of an indirect branch into a guarded page (PSTATE.BTYPE). A fragment is never
+  one: entries come from the runtime through the prologue's `br x12` with
+  kernel BTI off (K1), and a `Blr`/`Br` exit does not carry BTYPE (see "K3",
+  BTI limitation). So a `NOP` is exact for every correct program; a native BTI
+  fault on broken control flow is missed, as before.
+- One `NOP` (user-synthetic, like PRFM's) keeps the original PC mapped to
+  fragment code, so a BTI can be an entry, a branch target and a back-edge
+  target.
+- No BTI reaches EL1: the verifier classifies BTI as `UserOnly`
+  (`UserOnlyForm`), so the allowlisted HINT space stays exactly NOP. Mutation
+  class "insert BTI (A7d)".
+- Harness interpreter: NOP (the original runs it in sequence).
+
+## Carry arithmetic
+
+- Pure ALU (`Form::Alu`): no memory, control-flow or system effect. They read
+  NZCV.C; ADCS/SBCS write NZCV. Generated metadata now says `FlagsRead` for
+  exactly these 8 forms (see "Flags metadata"); nothing consumes it.
+- Correct only because the fragment keeps NZCV intact between user
+  instructions: nothing the translator emits sets flags (reg-virt fills/spills
+  are LDR/STR, the SP and alignment checks AND/ADD/CBNZ, the budget check
+  LDR/SUB/STR/CBZ, exit payloads MOVZ/MOVK/ORR); the budget-check unit test
+  pins it for that sequence, and the kernel trampoline loads/stores user NZCV
+  around every fragment call (K2). `adc_chain.s` carries C across an SVC exit
+  and resume, and across stack-backed fills.
+- Interpreter: `AddWithCarry(Rn, Rm or NOT(Rm), PSTATE.C)` on the operand
+  width, flags only for the S forms.
+
+## SMSUBL/UMSUBL, CRC32
+
+- `Form::Alu`. Interpreter: `Ra - sext/zext(Wn) * sext/zext(Wm)`; CRC as the
+  bit-reflected update of the pseudocode's `Poly32Mod2` (polynomials
+  0x04C11DB7 / 0x1EDC6F41, LSB first, no pre/post inversion), checked against
+  the standard "123456789" check values and on hardware.
+
+## specgen changes
+
+- `FlagsRead` inference (above). Only the 8 carry forms gain it.
+- A register role derived from the execute pseudocode takes its width from the
+  field's assembler operand when there is one, and an operand's own `<W..>`/
+  `<X..>` wins over the form's `datatype`: CRC32X/CRC32CX are `datatype = 64`
+  forms with `<Wd>, <Wn>, <Xm>`. Effect on existing forms: SMADDL/UMADDL lose
+  their spurious 64-bit read roles of `Wn`/`Wm` (decoded widths unchanged);
+  nothing else changes (checked by regenerating). Widths only matter to
+  reg-virt as known vs `Unknown`; the decoded width drives the pretty-printer.
+
+## Tests
+
+- `tests/arm64/bti_entry.s`: `bti c` entries, a `bti j` loop head reached by
+  the budgeted back-edge, `bti` mid-block, `bti jc`, calls out through
+  `bl`/`blr`/`br`, callees translated at their own `bti c`/`bti j`/`bti jc`
+  entries; `paciasp` as an entry word and `autiasp` before `ret` still exit
+  `Unsupported`.
+- `tests/arm64/adc_chain.s`: 128-bit counter with an SVC between ADDS and ADC,
+  192-bit add/subtract with carry/borrow-dependent branches, 128-bit
+  signed/unsigned compare (`cmp; sbcs xzr`), 32-bit forms, NGC/NGCS, stack-backed
+  operands, SMSUBL/UMSUBL/SMNEGL/UMNEGL and every CRC32 form.
+- Unit tests: hint space, new-form decode and CRC32 `sf`/`sz` UNDEFINED words,
+  carry boundaries, 128-bit chains, CRC check values, verifier `UserOnlyForm`
+  for every BTI target.
+
+## Not verified
+
+- The kernel module build and the new FEAT_CRC32 check (no kernel build tree in
+  this environment); guest coverage (redis, busybox) after A7d.
+- BTYPE is still not modelled (unchanged limitation).

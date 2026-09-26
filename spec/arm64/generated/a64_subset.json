@@ -13579,18 +13579,8 @@
           },
           {
             "kind": "RegRead",
-            "field": "Rm",
-            "width": "X64"
-          },
-          {
-            "kind": "RegRead",
             "field": "Rn",
             "width": "W32"
-          },
-          {
-            "kind": "RegRead",
-            "field": "Rn",
-            "width": "X64"
           },
           {
             "kind": "RegWrite",
@@ -13739,18 +13729,8 @@
           },
           {
             "kind": "RegRead",
-            "field": "Rm",
-            "width": "X64"
-          },
-          {
-            "kind": "RegRead",
             "field": "Rn",
             "width": "W32"
-          },
-          {
-            "kind": "RegRead",
-            "field": "Rn",
-            "width": "X64"
           },
           {
             "kind": "RegWrite",
@@ -13759,6 +13739,306 @@
           }
         ],
         "asm": "UMADDL <Xd> , <Wn> , <Wm> , <Xa>"
+      }
+    ]
+  },
+  {
+    "source_file": "smsubl.xml",
+    "section_id": "SMSUBL",
+    "heading": "SMSUBL",
+    "title": "SMSUBL -- A64",
+    "docvars": {
+      "datatype": "64",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "SMSUBL"
+    },
+    "variants": [
+      {
+        "section_id": "SMSUBL",
+        "heading": "SMSUBL",
+        "title": "SMSUBL -- A64",
+        "iclass": "64-bit",
+        "encoding_name": "SMSUBL_64WA_dp_3src",
+        "encoding_label": "",
+        "mnemonic": "SMSUBL",
+        "docvars": {
+          "datatype": "64",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "SMSUBL"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__5",
+            "hover": "Is the 32-bit name of the first general-purpose source register holding the multiplicand, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__6",
+            "hover": "Is the 32-bit name of the second general-purpose source register holding the multiplier, encoded in the \"Rm\" field."
+          },
+          {
+            "text": "<Xa>",
+            "link": "XaOrXZR__2",
+            "hover": "Is the 64-bit name of the third general-purpose source register holding the minuend, encoded in the \"Ra\" field."
+          }
+        ],
+        "mask": "0xffe08000",
+        "value": "0x9b208000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "op54",
+            "hi": 30,
+            "lo": 29,
+            "width": 2,
+            "shift": 29,
+            "mask": "0x60000000",
+            "variable": false
+          },
+          {
+            "name": "U",
+            "hi": 23,
+            "lo": 23,
+            "width": 1,
+            "shift": 23,
+            "mask": "0x00800000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "o0",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "Ra",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Ra",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
+        "asm": "SMSUBL <Xd> , <Wn> , <Wm> , <Xa>"
+      }
+    ]
+  },
+  {
+    "source_file": "umsubl.xml",
+    "section_id": "UMSUBL",
+    "heading": "UMSUBL",
+    "title": "UMSUBL -- A64",
+    "docvars": {
+      "datatype": "64",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "UMSUBL"
+    },
+    "variants": [
+      {
+        "section_id": "UMSUBL",
+        "heading": "UMSUBL",
+        "title": "UMSUBL -- A64",
+        "iclass": "64-bit",
+        "encoding_name": "UMSUBL_64WA_dp_3src",
+        "encoding_label": "",
+        "mnemonic": "UMSUBL",
+        "docvars": {
+          "datatype": "64",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "UMSUBL"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__5",
+            "hover": "Is the 32-bit name of the first general-purpose source register holding the multiplicand, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__6",
+            "hover": "Is the 32-bit name of the second general-purpose source register holding the multiplier, encoded in the \"Rm\" field."
+          },
+          {
+            "text": "<Xa>",
+            "link": "XaOrXZR__2",
+            "hover": "Is the 64-bit name of the third general-purpose source register holding the minuend, encoded in the \"Ra\" field."
+          }
+        ],
+        "mask": "0xffe08000",
+        "value": "0x9ba08000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "op54",
+            "hi": 30,
+            "lo": 29,
+            "width": 2,
+            "shift": 29,
+            "mask": "0x60000000",
+            "variable": false
+          },
+          {
+            "name": "U",
+            "hi": 23,
+            "lo": 23,
+            "width": 1,
+            "shift": 23,
+            "mask": "0x00800000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "o0",
+            "hi": 15,
+            "lo": 15,
+            "width": 1,
+            "shift": 15,
+            "mask": "0x00008000",
+            "variable": false
+          },
+          {
+            "name": "Ra",
+            "hi": 14,
+            "lo": 10,
+            "width": 5,
+            "shift": 10,
+            "mask": "0x00007c00",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Ra",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
+        "asm": "UMSUBL <Xd> , <Wn> , <Wm> , <Xa>"
       }
     ]
   },
@@ -14039,6 +14319,1964 @@
           }
         ],
         "asm": "UMULH <Xd> , <Xn> , <Xm>"
+      }
+    ]
+  },
+  {
+    "source_file": "adc.xml",
+    "section_id": "ADC",
+    "heading": "ADC",
+    "title": "ADC -- A64",
+    "docvars": {
+      "cond-setting": "no-s",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "ADC"
+    },
+    "variants": [
+      {
+        "section_id": "ADC",
+        "heading": "ADC",
+        "title": "ADC -- A64",
+        "iclass": "Not setting the condition flags",
+        "encoding_name": "ADC_32_addsub_carry",
+        "encoding_label": "32-bit",
+        "mnemonic": "ADC",
+        "docvars": {
+          "cond-setting": "no-s",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "ADC",
+          "datatype": "32"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR",
+            "hover": "Is the 32-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__3",
+            "hover": "Is the 32-bit name of the first general-purpose source register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__2",
+            "hover": "Is the 32-bit name of the second general-purpose source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x1a000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "FlagsRead",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "ADC <Wd> , <Wn> , <Wm>"
+      },
+      {
+        "section_id": "ADC",
+        "heading": "ADC",
+        "title": "ADC -- A64",
+        "iclass": "Not setting the condition flags",
+        "encoding_name": "ADC_64_addsub_carry",
+        "encoding_label": "64-bit",
+        "mnemonic": "ADC",
+        "docvars": {
+          "cond-setting": "no-s",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "ADC",
+          "datatype": "64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Xn>",
+            "link": "XnOrXZR__12",
+            "hover": "Is the 64-bit name of the first general-purpose source register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Xm>",
+            "link": "XmOrXZR__4",
+            "hover": "Is the 64-bit name of the second general-purpose source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x9a000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "FlagsRead",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
+        "asm": "ADC <Xd> , <Xn> , <Xm>"
+      }
+    ]
+  },
+  {
+    "source_file": "adcs.xml",
+    "section_id": "ADCS",
+    "heading": "ADCS",
+    "title": "ADCS -- A64",
+    "docvars": {
+      "cond-setting": "S",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "ADCS"
+    },
+    "variants": [
+      {
+        "section_id": "ADCS",
+        "heading": "ADCS",
+        "title": "ADCS -- A64",
+        "iclass": "Setting the condition flags",
+        "encoding_name": "ADCS_32_addsub_carry",
+        "encoding_label": "32-bit",
+        "mnemonic": "ADCS",
+        "docvars": {
+          "cond-setting": "S",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "ADCS",
+          "datatype": "32"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR",
+            "hover": "Is the 32-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__3",
+            "hover": "Is the 32-bit name of the first general-purpose source register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__2",
+            "hover": "Is the 32-bit name of the second general-purpose source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x3a000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "FlagsRead",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "FlagsWrite",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "ADCS <Wd> , <Wn> , <Wm>"
+      },
+      {
+        "section_id": "ADCS",
+        "heading": "ADCS",
+        "title": "ADCS -- A64",
+        "iclass": "Setting the condition flags",
+        "encoding_name": "ADCS_64_addsub_carry",
+        "encoding_label": "64-bit",
+        "mnemonic": "ADCS",
+        "docvars": {
+          "cond-setting": "S",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "ADCS",
+          "datatype": "64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Xn>",
+            "link": "XnOrXZR__12",
+            "hover": "Is the 64-bit name of the first general-purpose source register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Xm>",
+            "link": "XmOrXZR__4",
+            "hover": "Is the 64-bit name of the second general-purpose source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0xba000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "FlagsRead",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "FlagsWrite",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
+        "asm": "ADCS <Xd> , <Xn> , <Xm>"
+      }
+    ]
+  },
+  {
+    "source_file": "sbc.xml",
+    "section_id": "SBC",
+    "heading": "SBC",
+    "title": "SBC -- A64",
+    "docvars": {
+      "cond-setting": "no-s",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "SBC"
+    },
+    "variants": [
+      {
+        "section_id": "SBC",
+        "heading": "SBC",
+        "title": "SBC -- A64",
+        "iclass": "Not setting the condition flags",
+        "encoding_name": "SBC_32_addsub_carry",
+        "encoding_label": "32-bit",
+        "mnemonic": "SBC",
+        "docvars": {
+          "cond-setting": "no-s",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "SBC",
+          "datatype": "32"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR",
+            "hover": "Is the 32-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__3",
+            "hover": "Is the 32-bit name of the first general-purpose source register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__2",
+            "hover": "Is the 32-bit name of the second general-purpose source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x5a000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "FlagsRead",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "SBC <Wd> , <Wn> , <Wm>"
+      },
+      {
+        "section_id": "SBC",
+        "heading": "SBC",
+        "title": "SBC -- A64",
+        "iclass": "Not setting the condition flags",
+        "encoding_name": "SBC_64_addsub_carry",
+        "encoding_label": "64-bit",
+        "mnemonic": "SBC",
+        "docvars": {
+          "cond-setting": "no-s",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "SBC",
+          "datatype": "64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Xn>",
+            "link": "XnOrXZR__12",
+            "hover": "Is the 64-bit name of the first general-purpose source register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Xm>",
+            "link": "XmOrXZR__4",
+            "hover": "Is the 64-bit name of the second general-purpose source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0xda000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "FlagsRead",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
+        "asm": "SBC <Xd> , <Xn> , <Xm>"
+      }
+    ]
+  },
+  {
+    "source_file": "sbcs.xml",
+    "section_id": "SBCS",
+    "heading": "SBCS",
+    "title": "SBCS -- A64",
+    "docvars": {
+      "cond-setting": "S",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "SBCS"
+    },
+    "variants": [
+      {
+        "section_id": "SBCS",
+        "heading": "SBCS",
+        "title": "SBCS -- A64",
+        "iclass": "Setting the condition flags",
+        "encoding_name": "SBCS_32_addsub_carry",
+        "encoding_label": "32-bit",
+        "mnemonic": "SBCS",
+        "docvars": {
+          "cond-setting": "S",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "SBCS",
+          "datatype": "32"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR",
+            "hover": "Is the 32-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__3",
+            "hover": "Is the 32-bit name of the first general-purpose source register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__2",
+            "hover": "Is the 32-bit name of the second general-purpose source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x7a000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "FlagsRead",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "FlagsWrite",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "SBCS <Wd> , <Wn> , <Wm>"
+      },
+      {
+        "section_id": "SBCS",
+        "heading": "SBCS",
+        "title": "SBCS -- A64",
+        "iclass": "Setting the condition flags",
+        "encoding_name": "SBCS_64_addsub_carry",
+        "encoding_label": "64-bit",
+        "mnemonic": "SBCS",
+        "docvars": {
+          "cond-setting": "S",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "SBCS",
+          "datatype": "64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xd>",
+            "link": "XdOrXZR__6",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Xn>",
+            "link": "XnOrXZR__12",
+            "hover": "Is the 64-bit name of the first general-purpose source register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Xm>",
+            "link": "XmOrXZR__4",
+            "hover": "Is the 64-bit name of the second general-purpose source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0xfa000000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "op",
+            "hi": 30,
+            "lo": 30,
+            "width": 1,
+            "shift": 30,
+            "mask": "0x40000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "FlagsRead",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "FlagsWrite",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "X64"
+          }
+        ],
+        "asm": "SBCS <Xd> , <Xn> , <Xm>"
+      }
+    ]
+  },
+  {
+    "source_file": "crc32.xml",
+    "section_id": "CRC32",
+    "heading": "CRC32B, CRC32H, CRC32W, CRC32X",
+    "title": "CRC32B, CRC32H, CRC32W, CRC32X -- A64",
+    "docvars": {
+      "feature": "crc",
+      "instr-class": "general",
+      "isa": "A64"
+    },
+    "variants": [
+      {
+        "section_id": "CRC32",
+        "heading": "CRC32B, CRC32H, CRC32W, CRC32X",
+        "title": "CRC32B, CRC32H, CRC32W, CRC32X -- A64",
+        "iclass": "CRC",
+        "encoding_name": "CRC32B_32C_dp_2src",
+        "encoding_label": "CRC32B",
+        "mnemonic": "CRC32B",
+        "docvars": {
+          "feature": "crc",
+          "instr-class": "general",
+          "isa": "A64",
+          "datatype": "32",
+          "mnemonic": "CRC32B"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose accumulator output register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose accumulator input register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__5",
+            "hover": "Is the 32-bit name of the general-purpose data source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x1ac04000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "C",
+            "hi": 12,
+            "lo": 12,
+            "width": 1,
+            "shift": 12,
+            "mask": "0x00001000",
+            "variable": false
+          },
+          {
+            "name": "sz",
+            "hi": 11,
+            "lo": 10,
+            "width": 2,
+            "shift": 10,
+            "mask": "0x00000c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "CRC32B <Wd> , <Wn> , <Wm>"
+      },
+      {
+        "section_id": "CRC32",
+        "heading": "CRC32B, CRC32H, CRC32W, CRC32X",
+        "title": "CRC32B, CRC32H, CRC32W, CRC32X -- A64",
+        "iclass": "CRC",
+        "encoding_name": "CRC32H_32C_dp_2src",
+        "encoding_label": "CRC32H",
+        "mnemonic": "CRC32H",
+        "docvars": {
+          "feature": "crc",
+          "instr-class": "general",
+          "isa": "A64",
+          "datatype": "32",
+          "mnemonic": "CRC32H"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose accumulator output register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose accumulator input register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__5",
+            "hover": "Is the 32-bit name of the general-purpose data source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x1ac04400",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "C",
+            "hi": 12,
+            "lo": 12,
+            "width": 1,
+            "shift": 12,
+            "mask": "0x00001000",
+            "variable": false
+          },
+          {
+            "name": "sz",
+            "hi": 11,
+            "lo": 10,
+            "width": 2,
+            "shift": 10,
+            "mask": "0x00000c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "CRC32H <Wd> , <Wn> , <Wm>"
+      },
+      {
+        "section_id": "CRC32",
+        "heading": "CRC32B, CRC32H, CRC32W, CRC32X",
+        "title": "CRC32B, CRC32H, CRC32W, CRC32X -- A64",
+        "iclass": "CRC",
+        "encoding_name": "CRC32W_32C_dp_2src",
+        "encoding_label": "CRC32W",
+        "mnemonic": "CRC32W",
+        "docvars": {
+          "feature": "crc",
+          "instr-class": "general",
+          "isa": "A64",
+          "datatype": "32",
+          "mnemonic": "CRC32W"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose accumulator output register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose accumulator input register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__5",
+            "hover": "Is the 32-bit name of the general-purpose data source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x1ac04800",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "C",
+            "hi": 12,
+            "lo": 12,
+            "width": 1,
+            "shift": 12,
+            "mask": "0x00001000",
+            "variable": false
+          },
+          {
+            "name": "sz",
+            "hi": 11,
+            "lo": 10,
+            "width": 2,
+            "shift": 10,
+            "mask": "0x00000c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "CRC32W <Wd> , <Wn> , <Wm>"
+      },
+      {
+        "section_id": "CRC32",
+        "heading": "CRC32B, CRC32H, CRC32W, CRC32X",
+        "title": "CRC32B, CRC32H, CRC32W, CRC32X -- A64",
+        "iclass": "CRC",
+        "encoding_name": "CRC32X_64C_dp_2src",
+        "encoding_label": "CRC32X",
+        "mnemonic": "CRC32X",
+        "docvars": {
+          "feature": "crc",
+          "instr-class": "general",
+          "isa": "A64",
+          "datatype": "64",
+          "mnemonic": "CRC32X"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose accumulator output register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose accumulator input register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Xm>",
+            "link": "XmOrXZR__8",
+            "hover": "Is the 64-bit name of the general-purpose data source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x9ac04c00",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "C",
+            "hi": 12,
+            "lo": 12,
+            "width": 1,
+            "shift": 12,
+            "mask": "0x00001000",
+            "variable": false
+          },
+          {
+            "name": "sz",
+            "hi": 11,
+            "lo": 10,
+            "width": 2,
+            "shift": 10,
+            "mask": "0x00000c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "CRC32X <Wd> , <Wn> , <Xm>"
+      }
+    ]
+  },
+  {
+    "source_file": "crc32c.xml",
+    "section_id": "CRC32C",
+    "heading": "CRC32CB, CRC32CH, CRC32CW, CRC32CX",
+    "title": "CRC32CB, CRC32CH, CRC32CW, CRC32CX -- A64",
+    "docvars": {
+      "feature": "crc",
+      "instr-class": "general",
+      "isa": "A64"
+    },
+    "variants": [
+      {
+        "section_id": "CRC32C",
+        "heading": "CRC32CB, CRC32CH, CRC32CW, CRC32CX",
+        "title": "CRC32CB, CRC32CH, CRC32CW, CRC32CX -- A64",
+        "iclass": "CRC",
+        "encoding_name": "CRC32CB_32C_dp_2src",
+        "encoding_label": "CRC32CB",
+        "mnemonic": "CRC32CB",
+        "docvars": {
+          "feature": "crc",
+          "instr-class": "general",
+          "isa": "A64",
+          "datatype": "32",
+          "mnemonic": "CRC32CB"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose accumulator output register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose accumulator input register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__5",
+            "hover": "Is the 32-bit name of the general-purpose data source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x1ac05000",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "C",
+            "hi": 12,
+            "lo": 12,
+            "width": 1,
+            "shift": 12,
+            "mask": "0x00001000",
+            "variable": false
+          },
+          {
+            "name": "sz",
+            "hi": 11,
+            "lo": 10,
+            "width": 2,
+            "shift": 10,
+            "mask": "0x00000c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "CRC32CB <Wd> , <Wn> , <Wm>"
+      },
+      {
+        "section_id": "CRC32C",
+        "heading": "CRC32CB, CRC32CH, CRC32CW, CRC32CX",
+        "title": "CRC32CB, CRC32CH, CRC32CW, CRC32CX -- A64",
+        "iclass": "CRC",
+        "encoding_name": "CRC32CH_32C_dp_2src",
+        "encoding_label": "CRC32CH",
+        "mnemonic": "CRC32CH",
+        "docvars": {
+          "feature": "crc",
+          "instr-class": "general",
+          "isa": "A64",
+          "datatype": "32",
+          "mnemonic": "CRC32CH"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose accumulator output register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose accumulator input register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__5",
+            "hover": "Is the 32-bit name of the general-purpose data source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x1ac05400",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "C",
+            "hi": 12,
+            "lo": 12,
+            "width": 1,
+            "shift": 12,
+            "mask": "0x00001000",
+            "variable": false
+          },
+          {
+            "name": "sz",
+            "hi": 11,
+            "lo": 10,
+            "width": 2,
+            "shift": 10,
+            "mask": "0x00000c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "CRC32CH <Wd> , <Wn> , <Wm>"
+      },
+      {
+        "section_id": "CRC32C",
+        "heading": "CRC32CB, CRC32CH, CRC32CW, CRC32CX",
+        "title": "CRC32CB, CRC32CH, CRC32CW, CRC32CX -- A64",
+        "iclass": "CRC",
+        "encoding_name": "CRC32CW_32C_dp_2src",
+        "encoding_label": "CRC32CW",
+        "mnemonic": "CRC32CW",
+        "docvars": {
+          "feature": "crc",
+          "instr-class": "general",
+          "isa": "A64",
+          "datatype": "32",
+          "mnemonic": "CRC32CW"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose accumulator output register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose accumulator input register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Wm>",
+            "link": "WmOrWZR__5",
+            "hover": "Is the 32-bit name of the general-purpose data source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x1ac05800",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "C",
+            "hi": 12,
+            "lo": 12,
+            "width": 1,
+            "shift": 12,
+            "mask": "0x00001000",
+            "variable": false
+          },
+          {
+            "name": "sz",
+            "hi": 11,
+            "lo": 10,
+            "width": 2,
+            "shift": 10,
+            "mask": "0x00000c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "W32"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "CRC32CW <Wd> , <Wn> , <Wm>"
+      },
+      {
+        "section_id": "CRC32C",
+        "heading": "CRC32CB, CRC32CH, CRC32CW, CRC32CX",
+        "title": "CRC32CB, CRC32CH, CRC32CW, CRC32CX -- A64",
+        "iclass": "CRC",
+        "encoding_name": "CRC32CX_64C_dp_2src",
+        "encoding_label": "CRC32CX",
+        "mnemonic": "CRC32CX",
+        "docvars": {
+          "feature": "crc",
+          "instr-class": "general",
+          "isa": "A64",
+          "datatype": "64",
+          "mnemonic": "CRC32CX"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wd>",
+            "link": "WdOrWZR__2",
+            "hover": "Is the 32-bit name of the general-purpose accumulator output register, encoded in the \"Rd\" field."
+          },
+          {
+            "text": "<Wn>",
+            "link": "WnOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose accumulator input register, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<Xm>",
+            "link": "XmOrXZR__8",
+            "hover": "Is the 64-bit name of the general-purpose data source register, encoded in the \"Rm\" field."
+          }
+        ],
+        "mask": "0xffe0fc00",
+        "value": "0x9ac05c00",
+        "fields": [
+          {
+            "name": "sf",
+            "hi": 31,
+            "lo": 31,
+            "width": 1,
+            "shift": 31,
+            "mask": "0x80000000",
+            "variable": false
+          },
+          {
+            "name": "S",
+            "hi": 29,
+            "lo": 29,
+            "width": 1,
+            "shift": 29,
+            "mask": "0x20000000",
+            "variable": false
+          },
+          {
+            "name": "Rm",
+            "hi": 20,
+            "lo": 16,
+            "width": 5,
+            "shift": 16,
+            "mask": "0x001f0000",
+            "variable": true
+          },
+          {
+            "name": "C",
+            "hi": 12,
+            "lo": 12,
+            "width": 1,
+            "shift": 12,
+            "mask": "0x00001000",
+            "variable": false
+          },
+          {
+            "name": "sz",
+            "hi": 11,
+            "lo": 10,
+            "width": 2,
+            "shift": 10,
+            "mask": "0x00000c00",
+            "variable": false
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rd",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegRead",
+            "field": "Rm",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "W32"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rd",
+            "width": "W32"
+          }
+        ],
+        "asm": "CRC32CX <Wd> , <Wn> , <Xm>"
       }
     ]
   },
@@ -29211,6 +31449,64 @@
         ],
         "operand_roles": [],
         "asm": "NOP"
+      }
+    ]
+  },
+  {
+    "source_file": "bti.xml",
+    "section_id": "BTI",
+    "heading": "BTI",
+    "title": "BTI -- A64",
+    "docvars": {
+      "instr-class": "system",
+      "isa": "A64",
+      "mnemonic": "BTI"
+    },
+    "variants": [
+      {
+        "section_id": "BTI",
+        "heading": "BTI",
+        "title": "BTI -- A64",
+        "iclass": "System",
+        "encoding_name": "BTI_HB_hints",
+        "encoding_label": "",
+        "mnemonic": "BTI",
+        "docvars": {
+          "instr-class": "system",
+          "isa": "A64",
+          "mnemonic": "BTI"
+        },
+        "asm_operands": [
+          {
+            "text": "<targets>",
+            "link": "targets_option",
+            "hover": "Is the type of indirection, "
+          }
+        ],
+        "mask": "0xffffff3f",
+        "value": "0xd503241f",
+        "fields": [
+          {
+            "name": "CRm",
+            "hi": 11,
+            "lo": 8,
+            "width": 4,
+            "shift": 8,
+            "mask": "0x00000f00",
+            "variable": false
+          },
+          {
+            "name": "op2",
+            "hi": 7,
+            "lo": 5,
+            "width": 3,
+            "shift": 5,
+            "mask": "0x000000e0",
+            "variable": true
+          }
+        ],
+        "operand_roles": [],
+        "asm": "BTI  { <targets> }"
       }
     ]
   },

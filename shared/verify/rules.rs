@@ -34,11 +34,11 @@ pub(super) enum Form {
     UserAccess {
         mem: A64Mem,
     },
-    /// A user-code load/store/prefetch form the translator only ever lowers (to
-    /// `LDTR*`/`STTR*`, or a `NOP` for PRFM): never valid in a fragment, not even on
-    /// runtime memory, because it has no role there. Includes the acquire/release
-    /// forms (LDAR*, STLR*, LDAPR*): a privileged ordered access at EL1 would
-    /// bypass the EL0 permission check.
+    /// A user-code form the translator only ever lowers (loads/stores to
+    /// `LDTR*`/`STTR*`, PRFM and BTI to a `NOP`): never valid in a fragment, not
+    /// even on runtime memory, because it has no role there. Includes the
+    /// acquire/release forms (LDAR*, STLR*, LDAPR*): a privileged ordered access at
+    /// EL1 would bypass the EL0 permission check.
     UserOnly,
     /// Every other load/store: allowed only on the runtime frame or `pt_regs`.
     /// `bytes` is the whole contiguous footprint (16 for a 64-bit pair).
@@ -155,7 +155,9 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         | A64Insn::LdaprLdapr32lMemop { .. }
         | A64Insn::LdaprLdapr64lMemop { .. }
         | A64Insn::LdaprbLdaprb32lMemop { .. }
-        | A64Insn::LdaprhLdaprh32lMemop { .. } => Form::UserOnly,
+        | A64Insn::LdaprhLdaprh32lMemop { .. }
+        // BTI (A7d): rephrased to `NOP`, so the allowlisted hint space stays NOP.
+        | A64Insn::BtiBtiHbHints { .. } => Form::UserOnly,
 
         A64Insn::LdrImmGenLdr32LdstImmpost { mem, .. }
         | A64Insn::LdrImmGenLdr32LdstImmpre { mem, .. }
@@ -314,7 +316,26 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         | A64Insn::RevRev64Dp1src { .. }
         | A64Insn::Rev16IntRev1632Dp1src { .. }
         | A64Insn::Rev16IntRev1664Dp1src { .. }
-        | A64Insn::Rev32IntRev3264Dp1src { .. } => Form::Alu,
+        | A64Insn::Rev32IntRev3264Dp1src { .. }
+        // A7d: carry arithmetic (reads NZCV.C), multiply-subtract long, CRC32*.
+        | A64Insn::AdcAdc32AddsubCarry { .. }
+        | A64Insn::AdcAdc64AddsubCarry { .. }
+        | A64Insn::AdcsAdcs32AddsubCarry { .. }
+        | A64Insn::AdcsAdcs64AddsubCarry { .. }
+        | A64Insn::SbcSbc32AddsubCarry { .. }
+        | A64Insn::SbcSbc64AddsubCarry { .. }
+        | A64Insn::SbcsSbcs32AddsubCarry { .. }
+        | A64Insn::SbcsSbcs64AddsubCarry { .. }
+        | A64Insn::SmsublSmsubl64waDp3src { .. }
+        | A64Insn::UmsublUmsubl64waDp3src { .. }
+        | A64Insn::Crc32Crc32b32cDp2src { .. }
+        | A64Insn::Crc32Crc32h32cDp2src { .. }
+        | A64Insn::Crc32Crc32w32cDp2src { .. }
+        | A64Insn::Crc32Crc32x64cDp2src { .. }
+        | A64Insn::Crc32cCrc32cb32cDp2src { .. }
+        | A64Insn::Crc32cCrc32ch32cDp2src { .. }
+        | A64Insn::Crc32cCrc32cw32cDp2src { .. }
+        | A64Insn::Crc32cCrc32cx64cDp2src { .. } => Form::Alu,
     }
 }
 

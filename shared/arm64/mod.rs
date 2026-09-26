@@ -522,6 +522,32 @@ impl A64Insn {
             | Self::LdaprbLdaprb32lMemop { .. }
             | Self::LdaprhLdaprh32lMemop { .. }
             | Self::NopNopHiHints {}
+            // A7d. BTI: without FEAT_BTI its decode is `EndOfDecode(Decode_NOP)`,
+            // never UNDEFINED; every `op2` (targets none/c/j/jc) decodes (the diagram
+            // fixes CRm = 0100 and op2<0> = 0, so no other hint matches). ADC/ADCS/
+            // SBC/SBCS and SMSUBL/UMSUBL: no decode-time rule. CRC32*/CRC32C*: the
+            // `sf`/`sz` UNDEFINED combinations are fixed by each form's diagram; the
+            // remaining UNDEFINED case is a missing FEAT_CRC32, a CPU property
+            // (tmp/pipeline.md, A7d).
+            | Self::BtiBtiHbHints { .. }
+            | Self::AdcAdc32AddsubCarry { .. }
+            | Self::AdcAdc64AddsubCarry { .. }
+            | Self::AdcsAdcs32AddsubCarry { .. }
+            | Self::AdcsAdcs64AddsubCarry { .. }
+            | Self::SbcSbc32AddsubCarry { .. }
+            | Self::SbcSbc64AddsubCarry { .. }
+            | Self::SbcsSbcs32AddsubCarry { .. }
+            | Self::SbcsSbcs64AddsubCarry { .. }
+            | Self::SmsublSmsubl64waDp3src { .. }
+            | Self::UmsublUmsubl64waDp3src { .. }
+            | Self::Crc32Crc32b32cDp2src { .. }
+            | Self::Crc32Crc32h32cDp2src { .. }
+            | Self::Crc32Crc32w32cDp2src { .. }
+            | Self::Crc32Crc32x64cDp2src { .. }
+            | Self::Crc32cCrc32cb32cDp2src { .. }
+            | Self::Crc32cCrc32ch32cDp2src { .. }
+            | Self::Crc32cCrc32cw32cDp2src { .. }
+            | Self::Crc32cCrc32cx64cDp2src { .. }
             | Self::BlBlOnlyBranchImm { .. }
             | Self::BrBr64BranchReg { .. }
             | Self::BlrBlr64BranchReg { .. }
@@ -761,6 +787,54 @@ mod tests {
         for (word, key) in words {
             let insn = decode_word(word, 0x40).unwrap_or_else(|_| panic!("{word:#010x}"));
             assert_eq!(insn.inner.key(), key, "{word:#010x}");
+        }
+    }
+
+    /// A7d: in the whole HINT space (`hint #0..#127`) exactly NOP and the four BTI
+    /// encodings decode. PACIASP/AUTIASP/XPACLRI and every other hint stay
+    /// undecodable: pointer authentication must not run at EL1 with the kernel's
+    /// keys (K1), so they take the Unsupported exit and run in userspace.
+    #[test]
+    fn hint_space_decodes_only_nop_and_bti() {
+        for imm in 0..128_u32 {
+            let word = 0xd503_201f | (imm << 5);
+            let key = decode_word(word, 0).ok().map(|insn| insn.inner.key());
+            let expected = match imm {
+                0 => Some("NOP.NOP_HI_hints"),
+                0x20 | 0x22 | 0x24 | 0x26 => Some("BTI.BTI_HB_hints"),
+                _ => None,
+            };
+            assert_eq!(key, expected, "hint #{imm:#x} ({word:#010x})");
+        }
+    }
+
+    /// A7d: carry arithmetic, multiply-subtract long and CRC32 decode as
+    /// themselves (words from llvm-mc); CRC32's `sf`/`sz` UNDEFINED combinations
+    /// do not decode.
+    #[test]
+    fn carry_msubl_and_crc32_forms_decode() {
+        let words: [(u32, &str); 13] = [
+            (0x1a02_0020, "ADC.ADC_32_addsub_carry"),
+            (0x9a02_0020, "ADC.ADC_64_addsub_carry"),
+            (0xba05_0083, "ADCS.ADCS_64_addsub_carry"),
+            (0x5a02_0020, "SBC.SBC_32_addsub_carry"),
+            (0xda01_03e0, "SBC.SBC_64_addsub_carry"),
+            (0x7a04_03e3, "SBCS.SBCS_32_addsub_carry"),
+            (0xfa02_0020, "SBCS.SBCS_64_addsub_carry"),
+            (0x9b22_8c20, "SMSUBL.SMSUBL_64WA_dp_3src"),
+            (0x9ba2_fc20, "UMSUBL.UMSUBL_64WA_dp_3src"),
+            (0x1ac2_4020, "CRC32.CRC32B_32C_dp_2src"),
+            (0x9ac2_4c20, "CRC32.CRC32X_64C_dp_2src"),
+            (0x1ac2_5420, "CRC32C.CRC32CH_32C_dp_2src"),
+            (0x9ac2_5c20, "CRC32C.CRC32CX_64C_dp_2src"),
+        ];
+        for (word, key) in words {
+            let insn = decode_word(word, 0x40).unwrap_or_else(|_| panic!("{word:#010x}"));
+            assert_eq!(insn.inner.key(), key, "{word:#010x}");
+        }
+        // sf = 1 with sz != 11, sf = 0 with sz == 11 (CRC32 and CRC32C).
+        for word in [0x9ac2_4020_u32, 0x9ac2_5820, 0x1ac2_4c20, 0x1ac2_5c20] {
+            assert!(decode_word(word, 0).is_err(), "{word:#010x}");
         }
     }
 }

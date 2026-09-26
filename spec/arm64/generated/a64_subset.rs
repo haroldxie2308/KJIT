@@ -860,12 +860,104 @@ pub enum A64Insn {
         rn: A64Reg,
         rd: A64Reg,
     },
+    SmsublSmsubl64waDp3src {
+        rm: A64Reg,
+        ra: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    UmsublUmsubl64waDp3src {
+        rm: A64Reg,
+        ra: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
     SmulhSmulh64Dp3src {
         rm: A64Reg,
         rn: A64Reg,
         rd: A64Reg,
     },
     UmulhUmulh64Dp3src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AdcAdc32AddsubCarry {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AdcAdc64AddsubCarry {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AdcsAdcs32AddsubCarry {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AdcsAdcs64AddsubCarry {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SbcSbc32AddsubCarry {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SbcSbc64AddsubCarry {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SbcsSbcs32AddsubCarry {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SbcsSbcs64AddsubCarry {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Crc32Crc32b32cDp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Crc32Crc32h32cDp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Crc32Crc32w32cDp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Crc32Crc32x64cDp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Crc32cCrc32cb32cDp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Crc32cCrc32ch32cDp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Crc32cCrc32cw32cDp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Crc32cCrc32cx64cDp2src {
         rm: A64Reg,
         rn: A64Reg,
         rd: A64Reg,
@@ -1401,6 +1493,9 @@ pub enum A64Insn {
     },
     NopNopHiHints {
     },
+    BtiBtiHbHints {
+        op2: u8,
+    },
     DmbDmbBoBarriers {
         crm: u8,
     },
@@ -1644,8 +1739,26 @@ impl A64Insn {
             Self::MsubMsub64aDp3src { .. } => "MSUB.MSUB_64A_dp_3src",
             Self::SmaddlSmaddl64waDp3src { .. } => "SMADDL.SMADDL_64WA_dp_3src",
             Self::UmaddlUmaddl64waDp3src { .. } => "UMADDL.UMADDL_64WA_dp_3src",
+            Self::SmsublSmsubl64waDp3src { .. } => "SMSUBL.SMSUBL_64WA_dp_3src",
+            Self::UmsublUmsubl64waDp3src { .. } => "UMSUBL.UMSUBL_64WA_dp_3src",
             Self::SmulhSmulh64Dp3src { .. } => "SMULH.SMULH_64_dp_3src",
             Self::UmulhUmulh64Dp3src { .. } => "UMULH.UMULH_64_dp_3src",
+            Self::AdcAdc32AddsubCarry { .. } => "ADC.ADC_32_addsub_carry",
+            Self::AdcAdc64AddsubCarry { .. } => "ADC.ADC_64_addsub_carry",
+            Self::AdcsAdcs32AddsubCarry { .. } => "ADCS.ADCS_32_addsub_carry",
+            Self::AdcsAdcs64AddsubCarry { .. } => "ADCS.ADCS_64_addsub_carry",
+            Self::SbcSbc32AddsubCarry { .. } => "SBC.SBC_32_addsub_carry",
+            Self::SbcSbc64AddsubCarry { .. } => "SBC.SBC_64_addsub_carry",
+            Self::SbcsSbcs32AddsubCarry { .. } => "SBCS.SBCS_32_addsub_carry",
+            Self::SbcsSbcs64AddsubCarry { .. } => "SBCS.SBCS_64_addsub_carry",
+            Self::Crc32Crc32b32cDp2src { .. } => "CRC32.CRC32B_32C_dp_2src",
+            Self::Crc32Crc32h32cDp2src { .. } => "CRC32.CRC32H_32C_dp_2src",
+            Self::Crc32Crc32w32cDp2src { .. } => "CRC32.CRC32W_32C_dp_2src",
+            Self::Crc32Crc32x64cDp2src { .. } => "CRC32.CRC32X_64C_dp_2src",
+            Self::Crc32cCrc32cb32cDp2src { .. } => "CRC32C.CRC32CB_32C_dp_2src",
+            Self::Crc32cCrc32ch32cDp2src { .. } => "CRC32C.CRC32CH_32C_dp_2src",
+            Self::Crc32cCrc32cw32cDp2src { .. } => "CRC32C.CRC32CW_32C_dp_2src",
+            Self::Crc32cCrc32cx64cDp2src { .. } => "CRC32C.CRC32CX_64C_dp_2src",
             Self::ClzIntClz32Dp1src { .. } => "CLZ_int.CLZ_32_dp_1src",
             Self::ClzIntClz64Dp1src { .. } => "CLZ_int.CLZ_64_dp_1src",
             Self::RbitIntRbit32Dp1src { .. } => "RBIT_int.RBIT_32_dp_1src",
@@ -1762,6 +1875,7 @@ impl A64Insn {
             Self::LdtrshLdtrsh64LdstUnpriv { .. } => "LDTRSH.LDTRSH_64_ldst_unpriv",
             Self::LdtrswLdtrsw64LdstUnpriv { .. } => "LDTRSW.LDTRSW_64_ldst_unpriv",
             Self::NopNopHiHints { .. } => "NOP.NOP_HI_hints",
+            Self::BtiBtiHbHints { .. } => "BTI.BTI_HB_hints",
             Self::DmbDmbBoBarriers { .. } => "DMB.DMB_BO_barriers",
             Self::DsbDsbBoBarriers { .. } => "DSB.DSB_BO_barriers",
             Self::IsbIsbBiBarriers { .. } => "ISB.ISB_BI_barriers",
@@ -1891,8 +2005,26 @@ impl A64Insn {
             Self::MsubMsub64aDp3src { .. } => "MSUB",
             Self::SmaddlSmaddl64waDp3src { .. } => "SMADDL",
             Self::UmaddlUmaddl64waDp3src { .. } => "UMADDL",
+            Self::SmsublSmsubl64waDp3src { .. } => "SMSUBL",
+            Self::UmsublUmsubl64waDp3src { .. } => "UMSUBL",
             Self::SmulhSmulh64Dp3src { .. } => "SMULH",
             Self::UmulhUmulh64Dp3src { .. } => "UMULH",
+            Self::AdcAdc32AddsubCarry { .. } => "ADC",
+            Self::AdcAdc64AddsubCarry { .. } => "ADC",
+            Self::AdcsAdcs32AddsubCarry { .. } => "ADCS",
+            Self::AdcsAdcs64AddsubCarry { .. } => "ADCS",
+            Self::SbcSbc32AddsubCarry { .. } => "SBC",
+            Self::SbcSbc64AddsubCarry { .. } => "SBC",
+            Self::SbcsSbcs32AddsubCarry { .. } => "SBCS",
+            Self::SbcsSbcs64AddsubCarry { .. } => "SBCS",
+            Self::Crc32Crc32b32cDp2src { .. } => "CRC32B",
+            Self::Crc32Crc32h32cDp2src { .. } => "CRC32H",
+            Self::Crc32Crc32w32cDp2src { .. } => "CRC32W",
+            Self::Crc32Crc32x64cDp2src { .. } => "CRC32X",
+            Self::Crc32cCrc32cb32cDp2src { .. } => "CRC32CB",
+            Self::Crc32cCrc32ch32cDp2src { .. } => "CRC32CH",
+            Self::Crc32cCrc32cw32cDp2src { .. } => "CRC32CW",
+            Self::Crc32cCrc32cx64cDp2src { .. } => "CRC32CX",
             Self::ClzIntClz32Dp1src { .. } => "CLZ",
             Self::ClzIntClz64Dp1src { .. } => "CLZ",
             Self::RbitIntRbit32Dp1src { .. } => "RBIT",
@@ -2009,6 +2141,7 @@ impl A64Insn {
             Self::LdtrshLdtrsh64LdstUnpriv { .. } => "LDTRSH",
             Self::LdtrswLdtrsw64LdstUnpriv { .. } => "LDTRSW",
             Self::NopNopHiHints { .. } => "NOP",
+            Self::BtiBtiHbHints { .. } => "BTI",
             Self::DmbDmbBoBarriers { .. } => "DMB",
             Self::DsbDsbBoBarriers { .. } => "DSB",
             Self::IsbIsbBiBarriers { .. } => "ISB",
@@ -2138,8 +2271,26 @@ impl A64Insn {
             Self::MsubMsub64aDp3src { .. } => "MSUB <Xd> , <Xn> , <Xm> , <Xa>",
             Self::SmaddlSmaddl64waDp3src { .. } => "SMADDL <Xd> , <Wn> , <Wm> , <Xa>",
             Self::UmaddlUmaddl64waDp3src { .. } => "UMADDL <Xd> , <Wn> , <Wm> , <Xa>",
+            Self::SmsublSmsubl64waDp3src { .. } => "SMSUBL <Xd> , <Wn> , <Wm> , <Xa>",
+            Self::UmsublUmsubl64waDp3src { .. } => "UMSUBL <Xd> , <Wn> , <Wm> , <Xa>",
             Self::SmulhSmulh64Dp3src { .. } => "SMULH <Xd> , <Xn> , <Xm>",
             Self::UmulhUmulh64Dp3src { .. } => "UMULH <Xd> , <Xn> , <Xm>",
+            Self::AdcAdc32AddsubCarry { .. } => "ADC <Wd> , <Wn> , <Wm>",
+            Self::AdcAdc64AddsubCarry { .. } => "ADC <Xd> , <Xn> , <Xm>",
+            Self::AdcsAdcs32AddsubCarry { .. } => "ADCS <Wd> , <Wn> , <Wm>",
+            Self::AdcsAdcs64AddsubCarry { .. } => "ADCS <Xd> , <Xn> , <Xm>",
+            Self::SbcSbc32AddsubCarry { .. } => "SBC <Wd> , <Wn> , <Wm>",
+            Self::SbcSbc64AddsubCarry { .. } => "SBC <Xd> , <Xn> , <Xm>",
+            Self::SbcsSbcs32AddsubCarry { .. } => "SBCS <Wd> , <Wn> , <Wm>",
+            Self::SbcsSbcs64AddsubCarry { .. } => "SBCS <Xd> , <Xn> , <Xm>",
+            Self::Crc32Crc32b32cDp2src { .. } => "CRC32B <Wd> , <Wn> , <Wm>",
+            Self::Crc32Crc32h32cDp2src { .. } => "CRC32H <Wd> , <Wn> , <Wm>",
+            Self::Crc32Crc32w32cDp2src { .. } => "CRC32W <Wd> , <Wn> , <Wm>",
+            Self::Crc32Crc32x64cDp2src { .. } => "CRC32X <Wd> , <Wn> , <Xm>",
+            Self::Crc32cCrc32cb32cDp2src { .. } => "CRC32CB <Wd> , <Wn> , <Wm>",
+            Self::Crc32cCrc32ch32cDp2src { .. } => "CRC32CH <Wd> , <Wn> , <Wm>",
+            Self::Crc32cCrc32cw32cDp2src { .. } => "CRC32CW <Wd> , <Wn> , <Wm>",
+            Self::Crc32cCrc32cx64cDp2src { .. } => "CRC32CX <Wd> , <Wn> , <Xm>",
             Self::ClzIntClz32Dp1src { .. } => "CLZ <Wd> , <Wn>",
             Self::ClzIntClz64Dp1src { .. } => "CLZ <Xd> , <Xn>",
             Self::RbitIntRbit32Dp1src { .. } => "RBIT <Wd> , <Wn>",
@@ -2256,6 +2407,7 @@ impl A64Insn {
             Self::LdtrshLdtrsh64LdstUnpriv { .. } => "LDTRSH <Xt> , [ <Xn|SP> {, # <simm> }]",
             Self::LdtrswLdtrsw64LdstUnpriv { .. } => "LDTRSW <Xt> , [ <Xn|SP> {, # <simm> }]",
             Self::NopNopHiHints { .. } => "NOP",
+            Self::BtiBtiHbHints { .. } => "BTI  { <targets> }",
             Self::DmbDmbBoBarriers { .. } => "DMB  ( <option> |# <imm> )",
             Self::DsbDsbBoBarriers { .. } => "DSB  ( <option> |# <imm> )",
             Self::IsbIsbBiBarriers { .. } => "ISB  { <option> |# <imm> }",
@@ -3120,6 +3272,22 @@ impl A64Insn {
                 word |= encode_a64_field("UMADDL.UMADDL_64WA_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
+            Self::SmsublSmsubl64waDp3src { rm, ra, rn, rd } => {
+                let mut word = 0x9b208000;
+                word |= encode_a64_field("SMSUBL.SMSUBL_64WA_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SMSUBL.SMSUBL_64WA_dp_3src", "Ra", ra.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("SMSUBL.SMSUBL_64WA_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SMSUBL.SMSUBL_64WA_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UmsublUmsubl64waDp3src { rm, ra, rn, rd } => {
+                let mut word = 0x9ba08000;
+                word |= encode_a64_field("UMSUBL.UMSUBL_64WA_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("UMSUBL.UMSUBL_64WA_dp_3src", "Ra", ra.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("UMSUBL.UMSUBL_64WA_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UMSUBL.UMSUBL_64WA_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
             Self::SmulhSmulh64Dp3src { rm, rn, rd } => {
                 let mut word = 0x9b407c00;
                 word |= encode_a64_field("SMULH.SMULH_64_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
@@ -3132,6 +3300,118 @@ impl A64Insn {
                 word |= encode_a64_field("UMULH.UMULH_64_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
                 word |= encode_a64_field("UMULH.UMULH_64_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
                 word |= encode_a64_field("UMULH.UMULH_64_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AdcAdc32AddsubCarry { rm, rn, rd } => {
+                let mut word = 0x1a000000;
+                word |= encode_a64_field("ADC.ADC_32_addsub_carry", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADC.ADC_32_addsub_carry", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADC.ADC_32_addsub_carry", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AdcAdc64AddsubCarry { rm, rn, rd } => {
+                let mut word = 0x9a000000;
+                word |= encode_a64_field("ADC.ADC_64_addsub_carry", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADC.ADC_64_addsub_carry", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADC.ADC_64_addsub_carry", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AdcsAdcs32AddsubCarry { rm, rn, rd } => {
+                let mut word = 0x3a000000;
+                word |= encode_a64_field("ADCS.ADCS_32_addsub_carry", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADCS.ADCS_32_addsub_carry", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADCS.ADCS_32_addsub_carry", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AdcsAdcs64AddsubCarry { rm, rn, rd } => {
+                let mut word = 0xba000000;
+                word |= encode_a64_field("ADCS.ADCS_64_addsub_carry", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADCS.ADCS_64_addsub_carry", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADCS.ADCS_64_addsub_carry", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SbcSbc32AddsubCarry { rm, rn, rd } => {
+                let mut word = 0x5a000000;
+                word |= encode_a64_field("SBC.SBC_32_addsub_carry", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SBC.SBC_32_addsub_carry", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SBC.SBC_32_addsub_carry", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SbcSbc64AddsubCarry { rm, rn, rd } => {
+                let mut word = 0xda000000;
+                word |= encode_a64_field("SBC.SBC_64_addsub_carry", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SBC.SBC_64_addsub_carry", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SBC.SBC_64_addsub_carry", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SbcsSbcs32AddsubCarry { rm, rn, rd } => {
+                let mut word = 0x7a000000;
+                word |= encode_a64_field("SBCS.SBCS_32_addsub_carry", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SBCS.SBCS_32_addsub_carry", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SBCS.SBCS_32_addsub_carry", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SbcsSbcs64AddsubCarry { rm, rn, rd } => {
+                let mut word = 0xfa000000;
+                word |= encode_a64_field("SBCS.SBCS_64_addsub_carry", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SBCS.SBCS_64_addsub_carry", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SBCS.SBCS_64_addsub_carry", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Crc32Crc32b32cDp2src { rm, rn, rd } => {
+                let mut word = 0x1ac04000;
+                word |= encode_a64_field("CRC32.CRC32B_32C_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CRC32.CRC32B_32C_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CRC32.CRC32B_32C_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Crc32Crc32h32cDp2src { rm, rn, rd } => {
+                let mut word = 0x1ac04400;
+                word |= encode_a64_field("CRC32.CRC32H_32C_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CRC32.CRC32H_32C_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CRC32.CRC32H_32C_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Crc32Crc32w32cDp2src { rm, rn, rd } => {
+                let mut word = 0x1ac04800;
+                word |= encode_a64_field("CRC32.CRC32W_32C_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CRC32.CRC32W_32C_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CRC32.CRC32W_32C_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Crc32Crc32x64cDp2src { rm, rn, rd } => {
+                let mut word = 0x9ac04c00;
+                word |= encode_a64_field("CRC32.CRC32X_64C_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CRC32.CRC32X_64C_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CRC32.CRC32X_64C_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Crc32cCrc32cb32cDp2src { rm, rn, rd } => {
+                let mut word = 0x1ac05000;
+                word |= encode_a64_field("CRC32C.CRC32CB_32C_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CRC32C.CRC32CB_32C_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CRC32C.CRC32CB_32C_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Crc32cCrc32ch32cDp2src { rm, rn, rd } => {
+                let mut word = 0x1ac05400;
+                word |= encode_a64_field("CRC32C.CRC32CH_32C_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CRC32C.CRC32CH_32C_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CRC32C.CRC32CH_32C_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Crc32cCrc32cw32cDp2src { rm, rn, rd } => {
+                let mut word = 0x1ac05800;
+                word |= encode_a64_field("CRC32C.CRC32CW_32C_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CRC32C.CRC32CW_32C_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CRC32C.CRC32CW_32C_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Crc32cCrc32cx64cDp2src { rm, rn, rd } => {
+                let mut word = 0x9ac05c00;
+                word |= encode_a64_field("CRC32C.CRC32CX_64C_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CRC32C.CRC32CX_64C_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CRC32C.CRC32CX_64C_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::ClzIntClz32Dp1src { rn, rd } => {
@@ -3977,6 +4257,11 @@ impl A64Insn {
                 let word = 0xd503201f;
                 Ok(word)
             }
+            Self::BtiBtiHbHints { op2 } => {
+                let mut word = 0xd503241f;
+                word |= encode_a64_field("BTI.BTI_HB_hints", "op2", op2 as u32, 3, 5)?;
+                Ok(word)
+            }
             Self::DmbDmbBoBarriers { crm } => {
                 let mut word = 0xd50330bf;
                 word |= encode_a64_field("DMB.DMB_BO_barriers", "CRm", crm as u32, 4, 8)?;
@@ -4348,12 +4633,68 @@ impl A64Insn {
             Self::UmaddlUmaddl64waDp3src { ra, .. } if field == "Ra" => Some(*ra),
             Self::UmaddlUmaddl64waDp3src { rn, .. } if field == "Rn" => Some(*rn),
             Self::UmaddlUmaddl64waDp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SmsublSmsubl64waDp3src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SmsublSmsubl64waDp3src { ra, .. } if field == "Ra" => Some(*ra),
+            Self::SmsublSmsubl64waDp3src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SmsublSmsubl64waDp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::UmsublUmsubl64waDp3src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::UmsublUmsubl64waDp3src { ra, .. } if field == "Ra" => Some(*ra),
+            Self::UmsublUmsubl64waDp3src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UmsublUmsubl64waDp3src { rd, .. } if field == "Rd" => Some(*rd),
             Self::SmulhSmulh64Dp3src { rm, .. } if field == "Rm" => Some(*rm),
             Self::SmulhSmulh64Dp3src { rn, .. } if field == "Rn" => Some(*rn),
             Self::SmulhSmulh64Dp3src { rd, .. } if field == "Rd" => Some(*rd),
             Self::UmulhUmulh64Dp3src { rm, .. } if field == "Rm" => Some(*rm),
             Self::UmulhUmulh64Dp3src { rn, .. } if field == "Rn" => Some(*rn),
             Self::UmulhUmulh64Dp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AdcAdc32AddsubCarry { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AdcAdc32AddsubCarry { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AdcAdc32AddsubCarry { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AdcAdc64AddsubCarry { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AdcAdc64AddsubCarry { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AdcAdc64AddsubCarry { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AdcsAdcs32AddsubCarry { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AdcsAdcs32AddsubCarry { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AdcsAdcs32AddsubCarry { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AdcsAdcs64AddsubCarry { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AdcsAdcs64AddsubCarry { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AdcsAdcs64AddsubCarry { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SbcSbc32AddsubCarry { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SbcSbc32AddsubCarry { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SbcSbc32AddsubCarry { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SbcSbc64AddsubCarry { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SbcSbc64AddsubCarry { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SbcSbc64AddsubCarry { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SbcsSbcs32AddsubCarry { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SbcsSbcs32AddsubCarry { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SbcsSbcs32AddsubCarry { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SbcsSbcs64AddsubCarry { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SbcsSbcs64AddsubCarry { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SbcsSbcs64AddsubCarry { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Crc32Crc32b32cDp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::Crc32Crc32b32cDp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Crc32Crc32b32cDp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Crc32Crc32h32cDp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::Crc32Crc32h32cDp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Crc32Crc32h32cDp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Crc32Crc32w32cDp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::Crc32Crc32w32cDp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Crc32Crc32w32cDp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Crc32Crc32x64cDp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::Crc32Crc32x64cDp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Crc32Crc32x64cDp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Crc32cCrc32cb32cDp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::Crc32cCrc32cb32cDp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Crc32cCrc32cb32cDp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Crc32cCrc32ch32cDp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::Crc32cCrc32ch32cDp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Crc32cCrc32ch32cDp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Crc32cCrc32cw32cDp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::Crc32cCrc32cw32cDp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Crc32cCrc32cw32cDp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Crc32cCrc32cx64cDp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::Crc32cCrc32cx64cDp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Crc32cCrc32cx64cDp2src { rd, .. } if field == "Rd" => Some(*rd),
             Self::ClzIntClz32Dp1src { rn, .. } if field == "Rn" => Some(*rn),
             Self::ClzIntClz32Dp1src { rd, .. } if field == "Rd" => Some(*rd),
             Self::ClzIntClz64Dp1src { rn, .. } if field == "Rn" => Some(*rn),
@@ -5748,6 +6089,38 @@ impl A64Insn {
                 validate_a64_rewrite_field("UMADDL.UMADDL_64WA_dp_3src", "Rd", encoded, 5)?;
                 Ok(Self::UmaddlUmaddl64waDp3src { rm, ra, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
             }
+            Self::SmsublSmsubl64waDp3src { ra, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SMSUBL.SMSUBL_64WA_dp_3src", "Rm", encoded, 5)?;
+                Ok(Self::SmsublSmsubl64waDp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), ra, rn, rd })
+            }
+            Self::SmsublSmsubl64waDp3src { rm, rn, rd, .. } if field == "Ra" => {
+                validate_a64_rewrite_field("SMSUBL.SMSUBL_64WA_dp_3src", "Ra", encoded, 5)?;
+                Ok(Self::SmsublSmsubl64waDp3src { rm, ra: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::SmsublSmsubl64waDp3src { rm, ra, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SMSUBL.SMSUBL_64WA_dp_3src", "Rn", encoded, 5)?;
+                Ok(Self::SmsublSmsubl64waDp3src { rm, ra, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SmsublSmsubl64waDp3src { rm, ra, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SMSUBL.SMSUBL_64WA_dp_3src", "Rd", encoded, 5)?;
+                Ok(Self::SmsublSmsubl64waDp3src { rm, ra, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::UmsublUmsubl64waDp3src { ra, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("UMSUBL.UMSUBL_64WA_dp_3src", "Rm", encoded, 5)?;
+                Ok(Self::UmsublUmsubl64waDp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), ra, rn, rd })
+            }
+            Self::UmsublUmsubl64waDp3src { rm, rn, rd, .. } if field == "Ra" => {
+                validate_a64_rewrite_field("UMSUBL.UMSUBL_64WA_dp_3src", "Ra", encoded, 5)?;
+                Ok(Self::UmsublUmsubl64waDp3src { rm, ra: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::UmsublUmsubl64waDp3src { rm, ra, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UMSUBL.UMSUBL_64WA_dp_3src", "Rn", encoded, 5)?;
+                Ok(Self::UmsublUmsubl64waDp3src { rm, ra, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UmsublUmsubl64waDp3src { rm, ra, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("UMSUBL.UMSUBL_64WA_dp_3src", "Rd", encoded, 5)?;
+                Ok(Self::UmsublUmsubl64waDp3src { rm, ra, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
             Self::SmulhSmulh64Dp3src { rn, rd, .. } if field == "Rm" => {
                 validate_a64_rewrite_field("SMULH.SMULH_64_dp_3src", "Rm", encoded, 5)?;
                 Ok(Self::SmulhSmulh64Dp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
@@ -5771,6 +6144,198 @@ impl A64Insn {
             Self::UmulhUmulh64Dp3src { rm, rn, .. } if field == "Rd" => {
                 validate_a64_rewrite_field("UMULH.UMULH_64_dp_3src", "Rd", encoded, 5)?;
                 Ok(Self::UmulhUmulh64Dp3src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AdcAdc32AddsubCarry { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADC.ADC_32_addsub_carry", "Rm", encoded, 5)?;
+                Ok(Self::AdcAdc32AddsubCarry { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::AdcAdc32AddsubCarry { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADC.ADC_32_addsub_carry", "Rn", encoded, 5)?;
+                Ok(Self::AdcAdc32AddsubCarry { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AdcAdc32AddsubCarry { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADC.ADC_32_addsub_carry", "Rd", encoded, 5)?;
+                Ok(Self::AdcAdc32AddsubCarry { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::AdcAdc64AddsubCarry { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADC.ADC_64_addsub_carry", "Rm", encoded, 5)?;
+                Ok(Self::AdcAdc64AddsubCarry { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::AdcAdc64AddsubCarry { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADC.ADC_64_addsub_carry", "Rn", encoded, 5)?;
+                Ok(Self::AdcAdc64AddsubCarry { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AdcAdc64AddsubCarry { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADC.ADC_64_addsub_carry", "Rd", encoded, 5)?;
+                Ok(Self::AdcAdc64AddsubCarry { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AdcsAdcs32AddsubCarry { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADCS.ADCS_32_addsub_carry", "Rm", encoded, 5)?;
+                Ok(Self::AdcsAdcs32AddsubCarry { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::AdcsAdcs32AddsubCarry { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADCS.ADCS_32_addsub_carry", "Rn", encoded, 5)?;
+                Ok(Self::AdcsAdcs32AddsubCarry { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AdcsAdcs32AddsubCarry { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADCS.ADCS_32_addsub_carry", "Rd", encoded, 5)?;
+                Ok(Self::AdcsAdcs32AddsubCarry { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::AdcsAdcs64AddsubCarry { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADCS.ADCS_64_addsub_carry", "Rm", encoded, 5)?;
+                Ok(Self::AdcsAdcs64AddsubCarry { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::AdcsAdcs64AddsubCarry { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADCS.ADCS_64_addsub_carry", "Rn", encoded, 5)?;
+                Ok(Self::AdcsAdcs64AddsubCarry { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AdcsAdcs64AddsubCarry { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADCS.ADCS_64_addsub_carry", "Rd", encoded, 5)?;
+                Ok(Self::AdcsAdcs64AddsubCarry { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SbcSbc32AddsubCarry { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SBC.SBC_32_addsub_carry", "Rm", encoded, 5)?;
+                Ok(Self::SbcSbc32AddsubCarry { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::SbcSbc32AddsubCarry { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SBC.SBC_32_addsub_carry", "Rn", encoded, 5)?;
+                Ok(Self::SbcSbc32AddsubCarry { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SbcSbc32AddsubCarry { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SBC.SBC_32_addsub_carry", "Rd", encoded, 5)?;
+                Ok(Self::SbcSbc32AddsubCarry { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SbcSbc64AddsubCarry { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SBC.SBC_64_addsub_carry", "Rm", encoded, 5)?;
+                Ok(Self::SbcSbc64AddsubCarry { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::SbcSbc64AddsubCarry { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SBC.SBC_64_addsub_carry", "Rn", encoded, 5)?;
+                Ok(Self::SbcSbc64AddsubCarry { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SbcSbc64AddsubCarry { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SBC.SBC_64_addsub_carry", "Rd", encoded, 5)?;
+                Ok(Self::SbcSbc64AddsubCarry { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SbcsSbcs32AddsubCarry { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SBCS.SBCS_32_addsub_carry", "Rm", encoded, 5)?;
+                Ok(Self::SbcsSbcs32AddsubCarry { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::SbcsSbcs32AddsubCarry { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SBCS.SBCS_32_addsub_carry", "Rn", encoded, 5)?;
+                Ok(Self::SbcsSbcs32AddsubCarry { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SbcsSbcs32AddsubCarry { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SBCS.SBCS_32_addsub_carry", "Rd", encoded, 5)?;
+                Ok(Self::SbcsSbcs32AddsubCarry { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SbcsSbcs64AddsubCarry { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SBCS.SBCS_64_addsub_carry", "Rm", encoded, 5)?;
+                Ok(Self::SbcsSbcs64AddsubCarry { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::SbcsSbcs64AddsubCarry { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SBCS.SBCS_64_addsub_carry", "Rn", encoded, 5)?;
+                Ok(Self::SbcsSbcs64AddsubCarry { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SbcsSbcs64AddsubCarry { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SBCS.SBCS_64_addsub_carry", "Rd", encoded, 5)?;
+                Ok(Self::SbcsSbcs64AddsubCarry { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::Crc32Crc32b32cDp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CRC32.CRC32B_32C_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::Crc32Crc32b32cDp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::Crc32Crc32b32cDp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CRC32.CRC32B_32C_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::Crc32Crc32b32cDp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Crc32Crc32b32cDp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CRC32.CRC32B_32C_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::Crc32Crc32b32cDp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::Crc32Crc32h32cDp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CRC32.CRC32H_32C_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::Crc32Crc32h32cDp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::Crc32Crc32h32cDp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CRC32.CRC32H_32C_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::Crc32Crc32h32cDp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Crc32Crc32h32cDp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CRC32.CRC32H_32C_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::Crc32Crc32h32cDp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::Crc32Crc32w32cDp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CRC32.CRC32W_32C_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::Crc32Crc32w32cDp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::Crc32Crc32w32cDp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CRC32.CRC32W_32C_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::Crc32Crc32w32cDp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Crc32Crc32w32cDp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CRC32.CRC32W_32C_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::Crc32Crc32w32cDp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::Crc32Crc32x64cDp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CRC32.CRC32X_64C_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::Crc32Crc32x64cDp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::Crc32Crc32x64cDp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CRC32.CRC32X_64C_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::Crc32Crc32x64cDp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Crc32Crc32x64cDp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CRC32.CRC32X_64C_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::Crc32Crc32x64cDp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::Crc32cCrc32cb32cDp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CB_32C_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::Crc32cCrc32cb32cDp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::Crc32cCrc32cb32cDp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CB_32C_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::Crc32cCrc32cb32cDp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Crc32cCrc32cb32cDp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CB_32C_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::Crc32cCrc32cb32cDp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::Crc32cCrc32ch32cDp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CH_32C_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::Crc32cCrc32ch32cDp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::Crc32cCrc32ch32cDp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CH_32C_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::Crc32cCrc32ch32cDp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Crc32cCrc32ch32cDp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CH_32C_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::Crc32cCrc32ch32cDp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::Crc32cCrc32cw32cDp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CW_32C_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::Crc32cCrc32cw32cDp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::Crc32cCrc32cw32cDp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CW_32C_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::Crc32cCrc32cw32cDp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Crc32cCrc32cw32cDp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CW_32C_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::Crc32cCrc32cw32cDp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::Crc32cCrc32cx64cDp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CX_64C_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::Crc32cCrc32cx64cDp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::Crc32cCrc32cx64cDp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CX_64C_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::Crc32cCrc32cx64cDp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Crc32cCrc32cx64cDp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CRC32C.CRC32CX_64C_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::Crc32cCrc32cx64cDp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
             }
             Self::ClzIntClz32Dp1src { rd, .. } if field == "Rn" => {
                 validate_a64_rewrite_field("CLZ_int.CLZ_32_dp_1src", "Rn", encoded, 5)?;
@@ -7070,8 +7635,26 @@ impl A64Insn {
             Self::MsubMsub64aDp3src { .. } => OPERANDS_MSUB_MSUB_64A_DP_3SRC,
             Self::SmaddlSmaddl64waDp3src { .. } => OPERANDS_SMADDL_SMADDL_64WA_DP_3SRC,
             Self::UmaddlUmaddl64waDp3src { .. } => OPERANDS_UMADDL_UMADDL_64WA_DP_3SRC,
+            Self::SmsublSmsubl64waDp3src { .. } => OPERANDS_SMSUBL_SMSUBL_64WA_DP_3SRC,
+            Self::UmsublUmsubl64waDp3src { .. } => OPERANDS_UMSUBL_UMSUBL_64WA_DP_3SRC,
             Self::SmulhSmulh64Dp3src { .. } => OPERANDS_SMULH_SMULH_64_DP_3SRC,
             Self::UmulhUmulh64Dp3src { .. } => OPERANDS_UMULH_UMULH_64_DP_3SRC,
+            Self::AdcAdc32AddsubCarry { .. } => OPERANDS_ADC_ADC_32_ADDSUB_CARRY,
+            Self::AdcAdc64AddsubCarry { .. } => OPERANDS_ADC_ADC_64_ADDSUB_CARRY,
+            Self::AdcsAdcs32AddsubCarry { .. } => OPERANDS_ADCS_ADCS_32_ADDSUB_CARRY,
+            Self::AdcsAdcs64AddsubCarry { .. } => OPERANDS_ADCS_ADCS_64_ADDSUB_CARRY,
+            Self::SbcSbc32AddsubCarry { .. } => OPERANDS_SBC_SBC_32_ADDSUB_CARRY,
+            Self::SbcSbc64AddsubCarry { .. } => OPERANDS_SBC_SBC_64_ADDSUB_CARRY,
+            Self::SbcsSbcs32AddsubCarry { .. } => OPERANDS_SBCS_SBCS_32_ADDSUB_CARRY,
+            Self::SbcsSbcs64AddsubCarry { .. } => OPERANDS_SBCS_SBCS_64_ADDSUB_CARRY,
+            Self::Crc32Crc32b32cDp2src { .. } => OPERANDS_CRC32_CRC32B_32C_DP_2SRC,
+            Self::Crc32Crc32h32cDp2src { .. } => OPERANDS_CRC32_CRC32H_32C_DP_2SRC,
+            Self::Crc32Crc32w32cDp2src { .. } => OPERANDS_CRC32_CRC32W_32C_DP_2SRC,
+            Self::Crc32Crc32x64cDp2src { .. } => OPERANDS_CRC32_CRC32X_64C_DP_2SRC,
+            Self::Crc32cCrc32cb32cDp2src { .. } => OPERANDS_CRC32C_CRC32CB_32C_DP_2SRC,
+            Self::Crc32cCrc32ch32cDp2src { .. } => OPERANDS_CRC32C_CRC32CH_32C_DP_2SRC,
+            Self::Crc32cCrc32cw32cDp2src { .. } => OPERANDS_CRC32C_CRC32CW_32C_DP_2SRC,
+            Self::Crc32cCrc32cx64cDp2src { .. } => OPERANDS_CRC32C_CRC32CX_64C_DP_2SRC,
             Self::ClzIntClz32Dp1src { .. } => OPERANDS_CLZ_INT_CLZ_32_DP_1SRC,
             Self::ClzIntClz64Dp1src { .. } => OPERANDS_CLZ_INT_CLZ_64_DP_1SRC,
             Self::RbitIntRbit32Dp1src { .. } => OPERANDS_RBIT_INT_RBIT_32_DP_1SRC,
@@ -7188,6 +7771,7 @@ impl A64Insn {
             Self::LdtrshLdtrsh64LdstUnpriv { .. } => OPERANDS_LDTRSH_LDTRSH_64_LDST_UNPRIV,
             Self::LdtrswLdtrsw64LdstUnpriv { .. } => OPERANDS_LDTRSW_LDTRSW_64_LDST_UNPRIV,
             Self::NopNopHiHints { .. } => OPERANDS_NOP_NOP_HI_HINTS,
+            Self::BtiBtiHbHints { .. } => OPERANDS_BTI_BTI_HB_HINTS,
             Self::DmbDmbBoBarriers { .. } => OPERANDS_DMB_DMB_BO_BARRIERS,
             Self::DsbDsbBoBarriers { .. } => OPERANDS_DSB_DSB_BO_BARRIERS,
             Self::IsbIsbBiBarriers { .. } => OPERANDS_ISB_ISB_BI_BARRIERS,
@@ -8049,6 +8633,22 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
+    if (word & 0xffe08000) == 0x9b208000 {
+        return Some(A64Insn::SmsublSmsubl64waDp3src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            ra: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe08000) == 0x9ba08000 {
+        return Some(A64Insn::UmsublUmsubl64waDp3src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            ra: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
     if (word & 0xffe0fc00) == 0x9b407c00 {
         return Some(A64Insn::SmulhSmulh64Dp3src {
             rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
@@ -8061,6 +8661,118 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
             rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
             rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1a000000 {
+        return Some(A64Insn::AdcAdc32AddsubCarry {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9a000000 {
+        return Some(A64Insn::AdcAdc64AddsubCarry {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x3a000000 {
+        return Some(A64Insn::AdcsAdcs32AddsubCarry {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xba000000 {
+        return Some(A64Insn::AdcsAdcs64AddsubCarry {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x5a000000 {
+        return Some(A64Insn::SbcSbc32AddsubCarry {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xda000000 {
+        return Some(A64Insn::SbcSbc64AddsubCarry {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x7a000000 {
+        return Some(A64Insn::SbcsSbcs32AddsubCarry {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xfa000000 {
+        return Some(A64Insn::SbcsSbcs64AddsubCarry {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac04000 {
+        return Some(A64Insn::Crc32Crc32b32cDp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac04400 {
+        return Some(A64Insn::Crc32Crc32h32cDp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac04800 {
+        return Some(A64Insn::Crc32Crc32w32cDp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9ac04c00 {
+        return Some(A64Insn::Crc32Crc32x64cDp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac05000 {
+        return Some(A64Insn::Crc32cCrc32cb32cDp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac05400 {
+        return Some(A64Insn::Crc32cCrc32ch32cDp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac05800 {
+        return Some(A64Insn::Crc32cCrc32cw32cDp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9ac05c00 {
+        return Some(A64Insn::Crc32cCrc32cx64cDp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0xfffffc00) == 0x5ac01000 {
@@ -8824,6 +9536,11 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
     }
     if (word & 0xffffffff) == 0xd503201f {
         return Some(A64Insn::NopNopHiHints { });
+    }
+    if (word & 0xffffff3f) == 0xd503241f {
+        return Some(A64Insn::BtiBtiHbHints {
+            op2: ((word & 0x000000e0) >> 5) as u8,
+        });
     }
     if (word & 0xfffff0ff) == 0xd50330bf {
         return Some(A64Insn::DmbDmbBoBarriers {
@@ -10810,9 +11527,7 @@ pub const FIELDS_SMADDL_SMADDL_64WA_DP_3SRC: &[GeneratedFieldSpec] = &[
 pub const OPERANDS_SMADDL_SMADDL_64WA_DP_3SRC: &[A64OperandRole] = &[
     A64OperandRole::RegRead { field: "Ra", width: A64RegWidth::X64 },
     A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
-    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
     A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
-    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
     A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
 ];
 
@@ -10832,9 +11547,47 @@ pub const FIELDS_UMADDL_UMADDL_64WA_DP_3SRC: &[GeneratedFieldSpec] = &[
 pub const OPERANDS_UMADDL_UMADDL_64WA_DP_3SRC: &[A64OperandRole] = &[
     A64OperandRole::RegRead { field: "Ra", width: A64RegWidth::X64 },
     A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
-    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
     A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
-    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SMSUBL_SMSUBL_64WA_DP_3SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op54", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "U", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SMSUBL_SMSUBL_64WA_DP_3SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Ra", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UMSUBL_UMSUBL_64WA_DP_3SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op54", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "U", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UMSUBL_UMSUBL_64WA_DP_3SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Ra", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
     A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
 ];
 
@@ -10874,6 +11627,298 @@ pub const OPERANDS_UMULH_UMULH_64_DP_3SRC: &[A64OperandRole] = &[
     A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
     A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
     A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADC_ADC_32_ADDSUB_CARRY: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADC_ADC_32_ADDSUB_CARRY: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADC_ADC_64_ADDSUB_CARRY: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADC_ADC_64_ADDSUB_CARRY: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADCS_ADCS_32_ADDSUB_CARRY: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADCS_ADCS_32_ADDSUB_CARRY: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADCS_ADCS_64_ADDSUB_CARRY: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADCS_ADCS_64_ADDSUB_CARRY: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SBC_SBC_32_ADDSUB_CARRY: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SBC_SBC_32_ADDSUB_CARRY: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SBC_SBC_64_ADDSUB_CARRY: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SBC_SBC_64_ADDSUB_CARRY: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SBCS_SBCS_32_ADDSUB_CARRY: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SBCS_SBCS_32_ADDSUB_CARRY: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SBCS_SBCS_64_ADDSUB_CARRY: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SBCS_SBCS_64_ADDSUB_CARRY: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CRC32_CRC32B_32C_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "C", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "sz", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CRC32_CRC32B_32C_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CRC32_CRC32H_32C_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "C", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "sz", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CRC32_CRC32H_32C_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CRC32_CRC32W_32C_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "C", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "sz", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CRC32_CRC32W_32C_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CRC32_CRC32X_64C_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "C", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "sz", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CRC32_CRC32X_64C_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CRC32C_CRC32CB_32C_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "C", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "sz", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CRC32C_CRC32CB_32C_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CRC32C_CRC32CH_32C_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "C", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "sz", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CRC32C_CRC32CH_32C_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CRC32C_CRC32CW_32C_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "C", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "sz", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CRC32C_CRC32CW_32C_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CRC32C_CRC32CX_64C_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "C", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "sz", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CRC32C_CRC32CX_64C_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
 ];
 
 #[allow(dead_code)]
@@ -13079,6 +14124,16 @@ pub const OPERANDS_NOP_NOP_HI_HINTS: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
+pub const FIELDS_BTI_BTI_HB_HINTS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "CRm", hi: 11, lo: 8, width: 4, mask: 0x00000f00 },
+    GeneratedFieldSpec { name: "op2", hi: 7, lo: 5, width: 3, mask: 0x000000e0 },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_BTI_BTI_HB_HINTS: &[A64OperandRole] = &[
+];
+
+#[allow(dead_code)]
 pub const FIELDS_DMB_DMB_BO_BARRIERS: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "CRm", hi: 11, lo: 8, width: 4, mask: 0x00000f00 },
     GeneratedFieldSpec { name: "opc", hi: 6, lo: 5, width: 2, mask: 0x00000060 },
@@ -14779,6 +15834,32 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         asm: "UMADDL <Xd> , <Wn> , <Wm> , <Xa>",
     },
     GeneratedInsnSpec {
+        key: "SMSUBL.SMSUBL_64WA_dp_3src",
+        mnemonic: "SMSUBL",
+        heading: "SMSUBL",
+        title: "SMSUBL -- A64",
+        encoding_label: "",
+        mask: 0xffe08000,
+        value: 0x9b208000,
+        excludes: &[],
+        fields: FIELDS_SMSUBL_SMSUBL_64WA_DP_3SRC,
+        operands: OPERANDS_SMSUBL_SMSUBL_64WA_DP_3SRC,
+        asm: "SMSUBL <Xd> , <Wn> , <Wm> , <Xa>",
+    },
+    GeneratedInsnSpec {
+        key: "UMSUBL.UMSUBL_64WA_dp_3src",
+        mnemonic: "UMSUBL",
+        heading: "UMSUBL",
+        title: "UMSUBL -- A64",
+        encoding_label: "",
+        mask: 0xffe08000,
+        value: 0x9ba08000,
+        excludes: &[],
+        fields: FIELDS_UMSUBL_UMSUBL_64WA_DP_3SRC,
+        operands: OPERANDS_UMSUBL_UMSUBL_64WA_DP_3SRC,
+        asm: "UMSUBL <Xd> , <Wn> , <Wm> , <Xa>",
+    },
+    GeneratedInsnSpec {
         key: "SMULH.SMULH_64_dp_3src",
         mnemonic: "SMULH",
         heading: "SMULH",
@@ -14803,6 +15884,214 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         fields: FIELDS_UMULH_UMULH_64_DP_3SRC,
         operands: OPERANDS_UMULH_UMULH_64_DP_3SRC,
         asm: "UMULH <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "ADC.ADC_32_addsub_carry",
+        mnemonic: "ADC",
+        heading: "ADC",
+        title: "ADC -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe0fc00,
+        value: 0x1a000000,
+        excludes: &[],
+        fields: FIELDS_ADC_ADC_32_ADDSUB_CARRY,
+        operands: OPERANDS_ADC_ADC_32_ADDSUB_CARRY,
+        asm: "ADC <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "ADC.ADC_64_addsub_carry",
+        mnemonic: "ADC",
+        heading: "ADC",
+        title: "ADC -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe0fc00,
+        value: 0x9a000000,
+        excludes: &[],
+        fields: FIELDS_ADC_ADC_64_ADDSUB_CARRY,
+        operands: OPERANDS_ADC_ADC_64_ADDSUB_CARRY,
+        asm: "ADC <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "ADCS.ADCS_32_addsub_carry",
+        mnemonic: "ADCS",
+        heading: "ADCS",
+        title: "ADCS -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe0fc00,
+        value: 0x3a000000,
+        excludes: &[],
+        fields: FIELDS_ADCS_ADCS_32_ADDSUB_CARRY,
+        operands: OPERANDS_ADCS_ADCS_32_ADDSUB_CARRY,
+        asm: "ADCS <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "ADCS.ADCS_64_addsub_carry",
+        mnemonic: "ADCS",
+        heading: "ADCS",
+        title: "ADCS -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe0fc00,
+        value: 0xba000000,
+        excludes: &[],
+        fields: FIELDS_ADCS_ADCS_64_ADDSUB_CARRY,
+        operands: OPERANDS_ADCS_ADCS_64_ADDSUB_CARRY,
+        asm: "ADCS <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "SBC.SBC_32_addsub_carry",
+        mnemonic: "SBC",
+        heading: "SBC",
+        title: "SBC -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe0fc00,
+        value: 0x5a000000,
+        excludes: &[],
+        fields: FIELDS_SBC_SBC_32_ADDSUB_CARRY,
+        operands: OPERANDS_SBC_SBC_32_ADDSUB_CARRY,
+        asm: "SBC <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "SBC.SBC_64_addsub_carry",
+        mnemonic: "SBC",
+        heading: "SBC",
+        title: "SBC -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe0fc00,
+        value: 0xda000000,
+        excludes: &[],
+        fields: FIELDS_SBC_SBC_64_ADDSUB_CARRY,
+        operands: OPERANDS_SBC_SBC_64_ADDSUB_CARRY,
+        asm: "SBC <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "SBCS.SBCS_32_addsub_carry",
+        mnemonic: "SBCS",
+        heading: "SBCS",
+        title: "SBCS -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe0fc00,
+        value: 0x7a000000,
+        excludes: &[],
+        fields: FIELDS_SBCS_SBCS_32_ADDSUB_CARRY,
+        operands: OPERANDS_SBCS_SBCS_32_ADDSUB_CARRY,
+        asm: "SBCS <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "SBCS.SBCS_64_addsub_carry",
+        mnemonic: "SBCS",
+        heading: "SBCS",
+        title: "SBCS -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe0fc00,
+        value: 0xfa000000,
+        excludes: &[],
+        fields: FIELDS_SBCS_SBCS_64_ADDSUB_CARRY,
+        operands: OPERANDS_SBCS_SBCS_64_ADDSUB_CARRY,
+        asm: "SBCS <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "CRC32.CRC32B_32C_dp_2src",
+        mnemonic: "CRC32B",
+        heading: "CRC32B, CRC32H, CRC32W, CRC32X",
+        title: "CRC32B, CRC32H, CRC32W, CRC32X -- A64",
+        encoding_label: "CRC32B",
+        mask: 0xffe0fc00,
+        value: 0x1ac04000,
+        excludes: &[],
+        fields: FIELDS_CRC32_CRC32B_32C_DP_2SRC,
+        operands: OPERANDS_CRC32_CRC32B_32C_DP_2SRC,
+        asm: "CRC32B <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "CRC32.CRC32H_32C_dp_2src",
+        mnemonic: "CRC32H",
+        heading: "CRC32B, CRC32H, CRC32W, CRC32X",
+        title: "CRC32B, CRC32H, CRC32W, CRC32X -- A64",
+        encoding_label: "CRC32H",
+        mask: 0xffe0fc00,
+        value: 0x1ac04400,
+        excludes: &[],
+        fields: FIELDS_CRC32_CRC32H_32C_DP_2SRC,
+        operands: OPERANDS_CRC32_CRC32H_32C_DP_2SRC,
+        asm: "CRC32H <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "CRC32.CRC32W_32C_dp_2src",
+        mnemonic: "CRC32W",
+        heading: "CRC32B, CRC32H, CRC32W, CRC32X",
+        title: "CRC32B, CRC32H, CRC32W, CRC32X -- A64",
+        encoding_label: "CRC32W",
+        mask: 0xffe0fc00,
+        value: 0x1ac04800,
+        excludes: &[],
+        fields: FIELDS_CRC32_CRC32W_32C_DP_2SRC,
+        operands: OPERANDS_CRC32_CRC32W_32C_DP_2SRC,
+        asm: "CRC32W <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "CRC32.CRC32X_64C_dp_2src",
+        mnemonic: "CRC32X",
+        heading: "CRC32B, CRC32H, CRC32W, CRC32X",
+        title: "CRC32B, CRC32H, CRC32W, CRC32X -- A64",
+        encoding_label: "CRC32X",
+        mask: 0xffe0fc00,
+        value: 0x9ac04c00,
+        excludes: &[],
+        fields: FIELDS_CRC32_CRC32X_64C_DP_2SRC,
+        operands: OPERANDS_CRC32_CRC32X_64C_DP_2SRC,
+        asm: "CRC32X <Wd> , <Wn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "CRC32C.CRC32CB_32C_dp_2src",
+        mnemonic: "CRC32CB",
+        heading: "CRC32CB, CRC32CH, CRC32CW, CRC32CX",
+        title: "CRC32CB, CRC32CH, CRC32CW, CRC32CX -- A64",
+        encoding_label: "CRC32CB",
+        mask: 0xffe0fc00,
+        value: 0x1ac05000,
+        excludes: &[],
+        fields: FIELDS_CRC32C_CRC32CB_32C_DP_2SRC,
+        operands: OPERANDS_CRC32C_CRC32CB_32C_DP_2SRC,
+        asm: "CRC32CB <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "CRC32C.CRC32CH_32C_dp_2src",
+        mnemonic: "CRC32CH",
+        heading: "CRC32CB, CRC32CH, CRC32CW, CRC32CX",
+        title: "CRC32CB, CRC32CH, CRC32CW, CRC32CX -- A64",
+        encoding_label: "CRC32CH",
+        mask: 0xffe0fc00,
+        value: 0x1ac05400,
+        excludes: &[],
+        fields: FIELDS_CRC32C_CRC32CH_32C_DP_2SRC,
+        operands: OPERANDS_CRC32C_CRC32CH_32C_DP_2SRC,
+        asm: "CRC32CH <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "CRC32C.CRC32CW_32C_dp_2src",
+        mnemonic: "CRC32CW",
+        heading: "CRC32CB, CRC32CH, CRC32CW, CRC32CX",
+        title: "CRC32CB, CRC32CH, CRC32CW, CRC32CX -- A64",
+        encoding_label: "CRC32CW",
+        mask: 0xffe0fc00,
+        value: 0x1ac05800,
+        excludes: &[],
+        fields: FIELDS_CRC32C_CRC32CW_32C_DP_2SRC,
+        operands: OPERANDS_CRC32C_CRC32CW_32C_DP_2SRC,
+        asm: "CRC32CW <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "CRC32C.CRC32CX_64C_dp_2src",
+        mnemonic: "CRC32CX",
+        heading: "CRC32CB, CRC32CH, CRC32CW, CRC32CX",
+        title: "CRC32CB, CRC32CH, CRC32CW, CRC32CX -- A64",
+        encoding_label: "CRC32CX",
+        mask: 0xffe0fc00,
+        value: 0x9ac05c00,
+        excludes: &[],
+        fields: FIELDS_CRC32C_CRC32CX_64C_DP_2SRC,
+        operands: OPERANDS_CRC32C_CRC32CX_64C_DP_2SRC,
+        asm: "CRC32CX <Wd> , <Wn> , <Xm>",
     },
     GeneratedInsnSpec {
         key: "CLZ_int.CLZ_32_dp_1src",
@@ -16311,6 +17600,19 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         fields: FIELDS_NOP_NOP_HI_HINTS,
         operands: OPERANDS_NOP_NOP_HI_HINTS,
         asm: "NOP",
+    },
+    GeneratedInsnSpec {
+        key: "BTI.BTI_HB_hints",
+        mnemonic: "BTI",
+        heading: "BTI",
+        title: "BTI -- A64",
+        encoding_label: "",
+        mask: 0xffffff3f,
+        value: 0xd503241f,
+        excludes: &[],
+        fields: FIELDS_BTI_BTI_HB_HINTS,
+        operands: OPERANDS_BTI_BTI_HB_HINTS,
+        asm: "BTI  { <targets> }",
     },
     GeneratedInsnSpec {
         key: "DMB.DMB_BO_barriers",

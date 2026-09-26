@@ -351,11 +351,13 @@ make guest-tests-k3 GUEST_PROFILE=kjit-guest-debug K3_ITERATIONS=20
 ```
 
 Current reach: where the code is in the subset the path follows the callers
-(`dd bs=1`: every syscall issued in the kernel), but it stops at the first
-`bti c` of a BTI-built function (all of redis's paths end there: 0% of its
-syscalls in the kernel) and at SIMD `memcpy`/`strlen` loads. Fragment entries
-cost more than the mode switches they save on short chains; speed is not a
-goal yet. Details: `tmp/pipeline.md`, "K3", Findings.
+(`dd bs=1`: every syscall issued in the kernel), but it stops at SIMD
+`memcpy`/`strlen` loads. Before A7d every path of a BTI-built program (all of
+redis's) stopped at its first `bti c` (0% of its syscalls in the kernel); BTI
+and ADC/SBC now translate, and the guest has not been re-measured since.
+Fragment entries cost more than the mode switches they save on short chains;
+speed is not a goal yet. Details: `tmp/pipeline.md`, "K3", Findings, and
+"A7d".
 
 ### Harness
 
@@ -379,7 +381,13 @@ encoding at EL1. The only system-register access in the subset is
 `MRS Xt, TPIDR_EL0`; every other system register stays undecodable. The
 barriers `DMB`, `DSB` (not the nXS forms) and `ISB`, with every option, are
 the only other system instructions: they behave the same at EL1 as at EL0 for
-every observer of user memory and are emitted unchanged.
+every observer of user memory and are emitted unchanged. `BTI` (every target)
+is admitted and translated as a `NOP`: in sequence it is one, and a fragment is
+never an indirect-branch target in a guarded page. Every other HINT-space
+instruction stays undecodable, pointer authentication (`PACIASP`, `AUTIASP`,
+...) included, so it runs in userspace with the user's keys. Carry arithmetic
+(`ADC`, `ADCS`, `SBC`, `SBCS`, NGC/NGCS), `SMSUBL`/`UMSUBL` and
+`CRC32*`/`CRC32C*` are plain ALU forms (the kernel module requires FEAT_CRC32).
 
 Register virtualization now rewrites ordinary user-semantic uses of
 stack-backed `x12..x17`, stable-mapped user `x29`, and stable-mapped user `SP`,
@@ -469,8 +477,8 @@ and `shared::abi` (never the translator). It accepts a fragment only if the
 prologue/epilogue are byte-exact, the body never writes SP or x29, user memory
 is touched only by the `LDTR*`/`STTR*` family with a fault-site entry, no
 user-code memory form (byte/half, unscaled, register-offset, literal, PRFM,
-acquire/release, ...) appears at all, the only system instructions are
-`MRS TPIDR_EL0`, NOP and DMB/DSB/ISB, every other load/store
+acquire/release, ...) and no BTI appears at all, the only system instructions
+are `MRS TPIDR_EL0`, NOP and DMB/DSB/ISB, every other load/store
 stays in the user-state frame slots or `pt_regs` `regs[]`/`sp` through a pointer
 loaded from the frame, direct branches stay inside the body (or go to the
 epilogue), there are no calls, indirect branches, SVC or ADR/ADRP, every fault
@@ -483,6 +491,7 @@ mutation suite (`verify_mutation_tests.rs`), which mutates every fixture
 fragment (every LDTR*/STTR* -> its plain and unscaled user form, inserted
 user-only memory forms, acquire/release user forms and site-less LDTR*/STTR*,
 non-allowlisted barrier-like system ops (SB, CLREX, DSB nXS, WFE, ...),
+BTI and non-subset hints (PACIASP, AUTIASP, ...),
 branches out of the body, inserted BL/BR/RET/SVC/MSR/HVC,
 SP/x29 writes, out-of-range frame and pt_regs accesses, corrupted wrapper words,
 broken fault tables, dropped/retargeted/altered budget checks, stray counter

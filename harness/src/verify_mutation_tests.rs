@@ -68,6 +68,32 @@ const BARRIER_LIKE_WORDS: &[(&str, u32)] = &[
     ("esb", 0xd503_221f),
 ];
 
+/// Hint-space words next to BTI (A7d): pointer authentication must never run at
+/// EL1 with the kernel's keys, and the other hints are not in the subset. None of
+/// them decodes (the BTI form fixes CRm = 0100 and op2<0> = 0).
+const HINT_WORDS: &[(&str, u32)] = &[
+    ("paciasp", 0xd503_233f),
+    ("autiasp", 0xd503_23bf),
+    ("pacibsp", 0xd503_237f),
+    ("autibsp", 0xd503_23ff),
+    ("paciaz", 0xd503_231f),
+    ("xpaclri", 0xd503_20ff),
+    ("sev", 0xd503_209f),
+    ("csdb", 0xd503_229f),
+    ("hint #0x21", 0xd503_243f),
+    ("hint #0x27", 0xd503_24ff),
+    ("chkfeat x16", 0xd503_251f),
+];
+
+/// BTI, every target (A7d). Translation rephrases it to `NOP`, so it is a
+/// user-only form: rejected anywhere in a fragment.
+const BTI_WORDS: &[(&str, u32)] = &[
+    ("bti", 0xd503_241f),
+    ("bti c", 0xd503_245f),
+    ("bti j", 0xd503_249f),
+    ("bti jc", 0xd503_24df),
+];
+
 /// Acquire/release user forms of the subset (A7c). Translation lowers them to
 /// fenced `LDTR*`/`STTR*`, so each is rejected anywhere in a fragment.
 const ACQ_REL_WORDS: &[(&str, u32)] = &[
@@ -408,8 +434,14 @@ impl Suite {
                 what,
             );
         }
+        for (what, word) in HINT_WORDS {
+            self.replace_everywhere("insert non-subset hint / PAC (A7d)", fixture, *word, what);
+        }
         for (what, word) in USER_ONLY_WORDS {
             self.replace_everywhere("insert user-only memory form (A7b)", fixture, *word, what);
+        }
+        for (what, word) in BTI_WORDS {
+            self.replace_everywhere("insert BTI (A7d)", fixture, *word, what);
         }
         for (what, word) in ACQ_REL_WORDS {
             self.replace_everywhere("insert acquire/release user form (A7c)", fixture, *word, what);
@@ -1230,10 +1262,14 @@ fn verifier_rejects_every_mutation_of_every_fixture_fragment() {
 /// not the decoder).
 #[test]
 fn mutation_word_lists_are_classified_as_named() {
-    for (what, word) in FOREIGN_WORDS.iter().chain(BARRIER_LIKE_WORDS) {
+    for (what, word) in FOREIGN_WORDS
+        .iter()
+        .chain(BARRIER_LIKE_WORDS)
+        .chain(HINT_WORDS)
+    {
         assert!(decode(*word).is_none(), "{what} decodes");
     }
-    for (what, word) in USER_ONLY_WORDS.iter().chain(ACQ_REL_WORDS) {
+    for (what, word) in USER_ONLY_WORDS.iter().chain(ACQ_REL_WORDS).chain(BTI_WORDS) {
         let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
         assert!(!insn.is_unprivileged_access(), "{what}");
     }

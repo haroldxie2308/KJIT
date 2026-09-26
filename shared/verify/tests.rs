@@ -351,6 +351,11 @@ fn user_only_memory_forms_are_rejected_anywhere() {
         A64Insn::LdaprLdapr32lMemop { rn: xs(1), rt: w0 },
         A64Insn::LdaprbLdaprb32lMemop { rn: xs(1), rt: w0 },
         A64Insn::LdaprhLdaprh32lMemop { rn: xs(1), rt: w0 },
+        // A7d: BTI is rephrased to NOP; the allowlisted hint space is NOP only.
+        A64Insn::BtiBtiHbHints { op2: 0b000 },
+        A64Insn::BtiBtiHbHints { op2: 0b010 },
+        A64Insn::BtiBtiHbHints { op2: 0b100 },
+        A64Insn::BtiBtiHbHints { op2: 0b110 },
     ];
     for insn in cases {
         let frag = Frag::new(&[insn, b_epi(1)]);
@@ -402,6 +407,9 @@ fn barriers_are_the_only_allowed_system_instructions_besides_mrs_tpidr() {
         0xd503_201f | (0b0010 << 5), // hint #2 (wfe)
         0xd503_207f,     // wfi
         0xd503_233f,     // paciasp
+        0xd503_23bf,     // autiasp
+        0xd503_20ff,     // xpaclri
+        0xd503_243f,     // hint #0x21 (BTI's CRm, op2<0> = 1)
         0xd500_40bf,     // msr spsel, #0
         0xd503_41df,     // msr daifset, #1
         0xd508_7500,     // ic ialluis
@@ -777,10 +785,12 @@ fn classification_agrees_with_generated_roles() {
             rules::Form::Exception | rules::Form::PcRelative => {
                 assert!(!memory && !control, "{}", insn.key())
             }
-            // Every user-only form is a load/store, except PRFM (a hint, no access).
+            // Every user-only form is a load/store, except PRFM and BTI (hints, no
+            // access).
             rules::Form::UserOnly => {
                 assert!(!control, "{}", insn.key());
-                assert_eq!(memory, !insn.key().starts_with("PRFM"), "{}", insn.key());
+                let hint = insn.key().starts_with("PRFM") || insn.key().starts_with("BTI");
+                assert_eq!(memory, !hint, "{}", insn.key());
             }
         }
     }

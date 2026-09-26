@@ -421,6 +421,15 @@ pub(crate) fn rephrase_insn(
             RephrasedInsn::user_synthetic(insn.pc, A64Insn::NopNopHiHints {}),
             GFP_KERNEL,
         )?,
+        // BTI executed in sequence is a NOP. Its only effect is the landing-pad check
+        // of an indirect branch into a guarded page: fragment code is never one
+        // (entries come from the runtime, kernel BTI is off, K1), and a runtime exit
+        // does not carry PSTATE.BTYPE into the target (K3 BTI limitation). So a NOP
+        // is exact for every correct program, and no BTI reaches EL1.
+        A64Insn::BtiBtiHbHints { .. } => ret.push(
+            RephrasedInsn::user_synthetic(insn.pc, A64Insn::NopNopHiHints {}),
+            GFP_KERNEL,
+        )?,
         _ => ret.append(a64_ori!(insn.pc, insn.inner)?, GFP_KERNEL)?,
     }
     Ok(ret)

@@ -255,6 +255,9 @@ pub(crate) fn execute_insn(
 ) -> Result<u64, InsnError> {
     match insn {
         A64Insn::NopNopHiHints {} => Ok(pc + 4),
+        // Executed in sequence, BTI is a NOP. The landing-pad check it takes part in
+        // (PSTATE.BTYPE after an indirect branch into a guarded page) is not modelled.
+        A64Insn::BtiBtiHbHints { .. } => Ok(pc + 4),
 
         A64Insn::AdrAdrOnlyPcreladdr { rd, .. } | A64Insn::AdrpAdrpOnlyPcreladdr { rd, .. } => {
             let value = insn
@@ -932,6 +935,17 @@ pub(crate) fn execute_insn(
             state.write_reg(rd, state.read_reg(ra).wrapping_add(product));
             Ok(pc + 4)
         }
+        A64Insn::SmsublSmsubl64waDp3src { rm, ra, rn, rd } => {
+            let product = sign_extend_width(state.read_reg(rn), 32)
+                .wrapping_mul(sign_extend_width(state.read_reg(rm), 32));
+            state.write_reg(rd, state.read_reg(ra).wrapping_sub(product as u64));
+            Ok(pc + 4)
+        }
+        A64Insn::UmsublUmsubl64waDp3src { rm, ra, rn, rd } => {
+            let product = read_reg_sized(state, rn, 32) * read_reg_sized(state, rm, 32);
+            state.write_reg(rd, state.read_reg(ra).wrapping_sub(product));
+            Ok(pc + 4)
+        }
         A64Insn::SmulhSmulh64Dp3src { rm, rn, rd } => {
             let product =
                 i128::from(state.read_reg(rn) as i64) * i128::from(state.read_reg(rm) as i64);
@@ -941,6 +955,72 @@ pub(crate) fn execute_insn(
         A64Insn::UmulhUmulh64Dp3src { rm, rn, rd } => {
             let product = u128::from(state.read_reg(rn)) * u128::from(state.read_reg(rm));
             state.write_reg(rd, (product >> 64) as u64);
+            Ok(pc + 4)
+        }
+
+        A64Insn::AdcAdc32AddsubCarry { rm, rn, rd } => {
+            add_sub_carry(state, AddSub::Add, false, 32, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::AdcAdc64AddsubCarry { rm, rn, rd } => {
+            add_sub_carry(state, AddSub::Add, false, 64, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::AdcsAdcs32AddsubCarry { rm, rn, rd } => {
+            add_sub_carry(state, AddSub::Add, true, 32, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::AdcsAdcs64AddsubCarry { rm, rn, rd } => {
+            add_sub_carry(state, AddSub::Add, true, 64, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::SbcSbc32AddsubCarry { rm, rn, rd } => {
+            add_sub_carry(state, AddSub::Sub, false, 32, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::SbcSbc64AddsubCarry { rm, rn, rd } => {
+            add_sub_carry(state, AddSub::Sub, false, 64, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::SbcsSbcs32AddsubCarry { rm, rn, rd } => {
+            add_sub_carry(state, AddSub::Sub, true, 32, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::SbcsSbcs64AddsubCarry { rm, rn, rd } => {
+            add_sub_carry(state, AddSub::Sub, true, 64, rm, rn, rd);
+            Ok(pc + 4)
+        }
+
+        A64Insn::Crc32Crc32b32cDp2src { rm, rn, rd } => {
+            crc32(state, CRC32_POLY_REFLECTED, 8, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::Crc32Crc32h32cDp2src { rm, rn, rd } => {
+            crc32(state, CRC32_POLY_REFLECTED, 16, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::Crc32Crc32w32cDp2src { rm, rn, rd } => {
+            crc32(state, CRC32_POLY_REFLECTED, 32, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::Crc32Crc32x64cDp2src { rm, rn, rd } => {
+            crc32(state, CRC32_POLY_REFLECTED, 64, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::Crc32cCrc32cb32cDp2src { rm, rn, rd } => {
+            crc32(state, CRC32C_POLY_REFLECTED, 8, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::Crc32cCrc32ch32cDp2src { rm, rn, rd } => {
+            crc32(state, CRC32C_POLY_REFLECTED, 16, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::Crc32cCrc32cw32cDp2src { rm, rn, rd } => {
+            crc32(state, CRC32C_POLY_REFLECTED, 32, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::Crc32cCrc32cx64cDp2src { rm, rn, rd } => {
+            crc32(state, CRC32C_POLY_REFLECTED, 64, rm, rn, rd);
             Ok(pc + 4)
         }
 
@@ -1621,6 +1701,47 @@ fn add_sub(
         state.flags = flags;
     }
     write_reg_sized(state, rd, result, bits);
+}
+
+/// ADC/ADCS/SBC/SBCS: `Rn + Rm + C` or `Rn + NOT(Rm) + C` with the current carry
+/// flag; ADCS/SBCS also write NZCV. Rn/Rm/Rd are never SP (ZR mode).
+fn add_sub_carry(
+    state: &mut MachineState,
+    op: AddSub,
+    set_flags: bool,
+    bits: u8,
+    rm: A64Reg,
+    rn: A64Reg,
+    rd: A64Reg,
+) {
+    let operand1 = read_reg_sized(state, rn, bits);
+    let operand2 = match op {
+        AddSub::Add => read_reg_sized(state, rm, bits),
+        AddSub::Sub => !read_reg_sized(state, rm, bits),
+    };
+    let (result, flags) = add_with_carry(operand1, operand2, state.flags.c, bits);
+    if set_flags {
+        state.flags = flags;
+    }
+    write_reg_sized(state, rd, result, bits);
+}
+
+/// Bit-reversed `0x04C11DB7` (CRC32*) and `0x1EDC6F41` (CRC32C*).
+const CRC32_POLY_REFLECTED: u32 = 0xEDB8_8320;
+const CRC32C_POLY_REFLECTED: u32 = 0x82F6_3B78;
+
+/// CRC32*/CRC32C*: `Wd = CRC(Wn, Rm[size-1:0])`. The pseudocode's
+/// `BitReverse(Poly32Mod2(BitReverse(acc):0^size XOR BitReverse(val):0^32, poly))`
+/// is the bit-reflected CRC update, least-significant bit first, with no
+/// pre/post inversion.
+fn crc32(state: &mut MachineState, poly: u32, size: u8, rm: A64Reg, rn: A64Reg, rd: A64Reg) {
+    let mut crc = read_reg_sized(state, rn, 32) as u32;
+    let value = state.read_reg(rm) & width_mask(size);
+    for bit in 0..u32::from(size) {
+        let feedback = (crc ^ (value >> bit) as u32) & 1;
+        crc = (crc >> 1) ^ if feedback != 0 { poly } else { 0 };
+    }
+    write_reg_sized(state, rd, u64::from(crc), 32);
 }
 
 /// `ShiftReg`: shift type 0..=3 is LSL, LSR, ASR, ROR over `bits`.
@@ -3793,6 +3914,280 @@ mod alu_tests {
             },
         );
         assert_eq!(state.read_x(0), 16, "10 - (-2 * 3)");
+    }
+
+    /// `op` = ADC/ADCS/SBC/SBCS with `rd = x0, rn = x1, rm = x2`, from the given
+    /// operands and carry-in. Every other flag is set before, so a non-flag-setting
+    /// form must leave all four unchanged.
+    fn carry_op(
+        insn: fn(A64Reg, A64Reg, A64Reg) -> A64Insn,
+        bits: u8,
+        rn: u64,
+        rm: u64,
+        carry: bool,
+    ) -> (u64, Flags) {
+        let mut state = MachineState::new();
+        state.write_x(0, 0x5555_5555_5555_5555);
+        state.write_x(1, rn);
+        state.write_x(2, rm);
+        state.flags = flags(true, true, carry, true);
+        let reg = if bits == 32 { w } else { x };
+        run(&mut state, insn(reg(2), reg(1), reg(0)));
+        (state.read_x(0), state.flags)
+    }
+
+    #[test]
+    fn add_sub_with_carry_at_boundaries() {
+        let adc64 = |rm, rn, rd| A64Insn::AdcAdc64AddsubCarry { rm, rn, rd };
+        let adcs64 = |rm, rn, rd| A64Insn::AdcsAdcs64AddsubCarry { rm, rn, rd };
+        let adcs32 = |rm, rn, rd| A64Insn::AdcsAdcs32AddsubCarry { rm, rn, rd };
+        let sbc32 = |rm, rn, rd| A64Insn::SbcSbc32AddsubCarry { rm, rn, rd };
+        let sbcs64 = |rm, rn, rd| A64Insn::SbcsSbcs64AddsubCarry { rm, rn, rd };
+        let sbcs32 = |rm, rn, rd| A64Insn::SbcsSbcs32AddsubCarry { rm, rn, rd };
+
+        // ADC reads C and writes no flag.
+        assert_eq!(
+            carry_op(adc64, 64, 1, 2, true),
+            (4, flags(true, true, true, true))
+        );
+        assert_eq!(carry_op(adc64, 64, 1, 2, false).0, 3);
+        // ADCS: the carry-in alone carries out, and alone overflows.
+        assert_eq!(
+            carry_op(adcs64, 64, u64::MAX, 0, true),
+            (0, flags(false, true, true, false))
+        );
+        assert_eq!(
+            carry_op(adcs64, 64, i64::MAX as u64, 0, true),
+            (1 << 63, flags(true, false, false, true))
+        );
+        assert_eq!(
+            carry_op(adcs64, 64, u64::MAX, u64::MAX, true),
+            (u64::MAX, flags(true, false, true, false))
+        );
+        // 32-bit: operands are the low words, the result zero-extends.
+        assert_eq!(
+            carry_op(
+                adcs32,
+                32,
+                0xdead_beef_ffff_ffff,
+                0xffff_0000_0000_0000,
+                true
+            ),
+            (0, flags(false, true, true, false))
+        );
+        assert_eq!(
+            carry_op(adcs32, 32, 0x7fff_ffff, 0, true),
+            (0x8000_0000, flags(true, false, false, true))
+        );
+        // SBC(S): Rn - Rm - NOT(C). C clear is a borrow.
+        assert_eq!(
+            carry_op(sbcs64, 64, 0, 0, false),
+            (u64::MAX, flags(true, false, false, false))
+        );
+        assert_eq!(
+            carry_op(sbcs64, 64, 0, 0, true),
+            (0, flags(false, true, true, false))
+        );
+        assert_eq!(
+            carry_op(sbcs64, 64, 1 << 63, 0, false),
+            (i64::MAX as u64, flags(false, false, true, true))
+        );
+        assert_eq!(
+            carry_op(sbcs32, 32, 0x1_0000_0000, 1, true),
+            (0xffff_ffff, flags(true, false, false, false))
+        );
+        assert_eq!(
+            carry_op(sbc32, 32, 5, 7, false),
+            (0xffff_fffd, flags(true, true, false, true))
+        );
+        // NGC x0, x2 = SBC x0, xzr, x2.
+        let mut state = MachineState::new();
+        state.write_x(2, 5);
+        state.flags = flags(false, false, false, false);
+        run(
+            &mut state,
+            A64Insn::SbcSbc64AddsubCarry {
+                rm: x(2),
+                rn: x(31),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), (-6_i64) as u64);
+    }
+
+    /// 128-bit add and subtract through ADDS/ADCS and SUBS/SBCS.
+    #[test]
+    fn multi_word_carry_chain() {
+        let mut state = MachineState::new();
+        let (a, b) = (
+            0x0000_0001_ffff_ffff_ffff_ffff_u128,
+            0x0000_0002_0000_0000_0000_0001_u128,
+        );
+        state.write_x(1, a as u64);
+        state.write_x(2, (a >> 64) as u64);
+        state.write_x(3, b as u64);
+        state.write_x(4, (b >> 64) as u64);
+        run(
+            &mut state,
+            A64Insn::AddsAddsubShiftAdds64AddsubShift {
+                shift: 0,
+                rm: x(3),
+                imm6: uimm(0, 6),
+                rn: x(1),
+                rd: x(5),
+            },
+        );
+        run(
+            &mut state,
+            A64Insn::AdcAdc64AddsubCarry {
+                rm: x(4),
+                rn: x(2),
+                rd: x(6),
+            },
+        );
+        let sum = a + b;
+        assert_eq!(state.read_x(5), sum as u64);
+        assert_eq!(state.read_x(6), (sum >> 64) as u64);
+        run(
+            &mut state,
+            A64Insn::SubsAddsubShiftSubs64AddsubShift {
+                shift: 0,
+                rm: x(3),
+                imm6: uimm(0, 6),
+                rn: x(1),
+                rd: x(5),
+            },
+        );
+        run(
+            &mut state,
+            A64Insn::SbcsSbcs64AddsubCarry {
+                rm: x(4),
+                rn: x(2),
+                rd: x(6),
+            },
+        );
+        let diff = a.wrapping_sub(b);
+        assert_eq!(state.read_x(5), diff as u64);
+        assert_eq!(state.read_x(6), (diff >> 64) as u64);
+        assert!(state.flags.n && !state.flags.c, "a < b borrows out");
+    }
+
+    #[test]
+    fn multiply_subtract_long() {
+        let mut state = MachineState::new();
+        state.write_x(1, 0xdead_0000_ffff_fffe); // w1 = -2 (signed), 0xfffffffe
+        state.write_x(2, 0xbeef_0000_0000_0003); // w2 = 3
+        state.write_x(3, 10);
+        run(
+            &mut state,
+            A64Insn::SmsublSmsubl64waDp3src {
+                rm: w(2),
+                ra: x(3),
+                rn: w(1),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 16, "10 - (-2 * 3)");
+        run(
+            &mut state,
+            A64Insn::UmsublUmsubl64waDp3src {
+                rm: w(2),
+                ra: x(3),
+                rn: w(1),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 10_u64.wrapping_sub(0xffff_fffe * 3));
+        // SMNEGL: Ra = xzr.
+        run(
+            &mut state,
+            A64Insn::SmsublSmsubl64waDp3src {
+                rm: w(2),
+                ra: x(31),
+                rn: w(1),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 6);
+    }
+
+    /// CRC-32 and CRC-32C check values of "123456789" (initial value and final
+    /// XOR 0xffffffff, applied by software around the instructions), fed as
+    /// bytes, as halfwords + words, and as a doubleword + byte.
+    #[test]
+    fn crc32_check_values() {
+        let data = b"123456789";
+        type Crc = fn(A64Reg, A64Reg, A64Reg) -> A64Insn;
+        let sizes = |crc32c: bool| -> [(usize, Crc); 4] {
+            if crc32c {
+                [
+                    (1, |rm, rn, rd| A64Insn::Crc32cCrc32cb32cDp2src {
+                        rm,
+                        rn,
+                        rd,
+                    }),
+                    (2, |rm, rn, rd| A64Insn::Crc32cCrc32ch32cDp2src {
+                        rm,
+                        rn,
+                        rd,
+                    }),
+                    (4, |rm, rn, rd| A64Insn::Crc32cCrc32cw32cDp2src {
+                        rm,
+                        rn,
+                        rd,
+                    }),
+                    (8, |rm, rn, rd| A64Insn::Crc32cCrc32cx64cDp2src {
+                        rm,
+                        rn,
+                        rd,
+                    }),
+                ]
+            } else {
+                [
+                    (1, |rm, rn, rd| A64Insn::Crc32Crc32b32cDp2src { rm, rn, rd }),
+                    (2, |rm, rn, rd| A64Insn::Crc32Crc32h32cDp2src { rm, rn, rd }),
+                    (4, |rm, rn, rd| A64Insn::Crc32Crc32w32cDp2src { rm, rn, rd }),
+                    (8, |rm, rn, rd| A64Insn::Crc32Crc32x64cDp2src { rm, rn, rd }),
+                ]
+            }
+        };
+        for (crc32c, check) in [(false, 0xcbf4_3926_u64), (true, 0xe306_9283)] {
+            let forms = sizes(crc32c);
+            for chunks in [&[1; 9][..], &[2, 2, 4, 1], &[8, 1]] {
+                let mut state = MachineState::new();
+                // Initial CRC 0xffffffff; the upper word must be ignored.
+                state.write_x(0, u64::MAX);
+                let mut at = 0;
+                for &size in chunks {
+                    let (_, form) = forms.iter().find(|(bytes, _)| *bytes == size).unwrap();
+                    let mut chunk = [0_u8; 8];
+                    chunk[..size].copy_from_slice(&data[at..at + size]);
+                    // Bytes above the operand size must be ignored.
+                    let garbage = if size < 8 { u64::MAX << (size * 8) } else { 0 };
+                    state.write_x(1, u64::from_le_bytes(chunk) | garbage);
+                    let reg = if size == 8 { x } else { w };
+                    run(&mut state, form(reg(1), w(0), w(0)));
+                    at += size;
+                }
+                assert_eq!(
+                    state.read_x(0) ^ 0xffff_ffff,
+                    check,
+                    "crc32c={crc32c} {chunks:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn bti_is_a_nop() {
+        let mut state = MachineState::new();
+        state.write_x(0, 7);
+        state.flags = flags(true, false, true, false);
+        let before = state.clone();
+        for op2 in [0b000, 0b010, 0b100, 0b110] {
+            run(&mut state, A64Insn::BtiBtiHbHints { op2 });
+            assert_eq!(state, before);
+        }
     }
 
     #[test]
