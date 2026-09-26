@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * A hot loop with memory traffic between syscalls: LDP/STP on a heap block,
- * STR/LDR pre/post-index on the stack, a byte load (outside the decoded
- * subset: Unsupported exit, runs natively), and a write+read pair through a
- * pipe plus a write to /dev/null. Output must be identical with KJIT on/off.
- * KJIT_EXPECT=inkernel: most syscalls still run in the kernel, and the byte
- * load's Unsupported exits happen.
+ * STR/LDR pre/post-index on the stack, a byte load, an `mrs tpidrro_el0`
+ * (outside the decoded subset: Unsupported exit, runs natively), and a
+ * write+read pair through a pipe plus a write to /dev/null. Output must be
+ * identical with KJIT on/off. KJIT_EXPECT=inkernel: most syscalls still run in
+ * the kernel, and the mrs's Unsupported exits happen.
  */
 #include "kjit_test.h"
 
@@ -33,7 +33,9 @@ int main(int argc, char **argv)
 		"	str	x4, [sp, #-16]!\n"
 		"	ldr	x5, [sp], #16\n"
 		"	add	%[a], %[a], x5\n"
-		"	ldrb	w6, [%[heap], #3]\n"		/* Unsupported: native */
+		"	ldrb	w6, [%[heap], #3]\n"
+		"	add	%[a], %[a], x6\n"
+		"	mrs	x6, tpidrro_el0\n"		/* Unsupported: native */
 		"	add	%[a], %[a], x6\n"
 		"	mov	x0, %[wfd]\n"
 		"	mov	x1, %[heap]\n"
