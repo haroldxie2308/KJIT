@@ -1503,6 +1503,7 @@ pub fn check_case(
         initial,
         &report.original,
         report.original_cap,
+        &report.original_footprint,
         &report.fragment,
         &report.encoded_fragment,
     )
@@ -1510,7 +1511,9 @@ pub fn check_case(
 
 /// The native half of `check_case`, for a case whose interpreter runs already
 /// agree: native original (capped at `original_cap`, like the interpreter's) and
-/// native fragment must both match `original`.
+/// native fragment must both match `original`, up to the store footprint of a
+/// faulting instruction (`crate::undo_store_footprint`), which the CPU may have
+/// partly written in either run.
 #[allow(clippy::too_many_arguments)]
 pub fn check_against_interpreter(
     session: &NativeSession,
@@ -1520,23 +1523,27 @@ pub fn check_against_interpreter(
     initial: &MachineState,
     original: &ExecutionResult,
     original_cap: Option<InstanceCap>,
+    original_footprint: &[crate::StoreUnit],
     fragment: &ExecutionFragment,
     encoded_fragment: &[u8],
 ) -> Result<String, String> {
     let native_original = run_original(session, text_base, text, entry_pc, initial, original_cap)?;
     let native_fragment = run_fragment(session, fragment, encoded_fragment, initial)?;
+    let undo = |state: &MachineState| {
+        crate::undo_store_footprint(&original.state, original_footprint, state)
+    };
 
     let mut problems = diff_states(
         "interp-original",
         &original.state,
         "native-original",
-        &native_original.state,
+        &undo(&native_original.state),
     );
     problems.extend(diff_states(
         "interp-original",
         &original.state,
         "native-fragment",
-        &native_fragment.state,
+        &undo(&native_fragment.state),
     ));
     if let Err(message) = original_halt_matches(original, text_base, text, &native_original.stop) {
         problems.push(format!("native-original {message}"));
