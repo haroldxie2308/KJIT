@@ -185,6 +185,28 @@ fn read_insn<P: CodeProvider>(
     admit_word(u32::from_le_bytes(bytes), pc)
 }
 
+/// Final layout order of a program's blocks, as indices into the sequence of their
+/// start addresses: ascending start address. This is the single definition of
+/// "layout order": rephrase derives back-edges from it (a branch whose target is at
+/// or before it in this order), layout emits block bodies and cold regions in it,
+/// and the harness trace reconstructs offsets from it. Blocks partition the PC
+/// space, so starts are distinct, and a fall-through successor (which starts at its
+/// predecessor's end) is the next block in this order.
+pub fn layout_block_order(
+    starts: impl IntoIterator<Item = u64>,
+) -> Result<SharedVec<usize>, SharedAllocError> {
+    let mut keyed: SharedVec<(u64, usize)> = SharedVec::new();
+    for (index, start) in starts.into_iter().enumerate() {
+        keyed.push((start, index), GFP_KERNEL)?;
+    }
+    keyed.sort_unstable();
+    let mut order = SharedVec::with_capacity(keyed.len(), GFP_KERNEL)?;
+    for &(_, index) in keyed.iter() {
+        order.push(index, GFP_KERNEL)?;
+    }
+    Ok(order)
+}
+
 /// The single decision on whether the word at `pc` joins a translated block.
 /// `Ok(Ok(insn))`: translate it. `Ok(Err(u))`: end the block before it with an
 /// Unsupported exit. `Err`: translator bug. Shared with the harness original-code

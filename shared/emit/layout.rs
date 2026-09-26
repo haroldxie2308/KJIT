@@ -3,6 +3,7 @@ use crate::shared::abi::{
 };
 use crate::shared::arm64::{A64Insn, A64OperandRole, A64RewriteError};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
+use crate::shared::trans::cfg::layout_block_order;
 use crate::shared::trans::rephrase::{RephrasedInsnKind, RephrasedProgram};
 
 pub type LayoutVLabels = SharedVec<(u64, usize)>;
@@ -73,9 +74,22 @@ pub enum LayoutError {
     UntaggedUserAccess {
         insn_index: usize,
     },
-    /// Two cold exit groups for the same original instruction.
+    /// Two cold exit groups (fault or budget stubs) for the same original
+    /// instruction.
     DuplicateFaultStub {
         ori_pc: u64,
+    },
+    /// A budget check whose original instruction has no `Budget` stub.
+    MissingBudgetStub {
+        insn_index: usize,
+        ori_pc: u64,
+    },
+    /// A user branch to a target at or before it in layout order without a budget
+    /// check in its original instruction's sequence: rephrase and layout disagree on
+    /// the layout order, and the loop would run unbounded.
+    UnguardedBackEdge {
+        insn_index: usize,
+        target_original_pc: u64,
     },
 }
 
@@ -125,6 +139,17 @@ impl core::fmt::Display for LayoutError {
             Self::DuplicateFaultStub { ori_pc } => {
                 write!(f, "duplicate fault stub for pc {ori_pc:#x}")
             }
+            Self::MissingBudgetStub { insn_index, ori_pc } => write!(
+                f,
+                "budget check at instruction {insn_index} has no budget stub for pc {ori_pc:#x}"
+            ),
+            Self::UnguardedBackEdge {
+                insn_index,
+                target_original_pc,
+            } => write!(
+                f,
+                "back-edge at instruction {insn_index} to {target_original_pc:#x} has no budget check"
+            ),
         }
     }
 }
@@ -135,6 +160,9 @@ pub(crate) struct BranchReloc {
     pub(crate) insn_index: usize,
     pub(crate) target_original_pc: u64,
     pub(crate) kind: BranchRelocKind,
+    /// A budget check precedes the branch within its original instruction's
+    /// sequence. Required when the branch resolves backward.
+    pub(crate) budget_checked: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -149,15 +177,19 @@ pub(crate) enum BranchRelocKind {
     Tbnz,
 }
 
-/// Layout order: prologue, epilogue, every block body in block order, then the cold
-/// region (every block's `cold` exit groups, in block order). Each cold group ends in
-/// its runtime-exit branch, so nothing falls through into or out of the region.
+/// Layout order: prologue, epilogue, every block body in `layout_block_order`, then
+/// the cold region (every block's `cold` exit groups -- fault and budget stubs -- in
+/// the same order). The entry block is `program[0]` (CFG order). Each cold group
+/// ends in its runtime-exit branch, so nothing falls through into or out of the
+/// region. A budget check's `CBZ` resolves to the stub of its `ori_pc`; a user
+/// branch that resolves backward must be budget-checked.
 pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragment, LayoutError> {
     let insn_count = program
         .iter()
         .map(|block| block.insns.len() + block.cold.len())
         .sum::<usize>();
     let entry_pc = program.first().ok_or(LayoutError::EmptyProgram)?.start_addr;
+    let order = layout_block_order(program.iter().map(|block| block.start_addr))?;
     let mut fragment = ExecutionFragment {
         insns: SharedVec::with_capacity(
             insn_count + (PROLOGUE_LEN_BYTES + EPILOGUE_LEN_BYTES) / 4,
@@ -169,18 +201,26 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
     };
     let mut relocs = SharedVec::with_capacity(insn_count, GFP_KERNEL)?;
     let mut runtime_exit_branches = SharedVec::with_capacity(insn_count, GFP_KERNEL)?;
-    // Stub labels: original PC -> offset of its cold `Mem` exit group. Their own label
-    // kind, never merged into `vlabels`.
+    // Stub labels: original PC -> offset of its cold `Mem` or `Budget` exit group
+    // (at most one per PC). Their own label kind, never merged into `vlabels`.
     let mut stub_labels: LayoutVLabels = SharedVec::new();
+    // Budget-check `CBZ`s: (instruction index, original PC of the back-edge).
+    let mut budget_branches: SharedVec<(usize, u64)> = SharedVec::new();
+    // Original PC whose budget check has been emitted in the current run of
+    // instructions with that PC.
+    let mut budget_checked_pc = None;
 
     append_prologue(&mut fragment.insns, GFP_KERNEL)?;
     append_epilogue(&mut fragment.insns, GFP_KERNEL)?;
 
-    for block in &program {
+    for block in order.iter().map(|&index| &program[index]) {
         for rephrased in &block.insns {
             let insn_index = fragment.insns.len();
             let output_offset = insn_index * 4;
             insert_vlabel_once(&mut fragment.vlabels, rephrased.ori_pc, output_offset)?;
+            if budget_checked_pc != Some(rephrased.ori_pc) {
+                budget_checked_pc = None;
+            }
 
             let user_access = rephrased.kind == RephrasedInsnKind::UserAccess;
             if user_access != rephrased.insn.is_unprivileged_access() {
@@ -196,9 +236,18 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
                     },
                     GFP_KERNEL,
                 )?;
+            } else if rephrased.kind == RephrasedInsnKind::BudgetCheck {
+                if branch_target_role(rephrased.insn).is_some() {
+                    budget_branches.push((insn_index, rephrased.ori_pc), GFP_KERNEL)?;
+                    budget_checked_pc = Some(rephrased.ori_pc);
+                }
             } else if rephrased.kind.is_user_semantic() {
-                if let Some(reloc) = branch_reloc_for(rephrased.insn, rephrased.ori_pc, insn_index)?
-                {
+                if let Some(reloc) = branch_reloc_for(
+                    rephrased.insn,
+                    rephrased.ori_pc,
+                    insn_index,
+                    budget_checked_pc == Some(rephrased.ori_pc),
+                )? {
                     relocs.push(reloc, GFP_KERNEL)?;
                 }
             } else if rephrased.kind.is_runtime_exit_branch() {
@@ -211,7 +260,7 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
 
     // Reg-virt guarantees each cold group is one PC and ends in its exit branch.
     let mut group_start = true;
-    for rephrased in program.iter().flat_map(|block| block.cold.iter()) {
+    for rephrased in order.iter().flat_map(|&index| program[index].cold.iter()) {
         let insn_index = fragment.insns.len();
         if group_start {
             if find_vlabel(&stub_labels, rephrased.ori_pc).is_some() {
@@ -237,6 +286,12 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
                 insn_index: site.access_offset / 4,
                 ori_pc: site.ori_pc,
             })?;
+    }
+
+    for &(insn_index, ori_pc) in &budget_branches {
+        let stub_offset = find_vlabel(&stub_labels, ori_pc)
+            .ok_or(LayoutError::MissingBudgetStub { insn_index, ori_pc })?;
+        rewrite_branch_to_offset(&mut fragment, insn_index, stub_offset, ori_pc)?;
     }
 
     fragment.entry_offset =
@@ -271,6 +326,7 @@ fn branch_reloc_for(
     insn: A64Insn,
     original_pc: u64,
     insn_index: usize,
+    budget_checked: bool,
 ) -> SharedResult<Option<BranchReloc>, LayoutError> {
     let Some((field, scale, bits)) = branch_target_role(insn) else {
         return Ok(None);
@@ -286,6 +342,7 @@ fn branch_reloc_for(
         insn_index,
         target_original_pc: pc_relative_target(original_pc, encoded, bits, scale),
         kind,
+        budget_checked,
     }))
 }
 
@@ -308,6 +365,12 @@ fn resolve_branch_relocs(
                 target_original_pc: reloc.target_original_pc,
             },
         )?;
+        if target_offset <= reloc.insn_index * 4 && !reloc.budget_checked {
+            return Err(LayoutError::UnguardedBackEdge {
+                insn_index: reloc.insn_index,
+                target_original_pc: reloc.target_original_pc,
+            });
+        }
         rewrite_branch_to_offset(
             fragment,
             reloc.insn_index,
@@ -516,27 +579,20 @@ mod tests {
         );
     }
 
-    #[test]
-    fn rewrites_backward_cond_branch_to_layout_offset() {
-        let mut insns = SharedVec::new();
-        insns
-            .push(
-                RephrasedInsn::original(0x1000, A64Insn::NopNopHiHints {}),
-                GFP_KERNEL,
-            )
-            .unwrap();
-        insns
-            .push(
-                RephrasedInsn::synthetic(0x1004, A64Insn::NopNopHiHints {}),
-                GFP_KERNEL,
-            )
-            .unwrap();
-        insns
-            .push(
-                RephrasedInsn::synthetic(0x1004, A64Insn::NopNopHiHints {}),
-                GFP_KERNEL,
-            )
-            .unwrap();
+    /// nop @0x1000; two synthetic nops @0x1004; `cbnz x0, 0x1000` @0x1008, with the
+    /// back-edge's budget check before the CBNZ when `checked`.
+    fn backward_cbnz_block(checked: bool) -> SharedVec<RephrasedInsn> {
+        let nop = A64Insn::NopNopHiHints {};
+        let mut insns = vec_of(&[
+            RephrasedInsn::original(0x1000, nop),
+            RephrasedInsn::synthetic(0x1004, nop),
+            RephrasedInsn::synthetic(0x1004, nop),
+        ]);
+        if checked {
+            for check in crate::shared::trans::rephrase::budget_check(0x1008) {
+                insns.push(check, GFP_KERNEL).unwrap();
+            }
+        }
         insns
             .push(
                 RephrasedInsn::original(
@@ -549,13 +605,92 @@ mod tests {
                 GFP_KERNEL,
             )
             .unwrap();
+        insns
+    }
 
-        let layout = layout_program(one_block(insns)).unwrap();
+    #[test]
+    fn rewrites_backward_cond_branch_to_layout_offset() {
+        let mut program = one_block(backward_cbnz_block(true));
+        program[0].cold = vec_of(&[
+            RephrasedInsn::runtime_exit_payload(0x1008, A64Insn::NopNopHiHints {}),
+            exit_branch(0x1008),
+        ]);
+
+        let layout = layout_program(program).unwrap();
         let body_index = body_start_offset() / 4;
+        let cold_index = body_index + 8;
 
+        // The CBNZ follows its 4-instruction budget check and goes back 7.
         assert_eq!(
-            layout.insns[body_index + 3].branch_target_imm("imm19"),
-            Some(524285)
+            layout.insns[body_index + 7].branch_target_imm("imm19"),
+            Some(524288 - 7)
+        );
+        // The check's CBZ goes to the Budget stub in the cold region.
+        assert_eq!(
+            layout.insns[body_index + 6].direct_branch_target(0),
+            None,
+            "CBZ is conditional"
+        );
+        assert_eq!(
+            layout.insns[body_index + 6]
+                .conditional_targets(((body_index + 6) * 4) as u64)
+                .map(|(taken, _)| taken),
+            Some((cold_index * 4) as u64)
+        );
+    }
+
+    /// Bodies go out in `layout_block_order` (ascending start), not program order;
+    /// the entry is still `program[0]`.
+    #[test]
+    fn emits_blocks_in_layout_order_and_enters_at_the_first_program_block() {
+        let nop = A64Insn::NopNopHiHints {};
+        let mut program = one_block(vec_of(&[RephrasedInsn::original(0x1008, nop)]));
+        program[0].start_addr = 0x1008;
+        program
+            .push(
+                RephrasedBlock {
+                    start_addr: 0x1000,
+                    end_addr: 0x1008,
+                    prev: SharedVec::new(),
+                    next: SharedVec::new(),
+                    insns: vec_of(&[
+                        RephrasedInsn::original(0x1000, nop),
+                        RephrasedInsn::original(0x1004, nop),
+                    ]),
+                    cold: SharedVec::new(),
+                },
+                GFP_KERNEL,
+            )
+            .unwrap();
+
+        let layout = layout_program(program).unwrap();
+        let body = body_start_offset();
+        assert_eq!(
+            &layout.vlabels[..],
+            [(0x1000, body), (0x1004, body + 4), (0x1008, body + 8)]
+        );
+        assert_eq!(layout.entry_offset, body + 8);
+    }
+
+    #[test]
+    fn rejects_backward_branch_without_budget_check() {
+        assert_eq!(
+            layout_program(one_block(backward_cbnz_block(false))),
+            Err(LayoutError::UnguardedBackEdge {
+                insn_index: body_start_offset() / 4 + 3,
+                target_original_pc: 0x1000,
+            })
+        );
+    }
+
+    #[test]
+    fn rejects_budget_check_without_budget_stub() {
+        assert_eq!(
+            layout_program(one_block(backward_cbnz_block(true))),
+            Err(LayoutError::MissingBudgetStub {
+                insn_index: body_start_offset() / 4 + 6,
+                ori_pc: 0x1008,
+            })
         );
     }
 

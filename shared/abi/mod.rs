@@ -3,7 +3,8 @@ mod regs;
 mod wrapper;
 
 pub use frame::{
-    pt_regs_x_slot_offset, reg_virt_stack_backed_slot_offset, RUNTIME_FRAME_ENTRY_ADDR_OFFSET,
+    pt_regs_x_slot_offset, reg_virt_stack_backed_slot_offset, KJIT_BACKEDGE_BUDGET,
+    RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_ENTRY_ADDR_OFFSET,
     RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
 };
 pub use regs::{

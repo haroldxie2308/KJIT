@@ -19,7 +19,7 @@ use crate::model::{AccessKind, HaltReason, MachineState, Privilege};
 use crate::runtime::{URuntime, URuntimeHalt};
 use crate::shared::abi::RetStatus;
 use crate::{
-    compile_fixture_fragment, default_fixture_state, run_entry_fixture,
+    compile_fixture_fragment, default_fixture_state, fragment_instance_cap, run_entry_fixture,
     run_original_with_mocked_svc,
 };
 
@@ -42,7 +42,7 @@ struct CompiledCase {
 fn every_asm_fixture_case_matches_original() {
     run_every_case("interp", &mut |case| {
         let initial_state = default_fixture_state();
-        run_entry_fixture(
+        let report = run_entry_fixture(
             "asm-fixture",
             case.text_base,
             case.text_bytes.clone(),
@@ -64,7 +64,9 @@ fn every_asm_fixture_case_matches_original() {
         )
         .map_err(|message| format!("fragment fault differential: {message}"))?;
         Ok(format!(
-            "injected_user_accesses={user_accesses} injected_fragment_faults={fragment_faults}"
+            "halt={:?} injected_user_accesses={user_accesses} \
+             injected_fragment_faults={fragment_faults}",
+            report.fragment_halt
         ))
     });
 }
@@ -239,6 +241,7 @@ fn check_fault_injection(
         accesses_before: u64,
     }
 
+    let cap = fragment_instance_cap(text_base, text_bytes, entry_pc, initial_state)?;
     let mut pre_steps = Vec::new();
     let clean = run_original_with_mocked_svc(
         text_bytes,
@@ -246,6 +249,7 @@ fn check_fault_injection(
         entry_pc,
         initial_state,
         None,
+        cap,
         &mut |stepper| {
             pre_steps.push(PreStep {
                 pc: stepper.pc(),
@@ -254,9 +258,10 @@ fn check_fault_injection(
             })
         },
     )?;
-    // The halting step is a runtime exit, the end of the text or an
-    // undecodable word, none of which accesses memory, or an instruction that
-    // faults on its own. `total` counts the accesses before it.
+    // The halting step is a runtime exit, the end of the text, an undecodable
+    // word or an instance-capped instruction (none of which accesses memory in
+    // the run), or an instruction that faults on its own. `total` counts the
+    // accesses before it.
     let halting = pre_steps.last().ok_or("uninjected run took no steps")?;
     let total = halting.accesses_before;
 
@@ -266,6 +271,7 @@ fn check_fault_injection(
         entry_pc,
         initial_state,
         Some(total + 1),
+        cap,
         &mut |_| {},
     )?;
     match clean.halt_reason {
@@ -306,6 +312,7 @@ fn check_fault_injection(
             entry_pc,
             initial_state,
             Some(k),
+            cap,
             &mut |_| {},
         )?;
         match injected.halt_reason {
@@ -351,6 +358,7 @@ fn check_fragment_fault_injection(
         state: MachineState,
         accesses_before: u64,
     }
+    let cap = fragment_instance_cap(text_base, text_bytes, entry_pc, initial_state)?;
     let mut pre_steps = Vec::new();
     let mut original_log: Vec<LoggedAccess> = Vec::new();
     let clean = run_original_with_mocked_svc(
@@ -359,6 +367,7 @@ fn check_fragment_fault_injection(
         entry_pc,
         initial_state,
         None,
+        cap,
         &mut |stepper| {
             let log = stepper.access_log().expect("original runs record accesses");
             original_log.extend_from_slice(&log[original_log.len()..]);

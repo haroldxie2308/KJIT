@@ -1,7 +1,8 @@
 use super::{
     ABI_ENTRY_ARG_REG, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
-    REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
-    RUNTIME_FRAME_ENTRY_ADDR_OFFSET, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
+    KJIT_BACKEDGE_BUDGET, REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG,
+    RET_STATUS_REG, RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_ENTRY_ADDR_OFFSET,
+    RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
 };
 use crate::shared::arm64::ergo::{
     ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, sp, uimm, x, xzr,
@@ -20,8 +21,9 @@ pub const EPILOGUE_LEN_BYTES: usize = KJIT_EPILOGUE.len() * ABI_INSN_SIZE;
 const PROLOGUE_ENTRY_SCRATCH_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
 
 /// Entered at offset 0 with x0 = pt_regs, x1 = extra params and
-/// x2 = `ABI_ENTRY_ARG_REG` (absolute body address to start at). It ends with the
-/// fragment's only indirect branch, `br` to that saved entry address.
+/// x2 = `ABI_ENTRY_ARG_REG` (absolute body address to start at). It resets the
+/// back-edge budget counter and ends with the fragment's only indirect branch, `br`
+/// to that saved entry address.
 pub const KJIT_PROLOGUE: &[A64Insn] = &[
     A64Insn::StpGenStp64LdstpairPre {
         rt2: x(30),
@@ -203,6 +205,16 @@ pub const KJIT_PROLOGUE: &[A64Insn] = &[
         rt2: x(17),
         rt: x(16),
         mem: mem_off(sp(), ldstpair64_offset(64)),
+    },
+    // Every entry starts with a full budget (x12 is scratch here, see above).
+    A64Insn::MovzMovz64Movewide {
+        hw: 0,
+        imm16: uimm(KJIT_BACKEDGE_BUDGET as u32, 16),
+        rd: x(PROLOGUE_ENTRY_SCRATCH_REG),
+    },
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(PROLOGUE_ENTRY_SCRATCH_REG),
+        mem: mem_off(sp(), ldst64_offset(RUNTIME_FRAME_BUDGET_OFFSET)),
     },
     A64Insn::LdrImmGenLdr64LdstPos {
         rt: x(PROLOGUE_ENTRY_SCRATCH_REG),
@@ -430,8 +442,8 @@ mod tests {
 
     #[test]
     fn wrapper_lengths_match_contract() {
-        assert_eq!(PROLOGUE_LEN_BYTES, 0x98);
-        assert_eq!(EPILOGUE_OFFSET, 0x98);
+        assert_eq!(PROLOGUE_LEN_BYTES, 0xa0);
+        assert_eq!(EPILOGUE_OFFSET, 0xa0);
         assert_eq!(EPILOGUE_LEN_BYTES, 0x88);
     }
 

@@ -28,7 +28,10 @@ use crate::shared::trans::input::{
 use crate::shared::trans::translate::{compile_request, translate_request, TranslatedProgram};
 use arm64::OriginalStepper;
 use model::{ExecutionResult, HaltReason, MachineState, PagePerm, PAGE_SIZE};
-use runtime::{URuntime, URuntimeHalt};
+use runtime::{URuntime, URuntimeHalt, URuntimeReport, URuntimeStepper};
+
+/// Continuation bound for mocked-SVC original runs and interpreter fragment runs.
+const MAX_RUNTIME_EXITS: usize = 10_000;
 
 #[derive(Debug)]
 pub struct CaseReport {
@@ -36,9 +39,21 @@ pub struct CaseReport {
     pub fragment: ExecutionFragment,
     pub encoded_fragment: Vec<u8>,
     pub original: ExecutionResult,
+    /// Where the original run was stopped to match a `Budget` exit of the fragment.
+    pub original_cap: Option<InstanceCap>,
     pub fragment_state: MachineState,
     pub fragment_halt: URuntimeHalt,
     pub fragment_steps: usize,
+}
+
+/// Stop an original run right before the `instance`-th (1-based) execution of the
+/// instruction at `pc`, counted over the whole run (SVC continuations included).
+/// This is the dynamic point where a fragment's `Budget` exit returns to userspace
+/// (tmp/pipeline.md, "Execution budget (A6)"); `fragment_instance_cap` derives it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct InstanceCap {
+    pub pc: u64,
+    pub instance: u64,
 }
 
 pub struct MockCodeProvider {
@@ -130,13 +145,19 @@ pub fn run_entry_fixture(
     entry_pc: u64,
     initial_state: &MachineState,
 ) -> Result<CaseReport, String> {
-    let original =
-        execute_original_with_mocked_svc(&text_bytes, text_base, entry_pc, initial_state)?;
-
-    let fragment = compile_fixture_fragment(text_base, text_bytes, entry_pc, initial_state)?;
+    // The fragment runs first: a Budget exit decides where the original stops.
+    let fragment =
+        compile_fixture_fragment(text_base, text_bytes.clone(), entry_pc, initial_state)?;
     let mut runtime = URuntime::new(fragment, initial_state.clone());
-    let report = runtime.run();
+    let (report, original_cap) = run_fragment_counting_instances(&mut runtime)?;
     let encoded_fragment = encode_fragment(&runtime.fragment)?;
+    let original = execute_original_with_mocked_svc(
+        &text_bytes,
+        text_base,
+        entry_pc,
+        initial_state,
+        original_cap,
+    )?;
 
     if original.state != report.state {
         return Err(format!(
@@ -156,10 +177,96 @@ pub fn run_entry_fixture(
         fragment: runtime.fragment,
         encoded_fragment,
         original,
+        original_cap,
         fragment_state: report.state,
         fragment_halt: report.halt,
         fragment_steps: report.steps,
     })
+}
+
+/// Runs a fragment to its halt like `URuntime::run`, and, when it ends in a `Budget`
+/// exit at back-edge `pc`, returns where the original run must stop to match it.
+///
+/// The fragment starts original instruction `pc` exactly when it executes `pc`'s
+/// body label: every runtime entry, branch and fall-through into `pc` lands there,
+/// and for a back-edge that label is the first instruction of its budget check. So
+/// the exit happened on dynamic instance `executions(label(pc))` of `pc`.
+pub(crate) fn run_fragment_counting_instances(
+    runtime: &mut URuntime,
+) -> Result<(URuntimeReport, Option<InstanceCap>), String> {
+    let mut executions = vec![0_u64; runtime.fragment.insns.len()];
+    let report = {
+        let mut stepper = URuntimeStepper::new(runtime)
+            .map_err(|message| format!("fragment runtime setup failed: {message}"))?;
+        let mut continuations = 0usize;
+        loop {
+            let step = match stepper.step() {
+                Ok(Some(step)) => step,
+                Ok(None) => {
+                    break stepper.report_for_halt(URuntimeHalt::ExecutionError {
+                        pc: stepper.pc(),
+                        message: "runtime stepper stopped without a halt reason".to_string(),
+                    })
+                }
+                Err(message) => {
+                    break stepper.report_for_halt(URuntimeHalt::ExecutionError {
+                        pc: stepper.pc(),
+                        message,
+                    })
+                }
+            };
+            if let (true, Some(offset)) = (step.executed, step.offset) {
+                executions[offset / 4] += 1;
+            }
+            if step.runtime_transition.is_some_and(|transition| {
+                matches!(transition, runtime::URuntimeTransition::Continued { .. })
+            }) {
+                continuations += 1;
+                if continuations >= MAX_RUNTIME_EXITS {
+                    return Err(
+                        "fragment run exceeded the runtime-exit continuation limit".to_string()
+                    );
+                }
+            }
+            if let Some(halt) = step.halt {
+                break stepper.report_for_halt(halt);
+            }
+        }
+    };
+
+    let URuntimeHalt::ReturnedToUserspace {
+        status: crate::shared::abi::RetStatus::Budget,
+        target_pc: pc,
+    } = report.halt
+    else {
+        return Ok((report, None));
+    };
+    let label = runtime
+        .fragment
+        .offset_for_pc(pc)
+        .ok_or_else(|| format!("Budget exit at {pc:#x}, which has no body label"))?;
+    let instance = executions[label / 4];
+    if instance == 0 {
+        return Err(format!(
+            "Budget exit at {pc:#x}, but its body label {label:#x} never executed"
+        ));
+    }
+    Ok((report, Some(InstanceCap { pc, instance })))
+}
+
+/// `InstanceCap` of a fixture case: compiles and runs its fragment
+/// (`run_fragment_counting_instances`). `None` unless the fragment ends in `Budget`.
+#[cfg(test)]
+pub(crate) fn fragment_instance_cap(
+    text_base: u64,
+    text_bytes: &[u8],
+    entry_pc: u64,
+    initial_state: &MachineState,
+) -> Result<Option<InstanceCap>, String> {
+    let fragment =
+        compile_fixture_fragment(text_base, text_bytes.to_vec(), entry_pc, initial_state)?;
+    let mut runtime = URuntime::new(fragment, initial_state.clone());
+    Ok(run_fragment_counting_instances(&mut runtime)?.1)
 }
 
 /// Translates a fixture case exactly as `run_entry_fixture` does.
@@ -198,6 +305,7 @@ fn execute_original_with_mocked_svc(
     text_base: u64,
     entry_pc: u64,
     initial_state: &MachineState,
+    cap: Option<InstanceCap>,
 ) -> Result<ExecutionResult, String> {
     run_original_with_mocked_svc(
         program,
@@ -205,6 +313,7 @@ fn execute_original_with_mocked_svc(
         entry_pc,
         initial_state,
         None,
+        cap,
         &mut |_| {},
     )
 }
@@ -212,18 +321,19 @@ fn execute_original_with_mocked_svc(
 /// Runs original code to a halt, resuming after every SVC as if the syscall
 /// returned without side effects. `fail_user_access = Some(k)` faults the k-th
 /// dynamic user access of the whole run (1-based, SVC continuations included)
-/// regardless of permissions. `before_step` sees the stepper before each step;
-/// the stepper records its accesses (`OriginalStepper::access_log`).
+/// regardless of permissions. `cap` halts with `HaltReason::InstanceCap` before the
+/// instruction it names executes. `before_step` sees the stepper before each step,
+/// the capped one included; the stepper records its accesses
+/// (`OriginalStepper::access_log`).
 pub(crate) fn run_original_with_mocked_svc(
     program: &[u8],
     text_base: u64,
     entry_pc: u64,
     initial_state: &MachineState,
     fail_user_access: Option<u64>,
+    cap: Option<InstanceCap>,
     before_step: &mut dyn FnMut(&OriginalStepper),
 ) -> Result<ExecutionResult, String> {
-    const MAX_RUNTIME_EXITS: usize = 10_000;
-
     let mut stepper =
         OriginalStepper::new(program, text_base, entry_pc, initial_state)?.record_accesses();
     if let Some(k) = fail_user_access {
@@ -231,9 +341,23 @@ pub(crate) fn run_original_with_mocked_svc(
     }
     let mut steps = 0usize;
     let mut runtime_exits = 0usize;
+    let mut cap_arrivals = 0u64;
 
     loop {
         before_step(&stepper);
+        if let Some(cap) = cap.filter(|cap| cap.pc == stepper.pc()) {
+            cap_arrivals += 1;
+            if cap_arrivals == cap.instance {
+                return Ok(ExecutionResult {
+                    state: stepper.state().clone(),
+                    halt_reason: HaltReason::InstanceCap {
+                        pc: cap.pc,
+                        instance: cap.instance,
+                    },
+                    steps,
+                });
+            }
+        }
         let Some(step) = stepper.step()? else {
             return Err("original stepper stopped without a halt reason".to_string());
         };
@@ -326,6 +450,15 @@ pub(crate) fn runtime_halt_matches_original(original: &ExecutionResult, halt: &U
                 target_pc,
             },
         ) => fault.pc == *target_pc,
+        // The original was capped at the dynamic instance the fragment's Budget exit
+        // counted; userspace resumes natively at that back-edge branch.
+        (
+            HaltReason::InstanceCap { pc, .. },
+            URuntimeHalt::ReturnedToUserspace {
+                status: crate::shared::abi::RetStatus::Budget,
+                target_pc,
+            },
+        ) => pc == *target_pc,
         (HaltReason::FellOffEnd, URuntimeHalt::FellOffFragment { .. }) => true,
         _ => false,
     }

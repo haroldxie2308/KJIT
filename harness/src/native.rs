@@ -10,6 +10,9 @@
 //!   A branch exit (RET/BR/BL/BLR) is then executed by the hardware alone in a
 //!   copy of the text where every other word is a BRK, so the stop state includes
 //!   the hardware's own link-register write and the branch target it took.
+//!   An `InstanceCap` (a fragment `Budget` exit) stops the run before the n-th
+//!   execution of a back-edge branch: its word traps, and every earlier arrival
+//!   lets the hardware execute that branch once (`step_capped_branch`).
 //! - **Fragment:** the encoded fragment is mapped RX and called like the kernel
 //!   will call it (x0 = pt_regs, x1 = extra params, x2 = entry address, lr =
 //!   return), driven by the same `decide_runtime_return` loop as `URuntime`.
@@ -40,9 +43,11 @@ use crate::runtime::{
     PT_REGS_SP_OFFSET,
 };
 use crate::shared::abi::pt_regs_x_slot_offset;
+use crate::shared::arm64::{decode_word, A64OperandRole};
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::trans::cfg::admit_word;
 use crate::shared::trans::cfg::RuntimeExitReason;
+use crate::InstanceCap;
 
 /// Same continuation bound as `execute_original_with_mocked_svc` / `URuntime`.
 const MAX_RUNTIME_EXITS: usize = 10_000;
@@ -51,9 +56,11 @@ const BRK_ENTER_IMM: u16 = 0x4b01;
 const BRK_SVC_IMM: u16 = 0x4b02;
 const BRK_STOP_IMM: u16 = 0x4b03;
 const BRK_FILL_IMM: u16 = 0x4b04;
+const BRK_CAP_IMM: u16 = 0x4b05;
 const BRK_SVC: u32 = brk(BRK_SVC_IMM);
 const BRK_STOP: u32 = brk(BRK_STOP_IMM);
 const BRK_FILL: u32 = brk(BRK_FILL_IMM);
+const BRK_CAP: u32 = brk(BRK_CAP_IMM);
 
 const NZCV_MASK: u64 = 0xf000_0000;
 const ALT_STACK_BYTES: usize = 256 * 1024;
@@ -895,6 +902,8 @@ pub enum NativeStop {
     FellOffEnd { pc: u64 },
     /// The instruction at `pc` took a data abort at `addr` and did not retire.
     Fault { pc: u64, addr: u64 },
+    /// Stopped before the `InstanceCap`'s execution of the branch at `pc`.
+    InstanceCap { pc: u64 },
 }
 
 #[derive(Clone, Debug)]
@@ -938,6 +947,7 @@ pub fn run_original(
     text: &[u8],
     entry_pc: u64,
     initial: &MachineState,
+    cap: Option<InstanceCap>,
 ) -> Result<NativeOriginal, String> {
     if text.len() % 4 != 0 {
         return Err("fixture text length must be a multiple of 4 bytes".to_string());
@@ -953,19 +963,51 @@ pub fn run_original(
         round_up(text.len() + 4, session.page),
         PROT_READ | PROT_WRITE,
     )?;
-    text_map.install_code(&stop_point_words(&words, text_base))?;
+    let mut stop_words = stop_point_words(&words, text_base);
+    if let Some(cap) = cap {
+        let index = text_index(cap.pc, text_base, words.len())
+            .ok_or_else(|| format!("instance cap pc {:#x} is outside the text", cap.pc))?;
+        // A back-edge branch: never an SVC, a runtime exit or a rejected word.
+        if stop_words[index] != words[index] {
+            return Err(format!("instance cap pc {:#x} is a stop point", cap.pc));
+        }
+        stop_words[index] = BRK_CAP;
+    }
+    text_map.install_code(&stop_words)?;
     let memory = UserMemory::map(initial, session.page)?;
 
     let mut regs = user_regs(initial, entry_pc);
-    for _ in 0..MAX_RUNTIME_EXITS {
+    let mut runtime_exits = 0usize;
+    let mut cap_arrivals = 0u64;
+    loop {
         let (event, snapshot) = session.enter_user(regs, initial.tpidr_el0)?;
         let pc = event.pc;
         match (event.signal, event.brk()) {
             (SIGTRAP, Some(BRK_SVC)) => {
+                runtime_exits += 1;
+                if runtime_exits >= MAX_RUNTIME_EXITS {
+                    return Err(
+                        "native original run exceeded the runtime-exit continuation limit"
+                            .to_string(),
+                    );
+                }
                 // The mocked SVC of `execute_original_with_mocked_svc`: no state
                 // change, resume at the next instruction.
                 regs = snapshot;
                 regs.pc = pc + 4;
+            }
+            (SIGTRAP, Some(BRK_CAP)) => {
+                let cap = cap.ok_or("BRK_CAP trapped without an instance cap")?;
+                cap_arrivals += 1;
+                if cap_arrivals == cap.instance {
+                    return Ok(NativeOriginal {
+                        state: native_state(initial, &snapshot, &memory),
+                        stop: NativeStop::InstanceCap { pc },
+                    });
+                }
+                regs =
+                    step_capped_branch(session, &text_map, &words, text_base, snapshot, initial)?;
+                text_map.install_code(&stop_words)?;
             }
             (SIGTRAP, Some(BRK_STOP)) => {
                 let word = words[((pc - text_base) / 4) as usize];
@@ -1004,7 +1046,86 @@ pub fn run_original(
             }
         }
     }
-    Err("native original run exceeded the runtime-exit continuation limit".to_string())
+}
+
+fn text_index(pc: u64, text_base: u64, words: usize) -> Option<usize> {
+    let offset = pc.checked_sub(text_base)?;
+    let index = usize::try_from(offset / 4).ok()?;
+    (offset % 4 == 0 && index < words).then_some(index)
+}
+
+/// Lets the hardware execute the capped branch at `at.pc` once and returns the
+/// registers at the instruction it went to (the branch writes no register).
+///
+/// In place, in a text copy where every other word traps, the hardware picks both
+/// the direction and the target. A branch whose taken target is itself (`b .`,
+/// displacement 0) would spin there, so it runs from a scratch page with its
+/// displacement set to +8 instead: the hardware still decides taken/not-taken
+/// (`pc` / `pc + 4`), and "taken" means its own pc by definition.
+fn step_capped_branch(
+    session: &NativeSession,
+    text_map: &Mapping,
+    words: &[u32],
+    text_base: u64,
+    at: UserRegs,
+    initial: &MachineState,
+) -> Result<UserRegs, String> {
+    let index = ((at.pc - text_base) / 4) as usize;
+    let word = words[index];
+    let insn = decode_word(word, at.pc)
+        .map_err(|err| format!("capped word at {:#x}: {err:?}", at.pc))?
+        .inner;
+    let taken = insn
+        .direct_branch_target(at.pc)
+        .or_else(|| insn.conditional_targets(at.pc).map(|(taken, _)| taken))
+        .ok_or_else(|| format!("capped instruction at {:#x} is not a direct branch", at.pc))?;
+    let unexpected = |event: &Event| {
+        format!(
+            "native capped branch at {:#x}: unexpected {}",
+            at.pc,
+            describe_event(event)
+        )
+    };
+
+    if taken != at.pc {
+        let mut solo = vec![BRK_FILL; words.len()];
+        solo[index] = word;
+        text_map.install_code(&solo)?;
+        let (event, snapshot) = session.enter_user(at, initial.tpidr_el0)?;
+        return match (event.signal, event.brk()) {
+            (SIGTRAP, Some(BRK_FILL)) if text_map.contains(event.pc) => Ok(snapshot),
+            _ => Err(unexpected(&event)),
+        };
+    }
+
+    let field = insn
+        .operand_roles()
+        .iter()
+        .find_map(|role| match *role {
+            A64OperandRole::BranchTarget { field, .. } => Some(field),
+            _ => None,
+        })
+        .ok_or_else(|| format!("branch at {:#x} has no branch-target field", at.pc))?;
+    let moved = insn
+        .set_branch_target_imm(field, 2)
+        .map_err(|err| format!("re-targeting branch at {:#x}: {err:?}", at.pc))?
+        .encode()
+        .map_err(|err| format!("encoding branch at {:#x}: {err:?}", at.pc))?;
+    let scratch = Mapping::anywhere(session.page, PROT_READ | PROT_WRITE)?;
+    scratch.install_code(&[moved])?;
+    let (event, mut snapshot) = session.enter_user(
+        UserRegs {
+            pc: scratch.base(),
+            ..at
+        },
+        initial.tpidr_el0,
+    )?;
+    snapshot.pc = match (event.signal, event.brk()) {
+        (SIGTRAP, Some(BRK_FILL)) if event.pc == scratch.base() + 4 => at.pc + 4,
+        (SIGTRAP, Some(BRK_FILL)) if event.pc == scratch.base() + 8 => at.pc,
+        _ => return Err(unexpected(&event)),
+    };
+    Ok(snapshot)
 }
 
 /// Lets the hardware execute the branch exit at `at.pc` in a text copy where
@@ -1066,6 +1187,11 @@ pub fn original_halt_matches(
             },
             NativeStop::Unsupported { pc: native_pc },
         ) if pc == native_pc => Ok(()),
+        (HaltReason::InstanceCap { pc, .. }, NativeStop::InstanceCap { pc: native_pc })
+            if pc == native_pc =>
+        {
+            Ok(())
+        }
         // The CPU reports the first faulting byte, which may lie past the start
         // of an access that crosses into a bad page.
         (HaltReason::Fault(fault), NativeStop::Fault { pc, addr })
@@ -1346,7 +1472,14 @@ pub fn check_case(
         entry_pc,
         initial,
     )?;
-    let original = run_original(session, text_base, text, entry_pc, initial)?;
+    let original = run_original(
+        session,
+        text_base,
+        text,
+        entry_pc,
+        initial,
+        report.original_cap,
+    )?;
     let fragment = run_fragment(session, &report.fragment, &report.encoded_fragment, initial)?;
 
     let mut problems = diff_states(

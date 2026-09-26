@@ -615,8 +615,10 @@ pub(crate) fn decide_runtime_return(
         // Never continue inside the fragment: resuming at this PC would re-enter
         // the same exit. Userspace executes the instruction natively: for
         // Unsupported that runs it, for Mem it re-executes the faulting memory
-        // instruction and takes the fault (and any signal) itself.
-        RetStatus::Unsupported | RetStatus::Mem => {
+        // instruction and takes the fault (and any signal) itself, for Budget it
+        // runs the back-edge branch (the kernel's return to userspace is where
+        // signals and rescheduling happen).
+        RetStatus::Unsupported | RetStatus::Mem | RetStatus::Budget => {
             RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
                 status,
                 target_pc: param1,
@@ -1007,5 +1009,141 @@ mod tests {
             }
             other => panic!("expected an execution error, got {other:?}"),
         }
+    }
+
+    // ---- Execution budget (A6) ----
+
+    fn movz_x(rd: u8, value: u32) -> A64Insn {
+        A64Insn::MovzMovz64Movewide {
+            hw: 0,
+            imm16: uimm(value, 16),
+            rd: x(rd),
+        }
+    }
+
+    /// `movz x0, #n; L: sub x0, x0, #1; cbnz x0, L; ret` at 0x4000.
+    fn countdown(n: u32) -> [A64Insn; 4] {
+        [
+            movz_x(0, n),
+            A64Insn::SubAddsubImmSub64AddsubImm {
+                sh: 0,
+                imm12: uimm(1, 12),
+                rn: A64Reg::x_sp(0),
+                rd: A64Reg::x_sp(0),
+            },
+            A64Insn::CbnzCbnz64Compbranch {
+                imm19: A64Imm::scaled_signed((1 << 19) - 1, 19, 2),
+                rt: x(0),
+            },
+            A64Insn::RetRet64rBranchReg { rn: x(30) },
+        ]
+    }
+
+    fn run_counting(insns: &[A64Insn]) -> (URuntimeReport, Option<crate::InstanceCap>) {
+        let mut runtime = URuntime::new(compile_insns(0x4000, insns), MachineState::new());
+        crate::run_fragment_counting_instances(&mut runtime).unwrap()
+    }
+
+    #[test]
+    fn self_branch_exits_budget_on_its_budget_th_execution() {
+        use crate::shared::abi::KJIT_BACKEDGE_BUDGET;
+
+        let (report, cap) = run_counting(&[
+            movz_x(0, 0x1234),
+            A64Insn::BUncondBOnlyBranchImm {
+                imm26: A64Imm::scaled_signed(0, 26, 2),
+            },
+        ]);
+        assert_eq!(
+            report.halt,
+            URuntimeHalt::ReturnedToUserspace {
+                status: RetStatus::Budget,
+                target_pc: 0x4004,
+            }
+        );
+        assert_eq!(
+            cap,
+            Some(crate::InstanceCap {
+                pc: 0x4004,
+                instance: KJIT_BACKEDGE_BUDGET,
+            })
+        );
+        assert_eq!(report.state.read_x(0), 0x1234);
+    }
+
+    /// The N-th back-edge execution of one entry exits (N = the budget), before the
+    /// branch runs; N - 1 executions complete.
+    #[test]
+    fn budget_exits_exactly_on_the_budget_th_back_edge_execution() {
+        use crate::shared::abi::KJIT_BACKEDGE_BUDGET;
+        let budget = KJIT_BACKEDGE_BUDGET as u32;
+
+        let (report, cap) = run_counting(&countdown(budget - 1));
+        assert_eq!(
+            report.halt,
+            URuntimeHalt::ReturnedToUserspace {
+                status: RetStatus::Ret,
+                // User x30 of `MachineState::new()`.
+                target_pc: 0,
+            }
+        );
+        assert_eq!(cap, None);
+        assert_eq!(report.state.read_x(0), 0);
+
+        let (report, cap) = run_counting(&countdown(budget));
+        assert_eq!(
+            report.halt,
+            URuntimeHalt::ReturnedToUserspace {
+                status: RetStatus::Budget,
+                target_pc: 0x4008,
+            }
+        );
+        assert_eq!(
+            cap,
+            Some(crate::InstanceCap {
+                pc: 0x4008,
+                instance: KJIT_BACKEDGE_BUDGET,
+            })
+        );
+        // The last `sub` ran; the cbnz that would have fallen through did not.
+        assert_eq!(report.state.read_x(0), 0);
+    }
+
+    /// Every entry through the prologue restarts the budget: an SVC in the loop
+    /// body leaves and re-enters the fragment.
+    #[test]
+    fn budget_restarts_on_every_fragment_entry() {
+        use crate::shared::abi::KJIT_BACKEDGE_BUDGET;
+
+        // movz x0, #3 * budget / 2; L: svc; sub x0, x0, #1; cbnz x0, L; ret
+        let iterations = 3 * KJIT_BACKEDGE_BUDGET as u32 / 2;
+        let insns = [
+            movz_x(0, iterations),
+            A64Insn::SvcSvcExException {
+                imm16: A64Imm::unsigned(0, 16),
+            },
+            A64Insn::SubAddsubImmSub64AddsubImm {
+                sh: 0,
+                imm12: uimm(1, 12),
+                rn: A64Reg::x_sp(0),
+                rd: A64Reg::x_sp(0),
+            },
+            A64Insn::CbnzCbnz64Compbranch {
+                imm19: A64Imm::scaled_signed((1 << 19) - 2, 19, 2),
+                rt: x(0),
+            },
+            A64Insn::RetRet64rBranchReg { rn: x(30) },
+        ];
+        let (report, cap) = run_counting(&insns);
+        assert_eq!(
+            report.halt,
+            URuntimeHalt::ReturnedToUserspace {
+                status: RetStatus::Ret,
+                // User x30 of `MachineState::new()`.
+                target_pc: 0,
+            }
+        );
+        assert_eq!(cap, None);
+        assert_eq!(report.state.read_x(0), 0);
     }
 }

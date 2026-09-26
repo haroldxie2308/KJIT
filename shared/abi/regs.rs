@@ -38,6 +38,9 @@ pub enum RetStatus {
     /// Undecodable instruction; userspace resumes natively at it.
     /// RET_PARAM0 = raw word (zero-extended), RET_PARAM1 = its PC.
     Unsupported,
+    /// The back-edge budget ran out before a back-edge branch; userspace resumes
+    /// natively at it. RET_PARAM0 = the branch's raw word, RET_PARAM1 = its PC.
+    Budget,
     Debug,
     Invalid(u64),
 }
@@ -52,6 +55,7 @@ impl RetStatus {
             Self::Ret => 4,
             Self::Mem => 5,
             Self::Unsupported => 6,
+            Self::Budget => 7,
             Self::Debug => 8,
             Self::Invalid(value) => value,
         }
@@ -66,6 +70,7 @@ impl RetStatus {
             4 => Self::Ret,
             5 => Self::Mem,
             6 => Self::Unsupported,
+            7 => Self::Budget,
             8 => Self::Debug,
             other => Self::Invalid(other),
         }

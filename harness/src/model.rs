@@ -81,8 +81,16 @@ pub struct MachineState {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HaltReason {
     FellOffEnd,
-    RuntimeExit { reason: RuntimeExitReason },
+    RuntimeExit {
+        reason: RuntimeExitReason,
+    },
     Fault(MemFault),
+    /// Stopped by `InstanceCap` before the `instance`-th execution of `pc`; the
+    /// instruction did not execute.
+    InstanceCap {
+        pc: u64,
+        instance: u64,
+    },
 }
 
 impl fmt::Display for HaltReason {
