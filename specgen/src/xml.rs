@@ -26,7 +26,7 @@ pub fn parse_instruction(path: &Path) -> Result<InstructionSpec> {
             let (base_mask, base_value, fields, base_excludes) =
                 parse_regdiagram(child(iclass, "regdiagram"))?;
             let iclass_docvars = parse_docvars(iclass);
-            let (decode_text, execute_text) = parse_ps_texts(root, iclass);
+            let (decode_text, postdecode_text, execute_text) = parse_ps_texts(root, iclass);
 
             for encoding in children(iclass, "encoding") {
                 let (enc_mask, enc_value, _, enc_excludes) = parse_regdiagram(Some(encoding))?;
@@ -71,6 +71,7 @@ pub fn parse_instruction(path: &Path) -> Result<InstructionSpec> {
                         &fields,
                         &parse_asm_operands(encoding),
                         &decode_text,
+                        &postdecode_text,
                         &execute_text,
                     ),
                     asm,
@@ -255,11 +256,22 @@ fn parse_asm_operands(encoding: Node<'_, '_>) -> Vec<AsmOperand> {
         .collect()
 }
 
-fn parse_ps_texts(root: Node<'_, '_>, iclass: Node<'_, '_>) -> (String, String) {
+/// `(decode, postdecode, execute)` pseudocode. `decode` is the iclass's own;
+/// `postdecode` and `execute` are shared by the whole instruction section.
+fn parse_ps_texts(root: Node<'_, '_>, iclass: Node<'_, '_>) -> (String, String, String) {
     let decode = iclass
         .descendants()
         .filter(|node| node.has_tag_name("pstext"))
         .filter(|node| node.attribute("rep_section") == Some("decode"))
+        .map(flatten_text)
+        .filter(|text| !text.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
+
+    let postdecode = children(root, "ps_section")
+        .flat_map(|section| section.descendants())
+        .filter(|node| node.has_tag_name("pstext"))
+        .filter(|node| node.attribute("rep_section") == Some("postdecode"))
         .map(flatten_text)
         .filter(|text| !text.is_empty())
         .collect::<Vec<_>>()
@@ -274,7 +286,7 @@ fn parse_ps_texts(root: Node<'_, '_>, iclass: Node<'_, '_>) -> (String, String) 
         .collect::<Vec<_>>()
         .join(" ");
 
-    (decode, execute)
+    (decode, postdecode, execute)
 }
 
 fn render_fields(fields: &[FieldSlice], combined_mask: u32) -> Vec<FieldSpec> {

@@ -299,7 +299,10 @@ A word that matches a subset form's encoding diagram but that the form's decode
 pseudocode makes UNDEFINED (for example a reserved shift or logical-immediate
 pattern) counts as undecodable, so a fragment never executes an UNDEFINED
 encoding at EL1. The only system-register access in the subset is
-`MRS Xt, TPIDR_EL0`; every other system register stays undecodable.
+`MRS Xt, TPIDR_EL0`; every other system register stays undecodable. The
+barriers `DMB`, `DSB` (not the nXS forms) and `ISB`, with every option, are
+the only other system instructions: they behave the same at EL1 as at EL0 for
+every observer of user memory and are emitted unchanged.
 
 Register virtualization now rewrites ordinary user-semantic uses of
 stack-backed `x12..x17`, stable-mapped user `x29`, and stable-mapped user `SP`,
@@ -313,8 +316,13 @@ unscaled, register-offset and literal forms) is lowered to the unprivileged
 out-of-`simm9` offsets, register-offset addresses and literal addresses are
 materialized in scratch, writeback follows the accesses), and no user-visible
 register is written before the instruction's last access. `PRFM` is a hint and
-is translated as a `NOP`. Exclusive, atomic and FP/SIMD loads/stores stay
-outside the subset and take the `Unsupported` exit. Each access is a fault
+is translated as a `NOP`. The acquire/release forms (`LDAR*`, `STLR*`,
+`LDAPR*`; no unprivileged ordered access exists without FEAT_LSUI) become
+`dmb ish; LDTR*/STTR* [xN, #0]; dmb ish`, which orders at least as strongly;
+since `LDTR*`/`STTR*` never alignment-fault, an access that crosses a 16-byte
+boundary (a SIGBUS natively) leaves through its `Mem` stub first. Exclusive,
+atomic and FP/SIMD loads/stores stay outside the subset and take the
+`Unsupported` exit. Each access is a fault
 site: `ExecutionFragment.fault_sites` maps it to an out-of-line `Mem` exit stub for its original instruction, placed after the
 body, and a faulting access resumes there, so userspace re-executes the
 instruction and takes the fault itself. The harness classifies fragment
@@ -383,8 +391,9 @@ entry table before anything may execute them, using only the generated decoder
 and `shared::abi` (never the translator). It accepts a fragment only if the
 prologue/epilogue are byte-exact, the body never writes SP or x29, user memory
 is touched only by the `LDTR*`/`STTR*` family with a fault-site entry, no
-user-code memory form (byte/half, unscaled, register-offset, literal, PRFM, ...)
-appears at all, every other load/store
+user-code memory form (byte/half, unscaled, register-offset, literal, PRFM,
+acquire/release, ...) appears at all, the only system instructions are
+`MRS TPIDR_EL0`, NOP and DMB/DSB/ISB, every other load/store
 stays in the user-state frame slots or `pt_regs` `regs[]`/`sp` through a pointer
 loaded from the frame, direct branches stay inside the body (or go to the
 epilogue), there are no calls, indirect branches, SVC or ADR/ADRP, every fault
@@ -395,8 +404,9 @@ counter). Rules and decisions: `tmp/pipeline.md`, "Verifier (V3)".
 Every fixture case is verified before it runs. `make harness-test` also runs the
 mutation suite (`verify_mutation_tests.rs`), which mutates every fixture
 fragment (every LDTR*/STTR* -> its plain and unscaled user form, inserted
-user-only memory forms and site-less LDTR*/STTR*, branches out of the body,
-inserted BL/BR/RET/SVC/MSR/HVC,
+user-only memory forms, acquire/release user forms and site-less LDTR*/STTR*,
+non-allowlisted barrier-like system ops (SB, CLREX, DSB nXS, WFE, ...),
+branches out of the body, inserted BL/BR/RET/SVC/MSR/HVC,
 SP/x29 writes, out-of-range frame and pt_regs accesses, corrupted wrapper words,
 broken fault tables, dropped/retargeted/altered budget checks, stray counter
 writes, random words) and requires every deterministic mutation to

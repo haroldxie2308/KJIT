@@ -44,6 +44,10 @@ pub enum FaultCause {
     /// (Linux sets SCTLR_EL1.SA0) faults before any access. `access` is the
     /// instruction's first access.
     SpAlignment,
+    /// An acquire/release access (LDAR, STLR, LDAPR) that crosses a 16-byte
+    /// boundary: an Alignment fault before any access (SIGBUS natively). `access`
+    /// is the instruction's access.
+    Alignment,
 }
 
 /// A user access that faulted. The faulting instruction did not retire: state is
@@ -64,6 +68,7 @@ impl fmt::Display for MemFault {
         let cause = match self.cause {
             FaultCause::Permission => "",
             FaultCause::SpAlignment => " (SP alignment)",
+            FaultCause::Alignment => " (alignment)",
         };
         write!(
             f,

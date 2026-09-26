@@ -232,6 +232,21 @@ forms = [
   "LDTRSH.LDTRSH_64_ldst_unpriv",
   "LDTRSW.LDTRSW_64_ldst_unpriv",
   "NOP.NOP_HI_hints",
+  "DMB.DMB_BO_barriers",
+  "DSB.DSB_BO_barriers",
+  "ISB.ISB_BI_barriers",
+  "LDAR.LDAR_LR32_ldstord",
+  "LDAR.LDAR_LR64_ldstord",
+  "LDARB.LDARB_LR32_ldstord",
+  "LDARH.LDARH_LR32_ldstord",
+  "STLR.STLR_SL32_ldstord",
+  "STLR.STLR_SL64_ldstord",
+  "STLRB.STLRB_SL32_ldstord",
+  "STLRH.STLRH_SL32_ldstord",
+  "LDAPR.LDAPR_32L_memop",
+  "LDAPR.LDAPR_64L_memop",
+  "LDAPRB.LDAPRB_32L_memop",
+  "LDAPRH.LDAPRH_32L_memop",
   "BL.BL_only_branch_imm",
   "BR.BR_64_branch_reg",
   "BLR.BLR_64_branch_reg",
@@ -252,3 +267,18 @@ forms = [
 # value is CONSTRAINED UNPREDICTABLE, so only Ra = 31 decodes.
 "SMULH.SMULH_64_dp_3src" = { Ra = 31 }
 "UMULH.UMULH_64_dp_3src" = { Ra = 31 }
+# LDAR/STLR (A7c): Rs and Rt2 are should-be-one ("(1)") fields their decode never
+# reads; any other value is CONSTRAINED UNPREDICTABLE, so only 31 decodes. LDAPR
+# (FEAT_LRCPC, `memop` class) has the same rule for Rs.
+"LDAR.LDAR_LR32_ldstord" = { Rs = 31, Rt2 = 31 }
+"LDAR.LDAR_LR64_ldstord" = { Rs = 31, Rt2 = 31 }
+"LDARB.LDARB_LR32_ldstord" = { Rs = 31, Rt2 = 31 }
+"LDARH.LDARH_LR32_ldstord" = { Rs = 31, Rt2 = 31 }
+"STLR.STLR_SL32_ldstord" = { Rs = 31, Rt2 = 31 }
+"STLR.STLR_SL64_ldstord" = { Rs = 31, Rt2 = 31 }
+"STLRB.STLRB_SL32_ldstord" = { Rs = 31, Rt2 = 31 }
+"STLRH.STLRH_SL32_ldstord" = { Rs = 31, Rt2 = 31 }
+"LDAPR.LDAPR_32L_memop" = { Rs = 31 }
+"LDAPR.LDAPR_64L_memop" = { Rs = 31 }
+"LDAPRB.LDAPRB_32L_memop" = { Rs = 31 }
+"LDAPRH.LDAPRH_32L_memop" = { Rs = 31 }

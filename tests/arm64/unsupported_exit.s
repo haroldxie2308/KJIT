@@ -56,3 +56,40 @@ ldr_q_unsupported_mark:
     ldrb w4, [x12, #1]
     ldr q0, [x12]
     ret
+
+// A7c: acquire/release is admitted, but its exclusive and atomic relatives are
+// not: each case runs an admitted LDAR/STLR, then ends at the unsupported form.
+.global ldaxr_unsupported_mark
+ldaxr_unsupported_mark:
+    svc #0
+    add x0, x12, #0x80
+    ldar x1, [x0]
+    ldaxr x2, [x0]
+    ret
+
+.global stlxr_unsupported_mark
+stlxr_unsupported_mark:
+    svc #0
+    add x0, x12, #0x90
+    movz x1, #0x11
+    stlr x1, [x0]
+    stlxr w2, x1, [x0]
+    ret
+
+.global cas_unsupported_mark
+cas_unsupported_mark:
+    svc #0
+    add x0, x12, #0xa0
+    movz x1, #0
+    movz x2, #0x22
+    cas x1, x2, [x0]
+    ret
+
+// FEAT_LRCPC2/3 forms beyond the base-register LDAPR stay out.
+.arch_extension rcpc3
+.global ldapr_writeback_unsupported_mark
+ldapr_writeback_unsupported_mark:
+    svc #0
+    add x0, x12, #0xb0
+    ldapr x1, [x0], #8
+    ret

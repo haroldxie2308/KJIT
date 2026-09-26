@@ -2651,7 +2651,7 @@ fn rephrased_kind_label(kind: RephrasedInsnKind) -> &'static str {
         RephrasedInsnKind::RegVirtHelper => "RVH",
         RephrasedInsnKind::UserAccess => "UAC",
         RephrasedInsnKind::BudgetCheck => "BGT",
-        RephrasedInsnKind::SpAlignCheck => "SPA",
+        RephrasedInsnKind::AlignCheck => "ALN",
         RephrasedInsnKind::RuntimeExitPayload => "RTP",
         RephrasedInsnKind::RuntimeExitBranch => "REB",
     }

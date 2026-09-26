@@ -214,7 +214,7 @@ fn virtualize_insn(
         // These kinds are reg-virt output; seeing one on its input is a pipeline bug.
         RephrasedInsnKind::RegVirtHelper
         | RephrasedInsnKind::UserAccess
-        | RephrasedInsnKind::SpAlignCheck => Err(RegVirtError::UnexpectedRegVirtHelper {
+        | RephrasedInsnKind::AlignCheck => Err(RegVirtError::UnexpectedRegVirtHelper {
             pc: rephrased.ori_pc,
         }),
         RephrasedInsnKind::Original | RephrasedInsnKind::UserSynthetic => unreachable!(),
@@ -575,6 +575,9 @@ enum MemAddr {
     },
     /// PC-relative literal: the absolute address, fixed at translation time.
     Literal(u64),
+    /// `[base]`: the acquire/release forms (LDAR, STLR, LDAPR), no offset, never
+    /// written back.
+    Base(A64Reg),
 }
 
 /// A user load/store as reg-virt lowers it: one access, or two at consecutive
@@ -585,6 +588,10 @@ struct MemShape {
     rt: A64Reg,
     rt2: Option<A64Reg>,
     addr: MemAddr,
+    /// Acquire/release (LDAR*, STLR*, LDAPR*): the access is fenced by `DMB ISH`
+    /// on both sides and guarded by the 16-byte-block alignment rule (see
+    /// `emit_mem_lowering`).
+    ordered: bool,
 }
 
 /// `pc` is the instruction's own PC (literal forms address relative to it).
@@ -604,6 +611,7 @@ fn mem_shape(insn: A64Insn, pc: u64) -> Option<MemShape> {
     };
     // The `*BL` byte forms are the `LSL` (option = UXTX) encoding of the same load.
     const LSL: u8 = 0b011;
+    let ordered = |op, rt, base| (op, rt, None, MemAddr::Base(base));
     let (op, rt, rt2, addr) = match insn {
         A64Insn::LdrImmGenLdr32LdstPos { rt, mem }
         | A64Insn::LdrImmGenLdr32LdstImmpre { rt, mem }
@@ -788,9 +796,34 @@ fn mem_shape(insn: A64Insn, pc: u64) -> Option<MemShape> {
             None,
             MemAddr::Literal(insn.literal_address(pc)?),
         ),
+
+        // Acquire/release: the same element size and extension as the plain form.
+        A64Insn::LdarLdarLr32Ldstord { rn, rt } | A64Insn::LdaprLdapr32lMemop { rn, rt } => {
+            ordered(Ldtr32, rt, rn)
+        }
+        A64Insn::LdarLdarLr64Ldstord { rn, rt } | A64Insn::LdaprLdapr64lMemop { rn, rt } => {
+            ordered(Ldtr64, rt, rn)
+        }
+        A64Insn::LdarbLdarbLr32Ldstord { rn, rt } | A64Insn::LdaprbLdaprb32lMemop { rn, rt } => {
+            ordered(Ldtrb, rt, rn)
+        }
+        A64Insn::LdarhLdarhLr32Ldstord { rn, rt } | A64Insn::LdaprhLdaprh32lMemop { rn, rt } => {
+            ordered(Ldtrh, rt, rn)
+        }
+        A64Insn::StlrStlrSl32Ldstord { rn, rt } => ordered(Sttr32, rt, rn),
+        A64Insn::StlrStlrSl64Ldstord { rn, rt } => ordered(Sttr64, rt, rn),
+        A64Insn::StlrbStlrbSl32Ldstord { rn, rt } => ordered(Sttrb, rt, rn),
+        A64Insn::StlrhStlrhSl32Ldstord { rn, rt } => ordered(Sttrh, rt, rn),
         _ => return None,
     };
-    Some(MemShape { op, rt, rt2, addr })
+    let ordered = matches!(addr, MemAddr::Base(_));
+    Some(MemShape {
+        op,
+        rt,
+        rt2,
+        addr,
+        ordered,
+    })
 }
 
 /// Where the lowered accesses take their address from.
@@ -835,9 +868,14 @@ struct MemLowering {
     /// without writing a user-visible location or the access base.
     first_load_scratch: Option<u8>,
     /// SP-based user access: scratch for the SP alignment check
-    /// (`RephrasedInsnKind::SpAlignCheck`), which runs before anything else of
+    /// (`RephrasedInsnKind::AlignCheck`), which runs before anything else of
     /// the instruction, so it may share the address or first-load scratch.
     sp_align_scratch: Option<u8>,
+    /// Acquire/release access wider than a byte whose base is not SP: scratch for
+    /// the 16-byte-block alignment check (`RephrasedInsnKind::AlignCheck`). An SP
+    /// base needs none: the SP check already requires SP 16-byte aligned, and the
+    /// access is at SP itself.
+    block_align_scratch: Option<u8>,
 }
 
 const fn fits_simm9(offset: i64) -> bool {
@@ -1011,6 +1049,7 @@ impl RewritePlan {
                 };
                 (addr, None)
             }
+            MemAddr::Base(base) => (AccessAddr::Base { base, offset: 0 }, None),
         };
 
         let access_base = self.access_base(addr);
@@ -1023,7 +1062,9 @@ impl RewritePlan {
 
         let sp_based = match shape.addr {
             MemAddr::Imm(mem) => classify_reg(mem.base()) == RegClass::Sp,
-            MemAddr::RegOffset { base, .. } => classify_reg(base) == RegClass::Sp,
+            MemAddr::RegOffset { base, .. } | MemAddr::Base(base) => {
+                classify_reg(base) == RegClass::Sp
+            }
             MemAddr::Literal(_) => false,
         };
         let sp_align_scratch = if sp_based {
@@ -1039,6 +1080,11 @@ impl RewritePlan {
         } else {
             None
         };
+        let block_align_scratch = if shape.ordered && shape.op.size() > 1 && !sp_based {
+            Some(self.alloc_scratch()?)
+        } else {
+            None
+        };
 
         Ok(MemLowering {
             shape,
@@ -1046,6 +1092,7 @@ impl RewritePlan {
             writeback,
             first_load_scratch,
             sp_align_scratch,
+            block_align_scratch,
         })
     }
 
@@ -1118,6 +1165,11 @@ impl RewritePlan {
     /// 4. then the register move, the base writeback, and (in the caller) spills.
     /// So each `LDTR*`/`STTR*` faults with every user-visible location (direct
     /// registers, frame slots, x16/x17) still holding its pre-instruction value.
+    ///
+    /// Acquire/release forms (A7c; tmp/pipeline.md "Barriers and acquire/release")
+    /// become `[alignment check] dmb ish; LDTR*/STTR* [xN, #0]; dmb ish`: no
+    /// unprivileged ordered access exists without FEAT_LSUI, and the two full
+    /// fences order the access at least as strongly as LDAR/STLR/LDAPR.
     fn emit_mem_lowering(
         &self,
         rephrased: RephrasedInsn,
@@ -1135,7 +1187,7 @@ impl RewritePlan {
             let sp = A64Reg::x(REG_VIRT_STABLE_MAPPED_SP_PHYS_REG);
             push_rephrased(
                 out,
-                RephrasedInsn::sp_align_check(
+                RephrasedInsn::align_check(
                     pc,
                     A64Insn::AndLogImmAnd64LogImm {
                         n: 1,
@@ -1148,7 +1200,7 @@ impl RewritePlan {
             )?;
             push_rephrased(
                 out,
-                RephrasedInsn::sp_align_check(
+                RephrasedInsn::align_check(
                     pc,
                     A64Insn::CbnzCbnz64Compbranch {
                         imm19: scaled_simm(0, 19, 2),
@@ -1156,6 +1208,55 @@ impl RewritePlan {
                     },
                 ),
             )?;
+        }
+        if let Some(scratch) = mem.block_align_scratch {
+            // An unaligned acquire/release access faults (SIGBUS) at EL0 iff it
+            // crosses a 16-byte boundary (FEAT_LSE2, SCTLR_EL1.nAA == 0); LDTR*/STTR*
+            // never alignment-fault, so leave through the Mem stub when
+            // `(addr & 15) + size - 1 >= 16`:
+            //   and xS, <base>, #15; add xS, xS, #(size - 1); and xS, xS, #16;
+            //   cbnz xS, <Mem stub>
+            // Ordered forms address `[base]` (`AccessAddr::Base`), never SP here;
+            // flags are untouched.
+            let base = self.access_base(mem.addr);
+            let s = A64Reg::x_sp(scratch);
+            let checks = [
+                // #15: N=1, immr=0, imms=3 (four ones).
+                A64Insn::AndLogImmAnd64LogImm {
+                    n: 1,
+                    immr: uimm(0, 6),
+                    imms: uimm(3, 6),
+                    rn: x(base),
+                    rd: s,
+                },
+                A64Insn::AddAddsubImmAdd64AddsubImm {
+                    sh: 0,
+                    imm12: uimm(u32::from(shape.op.size()) - 1, 12),
+                    rn: s,
+                    rd: s,
+                },
+                // #16: N=1, immr=60, imms=0 (one one, rotated to bit 4).
+                A64Insn::AndLogImmAnd64LogImm {
+                    n: 1,
+                    immr: uimm(60, 6),
+                    imms: uimm(0, 6),
+                    rn: x(scratch),
+                    rd: s,
+                },
+                A64Insn::CbnzCbnz64Compbranch {
+                    imm19: scaled_simm(0, 19, 2),
+                    rt: x(scratch),
+                },
+            ];
+            for check in checks {
+                push_rephrased(out, RephrasedInsn::align_check(pc, check))?;
+            }
+        }
+        // `DMB ISH` (CRm = 0b1011): every observer of user memory is in the Inner
+        // Shareable domain (Linux's smp_mb()).
+        let fence = || helper(A64Insn::DmbDmbBoBarriers { crm: 0b1011 });
+        if shape.ordered {
+            push_rephrased(out, fence())?;
         }
 
         let first_offset = match mem.addr {
@@ -1251,6 +1352,9 @@ impl RewritePlan {
                     ),
                 )?;
             }
+        }
+        if shape.ordered {
+            push_rephrased(out, fence())?;
         }
 
         if let Some(Writeback { base, amount }) = mem.writeback {
@@ -1916,7 +2020,7 @@ mod tests {
     /// The SP alignment check before an SP-based user access, through `scratch`.
     fn sp_align_check(scratch: u8) -> [RephrasedInsn; 2] {
         [
-            RephrasedInsn::sp_align_check(
+            RephrasedInsn::align_check(
                 0x1000,
                 A64Insn::AndLogImmAnd64LogImm {
                     n: 1,
@@ -1926,7 +2030,7 @@ mod tests {
                     rd: A64Reg::x_sp(scratch),
                 },
             ),
-            RephrasedInsn::sp_align_check(
+            RephrasedInsn::align_check(
                 0x1000,
                 A64Insn::CbnzCbnz64Compbranch {
                     imm19: scaled_simm(0, 19, 2),
@@ -2678,7 +2782,159 @@ mod tests {
             imm19: A64Imm::scaled_signed(0x3ffff, 19, 2),
             rt: x(rt),
         });
+        // A7c acquire/release: `[base]` only.
+        forms.extend(acquire_release_forms(rt, base));
         forms
+    }
+
+    /// Every acquire/release form with transfer register `rt` and base `rn`.
+    fn acquire_release_forms(rt: u8, rn: A64Reg) -> [A64Insn; 12] {
+        let w = A64Reg::w(rt);
+        [
+            A64Insn::LdarLdarLr32Ldstord { rn, rt: w },
+            A64Insn::LdarLdarLr64Ldstord { rn, rt: x(rt) },
+            A64Insn::LdarbLdarbLr32Ldstord { rn, rt: w },
+            A64Insn::LdarhLdarhLr32Ldstord { rn, rt: w },
+            A64Insn::StlrStlrSl32Ldstord { rn, rt: w },
+            A64Insn::StlrStlrSl64Ldstord { rn, rt: x(rt) },
+            A64Insn::StlrbStlrbSl32Ldstord { rn, rt: w },
+            A64Insn::StlrhStlrhSl32Ldstord { rn, rt: w },
+            A64Insn::LdaprLdapr32lMemop { rn, rt: w },
+            A64Insn::LdaprLdapr64lMemop { rn, rt: x(rt) },
+            A64Insn::LdaprbLdaprb32lMemop { rn, rt: w },
+            A64Insn::LdaprhLdaprh32lMemop { rn, rt: w },
+        ]
+    }
+
+    fn dmb_ish() -> RephrasedInsn {
+        helper(A64Insn::DmbDmbBoBarriers { crm: 0b1011 })
+    }
+
+    /// The 16-byte-block alignment check of an acquire/release access of `size`
+    /// bytes based on physical register `base`, through `scratch`.
+    fn block_align_check(scratch: u8, base: u8, size: u32) -> [RephrasedInsn; 4] {
+        let s = A64Reg::x_sp(scratch);
+        [
+            A64Insn::AndLogImmAnd64LogImm {
+                n: 1,
+                immr: uimm(0, 6),
+                imms: uimm(3, 6),
+                rn: x(base),
+                rd: s,
+            },
+            add_imm(scratch, scratch, 0, size - 1),
+            A64Insn::AndLogImmAnd64LogImm {
+                n: 1,
+                immr: uimm(60, 6),
+                imms: uimm(0, 6),
+                rn: x(scratch),
+                rd: s,
+            },
+            A64Insn::CbnzCbnz64Compbranch {
+                imm19: scaled_simm(0, 19, 2),
+                rt: x(scratch),
+            },
+        ]
+        .map(|insn| RephrasedInsn::align_check(0x1000, insn))
+    }
+
+    #[test]
+    fn acquire_release_is_a_fenced_unprivileged_access_at_offset_zero() {
+        let w = A64Reg::w;
+        let ldtr = |op: fn(A64Reg, A64Mem) -> A64Insn, rt, base| {
+            access(op(rt, unpriv_mem(base, 0)))
+        };
+        let seq = |guard: &[RephrasedInsn], body: &[RephrasedInsn]| {
+            let mut out = guard.to_vec();
+            out.push(dmb_ish());
+            out.extend_from_slice(body);
+            out.push(dmb_ish());
+            out
+        };
+
+        // ldar x0, [x1]: guard, fence, ldtr, fence.
+        assert_eq!(
+            lowered(A64Insn::LdarLdarLr64Ldstord { rn: A64Reg::x_sp(1), rt: x(0) }).to_vec(),
+            seq(
+                &block_align_check(12, 1, 8),
+                &[ldtr(|rt, mem| A64Insn::LdtrLdtr64LdstUnpriv { rt, mem }, x(0), 1)]
+            )
+        );
+        // stlr w12, [x13]: both stack-backed (scratch in role order: base x13 ->
+        // x12, rt x12 -> x13); the guard takes the third scratch and reads the
+        // base's scratch.
+        let mut expected = vec![fill(12, 13), fill(13, 12)];
+        expected.extend(seq(
+            &block_align_check(14, 12, 4),
+            &[ldtr(|rt, mem| A64Insn::SttrSttr32LdstUnpriv { rt, mem }, w(13), 12)],
+        ));
+        assert_eq!(
+            lowered(A64Insn::StlrStlrSl32Ldstord { rn: A64Reg::x_sp(13), rt: w(12) }).to_vec(),
+            expected
+        );
+        // ldarb w12, [x2]: a byte is always aligned, no guard; the load lands in
+        // the scratch, then spills.
+        let mut expected = seq(
+            &[],
+            &[ldtr(|rt, mem| A64Insn::LdtrbLdtrb32LdstUnpriv { rt, mem }, w(12), 2)],
+        );
+        expected.push(spill(12, 12));
+        assert_eq!(
+            lowered(A64Insn::LdarbLdarbLr32Ldstord { rn: A64Reg::x_sp(2), rt: w(12) }).to_vec(),
+            expected
+        );
+        // ldaprh w3, [sp]: the SP check only (SP 16-byte aligned implies the
+        // access is aligned), then through x17.
+        assert_eq!(
+            lowered(A64Insn::LdaprhLdaprh32lMemop { rn: sp(), rt: w(3) }).to_vec(),
+            seq(
+                &sp_align_check(12),
+                &[ldtr(|rt, mem| A64Insn::LdtrhLdtrh32LdstUnpriv { rt, mem }, w(3), 17)]
+            )
+        );
+        // stlrh / ldapr keep their element size and extension.
+        assert_eq!(
+            lowered(A64Insn::StlrhStlrhSl32Ldstord { rn: A64Reg::x_sp(4), rt: w(5) }).to_vec(),
+            seq(
+                &block_align_check(12, 4, 2),
+                &[ldtr(|rt, mem| A64Insn::SttrhSttrh32LdstUnpriv { rt, mem }, w(5), 4)]
+            )
+        );
+        assert_eq!(
+            lowered(A64Insn::LdaprLdapr32lMemop { rn: A64Reg::x_sp(6), rt: w(6) }).to_vec(),
+            seq(
+                &block_align_check(12, 6, 4),
+                &[ldtr(|rt, mem| A64Insn::LdtrLdtr32LdstUnpriv { rt, mem }, w(6), 6)]
+            )
+        );
+    }
+
+    /// Every acquire/release lowering: exactly one user access, `dmb ish` right
+    /// before and right after it, and the alignment guards before the leading fence.
+    #[test]
+    fn every_acquire_release_lowering_is_fenced_on_both_sides() {
+        let regs = [0u8, 1, 9, 12, 13, 16, 29, 30, 31];
+        for rt in regs {
+            for base in regs {
+                for insn in acquire_release_forms(rt, A64Reg::x_sp(base)) {
+                    let out = lowered(insn);
+                    let at = out
+                        .iter()
+                        .position(|r| r.kind == RephrasedInsnKind::UserAccess)
+                        .unwrap();
+                    assert_eq!(out[at - 1], dmb_ish(), "{insn:?}: {out:?}");
+                    assert_eq!(out[at + 1], dmb_ish(), "{insn:?}: {out:?}");
+                    let fences = out.iter().filter(|r| **r == dmb_ish()).count();
+                    assert_eq!(fences, 2, "{insn:?}: {out:?}");
+                    assert!(
+                        out[at..]
+                            .iter()
+                            .all(|r| r.kind != RephrasedInsnKind::AlignCheck),
+                        "{insn:?}: {out:?}"
+                    );
+                }
+            }
+        }
     }
 
     fn assert_commit_after_last_access(original: A64Insn, lowered: &[RephrasedInsn]) {

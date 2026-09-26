@@ -37,20 +37,46 @@ const FOREIGN_WORDS: &[(&str, u32)] = &[
     ("eret", 0xd69f_03e0),
     ("dc civac, x0", 0xd50b_7e20),
     ("ic ivau, x0", 0xd50b_7520),
-    ("isb", 0xd503_3fdf),
-    ("dsb sy", 0xd503_3f9f),
     ("ldxr x0, [x1]", 0xc85f_7c20),
     ("stxr w2, x0, [x1]", 0xc802_7c20),
+    ("ldaxr w0, [x1]", 0x885f_fc20),
+    ("stlxr w2, w0, [x1]", 0x8802_fc20),
+    ("cas x0, x1, [x2]", 0xc8a0_7c41),
     ("ldadd x0, x1, [x2]", 0xf820_0041),
+    ("ldapr x0, [x1], #8 (LRCPC3)", 0xd9c0_0820),
+    ("stlr x0, [x1, #-8]! (LRCPC3)", 0xd980_0820),
+    ("ldapur x0, [x1, #8] (LRCPC2)", 0xd940_8020),
     ("ldr q0, [x1]", 0x3dc0_0020),
     ("ldr d0, [x1, #8]", 0xfd40_0420),
     ("ldr q0, <literal>", 0x9c00_0000),
     ("ldnp x0, x1, [x2]", 0xa840_0440),
-    ("ldapr x0, [x1]", 0xf8bf_c020),
     ("prfum pldl1keep, [x0, #1]", 0xf880_1000),
     ("rprfm pldkeep, x22, [x30]", 0xf8b6_4bd8),
     // Register offset with a sub-word index: matches the diagram, UNDEFINED.
     ("ldr x0, [x1, w2, uxtb]", 0xf862_0820),
+];
+
+/// Barrier-like and hint/system words next to the allowlisted DMB/DSB/ISB (A7c):
+/// none of them is in the subset.
+const BARRIER_LIKE_WORDS: &[(&str, u32)] = &[
+    ("dsb ishnxs", 0xd503_3a3f),
+    ("sb", 0xd503_30ff),
+    ("clrex", 0xd503_3f5f),
+    ("wfe", 0xd503_205f),
+    ("wfi", 0xd503_207f),
+    ("yield", 0xd503_203f),
+    ("esb", 0xd503_221f),
+];
+
+/// Acquire/release user forms of the subset (A7c). Translation lowers them to
+/// fenced `LDTR*`/`STTR*`, so each is rejected anywhere in a fragment.
+const ACQ_REL_WORDS: &[(&str, u32)] = &[
+    ("ldar x0, [x1]", 0xc8df_fc20),
+    ("stlr w0, [x1]", 0x889f_fc20),
+    ("ldarb w0, [sp]", 0x08df_ffe0),
+    ("stlrh w3, [x4]", 0x489f_fc83),
+    ("ldapr w5, [x6]", 0xb8bf_c0c5),
+    ("ldaprh w7, [x8]", 0x78bf_c107),
 ];
 
 /// User-code memory forms of the subset (A7b). Translation only lowers them, so
@@ -374,8 +400,19 @@ impl Suite {
                 what,
             );
         }
+        for (what, word) in BARRIER_LIKE_WORDS {
+            self.replace_everywhere(
+                "insert non-allowlisted barrier-like system op (A7c)",
+                fixture,
+                *word,
+                what,
+            );
+        }
         for (what, word) in USER_ONLY_WORDS {
             self.replace_everywhere("insert user-only memory form (A7b)", fixture, *word, what);
+        }
+        for (what, word) in ACQ_REL_WORDS {
+            self.replace_everywhere("insert acquire/release user form (A7c)", fixture, *word, what);
         }
         // A user access where the table has no entry. (Swapping one user access for
         // another at a fault site is not a violation, so those words are skipped.)
@@ -1193,10 +1230,10 @@ fn verifier_rejects_every_mutation_of_every_fixture_fragment() {
 /// not the decoder).
 #[test]
 fn mutation_word_lists_are_classified_as_named() {
-    for (what, word) in FOREIGN_WORDS {
+    for (what, word) in FOREIGN_WORDS.iter().chain(BARRIER_LIKE_WORDS) {
         assert!(decode(*word).is_none(), "{what} decodes");
     }
-    for (what, word) in USER_ONLY_WORDS {
+    for (what, word) in USER_ONLY_WORDS.iter().chain(ACQ_REL_WORDS) {
         let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
         assert!(!insn.is_unprivileged_access(), "{what}");
     }
