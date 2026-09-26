@@ -216,6 +216,149 @@ fn user_access_needs_fault_site_and_exit_group_stub() {
     assert_eq!(frag.rule(), Some(VerifyRule::UserAccessSpBase));
 }
 
+/// Every unprivileged form is a user access under the same rules as `LDTR`:
+/// fault-site entry required, SP base rejected, and not allowed in an exit group.
+#[test]
+fn every_unprivileged_form_is_a_fault_site_user_access() {
+    let mem = |base| mem_off(xs(base), simm(0x1ff, 9));
+    const W0: crate::shared::arm64::A64Reg = crate::shared::arm64::A64Reg::w(0);
+    let forms: [fn(crate::shared::arm64::A64Mem) -> A64Insn; 13] = [
+        |mem| A64Insn::LdtrLdtr32LdstUnpriv { rt: W0, mem },
+        |mem| A64Insn::LdtrLdtr64LdstUnpriv { rt: x(0), mem },
+        |mem| A64Insn::LdtrbLdtrb32LdstUnpriv { rt: W0, mem },
+        |mem| A64Insn::LdtrhLdtrh32LdstUnpriv { rt: W0, mem },
+        |mem| A64Insn::LdtrsbLdtrsb32LdstUnpriv { rt: W0, mem },
+        |mem| A64Insn::LdtrsbLdtrsb64LdstUnpriv { rt: x(0), mem },
+        |mem| A64Insn::LdtrshLdtrsh32LdstUnpriv { rt: W0, mem },
+        |mem| A64Insn::LdtrshLdtrsh64LdstUnpriv { rt: x(0), mem },
+        |mem| A64Insn::LdtrswLdtrsw64LdstUnpriv { rt: x(0), mem },
+        |mem| A64Insn::SttrSttr32LdstUnpriv { rt: W0, mem },
+        |mem| A64Insn::SttrSttr64LdstUnpriv { rt: x(0), mem },
+        |mem| A64Insn::SttrbSttrb32LdstUnpriv { rt: W0, mem },
+        |mem| A64Insn::SttrhSttrh32LdstUnpriv { rt: W0, mem },
+    ];
+    for make in forms {
+        let access = make(mem(1));
+        let ok = Frag::new(&[access, b_epi(1), movz(9, 5), b_epi(3)]).site(0, 2);
+        assert_eq!(ok.rule(), None, "{access:?}");
+        let no_site = Frag::new(&[access, b_epi(1)]);
+        assert_eq!(
+            no_site.rule(),
+            Some(VerifyRule::MissingFaultSite),
+            "{access:?}"
+        );
+        let sp = make(mem(31));
+        let sp_base = Frag::new(&[sp, b_epi(1), movz(9, 5), b_epi(3)]).site(0, 2);
+        assert_eq!(sp_base.rule(), Some(VerifyRule::UserAccessSpBase), "{sp:?}");
+        // In a fault stub's exit group.
+        let in_stub = Frag::new(&[ldtr(0, 1), b_epi(1), access, b_epi(3)])
+            .site(0, 2)
+            .site(2, 2);
+        assert_eq!(in_stub.rule(), Some(VerifyRule::ExitGroup), "{access:?}");
+    }
+}
+
+/// User-code memory forms are only ever lowered, so the verifier rejects them in a
+/// fragment even where a plain runtime `LDR`/`STR` would be allowed (a user-state
+/// frame slot).
+#[test]
+fn user_only_memory_forms_are_rejected_anywhere() {
+    let frame = mem_off(sp(), simm(16, 9));
+    let frame_pos = |scale| {
+        crate::shared::arm64::A64Mem::offset(
+            sp(),
+            crate::shared::arm64::A64Imm::scaled_unsigned(16_u32 >> scale, 12, scale),
+        )
+    };
+    let pair = crate::shared::arm64::A64Mem::offset(sp(), scaled_simm(4, 7, 2));
+    let w0 = crate::shared::arm64::A64Reg::w(0);
+    let cases = [
+        A64Insn::LdrbImmLdrb32LdstPos {
+            rt: w0,
+            mem: frame_pos(0),
+        },
+        A64Insn::StrhImmStrh32LdstPos {
+            rt: w0,
+            mem: frame_pos(1),
+        },
+        A64Insn::LdrswImmLdrsw64LdstPos {
+            rt: x(0),
+            mem: frame_pos(2),
+        },
+        A64Insn::LdurGenLdur64LdstUnscaled {
+            rt: x(0),
+            mem: frame,
+        },
+        A64Insn::SturbSturb32LdstUnscaled { rt: w0, mem: frame },
+        A64Insn::LdpGenLdp32LdstpairOff {
+            rt2: crate::shared::arm64::A64Reg::w(1),
+            rt: w0,
+            mem: pair,
+        },
+        A64Insn::StpGenStp32LdstpairOff {
+            rt2: crate::shared::arm64::A64Reg::w(1),
+            rt: w0,
+            mem: pair,
+        },
+        A64Insn::LdpswLdpsw64LdstpairOff {
+            rt2: x(1),
+            rt: x(0),
+            mem: pair,
+        },
+        A64Insn::LdrRegGenLdr64LdstRegoff {
+            rm: x(1),
+            option: 0b011,
+            s: 0,
+            rn: sp(),
+            rt: x(0),
+        },
+        A64Insn::StrbRegStrb32blLdstRegoff {
+            rm: x(1),
+            s: 0,
+            rn: xs(2),
+            rt: w0,
+        },
+        A64Insn::LdrLitGenLdr64Loadlit {
+            imm19: scaled_simm(1, 19, 2),
+            rt: x(0),
+        },
+        A64Insn::PrfmImmPrfmPLdstPos {
+            imm12: uimm(0, 12),
+            rn: xs(1),
+            rt: 0,
+        },
+        A64Insn::PrfmLitPrfmPLoadlit {
+            imm19: uimm(1, 19),
+            rt: 0,
+        },
+        A64Insn::PrfmRegPrfmPLdstRegoff {
+            rm: x(1),
+            option: 0b011,
+            s: 0,
+            rn: xs(2),
+            rt: 0,
+        },
+    ];
+    for insn in cases {
+        let frag = Frag::new(&[insn, b_epi(1)]);
+        assert_eq!(
+            frag.verify().unwrap_err(),
+            VerifyError {
+                offset: at(0),
+                rule: VerifyRule::UserOnlyForm
+            },
+            "{insn:?}"
+        );
+        // Also with a fault-site entry: that does not make it a user access.
+        let frag = Frag::new(&[insn, b_epi(1), movz(9, 5), b_epi(3)]).site(0, 2);
+        assert_eq!(
+            frag.rule(),
+            Some(VerifyRule::FaultSiteNotUserAccess),
+            "{insn:?}"
+        );
+    }
+}
+
 #[test]
 fn cold_region_is_entered_only_at_exit_group_starts() {
     // Alignment guard: `and x12, x17, #15; cbnz x12, <stub>; sttr x0, [x17]`.
@@ -569,6 +712,11 @@ fn classification_agrees_with_generated_roles() {
             }
             rules::Form::Exception | rules::Form::PcRelative => {
                 assert!(!memory && !control, "{}", insn.key())
+            }
+            // Every user-only form is a load/store, except PRFM (a hint, no access).
+            rules::Form::UserOnly => {
+                assert!(!control, "{}", insn.key());
+                assert_eq!(memory, !insn.key().starts_with("PRFM"), "{}", insn.key());
             }
         }
     }

@@ -288,7 +288,9 @@ The target fails unless the native test actually ran and passed.
 entry table before anything may execute them, using only the generated decoder
 and `shared::abi` (never the translator). It accepts a fragment only if the
 prologue/epilogue are byte-exact, the body never writes SP or x29, user memory
-is touched only by `LDTR`/`STTR` with a fault-site entry, every other load/store
+is touched only by the `LDTR*`/`STTR*` family with a fault-site entry, no
+user-code memory form (byte/half, unscaled, register-offset, literal, PRFM, ...)
+appears at all, every other load/store
 stays in the user-state frame slots or `pt_regs` `regs[]`/`sp` through a pointer
 loaded from the frame, direct branches stay inside the body (or go to the
 epilogue), there are no calls, indirect branches, SVC or ADR/ADRP, every fault
@@ -298,7 +300,9 @@ counter). Rules and decisions: `tmp/pipeline.md`, "Verifier (V3)".
 
 Every fixture case is verified before it runs. `make harness-test` also runs the
 mutation suite (`verify_mutation_tests.rs`), which mutates every fixture
-fragment (LDTR->LDR, branches out of the body, inserted BL/BR/RET/SVC/MSR/HVC,
+fragment (every LDTR*/STTR* -> its plain and unscaled user form, inserted
+user-only memory forms and site-less LDTR*/STTR*, branches out of the body,
+inserted BL/BR/RET/SVC/MSR/HVC,
 SP/x29 writes, out-of-range frame and pt_regs accesses, corrupted wrapper words,
 broken fault tables, dropped/retargeted/altered budget checks, stray counter
 writes, random words) and requires every deterministic mutation to

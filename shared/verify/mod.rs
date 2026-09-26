@@ -78,6 +78,10 @@ pub enum VerifyRule {
     FaultSiteOrder,
     /// 3: a fault-site entry that is not on a user access.
     FaultSiteNotUserAccess,
+    /// 3: a user-code load/store/prefetch form (byte/half/signed, unscaled,
+    /// register offset, literal, 32-bit pair, PRFM): translation lowers these, so
+    /// one in a fragment is neither a user nor a runtime access.
+    UserOnlyForm,
     /// 3: a runtime access with base writeback.
     RuntimeAccessWriteback,
     /// 3: a runtime access whose base is neither SP nor a proven pt_regs pointer.
@@ -221,6 +225,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
         match form {
             Form::Alu | Form::Nop | Form::MrsTpidrEl0 => {}
             Form::PcRelative => return Err(err(offset, VerifyRule::PcRelative)),
+            Form::UserOnly => return Err(err(offset, VerifyRule::UserOnlyForm)),
             Form::Call => return Err(err(offset, VerifyRule::Call)),
             Form::IndirectBranch => return Err(err(offset, VerifyRule::IndirectBranch)),
             Form::Exception => return Err(err(offset, VerifyRule::Exception)),
@@ -434,7 +439,8 @@ fn check_exit_group(
             | Form::Call
             | Form::IndirectBranch
             | Form::Exception
-            | Form::UserAccess { .. } => return Err(reject(index)),
+            | Form::UserAccess { .. }
+            | Form::UserOnly => return Err(reject(index)),
             Form::Alu
             | Form::Nop
             | Form::MrsTpidrEl0
