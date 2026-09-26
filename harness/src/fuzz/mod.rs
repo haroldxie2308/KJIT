@@ -15,6 +15,11 @@
 //!   (`decide_runtime_return`); the original interpreter stops, so the oracle
 //!   cannot compare the two. Generated register values reach text addresses
 //!   only through arithmetic (e.g. `movz`/`movk` building a PC).
+//! - `NativeUnobservable` (native leg only): the interpreter's original read
+//!   text that the native original replaces with traps, so only the native
+//!   fragment is compared.
+//!
+//! The text is mapped read-only (`with_text_mapped`), as in every fixture case.
 
 pub mod forms;
 pub mod gen;
@@ -32,8 +37,8 @@ use crate::model::{HaltReason, MachineState};
 use crate::runtime::URuntimeHalt;
 use crate::shared::trans::cfg::RuntimeExitReason;
 use crate::{
-    compare_differential, run_differential, DifferentialError, DifferentialRun, MismatchKind,
-    OriginalRunError, StepLimits,
+    compare_differential, run_differential, with_text_mapped, DifferentialError, DifferentialRun,
+    MismatchKind, OriginalRunError, StepLimits,
 };
 use forms::{Catalog, Form};
 use gen::{generate, GenConfig};
@@ -86,6 +91,10 @@ pub enum Outcome {
     Pass,
     NonTerminating,
     Chained,
+    /// Interpreter sides and native fragment agree, but the interpreter's
+    /// original read text the native original replaces with traps, so the native
+    /// original cannot be compared (`native::original_reads_patched_text`).
+    NativeUnobservable,
     Fail(Failure),
 }
 
@@ -131,6 +140,9 @@ impl<'a> Checker<'a> {
         let text = program
             .text_bytes()
             .unwrap_or_else(|err| panic!("checked program does not encode: {err}"));
+        // The text is a read-only user page, as in every fixture case.
+        let state = &with_text_mapped(state, TEXT_BASE, &text)
+            .unwrap_or_else(|err| panic!("generated state cannot map the text: {err}"));
         // Registers before the most recent original step: the halting step's
         // own inputs, which a BLR x30 exit overwrites.
         let mut pre_halt_regs = [0u64; 32];
@@ -192,34 +204,17 @@ impl<'a> Checker<'a> {
         }
         #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
         if let Some(session) = self.native {
-            if let Err(message) = self.check_native(session, &text, state, &run) {
-                return (fail(FailureKind::Native, message), halt);
+            match crate::native::check_against_interpreter(
+                session, TEXT_BASE, &text, ENTRY_PC, state, &run,
+            ) {
+                Ok(crate::native::NativeVerdict::Agreed(_)) => {}
+                Ok(crate::native::NativeVerdict::OriginalUnobservable(_)) => {
+                    return (Outcome::NativeUnobservable, halt)
+                }
+                Err(message) => return (fail(FailureKind::Native, message), halt),
             }
         }
         (Outcome::Pass, halt)
-    }
-
-    #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
-    fn check_native(
-        &self,
-        session: &crate::native::NativeSession,
-        text: &[u8],
-        state: &MachineState,
-        run: &DifferentialRun,
-    ) -> Result<(), String> {
-        crate::native::check_against_interpreter(
-            session,
-            TEXT_BASE,
-            text,
-            ENTRY_PC,
-            state,
-            &run.original,
-            run.original_cap,
-            &run.original_footprint,
-            &run.fragment,
-            &run.encoded_fragment,
-        )
-        .map(|_| ())
     }
 }
 
@@ -295,7 +290,7 @@ pub struct FailureReport {
 pub struct Stats {
     pub generated: u64,
     /// Programs the original halted in (`generated - discarded_nonterminating`):
-    /// passed + failed + chained.
+    /// passed + failed + chained + native_unobservable.
     pub run: u64,
     pub discarded_nonterminating: u64,
     /// Original exits into a translated PC; see `Outcome::Chained`.
@@ -304,6 +299,8 @@ pub struct Stats {
     pub failed: u64,
     /// Passed programs that also agreed natively.
     pub native_passed: u64,
+    /// See `Outcome::NativeUnobservable`; not counted as passed.
+    pub native_unobservable: u64,
     pub failures_by_kind: BTreeMap<FailureKind, u64>,
     /// How the original halted, over programs that ran.
     pub original_halts: BTreeMap<&'static str, u64>,
@@ -370,6 +367,7 @@ pub fn fuzz(
                 }
             }
             Outcome::Chained => stats.chained += 1,
+            Outcome::NativeUnobservable => stats.native_unobservable += 1,
             Outcome::Fail(failure) => {
                 stats.failed += 1;
                 *stats.failures_by_kind.entry(failure.kind).or_default() += 1;
@@ -416,6 +414,7 @@ impl fmt::Display for Stats {
         writeln!(f, "chained (no verdict):     {}", self.chained)?;
         writeln!(f, "passed:                   {}", self.passed)?;
         writeln!(f, "native-passed:            {}", self.native_passed)?;
+        writeln!(f, "native-unobservable:      {}", self.native_unobservable)?;
         writeln!(f, "failed:                   {}", self.failed)?;
         for (kind, count) in &self.failures_by_kind {
             writeln!(f, "  {kind:?}: {count}")?;

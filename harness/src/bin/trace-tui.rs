@@ -18,7 +18,7 @@ use kjit_harness::model::{Flags, MachineState};
 use kjit_harness::shared::trans::input::TranslationTrigger;
 use kjit_harness::shared::trans::rephrase::RephrasedInsnKind;
 use kjit_harness::trace::{request_for_trace, PipelineTrace};
-use kjit_harness::{default_fixture_state, run_entry_fixture, CaseReport};
+use kjit_harness::{fixture_state, run_entry_fixture, CaseReport};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -44,7 +44,10 @@ fn main() {
         std::process::exit(1);
     });
 
-    let initial_state = default_fixture_state();
+    let initial_state = fixture_state(config.text_base, &text_bytes).unwrap_or_else(|err| {
+        eprintln!("cannot map the fixture text: {err}");
+        std::process::exit(1);
+    });
     let request = request_for_trace(config.entry_pc, TranslationTrigger::HotSvc, &initial_state);
     let trace = PipelineTrace::build(
         config.text_base,

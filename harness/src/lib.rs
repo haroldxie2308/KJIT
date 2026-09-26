@@ -50,6 +50,8 @@ pub struct CaseReport {
     pub original_cap: Option<InstanceCap>,
     /// See `DifferentialRun::original_footprint`.
     pub original_footprint: Vec<StoreUnit>,
+    /// See `DifferentialRun::original_accesses`.
+    pub original_accesses: Vec<arm64::LoggedAccess>,
     pub fragment_state: MachineState,
     pub fragment_halt: URuntimeHalt,
     pub fragment_steps: usize,
@@ -125,11 +127,11 @@ pub const FIXTURE_TLS_BASE: u64 = FIXTURE_DATA_BASE + 0x3000;
 /// can fault on a store to it. The page after it (x12 + 0x5000) is unmapped.
 pub const FIXTURE_RO_BASE: u64 = FIXTURE_DATA_BASE + FIXTURE_DATA_LEN;
 
-/// Initial machine state for `.s` fixture cases. Shared by `trace-tui --check`
-/// and the fixture suite so both check the same starting point: x12 points at
-/// the fixture data window, which is read-write, followed by one read-only page
-/// (`FIXTURE_RO_BASE`); TPIDR_EL0 is `FIXTURE_TLS_BASE` inside the window.
-/// Everything else is unmapped.
+/// Initial machine state for `.s` fixture cases, before the text is mapped
+/// (`fixture_state` adds it): x12 points at the fixture data window, which is
+/// read-write, followed by one read-only page (`FIXTURE_RO_BASE`); TPIDR_EL0 is
+/// `FIXTURE_TLS_BASE` inside the window. Everything else is unmapped. The
+/// fuzzer builds on it and its minimizer lifts states relative to it.
 pub fn default_fixture_state() -> MachineState {
     let mut state = MachineState::new();
     state.write_x(12, FIXTURE_DATA_BASE);
@@ -149,6 +151,43 @@ pub fn default_fixture_state() -> MachineState {
         )
         .expect("fixture read-only page is page-aligned");
     state
+}
+
+/// The initial state of a fixture case: `default_fixture_state()` with the text
+/// mapped (`with_text_mapped`). Shared by the fixture suites and `trace-tui`.
+pub fn fixture_state(text_base: u64, text: &[u8]) -> Result<MachineState, String> {
+    with_text_mapped(&default_fixture_state(), text_base, text)
+}
+
+/// `state` with the text a user page, as a process maps it: read-only (and
+/// executable; the interpreter does not model execute permission), holding the
+/// text bytes, so literal pools in the text load as data and a store to the text
+/// faults. Every page the text touches is mapped; bytes past its end read zero.
+/// The pages must not be mapped yet.
+pub fn with_text_mapped(
+    state: &MachineState,
+    text_base: u64,
+    text: &[u8],
+) -> Result<MachineState, String> {
+    let text_end = text_base
+        .checked_add(text.len() as u64)
+        .ok_or("text wraps the address space")?;
+    let first_page = text_base & !(PAGE_SIZE - 1);
+    let end_page = text_end
+        .checked_add(PAGE_SIZE - 1)
+        .ok_or("text wraps the address space")?
+        & !(PAGE_SIZE - 1);
+    let mut state = state.clone();
+    for page in (first_page..end_page).step_by(PAGE_SIZE as usize) {
+        if state.user_page_perm(page).is_some() {
+            return Err(format!("text page {page:#x} is already a mapped user page"));
+        }
+    }
+    state.map_user_range(first_page, end_page, PagePerm::ReadOnly)?;
+    for (offset, &byte) in text.iter().enumerate() {
+        state.write_le(text_base + offset as u64, 1, u64::from(byte));
+    }
+    Ok(state)
 }
 
 pub fn run_entry_fixture(
@@ -179,6 +218,7 @@ pub fn run_entry_fixture(
         original: run.original,
         original_cap: run.original_cap,
         original_footprint: run.original_footprint,
+        original_accesses: run.original_accesses,
         fragment_state: run.report.state,
         fragment_halt: run.report.halt,
         fragment_steps: run.report.steps,
@@ -207,6 +247,8 @@ pub struct DifferentialRun {
     /// When the original faulted: the store units the fragment may already have
     /// written (`faulting_store_footprint`). Empty otherwise.
     pub original_footprint: Vec<StoreUnit>,
+    /// Every user access the original attempted, in order (a faulting one last).
+    pub original_accesses: Vec<arm64::LoggedAccess>,
     pub report: URuntimeReport,
 }
 
@@ -287,6 +329,7 @@ pub fn run_differential(
     let (report, original_cap) =
         run_fragment_counting_instances(&mut runtime, limits.map(|limits| limits.fragment))
             .map_err(DifferentialError::Fragment)?;
+    let mut original_accesses = Vec::new();
     let original = run_original_with_mocked_svc(
         &text_bytes,
         text_base,
@@ -295,7 +338,13 @@ pub fn run_differential(
         None,
         original_cap,
         limits.map(|limits| limits.original),
-        before_original_step,
+        &mut |stepper| {
+            // Before each step: every access of the steps so far. The halting
+            // step accesses memory only when it faults (added below).
+            let log = stepper.access_log().expect("original runs record accesses");
+            original_accesses.extend_from_slice(&log[original_accesses.len()..]);
+            before_original_step(stepper)
+        },
     )
     .map_err(|err| match (&err, &report.halt) {
         (OriginalRunError::StepLimit { .. }, URuntimeHalt::StepLimit { .. }) => {
@@ -303,6 +352,13 @@ pub fn run_differential(
         }
         _ => DifferentialError::Original(err),
     })?;
+    if let HaltReason::Fault(fault) = original.halt_reason {
+        original_accesses.push(arm64::LoggedAccess {
+            pc: fault.pc,
+            access: fault.access,
+            privilege: model::Privilege::User,
+        });
+    }
     let original_footprint = faulting_store_footprint(&text_bytes, text_base, &original)
         .map_err(|message| DifferentialError::Original(OriginalRunError::Harness(message)))?;
     Ok(DifferentialRun {
@@ -311,6 +367,7 @@ pub fn run_differential(
         original,
         original_cap,
         original_footprint,
+        original_accesses,
         report,
     })
 }
