@@ -5,10 +5,9 @@ use crate::model::{Flags, HaltReason, MachineState};
 use crate::runtime::{
     OwnedURuntimeStepper, URuntime, URuntimeHalt, URuntimeStep, URuntimeTransition,
 };
-use crate::shared::arm64::{decode_word, DecodeError};
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::platform::{SharedVec, GFP_KERNEL};
-use crate::shared::trans::cfg::RuntimeExitReason;
+use crate::shared::trans::cfg::{admit_word, RuntimeExitReason, UnsupportedInsn};
 use crate::trace::TraceFragment;
 
 const MAX_GROUP_TRANSLATED_STEPS: usize = 100_000;
@@ -528,9 +527,9 @@ impl ActiveOriginalStepper {
 
         let chunk = &self.program[insn_index * 4..insn_index * 4 + 4];
         let word = u32::from_le_bytes(chunk.try_into().unwrap());
-        let decoded = match decode_word(word, self.pc) {
+        let decoded = match admit_word(word, self.pc).map_err(|err| err.to_string())? {
             Ok(decoded) => decoded,
-            Err(DecodeError::UnsupportedWord { pc, word }) => {
+            Err(UnsupportedInsn { pc, word }) => {
                 let reason = RuntimeExitReason::Unsupported { pc, word };
                 self.stopped = true;
                 return Ok(Some(ActiveOriginalStep {
@@ -542,7 +541,6 @@ impl ActiveOriginalStepper {
                     state: self.state.clone(),
                 }));
             }
-            Err(err) => return Err(err.to_string()),
         };
 
         if let Some(reason) = decoded.inner.runtime_exit_reason(self.pc) {

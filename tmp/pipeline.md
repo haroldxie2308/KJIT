@@ -31,12 +31,30 @@ translation/runtime harness untouched.
   Invariant: `pc == end_addr`, `next` is empty, `insns` may be empty (entry
   itself undecodable). Only `DecodeError::UnsupportedWord` converts; code-read
   failures keep their old behavior.
+- The same exit covers a word that decodes but that reg-virt rejects for an
+  instruction-intrinsic reason (e.g. `UnpredictableMemoryOp` for
+  `ldr x1, [x1], #8`). `cfg::admit_word` is the single decision point: decode,
+  then `reg_virt::admit_insn`, which runs `RewritePlan::build` (the check
+  `rewrite_user_semantic` runs) over every user-semantic instruction rephrase
+  lowers the word into. `RegVirtError::is_instruction_intrinsic` (exhaustive)
+  splits the result: intrinsic -> exit; translator-internal -> hard
+  `CfgError::RegVirt`. Runtime-exit payloads are not admitted: their only
+  user-chosen register is the param0 capture, which accepts every register
+  class, so they cannot reject intrinsically.
+- Invariant this rests on: reg-virt rewrites each original instruction
+  independently of its neighbours. A context-sensitive allocator would have to
+  move admission to block level.
+- The harness original-code interpreters and the raw trace view call
+  `admit_word` too, so they stop exactly where the translated code exits.
+- Rephrase stays the only producer of the exit; reg-virt never synthesizes it.
 - Rephrase lowers it to an exit group: `x9 = RetStatus::Unsupported (6)`,
   `x10 = raw word`, `x11 = pc`. The runtime always resumes userspace at `x11`
   and never re-enters the fragment at that PC for this status.
 - Why it's exact: userspace executes the instruction natively, including taking
   SIGILL itself for a truly undefined word.
 - `x10` carrying the word is what the coverage histogram will be built from.
+  It is the exact word in both cases; decoding it tells an undecodable word
+  from a reg-virt rejection.
 
 ## Pair and writeback memory forms in reg-virt
 
@@ -45,7 +63,7 @@ translation/runtime harness untouched.
   read-write.
 - Constrained-unpredictable encodings (writeback base == transfer register with
   a non-SP base; LDP rt == rt2) are rejected with `UnpredictableMemoryOp`, never
-  translated.
+  translated; admission turns that into the Unsupported exit.
 
 # P1 contracts: memory sandbox, fault exits, execution budget (2026-09-27)
 

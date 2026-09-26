@@ -94,14 +94,16 @@ user-semantic register virtualization, wrapped layout, and `URuntime`. The
 wrapper includes the shared prologue and epilogue, and runtime exits return
 through `x9/x10/x11` with `x11` carrying the original resume PC.
 
-A reachable instruction outside the decoded subset does not fail translation:
-its block ends with an `Unsupported` runtime exit (`x10` = raw word, `x11` =
-its PC), and userspace executes that instruction natively.
+A reachable instruction outside the decoded subset, or one that decodes but
+that register virtualization rejects for an instruction-intrinsic reason, does
+not fail translation: its block ends with an `Unsupported` runtime exit (`x10` =
+raw word, `x11` = its PC), and userspace executes that instruction natively.
 
 Register virtualization now rewrites ordinary user-semantic uses of
 stack-backed `x12..x17`, stable-mapped user `x29`, and stable-mapped user `SP`,
 including LDP/STP and pre/post-index loads/stores. Constrained-unpredictable
-register overlaps in those forms are rejected rather than translated.
+register overlaps in those forms are rejected rather than translated, and so
+take the `Unsupported` exit.
 Runtime-exit sequencing now preserves user-visible `x9`, `x10`, and `x11`
 to `pt_regs` before those physical registers become the runtime return channel.
 Dynamic exit targets such as `br x9`, stack-backed branch registers, and

@@ -151,7 +151,9 @@ macro_rules! a64_ori {
     }};
 }
 
-fn rephrase_insn(insn: IrInsn) -> SharedResult<SharedVec<RephrasedInsn>, SharedAllocError> {
+pub(crate) fn rephrase_insn(
+    insn: IrInsn,
+) -> SharedResult<SharedVec<RephrasedInsn>, SharedAllocError> {
     let mut ret = SharedVec::with_capacity(10, GFP_KERNEL)?;
     match insn.inner {
         A64Insn::AdrAdrOnlyPcreladdr { rd, .. } | A64Insn::AdrpAdrpOnlyPcreladdr { rd, .. } => {
