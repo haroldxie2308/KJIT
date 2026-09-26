@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Sun, 27 Sep 2026 02:48:00 +0800
+Subject: [PATCH 2/3] extable: consult KJIT fragment exception tables last
+
+Translated KJIT code accesses user memory only with LDTR/STTR, and every
+such instruction may fault: demand paging, copy-on-write, or a truly bad
+address. The arm64 fault path handles an EL1 fault on a user address only
+when search_exception_tables() knows the faulting instruction
+(insn_may_access_user(), and lock_mm_and_find_vma() when the mmap lock is
+contended); otherwise it dies with "access to user memory outside uaccess
+routines".
+
+search_exception_tables() now asks the registered KJIT runtime last,
+through a search_extable callback in struct kjit_hook_ops. The runtime
+emits one arm64 exception_table_entry per user access, of type
+EX_TYPE_UACCESS_ERR_ZERO with both registers set to 31 (xzr), so
+fixup_exception() only redirects the PC to the access's out-of-line exit
+stub. With that, a fragment's user access behaves like copy_from_user():
+demand paging and CoW go through handle_mm_fault(), and an unresolvable
+fault leaves the fragment through its exit stub, after which userspace
+re-executes the instruction and takes the fault itself.
+
+The entries are self-relative, so the runtime keeps them in the same
+allocation as the code. The lookup runs under the hook's SRCU, is skipped
+in NMI context (translated code never runs there, and SRCU readers are not
+NMI-safe), and costs one static branch when no runtime is registered.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/kernel/kjit.c | 26 ++++++++++++++++++++++++++
+ include/linux/kjit.h     | 13 +++++++++++++
+ kernel/extable.c         |  3 +++
+ 3 files changed, 42 insertions(+)
+
+diff --git a/arch/arm64/kernel/kjit.c b/arch/arm64/kernel/kjit.c
+index 77c5233e7..98fd29c23 100644
+--- a/arch/arm64/kernel/kjit.c
++++ b/arch/arm64/kernel/kjit.c
+@@ -10,6 +10,7 @@
+  * outside that section, so unregistering never waits for a blocked syscall.
+  */
+ #include <linux/export.h>
++#include <linux/hardirq.h>
+ #include <linux/jump_label.h>
+ #include <linux/kjit.h>
+ #include <linux/mutex.h>
+@@ -25,6 +26,8 @@ static DEFINE_MUTEX(kjit_hook_mutex);
+ /* Only one runtime can own the hook; a second registration gets -EBUSY. */
+ int kjit_register_hook(const struct kjit_hook_ops *ops)
+ {
++	if (!ops->after_syscall || !ops->search_extable)
++		return -EINVAL;
+ 	guard(mutex)(&kjit_hook_mutex);
+ 	if (rcu_access_pointer(kjit_hook))
+ 		return -EBUSY;
+@@ -59,3 +62,26 @@ long kjit_call_after_syscall(struct pt_regs *regs)
+ 	srcu_read_unlock(&kjit_hook_srcu, idx);
+ 	return scno;
+ }
++
++/*
++ * Called by search_exception_tables() after every other table, so only
++ * addresses no other table claims get here. SRCU readers are not NMI-safe;
++ * translated code never runs in NMI context, so an NMI fault cannot be one of
++ * its user accesses.
++ */
++const struct exception_table_entry *search_kjit_extables(unsigned long addr)
++{
++	const struct exception_table_entry *e = NULL;
++	const struct kjit_hook_ops *ops;
++	int idx;
++
++	if (!static_branch_unlikely(&kjit_hook_enabled) || in_nmi())
++		return NULL;
++
++	idx = srcu_read_lock(&kjit_hook_srcu);
++	ops = srcu_dereference(kjit_hook, &kjit_hook_srcu);
++	if (ops)
++		e = ops->search_extable(addr);
++	srcu_read_unlock(&kjit_hook_srcu, idx);
++	return e;
++}
+diff --git a/include/linux/kjit.h b/include/linux/kjit.h
+index 32d66f904..2cc787b39 100644
+--- a/include/linux/kjit.h
++++ b/include/linux/kjit.h
+@@ -12,6 +12,7 @@
+ #include <linux/jump_label.h>
+ #include <linux/types.h>
+ 
++struct exception_table_entry;
+ struct pt_regs;
+ 
+ /**
+@@ -23,9 +24,14 @@ struct pt_regs;
+  *	with the arguments in @regs, as if userspace had executed an SVC just
+  *	before @regs->pc. It is called again after that syscall. It runs in
+  *	process context with interrupts and preemption enabled and may sleep.
++ * @search_extable: Returns the exception table entry for @addr if @addr is
++ *	a user access of translated code the runtime owns, else NULL. Consulted
++ *	by search_exception_tables() after every other table. Must not sleep.
++ *	The entry must stay valid while the code containing @addr can run.
+  */
+ struct kjit_hook_ops {
+ 	long (*after_syscall)(struct pt_regs *regs);
++	const struct exception_table_entry *(*search_extable)(unsigned long addr);
+ };
+ 
+ #ifdef CONFIG_ARM64_KJIT
+@@ -34,6 +40,13 @@ DECLARE_STATIC_KEY_FALSE(kjit_hook_enabled);
+ int kjit_register_hook(const struct kjit_hook_ops *ops);
+ void kjit_unregister_hook(const struct kjit_hook_ops *ops);
+ long kjit_call_after_syscall(struct pt_regs *regs);
++const struct exception_table_entry *search_kjit_extables(unsigned long addr);
++#else
++static inline const struct exception_table_entry *
++search_kjit_extables(unsigned long addr)
++{
++	return NULL;
++}
+ #endif
+ 
+ #endif /* _LINUX_KJIT_H */
+diff --git a/kernel/extable.c b/kernel/extable.c
+index 71f482581..6e8a1cf94 100644
+--- a/kernel/extable.c
++++ b/kernel/extable.c
+@@ -12,6 +12,7 @@
+ #include <linux/init.h>
+ #include <linux/kprobes.h>
+ #include <linux/filter.h>
++#include <linux/kjit.h>
+ 
+ #include <asm/sections.h>
+ #include <linux/uaccess.h>
+@@ -60,6 +61,8 @@ const struct exception_table_entry *search_exception_tables(unsigned long addr)
+ 		e = search_module_extables(addr);
+ 	if (!e)
+ 		e = search_bpf_extables(addr);
++	if (!e)
++		e = search_kjit_extables(addr);
+ 	return e;
+ }
+ 

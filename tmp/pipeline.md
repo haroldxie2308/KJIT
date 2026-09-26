@@ -469,7 +469,10 @@ O(words + fault sites + entries) time, O(words) memory. No recursion, no panics
   (interpreter and native suites, `trace-tui --check`) runs only verified
   fragments; the runtime unit-test fragments and the kernel golden are verified
   too. `verify_mutation_tests.rs` is the G1 mutation suite.
-- Kernel: not wired yet (K2 preconditions).
+- Kernel (K2): `runtime/translate.rs` runs `verify_fragment` on exactly the
+  bytes, fault-site table and entry table (`entry_offset` + every `vlabels`
+  offset) that `kjit_install` installs; a rejected fragment is counted
+  (`translate_verify_rejected`, FallsOffEnd separately) and never installed.
 
 # K2 contract: kernel runtime (2026-09-27)
 
@@ -553,6 +556,137 @@ Written before implementation. Facts checked against `dep/linux` 7.1-rc1:
 
   translated.
 
+# K2 implementation (2026-09-27)
+
+Implements "K2 contract: kernel runtime". Decisions the contract left open, and
+where the implementation is stricter than it:
+
+## Kernel tree and patches
+
+- `kernel-patches/000{1,2,3}` on the pinned 7.1-rc1 commit, applied by
+  `scripts/kjit-kernel-tree.sh` to `$KJIT_BUILD_ROOT/linux-kjit`, a git worktree
+  of `dep/linux` (idempotent via a stamp of base commit + patch hashes;
+  fail-fast on local changes, a half-applied `git am` or a patch that does not
+  apply). Every profile builds from it; `ARM64_KJIT=y` is a K1 invariant
+  (`kjit-invariants.conf`). Why all profiles: the module links against the hook
+  symbols, and one module shape is simpler than a K0-only build.
+- 0001: `ARM64_KJIT` (selects `MMU_NOTIFIER`; depends on !SCS, !CFI,
+  !BTI_KERNEL, !SW_TTBR0_PAN), `include/linux/kjit.h`,
+  `arch/arm64/kernel/kjit.c`, the loop in `el0_svc_common`.
+  - The ops pointer is protected by **SRCU**, not RCU: `after_syscall` sleeps
+    (fragment page faults). Unregister = static key off, pointer NULL,
+    `synchronize_srcu`: it waits for hook calls in flight, never for a syscall
+    the loop invoked (those run outside the SRCU section).
+  - Loop placement: inside the existing "no syscall work at entry, none at exit,
+    no single-step, !DEBUG_RSEQ" branch. After each invoked syscall the flags are
+    re-read; syscall work or single-step leaves through `trace_exit`, as upstream
+    does when work appears under one syscall.
+  - `KJIT_MAX_SYSCALLS_PER_ENTRY = 4096`, checked before the hook is called:
+    a pure syscall loop would otherwise never switch voluntarily or pass through
+    user mode (RCU Tasks). Cost: one return to EL0 per 4096 syscalls.
+  - `invoke_syscall` goes through a `noinline` wrapper so the
+    `RANDOMIZE_KSTACK_OFFSET` alloca is released per syscall.
+- 0002: `search_kjit_extables()` is the last lookup in
+  `search_exception_tables()`, through `ops->search_extable` under the same SRCU;
+  skipped in NMI (SRCU readers are not NMI-safe; fragments never run there).
+- 0003: `EXPORT_SYMBOL_GPL` for `execmem_alloc`, `execmem_free`,
+  `set_memory_ro`, `set_memory_x` (arm64's `set_memory_rox` is the generic
+  inline over the last two). `flush_icache_range` already uses exported helpers.
+
+## Hook return value
+
+- Kept `long after_syscall(regs)`: -1 = return to EL0 at `regs->pc`, >= 0 = the
+  syscall number to invoke. On `Svc` the runtime returns `(int)regs->regs[8]`
+  (the kernel's own entry truncates x8 to `int`); a negative value is declined
+  (pc = x11 - 4), so `NO_SYSCALL`-style numbers keep the native path.
+
+## Run conditions (`kjit_can_run`, before every entry and every in-kernel syscall)
+
+- Superset of the contract: 64-bit task, **not ptraced** (`current->ptrace`: a
+  tracer may single-step, watch or inspect at any instruction), no bit of
+  `(EXIT_TO_USER_MODE_WORK & ~_TIF_FOREIGN_FPSTATE) | _TIF_SYSCALL_WORK |
+  _TIF_SINGLESTEP` (signals incl. `NOTIFY_SIGNAL`, both need_resched bits,
+  `NOTIFY_RESUME` = task_work/rseq, uprobes, livepatch, MTE async faults),
+  x0 not in -ERESTARTSYS..-ERESTART_RESTARTBLOCK. `FOREIGN_FPSTATE` only asks
+  for an FP reload before EL0 runs; fragments never touch FP/SIMD.
+- Seccomp-filtered tasks never reach the hook (`TIF_SECCOMP` is syscall work).
+
+## Call ABI (trampoline `kjit_call_fragment`, `kjit_glue.c`)
+
+- `x0 = regs`, `x1 = extra`, `x2 = base + entry offset`, `blr base`; mirrors
+  `harness/src/native.rs`. Before the call it loads the user NZCV from
+  `regs->pstate[31:28]` into PSTATE; after it writes NZCV back (the fragment
+  runs user flag-setting code in hardware). Callee-saved registers, x29/x30 and
+  sp come back through the epilogue.
+- Extra params = two u64: `[0] = x10 (RET_PARAM0)`, `[1] = x11 (RET_PARAM1)`
+  (epilogue `stp x10, x11, [x17]`); `x0` = `RetStatus`. The Rust side matches
+  the raw status exactly (0..=7), not `RetStatus::from_reg` (which masks with
+  0xFFFF); anything else is the WARN_ONCE + disable path.
+
+## Code cache and lifetimes
+
+- `kjit_mm` per mm, embedding the `mmu_notifier` (`mmu_notifier_get/put`).
+  Found from the syscall path through a global RCU hash keyed by `mm`. The hash
+  membership owns exactly one notifier reference; whoever unhashes it (mm
+  release, or module exit) under `kjit_mm_lock` drops it. Freed in
+  `free_notifier` (after the notifier SRCU grace period) with `kfree_rcu`
+  (hash readers are RCU readers).
+- Table: per-`kjit_mm` RCU hash keyed by the **entry PC** (the PC a translation
+  was requested for). The fragment also carries its sorted `vlabels`
+  (PC -> offset); branch-exit chaining first looks for the target in the
+  fragment that just exited (a verified entry offset), then in the table.
+  After an `Svc` exit the next hook call looks the resume PC up in the table
+  (the reference is not held across the syscall).
+- `kjit_frag` refcount: one held by the table while installed, one per running
+  call (`kjit_lookup` = RCU lookup + `refcount_inc_not_zero`). The fragment is
+  on the global extable list until its **last** reference is dropped, so a
+  fragment removed from its table while it runs keeps its fault fixups. Last
+  put: off the list, image freed by `queue_rcu_work` (execmem_free needs
+  process context).
+- Image = one `execmem_alloc(EXECMEM_BPF)` allocation: code, then one
+  `exception_table_entry` per fault site (`EX_TYPE_UACCESS_ERR_ZERO`, both
+  registers 31), `flush_icache_range`, `set_memory_rox`.
+- Locks: `kjit_mm.lock` -> `kjit_frags_lock` (spinlocks, no allocation under
+  either: both are taken inside mmu_notifier invalidation). `kjit_mm_lock` is
+  never nested with them.
+- Invalidation: every `invalidate_range_start` event whose range intersects a
+  fragment's source span `[lo, hi)` (min/max of every byte the translator read)
+  removes it; not only unmaps, because a protection change can make the text
+  writable and CoW/migration replace pages. Non-blocking-safe (spinlock only).
+- Install gate: `kjit_mm.seq` counts started invalidations, `invalidating` the
+  ones in progress. The translator snapshots `seq` before reading text;
+  `kjit_install` installs only if `seq` is unchanged and nothing is in
+  progress, else `-EAGAIN` (retried 3 times; `translate_raced`). Any change to
+  the text between the read and the install therefore prevents the install.
+- Text reads: `kjit_read_text_page` under `mmap_read_lock`, only from a VMA
+  with `VM_EXEC` and without `VM_WRITE`, one page snapshot per page
+  (`get_user_pages_remote`, `FOLL_FORCE` for exec-only text). Per translation
+  at most 16 pages and 16384 reads (`build_cfg` has no size bound of its own
+  and quadratic bookkeeping).
+- Teardown: mm release (`release` callback) empties the table and unhashes.
+  Module exit: remove debugfs (waits for writers), unregister the hook (waits
+  for calls in flight), claim and empty every `kjit_mm`, `mmu_notifier_put`,
+  `mmu_notifier_synchronize`, `rcu_barrier`, `destroy_workqueue`.
+
+## Known limitations (in addition to rseq)
+
+- A write to a mapped text file through `write(2)` or a shared writable mapping
+  of the same file changes page-cache pages in place without an mmu_notifier
+  event on our (non-writable) VMA, so a translation of it is not invalidated.
+  The running executable is protected by `ETXTBSY`; shared libraries are not.
+- Invalidation is conservative: any notifier event on a fragment's span drops
+  it (reclaim of clean text pages, migration), and the install gate retries
+  on unrelated invalidations.
+- Perf hardware breakpoints/watchpoints on a non-ptraced task are not
+  considered.
+
+## Guest tests (G2 and hardening)
+
+- `tests/guest/` (static, `/opt/kjit-tests` in the guest rootfs;
+  `make guest-tests GUEST_PROFILE=... K2_ITERATIONS=N`). Every test runs with
+  `enable` N and Y: identical stdout and exit status, plus counter checks in the
+  enabled run. G2 = `toy_loop`: >= 99% of its syscalls invoked in-kernel.
+
 ## K0 kernel bring-up: golden fragment check
 
 - The userspace harness is the reference. `tests/arm64/golden/toy_cfg_hot_svc_mark.rs`
@@ -567,8 +701,9 @@ Written before implementation. Facts checked against `dep/linux` 7.1-rc1:
 - Module init runs `compile_request` over a `CodeProvider` backed by the embedded
   words, encodes, and compares byte-for-byte. PASS/FAIL is `pr_info!`/`pr_err!`
   with the first mismatching offset; FAIL returns `EINVAL` from init.
-- Invariant: the module never executes or branches into the emitted bytes. That
-  waits for an independent in-kernel verifier.
+- Invariant: the module never executes or branches into the golden fragment's
+  bytes. (K2 executes only fragments it translated from a live process and
+  verified in-kernel; see "K2 implementation".)
 
 # A64 subset contracts (A7a, 2026-09-27)
 

@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Sun, 27 Sep 2026 02:48:18 +0800
+Subject: [PATCH 3/3] mm, arm64: export execmem and set_memory_{ro,x} for the
+ KJIT runtime
+
+The KJIT runtime module installs translated user code as kernel text: it
+allocates it with execmem_alloc(), writes the code and its exception
+table, makes the pages read-only and executable with set_memory_rox()
+(set_memory_ro() + set_memory_x() on arm64), flushes the I-cache with
+flush_icache_range() (already built from exported helpers) and releases it
+with execmem_free(), whose VM_FLUSH_RESET_PERMS allocation restores the
+linear-map permissions. This is the life cycle of module text and of the
+BPF JIT, but from a module, so these four symbols are exported GPL-only.
+Nothing else changes.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/mm/pageattr.c | 2 ++
+ mm/execmem.c             | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/arch/arm64/mm/pageattr.c b/arch/arm64/mm/pageattr.c
+index ce035e1b4..70382ea43 100644
+--- a/arch/arm64/mm/pageattr.c
++++ b/arch/arm64/mm/pageattr.c
+@@ -217,6 +217,7 @@ int set_memory_ro(unsigned long addr, int numpages)
+ 					__pgprot(PTE_RDONLY),
+ 					__pgprot(PTE_WRITE));
+ }
++EXPORT_SYMBOL_GPL(set_memory_ro);
+ 
+ int set_memory_rw(unsigned long addr, int numpages)
+ {
+@@ -238,6 +239,7 @@ int set_memory_x(unsigned long addr, int numpages)
+ 					__pgprot(PTE_MAYBE_GP),
+ 					__pgprot(PTE_PXN));
+ }
++EXPORT_SYMBOL_GPL(set_memory_x);
+ 
+ int set_memory_valid(unsigned long addr, int numpages, int enable)
+ {
+diff --git a/mm/execmem.c b/mm/execmem.c
+index 084a207e4..bca0cbe27 100644
+--- a/mm/execmem.c
++++ b/mm/execmem.c
+@@ -478,6 +478,7 @@ void *execmem_alloc(enum execmem_type type, size_t size)
+ 
+ 	return kasan_reset_tag(p);
+ }
++EXPORT_SYMBOL_GPL(execmem_alloc);
+ 
+ void *execmem_alloc_rw(enum execmem_type type, size_t size)
+ {
+@@ -505,6 +506,7 @@ void execmem_free(void *ptr)
+ 	if (!execmem_cache_free(ptr))
+ 		vfree(ptr);
+ }
++EXPORT_SYMBOL_GPL(execmem_free);
+ 
+ bool execmem_is_rox(enum execmem_type type)
+ {

@@ -3,12 +3,16 @@
 //! Kernel JIT implementation in Rust
 //!
 //! This kernel module provides a framework for userspace code JIT in kernel.
+//! Init runs the K0 golden self-check, then starts the K2 runtime
+//! (`runtime/`, `kjit_glue.c`).
 #![allow(dead_code)]
 #![allow(unused)]
 #![allow(elided_lifetimes_in_paths)]
 
 #[allow(missing_docs)]
 pub mod shared;
+
+mod runtime;
 
 use kernel::prelude::*;
 
@@ -125,12 +129,14 @@ impl kernel::Module for RustKJIT {
     fn init(_module: &'static ThisModule) -> Result<Self> {
         pr_info!("######## Rust KJIT inits ########\n");
         check_golden()?;
+        runtime::init()?;
         Ok(RustKJIT {})
     }
 }
 
 impl Drop for RustKJIT {
     fn drop(&mut self) {
+        runtime::exit();
         pr_info!("######## Rust KJIT exits ########\n");
     }
 }

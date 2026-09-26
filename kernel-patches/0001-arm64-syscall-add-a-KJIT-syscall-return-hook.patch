@@ -1,0 +1,306 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Sun, 27 Sep 2026 02:47:41 +0800
+Subject: [PATCH 1/3] arm64: syscall: add a KJIT syscall-return hook
+
+KJIT translates hot user code between two SVCs into verified EL1 code, so
+a syscall-heavy loop can issue its next syscall without returning to
+userspace. The kernel side needs one thing from the syscall path: after a
+syscall with no syscall work, ask the runtime whether to invoke another
+syscall directly.
+
+el0_svc_common() now calls kjit_syscall_loop() on the path that returns
+without syscall work. While the registered runtime returns a syscall
+number, the loop sets orig_x0/syscallno and invokes it, then re-reads the
+thread flags. If syscall work (trace, audit, seccomp, tracepoints, emu) or
+single-step appeared, it leaves through the existing trace_exit path, the
+same as when work appears under a single syscall. The runtime itself
+declines whenever signals, rescheduling or other exit-to-user work are
+pending, so every such event is handled by the normal return to userspace.
+
+The loop invokes at most KJIT_MAX_SYSCALLS_PER_ENTRY (4096) syscalls per
+kernel entry, checked before the hook is called (once the hook returned a
+syscall number, regs->pc is past that SVC and the syscall must run). A pure
+syscall loop would otherwise never switch voluntarily or pass through user
+mode, which RCU Tasks waits for.
+
+invoke_syscall() is called through a noinline wrapper: with
+RANDOMIZE_KSTACK_OFFSET its alloca would otherwise accumulate on the stack
+for every syscall of the loop.
+
+The hook is a static key plus an ops pointer that one module registers.
+Calls through it run under SRCU, because the runtime may sleep (translated
+code takes ordinary page faults), and kjit_unregister_hook() waits for
+calls in flight. Syscalls are invoked outside the SRCU section, so
+unregistering never waits for a blocked syscall. Unregistered, the syscall
+path pays one static branch.
+
+ARM64_KJIT selects MMU_NOTIFIER, which the runtime uses to drop
+translations whose user text changed, and depends on the configuration the
+translated code relies on: no shadow call stack (it owns x18), no kCFI
+(it is called indirectly without a type hash), no kernel BTI (it enters
+its body with BR) and no SW TTBR0 PAN (it reaches user memory with
+LDTR/STTR).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/Kconfig          | 20 +++++++++++
+ arch/arm64/kernel/Makefile  |  1 +
+ arch/arm64/kernel/kjit.c    | 61 ++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/syscall.c | 70 ++++++++++++++++++++++++++++++++++++-
+ include/linux/kjit.h        | 39 +++++++++++++++++++++
+ 5 files changed, 190 insertions(+), 1 deletion(-)
+ create mode 100644 arch/arm64/kernel/kjit.c
+ create mode 100644 include/linux/kjit.h
+
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index fe60738e5..c1ab7e6da 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -1695,6 +1695,26 @@ config ARM64_TAGGED_ADDR_ABI
+ 	  to system calls as pointer arguments. For details, see
+ 	  Documentation/arch/arm64/tagged-address-abi.rst.
+ 
++config ARM64_KJIT
++	bool "KJIT syscall-return hook"
++	depends on MODULES && !SHADOW_CALL_STACK && !CFI && !ARM64_BTI_KERNEL && !ARM64_SW_TTBR0_PAN
++	select MMU_NOTIFIER
++	help
++	  Lets one module (the KJIT runtime) register a hook that runs on
++	  the 64-bit syscall return path. The hook may execute verified,
++	  translated copies of the task's user code at EL1 and ask the
++	  kernel to invoke the next system call directly, instead of
++	  returning to userspace. With no hook registered the syscall path
++	  costs one static branch.
++
++	  The translated code owns x18, is called indirectly without a kCFI
++	  hash, starts with an indirect branch into code without BTI landing
++	  pads and accesses user memory with LDTR/STTR, hence the
++	  dependencies. MMU_NOTIFIER is selected because the runtime must
++	  drop translations when the user text changes.
++
++	  If unsure, say N.
++
+ menuconfig COMPAT
+ 	bool "Kernel support for 32-bit EL0"
+ 	depends on ARM64_4K_PAGES || EXPERT
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index 74b76bb70..185ed600b 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -43,6 +43,7 @@ obj-$(CONFIG_COMPAT_ALIGNMENT_FIXUPS)	+= compat_alignment.o
+ obj-$(CONFIG_KUSER_HELPERS)		+= kuser32.o
+ obj-$(CONFIG_FUNCTION_TRACER)		+= ftrace.o entry-ftrace.o
+ obj-$(CONFIG_MODULES)			+= module.o module-plts.o
++obj-$(CONFIG_ARM64_KJIT)		+= kjit.o
+ obj-$(CONFIG_PERF_EVENTS)		+= perf_regs.o perf_callchain.o
+ obj-$(CONFIG_HARDLOCKUP_DETECTOR_PERF)	+= watchdog_hld.o
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT)	+= hw_breakpoint.o
+diff --git a/arch/arm64/kernel/kjit.c b/arch/arm64/kernel/kjit.c
+new file mode 100644
+index 000000000..77c5233e7
+--- /dev/null
++++ b/arch/arm64/kernel/kjit.c
+@@ -0,0 +1,61 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * KJIT hook registration (see include/linux/kjit.h).
++ *
++ * The ops pointer is published with RCU semantics and every call through it
++ * runs inside an SRCU read-side section: after_syscall may sleep (translated
++ * code takes ordinary page faults), so plain RCU cannot cover it, and SRCU
++ * lets kjit_unregister_hook() wait for the calls in flight before the module
++ * that implements them goes away. Syscalls the hook asks for are invoked
++ * outside that section, so unregistering never waits for a blocked syscall.
++ */
++#include <linux/export.h>
++#include <linux/jump_label.h>
++#include <linux/kjit.h>
++#include <linux/mutex.h>
++#include <linux/rcupdate.h>
++#include <linux/srcu.h>
++
++DEFINE_STATIC_KEY_FALSE(kjit_hook_enabled);
++
++DEFINE_STATIC_SRCU(kjit_hook_srcu);
++static const struct kjit_hook_ops __rcu *kjit_hook;
++static DEFINE_MUTEX(kjit_hook_mutex);
++
++/* Only one runtime can own the hook; a second registration gets -EBUSY. */
++int kjit_register_hook(const struct kjit_hook_ops *ops)
++{
++	guard(mutex)(&kjit_hook_mutex);
++	if (rcu_access_pointer(kjit_hook))
++		return -EBUSY;
++	rcu_assign_pointer(kjit_hook, ops);
++	static_branch_enable(&kjit_hook_enabled);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kjit_register_hook);
++
++/* Returns once no call into @ops is in flight. */
++void kjit_unregister_hook(const struct kjit_hook_ops *ops)
++{
++	guard(mutex)(&kjit_hook_mutex);
++	if (WARN_ON(rcu_access_pointer(kjit_hook) != ops))
++		return;
++	static_branch_disable(&kjit_hook_enabled);
++	rcu_assign_pointer(kjit_hook, NULL);
++	synchronize_srcu(&kjit_hook_srcu);
++}
++EXPORT_SYMBOL_GPL(kjit_unregister_hook);
++
++long kjit_call_after_syscall(struct pt_regs *regs)
++{
++	const struct kjit_hook_ops *ops;
++	long scno = -1;
++	int idx;
++
++	idx = srcu_read_lock(&kjit_hook_srcu);
++	ops = srcu_dereference(kjit_hook, &kjit_hook_srcu);
++	if (ops)
++		scno = ops->after_syscall(regs);
++	srcu_read_unlock(&kjit_hook_srcu, idx);
++	return scno;
++}
+diff --git a/arch/arm64/kernel/syscall.c b/arch/arm64/kernel/syscall.c
+index 358ddfbf1..75d18277e 100644
+--- a/arch/arm64/kernel/syscall.c
++++ b/arch/arm64/kernel/syscall.c
+@@ -3,6 +3,7 @@
+ #include <linux/compiler.h>
+ #include <linux/context_tracking.h>
+ #include <linux/errno.h>
++#include <linux/kjit.h>
+ #include <linux/nospec.h>
+ #include <linux/ptrace.h>
+ #include <linux/randomize_kstack.h>
+@@ -59,6 +60,70 @@ static inline bool has_syscall_work(unsigned long flags)
+ 	return unlikely(flags & _TIF_SYSCALL_WORK);
+ }
+ 
++#ifdef CONFIG_ARM64_KJIT
++/*
++ * Out of line so that the random kstack offset invoke_syscall() allocates is
++ * released after every syscall of the loop below instead of accumulating.
++ */
++static noinline void kjit_invoke_syscall(struct pt_regs *regs, unsigned int scno,
++					 unsigned int sc_nr,
++					 const syscall_fn_t syscall_table[])
++{
++	invoke_syscall(regs, scno, sc_nr, syscall_table);
++}
++
++/*
++ * Syscalls one kernel entry may invoke on behalf of the KJIT runtime before it
++ * returns to userspace anyway. A pure syscall loop could otherwise stay in the
++ * kernel indefinitely without a voluntary context switch or a user-mode
++ * transition, which RCU Tasks and similar machinery wait for. Returning costs
++ * one mode switch per KJIT_MAX_SYSCALLS_PER_ENTRY syscalls.
++ */
++#define KJIT_MAX_SYSCALLS_PER_ENTRY	4096
++
++/*
++ * Called after a syscall that had no syscall work. While the KJIT runtime
++ * returns a syscall number, invoke it here instead of returning to userspace:
++ * the runtime has already run the user code between the two SVCs and put the
++ * user state in @regs, with regs->pc just after the next SVC. Returns true if
++ * syscall work appeared during the loop, so the caller must run the exit trace
++ * for the last syscall, exactly as it does when work appears under a single
++ * syscall.
++ */
++static bool kjit_syscall_loop(struct pt_regs *regs, int sc_nr,
++			      const syscall_fn_t syscall_table[])
++{
++	unsigned int n = 0;
++	unsigned long flags;
++	long scno;
++
++	if (!static_branch_unlikely(&kjit_hook_enabled))
++		return false;
++
++	/*
++	 * The cap is checked before calling the hook: once it has returned a
++	 * syscall number, regs->pc is already past that SVC and the syscall
++	 * must be invoked.
++	 */
++	while (n++ < KJIT_MAX_SYSCALLS_PER_ENTRY &&
++	       (scno = kjit_call_after_syscall(regs)) >= 0) {
++		regs->orig_x0 = regs->regs[0];
++		regs->syscallno = scno;
++		kjit_invoke_syscall(regs, scno, sc_nr, syscall_table);
++		flags = read_thread_flags();
++		if (has_syscall_work(flags) || (flags & _TIF_SINGLESTEP))
++			return true;
++	}
++	return false;
++}
++#else
++static inline bool kjit_syscall_loop(struct pt_regs *regs, int sc_nr,
++				     const syscall_fn_t syscall_table[])
++{
++	return false;
++}
++#endif
++
+ static void el0_svc_common(struct pt_regs *regs, int scno, int sc_nr,
+ 			   const syscall_fn_t syscall_table[])
+ {
+@@ -127,8 +192,11 @@ static void el0_svc_common(struct pt_regs *regs, int scno, int sc_nr,
+ 	 */
+ 	if (!has_syscall_work(flags) && !IS_ENABLED(CONFIG_DEBUG_RSEQ)) {
+ 		flags = read_thread_flags();
+-		if (!has_syscall_work(flags) && !(flags & _TIF_SINGLESTEP))
++		if (!has_syscall_work(flags) && !(flags & _TIF_SINGLESTEP)) {
++			if (kjit_syscall_loop(regs, sc_nr, syscall_table))
++				goto trace_exit;
+ 			return;
++		}
+ 	}
+ 
+ trace_exit:
+diff --git a/include/linux/kjit.h b/include/linux/kjit.h
+new file mode 100644
+index 000000000..32d66f904
+--- /dev/null
++++ b/include/linux/kjit.h
+@@ -0,0 +1,39 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * KJIT: run verified translations of hot user code on the syscall return path.
++ *
++ * The kernel side is only a hook. A single runtime module registers a
++ * struct kjit_hook_ops; everything else (translation, verification, the code
++ * cache, the decision whether to run translated code) lives in that module.
++ */
++#ifndef _LINUX_KJIT_H
++#define _LINUX_KJIT_H
++
++#include <linux/jump_label.h>
++#include <linux/types.h>
++
++struct pt_regs;
++
++/**
++ * struct kjit_hook_ops - callbacks of the registered KJIT runtime
++ * @after_syscall: Called on the 64-bit syscall return path when no syscall
++ *	entry/exit work is pending, with @regs holding the user state after the
++ *	syscall. Returns a negative value to return to userspace at
++ *	@regs->pc, or a syscall number (>= 0) that the kernel invokes next,
++ *	with the arguments in @regs, as if userspace had executed an SVC just
++ *	before @regs->pc. It is called again after that syscall. It runs in
++ *	process context with interrupts and preemption enabled and may sleep.
++ */
++struct kjit_hook_ops {
++	long (*after_syscall)(struct pt_regs *regs);
++};
++
++#ifdef CONFIG_ARM64_KJIT
++DECLARE_STATIC_KEY_FALSE(kjit_hook_enabled);
++
++int kjit_register_hook(const struct kjit_hook_ops *ops);
++void kjit_unregister_hook(const struct kjit_hook_ops *ops);
++long kjit_call_after_syscall(struct pt_regs *regs);
++#endif
++
++#endif /* _LINUX_KJIT_H */
