@@ -10,6 +10,8 @@ pub mod shared;
 pub mod trace;
 
 #[cfg(test)]
+mod asm_fixture_tests;
+#[cfg(test)]
 mod encoding_tests;
 
 use crate::shared::emit::layout::ExecutionFragment;
@@ -74,6 +76,15 @@ impl CodeProvider for MockCodeProvider {
         dst.copy_from_slice(&self.bytes[offset..offset + dst.len()]);
         Ok(())
     }
+}
+
+/// Initial machine state for `.s` fixture cases. Shared by `trace-tui --check`
+/// and the fixture suite so both check the same starting point: x12 points at
+/// the fixture scratch memory.
+pub fn default_fixture_state() -> MachineState {
+    let mut state = MachineState::new();
+    state.write_x(12, 0x9000);
+    state
 }
 
 pub fn run_entry_fixture(

@@ -1,13 +1,9 @@
 // Hard fixture for runtime-reserved and virtualized register exits.
-// Each case has its own hot SVC marker. Select a case with HOT_SVC_SYMBOL.
+// Each case has its own hot SVC marker (a symbol ending in `_mark`).
 //
-// Expected future runs:
-//   HOT_SVC_SYMBOL=hot_svc_mark make harness-test-asm ASM=tests/arm64/reserved_regs_hard.s
+// `make harness-test` runs every `_mark` case in this file automatically. To run
+// one case alone, select it with HOT_SVC_SYMBOL, e.g.:
 //   HOT_SVC_SYMBOL=hard_br_x9_mark make harness-test-asm ASM=tests/arm64/reserved_regs_hard.s
-//   HOT_SVC_SYMBOL=hard_blr_x10_mark make harness-test-asm ASM=tests/arm64/reserved_regs_hard.s
-//   HOT_SVC_SYMBOL=hard_ret_x11_mark make harness-test-asm ASM=tests/arm64/reserved_regs_hard.s
-//   HOT_SVC_SYMBOL=hard_br_x16_mark make harness-test-asm ASM=tests/arm64/reserved_regs_hard.s
-//   HOT_SVC_SYMBOL=hard_ret_x29_mark make harness-test-asm ASM=tests/arm64/reserved_regs_hard.s
 
 .text
 .global toy_translate_entry

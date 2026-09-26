@@ -124,11 +124,22 @@ make harness-test-asm ASM=tests/arm64/reserved_regs.s
 
 `make tui` remains a short alias for `make harness-tui`.
 
+`make harness-test` runs the full-pipeline check on every case of every
+`tests/arm64/*.s` fixture. A case is any defined symbol whose name ends in
+`_mark`: its address is the hot SVC PC and translation starts at
+`hot_svc_pc + 4`. Every fixture must define at least one case (normally
+`hot_svc_mark`); a fixture with none fails the suite. The suite reports every
+failing (fixture, case) in one run. `llvm-mc`, `llvm-nm` and `llvm-objcopy`
+must be on `PATH` (for example Homebrew `llvm`); `make harness-test` fails if
+they are missing.
+
 For now the TUI and noninteractive fixture workflows accept AArch64 `.s`
 fixtures. Pass `ASM=path/to/file.s`, or run the command interactively and choose
 from the fixture prompt. The script assembles the fixture with LLVM tools,
 finds `HOT_SVC_SYMBOL` (default: `hot_svc_mark`), derives the translated entry
 PC as `hot_svc_pc + 4`, and then launches the trace UI or full-pipeline check.
+Each run assembles into its own temporary directory under `tmp/`, so concurrent
+runs do not interfere.
 The TUI header and dump output include the full-pipeline check result so a
 fixture can be inspected alongside its pass/fail metadata.
 
