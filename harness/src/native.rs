@@ -1194,11 +1194,12 @@ pub fn original_halt_matches(
         {
             Ok(())
         }
-        // Linux reports an SP alignment fault at the SP value (`el0_sp`).
+        // Linux reports an SP alignment fault at the SP value (`el0_sp`),
+        // untagged like every fault address it reports.
         (HaltReason::Fault(fault), NativeStop::Fault { pc, addr })
             if fault.cause == FaultCause::SpAlignment =>
         {
-            if fault.pc == pc && addr == original.state.sp() {
+            if fault.pc == pc && addr == crate::arm64::untagged(original.state.sp()) {
                 Ok(())
             } else {
                 Err(mismatch())

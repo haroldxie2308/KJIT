@@ -161,6 +161,13 @@ to it is a design change and gets recorded here first.
   accesses (page permissions, fault injection counts only them); every other
   load/store is a runtime access and must lie in the runtime-owned ranges. The
   A4 address-based rule is gone.
+- Top-byte-ignore (V2 native fuzz finding): Linux sets `TCR_EL1.TBI0`, so bits
+  63:56 of a data address with bit 55 clear take no part in translation (bit 55
+  set is the kernel half and faults at EL0). A tagged pointer into a mapped page
+  works natively. The interpreter applies Linux's `untagged_addr`
+  (`addr & sign_extend64(addr, 55)`) to every access address (original code and
+  a fragment's LDTR/STTR alike: both translate through the EL0 regime); a base
+  writeback keeps the tag. Fault addresses are reported the same way.
 
 ## Memory rewrite (A5)
 
