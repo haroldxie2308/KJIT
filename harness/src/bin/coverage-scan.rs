@@ -511,6 +511,13 @@ fn layout_err_info(err: LayoutError) -> ErrInfo {
             "UnguardedBackEdge",
             format!("insn_index={insn_index} target={target_original_pc:#x}"),
         ),
+        LayoutError::FallthroughNotAdjacent {
+            block_start,
+            end_addr,
+        } => (
+            "FallthroughNotAdjacent",
+            format!("block={block_start:#x} end={end_addr:#x}"),
+        ),
     };
     ErrInfo {
         variant: format!("Layout::{name}"),

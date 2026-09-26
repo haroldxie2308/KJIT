@@ -91,6 +91,13 @@ pub enum LayoutError {
         insn_index: usize,
         target_original_pc: u64,
     },
+    /// A block whose successor starts at its end (it falls through) is not
+    /// followed by that successor in layout order: its lowering would run into
+    /// the wrong block.
+    FallthroughNotAdjacent {
+        block_start: u64,
+        end_addr: u64,
+    },
 }
 
 impl From<SharedAllocError> for LayoutError {
@@ -150,6 +157,13 @@ impl core::fmt::Display for LayoutError {
                 f,
                 "back-edge at instruction {insn_index} to {target_original_pc:#x} has no budget check"
             ),
+            Self::FallthroughNotAdjacent {
+                block_start,
+                end_addr,
+            } => write!(
+                f,
+                "block {block_start:#x} falls through to {end_addr:#x}, which is not laid out next"
+            ),
         }
     }
 }
@@ -190,6 +204,7 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
         .sum::<usize>();
     let entry_pc = program.first().ok_or(LayoutError::EmptyProgram)?.start_addr;
     let order = layout_block_order(program.iter().map(|block| block.start_addr))?;
+    check_fallthrough_adjacency(&program, &order)?;
     let mut fragment = ExecutionFragment {
         insns: SharedVec::with_capacity(
             insn_count + (PROLOGUE_LEN_BYTES + EPILOGUE_LEN_BYTES) / 4,
@@ -302,6 +317,31 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
     resolve_runtime_exit_branches(&mut fragment, &runtime_exit_branches)?;
     resolve_branch_relocs(&mut fragment, &relocs)?;
     Ok(fragment)
+}
+
+/// Lowering relies on physical fall-through: a block with a successor at its own
+/// end (a conditional branch's not-taken path, a split at a branch target) emits
+/// no branch to it. So that successor must be the next block in layout order.
+fn check_fallthrough_adjacency(
+    program: &RephrasedProgram,
+    order: &[usize],
+) -> SharedResult<(), LayoutError> {
+    for (position, &index) in order.iter().enumerate() {
+        let block = &program[index];
+        if !block.next.contains(&block.end_addr) {
+            continue;
+        }
+        let next_start = order
+            .get(position + 1)
+            .map(|&next| program[next].start_addr);
+        if next_start != Some(block.end_addr) {
+            return Err(LayoutError::FallthroughNotAdjacent {
+                block_start: block.start_addr,
+                end_addr: block.end_addr,
+            });
+        }
+    }
+    Ok(())
 }
 
 fn insert_vlabel_once(
@@ -636,6 +676,36 @@ mod tests {
                 .conditional_targets(((body_index + 6) * 4) as u64)
                 .map(|(taken, _)| taken),
             Some((cold_index * 4) as u64)
+        );
+    }
+
+    /// A block whose successor starts at its end must be followed by it: here the
+    /// successor at 0x100c is missing, so the next laid-out block starts at 0x1010.
+    #[test]
+    fn rejects_a_fallthrough_successor_that_is_not_laid_out_next() {
+        let nop = A64Insn::NopNopHiHints {};
+        let mut program = one_block(vec_of(&[RephrasedInsn::original(0x1000, nop)]));
+        program[0].next.push(0x100c, GFP_KERNEL).unwrap();
+        program
+            .push(
+                RephrasedBlock {
+                    start_addr: 0x1010,
+                    end_addr: 0x1014,
+                    prev: SharedVec::new(),
+                    next: SharedVec::new(),
+                    insns: vec_of(&[RephrasedInsn::original(0x1010, nop)]),
+                    cold: SharedVec::new(),
+                },
+                GFP_KERNEL,
+            )
+            .unwrap();
+
+        assert_eq!(
+            layout_program(program),
+            Err(LayoutError::FallthroughNotAdjacent {
+                block_start: 0x1000,
+                end_addr: 0x100c,
+            })
         );
     }
 
