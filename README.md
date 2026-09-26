@@ -135,7 +135,7 @@ a fragment requests is missing from the final `.config` with the requested value
 | Profile | Fragments | Use |
 |---|---|---|
 | `tiny-qemu`, `tiny-qemu-debug` | `tiny-qemu-base` + `tiny-qemu-rust` (+ `tiny-qemu-debug`: debug info) | K0 golden boot |
-| `kjit-guest` | tiny-qemu-debug + `kjit-guest.conf` | Debian bookworm + redis in an initramfs, E0, K2 guest tests |
+| `kjit-guest` | tiny-qemu-debug + `kjit-guest.conf` | Debian bookworm + redis in an initramfs, E0, K2/K3 guest tests |
 | `kjit-guest-debug` | kjit-guest + `kjit-guest-debug.conf` | + generic KASAN, lockdep, `DEBUG_ATOMIC_SLEEP`, `DEBUG_LIST` |
 
 Every profile builds from the patched tree `$KJIT_BUILD_ROOT/linux-kjit`
@@ -164,7 +164,7 @@ Build (container) and run (host):
 export KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/kjit-build   # optional
 ./scripts/docker-dev.sh -- make guest-kernel         # kernel + kjit.ko
 ./scripts/docker-dev.sh -- make guest-kernel-debug   # KASAN/lockdep
-make guest-rootfs          # host: debian:bookworm + redis (base.cpio, built once) + K2 tests (tests.cpio) -> rootfs.cpio
+make guest-rootfs          # host: debian:bookworm + redis (base.cpio, built once) + K2/K3 tests (tests.cpio) -> rootfs.cpio
 make guest-run GUEST_PROFILE=kjit-guest CMD='redis-server --daemonize yes --save "" --appendonly no; sleep 1; redis-benchmark -q -n 10000'
 make e0-bench GUEST_PROFILE=kjit-guest
 ```
@@ -181,11 +181,12 @@ rmmods the module, prints `kjit-init: run exit=N`, and powers off. Pass
 interactive shell on the serial console. `guest-run` fails if the run did not
 exit 0, if QEMU hit the timeout, if `CPU features: detected: Privileged Access
 Never` is missing (K1: hardware PAN), or if any timestamped kernel line reports
-`BUG:`, `WARNING:`, an oops, a panic, `Call trace:` or a lockdep `INFO:`.
+`BUG:`, `WARNING:`, an oops, a panic, `Call trace:`, a lockdep `INFO:` or an
+RCU stall.
 
 `rootfs.cpio` is `base.cpio` (the Debian export; rebuilt only when missing or
 with `scripts/mk-guest-rootfs.sh --rebuild-base`) followed by `tests.cpio` (the
-K2 guest tests, rebuilt every run); the kernel unpacks both archives in order.
+K2/K3 guest tests, rebuilt every run); the kernel unpacks both archives in order.
 
 `make e0-bench` (`scripts/e0-bench.sh`, `tools/e0/syscall_bench.c`) builds a
 static benchmark in the dev image. It runs the benchmark in a plain
@@ -203,7 +204,7 @@ returns, so a hot syscall loop issues its next syscall without going back to
 EL0. Contract and design: `tmp/pipeline.md`, "K2 contract: kernel runtime" and
 "K2 implementation".
 
-**Patched kernel.** `kernel-patches/` is a three-patch series on the pinned
+**Patched kernel.** `kernel-patches/` is a four-patch series on the pinned
 `dep/linux` commit (7.1-rc1):
 
 1. `arm64: syscall: add a KJIT syscall-return hook`: `ARM64_KJIT`, a static key
@@ -214,6 +215,12 @@ EL0. Contract and design: `tmp/pipeline.md`, "K2 contract: kernel runtime" and
    `LDTR`/`STTR` faults are handled like `copy_from_user` (demand paging, CoW);
    an unresolvable one jumps to the access's `Mem` exit stub.
 3. `mm, arm64: export execmem and set_memory_{ro,x} for the KJIT runtime`.
+4. `arm64: kjit: let the runtime defer work to the task's own context` (K3):
+   `kjit_queue_task_work()` queues a runtime request as `task_work`
+   (`TWA_RESUME`) with a kernel callback that calls the runtime's
+   `ops->task_work` under the hook SRCU, and only if the registration that
+   queued it is still the current one; otherwise it frees the request. So a
+   request still queued when the module is unloaded never runs module code.
 
 `scripts/kjit-kernel-tree.sh` (`make kernel-tree`) creates the patched tree as a
 git worktree of `dep/linux` at `$KJIT_BUILD_ROOT/linux-kjit` (shared objects, no
@@ -230,7 +237,7 @@ export KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/kjit-build
 make kernel-tree KJIT_LINUX_GIT=/path/to/KJIT/dep/linux   # host, once per series change
 ./scripts/docker-dev.sh -- make guest-kernel               # patched kernel + kjit.ko
 ./scripts/docker-dev.sh -- make guest-kernel-debug
-make guest-rootfs                                          # host: adds the K2 tests
+make guest-rootfs                                          # host: adds the K2/K3 tests
 ```
 
 To change the series, commit in `$KJIT_BUILD_ROOT/linux-kjit`, then
@@ -239,8 +246,11 @@ To change the series, commit in `$KJIT_BUILD_ROOT/linux-kjit`, then
 **Module.** `rust_kjit.rs` + `runtime/` (Rust: translation, verification,
 image layout, the exit decision table, stats) and `kjit_glue.c` (C: hook
 registration, the per-mm code cache and its `mmu_notifier`, fragment memory
-and exception tables, reading user text, the call trampoline, debugfs). Init
-still runs the K0 golden check first. A fragment is installed only if
+and exception tables, reading user text, the call trampoline, the K3 profiler
+and its `task_work` requests, debugfs). Init
+still runs the K0 golden check first, and refuses to load (`-ENODEV`, naming
+the feature) on a CPU without FEAT_LSE2 (or with `SCTLR_EL1.nAA` set) or
+FEAT_LRCPC, which the translated acquire/release accesses rely on. A fragment is installed only if
 `verify_fragment` accepts exactly the bytes, fault-site table and entry table
 that get installed; it is refused unless every text page it came from is in an
 executable, non-writable mapping.
@@ -251,8 +261,14 @@ executable, non-writable mapping.
 |---|---|
 | `translate` | write `"<pid> <pc>"`: translate that entry PC (logs the result) |
 | `translate_svc_sites` | write `"<pid>"`: translate `svc_pc + 4` for every SVC word in the process's executable, non-writable mappings |
-| `stats` | counters: `syscalls_in_kernel`, `fragment_entries`, `chains`, exits per status, `svc_declined`, translations ok/exists/unreadable/compile/encode/verify-rejected (and FallsOffEnd)/raced/install-failed, `invalidated_fragments`, `released_fragments`, `svc_sites_scanned` |
-| `enable` | `Y`/`N` (global) |
+| `stats` | counters: `syscalls_in_kernel`, `fragment_entries`, `chains`, `chain_cap`, exits per status, `svc_declined`, translations ok/exists/unreadable/entry-unsupported/compile/encode/verify-rejected (and FallsOffEnd)/raced/capped/install-failed, `invalidated_fragments`, `released_fragments`, `svc_sites_scanned`, the K3 `auto_*` counters, `unsupported_top_dropped`, `unsupported_bad_word`, `hook_calls` (hook calls while enabled: syscalls without syscall work, in-kernel ones included) |
+| `enable` | `Y`/`N` (global; also stops fragment runs and chains at the next run-condition check) |
+| `auto`, `hot_threshold`, `hot_window_ms` | K3 auto mode (below) |
+| `unsupported_top` | `word exits entry_stops` per line, most frequent first (below) |
+
+A translation whose entry instruction itself is not translatable (it would
+take the `Unsupported` exit at once) is refused (`translate_entry_unsupported`,
+`-ENOEXEC`): such a fragment could only return to userspace at its own entry.
 
 ```sh
 mount -t debugfs debugfs /sys/kernel/debug
@@ -273,12 +289,73 @@ progress), `signal_loop` (1 ms SIGALRM during the hot loop), `munmap_race`
 (hot text unmapped while another thread runs it: SIGSEGV, fragment
 invalidated), `seccomp_loop` and `ptrace_loop` (no fragment entry at all), plus
 `kill -9` of a hot `toy_loop` and `tight_loop`, and a hot process left running
-while `/init` unloads the module.
+while `/init` unloads the module. `run-k2.sh --auto` runs the same tests with
+the K3 auto mode instead of self-registration.
 
 ```sh
 make guest-tests GUEST_PROFILE=kjit-guest
 make guest-tests GUEST_PROFILE=kjit-guest-debug K2_ITERATIONS=100
 ```
+
+### K3 auto mode (hot-path detection)
+
+With auto mode on, unmodified programs are accelerated without any trigger, and
+the in-kernel path follows branch exits out of libc into the callers. Contract:
+`tmp/pipeline.md`, "K3".
+
+- **Profiler.** After every syscall whose resume PC has no fragment, and after
+  every `Bl`/`Blr`/`Br`/`Ret` exit whose target has none, the hook counts one
+  hit of that PC in a bounded per-mm table (256 slots, open addressing; no
+  allocation after the mm's first syscall). `hot_threshold` hits within
+  `hot_window_ms` (CNTVCT; defaults 64 and 100 ms) make the PC hot.
+- **Translation in the task's context.** A hot PC is queued as `task_work`
+  (`TWA_RESUME`, kernel patch 4) and translated at the task's next return to
+  user mode, from its own mm, under the same rules as the manual trigger
+  (executable, non-writable text; verified before install). Failures that
+  would repeat go to a per-mm negative cache (64 PCs, FIFO) and are not
+  retried; races, memory and caps are.
+- **Caps.** Module parameters `max_frags_per_mm` (512), `max_code_per_mm`
+  (2 MiB), `max_frags_total` (8192), `max_code_total` (64 MiB); an install over
+  a cap fails with `-ENOSPC` (`translate_capped`), for every trigger. At most 8
+  requests per mm are queued at a time.
+- **Chaining.** A branch exit continues in a fragment for the target (in the
+  same fragment or the mm's table), at most 16 entries per hook call, every run
+  condition re-checked before each. `Unsupported`/`Mem`/`Budget` exits return
+  to userspace and are not learned.
+- **Switch.** `insmod kjit.ko auto=1` or debugfs `auto` (default off). The
+  manual `translate`/`translate_svc_sites` triggers keep working either way.
+- **`unsupported_top`.** Per word: `exits` = `Unsupported` exits at that word
+  (x10; `unreadable` for the past-the-text sentinel), `entry_stops` = syscall
+  returns and branch exits to a PC whose first instruction is that word (its
+  translation was refused, so the in-kernel path stops there). Ranks the next
+  coverage work from real runs.
+
+**Tests** (`tests/guest/run-k3.sh`, `make guest-tests-k3`): every test runs
+with KJIT disabled and then enabled with auto mode; stdout and exit status
+must be identical, and the runner prints the counter deltas of the enabled run
+(translations, fragment entries, chains, in-kernel syscalls / hook calls,
+exits by status, top Unsupported words). (a) the K2 micro tests in auto mode;
+(b) coreutils and busybox on a generated text file (default 64 MiB): `dd`
+bs=4k and bs=1 (first 4 MiB), `cat | wc`, `sha256sum`, `gzip | gunzip`,
+`sort`, `wc`; (c) `pipe_ring` (4 threads, pipe token ring); (d)
+`epoll_echo` (epoll server + client, 100k round trips over TCP loopback); (e)
+`sqlite3` if the rootfs has it (it does not by default); (f)
+`redis-smoke.sh` (dataset load + read-back + `DEBUG DIGEST`, then
+`redis-benchmark -n 100000 -t set,get,incr,lpush,lpop,sadd,hset -P 1 -c 4`
+under `nojit` so the counters measure the server, and the digest again); and
+module unload/reload five times while `jit_churn` keeps translations queued.
+
+```sh
+make guest-tests-k3 GUEST_PROFILE=kjit-guest
+make guest-tests-k3 GUEST_PROFILE=kjit-guest-debug K3_ITERATIONS=20
+```
+
+Current reach: where the code is in the subset the path follows the callers
+(`dd bs=1`: every syscall issued in the kernel), but it stops at the first
+`bti c` of a BTI-built function (all of redis's paths end there: 0% of its
+syscalls in the kernel) and at SIMD `memcpy`/`strlen` loads. Fragment entries
+cost more than the mode switches they save on short chains; speed is not a
+goal yet. Details: `tmp/pipeline.md`, "K3", Findings.
 
 ### Harness
 

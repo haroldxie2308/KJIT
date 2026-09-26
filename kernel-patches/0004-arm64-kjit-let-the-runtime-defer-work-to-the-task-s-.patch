@@ -1,0 +1,179 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Sun, 27 Sep 2026 03:40:38 +0800
+Subject: [PATCH] arm64: kjit: let the runtime defer work to the task's own
+ context
+
+The KJIT runtime wants to translate code that a task runs hot. Reading and
+translating user text sleeps and allocates, so it must not happen in the
+syscall-return hook itself; it belongs in the task's own context at its
+next return to user mode, which is what task_work with TWA_RESUME
+provides.
+
+A module cannot simply queue its own task_work callback: a work still
+queued when the module is unloaded would later call into freed module
+text, and cancelling the pending work of every task at unload is not
+possible without tracking every task. So the kernel side runs the
+callback instead. kjit_queue_task_work() queues a struct kjit_task_work
+(embedded first in a kmalloc()ed runtime request) with a kernel callback
+that calls the runtime's new ops->task_work under the hook SRCU, and only
+if the registration that queued the work is still the current one; a
+generation bumped by every registration tells them apart. Otherwise the
+kernel kfree()s the request. kjit_unregister_hook() already waits for
+SRCU readers, so no runtime code runs for a request after it returns.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/kernel/kjit.c | 57 +++++++++++++++++++++++++++++++++++++++-
+ include/linux/kjit.h     | 23 ++++++++++++++++
+ 2 files changed, 79 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/kernel/kjit.c b/arch/arm64/kernel/kjit.c
+index 98fd29c23..5d8b034f1 100644
+--- a/arch/arm64/kernel/kjit.c
++++ b/arch/arm64/kernel/kjit.c
+@@ -8,6 +8,13 @@
+  * lets kjit_unregister_hook() wait for the calls in flight before the module
+  * that implements them goes away. Syscalls the hook asks for are invoked
+  * outside that section, so unregistering never waits for a blocked syscall.
++ *
++ * Work the runtime defers to a task's own context (kjit_queue_task_work())
++ * runs through kjit_task_work_fn(), which is kernel code: it calls into the
++ * runtime under the same SRCU, and only if the registration that queued the
++ * work is still the current one. A request still queued when the runtime is
++ * unloaded is freed here instead, so unloading never has to find and cancel
++ * the pending work of every task.
+  */
+ #include <linux/export.h>
+ #include <linux/hardirq.h>
+@@ -15,22 +22,28 @@
+ #include <linux/kjit.h>
+ #include <linux/mutex.h>
+ #include <linux/rcupdate.h>
++#include <linux/slab.h>
+ #include <linux/srcu.h>
++#include <linux/task_work.h>
+ 
+ DEFINE_STATIC_KEY_FALSE(kjit_hook_enabled);
+ 
+ DEFINE_STATIC_SRCU(kjit_hook_srcu);
+ static const struct kjit_hook_ops __rcu *kjit_hook;
+ static DEFINE_MUTEX(kjit_hook_mutex);
++/* Bumped by every registration (under kjit_hook_mutex), before it is published. */
++static unsigned long kjit_hook_gen;
+ 
+ /* Only one runtime can own the hook; a second registration gets -EBUSY. */
+ int kjit_register_hook(const struct kjit_hook_ops *ops)
+ {
+-	if (!ops->after_syscall || !ops->search_extable)
++	if (!ops->after_syscall || !ops->search_extable || !ops->task_work)
+ 		return -EINVAL;
+ 	guard(mutex)(&kjit_hook_mutex);
+ 	if (rcu_access_pointer(kjit_hook))
+ 		return -EBUSY;
++	/* Ordered before the pointer by rcu_assign_pointer()'s release. */
++	WRITE_ONCE(kjit_hook_gen, kjit_hook_gen + 1);
+ 	rcu_assign_pointer(kjit_hook, ops);
+ 	static_branch_enable(&kjit_hook_enabled);
+ 	return 0;
+@@ -63,6 +76,48 @@ long kjit_call_after_syscall(struct pt_regs *regs)
+ 	return scno;
+ }
+ 
++static void kjit_task_work_fn(struct callback_head *head)
++{
++	struct kjit_task_work *work = container_of(head, struct kjit_task_work, head);
++	const struct kjit_hook_ops *ops;
++	int idx;
++
++	idx = srcu_read_lock(&kjit_hook_srcu);
++	ops = srcu_dereference(kjit_hook, &kjit_hook_srcu);
++	/* Pairs with the registration's release: a newer ops has a newer gen. */
++	smp_rmb();
++	if (ops && work->gen == READ_ONCE(kjit_hook_gen))
++		ops->task_work(work);
++	else
++		kfree(work);
++	srcu_read_unlock(&kjit_hook_srcu, idx);
++}
++
++/**
++ * kjit_queue_task_work - run @work in current's context later
++ * @work: first member of a kmalloc()ed runtime request
++ *
++ * Queues @work on current with TWA_RESUME: the registered runtime's
++ * @task_work runs it at the task's next return to user mode, or during its
++ * exit. Only the registered runtime may call this, from within one of its
++ * hook callbacks, so the registration it records is the caller's own.
++ *
++ * Returns 0, or -ESRCH if current is exiting; then @work was not queued and
++ * the caller still owns it.
++ */
++int kjit_queue_task_work(struct kjit_task_work *work)
++{
++	/*
++	 * The caller's hook call dereferenced the ops of its registration
++	 * before this; order that before reading the generation.
++	 */
++	smp_rmb();
++	work->gen = READ_ONCE(kjit_hook_gen);
++	init_task_work(&work->head, kjit_task_work_fn);
++	return task_work_add(current, &work->head, TWA_RESUME);
++}
++EXPORT_SYMBOL_GPL(kjit_queue_task_work);
++
+ /*
+  * Called by search_exception_tables() after every other table, so only
+  * addresses no other table claims get here. SRCU readers are not NMI-safe;
+diff --git a/include/linux/kjit.h b/include/linux/kjit.h
+index 2cc787b39..a7eff8b9e 100644
+--- a/include/linux/kjit.h
++++ b/include/linux/kjit.h
+@@ -15,6 +15,23 @@
+ struct exception_table_entry;
+ struct pt_regs;
+ 
++/**
++ * struct kjit_task_work - runtime work that runs in a task's own context
++ * @head: the task_work, queued by kjit_queue_task_work()
++ * @gen: the registration that queued it (set by kjit_queue_task_work())
++ *
++ * The runtime embeds it as the first member of a kmalloc()ed request. When
++ * the task runs it, the kernel hands it to the registered runtime's
++ * @task_work only if that is still the registration that queued it, and
++ * kfree()s it otherwise (the runtime was unloaded, or unloaded and loaded
++ * again, meanwhile). So no runtime code runs for it after
++ * kjit_unregister_hook() has returned.
++ */
++struct kjit_task_work {
++	struct callback_head head;
++	unsigned long gen;
++};
++
+ /**
+  * struct kjit_hook_ops - callbacks of the registered KJIT runtime
+  * @after_syscall: Called on the 64-bit syscall return path when no syscall
+@@ -28,10 +45,15 @@ struct pt_regs;
+  *	a user access of translated code the runtime owns, else NULL. Consulted
+  *	by search_exception_tables() after every other table. Must not sleep.
+  *	The entry must stay valid while the code containing @addr can run.
++ * @task_work: Runs a request this registration queued with
++ *	kjit_queue_task_work(), in the context of the task that queued it:
++ *	at its next return to user mode, or during its exit (then current->mm
++ *	may already be NULL). Owns @work and must free it. May sleep.
+  */
+ struct kjit_hook_ops {
+ 	long (*after_syscall)(struct pt_regs *regs);
+ 	const struct exception_table_entry *(*search_extable)(unsigned long addr);
++	void (*task_work)(struct kjit_task_work *work);
+ };
+ 
+ #ifdef CONFIG_ARM64_KJIT
+@@ -40,6 +62,7 @@ DECLARE_STATIC_KEY_FALSE(kjit_hook_enabled);
+ int kjit_register_hook(const struct kjit_hook_ops *ops);
+ void kjit_unregister_hook(const struct kjit_hook_ops *ops);
+ long kjit_call_after_syscall(struct pt_regs *regs);
++int kjit_queue_task_work(struct kjit_task_work *work);
+ const struct exception_table_entry *search_kjit_extables(unsigned long addr);
+ #else
+ static inline const struct exception_table_entry *

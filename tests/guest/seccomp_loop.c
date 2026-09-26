@@ -2,7 +2,8 @@
 /*
  * A seccomp-filtered process (allow-all filter): every syscall has syscall
  * work, so the kernel never calls the KJIT hook for it. KJIT_EXPECT=declined:
- * the translations installed, but no fragment ever ran.
+ * the translations installed, but no fragment ever ran. In auto mode nothing
+ * is translated either (the profiler lives in the hook).
  */
 #include "kjit_test.h"
 #include <linux/filter.h>
@@ -32,7 +33,7 @@ int main(int argc, char **argv)
 	printf("seccomp_loop iters=%ld a=%#llx b=%#llx\n", iters, (unsigned long long)a,
 	       (unsigned long long)b);
 	if (kjit_expect("declined")) {
-		if (s1.translate_ok == s0.translate_ok)
+		if (s1.translate_ok == s0.translate_ok && !kjit_auto_mode())
 			die("seccomp_loop: nothing was translated");
 		if (s1.entries != s0.entries || s1.in_kernel != s0.in_kernel)
 			die("seccomp_loop: %lld fragment entries under seccomp", s1.entries - s0.entries);

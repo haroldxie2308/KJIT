@@ -6,6 +6,9 @@
  * byte-identical with KJIT enabled and disabled; diagnostics go to stderr.
  * When KJIT_EXPECT is set (the runner sets it only for the enabled run), the
  * test also checks the KJIT counters in /sys/kernel/debug/kjit/stats.
+ * When KJIT_AUTO=1 (run-k2.sh --auto), the module's auto mode translates hot
+ * code: the tests do not register themselves, and expectations allow for the
+ * iterations that run before a PC is hot.
  */
 #ifndef KJIT_TEST_H
 #define KJIT_TEST_H
@@ -50,11 +53,45 @@ static inline void kjit_write(const char *file, const char *text)
 	close(fd);
 }
 
-/* Translates the resume PC of every SVC in this process's text. */
+/* KJIT_AUTO=1: auto mode translates hot code, nothing registers itself. */
+static inline int kjit_auto_mode(void)
+{
+	const char *e = getenv("KJIT_AUTO");
+
+	return e && !strcmp(e, "1");
+}
+
+/*
+ * Iterations of a hot loop that may run natively in auto mode before its PCs
+ * are translated: hot_threshold hits per PC, twice for slack (a hit window can
+ * restart, a translation can race). 0 outside auto mode.
+ */
+static inline long kjit_auto_warmup(void)
+{
+	char line[32];
+	long threshold;
+	FILE *f;
+
+	if (!kjit_auto_mode())
+		return 0;
+	f = fopen(KJIT_DEBUGFS "/hot_threshold", "r");
+	if (!f || !fgets(line, sizeof(line), f))
+		die("read hot_threshold: %s", strerror(errno));
+	fclose(f);
+	threshold = atol(line);
+	return 2 * (threshold > 0 ? threshold : 1);
+}
+
+/*
+ * Translates the resume PC of every SVC in this process's text. A no-op in
+ * auto mode.
+ */
 static inline void kjit_register_self(void)
 {
 	char buf[32];
 
+	if (kjit_auto_mode())
+		return;
 	snprintf(buf, sizeof(buf), "%d", getpid());
 	kjit_write("translate_svc_sites", buf);
 }

@@ -1,7 +1,11 @@
 #!/bin/sh
 # K2 guest test suite (runs inside the kjit-guest; binaries in /opt/kjit-tests).
 #
-#   run-k2.sh [iterations]
+#   run-k2.sh [--auto] [iterations]
+#
+# --auto: the K3 auto mode translates hot code (debugfs auto=1 for the enabled
+# runs, KJIT_AUTO=1 for the tests): no test registers itself.
+# K2_LEAVE_HOT=0 skips leaving a hot process behind for the rmmod check.
 #
 # Every test runs with KJIT disabled and enabled (/sys/kernel/debug/kjit/enable);
 # stdout and the exit status must be identical, and the enabled run must show
@@ -10,6 +14,11 @@
 # "k2: ALL PASS" and the final stats at the end.
 set -eu
 
+auto=0
+if [ "${1:-}" = --auto ]; then
+    auto=1
+    shift
+fi
 iterations=${1:-1}
 T=/opt/kjit-tests
 K=/sys/kernel/debug/kjit
@@ -35,13 +44,14 @@ run() {
     local name=$1 enable=$2 expect=$3
     shift 3
     echo "$enable" > "$K/enable"
+    if [ "$enable" = 1 ]; then echo "$auto" > "$K/auto"; else echo 0 > "$K/auto"; fi
     set +e
     # No timeout(1) wrapper: the tests' getppid results must see the same
     # parent (this shell) in both runs. guest-run's QEMU timeout bounds hangs.
     if [ "$enable" = 1 ]; then
-        KJIT_EXPECT="$expect" "$@" > "$name.$enable.out" 2> "$name.$enable.err"
+        KJIT_AUTO=$auto KJIT_EXPECT="$expect" "$@" > "$name.$enable.out" 2> "$name.$enable.err"
     else
-        "$@" > "$name.$enable.out" 2> "$name.$enable.err"
+        KJIT_AUTO=$auto "$@" > "$name.$enable.out" 2> "$name.$enable.err"
     fi
     echo $? > "$name.$enable.status"
     set -e
@@ -66,8 +76,9 @@ kill_hot() {
     local name=$1 before pid hot status
     shift
     echo 1 > "$K/enable"
+    echo "$auto" > "$K/auto"
     before=$(stat fragment_entries)
-    "$@" > "$name.kill.out" 2> "$name.kill.err" &
+    KJIT_AUTO=$auto "$@" > "$name.kill.out" 2> "$name.kill.err" &
     pid=$!
     sleep 1
     hot=$(( $(stat fragment_entries) - before ))
@@ -127,11 +138,14 @@ done
 echo 1 > "$K/enable"
 echo "k2: stats"
 sed 's/^/k2:   /' "$K/stats"
-echo "k2: ALL PASS ($iterations iterations)"
+echo "k2: ALL PASS ($iterations iterations, auto=$auto)"
 
 # Module unload safety: leave a hot process running. The guest's /init
 # unloads kjit.ko after this script (it must succeed while the process is in
 # its in-kernel syscall loop) and powers off.
-"$T/toy_loop" 0 > /dev/null 2>&1 &
-sleep 1
-echo "k2: left toy_loop $! hot for rmmod ($(stat syscalls_in_kernel) syscalls in kernel so far)"
+if [ "${K2_LEAVE_HOT:-1}" = 1 ]; then
+    echo "$auto" > "$K/auto"
+    KJIT_AUTO=$auto "$T/toy_loop" 0 > /dev/null 2>&1 &
+    sleep 1
+    echo "k2: left toy_loop $! hot for rmmod ($(stat syscalls_in_kernel) syscalls in kernel so far)"
+fi

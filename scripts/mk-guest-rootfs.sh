@@ -3,9 +3,10 @@ set -euo pipefail
 
 # Build the kjit-guest initramfs: Debian bookworm arm64 + redis-server,
 # redis-tools (redis-benchmark), busybox, kmod, with scripts/guest/init as /init,
-# plus the K2 guest tests (tests/guest/, static binaries built in the dev image)
-# in /opt/kjit-tests. Runs on the host (needs docker and bsdtar). The result is
-# an uncompressed newc cpio, so the guest kernel needs no decompressor.
+# plus the K2/K3 guest tests (tests/guest/: static binaries built in the dev
+# image, and the runner scripts) in /opt/kjit-tests. Runs on the host (needs
+# docker and bsdtar). The result is an uncompressed newc cpio, so the guest
+# kernel needs no decompressor.
 #
 # rootfs.cpio = base.cpio + tests.cpio (the kernel unpacks concatenated
 # archives in order). base.cpio (the Debian export) is built only when it is
@@ -89,7 +90,9 @@ docker run --rm --user "$(id -u):$(id -g)" \
     sh -euc 'for c in /src/*.c; do
                  cc -O2 -static -pthread -Wall -Werror -o "/out/$(basename "$c" .c)" "$c"
              done'
-install -m 0755 "$ROOT_DIR/tests/guest/run-k2.sh" "$stage/run-k2.sh"
+for script in run-k2.sh run-k3.sh redis-smoke.sh; do
+    install -m 0755 "$ROOT_DIR/tests/guest/$script" "$stage/$script"
+done
 (cd "$out_dir/tests-root" && bsdtar --format newc --uid 0 --gid 0 --uname root --gname root \
     -cf "$tests.tmp" opt)
 mv "$tests.tmp" "$tests"

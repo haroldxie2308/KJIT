@@ -2,6 +2,7 @@
 /*
  * A ptrace-attached process (no syscall tracing, so it has no syscall work):
  * KJIT declines every fragment entry for a traced task. KJIT_EXPECT=declined.
+ * In auto mode nothing is translated either (a traced task is not profiled).
  */
 #include "kjit_test.h"
 #include <signal.h>
@@ -36,7 +37,7 @@ int main(int argc, char **argv)
 		printf("ptrace_loop child iters=%ld a_ok=%d\n", iters,
 		       a == (uint64_t)iters * (uint64_t)(getppid() + 1));
 		if (kjit_expect("declined")) {
-			if (s1.translate_ok == s0.translate_ok)
+			if (s1.translate_ok == s0.translate_ok && !kjit_auto_mode())
 				die("ptrace_loop: nothing was translated");
 			if (s1.entries != s0.entries)
 				die("ptrace_loop: %lld fragment entries while traced",

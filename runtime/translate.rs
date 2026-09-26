@@ -8,13 +8,14 @@
 use core::cell::RefCell;
 
 use kernel::alloc::flags::GFP_KERNEL;
-use kernel::error::code::{E2BIG, EAGAIN, EEXIST, EFAULT, EINVAL, ENOMEM, EPERM};
+use kernel::error::code::{E2BIG, EAGAIN, EEXIST, EFAULT, EINVAL, ENOEXEC, ENOMEM, ENOSPC, EPERM};
 use kernel::ffi::c_int;
 use kernel::page::PAGE_SIZE;
 use kernel::prelude::*;
 
 use super::ffi::{self, KjitLabel, KjitMm, KjitSite};
 use super::stats::{self, Stat};
+use crate::shared::trans::cfg::{admit_at, UnsupportedExit};
 use crate::shared::trans::input::{
     CodeProvider, CodeReadError, TranslationRequest, TranslationTrigger,
 };
@@ -139,6 +140,10 @@ impl CodeProvider for UserText {
 /// Why a translation did not install; `errno` is what the debugfs write returns.
 enum Failure {
     Text(TextFault),
+    /// The entry instruction (this word) itself takes the Unsupported exit: the
+    /// fragment could only return to userspace at its own entry, at the cost
+    /// of a call.
+    EntryUnsupported(u32),
     Compile,
     Encode,
     Verify(VerifyRule),
@@ -158,17 +163,24 @@ impl Failure {
                 EINVAL.to_errno()
             }
             Failure::Verify(_) => EPERM.to_errno(),
+            Failure::EntryUnsupported(_) => ENOEXEC.to_errno(),
             Failure::Install(rc) => *rc,
         }
     }
 }
 
 /// Translates the code at `pc` of `kmm`'s mm and installs it. Returns 0 or a
-/// negative errno. Every outcome is counted; `verbose` logs failures (the
-/// single-PC `translate` file), verifier rejections other than the known
-/// FallsOffEnd are always logged.
+/// negative errno; -ENOEXEC (the entry instruction is not translatable) also
+/// stores that word in `*entry_word` unless it is NULL. Every outcome is
+/// counted; `verbose` logs failures (the single-PC `translate` file), verifier
+/// rejections other than the known FallsOffEnd are always logged.
 #[no_mangle]
-extern "C" fn kjit_rs_translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> c_int {
+extern "C" fn kjit_rs_translate(
+    kmm: *mut KjitMm,
+    pc: u64,
+    verbose: bool,
+    entry_word: *mut u32,
+) -> c_int {
     let mut result = translate(kmm, pc, verbose);
     // Any invalidation of the mm while the text was read makes the install
     // fail, including ones on unrelated ranges (heap munmap in another
@@ -196,6 +208,13 @@ extern "C" fn kjit_rs_translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> c_i
                         pr_info!("kjit: pc {pc:#x}: text not translatable: {fault:?}\n");
                     }
                 }
+                Failure::EntryUnsupported(word) => {
+                    stats::inc(Stat::TranslateEntryUnsupported);
+                    if !entry_word.is_null() {
+                        // SAFETY: the C caller passes a writable u32 or NULL.
+                        unsafe { *entry_word = word };
+                    }
+                }
                 Failure::Compile | Failure::Unaligned | Failure::Overflow => {
                     stats::inc(Stat::TranslateCompileFailed)
                 }
@@ -210,6 +229,9 @@ extern "C" fn kjit_rs_translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> c_i
                 }
                 Failure::Install(_) if rc == EAGAIN.to_errno() => {
                     stats::inc(Stat::TranslateRaced)
+                }
+                Failure::Install(_) if rc == ENOSPC.to_errno() => {
+                    stats::inc(Stat::TranslateCapped)
                 }
                 Failure::Install(_) | Failure::Alloc => stats::inc(Stat::TranslateInstallFailed),
             }
@@ -228,6 +250,16 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
     let seq = unsafe { ffi::kjit_mm_seq(kmm) };
 
     let text = UserText::new(kmm, pc);
+    match admit_at(&text, pc) {
+        Ok(Ok(_)) => {}
+        Ok(Err(UnsupportedExit::Insn(insn))) => return Err(Failure::EntryUnsupported(insn.word)),
+        // The entry is unreadable: the provider recorded why.
+        Ok(Err(UnsupportedExit::Unreadable { .. })) => {
+            let fault = text.state.borrow().fault;
+            return Err(fault.map_or(Failure::Compile, Failure::Text));
+        }
+        Err(_) => return Err(Failure::Compile),
+    }
     let request = TranslationRequest {
         entry_pc: pc,
         trigger: TranslationTrigger::Manual,

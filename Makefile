@@ -29,7 +29,7 @@ SCRIPT_ENV = KDIR=$(KDIR) KJIT_PATCHED_KDIR=$(KJIT_PATCHED_KDIR) KJIT_BUILD_ROOT
 KMAKE = $(MAKE) -C $(KDIR) ARCH=$(ARCH) LLVM=$(LLVM) O=$(KBUILD_OUTPUT)
 MODULE_MAKE = mkdir -p $(KJIT_MODULE_DIR) && $(KMAKE) M=$(CURDIR) MO=$(KJIT_MODULE_DIR)
 
-.PHONY: initramfs kernel-tree guest-kernel guest-kernel-debug guest-rootfs guest-run e0-bench guest-tests
+.PHONY: initramfs kernel-tree guest-kernel guest-kernel-debug guest-rootfs guest-run e0-bench guest-tests guest-tests-k3
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
 	harness-test harness-test-native fuzz harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan kernel-golden help
@@ -133,6 +133,14 @@ guest-tests: guest-rootfs
 	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/guest-run.sh --profile $(GUEST_PROFILE) \
 		--timeout 3600 -- "sh /opt/kjit-tests/run-k2.sh $(K2_ITERATIONS)"
 
+# K3 guest suite (tests/guest/run-k3.sh): real programs under the auto mode.
+K3_ITERATIONS ?= 1
+K3_FILE_MIB ?= 64
+K3_DD1_MIB ?= 4
+guest-tests-k3: guest-rootfs
+	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/guest-run.sh --profile $(GUEST_PROFILE) \
+		--timeout 14400 -- "sh /opt/kjit-tests/run-k3.sh $(K3_ITERATIONS) $(K3_FILE_MIB) $(K3_DD1_MIB)"
+
 e0-bench:
 	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/e0-bench.sh --profile $(GUEST_PROFILE)
 
@@ -199,6 +207,7 @@ help:
 		'guest-kernel-debug' 'Container: same for kjit-guest-debug (KASAN, lockdep)' \
 		'guest-rootfs' 'Host: build the Debian bookworm + redis initramfs (+ K2 guest tests in /opt/kjit-tests)' \
 		'guest-tests' 'Host: run the K2 guest suite on GUEST_PROFILE, K2_ITERATIONS times' \
+		'guest-tests-k3' 'Host: run the K3 auto-mode suite (real programs) on GUEST_PROFILE, K3_ITERATIONS times' \
 		'guest-run' "Host: boot GUEST_PROFILE under QEMU, insmod kjit.ko, run CMD='...', power off" \
 		'e0-bench' 'Host: E0 syscall microbenchmark in the guest and in a plain Docker container' \
 		'spec-gen' 'Generate the checked-in ARM64 subset tables from the Arm XML bundle' \

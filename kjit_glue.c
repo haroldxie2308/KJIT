@@ -7,28 +7,37 @@
  * and what must interoperate with C-side lifetimes: the hook registration
  * (kernel-patches/0001, 0002), the per-mm code cache and its mmu_notifier,
  * fragment memory (execmem, ROX, I-cache, the arm64 exception table), reading
- * the target's user text, the call trampoline and the debugfs files.
- * Design notes: tmp/pipeline.md, "K2 implementation".
+ * the target's user text, the call trampoline, the auto-mode profiler and its
+ * task_work requests (kernel-patches/0004), and the debugfs files.
+ * Design notes: tmp/pipeline.md, "K2 implementation" and "K3".
  *
  * Lifetimes and locking
  *
- *   kjit_mm   One per mm with at least one translation request; embeds the
- *             mmu_notifier (mmu_notifier_get/put). Found from the syscall path
+ *   kjit_mm   One per mm with at least one translation request, or (auto mode)
+ *             one eligible syscall; embeds the mmu_notifier
+ *             (mmu_notifier_get/put) and the mm's profile table. Found from the
+ *             syscall path
  *             through kjit_mm_hash (RCU). The hash membership owns exactly
  *             one notifier reference; whoever unhashes it (mm release or
  *             module exit, under kjit_mm_lock) drops it. Freed by
  *             free_notifier after the notifier SRCU grace period, then
- *             kfree_rcu for the hash readers.
+ *             kvfree_rcu for the hash readers.
  *   kjit_frag One installed translation. refcount: one reference held by its
  *             kjit_mm's table while it is installed, one per running call.
  *             It stays on kjit_all_frags (the extable search list, RCU) until
  *             its last reference is gone, so a fragment removed from its table
  *             while it runs still has its fault fixups. The image is freed
  *             by a work item after an RCU grace period.
+ *   kjit_request  One queued auto-mode translation (task_work). Holds no
+ *             reference: it names its kjit_mm by (mm, id) and finds it again
+ *             under RCU, and it runs through the kernel's
+ *             kjit_queue_task_work(), which frees it instead of calling in
+ *             here once this module is unregistered.
  *   Lock order: kjit_mm.lock -> kjit_frags_lock. kjit_mm_lock is never held
  *             together with either. None of them is held across an allocation
  *             (they are taken inside mmu_notifier invalidation).
  */
+#include <linux/atomic.h>
 #include <linux/bitfield.h>
 #include <linux/cacheflush.h>
 #include <linux/compat.h>
@@ -37,12 +46,15 @@
 #include <linux/errno.h>
 #include <linux/execmem.h>
 #include <linux/extable.h>
+#include <linux/hash.h>
 #include <linux/hashtable.h>
 #include <linux/highmem.h>
 #include <linux/kjit.h>
 #include <linux/mm.h>
 #include <linux/mmu_notifier.h>
 #include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/percpu.h>
 #include <linux/pid.h>
 #include <linux/rculist.h>
 #include <linux/refcount.h>
@@ -53,11 +65,17 @@
 #include <linux/set_memory.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
+#include <linux/timekeeping.h>
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
 
+#include <asm/arch_timer.h>
 #include <asm/asm-extable.h>
+#include <asm/cpufeature.h>
 #include <asm/ptrace.h>
+#include <asm/sysreg.h>
+
+#include <clocksource/arm_arch_timer.h>
 
 #include <linux/irq-entry-common.h>
 
@@ -73,11 +91,31 @@ static_assert(sizeof(struct exception_table_entry) == 12);
 
 struct kjit_mm;
 long kjit_rs_after_syscall(struct pt_regs *regs);
-int kjit_rs_translate(struct kjit_mm *kmm, u64 pc, bool verbose);
+int kjit_rs_translate(struct kjit_mm *kmm, u64 pc, bool verbose, u32 *entry_word);
 size_t kjit_rs_stats_show(char *buf, size_t len);
-void kjit_rs_note_invalidated(u64 fragments);
-void kjit_rs_note_released(u64 fragments);
-void kjit_rs_note_svc_scan(u64 sites);
+size_t kjit_rs_unsupported_show(char *buf, size_t len);
+void kjit_rs_note_entry_stop(u32 word);
+
+/* Counters this file bumps: runtime/stats.rs, enum Note (same values). */
+enum kjit_note {
+	KJIT_NOTE_INVALIDATED = 0,	/* fragments removed by an invalidation */
+	KJIT_NOTE_RELEASED = 1,		/* fragments removed at mm/module teardown */
+	KJIT_NOTE_SVC_SITES = 2,	/* SVC words found by translate_svc_sites */
+	KJIT_NOTE_MM_CREATED = 3,	/* kjit_mm set up by the auto profiler */
+	KJIT_NOTE_MM_SETUP_FAILED = 4,	/* ... and failed (retried next syscall) */
+	KJIT_NOTE_PROF_FULL = 5,	/* hit dropped: no free profile slot */
+	KJIT_NOTE_HOT_NEGATIVE = 6,	/* hot PC in the negative cache */
+	KJIT_NOTE_HOT_CAPPED = 7,	/* hot PC, but a fragment cap is reached */
+	KJIT_NOTE_HOT_QUEUE_FULL = 8,	/* hot PC, but the mm has too many requests */
+	KJIT_NOTE_REQ_SVC_RESUME = 9,	/* request queued for a syscall resume PC */
+	KJIT_NOTE_REQ_EXIT_TARGET = 10,	/* request queued for a branch-exit target */
+	KJIT_NOTE_REQ_DROPPED = 11,	/* request not queued (no memory, exiting) */
+	KJIT_NOTE_REQ_STALE = 12,	/* request ran after exec/exit/auto off */
+	KJIT_NOTE_NEG_ADDED = 13,	/* PC added to the negative cache */
+	KJIT_NOTE_NEG_EVICTED = 14,	/* ... evicting an older one */
+	KJIT_NOTE_TRANSLATE_NS = 15,	/* time spent in auto-mode translations */
+};
+void kjit_rs_note(u32 note, u64 n);
 
 /* ------------------------------------------------------------------------- */
 /* Types and functions shared with runtime/ffi.rs (keep in sync).              */
@@ -101,6 +139,14 @@ u64 kjit_frag_base(const struct kjit_frag *f);
 s64 kjit_frag_offset_for_pc(const struct kjit_frag *f, u64 pc);
 void kjit_bad_status(u64 status, u64 pc);
 u64 kjit_call_fragment(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
+void kjit_profile(u64 pc, u32 kind);
+u64 kjit_hook_calls(void);
+
+/* kjit_profile()'s @kind: where the profiled PC came from. */
+enum kjit_hot_kind {
+	KJIT_HOT_SVC_RESUME = 0,	/* regs->pc after a syscall */
+	KJIT_HOT_EXIT_TARGET = 1,	/* target of a Bl/Blr/Br/Ret exit */
+};
 
 /* One fault site: a user access at code offset @access resumes at @stub. */
 struct kjit_site {
@@ -134,17 +180,57 @@ struct kjit_frag {
 
 #define KJIT_TABLE_BITS 6
 
+/*
+ * Auto-mode profile table (tmp/pipeline.md, "K3"): open addressing over
+ * KJIT_PROF_SLOTS, a PC may sit in any of the KJIT_PROF_PROBE slots after its
+ * hash slot. Lookups scan all of them (no early stop at a free slot), so
+ * freeing a slot needs no tombstone.
+ */
+#define KJIT_PROF_BITS 8
+#define KJIT_PROF_SLOTS (1U << KJIT_PROF_BITS)
+#define KJIT_PROF_PROBE 8
+/*
+ * Negative cache: PCs whose translation failed for good; FIFO replacement.
+ * Tagged words (KJIT_WORD_TAG | word) record an untranslatable entry
+ * instruction, 0 any other failure.
+ */
+#define KJIT_NEG_SLOTS 64
+#define KJIT_WORD_TAG BIT_ULL(63)
+/* Requests (queued task_work) per mm at a time. */
+#define KJIT_MAX_QUEUED_PER_MM 8
+
+struct kjit_prof_slot {
+	u64 pc;				/* 0: free (never a user text address) */
+	u64 start;			/* arch counter at the window start */
+	u32 hits;			/* in the window */
+	bool queued;			/* a request for pc is queued: keep the slot */
+	/*
+	 * Tagged entry word if pc is in the negative cache because its entry
+	 * instruction is untranslatable: every later hit is a path stop at that
+	 * word (unsupported_top's entry_stops), not a count.
+	 */
+	u64 stop_word;
+};
+
 struct kjit_mm {
 	struct mmu_notifier mn;
 	struct hlist_node hash_node;	/* kjit_mm_hash, under kjit_mm_lock */
 	bool hashed;			/* under kjit_mm_lock */
 	struct rcu_head rcu;
+	u64 id;				/* unique per kjit_mm, for requests */
 	spinlock_t lock;		/* everything below */
 	DECLARE_HASHTABLE(table, KJIT_TABLE_BITS);
 	u64 seq;			/* invalidations started */
 	unsigned int invalidating;	/* invalidations in progress */
 	bool dead;			/* mm released or module exiting */
 	bool disabled;			/* runtime bug seen for this mm */
+	unsigned int n_frags;		/* installed fragments ... */
+	unsigned long code_bytes;	/* ... and their code bytes */
+	unsigned int queued;		/* requests queued */
+	unsigned int neg_next;		/* next negative-cache slot to fill */
+	u64 neg[KJIT_NEG_SLOTS];
+	u64 neg_word[KJIT_NEG_SLOTS];	/* tagged entry word, or 0 */
+	struct kjit_prof_slot prof[KJIT_PROF_SLOTS];
 };
 
 static DEFINE_HASHTABLE(kjit_mm_hash, 6);
@@ -154,6 +240,48 @@ static DEFINE_SPINLOCK(kjit_frags_lock);
 static struct workqueue_struct *kjit_wq;
 static struct dentry *kjit_debugfs;
 static bool kjit_enabled = true;
+static atomic64_t kjit_mm_ids = ATOMIC64_INIT(0);
+static DEFINE_PER_CPU(u64, kjit_hook_calls_pcpu);
+
+/*
+ * Auto mode (P3) and its limits. Module parameters (writable in
+ * /sys/module/kjit/parameters/); auto, hot_threshold and hot_window_ms are
+ * also in debugfs. Defaults: tmp/pipeline.md, "K3".
+ */
+static bool kjit_auto;
+/*
+ * <linux/compiler_types.h> defines `auto` as `__auto_type` (C23 spelling), and
+ * module_param_named() expands its name argument, which would name the
+ * parameter "__auto_type". Undefine it for these two lines only.
+ */
+#pragma push_macro("auto")
+#undef auto
+module_param_named(auto, kjit_auto, bool, 0644);
+MODULE_PARM_DESC(auto, "Translate hot syscall resume PCs and exit targets automatically (default off)");
+#pragma pop_macro("auto")
+static u32 kjit_hot_threshold = 64;
+module_param_named(hot_threshold, kjit_hot_threshold, uint, 0644);
+MODULE_PARM_DESC(hot_threshold, "Hits of one PC within hot_window_ms that request its translation (default 64)");
+static u32 kjit_hot_window_ms = 100;
+module_param_named(hot_window_ms, kjit_hot_window_ms, uint, 0644);
+MODULE_PARM_DESC(hot_window_ms, "Profile window in ms (default 100)");
+static unsigned int kjit_max_frags_per_mm = 512;
+module_param_named(max_frags_per_mm, kjit_max_frags_per_mm, uint, 0644);
+static unsigned long kjit_max_code_per_mm = 2UL << 20;
+module_param_named(max_code_per_mm, kjit_max_code_per_mm, ulong, 0644);
+static unsigned long kjit_max_frags_total = 8192;
+module_param_named(max_frags_total, kjit_max_frags_total, ulong, 0644);
+static unsigned long kjit_max_code_total = 64UL << 20;
+module_param_named(max_code_total, kjit_max_code_total, ulong, 0644);
+/* Installed fragments of every mm; see kjit_caps_allow(). */
+static atomic_long_t kjit_total_frags = ATOMIC_LONG_INIT(0);
+static atomic_long_t kjit_total_code = ATOMIC_LONG_INIT(0);
+/*
+ * Requests queued, and requests whose task_work ran: the difference at unload
+ * is left to the kernel (0004) to free.
+ */
+static atomic64_t kjit_req_queued = ATOMIC64_INIT(0);
+static atomic64_t kjit_req_ran = ATOMIC64_INIT(0);
 
 /* ------------------------------------------------------------------------- */
 /* Fragments                                                                   */
@@ -221,11 +349,28 @@ static u64 kjit_mm_flush_locked(struct kjit_mm *kmm, unsigned long start, unsign
 	hash_for_each_safe(kmm->table, bkt, tmp, f, table_node) {
 		if (f->src_start < end && start < f->src_end) {
 			hash_del_rcu(&f->table_node);
+			kmm->n_frags--;
+			kmm->code_bytes -= f->code_len;
+			atomic_long_dec(&kjit_total_frags);
+			atomic_long_sub(f->code_len, &kjit_total_code);
 			kjit_frag_put(f);
 			n++;
 		}
 	}
 	return n;
+}
+
+/*
+ * Whether @kmm may install @code_len more bytes of code. The per-mm limits are
+ * exact under kmm->lock; the global ones are checked racily against other
+ * mms, so concurrent installs can overshoot them by one fragment each.
+ */
+static bool kjit_caps_allow(const struct kjit_mm *kmm, unsigned long code_len)
+{
+	return kmm->n_frags < READ_ONCE(kjit_max_frags_per_mm) &&
+	       kmm->code_bytes + code_len <= READ_ONCE(kjit_max_code_per_mm) &&
+	       atomic_long_read(&kjit_total_frags) < READ_ONCE(kjit_max_frags_total) &&
+	       atomic_long_read(&kjit_total_code) + code_len <= READ_ONCE(kjit_max_code_total);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -250,7 +395,7 @@ static void kjit_mm_kill(struct kjit_mm *kmm)
 	kmm->dead = true;
 	n = kjit_mm_flush_locked(kmm, 0, ULONG_MAX);
 	spin_unlock(&kmm->lock);
-	kjit_rs_note_released(n);
+	kjit_rs_note(KJIT_NOTE_RELEASED, n);
 }
 
 /*
@@ -292,7 +437,7 @@ static int kjit_mn_invalidate_range_start(struct mmu_notifier *mn,
 	n = kjit_mm_flush_locked(kmm, range->start, range->end);
 	spin_unlock(&kmm->lock);
 	if (n)
-		kjit_rs_note_invalidated(n);
+		kjit_rs_note(KJIT_NOTE_INVALIDATED, n);
 	return 0;
 }
 
@@ -314,10 +459,12 @@ static void kjit_mn_release(struct mmu_notifier *mn, struct mm_struct *mm)
 
 static struct mmu_notifier *kjit_mn_alloc(struct mm_struct *mm)
 {
-	struct kjit_mm *kmm = kzalloc(sizeof(*kmm), GFP_KERNEL);
+	/* About 10 KiB with the profile table: no need for contiguous pages. */
+	struct kjit_mm *kmm = kvzalloc(sizeof(*kmm), GFP_KERNEL);
 
 	if (!kmm)
 		return ERR_PTR(-ENOMEM);
+	kmm->id = atomic64_inc_return(&kjit_mm_ids);
 	spin_lock_init(&kmm->lock);
 	hash_init(kmm->table);
 	return &kmm->mn;
@@ -328,7 +475,7 @@ static void kjit_mn_free(struct mmu_notifier *mn)
 	struct kjit_mm *kmm = container_of(mn, struct kjit_mm, mn);
 
 	/* Syscall-path readers found it under RCU, not the notifier SRCU. */
-	kfree_rcu(kmm, rcu);
+	kvfree_rcu(kmm, rcu);
 }
 
 static const struct mmu_notifier_ops kjit_mn_ops = {
@@ -438,8 +585,9 @@ out:
  * it was read never becomes visible.
  *
  * Returns 0, -EEXIST (@entry_pc already has a fragment), -EAGAIN (raced with
- * an invalidation), -ESRCH (mm gone), -ENOMEM, -EINVAL (malformed tables; the
- * Rust side never passes them), or the set_memory_rox() error.
+ * an invalidation), -ESRCH (mm gone), -ENOSPC (a fragment cap is reached,
+ * kjit_caps_allow()), -ENOMEM, -EINVAL (malformed tables; the Rust side never
+ * passes them), or the set_memory_rox() error.
  */
 int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		 const u8 *code, u32 code_len, u32 entry_offset,
@@ -519,8 +667,15 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		hash_for_each_possible(kmm->table, old, table_node, entry_pc)
 			if (old->entry_pc == entry_pc)
 				ret = -EEXIST;
-		if (!ret)
+		if (!ret && !kjit_caps_allow(kmm, code_len))
+			ret = -ENOSPC;
+		if (!ret) {
 			hash_add_rcu(kmm->table, &f->table_node, entry_pc);
+			kmm->n_frags++;
+			kmm->code_bytes += code_len;
+			atomic_long_inc(&kjit_total_frags);
+			atomic_long_add(code_len, &kjit_total_code);
+		}
 	}
 	spin_unlock(&kmm->lock);
 	if (ret)
@@ -551,7 +706,8 @@ bool kjit_can_run(const struct pt_regs *regs)
 {
 	unsigned long x0 = regs->regs[0];
 
-	if (is_compat_task() || current->ptrace)
+	/* debugfs enable=N stops fragment runs and chains at the next check. */
+	if (!READ_ONCE(kjit_enabled) || is_compat_task() || current->ptrace)
 		return false;
 	if (read_thread_flags() & KJIT_BAIL_FLAGS)
 		return false;
@@ -606,7 +762,7 @@ void kjit_bad_status(u64 status, u64 pc)
 		spin_unlock(&kmm->lock);
 	}
 	rcu_read_unlock();
-	kjit_rs_note_released(n);
+	kjit_rs_note(KJIT_NOTE_RELEASED, n);
 }
 
 /*
@@ -647,7 +803,22 @@ static long kjit_after_syscall(struct pt_regs *regs)
 {
 	if (!READ_ONCE(kjit_enabled))
 		return -1;
+	this_cpu_inc(kjit_hook_calls_pcpu);
 	return kjit_rs_after_syscall(regs);
+}
+
+/*
+ * Hook calls while enabled: every syscall without syscall work, in-kernel ones
+ * included.
+ */
+u64 kjit_hook_calls(void)
+{
+	u64 sum = 0;
+	int cpu;
+
+	for_each_possible_cpu(cpu)
+		sum += per_cpu(kjit_hook_calls_pcpu, cpu);
+	return sum;
 }
 
 /*
@@ -687,9 +858,299 @@ static const struct exception_table_entry *kjit_search_extable(unsigned long add
 	return found;
 }
 
+/* ------------------------------------------------------------------------- */
+/* Auto mode (P3): profiler and task_work translation requests                 */
+
+/*
+ * One queued translation of @pc. Holds no reference: @mm is only compared,
+ * never dereferenced, and the kjit_mm is found again by (@mm, @kmm_id) under
+ * RCU, so neither a dying mm nor module unload waits for it.
+ */
+struct kjit_request {
+	struct kjit_task_work tw;	/* first: the kernel kfree()s an orphaned request */
+	struct mm_struct *mm;
+	u64 kmm_id;
+	u64 pc;
+};
+
+static u64 kjit_window_ticks(void)
+{
+	return (u64)READ_ONCE(kjit_hot_window_ms) * arch_timer_get_cntfrq() / MSEC_PER_SEC;
+}
+
+/* The negative-cache index of @pc, or -1. */
+static int kjit_neg_find_locked(const struct kjit_mm *kmm, u64 pc)
+{
+	unsigned int i;
+
+	for (i = 0; i < KJIT_NEG_SLOTS; i++)
+		if (kmm->neg[i] == pc)
+			return i;
+	return -1;
+}
+
+static void kjit_neg_add_locked(struct kjit_mm *kmm, u64 pc, u64 word)
+{
+	unsigned int i = kmm->neg_next++ % KJIT_NEG_SLOTS;
+
+	if (kmm->neg[i])
+		kjit_rs_note(KJIT_NOTE_NEG_EVICTED, 1);
+	kmm->neg[i] = pc;
+	kmm->neg_word[i] = word;
+	kjit_rs_note(KJIT_NOTE_NEG_ADDED, 1);
+}
+
+/*
+ * Counts one hit of @pc at arch counter @now. Returns true if @pc just became
+ * hot and a request must be queued; the slot is then marked queued (and
+ * counted in kmm->queued) until kjit_request_done(). A hit of a PC known to
+ * start with an untranslatable word sets *@stop to that tagged word instead.
+ */
+static bool kjit_prof_hit_locked(struct kjit_mm *kmm, u64 pc, u64 now, u64 *stop)
+{
+	u32 h = hash_64(pc, KJIT_PROF_BITS), threshold = READ_ONCE(kjit_hot_threshold);
+	struct kjit_prof_slot *s = NULL, *victim = NULL;
+	u64 window = kjit_window_ticks();
+	unsigned int i;
+	int neg;
+
+	lockdep_assert_held(&kmm->lock);
+	for (i = 0; i < KJIT_PROF_PROBE; i++) {
+		struct kjit_prof_slot *c = &kmm->prof[(h + i) & (KJIT_PROF_SLOTS - 1)];
+
+		if (c->pc == pc) {
+			s = c;
+			break;
+		}
+		/* A free slot, or one whose window is over (it was not hot). */
+		if (!victim && !c->queued && (!c->pc || now - c->start > window))
+			victim = c;
+	}
+	if (!s) {
+		if (!victim) {
+			kjit_rs_note(KJIT_NOTE_PROF_FULL, 1);
+			return false;
+		}
+		s = victim;
+		s->pc = pc;
+		s->start = now;
+		s->hits = 0;
+		s->stop_word = 0;
+	}
+	if (s->queued)
+		return false;
+	if (s->stop_word) {
+		/* Keep the slot fresh (not a victim) while the stops go on. */
+		s->start = now;
+		*stop = s->stop_word;
+		return false;
+	}
+	if (now - s->start > window) {
+		s->start = now;
+		s->hits = 0;
+	}
+	if (++s->hits < threshold)
+		return false;
+
+	/* Hot. Whatever happens next, the next request needs a fresh window. */
+	s->start = now;
+	s->hits = 0;
+	neg = kjit_neg_find_locked(kmm, pc);
+	if (neg >= 0) {
+		kjit_rs_note(KJIT_NOTE_HOT_NEGATIVE, 1);
+		s->stop_word = kmm->neg_word[neg];
+		return false;
+	}
+	/* Pre-check only; kjit_install() enforces the caps. */
+	if (!kjit_caps_allow(kmm, 0)) {
+		kjit_rs_note(KJIT_NOTE_HOT_CAPPED, 1);
+		return false;
+	}
+	if (kmm->queued >= KJIT_MAX_QUEUED_PER_MM) {
+		kjit_rs_note(KJIT_NOTE_HOT_QUEUE_FULL, 1);
+		return false;
+	}
+	s->queued = true;
+	kmm->queued++;
+	return true;
+}
+
+/*
+ * Whether a failed translation of a PC would fail again on the same text:
+ * compile, encode or verifier failure (-EINVAL, -EPERM), text outside an
+ * executable non-writable mapping or unmapped (-EACCES, -EFAULT), or over the
+ * text budget (-E2BIG). Races, memory, a fatal signal, a dying mm and the caps
+ * are transient: the PC is profiled again.
+ */
+static bool kjit_failure_is_final(int ret)
+{
+	switch (ret) {
+	case -EAGAIN:
+	case -ENOMEM:
+	case -EINTR:
+	case -ESRCH:
+	case -ENOSPC:
+		return false;
+	default:
+		return true;
+	}
+}
+
+/*
+ * The request for @pc of (@mm, @id) is finished with @ret (0 or -EEXIST:
+ * installed); @word is the tagged entry word for -ENOEXEC. Frees its profile
+ * slot and records a final failure in the negative cache. The kjit_mm may be
+ * gone (mm exited): then nothing is left to update.
+ */
+static void kjit_request_done(struct mm_struct *mm, u64 id, u64 pc, int ret, u64 word)
+{
+	bool final = ret && ret != -EEXIST && kjit_failure_is_final(ret);
+	u32 h = hash_64(pc, KJIT_PROF_BITS);
+	struct kjit_mm *kmm;
+	unsigned int i;
+
+	rcu_read_lock();
+	kmm = kjit_mm_find_rcu(mm);
+	if (kmm && kmm->id == id) {
+		spin_lock(&kmm->lock);
+		for (i = 0; i < KJIT_PROF_PROBE; i++) {
+			struct kjit_prof_slot *s = &kmm->prof[(h + i) & (KJIT_PROF_SLOTS - 1)];
+
+			if (s->pc == pc && s->queued) {
+				kmm->queued--;
+				memset(s, 0, sizeof(*s));
+				/* Count the stops at this word from now on. */
+				if (final && word) {
+					s->pc = pc;
+					s->start = arch_timer_read_counter();
+					s->stop_word = word;
+				}
+				break;
+			}
+		}
+		if (final)
+			kjit_neg_add_locked(kmm, pc, word);
+		spin_unlock(&kmm->lock);
+	}
+	rcu_read_unlock();
+}
+
+/* Queues the translation of @pc in current's context. */
+static void kjit_request(struct mm_struct *mm, u64 id, u64 pc, u32 kind)
+{
+	struct kjit_request *req = kmalloc(sizeof(*req), GFP_KERNEL);
+	int ret = -ENOMEM;
+
+	if (req) {
+		req->mm = mm;
+		req->kmm_id = id;
+		req->pc = pc;
+		ret = kjit_queue_task_work(&req->tw);
+		if (!ret) {
+			atomic64_inc(&kjit_req_queued);
+			kjit_rs_note(kind == KJIT_HOT_EXIT_TARGET ? KJIT_NOTE_REQ_EXIT_TARGET :
+				     KJIT_NOTE_REQ_SVC_RESUME, 1);
+			return;
+		}
+		/* -ESRCH: current is exiting; nothing will run the request. */
+		kfree(req);
+	}
+	kjit_rs_note(KJIT_NOTE_REQ_DROPPED, 1);
+	/* Both errors are transient: the slot is freed, the PC profiled again. */
+	kjit_request_done(mm, id, pc, ret, 0);
+}
+
+/*
+ * The runtime's ops->task_work (kernel-patches/0004): translate the request's
+ * PC in the requesting task's own context, which is the context the manual
+ * trigger emulates with a remote mm. The request is stale if the task has
+ * exec'd (another mm), is exiting (no mm), or auto mode was switched off.
+ */
+static void kjit_task_work(struct kjit_task_work *tw)
+{
+	struct kjit_request *req = container_of(tw, struct kjit_request, tw);
+	struct mm_struct *mm = current->mm;
+	struct kjit_mm *kmm;
+	int ret = -ESRCH;
+	u32 word = 0;
+
+	if (mm && mm == req->mm && !(current->flags & PF_EXITING) &&
+	    READ_ONCE(kjit_auto) && READ_ONCE(kjit_enabled)) {
+		/* current->mm: mm_users is held. */
+		kmm = kjit_mm_get(mm);
+		if (!IS_ERR(kmm)) {
+			if (kmm->id == req->kmm_id) {
+				u64 t0 = ktime_get_ns();
+
+				ret = kjit_rs_translate(kmm, req->pc, false, &word);
+				kjit_rs_note(KJIT_NOTE_TRANSLATE_NS, ktime_get_ns() - t0);
+			}
+			kjit_mm_put(kmm);
+		}
+	} else {
+		kjit_rs_note(KJIT_NOTE_REQ_STALE, 1);
+	}
+	kjit_request_done(req->mm, req->kmm_id, req->pc, ret,
+			  ret == -ENOEXEC ? KJIT_WORD_TAG | word : 0);
+	kfree(req);
+	atomic64_inc(&kjit_req_ran);
+}
+
+/*
+ * Auto mode, from the syscall path: one more hit of @pc, a PC current's mm has
+ * no fragment for and at which userspace is about to resume. The first hit of
+ * an mm sets up its kjit_mm (mmu_notifier registration, may sleep) and is not
+ * counted. After that, a hit costs a hash lookup, a spinlock and an arch
+ * counter read, and allocates nothing; a PC that becomes hot allocates its
+ * request.
+ */
+void kjit_profile(u64 pc, u32 kind)
+{
+	struct mm_struct *mm = current->mm;
+	struct kjit_mm *kmm;
+	bool queue = false;
+	u64 id = 0, stop = 0;
+
+	if (!READ_ONCE(kjit_auto) || !mm || !pc)
+		return;
+	rcu_read_lock();
+	kmm = kjit_mm_find_rcu(mm);
+	if (kmm) {
+		u64 now = arch_timer_read_counter();
+
+		spin_lock(&kmm->lock);
+		if (!kmm->dead && !kmm->disabled)
+			queue = kjit_prof_hit_locked(kmm, pc, now, &stop);
+		id = kmm->id;
+		spin_unlock(&kmm->lock);
+	}
+	rcu_read_unlock();
+	if (stop)
+		kjit_rs_note_entry_stop((u32)stop);
+
+	if (queue) {
+		kjit_request(mm, id, pc, kind);
+	} else if (!kmm) {
+		/* current->mm: mm_users is held. The hash keeps the kjit_mm. */
+		kmm = kjit_mm_get(mm);
+		if (IS_ERR(kmm)) {
+			/*
+			 * Fallback: -ENOMEM, or -EINTR from mm_take_all_locks()
+			 * with a signal pending. Profiling only starts later; the
+			 * next hit retries.
+			 */
+			kjit_rs_note(KJIT_NOTE_MM_SETUP_FAILED, 1);
+			return;
+		}
+		kjit_mm_put(kmm);
+		kjit_rs_note(KJIT_NOTE_MM_CREATED, 1);
+	}
+}
+
 static const struct kjit_hook_ops kjit_hook_ops = {
 	.after_syscall = kjit_after_syscall,
 	.search_extable = kjit_search_extable,
+	.task_work = kjit_task_work,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -745,7 +1206,7 @@ static ssize_t kjit_translate_write(struct file *file, const char __user *ubuf,
 	if (IS_ERR(kmm)) {
 		ret = PTR_ERR(kmm);
 	} else {
-		ret = kjit_rs_translate(kmm, pc, true);
+		ret = kjit_rs_translate(kmm, pc, true, NULL);
 		kjit_mm_put(kmm);
 	}
 	mmput(mm);
@@ -839,7 +1300,7 @@ static ssize_t kjit_svc_sites_write(struct file *file, const char __user *ubuf,
 					continue;
 				sites++;
 				/* Per-site results are counted in stats. */
-				kjit_rs_translate(kmm, addr + w * 4 + 4, false);
+				kjit_rs_translate(kmm, addr + w * 4 + 4, false, NULL);
 				cond_resched();
 				if (fatal_signal_pending(current)) {
 					ret = -EINTR;
@@ -848,7 +1309,7 @@ static ssize_t kjit_svc_sites_write(struct file *file, const char __user *ubuf,
 			}
 		}
 	}
-	kjit_rs_note_svc_scan(sites);
+	kjit_rs_note(KJIT_NOTE_SVC_SITES, sites);
 	pr_info("kjit: translate_svc_sites pid %d: %u text ranges, %llu svc sites\n", pid, n, sites);
 	ret = 0;
 out_kmm:
@@ -873,6 +1334,21 @@ static ssize_t kjit_stats_read(struct file *file, char __user *ubuf, size_t coun
 	return ret;
 }
 
+/* The Unsupported words seen at runtime, most frequent first (runtime/stats.rs). */
+static ssize_t kjit_unsupported_read(struct file *file, char __user *ubuf, size_t count,
+				     loff_t *ppos)
+{
+	size_t size = 4 * PAGE_SIZE;
+	char *buf = kmalloc(size, GFP_KERNEL);
+	ssize_t ret;
+
+	if (!buf)
+		return -ENOMEM;
+	ret = simple_read_from_buffer(ubuf, count, ppos, buf, kjit_rs_unsupported_show(buf, size));
+	kfree(buf);
+	return ret;
+}
+
 static const struct file_operations kjit_translate_fops = {
 	.owner = THIS_MODULE,
 	.write = kjit_translate_write,
@@ -888,12 +1364,53 @@ static const struct file_operations kjit_stats_fops = {
 	.read = kjit_stats_read,
 };
 
+static const struct file_operations kjit_unsupported_fops = {
+	.owner = THIS_MODULE,
+	.read = kjit_unsupported_read,
+};
+
 /* ------------------------------------------------------------------------- */
 /* Module init/exit (called from rust_kjit.rs)                                 */
+
+/*
+ * CPU features the translator's output relies on (tmp/pipeline.md, "K2
+ * contract", Preconditions). Sanitised ID registers: the value every CPU
+ * supports. Returns 0 or -ENODEV, naming the missing feature.
+ */
+static int kjit_check_cpu(void)
+{
+	u64 mmfr2 = read_sanitised_ftr_reg(SYS_ID_AA64MMFR2_EL1);
+	u64 isar1 = read_sanitised_ftr_reg(SYS_ID_AA64ISAR1_EL1);
+
+	/*
+	 * FEAT_LSE2: a misaligned LDAR/STLR/LDAPR inside a 16-byte block must
+	 * not fault natively, since the fragment's LDTR/STTR-family access for
+	 * it does not.
+	 */
+	if (!cpuid_feature_extract_unsigned_field(mmfr2, ID_AA64MMFR2_EL1_AT_SHIFT)) {
+		pr_err("kjit: CPU lacks FEAT_LSE2 (ID_AA64MMFR2_EL1.AT == 0): fragments would not fault on misaligned acquire/release accesses that fault natively; refusing to load\n");
+		return -ENODEV;
+	}
+	/* ...and with SCTLR_EL1.nAA clear (Linux never sets it). */
+	if (read_sysreg(sctlr_el1) & SCTLR_EL1_nAA) {
+		pr_err("kjit: SCTLR_EL1.nAA is set: misaligned acquire/release accesses fault natively; refusing to load\n");
+		return -ENODEV;
+	}
+	/* FEAT_LRCPC: else user LDAPR is UNDEFINED natively but would run in a fragment. */
+	if (!cpuid_feature_extract_unsigned_field(isar1, ID_AA64ISAR1_EL1_LRCPC_SHIFT)) {
+		pr_err("kjit: CPU lacks FEAT_LRCPC (ID_AA64ISAR1_EL1.LRCPC == 0): user LDAPR is UNDEFINED natively but would run in a fragment; refusing to load\n");
+		return -ENODEV;
+	}
+	return 0;
+}
 
 int kjit_glue_init(void)
 {
 	int ret;
+
+	ret = kjit_check_cpu();
+	if (ret)
+		return ret;
 
 	kjit_wq = alloc_workqueue("kjit", WQ_UNBOUND, 0);
 	if (!kjit_wq)
@@ -903,6 +1420,10 @@ int kjit_glue_init(void)
 	debugfs_create_file("translate_svc_sites", 0200, kjit_debugfs, NULL, &kjit_svc_sites_fops);
 	debugfs_create_file("stats", 0400, kjit_debugfs, NULL, &kjit_stats_fops);
 	debugfs_create_bool("enable", 0600, kjit_debugfs, &kjit_enabled);
+	debugfs_create_bool("auto", 0600, kjit_debugfs, &kjit_auto);
+	debugfs_create_u32("hot_threshold", 0600, kjit_debugfs, &kjit_hot_threshold);
+	debugfs_create_u32("hot_window_ms", 0600, kjit_debugfs, &kjit_hot_window_ms);
+	debugfs_create_file("unsupported_top", 0400, kjit_debugfs, NULL, &kjit_unsupported_fops);
 
 	ret = kjit_register_hook(&kjit_hook_ops);
 	if (ret) {
@@ -919,8 +1440,14 @@ void kjit_glue_exit(void)
 
 	/* No new translations (waits for writers in flight). */
 	debugfs_remove(kjit_debugfs);
-	/* No fragment runs or extable lookups after this. */
+	/*
+	 * No fragment runs, extable lookups or task_work requests in here after
+	 * this; requests still queued are freed by the kernel (0004).
+	 */
 	kjit_unregister_hook(&kjit_hook_ops);
+	pr_info("kjit: %lld of %lld translation requests still queued at unload (freed by the kernel)\n",
+		atomic64_read(&kjit_req_queued) - atomic64_read(&kjit_req_ran),
+		atomic64_read(&kjit_req_queued));
 
 	for (;;) {
 		struct kjit_mm *victim = NULL;
@@ -946,7 +1473,7 @@ void kjit_glue_exit(void)
 	}
 	/* free_notifier callbacks (module code) have run after this. */
 	mmu_notifier_synchronize();
-	/* kfree_rcu and the rcu_work frees are queued after this... */
+	/* kvfree_rcu and the rcu_work frees are queued after this... */
 	rcu_barrier();
 	/* ...and the image frees have run after this. */
 	destroy_workqueue(kjit_wq);

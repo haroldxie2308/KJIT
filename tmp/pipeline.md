@@ -554,6 +554,14 @@ Written before implementation. Facts checked against `dep/linux` 7.1-rc1:
 - Kernel config invariants live in `kernel-config/` (K1): shadow call stack
   off (the fragment owns x18), kCFI off, kernel BTI off (the prologue ends
   in `br x12`), hardware PAN on, `ARM64_SW_TTBR0_PAN` off, and `UAO` clear.
+- CPU features (A7c, checked at module init by `kjit_check_cpu`,
+  `kjit_glue.c`; `insmod` fails with `-ENODEV` and a `pr_err` naming the
+  feature): FEAT_LSE2 (sanitised `ID_AA64MMFR2_EL1.AT != 0`) with
+  `SCTLR_EL1.nAA` clear, because a misaligned LDAR/STLR/LDAPR inside a 16-byte
+  block must not fault natively when the fragment's `LDTR*`/`STTR*` for it
+  does not; FEAT_LRCPC (sanitised `ID_AA64ISAR1_EL1.LRCPC != 0`), because
+  without it user LDAPR is UNDEFINED natively but would run in a fragment.
+  (`SCTLR_EL1.nAA` is read on the loading CPU; Linux never sets it.)
 
 ## Patch series (`kernel-patches/`, applied by the setup script)
 
@@ -770,6 +778,169 @@ where the implementation is stricter than it:
   bytes. (K2 executes only fragments it translated from a live process and
   verified in-kernel; see "K2 implementation".)
 
+# K3: automatic hot-path detection (2026-09-27)
+
+Implements P3 on top of "K2 implementation". Code: `kjit_glue.c` ("Auto
+mode"), `runtime/exec.rs`, `runtime/translate.rs`, `runtime/stats.rs`,
+`kernel-patches/0004`.
+
+## Profiler
+
+- Where: the syscall-return hook, only when a run is otherwise possible
+  (`kjit_can_run`) and there is no fragment: (1) at `regs->pc` after a syscall
+  (`KJIT_HOT_SVC_RESUME`), (2) at the target of a `Bl`/`Blr`/`Br`/`Ret` exit
+  whose chaining lookup failed (`KJIT_HOT_EXIT_TARGET`, exit-target
+  learning). Never after `Unsupported`/`Mem`/`Budget` (userspace resumes
+  mid-block; the next syscall resume PC is the profiled point), never when the
+  chain cap or a run condition stopped chaining.
+- Table: per `kjit_mm`, 256 slots, open addressing over 8 probe slots from
+  `hash_64(pc)`. A lookup scans all 8 (no early stop), so freeing a slot needs
+  no tombstone. A new PC takes a free slot or one whose window has expired and
+  that has no queued request; else the hit is dropped (`auto_prof_full`).
+  Under `kjit_mm.lock`. The first eligible syscall of an mm only creates its
+  `kjit_mm` (`mmu_notifier_get`, may sleep: mmap write lock,
+  `mm_take_all_locks`) and is not counted; after that a hit costs a hash
+  lookup, the spinlock and an arch-counter read, and allocates nothing.
+- Hot: `hot_threshold` hits within one `hot_window_ms` window (window start =
+  first hit; an expired window restarts at the hit). Time is CNTVCT
+  (`arch_timer_read_counter`, ticks = ms * CNTFRQ / 1000). On the crossing the
+  slot's window restarts whatever happens next.
+- Defaults 64 hits / 100 ms (>= 640 hits/s sustained). Why: a translation
+  costs ~240 us in the guest (`auto_translate_ns` / requests, K2 micro tests);
+  one in-kernel syscall saves at most one EL0 round trip (~120 ns, E0
+  `getppid`), so a translation pays back after ~2000 hits, i.e. within ~3 s
+  at the threshold rate; bursts of fewer than 64 hits per 100 ms (startup,
+  config parsing) are never translated. Module parameters and debugfs.
+
+## Requests (task_work)
+
+- A hot PC that is not in the negative cache, under the caps, and with fewer
+  than 8 requests queued for its mm gets its slot marked `queued` and a
+  `kjit_request` (kmalloc, the only allocation of the path) queued with
+  `kjit_queue_task_work()` (patch 0004, `TWA_RESUME`). Translation never runs
+  in the syscall hook.
+- The request runs in the requesting task at its next return to user mode (the
+  queued `TIF_NOTIFY_RESUME` is a bail flag, so the hook returns first). It
+  translates only if `current->mm` is still the request's mm, the task is not
+  exiting and auto mode and `enable` are still on (else `auto_req_stale`),
+  with `kjit_rs_translate` on the task's own mm: same text rules, same
+  verification, same install gate as the manual trigger.
+- A request holds no reference. It names its `kjit_mm` by (mm pointer, a
+  per-`kjit_mm` 64-bit id) and finds it again under RCU when it finishes, so an
+  exited mm or a reused mm address is detected. Finishing frees the slot
+  (installed: the table now has the PC; transient failure: it is profiled
+  again).
+- Module lifetime (patch 0004): the task_work callback is kernel code that
+  calls `ops->task_work` under the hook SRCU, and only if the registration
+  generation recorded at queue time is current; otherwise it `kfree`s the
+  request. `kjit_unregister_hook` already waits for SRCU readers, so after
+  module exit no request runs module code, and a request queued by one module
+  instance is never handed to a later one. Nothing has to cancel per-task
+  work at unload.
+
+## Negative cache
+
+- Final failures (errno): compile/encode (`-EINVAL`), verifier (`-EPERM`),
+  untranslatable entry instruction (`-ENOEXEC`), text not in an executable
+  non-writable mapping or unmapped (`-EACCES`, `-EFAULT`), text budget
+  (`-E2BIG`), and anything unclassified. Transient: `-EAGAIN` (lost the install
+  race 4 times), `-ENOMEM`, `-EINTR`, `-ESRCH`, `-ENOSPC` (caps).
+- Per `kjit_mm`, 64 PCs, FIFO replacement (`auto_neg_evicted`); checked only
+  when a PC crosses the threshold, so a hit never scans it. Not cleared by
+  invalidations: a PC whose text is later replaced (dlclose + dlopen at the
+  same address) stays untranslated in that mm. Pessimistic, never wrong.
+- Entry refusal (all triggers): a translation whose entry word itself would
+  take the `Unsupported` exit (`cfg::admit_at`) is refused with `-ENOEXEC`
+  (`translate_entry_unsupported`): the fragment could only return to
+  userspace at its own entry, at the cost of a call. The negative cache keeps
+  the word; the PC's profile slot then counts every later hit as an
+  `entry_stop` of that word in `unsupported_top` instead of counting it.
+
+## Caps
+
+- `max_frags_per_mm` 512, `max_code_per_mm` 2 MiB, `max_frags_total` 8192,
+  `max_code_total` 64 MiB (module parameters). Checked in `kjit_install` under
+  `kjit_mm.lock` (per mm exact; the global counters are read racily across
+  mms, so concurrent installs can overshoot by one fragment each), `-ENOSPC`,
+  for every trigger. Pre-checked before a request is queued.
+- Counts move with table membership (install, `kjit_mm_flush_locked`), not with
+  the last reference, so a fragment still running after removal is not
+  counted.
+
+## Chaining rules
+
+- On `Bl`/`Blr`/`Br`/`Ret` with target T: if the hook call has made fewer than
+  `MAX_CHAIN` (16) chained entries and `kjit_can_run` holds (it now also checks
+  `enable`), continue at T's verified entry in the fragment that just exited,
+  else at the fragment for (mm, T); each chained entry counts `chains`.
+  Otherwise userspace resumes at T; if the lookups ran and failed, T is
+  profiled. Reaching the cap counts `chain_cap`.
+- Every entry is budget-bounded and the run conditions are re-checked before
+  each entry and before each in-kernel syscall, so a hook call spends at most
+  16 budget-bounded runs in fragments between syscalls.
+
+## Lifetimes
+
+- exec: a new mm, so a new `kjit_mm` on its first syscall; the old one dies at
+  mm release; requests queued before the exec are stale.
+- fork: mmu notifier subscriptions are not inherited, so the child starts
+  empty and profiles on its own. In the parent, `copy_page_range` only walks
+  VMAs that need copying (`vma_needs_copy`: an `anon_vma`, or
+  `VM_COPY_ON_FORK`); for a CoW one it sends a `PROTECTION_PAGE` invalidation,
+  which drops fragments translated from it (conservative, as in K2). Plain
+  file-backed text has no `anon_vma`, so its fragments survive a fork; text in
+  an anonymous RX mapping does not.
+- Thread exit: a queued request runs in `exit_task_work` with `current->mm`
+  NULL: stale, its slot is released under RCU.
+- Process exit, module unload: as K2 (release/claim empties the table); queued
+  requests are freed by the kernel (0004).
+
+## Accounting and diagnostics
+
+- `hook_calls` (per-CPU in C): hook calls while enabled, i.e. syscalls without
+  syscall work, in-kernel ones included. `syscalls_in_kernel / hook_calls` is
+  the in-kernel fraction (global: the runner isolates the program under test
+  by running load generators under `nojit`, an allow-all seccomp filter).
+- `unsupported_top`: lock-free table of 1024 words (16 probes; a slot's key is
+  claimed once by compare-exchange and never changes). Columns `exits`
+  (`Unsupported` exits, x10 = word, `unreadable` for
+  `UNSUPPORTED_WORD_UNREADABLE`, any other x10 counts `unsupported_bad_word`)
+  and `entry_stops`. Full table: `unsupported_top_dropped`.
+- C counters go through one `kjit_rs_note(enum kjit_note, n)` (values mirrored
+  in `runtime/stats.rs`, `note_stat`).
+
+## Known limitations
+
+- BTI: a `Blr`/`Br` exit does not model PSTATE.BTYPE. Chaining into a
+  fragment, or resuming userspace at the target with the syscall's BTYPE (0),
+  skips the landing-pad check that a native indirect branch to a non-`BTI`
+  instruction in a guarded page would fail (SIGILL). Only programs with broken
+  control flow are affected. (Present since K2 chaining.)
+- The first eligible syscall of every mm registers an mmu notifier
+  (`mm_take_all_locks`); every process pays it once in auto mode.
+- Per-mm table and negative cache are per mm, not per executable: every
+  process warms up on its own.
+
+## Findings (kjit-guest, 2026-09-27)
+
+- Semantics: every `run-k3.sh` test gives identical output and exit status
+  with auto mode on and off (20 iterations on `kjit-guest-debug` without a
+  kernel report).
+- Coverage: the in-kernel path extends well past libc wrappers where the code
+  is in the subset (`dd bs=1`: 100% of syscalls in the kernel, 8 fragment
+  entries per syscall through Ret/Bl/Blr/Br chains; `epoll_echo` 88%,
+  `dd bs=4k` 70%, `busybox dd` 64%), but stops at `bti c` (0xd503245f) at
+  function entries (Debian's redis and the dev image's static glibc are
+  BTI-built), SIMD loads in `memcpy`/`strlen`/`memchr` (`ldr q`, `ldp q`,
+  `ld1`, `dup`) and `adc`. redis-server under redis-benchmark: 0 of ~1.59M
+  syscalls in the kernel; with A7c's LDAR, every path ends at a `bti c` entry
+  (~1.59M entry stops, no Unsupported exits). Before A7c the second blocker
+  was `ldar x1, [x0]` (0xc8dffc01, ~0.7M exits). Translating `bti` (a NOP
+  outside guarded pages; see the BTI limitation) is the next coverage step.
+- Speed: not a goal yet. Fragment entry and exit cost more than the mode
+  switches they save when a path chains through many short fragments
+  (`dd bs=1`: 100% in kernel and ~40% slower).
+
 # A64 subset contracts (A7a, 2026-09-27)
 
 ## Decode admission
@@ -832,6 +1003,9 @@ where the implementation is stricter than it:
     `CPU features: detected: Privileged Access Never`.
   - `PSTATE.UAO == 0`: `CONFIG_ARM64_UAO` is gone. Nothing in arch/arm64 sets
     UAO, and an exception to EL1 clears it.
+  - CPU features FEAT_LSE2 (with `SCTLR_EL1.nAA` clear) and FEAT_LRCPC: not
+    configuration but hardware; `kjit.ko` refuses to load without them (see
+    "K2 contract", Preconditions).
 - Checked and not pinned: `ARM64_LSUI` (futex atomics only), `ARM64_EPAN`
   (privileged accesses only; LDTR/STTR are unprivileged), `ARM64_MTE` (LDTR/STTR
   are checked with TCF0, as in copy_from_user), `ARM64_PTR_AUTH_KERNEL`
@@ -1107,7 +1281,7 @@ the Inner Shareable domain, which holds every CPU that can run the process
   pseudocode), on the untagged address; the native original reports it as a
   SIGBUS at the instruction, which the generic fault match accepts.
 
-### Kernel assumptions (pin in K-tasks)
+### Kernel assumptions (pinned: module init, see "K2 contract", Preconditions)
 
 - FEAT_LSE2 with SCTLR_EL1.nAA == 0. On a CPU without FEAT_LSE2 every misaligned
   ordered access faults natively, while a fragment runs a misaligned one that
