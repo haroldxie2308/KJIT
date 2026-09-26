@@ -595,3 +595,39 @@ Written before implementation. Facts checked against `dep/linux` 7.1-rc1:
   (`AddWithCarry` + `nzcv`) missed ANDS/BICS and CCMP/CCMN. No pass consumes
   flag roles yet.
 
+## K1 kernel config invariants (2026-09-27)
+
+- `kernel-config/kjit-invariants.conf` is merged last by every profile.
+  `scripts/setup-kernel-build.sh` fails, naming each option, when any value
+  requested by the merged fragments is not in the final `.config` (an
+  `is not set` request is also satisfied by an absent symbol).
+- Pinned options (Linux 7.1-rc1):
+
+  | Option | Value | Why |
+  |---|---|---|
+  | `SHADOW_CALL_STACK` | n | fragment owns x18 |
+  | `CFI` (kCFI; `CFI_CLANG` is now a transitional alias) | n | kernel calls untyped fragment code indirectly |
+  | `ARM64_BTI_KERNEL` | n | prologue ends in `br x12` into code without landing pads |
+  | `ARM64_SW_TTBR0_PAN` | n | LDTR/STTR must reach user page tables |
+  | `MODULES`, `RUST` | y | kjit.ko is an out-of-tree Rust module |
+
+- Contract items with no Kconfig symbol in 7.1, checked in source:
+  - Hardware PAN: `CONFIG_ARM64_PAN` is gone. The `ARM64_HAS_PAN` cpucap is
+    always built and enabled when the CPU implements PAN. It is checked at
+    runtime: `scripts/guest-run.sh` fails without the boot line
+    `CPU features: detected: Privileged Access Never`.
+  - `PSTATE.UAO == 0`: `CONFIG_ARM64_UAO` is gone. Nothing in arch/arm64 sets
+    UAO, and an exception to EL1 clears it.
+- Checked and not pinned: `ARM64_LSUI` (futex atomics only), `ARM64_EPAN`
+  (privileged accesses only; LDTR/STTR are unprivileged), `ARM64_MTE` (LDTR/STTR
+  are checked with TCF0, as in copy_from_user), `ARM64_PTR_AUTH_KERNEL`
+  (this is safe only while PAC hints stay outside the decoded subset: they take
+  the Unsupported exit and run in userspace).
+- Profiles: `tiny-qemu[-debug]` (K0), `kjit-guest` (Debian/redis userland,
+  E0 baseline) and `kjit-guest-debug` (+ generic KASAN, lockdep,
+  DEBUG_ATOMIC_SLEEP, DEBUG_LIST). All start from tinyconfig. The guest profiles
+  use `PREEMPT` (full), because fragments run preemptible.
+- Kernels build out of tree only: `dep/linux` stays a clean source tree, and
+  `KBUILD_OUTPUT` defaults to `$KJIT_BUILD_ROOT/$KJIT_KERNEL_PROFILE`. kjit.ko
+  (Kbuild `MO=`) and the K0 golden initramfs live in that build dir, so a
+  module is always paired with the kernel it was built against.

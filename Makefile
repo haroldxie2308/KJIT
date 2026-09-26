@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 
 KDIR ?= $(CURDIR)/dep/linux
-KBUILD_OUTPUT ?= $(KDIR)
 ARCH ?= arm64
 LLVM ?= 1
 ARM64_ISA_XML_DIR ?= $(CURDIR)/tmp/isa_a64_2026_03/ISA_A64_xml_A_profile-2026-03
@@ -10,23 +9,36 @@ HARNESS_SHARED_BACKUP := harness/.shared.bak
 KERNEL_GOLDEN_ASM := tests/arm64/toy_cfg.s
 KERNEL_GOLDEN := tests/arm64/golden/toy_cfg_hot_svc_mark.rs
 
-KMAKE = $(MAKE) -C $(KDIR) ARCH=$(ARCH) LLVM=$(LLVM)
-ifneq ($(abspath $(KBUILD_OUTPUT)),$(abspath $(KDIR)))
-KMAKE += O=$(KBUILD_OUTPUT)
-endif
+# Kernels build out of tree only: KDIR stays a clean source tree and the
+# selected profile builds in $(KJIT_BUILD_ROOT)/$(KJIT_KERNEL_PROFILE). kjit.ko
+# is built next to that kernel (Kbuild MO=). Same defaults as scripts/kjit-env.sh.
+KJIT_BUILD_ROOT ?= $(CURDIR)/.kjit/build
+KJIT_KERNEL_PROFILE ?= tiny-qemu-debug
+KBUILD_OUTPUT ?= $(KJIT_BUILD_ROOT)/$(KJIT_KERNEL_PROFILE)
+KJIT_MODULE_DIR ?= $(abspath $(KBUILD_OUTPUT))/kjit-module
+GUEST_PROFILE ?= kjit-guest
 
+# The scripts get the same selection, so every target keys off one build dir.
+SCRIPT_ENV = KDIR=$(KDIR) KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) \
+	KJIT_KERNEL_PROFILE=$(KJIT_KERNEL_PROFILE) KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
+	KJIT_MODULE_DIR=$(KJIT_MODULE_DIR)
+
+KMAKE = $(MAKE) -C $(KDIR) ARCH=$(ARCH) LLVM=$(LLVM) O=$(KBUILD_OUTPUT)
+MODULE_MAKE = mkdir -p $(KJIT_MODULE_DIR) && $(KMAKE) M=$(CURDIR) MO=$(KJIT_MODULE_DIR)
+
+.PHONY: initramfs guest-kernel guest-kernel-debug guest-rootfs guest-run e0-bench
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
 	harness-test harness-test-native harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan kernel-golden help
 
 default:
-	$(KMAKE) M=$$PWD
+	$(MODULE_MAKE)
 
 modules_install: default
-	$(KMAKE) M=$$PWD modules_install
+	$(MODULE_MAKE) modules_install
 
 install:
-	sudo insmod kjit.ko
+	sudo insmod $(KJIT_MODULE_DIR)/kjit.ko
 
 uninstall:
 	sudo rmmod kjit
@@ -43,7 +55,7 @@ test:
 	objdump -D kjit.ko -C rust > kjit_test.S
 
 rust-analyzer:
-	bash ./scripts/gen-rust-project.sh
+	$(SCRIPT_ENV) bash ./scripts/gen-rust-project.sh
 
 rustavailable-check:
 	$(KMAKE) rustavailable
@@ -62,21 +74,24 @@ harness-sync:
 harness-prepare: harness-sync
 
 kernel-prepare:
-	bash ./scripts/setup-kernel-build.sh
+	$(SCRIPT_ENV) bash ./scripts/setup-kernel-build.sh
 
 kernel-build:
-	bash ./scripts/setup-kernel-build.sh --build
+	$(SCRIPT_ENV) bash ./scripts/setup-kernel-build.sh --build
 
 kernel-clean:
-	bash ./scripts/setup-kernel-build.sh --clean
+	$(SCRIPT_ENV) bash ./scripts/setup-kernel-build.sh --clean
 
 clean: kernel-clean
 
+initramfs:
+	$(SCRIPT_ENV) bash ./scripts/mk-initramfs.sh
+
 qemu-run:
-	bash ./scripts/qemu-run.sh
+	$(SCRIPT_ENV) bash ./scripts/qemu-run.sh
 
 qemu-run-bg:
-	bash ./scripts/qemu-run.sh --detach
+	$(SCRIPT_ENV) bash ./scripts/qemu-run.sh --detach
 
 qemu-reset:
 	bash ./scripts/qemu-reset.sh
@@ -85,6 +100,26 @@ pack:
 	bash ./scripts/pack.sh
 
 module-build: default
+
+guest-kernel:
+	$(MAKE) kernel-build KJIT_KERNEL_PROFILE=kjit-guest
+	$(MAKE) module-build KJIT_KERNEL_PROFILE=kjit-guest
+
+guest-kernel-debug:
+	$(MAKE) kernel-build KJIT_KERNEL_PROFILE=kjit-guest-debug
+	$(MAKE) module-build KJIT_KERNEL_PROFILE=kjit-guest-debug
+
+guest-rootfs:
+	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/mk-guest-rootfs.sh
+
+# CMD from the make command line is exported to the recipe environment;
+# reading it as $$CMD avoids re-quoting it through make.
+guest-run:
+	@if [ -z "$(CMD)" ]; then echo "usage: make guest-run CMD='shell command' [GUEST_PROFILE=kjit-guest|kjit-guest-debug]" >&2; exit 2; fi
+	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/guest-run.sh --profile $(GUEST_PROFILE) -- "$$CMD"
+
+e0-bench:
+	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/e0-bench.sh --profile $(GUEST_PROFILE)
 
 harness-test:
 	cargo test --manifest-path harness/Cargo.toml -- --nocapture
@@ -126,14 +161,20 @@ spec-gen:
 help:
 	@printf '%-20s %s\n' \
 		'prepare' 'Prepare/build the kernel in the container dev environment' \
-		'kernel-prepare' 'Prepare the kernel build tree for ARM64 Rust development' \
-		'kernel-build' 'Build Image/modules into the kernel build tree' \
-		'kernel-clean' 'Clean the kernel build tree' \
+		'kernel-prepare' 'Configure $$KJIT_BUILD_ROOT/$$KJIT_KERNEL_PROFILE (default tiny-qemu-debug)' \
+		'kernel-build' 'Build Image/modules in the profile build dir' \
+		'kernel-clean' 'Clean the profile build dir' \
 		'clean' 'Alias for kernel-clean' \
 		'harness-sync' 'Copy shared/ into harness/src/shared with one backup' \
 		'rust-analyzer' 'Generate rust-project.json for this module' \
 		'rustavailable-check' 'Check Rust-for-Linux toolchain readiness' \
-		'module-build' 'Build the KJIT module' \
+		'module-build' 'Build kjit.ko into <profile build dir>/kjit-module' \
+		'initramfs' 'Container: K0 golden initramfs for the profile (after module-build)' \
+		'guest-kernel' 'Container: configure+build kjit-guest and its kjit.ko in $$KJIT_BUILD_ROOT/kjit-guest' \
+		'guest-kernel-debug' 'Container: same for kjit-guest-debug (KASAN, lockdep)' \
+		'guest-rootfs' 'Host: build the Debian bookworm + redis initramfs' \
+		'guest-run' "Host: boot GUEST_PROFILE under QEMU, insmod kjit.ko, run CMD='...', power off" \
+		'e0-bench' 'Host: E0 syscall microbenchmark in the guest and in a plain Docker container' \
 		'spec-gen' 'Generate the checked-in ARM64 subset tables from the Arm XML bundle' \
 		'harness-test' 'Run the standalone harness tests' \
 		'harness-test-native' 'Run the harness tests plus the native hardware oracle on Linux arm64 (container on macOS)' \
@@ -144,7 +185,7 @@ help:
 		'spec-test-encoding' 'Compare generated A64Insn encoding against LLVM assembler output' \
 		'coverage-scan' 'Translate from every SVC site in ELF=path and report exits/unsupported forms' \
 		'kernel-golden' 'Regenerate the kernel module golden fragment from the harness' \
-		'qemu-run' 'Boot the local kernel image in QEMU (foreground)' \
+		'qemu-run' "Boot the profile's kernel + golden initramfs in QEMU (foreground)" \
 		'qemu-run-bg' 'Boot the local kernel image in QEMU (background)' \
 		'qemu-reset' 'Reset the running QEMU guest through QMP' \
 		'pack' 'Create a tar.gz of tracked files under tmp/pack/'

@@ -52,7 +52,12 @@ require_cmd "$QEMU_BINARY"
 
 if [[ ! -f "$QEMU_KERNEL_IMAGE" ]]; then
     echo "Kernel image not found: $QEMU_KERNEL_IMAGE" >&2
-    echo "Run ./scripts/setup-kernel-build.sh --build first." >&2
+    echo "Run make kernel-build (profile $KJIT_KERNEL_PROFILE) first." >&2
+    exit 1
+fi
+if [[ -n "$QEMU_INITRAMFS" && ! -f "$QEMU_INITRAMFS" ]]; then
+    echo "Initramfs not found: $QEMU_INITRAMFS" >&2
+    echo "Run make initramfs, or set QEMU_INITRAMFS= to boot without one." >&2
     exit 1
 fi
 
@@ -81,10 +86,15 @@ qemu_args=(
     -append "$QEMU_APPEND"
     -pidfile "$QEMU_PID_FILE"
     -qmp "unix:$QEMU_QMP_SOCKET,server=on,wait=off"
-    -device virtio-net-pci,netdev=net0
-    -netdev "user,id=net0,hostfwd=tcp::${QEMU_SSH_PORT}-:22"
     -virtfs "local,path=$QEMU_SHARE_DIR,mount_tag=hostshare,security_model=none"
 )
+
+if [[ "$QEMU_USER_NET" == "1" ]]; then
+    qemu_args+=(
+        -device virtio-net-pci,netdev=net0
+        -netdev "user,id=net0,hostfwd=tcp::${QEMU_SSH_PORT}-:22"
+    )
+fi
 
 if [[ -n "$QEMU_ROOTFS_IMAGE" ]]; then
     qemu_args+=(

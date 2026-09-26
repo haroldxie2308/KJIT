@@ -8,12 +8,23 @@ if [[ "${KJIT_IGNORE_LOCAL_ENV:-0}" != "1" && -f "$ROOT_DIR/.kjit.env" ]]; then
 fi
 
 : "${KDIR:=$ROOT_DIR/dep/linux}"
-: "${KBUILD_OUTPUT:=$KDIR}"
 : "${ARCH:=arm64}"
 : "${LLVM:=1}"
 : "${DEFCONFIG:=tinyconfig}"
 : "${KJIT_KERNEL_PROFILE:=tiny-qemu-debug}"
 : "${KJIT_ENABLE_CAPSTONE_STUB:=0}"
+# Kernels are only built out of tree: KDIR stays a clean source tree and each
+# profile builds in $KJIT_BUILD_ROOT/<profile> (O=). Set KJIT_BUILD_ROOT to a
+# directory outside the repo to share builds between worktrees; docker-dev.sh
+# mounts it at the same absolute path in the container. The Makefile derives
+# the same defaults.
+: "${KJIT_BUILD_ROOT:=$ROOT_DIR/.kjit/build}"
+: "${KBUILD_OUTPUT:=$KJIT_BUILD_ROOT/$KJIT_KERNEL_PROFILE}"
+# kjit.ko is built next to its kernel (Kbuild MO=), so a module can never be
+# paired with a kernel it was not built against.
+: "${KJIT_MODULE_DIR:=$KBUILD_OUTPUT/kjit-module}"
+# K0 golden initramfs (scripts/mk-initramfs.sh) for this profile.
+: "${KJIT_INITRAMFS:=$KBUILD_OUTPUT/kjit-initramfs/kjit-initramfs.cpio}"
 
 : "${QEMU_BINARY:=qemu-system-aarch64}"
 : "${QEMU_MEMORY:=4096}"
@@ -27,8 +38,11 @@ fi
 : "${QEMU_APPEND:=console=ttyAMA0 panic=-1 nokaslr}"
 : "${QEMU_KERNEL_IMAGE:=$KBUILD_OUTPUT/arch/$ARCH/boot/Image}"
 : "${QEMU_ROOTFS_IMAGE:=}"
-: "${QEMU_INITRAMFS:=}"
+# Set QEMU_INITRAMFS= (empty) to boot without an initramfs.
+: "${QEMU_INITRAMFS=$KJIT_INITRAMFS}"
 : "${QEMU_SHARE_DIR:=$ROOT_DIR}"
+# 1 = virtio-net with user networking and an ssh host forward; 0 = no NIC.
+: "${QEMU_USER_NET:=1}"
 
 require_cmd() {
     local cmd="$1"

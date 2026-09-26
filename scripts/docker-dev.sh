@@ -83,6 +83,14 @@ fi
 mkdir -p \
     "$ROOT_DIR/.kjit/docker-home"
 
+# An out-of-repo KJIT_BUILD_ROOT is mounted at the same absolute path, so the
+# kernel image paths the container writes are the paths QEMU reads on the host.
+build_root_args=()
+if [[ -n "${KJIT_BUILD_ROOT:-}" ]]; then
+    mkdir -p "$KJIT_BUILD_ROOT"
+    build_root_args=(-e "KJIT_BUILD_ROOT=$KJIT_BUILD_ROOT" -v "$KJIT_BUILD_ROOT:$KJIT_BUILD_ROOT")
+fi
+
 if [[ ${#cmd[@]} -eq 0 ]]; then
     cmd=(bash)
 fi
@@ -102,5 +110,6 @@ docker run --rm \
     -e LOGNAME="${USER:-user}" \
     -w /workspace \
     -v "$ROOT_DIR:/workspace" \
+    "${build_root_args[@]}" \
     "$IMAGE" \
     bash -lc "$container_cmd" bash "${cmd[@]}"
