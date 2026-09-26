@@ -180,6 +180,22 @@ to it is a design change and gets recorded here first.
   instruction.
 - If the instruction can't be lowered within the scratch pool, it is an
   intrinsic reg-virt rejection → `Unsupported` exit at that PC (A1 path).
+- **SP alignment check** (V2 fuzzer finding). Linux runs EL0 with SP alignment
+  checking (`SCTLR_EL1.SA0`): a load/store whose base is SP faults (SIGBUS)
+  when SP is not 16-byte aligned. User SP lives in x17 in a fragment, which is
+  never checked, so without a check KJIT would run code that natively faults.
+  For every user access whose base is SP (immediate and register-offset forms)
+  reg-virt emits, before anything else of the instruction,
+  `and xS, x17, #15; cbnz xS, <Mem stub of that instruction>` (kind
+  `SpAlignCheck`; layout resolves the `CBNZ` like a budget check's `CBZ`).
+  Flags are untouched. `xS` comes from the same scratch pool (so admission
+  accounts for it); it shares the address or pair first-load scratch when the
+  instruction has one, both being written only after the check. The `Mem` exit
+  returns to userspace at the instruction, which re-executes natively and takes
+  the SIGBUS itself: exact. The `CBNZ` is a forward branch into the cold region,
+  to an exit-group start (verifier rule 4). The harness interpreter models the
+  fault (`FaultCause::SpAlignment`, precise, before any access); the native
+  runner matches it at the SP value Linux reports (`el0_sp`).
 
 Implementation decisions (A5):
 

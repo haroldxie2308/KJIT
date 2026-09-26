@@ -37,7 +37,9 @@ use core::ptr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
-use crate::model::{ExecutionResult, Flags, HaltReason, MachineState, PagePerm, PAGE_SIZE};
+use crate::model::{
+    ExecutionResult, FaultCause, Flags, HaltReason, MachineState, PagePerm, PAGE_SIZE,
+};
 use crate::runtime::{
     decide_runtime_return, validate_entry_offset, RuntimeAction, URuntimeHalt, PT_REGS_BYTES,
     PT_REGS_SP_OFFSET,
@@ -1191,6 +1193,16 @@ pub fn original_halt_matches(
             if pc == native_pc =>
         {
             Ok(())
+        }
+        // Linux reports an SP alignment fault at the SP value (`el0_sp`).
+        (HaltReason::Fault(fault), NativeStop::Fault { pc, addr })
+            if fault.cause == FaultCause::SpAlignment =>
+        {
+            if fault.pc == pc && addr == original.state.sp() {
+                Ok(())
+            } else {
+                Err(mismatch())
+            }
         }
         // The CPU reports the first faulting byte, which may lie past the start
         // of an access that crosses into a bad page.

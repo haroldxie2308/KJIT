@@ -35,12 +35,24 @@ pub struct MemAccess {
     pub kind: AccessKind,
 }
 
-/// A user access that violated page permissions (or was injected). The
-/// faulting instruction did not retire: state is as before it.
+/// Why a user access faulted.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FaultCause {
+    /// Page permissions (or an injected fault) refused `access`.
+    Permission,
+    /// The base is SP and SP is not 16-byte aligned: EL0 SP alignment checking
+    /// (Linux sets SCTLR_EL1.SA0) faults before any access. `access` is the
+    /// instruction's first access.
+    SpAlignment,
+}
+
+/// A user access that faulted. The faulting instruction did not retire: state is
+/// as before it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct MemFault {
     pub pc: u64,
     pub access: MemAccess,
+    pub cause: FaultCause,
 }
 
 impl fmt::Display for MemFault {
@@ -49,9 +61,13 @@ impl fmt::Display for MemFault {
             AccessKind::Read => "read",
             AccessKind::Write => "write",
         };
+        let cause = match self.cause {
+            FaultCause::Permission => "",
+            FaultCause::SpAlignment => " (SP alignment)",
+        };
         write!(
             f,
-            "user {kind} fault pc={:#x} addr={:#x} size={}",
+            "user {kind} fault{cause} pc={:#x} addr={:#x} size={}",
             self.pc, self.access.addr, self.access.size
         )
     }

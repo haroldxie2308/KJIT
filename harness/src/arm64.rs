@@ -1,5 +1,7 @@
-use crate::model::{AccessKind, Flags, HaltReason, MachineState, MemAccess, MemFault, Privilege};
-use crate::shared::arm64::{A64Condition, A64Imm, A64Insn, A64Mem, A64Reg};
+use crate::model::{
+    AccessKind, FaultCause, Flags, HaltReason, MachineState, MemAccess, MemFault, Privilege,
+};
+use crate::shared::arm64::{A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode};
 use crate::shared::trans::cfg::{admit_at, RuntimeExitReason};
 use crate::MockCodeProvider;
 
@@ -2112,6 +2114,22 @@ fn execute_mem(
         .iter()
         .map(|reg| state.read_reg(*reg) & width_mask(size * 8))
         .collect::<Vec<_>>();
+    // EL0 SP alignment check (SCTLR_EL1.SA0, set by Linux): an SP-based access
+    // with SP not 16-byte aligned faults before any access. Original code only;
+    // a fragment's SP accesses are to the runtime frame, at EL1.
+    let is_sp = |reg: A64Reg| reg.enc() == 31 && reg.reg31 == A64Reg31Mode::Sp;
+    let sp_based = match addr {
+        Addr::Imm(mem) => is_sp(mem.base()),
+        Addr::Reg { base, .. } => is_sp(base),
+        Addr::Literal(_) => false,
+    };
+    if matches!(ctx, AccessContext::Original { .. }) && sp_based && state.sp() % 16 != 0 {
+        return Err(InsnError::Fault(MemFault {
+            pc,
+            access: accesses[0],
+            cause: FaultCause::SpAlignment,
+        }));
+    }
     check_accesses(ctx, state, pc, &accesses, insn.is_unprivileged_access())?;
 
     match elem {
@@ -2214,7 +2232,11 @@ fn check_accesses(
         }
         let injected = counter.is_some_and(|counter| counter.record());
         if injected || !state.user_access_allowed(access) {
-            return Err(InsnError::Fault(MemFault { pc, access }));
+            return Err(InsnError::Fault(MemFault {
+                pc,
+                access,
+                cause: FaultCause::Permission,
+            }));
         }
     }
     Ok(())
@@ -2882,6 +2904,27 @@ mod tests {
         .unwrap();
         assert_eq!(state.sp(), 0x0ff0);
         assert_eq!(state.read_x(31), 0);
+    }
+
+    /// EL0 SP alignment checking: an SP-based access faults when SP is not
+    /// 16-byte aligned, even though the page is mapped; a non-SP base does not.
+    #[test]
+    fn sp_based_access_with_misaligned_sp_faults() {
+        let mut state = rw_page_at_0x9000();
+        state.set_sp(0x9008);
+        state.write_x(1, 0x9008);
+        let ldr = |base: A64Reg| A64Insn::LdrImmGenLdr64LdstPos {
+            rt: x(0),
+            mem: A64Mem::offset(base, A64Imm::scaled_unsigned(1, 12, 3)),
+        };
+
+        let fault = expect_fault(ldr(A64Reg::x_sp(31)), &state, None);
+        assert_eq!(fault.cause, FaultCause::SpAlignment);
+        assert_eq!(fault.access.addr, 0x9010);
+
+        exec_user(ldr(A64Reg::x_sp(1)), 0x4000, &mut state).unwrap();
+        state.set_sp(0x9010);
+        exec_user(ldr(A64Reg::x_sp(31)), 0x4000, &mut state).unwrap();
     }
 
     #[test]
