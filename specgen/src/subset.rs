@@ -193,6 +193,7 @@ mod tests {
             asm_operands: Vec::new(),
             mask: "0xfff00000".to_string(),
             value: "0xd5300000".to_string(),
+            excludes: Vec::new(),
             fields: vec![field("op1", 18, 3), field("op2", 7, 3), field("Rt", 4, 5)],
             operand_roles: vec![OperandRoleSpec {
                 kind: "RegWrite".to_string(),

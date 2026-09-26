@@ -167,15 +167,48 @@ impl A64Insn {
         Some((taken, pc.wrapping_add(4)))
     }
 
-    /// `LDTR`/`STTR`: the only instructions a fragment may use to touch user memory.
-    /// Emitted by reg-virt only; never admitted from user code.
+    /// The `LDTR`/`STTR` family (`LDTR`, `LDTRB`, `LDTRH`, `LDTRSB`, `LDTRSH`,
+    /// `LDTRSW`, `STTR`, `STTRB`, `STTRH`): the only instructions a fragment may use
+    /// to touch user memory. Emitted by reg-virt only; never admitted from user code.
     pub const fn is_unprivileged_access(self) -> bool {
         matches!(
             self,
             Self::LdtrLdtr32LdstUnpriv { .. }
                 | Self::LdtrLdtr64LdstUnpriv { .. }
+                | Self::LdtrbLdtrb32LdstUnpriv { .. }
+                | Self::LdtrhLdtrh32LdstUnpriv { .. }
+                | Self::LdtrsbLdtrsb32LdstUnpriv { .. }
+                | Self::LdtrsbLdtrsb64LdstUnpriv { .. }
+                | Self::LdtrshLdtrsh32LdstUnpriv { .. }
+                | Self::LdtrshLdtrsh64LdstUnpriv { .. }
+                | Self::LdtrswLdtrsw64LdstUnpriv { .. }
                 | Self::SttrSttr32LdstUnpriv { .. }
                 | Self::SttrSttr64LdstUnpriv { .. }
+                | Self::SttrbSttrb32LdstUnpriv { .. }
+                | Self::SttrhSttrh32LdstUnpriv { .. }
+        )
+    }
+
+    /// The data address of a literal load (`LDR`/`LDRSW` (literal)): `pc + imm19 * 4`.
+    pub fn literal_address(self, pc: u64) -> Option<u64> {
+        match self {
+            Self::LdrLitGenLdr32Loadlit { imm19, .. }
+            | Self::LdrLitGenLdr64Loadlit { imm19, .. }
+            | Self::LdrswLitLdrsw64Loadlit { imm19, .. } => {
+                Some(pc.wrapping_add_signed(imm19.value()))
+            }
+            _ => None,
+        }
+    }
+
+    /// `PRFM` (immediate, literal, register): a prefetch hint. It has no
+    /// architectural effect and never raises a data abort, so translation drops it.
+    pub const fn is_prefetch(self) -> bool {
+        matches!(
+            self,
+            Self::PrfmImmPrfmPLdstPos { .. }
+                | Self::PrfmLitPrfmPLoadlit { .. }
+                | Self::PrfmRegPrfmPLdstRegoff { .. }
         )
     }
 
@@ -269,6 +302,24 @@ impl A64Insn {
             | Self::BfmBfm32mBitfield { immr, imms, .. } => {
                 (immr.raw() | imms.raw()) & 0b10_0000 != 0
             }
+
+            // Register-offset loads/stores: `if option<1> == '0' then
+            // EndOfDecode(Decode_UNDEF)` (a sub-word index). The `*BL` byte forms
+            // (option = 0b011) and PRFM (register) (option<1> = 1) fix it in their
+            // diagrams.
+            Self::LdrRegGenLdr32LdstRegoff { option, .. }
+            | Self::LdrRegGenLdr64LdstRegoff { option, .. }
+            | Self::StrRegGenStr32LdstRegoff { option, .. }
+            | Self::StrRegGenStr64LdstRegoff { option, .. }
+            | Self::LdrbRegLdrb32bLdstRegoff { option, .. }
+            | Self::StrbRegStrb32bLdstRegoff { option, .. }
+            | Self::LdrhRegLdrh32LdstRegoff { option, .. }
+            | Self::StrhRegStrh32LdstRegoff { option, .. }
+            | Self::LdrsbRegLdrsb32bLdstRegoff { option, .. }
+            | Self::LdrsbRegLdrsb64bLdstRegoff { option, .. }
+            | Self::LdrshRegLdrsh32LdstRegoff { option, .. }
+            | Self::LdrshRegLdrsh64LdstRegoff { option, .. }
+            | Self::LdrswRegLdrsw64LdstRegoff { option, .. } => option & 0b010 == 0,
 
             // Every remaining rule of these forms is fixed by the encoding diagram
             // (MOVZ/MOVK/MOVN 32-bit hw<1>, bitfield/EXTR N == sf, EXTR 32-bit
@@ -374,6 +425,78 @@ impl A64Insn {
             | Self::StpGenStp64LdstpairPost { .. }
             | Self::StpGenStp64LdstpairPre { .. }
             | Self::StpGenStp64LdstpairOff { .. }
+            // Memory forms added in A7b. Their decode pseudocode has no UNDEFINED
+            // case outside the register-offset rule above; the writeback and LDP
+            // `t == t2` overlaps are CONSTRAINED UNPREDICTABLE, which reg-virt rejects
+            // from the operand roles (`UnpredictableMemoryOp`).
+            | Self::LdpGenLdp32LdstpairPost { .. }
+            | Self::LdpGenLdp32LdstpairPre { .. }
+            | Self::LdpGenLdp32LdstpairOff { .. }
+            | Self::StpGenStp32LdstpairPost { .. }
+            | Self::StpGenStp32LdstpairPre { .. }
+            | Self::StpGenStp32LdstpairOff { .. }
+            | Self::LdpswLdpsw64LdstpairPost { .. }
+            | Self::LdpswLdpsw64LdstpairPre { .. }
+            | Self::LdpswLdpsw64LdstpairOff { .. }
+            | Self::LdrbImmLdrb32LdstImmpost { .. }
+            | Self::LdrbImmLdrb32LdstImmpre { .. }
+            | Self::LdrbImmLdrb32LdstPos { .. }
+            | Self::StrbImmStrb32LdstImmpost { .. }
+            | Self::StrbImmStrb32LdstImmpre { .. }
+            | Self::StrbImmStrb32LdstPos { .. }
+            | Self::LdrhImmLdrh32LdstImmpost { .. }
+            | Self::LdrhImmLdrh32LdstImmpre { .. }
+            | Self::LdrhImmLdrh32LdstPos { .. }
+            | Self::StrhImmStrh32LdstImmpost { .. }
+            | Self::StrhImmStrh32LdstImmpre { .. }
+            | Self::StrhImmStrh32LdstPos { .. }
+            | Self::LdrsbImmLdrsb32LdstImmpost { .. }
+            | Self::LdrsbImmLdrsb64LdstImmpost { .. }
+            | Self::LdrsbImmLdrsb32LdstImmpre { .. }
+            | Self::LdrsbImmLdrsb64LdstImmpre { .. }
+            | Self::LdrsbImmLdrsb32LdstPos { .. }
+            | Self::LdrsbImmLdrsb64LdstPos { .. }
+            | Self::LdrshImmLdrsh32LdstImmpost { .. }
+            | Self::LdrshImmLdrsh64LdstImmpost { .. }
+            | Self::LdrshImmLdrsh32LdstImmpre { .. }
+            | Self::LdrshImmLdrsh64LdstImmpre { .. }
+            | Self::LdrshImmLdrsh32LdstPos { .. }
+            | Self::LdrshImmLdrsh64LdstPos { .. }
+            | Self::LdrswImmLdrsw64LdstImmpost { .. }
+            | Self::LdrswImmLdrsw64LdstImmpre { .. }
+            | Self::LdrswImmLdrsw64LdstPos { .. }
+            | Self::LdurGenLdur32LdstUnscaled { .. }
+            | Self::LdurGenLdur64LdstUnscaled { .. }
+            | Self::SturGenStur32LdstUnscaled { .. }
+            | Self::SturGenStur64LdstUnscaled { .. }
+            | Self::LdurbLdurb32LdstUnscaled { .. }
+            | Self::SturbSturb32LdstUnscaled { .. }
+            | Self::LdurhLdurh32LdstUnscaled { .. }
+            | Self::SturhSturh32LdstUnscaled { .. }
+            | Self::LdursbLdursb32LdstUnscaled { .. }
+            | Self::LdursbLdursb64LdstUnscaled { .. }
+            | Self::LdurshLdursh32LdstUnscaled { .. }
+            | Self::LdurshLdursh64LdstUnscaled { .. }
+            | Self::LdurswLdursw64LdstUnscaled { .. }
+            | Self::LdrbRegLdrb32blLdstRegoff { .. }
+            | Self::StrbRegStrb32blLdstRegoff { .. }
+            | Self::LdrsbRegLdrsb32blLdstRegoff { .. }
+            | Self::LdrsbRegLdrsb64blLdstRegoff { .. }
+            | Self::LdrLitGenLdr32Loadlit { .. }
+            | Self::LdrLitGenLdr64Loadlit { .. }
+            | Self::LdrswLitLdrsw64Loadlit { .. }
+            | Self::PrfmImmPrfmPLdstPos { .. }
+            | Self::PrfmLitPrfmPLoadlit { .. }
+            | Self::PrfmRegPrfmPLdstRegoff { .. }
+            | Self::LdtrbLdtrb32LdstUnpriv { .. }
+            | Self::SttrbSttrb32LdstUnpriv { .. }
+            | Self::LdtrhLdtrh32LdstUnpriv { .. }
+            | Self::SttrhSttrh32LdstUnpriv { .. }
+            | Self::LdtrsbLdtrsb32LdstUnpriv { .. }
+            | Self::LdtrsbLdtrsb64LdstUnpriv { .. }
+            | Self::LdtrshLdtrsh32LdstUnpriv { .. }
+            | Self::LdtrshLdtrsh64LdstUnpriv { .. }
+            | Self::LdtrswLdtrsw64LdstUnpriv { .. }
             | Self::LdtrLdtr32LdstUnpriv { .. }
             | Self::LdtrLdtr64LdstUnpriv { .. }
             | Self::SttrSttr32LdstUnpriv { .. }
@@ -493,6 +616,100 @@ mod tests {
                     pc: 0x40,
                     word: undefined
                 }),
+                "{what}"
+            );
+        }
+    }
+
+    /// Register-offset loads/stores with `option<1> == 0` (a sub-word index) are
+    /// UNDEFINED; the UXTW neighbour decodes.
+    #[test]
+    fn register_offset_with_sub_word_index_is_undefined() {
+        let cases: [(u32, u32, &str); 3] = [
+            (0xf862_4820, 0xf862_0820, "ldr x0, [x1, w2, uxtw] / uxtb"),
+            (0xb822_c820, 0xb822_a820, "str w0, [x1, w2, sxtw] / sxth"),
+            (0x3862_4820, 0x3862_2820, "ldrb w0, [x1, w2, uxtw] / uxth"),
+        ];
+        for (defined, undefined, what) in cases {
+            assert!(decode_word(defined, 0).is_ok(), "{what}: {defined:#010x}");
+            assert!(
+                A64Insn::decode(undefined).is_some(),
+                "{what}: {undefined:#010x} must match the encoding diagram"
+            );
+            assert!(
+                decode_word(undefined, 0).is_err(),
+                "{what}: {undefined:#010x}"
+            );
+        }
+    }
+
+    /// `LDRB_32B_ldst_regoff` carries the diagram constraint `option != 011`; those
+    /// words belong to the `LSL` form `LDRB_32BL_ldst_regoff`.
+    #[test]
+    fn diagram_exclusions_route_words_to_the_right_form() {
+        // ldrb w0, [x1, x2, lsl #0]
+        assert_eq!(
+            A64Insn::decode(0x3862_7820).map(|insn| insn.key()),
+            Some("LDRB_reg.LDRB_32BL_ldst_regoff")
+        );
+        // ldrb w0, [x1, x2, sxtx]
+        assert_eq!(
+            A64Insn::decode(0x3862_e820).map(|insn| insn.key()),
+            Some("LDRB_reg.LDRB_32B_ldst_regoff")
+        );
+        // RPRFM space (PRFM register with Rt<4:3> == 11) is excluded from PRFM.
+        assert!(A64Insn::decode(0xf8a2_4818).is_none());
+    }
+
+    /// Every generated form decodes from its own base value to itself, and
+    /// `is_unprivileged_access` is exactly the `LDTR*`/`STTR*` family.
+    #[test]
+    fn unprivileged_family_matches_the_generated_ldtr_sttr_forms() {
+        use generated::GENERATED_A64_SUBSET;
+        let mut unprivileged = 0;
+        for spec in GENERATED_A64_SUBSET {
+            let insn = A64Insn::decode(spec.value)
+                .unwrap_or_else(|| panic!("{} does not decode its own value", spec.key));
+            assert_eq!(insn.key(), spec.key, "{:#010x}", spec.value);
+            let family = spec.mnemonic.starts_with("LDTR") || spec.mnemonic.starts_with("STTR");
+            assert_eq!(insn.is_unprivileged_access(), family, "{}", spec.key);
+            unprivileged += usize::from(family);
+        }
+        assert_eq!(unprivileged, 13);
+    }
+
+    /// Exclusive, acquire/release, atomic and FP/SIMD memory forms stay outside the
+    /// subset: they must not decode, so they take the Unsupported exit.
+    #[test]
+    fn exclusive_atomic_and_fp_memory_forms_stay_undecodable() {
+        let words: [(u32, &str); 22] = [
+            (0xc85f_7c20, "ldxr x0, [x1]"),
+            (0xc802_7c20, "stxr w2, x0, [x1]"),
+            (0x885f_fc20, "ldaxr w0, [x1]"),
+            (0x8802_fc20, "stlxr w2, w0, [x1]"),
+            (0xc8df_fc20, "ldar x0, [x1]"),
+            (0x889f_fc20, "stlr w0, [x1]"),
+            (0xc87f_0440, "ldxp x0, x1, [x2]"),
+            (0xc8a0_7c41, "cas x0, x1, [x2]"),
+            (0x88e0_fc41, "casal w0, w1, [x2]"),
+            (0xf820_0041, "ldadd x0, x1, [x2]"),
+            (0xb8e0_0041, "ldaddal w0, w1, [x2]"),
+            (0xf820_8041, "swp x0, x1, [x2]"),
+            (0xf8bf_c020, "ldapr x0, [x1]"),
+            (0x3dc0_0020, "ldr q0, [x1]"),
+            (0xfd40_0420, "ldr d0, [x1, #8]"),
+            (0xbc40_4420, "ldr s0, [x1], #4"),
+            (0xad40_0420, "ldp q0, q1, [x1]"),
+            (0xfc22_7820, "str d0, [x1, x2, lsl #3]"),
+            (0x3cdf_0020, "ldur q0, [x1, #-16]"),
+            (0x9c00_0000, "ldr q0, <literal>"),
+            (0xa840_0440, "ldnp x0, x1, [x2]"),
+            (0xf880_1000, "prfum pldl1keep, [x0, #1]"),
+        ];
+        for (word, what) in words {
+            assert_eq!(
+                decode_word(word, 0x40),
+                Err(DecodeError::UnsupportedWord { pc: 0x40, word }),
                 "{what}"
             );
         }

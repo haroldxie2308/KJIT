@@ -1013,62 +1013,432 @@ pub(crate) fn execute_insn(
             branch_on_bit(insn, pc, state, rt, bit_index(b5, b40), true)
         }
 
+        // Loads and stores: `Elem` gives the element size and how a loaded element
+        // becomes the register value (Mem, then ZeroExtend/SignExtend to the
+        // destination width); `Addr` gives the addressing mode.
         A64Insn::LdrImmGenLdr32LdstPos { rt, mem }
         | A64Insn::LdrImmGenLdr32LdstImmpre { rt, mem }
-        | A64Insn::LdrImmGenLdr32LdstImmpost { rt, mem } => {
-            execute_ldr(ctx, state, pc, mem, rt, 4, false)?;
-            Ok(pc + 4)
+        | A64Insn::LdrImmGenLdr32LdstImmpost { rt, mem }
+        | A64Insn::LdurGenLdur32LdstUnscaled { rt, mem }
+        | A64Insn::LdtrLdtr32LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, zx(4, 32), rt, None, Addr::Imm(mem))
         }
         A64Insn::LdrImmGenLdr64LdstPos { rt, mem }
         | A64Insn::LdrImmGenLdr64LdstImmpre { rt, mem }
-        | A64Insn::LdrImmGenLdr64LdstImmpost { rt, mem } => {
-            execute_ldr(ctx, state, pc, mem, rt, 8, false)?;
-            Ok(pc + 4)
+        | A64Insn::LdrImmGenLdr64LdstImmpost { rt, mem }
+        | A64Insn::LdurGenLdur64LdstUnscaled { rt, mem }
+        | A64Insn::LdtrLdtr64LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, zx(8, 64), rt, None, Addr::Imm(mem))
+        }
+        A64Insn::LdrbImmLdrb32LdstPos { rt, mem }
+        | A64Insn::LdrbImmLdrb32LdstImmpre { rt, mem }
+        | A64Insn::LdrbImmLdrb32LdstImmpost { rt, mem }
+        | A64Insn::LdurbLdurb32LdstUnscaled { rt, mem }
+        | A64Insn::LdtrbLdtrb32LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, zx(1, 32), rt, None, Addr::Imm(mem))
+        }
+        A64Insn::LdrhImmLdrh32LdstPos { rt, mem }
+        | A64Insn::LdrhImmLdrh32LdstImmpre { rt, mem }
+        | A64Insn::LdrhImmLdrh32LdstImmpost { rt, mem }
+        | A64Insn::LdurhLdurh32LdstUnscaled { rt, mem }
+        | A64Insn::LdtrhLdtrh32LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, zx(2, 32), rt, None, Addr::Imm(mem))
+        }
+        A64Insn::LdrsbImmLdrsb32LdstPos { rt, mem }
+        | A64Insn::LdrsbImmLdrsb32LdstImmpre { rt, mem }
+        | A64Insn::LdrsbImmLdrsb32LdstImmpost { rt, mem }
+        | A64Insn::LdursbLdursb32LdstUnscaled { rt, mem }
+        | A64Insn::LdtrsbLdtrsb32LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, sx(1, 32), rt, None, Addr::Imm(mem))
+        }
+        A64Insn::LdrsbImmLdrsb64LdstPos { rt, mem }
+        | A64Insn::LdrsbImmLdrsb64LdstImmpre { rt, mem }
+        | A64Insn::LdrsbImmLdrsb64LdstImmpost { rt, mem }
+        | A64Insn::LdursbLdursb64LdstUnscaled { rt, mem }
+        | A64Insn::LdtrsbLdtrsb64LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, sx(1, 64), rt, None, Addr::Imm(mem))
+        }
+        A64Insn::LdrshImmLdrsh32LdstPos { rt, mem }
+        | A64Insn::LdrshImmLdrsh32LdstImmpre { rt, mem }
+        | A64Insn::LdrshImmLdrsh32LdstImmpost { rt, mem }
+        | A64Insn::LdurshLdursh32LdstUnscaled { rt, mem }
+        | A64Insn::LdtrshLdtrsh32LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, sx(2, 32), rt, None, Addr::Imm(mem))
+        }
+        A64Insn::LdrshImmLdrsh64LdstPos { rt, mem }
+        | A64Insn::LdrshImmLdrsh64LdstImmpre { rt, mem }
+        | A64Insn::LdrshImmLdrsh64LdstImmpost { rt, mem }
+        | A64Insn::LdurshLdursh64LdstUnscaled { rt, mem }
+        | A64Insn::LdtrshLdtrsh64LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, sx(2, 64), rt, None, Addr::Imm(mem))
+        }
+        A64Insn::LdrswImmLdrsw64LdstPos { rt, mem }
+        | A64Insn::LdrswImmLdrsw64LdstImmpre { rt, mem }
+        | A64Insn::LdrswImmLdrsw64LdstImmpost { rt, mem }
+        | A64Insn::LdurswLdursw64LdstUnscaled { rt, mem }
+        | A64Insn::LdtrswLdtrsw64LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, sx(4, 64), rt, None, Addr::Imm(mem))
         }
         A64Insn::StrImmGenStr32LdstPos { rt, mem }
         | A64Insn::StrImmGenStr32LdstImmpre { rt, mem }
-        | A64Insn::StrImmGenStr32LdstImmpost { rt, mem } => {
-            execute_str(ctx, state, pc, mem, rt, 4, false)?;
-            Ok(pc + 4)
+        | A64Insn::StrImmGenStr32LdstImmpost { rt, mem }
+        | A64Insn::SturGenStur32LdstUnscaled { rt, mem }
+        | A64Insn::SttrSttr32LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, st(4), rt, None, Addr::Imm(mem))
         }
         A64Insn::StrImmGenStr64LdstPos { rt, mem }
         | A64Insn::StrImmGenStr64LdstImmpre { rt, mem }
-        | A64Insn::StrImmGenStr64LdstImmpost { rt, mem } => {
-            execute_str(ctx, state, pc, mem, rt, 8, false)?;
-            Ok(pc + 4)
+        | A64Insn::StrImmGenStr64LdstImmpost { rt, mem }
+        | A64Insn::SturGenStur64LdstUnscaled { rt, mem }
+        | A64Insn::SttrSttr64LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, st(8), rt, None, Addr::Imm(mem))
+        }
+        A64Insn::StrbImmStrb32LdstPos { rt, mem }
+        | A64Insn::StrbImmStrb32LdstImmpre { rt, mem }
+        | A64Insn::StrbImmStrb32LdstImmpost { rt, mem }
+        | A64Insn::SturbSturb32LdstUnscaled { rt, mem }
+        | A64Insn::SttrbSttrb32LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, st(1), rt, None, Addr::Imm(mem))
+        }
+        A64Insn::StrhImmStrh32LdstPos { rt, mem }
+        | A64Insn::StrhImmStrh32LdstImmpre { rt, mem }
+        | A64Insn::StrhImmStrh32LdstImmpost { rt, mem }
+        | A64Insn::SturhSturh32LdstUnscaled { rt, mem }
+        | A64Insn::SttrhSttrh32LdstUnpriv { rt, mem } => {
+            execute_mem(ctx, state, pc, insn, st(2), rt, None, Addr::Imm(mem))
         }
 
-        // Unscaled simm9 offset (the decoder builds it unscaled); the 32-bit load
-        // zero-extends like LDR W.
-        A64Insn::LdtrLdtr32LdstUnpriv { rt, mem } => {
-            execute_ldr(ctx, state, pc, mem, rt, 4, true)?;
-            Ok(pc + 4)
-        }
-        A64Insn::LdtrLdtr64LdstUnpriv { rt, mem } => {
-            execute_ldr(ctx, state, pc, mem, rt, 8, true)?;
-            Ok(pc + 4)
-        }
-        A64Insn::SttrSttr32LdstUnpriv { rt, mem } => {
-            execute_str(ctx, state, pc, mem, rt, 4, true)?;
-            Ok(pc + 4)
-        }
-        A64Insn::SttrSttr64LdstUnpriv { rt, mem } => {
-            execute_str(ctx, state, pc, mem, rt, 8, true)?;
-            Ok(pc + 4)
-        }
-
+        A64Insn::LdpGenLdp32LdstpairPost { rt2, rt, mem }
+        | A64Insn::LdpGenLdp32LdstpairPre { rt2, rt, mem }
+        | A64Insn::LdpGenLdp32LdstpairOff { rt2, rt, mem } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            zx(4, 32),
+            rt,
+            Some(rt2),
+            Addr::Imm(mem),
+        ),
         A64Insn::LdpGenLdp64LdstpairPost { rt2, rt, mem }
         | A64Insn::LdpGenLdp64LdstpairPre { rt2, rt, mem }
-        | A64Insn::LdpGenLdp64LdstpairOff { rt2, rt, mem } => {
-            execute_ldp64(ctx, state, pc, mem, rt, rt2)?;
-            Ok(pc + 4)
+        | A64Insn::LdpGenLdp64LdstpairOff { rt2, rt, mem } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            zx(8, 64),
+            rt,
+            Some(rt2),
+            Addr::Imm(mem),
+        ),
+        A64Insn::LdpswLdpsw64LdstpairPost { rt2, rt, mem }
+        | A64Insn::LdpswLdpsw64LdstpairPre { rt2, rt, mem }
+        | A64Insn::LdpswLdpsw64LdstpairOff { rt2, rt, mem } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            sx(4, 64),
+            rt,
+            Some(rt2),
+            Addr::Imm(mem),
+        ),
+        A64Insn::StpGenStp32LdstpairPost { rt2, rt, mem }
+        | A64Insn::StpGenStp32LdstpairPre { rt2, rt, mem }
+        | A64Insn::StpGenStp32LdstpairOff { rt2, rt, mem } => {
+            execute_mem(ctx, state, pc, insn, st(4), rt, Some(rt2), Addr::Imm(mem))
         }
         A64Insn::StpGenStp64LdstpairPost { rt2, rt, mem }
         | A64Insn::StpGenStp64LdstpairPre { rt2, rt, mem }
         | A64Insn::StpGenStp64LdstpairOff { rt2, rt, mem } => {
-            execute_stp64(ctx, state, pc, mem, rt, rt2)?;
-            Ok(pc + 4)
+            execute_mem(ctx, state, pc, insn, st(8), rt, Some(rt2), Addr::Imm(mem))
         }
+
+        A64Insn::LdrRegGenLdr32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            zx(4, 32),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::LdrRegGenLdr64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            zx(8, 64),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::StrRegGenStr32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            st(4),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::StrRegGenStr64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            st(8),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::LdrbRegLdrb32bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            zx(1, 32),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::LdrbRegLdrb32blLdstRegoff { rm, s, rn, rt } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            zx(1, 32),
+            rt,
+            None,
+            Addr::reg(rn, rm, LSL, s),
+        ),
+        A64Insn::StrbRegStrb32bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            st(1),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::StrbRegStrb32blLdstRegoff { rm, s, rn, rt } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            st(1),
+            rt,
+            None,
+            Addr::reg(rn, rm, LSL, s),
+        ),
+        A64Insn::LdrhRegLdrh32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            zx(2, 32),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::StrhRegStrh32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            st(2),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::LdrsbRegLdrsb32bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            sx(1, 32),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::LdrsbRegLdrsb32blLdstRegoff { rm, s, rn, rt } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            sx(1, 32),
+            rt,
+            None,
+            Addr::reg(rn, rm, LSL, s),
+        ),
+        A64Insn::LdrsbRegLdrsb64bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            sx(1, 64),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::LdrsbRegLdrsb64blLdstRegoff { rm, s, rn, rt } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            sx(1, 64),
+            rt,
+            None,
+            Addr::reg(rn, rm, LSL, s),
+        ),
+        A64Insn::LdrshRegLdrsh32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            sx(2, 32),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::LdrshRegLdrsh64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            sx(2, 64),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+        A64Insn::LdrswRegLdrsw64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            sx(4, 64),
+            rt,
+            None,
+            Addr::reg(rn, rm, option, s),
+        ),
+
+        A64Insn::LdrLitGenLdr32Loadlit { imm19, rt } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            zx(4, 32),
+            rt,
+            None,
+            Addr::literal(pc, imm19),
+        ),
+        A64Insn::LdrLitGenLdr64Loadlit { imm19, rt } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            zx(8, 64),
+            rt,
+            None,
+            Addr::literal(pc, imm19),
+        ),
+        A64Insn::LdrswLitLdrsw64Loadlit { imm19, rt } => execute_mem(
+            ctx,
+            state,
+            pc,
+            insn,
+            sx(4, 64),
+            rt,
+            None,
+            Addr::literal(pc, imm19),
+        ),
+
+        // Prefetch hints: no architectural effect, never a data abort.
+        A64Insn::PrfmImmPrfmPLdstPos { .. }
+        | A64Insn::PrfmLitPrfmPLoadlit { .. }
+        | A64Insn::PrfmRegPrfmPLdstRegoff { .. } => Ok(pc + 4),
 
         A64Insn::BlBlOnlyBranchImm { imm26 } => {
             let target = pc_relative_target(pc, imm26.raw(), 26);
@@ -1605,109 +1975,177 @@ fn write_movn(
     Ok(())
 }
 
-fn execute_ldr(
-    ctx: &mut AccessContext<'_>,
-    state: &mut MachineState,
-    pc: u64,
-    mem: A64Mem,
-    rt: A64Reg,
-    size: u8,
-    unprivileged: bool,
-) -> Result<(), InsnError> {
-    let (addr, writeback) = mem_addressing(state, mem);
-    check_accesses(ctx, state, pc, &[read_access(addr, size)], unprivileged)?;
-    let value = state.read_le(addr, size);
-    if let Some(new_base) = writeback {
-        state.write_reg(mem.base(), new_base);
-    }
-    state.write_reg(rt, value);
-    Ok(())
+/// One element of a load/store: its size in bytes and, for a load, how it becomes
+/// the register value (`ZeroExtend`/`SignExtend` to `dest_bits`).
+#[derive(Clone, Copy, Debug)]
+enum Elem {
+    Load {
+        size: u8,
+        signed: bool,
+        dest_bits: u8,
+    },
+    Store {
+        size: u8,
+    },
 }
 
-// A writeback STR whose `rt` is its base stores the base's value from before
-// the writeback (architecturally CONSTRAINED UNPREDICTABLE; this is one of the
-// permitted behaviours, and matches STP).
-fn execute_str(
-    ctx: &mut AccessContext<'_>,
-    state: &mut MachineState,
-    pc: u64,
-    mem: A64Mem,
-    rt: A64Reg,
-    size: u8,
-    unprivileged: bool,
-) -> Result<(), InsnError> {
-    let value = read_reg_sized(state, rt, size * 8);
-    let (addr, writeback) = mem_addressing(state, mem);
-    check_accesses(ctx, state, pc, &[write_access(addr, size)], unprivileged)?;
-    state.write_le(addr, size, value);
-    if let Some(new_base) = writeback {
-        state.write_reg(mem.base(), new_base);
+impl Elem {
+    const fn size(self) -> u8 {
+        match self {
+            Elem::Load { size, .. } | Elem::Store { size } => size,
+        }
     }
-    Ok(())
 }
 
-fn execute_ldp64(
-    ctx: &mut AccessContext<'_>,
-    state: &mut MachineState,
-    pc: u64,
-    mem: A64Mem,
-    rt: A64Reg,
-    rt2: A64Reg,
-) -> Result<(), InsnError> {
-    let base = mem.base();
-    if mem_has_writeback(mem)
-        && base.enc() != 31
-        && (base.enc() == rt.enc() || base.enc() == rt2.enc())
-    {
-        return Err(InsnError::Error(
-            "writeback LDP with base/target overlap is unsupported".to_string(),
-        ));
+const fn zx(size: u8, dest_bits: u8) -> Elem {
+    Elem::Load {
+        size,
+        signed: false,
+        dest_bits,
     }
-
-    let (addr, writeback) = mem_addressing(state, mem);
-    let second_addr = addr.wrapping_add(8);
-    check_accesses(
-        ctx,
-        state,
-        pc,
-        &[read_access(addr, 8), read_access(second_addr, 8)],
-        false,
-    )?;
-    let first = state.read_le(addr, 8);
-    let second = state.read_le(second_addr, 8);
-    if let Some(new_base) = writeback {
-        state.write_reg(base, new_base);
-    }
-    state.write_reg(rt, first);
-    state.write_reg(rt2, second);
-    Ok(())
 }
 
-fn execute_stp64(
+const fn sx(size: u8, dest_bits: u8) -> Elem {
+    Elem::Load {
+        size,
+        signed: true,
+        dest_bits,
+    }
+}
+
+const fn st(size: u8) -> Elem {
+    Elem::Store { size }
+}
+
+/// `option` of the register-offset `*BL` byte forms, which encode `LSL` (UXTX).
+const LSL: u8 = 0b011;
+
+/// Addressing mode of a load/store.
+#[derive(Clone, Copy, Debug)]
+enum Addr {
+    /// Base plus immediate; pre/post-index forms write the base back.
+    Imm(A64Mem),
+    /// `base + ExtendReg(index, option, S ? log2(size) : 0)`.
+    Reg {
+        base: A64Reg,
+        index: A64Reg,
+        option: u8,
+        s: u8,
+    },
+    /// `pc + imm19 * 4`.
+    Literal(u64),
+}
+
+impl Addr {
+    const fn reg(base: A64Reg, index: A64Reg, option: u8, s: u8) -> Self {
+        Addr::Reg {
+            base,
+            index,
+            option,
+            s,
+        }
+    }
+
+    fn literal(pc: u64, imm19: A64Imm) -> Self {
+        Addr::Literal(pc.wrapping_add_signed(sign_extend(imm19.raw(), 19) << 2))
+    }
+}
+
+/// Every load/store (single or pair, user or `LDTR*`/`STTR*`). A pair is two
+/// element accesses at consecutive addresses. All accesses are checked before
+/// anything is written; then memory or the destination registers, then the
+/// writeback. A store reads its registers before the writeback, so a writeback
+/// STR whose `rt` is its base stores the old base (CONSTRAINED UNPREDICTABLE; one
+/// of the permitted behaviours; reg-virt rejects the encoding anyway).
+#[allow(clippy::too_many_arguments)]
+fn execute_mem(
     ctx: &mut AccessContext<'_>,
     state: &mut MachineState,
     pc: u64,
-    mem: A64Mem,
+    insn: A64Insn,
+    elem: Elem,
     rt: A64Reg,
-    rt2: A64Reg,
-) -> Result<(), InsnError> {
-    let first = state.read_reg(rt);
-    let second = state.read_reg(rt2);
-    let (addr, writeback) = mem_addressing(state, mem);
-    let second_addr = addr.wrapping_add(8);
-    check_accesses(
-        ctx,
-        state,
-        pc,
-        &[write_access(addr, 8), write_access(second_addr, 8)],
-        false,
-    )?;
-    state.write_le(addr, 8, first);
-    state.write_le(second_addr, 8, second);
-    if let Some(new_base) = writeback {
-        state.write_reg(mem.base(), new_base);
+    rt2: Option<A64Reg>,
+    addr: Addr,
+) -> Result<u64, InsnError> {
+    let size = elem.size();
+    let (address, writeback) = match addr {
+        Addr::Imm(mem) => mem_addressing(state, mem),
+        Addr::Reg {
+            base,
+            index,
+            option,
+            s,
+        } => {
+            let shift = if s == 1 { size.trailing_zeros() } else { 0 };
+            let offset = extend_value(state.read_reg(index), option, shift, 64)?;
+            (state.read_reg(base).wrapping_add(offset), None)
+        }
+        Addr::Literal(address) => (address, None),
+    };
+    if let (Addr::Imm(mem), Some(_), Elem::Load { .. }, Some(rt2)) = (addr, writeback, elem, rt2) {
+        let base = mem.base();
+        if base.enc() != 31 && (base.enc() == rt.enc() || base.enc() == rt2.enc()) {
+            return Err(InsnError::Error(
+                "writeback pair load with base/target overlap is unsupported".to_string(),
+            ));
+        }
     }
-    Ok(())
+
+    let transfers: &[A64Reg] = match &rt2 {
+        Some(rt2) => &[rt, *rt2],
+        None => &[rt],
+    };
+    let accesses = transfers
+        .iter()
+        .enumerate()
+        .map(|(index, _)| {
+            let at = address.wrapping_add(index as u64 * u64::from(size));
+            match elem {
+                Elem::Load { .. } => read_access(at, size),
+                Elem::Store { .. } => write_access(at, size),
+            }
+        })
+        .collect::<Vec<_>>();
+    let store_values = transfers
+        .iter()
+        .map(|reg| state.read_reg(*reg) & width_mask(size * 8))
+        .collect::<Vec<_>>();
+    check_accesses(ctx, state, pc, &accesses, insn.is_unprivileged_access())?;
+
+    match elem {
+        Elem::Load {
+            signed, dest_bits, ..
+        } => {
+            let values = accesses
+                .iter()
+                .map(|access| {
+                    let raw = state.read_le(access.addr, size);
+                    let extended = if signed {
+                        sign_extend_width(raw, size * 8) as u64
+                    } else {
+                        raw
+                    };
+                    extended & width_mask(dest_bits)
+                })
+                .collect::<Vec<_>>();
+            if let (Addr::Imm(mem), Some(new_base)) = (addr, writeback) {
+                state.write_reg(mem.base(), new_base);
+            }
+            for (reg, value) in transfers.iter().zip(values) {
+                state.write_reg(*reg, value);
+            }
+        }
+        Elem::Store { .. } => {
+            for (access, value) in accesses.iter().zip(store_values) {
+                state.write_le(access.addr, size, value);
+            }
+            if let (Addr::Imm(mem), Some(new_base)) = (addr, writeback) {
+                state.write_reg(mem.base(), new_base);
+            }
+        }
+    }
+    Ok(pc + 4)
 }
 
 fn read_access(addr: u64, size: u8) -> MemAccess {
@@ -1789,10 +2227,6 @@ pub(crate) fn access_in_ranges(ranges: &[(u64, u64)], access: MemAccess) -> bool
     ranges
         .iter()
         .any(|&(start, range_end)| start <= access.addr && end <= range_end)
-}
-
-fn mem_has_writeback(mem: A64Mem) -> bool {
-    matches!(mem, A64Mem::PreIndex { .. } | A64Mem::PostIndex { .. })
 }
 
 /// The access address and, for pre/post-index forms, the base register's new
@@ -3198,6 +3632,379 @@ mod alu_tests {
                     "cond {cond:#x} nzcv {nzcv:#06b}"
                 );
             }
+        }
+    }
+}
+
+/// Semantics of the A7b load/store forms: extension, access sizes, register-offset
+/// addressing, alignment and page crossing. The native oracle checks the same
+/// forms on hardware through the fixtures; these pin the edge values.
+#[cfg(test)]
+mod mem_form_tests {
+    use super::*;
+    use crate::model::PagePerm;
+
+    const PAGE: u64 = 0x9000;
+
+    fn run(state: &mut MachineState, insn: A64Insn) -> Result<u64, InsnError> {
+        execute_insn(
+            insn,
+            0x4000,
+            state,
+            &mut AccessContext::Original {
+                counter: None,
+                log: None,
+            },
+        )
+    }
+
+    /// Two RW pages at 0x9000..0xb000 with x1 = 0x9000; x0 holds garbage.
+    fn two_pages() -> MachineState {
+        let mut state = MachineState::new();
+        state
+            .map_user_range(PAGE, PAGE + 0x2000, PagePerm::ReadWrite)
+            .unwrap();
+        state.write_x(1, PAGE);
+        state.write_x(0, 0xdead_beef_dead_beef);
+        state
+    }
+
+    fn off(base: u8) -> A64Mem {
+        A64Mem::offset(A64Reg::x_sp(base), A64Imm::signed(0, 9))
+    }
+
+    /// Loads `bytes` at 0x9000 with `insn` (addressing [x1]) and returns x0.
+    fn load(insn: fn(A64Reg, A64Mem) -> A64Insn, rt: A64Reg, bytes: &[u8]) -> u64 {
+        let mut state = two_pages();
+        for (i, byte) in bytes.iter().enumerate() {
+            state.write_le(PAGE + i as u64, 1, u64::from(*byte));
+        }
+        run(&mut state, insn(rt, off(1))).unwrap();
+        state.read_x(0)
+    }
+
+    #[test]
+    fn signed_loads_extend_at_every_boundary_and_32_bit_targets_clear_the_top() {
+        type Make = fn(A64Reg, A64Mem) -> A64Insn;
+        let ldursb32: Make = |rt, mem| A64Insn::LdursbLdursb32LdstUnscaled { rt, mem };
+        let ldursb64: Make = |rt, mem| A64Insn::LdursbLdursb64LdstUnscaled { rt, mem };
+        let ldursh32: Make = |rt, mem| A64Insn::LdurshLdursh32LdstUnscaled { rt, mem };
+        let ldursh64: Make = |rt, mem| A64Insn::LdurshLdursh64LdstUnscaled { rt, mem };
+        let ldursw: Make = |rt, mem| A64Insn::LdurswLdursw64LdstUnscaled { rt, mem };
+        let ldurb: Make = |rt, mem| A64Insn::LdurbLdurb32LdstUnscaled { rt, mem };
+        let ldurh: Make = |rt, mem| A64Insn::LdurhLdurh32LdstUnscaled { rt, mem };
+        let ldur32: Make = |rt, mem| A64Insn::LdurGenLdur32LdstUnscaled { rt, mem };
+        let (w0, x0) = (A64Reg::w(0), A64Reg::x(0));
+        let cases: [(Make, A64Reg, &[u8], u64); 20] = [
+            (ldursb32, w0, &[0x7f], 0x7f),
+            (ldursb32, w0, &[0x80], 0xffff_ff80),
+            (ldursb64, x0, &[0x7f], 0x7f),
+            (ldursb64, x0, &[0x80], 0xffff_ffff_ffff_ff80),
+            (ldursh32, w0, &[0xff, 0x7f], 0x7fff),
+            (ldursh32, w0, &[0x00, 0x80], 0xffff_8000),
+            (ldursh64, x0, &[0xff, 0x7f], 0x7fff),
+            (ldursh64, x0, &[0x00, 0x80], 0xffff_ffff_ffff_8000),
+            (ldursw, x0, &[0xff, 0xff, 0xff, 0x7f], 0x7fff_ffff),
+            (ldursw, x0, &[0x00, 0x00, 0x00, 0x80], 0xffff_ffff_8000_0000),
+            // Zero-extending forms at the same values, and only `size` bytes read.
+            (ldurb, w0, &[0x80, 0xaa], 0x80),
+            (ldurh, w0, &[0x00, 0x80, 0xaa], 0x8000),
+            (ldur32, w0, &[0x00, 0x00, 0x00, 0x80, 0xaa], 0x8000_0000),
+            (ldurb, w0, &[0xff], 0xff),
+            (ldursb32, w0, &[0xff], 0xffff_ffff),
+            (ldursb64, x0, &[0x00], 0),
+            (ldursh32, w0, &[0xff, 0xff], 0xffff_ffff),
+            (ldursh64, x0, &[0x01, 0x00], 1),
+            (ldursw, x0, &[0xff, 0xff, 0xff, 0xff], u64::MAX),
+            (ldursw, x0, &[0x01, 0x00, 0x00, 0x00, 0xff], 1),
+        ];
+        for (index, (make, rt, bytes, expected)) in cases.into_iter().enumerate() {
+            assert_eq!(load(make, rt, bytes), expected, "case {index}: {bytes:x?}");
+        }
+    }
+
+    #[test]
+    fn narrow_stores_write_only_their_bytes() {
+        let mut state = two_pages();
+        state.write_le(PAGE, 8, u64::MAX);
+        state.write_x(2, 0x1122_3344_5566_7788);
+        run(
+            &mut state,
+            A64Insn::SturbSturb32LdstUnscaled {
+                rt: A64Reg::w(2),
+                mem: off(1),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_le(PAGE, 8), 0xffff_ffff_ffff_ff88);
+        run(
+            &mut state,
+            A64Insn::StrhImmStrh32LdstPos {
+                rt: A64Reg::w(2),
+                mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_unsigned(1, 12, 1)),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_le(PAGE, 8), 0xffff_ffff_7788_ff88);
+        run(
+            &mut state,
+            A64Insn::StpGenStp32LdstpairOff {
+                rt2: A64Reg::w(31),
+                rt: A64Reg::w(2),
+                mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_signed(1, 7, 2)),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_le(PAGE, 8), 0x5566_7788_7788_ff88);
+        assert_eq!(state.read_le(PAGE + 8, 4), 0);
+    }
+
+    fn ldr_reg(option: u8, s: u8, rt: A64Reg) -> A64Insn {
+        A64Insn::LdrRegGenLdr64LdstRegoff {
+            rm: A64Reg::x(2),
+            option,
+            s,
+            rn: A64Reg::x_sp(1),
+            rt,
+        }
+    }
+
+    #[test]
+    fn register_offset_applies_every_extend_and_the_size_shift() {
+        let mut state = two_pages();
+        // x1 points into the middle of the two pages.
+        state.write_x(1, PAGE + 0x1000);
+        for slot in -4i64..4 {
+            let addr = (PAGE + 0x1000).wrapping_add_signed(slot * 8);
+            state.write_le(addr, 8, 0x1000_u64.wrapping_add_signed(slot));
+        }
+        let cases: [(u8, u8, u64, i64); 9] = [
+            // (option, S, x2, expected slot)
+            (0b011, 1, 3, 3),                      // lsl #3
+            (0b011, 0, 16, 2),                     // lsl #0
+            (0b010, 1, 0xffff_ffff_0000_0002, 2),  // uxtw #3 drops the top half
+            (0b110, 1, 0x0000_0001_ffff_fffe, -2), // sxtw #3: w2 = -2
+            (0b110, 0, 0xffff_ffff_ffff_fff8, -1), // sxtw: w2 = -8 bytes
+            (0b111, 1, (-3i64) as u64, -3),        // sxtx #3
+            (0b111, 0, (-32i64) as u64, -4),       // sxtx
+            (0b010, 0, 0x8000_0000_0000_0008, 1),  // uxtw ignores bit 63
+            (0b011, 1, 0, 0),
+        ];
+        for (option, s, index, slot) in cases {
+            state.write_x(2, index);
+            run(&mut state, ldr_reg(option, s, A64Reg::x(0))).unwrap();
+            assert_eq!(
+                state.read_x(0),
+                0x1000_u64.wrapping_add_signed(slot),
+                "option {option:#05b} S {s} index {index:#x}"
+            );
+        }
+        // Byte and halfword forms: S = 1 shifts by log2(size); XZR index is zero.
+        state.write_x(2, 3);
+        run(
+            &mut state,
+            A64Insn::LdrhRegLdrh32LdstRegoff {
+                rm: A64Reg::x(2),
+                option: 0b011,
+                s: 1,
+                rn: A64Reg::x_sp(1),
+                rt: A64Reg::w(0),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_x(0), state.read_le(PAGE + 0x1006, 2));
+        run(
+            &mut state,
+            A64Insn::LdrsbRegLdrsb64blLdstRegoff {
+                rm: A64Reg::x(31),
+                s: 1,
+                rn: A64Reg::x_sp(1),
+                rt: A64Reg::x(0),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_x(0), 0);
+    }
+
+    #[test]
+    fn unaligned_and_page_crossing_accesses_are_allowed_on_mapped_pages() {
+        let mut state = two_pages();
+        for i in 0..16u64 {
+            state.write_le(PAGE + 0xff8 + i, 1, 0x10 + i);
+        }
+        // Unaligned 8-byte load inside a page.
+        state.write_x(1, PAGE + 0xff9);
+        run(
+            &mut state,
+            A64Insn::LdurGenLdur64LdstUnscaled {
+                rt: A64Reg::x(0),
+                mem: off(1),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_x(0), 0x1817_1615_1413_1211);
+        // Halfword and word straddling the page boundary at 0xa000.
+        state.write_x(1, PAGE + 0xfff);
+        run(
+            &mut state,
+            A64Insn::LdurshLdursh64LdstUnscaled {
+                rt: A64Reg::x(0),
+                mem: off(1),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_x(0), 0x1817);
+        state.write_x(1, PAGE + 0xffe);
+        run(
+            &mut state,
+            A64Insn::LdurswLdursw64LdstUnscaled {
+                rt: A64Reg::x(0),
+                mem: off(1),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_x(0), 0x1918_1716);
+        state.write_x(3, 0xa1b2);
+        state.write_x(1, PAGE + 0xfff);
+        run(
+            &mut state,
+            A64Insn::SturhSturh32LdstUnscaled {
+                rt: A64Reg::w(3),
+                mem: off(1),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_le(PAGE + 0xfff, 2), 0xa1b2);
+    }
+
+    #[test]
+    fn page_crossing_into_unmapped_memory_faults_without_side_effects() {
+        let mut state = MachineState::new();
+        state
+            .map_user_range(PAGE, PAGE + 0x1000, PagePerm::ReadWrite)
+            .unwrap();
+        state.write_x(1, PAGE + 0xffe);
+        state.write_x(2, 1);
+        state.write_x(0, 0x55);
+        let before = state.clone();
+        for insn in [
+            A64Insn::LdrRegGenLdr32LdstRegoff {
+                rm: A64Reg::x(2),
+                option: 0b011,
+                s: 0,
+                rn: A64Reg::x_sp(1),
+                rt: A64Reg::w(0),
+            },
+            A64Insn::LdrhImmLdrh32LdstImmpre {
+                rt: A64Reg::w(0),
+                mem: A64Mem::pre_index(A64Reg::x_sp(1), A64Imm::signed(1, 9)),
+            },
+            A64Insn::StpGenStp32LdstpairPost {
+                rt2: A64Reg::w(0),
+                rt: A64Reg::w(2),
+                mem: A64Mem::post_index(A64Reg::x_sp(1), A64Imm::scaled_signed(1, 7, 2)),
+            },
+            A64Insn::LdpswLdpsw64LdstpairOff {
+                rt2: A64Reg::x(3),
+                rt: A64Reg::x(0),
+                mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_signed(0x7f, 7, 2)),
+            },
+        ] {
+            let mut run_state = before.clone();
+            match run(&mut run_state, insn) {
+                Err(InsnError::Fault(fault)) => {
+                    assert_eq!(fault.pc, 0x4000, "{insn:?}");
+                }
+                other => panic!("{insn:?}: expected a fault, got {other:?}"),
+            }
+            assert_eq!(run_state, before, "{insn:?} mutated state");
+        }
+    }
+
+    #[test]
+    fn pair_loads_extend_each_element() {
+        let mut state = two_pages();
+        state.write_le(PAGE, 4, 0x8000_0000);
+        state.write_le(PAGE + 4, 4, 0x7fff_ffff);
+        state.write_x(3, u64::MAX);
+        run(
+            &mut state,
+            A64Insn::LdpswLdpsw64LdstpairPost {
+                rt2: A64Reg::x(3),
+                rt: A64Reg::x(0),
+                mem: A64Mem::post_index(A64Reg::x_sp(1), A64Imm::scaled_signed(2, 7, 2)),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_x(0), 0xffff_ffff_8000_0000);
+        assert_eq!(state.read_x(3), 0x7fff_ffff);
+        assert_eq!(state.read_x(1), PAGE + 8);
+        state.write_x(1, PAGE);
+        state.write_x(3, u64::MAX);
+        run(
+            &mut state,
+            A64Insn::LdpGenLdp32LdstpairOff {
+                rt2: A64Reg::w(3),
+                rt: A64Reg::w(0),
+                mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_signed(0, 7, 2)),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_x(0), 0x8000_0000);
+        assert_eq!(state.read_x(3), 0x7fff_ffff);
+    }
+
+    #[test]
+    fn literal_loads_address_from_the_pc_and_prefetch_never_faults() {
+        let mut state = MachineState::new();
+        state
+            .map_user_range(0x3000, 0x4000, PagePerm::ReadOnly)
+            .unwrap();
+        state.write_le(0x3ff8, 8, 0x8000_0000_8000_0001);
+        // pc 0x4000, imm19 = -2 words.
+        let imm19 = A64Imm::scaled_signed(0x7fffe, 19, 2);
+        run(
+            &mut state,
+            A64Insn::LdrswLitLdrsw64Loadlit {
+                imm19,
+                rt: A64Reg::x(0),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_x(0), 0xffff_ffff_8000_0001);
+        run(
+            &mut state,
+            A64Insn::LdrLitGenLdr64Loadlit {
+                imm19,
+                rt: A64Reg::x(0),
+            },
+        )
+        .unwrap();
+        assert_eq!(state.read_x(0), 0x8000_0000_8000_0001);
+
+        // PRFM of an unmapped address: no fault, no state change.
+        state.write_x(1, 0xdead_0000);
+        let before = state.clone();
+        for insn in [
+            A64Insn::PrfmImmPrfmPLdstPos {
+                imm12: A64Imm::unsigned(1, 12),
+                rn: A64Reg::x_sp(1),
+                rt: 0,
+            },
+            A64Insn::PrfmRegPrfmPLdstRegoff {
+                rm: A64Reg::x(1),
+                option: 0b011,
+                s: 1,
+                rn: A64Reg::x_sp(1),
+                rt: 0b10001,
+            },
+            A64Insn::PrfmLitPrfmPLoadlit {
+                imm19: A64Imm::unsigned(0x40000, 19),
+                rt: 0,
+            },
+        ] {
+            assert_eq!(run(&mut state, insn), Ok(0x4004), "{insn:?}");
+            assert_eq!(state, before, "{insn:?}");
         }
     }
 }

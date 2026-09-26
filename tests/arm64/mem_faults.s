@@ -46,3 +46,47 @@ split_ldp_mark:
     movz x13, #0x1313
     ldp x7, x13, [x6]
     ret
+
+// A7b: byte store to the read-only page, after a byte load from it succeeds.
+.global byte_store_ro_mark
+byte_store_ro_mark:
+    svc #0
+    add x0, x12, #0x4000
+    movz w1, #0x77
+    sturb w1, [x0, #-1]
+    ldrb w2, [x0, #7]
+    strb w1, [x0, #7]
+    ret
+
+// A7b: unscaled load that starts on the read-only page and runs into the
+// unmapped one.
+.global unscaled_unmapped_mark
+unscaled_unmapped_mark:
+    svc #0
+    add x3, x12, #0x5000
+    movz x4, #0x44
+    ldursw x4, [x3, #-2]
+    ret
+
+// A7b: register-offset load crossing from the read-only page into the unmapped
+// one; target, base and index keep their values.
+.global regoffset_cross_mark
+regoffset_cross_mark:
+    svc #0
+    add x5, x12, #0x4000
+    movz x6, #0xffc
+    movz x7, #0x77
+    ldr x7, [x5, x6]
+    ret
+
+// A7b: 32-bit pair whose first half is readable and whose second is unmapped; the
+// pre-index writeback must not land either.
+.global split_ldp32_mark
+split_ldp32_mark:
+    svc #0
+    add x8, x12, #0x5000
+    sub x8, x8, #8
+    movz x9, #0x99
+    movz x13, #0x1313
+    ldp w9, w13, [x8, #4]!
+    ret

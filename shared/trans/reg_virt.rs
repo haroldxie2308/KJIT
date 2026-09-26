@@ -483,63 +483,354 @@ enum MemDir {
     Store,
 }
 
-/// A user load/store as reg-virt lowers it: one or two accesses of `size` bytes at
-/// consecutive addresses, with an optional base writeback.
+/// The `LDTR*`/`STTR*` instruction that performs one access of a lowered user
+/// load/store. It has the user form's element size and load extension, so the
+/// access and the value it produces are exactly the original's.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum UserAccessOp {
+    Ldtrb,
+    Ldtrh,
+    Ldtr32,
+    Ldtr64,
+    Ldtrsb32,
+    Ldtrsb64,
+    Ldtrsh32,
+    Ldtrsh64,
+    Ldtrsw,
+    Sttrb,
+    Sttrh,
+    Sttr32,
+    Sttr64,
+}
+
+impl UserAccessOp {
+    const fn dir(self) -> MemDir {
+        match self {
+            Self::Sttrb | Self::Sttrh | Self::Sttr32 | Self::Sttr64 => MemDir::Store,
+            Self::Ldtrb
+            | Self::Ldtrh
+            | Self::Ldtr32
+            | Self::Ldtr64
+            | Self::Ldtrsb32
+            | Self::Ldtrsb64
+            | Self::Ldtrsh32
+            | Self::Ldtrsh64
+            | Self::Ldtrsw => MemDir::Load,
+        }
+    }
+
+    /// Bytes per access.
+    const fn size(self) -> u8 {
+        match self {
+            Self::Ldtrb | Self::Ldtrsb32 | Self::Ldtrsb64 | Self::Sttrb => 1,
+            Self::Ldtrh | Self::Ldtrsh32 | Self::Ldtrsh64 | Self::Sttrh => 2,
+            Self::Ldtr32 | Self::Ldtrsw | Self::Sttr32 => 4,
+            Self::Ldtr64 | Self::Sttr64 => 8,
+        }
+    }
+
+    /// `log2(size)`: the shift a register-offset form applies when `S == 1`.
+    const fn scale(self) -> u8 {
+        match self.size() {
+            1 => 0,
+            2 => 1,
+            4 => 2,
+            _ => 3,
+        }
+    }
+
+    /// The access `[base, #offset]`; `offset` must fit the unscaled `simm9`.
+    fn insn(self, rt: A64Reg, base: u8, offset: i64) -> A64Insn {
+        debug_assert!(fits_simm9(offset));
+        let mem = mem_off(A64Reg::x_sp(base), simm((offset as u32) & 0x1FF, 9));
+        match self {
+            Self::Ldtrb => A64Insn::LdtrbLdtrb32LdstUnpriv { rt, mem },
+            Self::Ldtrh => A64Insn::LdtrhLdtrh32LdstUnpriv { rt, mem },
+            Self::Ldtr32 => A64Insn::LdtrLdtr32LdstUnpriv { rt, mem },
+            Self::Ldtr64 => A64Insn::LdtrLdtr64LdstUnpriv { rt, mem },
+            Self::Ldtrsb32 => A64Insn::LdtrsbLdtrsb32LdstUnpriv { rt, mem },
+            Self::Ldtrsb64 => A64Insn::LdtrsbLdtrsb64LdstUnpriv { rt, mem },
+            Self::Ldtrsh32 => A64Insn::LdtrshLdtrsh32LdstUnpriv { rt, mem },
+            Self::Ldtrsh64 => A64Insn::LdtrshLdtrsh64LdstUnpriv { rt, mem },
+            Self::Ldtrsw => A64Insn::LdtrswLdtrsw64LdstUnpriv { rt, mem },
+            Self::Sttrb => A64Insn::SttrbSttrb32LdstUnpriv { rt, mem },
+            Self::Sttrh => A64Insn::SttrhSttrh32LdstUnpriv { rt, mem },
+            Self::Sttr32 => A64Insn::SttrSttr32LdstUnpriv { rt, mem },
+            Self::Sttr64 => A64Insn::SttrSttr64LdstUnpriv { rt, mem },
+        }
+    }
+}
+
+/// How a user load/store forms its address.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum MemAddr {
+    /// Base register plus immediate, with pre/post-index writeback for those forms.
+    Imm(A64Mem),
+    /// `[base, index, <extend> #shift]`: register offset, never written back.
+    RegOffset {
+        base: A64Reg,
+        index: A64Reg,
+        option: u8,
+        shift: u8,
+    },
+    /// PC-relative literal: the absolute address, fixed at translation time.
+    Literal(u64),
+}
+
+/// A user load/store as reg-virt lowers it: one access, or two at consecutive
+/// addresses for a pair, each performed by `op`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct MemShape {
-    dir: MemDir,
-    size: u8,
+    op: UserAccessOp,
     rt: A64Reg,
     rt2: Option<A64Reg>,
-    mem: A64Mem,
+    addr: MemAddr,
 }
 
-fn mem_shape(insn: A64Insn) -> Option<MemShape> {
-    let (dir, size, rt, rt2, mem) = match insn {
+/// `pc` is the instruction's own PC (literal forms address relative to it).
+fn mem_shape(insn: A64Insn, pc: u64) -> Option<MemShape> {
+    use UserAccessOp::*;
+    let imm = |op, rt, mem| (op, rt, None, MemAddr::Imm(mem));
+    let pair = |op, rt, rt2, mem| (op, rt, Some(rt2), MemAddr::Imm(mem));
+    let reg = |op: UserAccessOp, rt, base, index, option, s: u8| {
+        let shift = if s == 1 { op.scale() } else { 0 };
+        let addr = MemAddr::RegOffset {
+            base,
+            index,
+            option,
+            shift,
+        };
+        (op, rt, None, addr)
+    };
+    // The `*BL` byte forms are the `LSL` (option = UXTX) encoding of the same load.
+    const LSL: u8 = 0b011;
+    let (op, rt, rt2, addr) = match insn {
         A64Insn::LdrImmGenLdr32LdstPos { rt, mem }
         | A64Insn::LdrImmGenLdr32LdstImmpre { rt, mem }
-        | A64Insn::LdrImmGenLdr32LdstImmpost { rt, mem } => (MemDir::Load, 4, rt, None, mem),
+        | A64Insn::LdrImmGenLdr32LdstImmpost { rt, mem }
+        | A64Insn::LdurGenLdur32LdstUnscaled { rt, mem } => imm(Ldtr32, rt, mem),
         A64Insn::LdrImmGenLdr64LdstPos { rt, mem }
         | A64Insn::LdrImmGenLdr64LdstImmpre { rt, mem }
-        | A64Insn::LdrImmGenLdr64LdstImmpost { rt, mem } => (MemDir::Load, 8, rt, None, mem),
+        | A64Insn::LdrImmGenLdr64LdstImmpost { rt, mem }
+        | A64Insn::LdurGenLdur64LdstUnscaled { rt, mem } => imm(Ldtr64, rt, mem),
         A64Insn::StrImmGenStr32LdstPos { rt, mem }
         | A64Insn::StrImmGenStr32LdstImmpre { rt, mem }
-        | A64Insn::StrImmGenStr32LdstImmpost { rt, mem } => (MemDir::Store, 4, rt, None, mem),
+        | A64Insn::StrImmGenStr32LdstImmpost { rt, mem }
+        | A64Insn::SturGenStur32LdstUnscaled { rt, mem } => imm(Sttr32, rt, mem),
         A64Insn::StrImmGenStr64LdstPos { rt, mem }
         | A64Insn::StrImmGenStr64LdstImmpre { rt, mem }
-        | A64Insn::StrImmGenStr64LdstImmpost { rt, mem } => (MemDir::Store, 8, rt, None, mem),
+        | A64Insn::StrImmGenStr64LdstImmpost { rt, mem }
+        | A64Insn::SturGenStur64LdstUnscaled { rt, mem } => imm(Sttr64, rt, mem),
+        A64Insn::LdrbImmLdrb32LdstPos { rt, mem }
+        | A64Insn::LdrbImmLdrb32LdstImmpre { rt, mem }
+        | A64Insn::LdrbImmLdrb32LdstImmpost { rt, mem }
+        | A64Insn::LdurbLdurb32LdstUnscaled { rt, mem } => imm(Ldtrb, rt, mem),
+        A64Insn::StrbImmStrb32LdstPos { rt, mem }
+        | A64Insn::StrbImmStrb32LdstImmpre { rt, mem }
+        | A64Insn::StrbImmStrb32LdstImmpost { rt, mem }
+        | A64Insn::SturbSturb32LdstUnscaled { rt, mem } => imm(Sttrb, rt, mem),
+        A64Insn::LdrhImmLdrh32LdstPos { rt, mem }
+        | A64Insn::LdrhImmLdrh32LdstImmpre { rt, mem }
+        | A64Insn::LdrhImmLdrh32LdstImmpost { rt, mem }
+        | A64Insn::LdurhLdurh32LdstUnscaled { rt, mem } => imm(Ldtrh, rt, mem),
+        A64Insn::StrhImmStrh32LdstPos { rt, mem }
+        | A64Insn::StrhImmStrh32LdstImmpre { rt, mem }
+        | A64Insn::StrhImmStrh32LdstImmpost { rt, mem }
+        | A64Insn::SturhSturh32LdstUnscaled { rt, mem } => imm(Sttrh, rt, mem),
+        A64Insn::LdrsbImmLdrsb32LdstPos { rt, mem }
+        | A64Insn::LdrsbImmLdrsb32LdstImmpre { rt, mem }
+        | A64Insn::LdrsbImmLdrsb32LdstImmpost { rt, mem }
+        | A64Insn::LdursbLdursb32LdstUnscaled { rt, mem } => imm(Ldtrsb32, rt, mem),
+        A64Insn::LdrsbImmLdrsb64LdstPos { rt, mem }
+        | A64Insn::LdrsbImmLdrsb64LdstImmpre { rt, mem }
+        | A64Insn::LdrsbImmLdrsb64LdstImmpost { rt, mem }
+        | A64Insn::LdursbLdursb64LdstUnscaled { rt, mem } => imm(Ldtrsb64, rt, mem),
+        A64Insn::LdrshImmLdrsh32LdstPos { rt, mem }
+        | A64Insn::LdrshImmLdrsh32LdstImmpre { rt, mem }
+        | A64Insn::LdrshImmLdrsh32LdstImmpost { rt, mem }
+        | A64Insn::LdurshLdursh32LdstUnscaled { rt, mem } => imm(Ldtrsh32, rt, mem),
+        A64Insn::LdrshImmLdrsh64LdstPos { rt, mem }
+        | A64Insn::LdrshImmLdrsh64LdstImmpre { rt, mem }
+        | A64Insn::LdrshImmLdrsh64LdstImmpost { rt, mem }
+        | A64Insn::LdurshLdursh64LdstUnscaled { rt, mem } => imm(Ldtrsh64, rt, mem),
+        A64Insn::LdrswImmLdrsw64LdstPos { rt, mem }
+        | A64Insn::LdrswImmLdrsw64LdstImmpre { rt, mem }
+        | A64Insn::LdrswImmLdrsw64LdstImmpost { rt, mem }
+        | A64Insn::LdurswLdursw64LdstUnscaled { rt, mem } => imm(Ldtrsw, rt, mem),
+
+        A64Insn::LdpGenLdp32LdstpairOff { rt2, rt, mem }
+        | A64Insn::LdpGenLdp32LdstpairPre { rt2, rt, mem }
+        | A64Insn::LdpGenLdp32LdstpairPost { rt2, rt, mem } => pair(Ldtr32, rt, rt2, mem),
         A64Insn::LdpGenLdp64LdstpairOff { rt2, rt, mem }
         | A64Insn::LdpGenLdp64LdstpairPre { rt2, rt, mem }
-        | A64Insn::LdpGenLdp64LdstpairPost { rt2, rt, mem } => {
-            (MemDir::Load, 8, rt, Some(rt2), mem)
-        }
+        | A64Insn::LdpGenLdp64LdstpairPost { rt2, rt, mem } => pair(Ldtr64, rt, rt2, mem),
+        A64Insn::LdpswLdpsw64LdstpairOff { rt2, rt, mem }
+        | A64Insn::LdpswLdpsw64LdstpairPre { rt2, rt, mem }
+        | A64Insn::LdpswLdpsw64LdstpairPost { rt2, rt, mem } => pair(Ldtrsw, rt, rt2, mem),
+        A64Insn::StpGenStp32LdstpairOff { rt2, rt, mem }
+        | A64Insn::StpGenStp32LdstpairPre { rt2, rt, mem }
+        | A64Insn::StpGenStp32LdstpairPost { rt2, rt, mem } => pair(Sttr32, rt, rt2, mem),
         A64Insn::StpGenStp64LdstpairOff { rt2, rt, mem }
         | A64Insn::StpGenStp64LdstpairPre { rt2, rt, mem }
-        | A64Insn::StpGenStp64LdstpairPost { rt2, rt, mem } => {
-            (MemDir::Store, 8, rt, Some(rt2), mem)
-        }
+        | A64Insn::StpGenStp64LdstpairPost { rt2, rt, mem } => pair(Sttr64, rt, rt2, mem),
+
+        A64Insn::LdrRegGenLdr32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Ldtr32, rt, rn, rm, option, s),
+        A64Insn::LdrRegGenLdr64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Ldtr64, rt, rn, rm, option, s),
+        A64Insn::StrRegGenStr32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Sttr32, rt, rn, rm, option, s),
+        A64Insn::StrRegGenStr64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Sttr64, rt, rn, rm, option, s),
+        A64Insn::LdrbRegLdrb32bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Ldtrb, rt, rn, rm, option, s),
+        A64Insn::LdrbRegLdrb32blLdstRegoff { rm, s, rn, rt } => reg(Ldtrb, rt, rn, rm, LSL, s),
+        A64Insn::StrbRegStrb32bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Sttrb, rt, rn, rm, option, s),
+        A64Insn::StrbRegStrb32blLdstRegoff { rm, s, rn, rt } => reg(Sttrb, rt, rn, rm, LSL, s),
+        A64Insn::LdrhRegLdrh32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Ldtrh, rt, rn, rm, option, s),
+        A64Insn::StrhRegStrh32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Sttrh, rt, rn, rm, option, s),
+        A64Insn::LdrsbRegLdrsb32bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Ldtrsb32, rt, rn, rm, option, s),
+        A64Insn::LdrsbRegLdrsb32blLdstRegoff { rm, s, rn, rt } => reg(Ldtrsb32, rt, rn, rm, LSL, s),
+        A64Insn::LdrsbRegLdrsb64bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Ldtrsb64, rt, rn, rm, option, s),
+        A64Insn::LdrsbRegLdrsb64blLdstRegoff { rm, s, rn, rt } => reg(Ldtrsb64, rt, rn, rm, LSL, s),
+        A64Insn::LdrshRegLdrsh32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Ldtrsh32, rt, rn, rm, option, s),
+        A64Insn::LdrshRegLdrsh64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Ldtrsh64, rt, rn, rm, option, s),
+        A64Insn::LdrswRegLdrsw64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => reg(Ldtrsw, rt, rn, rm, option, s),
+
+        A64Insn::LdrLitGenLdr32Loadlit { rt, .. } => (
+            Ldtr32,
+            rt,
+            None,
+            MemAddr::Literal(insn.literal_address(pc)?),
+        ),
+        A64Insn::LdrLitGenLdr64Loadlit { rt, .. } => (
+            Ldtr64,
+            rt,
+            None,
+            MemAddr::Literal(insn.literal_address(pc)?),
+        ),
+        A64Insn::LdrswLitLdrsw64Loadlit { rt, .. } => (
+            Ldtrsw,
+            rt,
+            None,
+            MemAddr::Literal(insn.literal_address(pc)?),
+        ),
         _ => return None,
     };
-    Some(MemShape {
-        dir,
-        size,
-        rt,
-        rt2,
-        mem,
-    })
+    Some(MemShape { op, rt, rt2, addr })
 }
 
-/// How one user load/store becomes `LDTR`/`STTR` (see `emit_mem_lowering`). The
+/// Where the lowered accesses take their address from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AccessAddr {
+    /// The (mapped) user base register; the first access is at `offset` and every
+    /// access offset fits `simm9`.
+    Base { base: A64Reg, offset: i64 },
+    /// `scratch = base + offset` (`ADD`/`SUB` imm): an access offset is outside `simm9`.
+    BasePlusImm {
+        scratch: u8,
+        base: A64Reg,
+        offset: i64,
+    },
+    /// `scratch = base + ExtendReg(index, option, shift)` (`ADD` extended register).
+    BasePlusIndex {
+        scratch: u8,
+        base: A64Reg,
+        index: A64Reg,
+        option: u8,
+        shift: u8,
+    },
+    /// `scratch = address` (`MOVZ`/`MOVK`): a literal load.
+    Absolute { scratch: u8, address: u64 },
+}
+
+/// Pre/post-index base update, applied after every access.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Writeback {
+    base: A64Reg,
+    amount: i64,
+}
+
+/// How one user load/store becomes `LDTR*`/`STTR*` (see `emit_mem_lowering`). The
 /// scratch registers come from the plan's single scratch pool.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct MemLowering {
     shape: MemShape,
-    /// Offset of the first access from the base's pre-instruction value.
-    first_offset: i64,
-    /// Base update applied after every access (pre/post-index forms).
-    writeback: Option<i64>,
-    /// Holds `base + first_offset` when an access offset is outside `simm9`.
-    addr_scratch: Option<u8>,
+    addr: AccessAddr,
+    writeback: Option<Writeback>,
     /// Pair loads only: the first load's destination when `rt` cannot take it
     /// without writing a user-visible location or the access base.
     first_load_scratch: Option<u8>,
@@ -632,10 +923,11 @@ impl RewritePlan {
         }
 
         if insn.accesses_memory() {
-            let shape = mem_shape(insn).ok_or(RegVirtError::UnloweredMemoryForm {
-                pc: rephrased.ori_pc,
-                insn: insn_key,
-            })?;
+            let shape =
+                mem_shape(insn, rephrased.ori_pc).ok_or(RegVirtError::UnloweredMemoryForm {
+                    pc: rephrased.ori_pc,
+                    insn: insn_key,
+                })?;
             plan.mem = Some(plan.plan_mem(shape)?);
         }
 
@@ -659,31 +951,66 @@ impl RewritePlan {
             insn: self.insn,
             offset,
         };
-        let (first_offset, writeback) = match shape.mem {
-            A64Mem::Offset { offset, .. } => (offset.value(), None),
-            A64Mem::PreIndex { offset, .. } => (offset.value(), Some(offset.value())),
-            A64Mem::PostIndex { offset, .. } => (0, Some(offset.value())),
-        };
-        if let Some(amount) = writeback {
-            add_sub_imm_parts(amount).ok_or(unencodable(amount))?;
-        }
-        let last_offset = match shape.rt2 {
-            Some(_) => first_offset + i64::from(shape.size),
-            None => first_offset,
+        let size = i64::from(shape.op.size());
+        let (addr, writeback) = match shape.addr {
+            MemAddr::Imm(mem) => {
+                let (first_offset, writeback) = match mem {
+                    A64Mem::Offset { offset, .. } => (offset.value(), None),
+                    A64Mem::PreIndex { offset, .. } => (offset.value(), Some(offset.value())),
+                    A64Mem::PostIndex { offset, .. } => (0, Some(offset.value())),
+                };
+                if let Some(amount) = writeback {
+                    add_sub_imm_parts(amount).ok_or(unencodable(amount))?;
+                }
+                let last_offset = match shape.rt2 {
+                    Some(_) => first_offset + size,
+                    None => first_offset,
+                };
+                let addr = if fits_simm9(first_offset) && fits_simm9(last_offset) {
+                    AccessAddr::Base {
+                        base: mem.base(),
+                        offset: first_offset,
+                    }
+                } else {
+                    add_sub_imm_parts(first_offset).ok_or(unencodable(first_offset))?;
+                    AccessAddr::BasePlusImm {
+                        scratch: self.alloc_scratch()?,
+                        base: mem.base(),
+                        offset: first_offset,
+                    }
+                };
+                let writeback = writeback.map(|amount| Writeback {
+                    base: mem.base(),
+                    amount,
+                });
+                (addr, writeback)
+            }
+            MemAddr::RegOffset {
+                base,
+                index,
+                option,
+                shift,
+            } => {
+                let addr = AccessAddr::BasePlusIndex {
+                    scratch: self.alloc_scratch()?,
+                    base,
+                    index,
+                    option,
+                    shift,
+                };
+                (addr, None)
+            }
+            MemAddr::Literal(address) => {
+                let addr = AccessAddr::Absolute {
+                    scratch: self.alloc_scratch()?,
+                    address,
+                };
+                (addr, None)
+            }
         };
 
-        let addr_scratch = if fits_simm9(first_offset) && fits_simm9(last_offset) {
-            None
-        } else {
-            add_sub_imm_parts(first_offset).ok_or(unencodable(first_offset))?;
-            Some(self.alloc_scratch()?)
-        };
-        let access_base = match addr_scratch {
-            Some(scratch) => scratch,
-            None => self.phys(shape.mem.base()).enc,
-        };
-
-        let first_load_scratch = match (shape.dir, shape.rt2) {
+        let access_base = self.access_base(addr);
+        let first_load_scratch = match (shape.op.dir(), shape.rt2) {
             (MemDir::Load, Some(_)) if !self.can_take_first_load(shape.rt, access_base) => {
                 Some(self.alloc_scratch()?)
             }
@@ -692,11 +1019,20 @@ impl RewritePlan {
 
         Ok(MemLowering {
             shape,
-            first_offset,
+            addr,
             writeback,
-            addr_scratch,
             first_load_scratch,
         })
+    }
+
+    /// The physical register every lowered access addresses from.
+    fn access_base(&self, addr: AccessAddr) -> u8 {
+        match addr {
+            AccessAddr::Base { base, .. } => self.phys(base).enc,
+            AccessAddr::BasePlusImm { scratch, .. }
+            | AccessAddr::BasePlusIndex { scratch, .. }
+            | AccessAddr::Absolute { scratch, .. } => scratch,
+        }
     }
 
     /// Whether a pair's first load may write `rt`'s register directly. Only when that
@@ -756,7 +1092,7 @@ impl RewritePlan {
     ///    register's scratch, which is not user-visible until its spill);
     /// 3. the last access may target its final register;
     /// 4. then the register move, the base writeback, and (in the caller) spills.
-    /// So each `LDTR`/`STTR` faults with every user-visible location (direct
+    /// So each `LDTR*`/`STTR*` faults with every user-visible location (direct
     /// registers, frame slots, x16/x17) still holding its pre-instruction value.
     fn emit_mem_lowering(
         &self,
@@ -766,57 +1102,73 @@ impl RewritePlan {
     ) -> SharedResult<(), RegVirtError> {
         let pc = rephrased.ori_pc;
         let shape = mem.shape;
-        let base = self.phys(shape.mem.base()).enc;
+        let helper = |insn| RephrasedInsn::reg_virt_helper(pc, insn);
 
-        let (access_base, first_offset) = match mem.addr_scratch {
-            Some(scratch) => {
-                self.push_add_sub_imm(
-                    out,
-                    |insn| RephrasedInsn::reg_virt_helper(pc, insn),
-                    scratch,
-                    base,
-                    mem.first_offset,
-                )?;
-                (scratch, 0)
+        let first_offset = match mem.addr {
+            AccessAddr::Base { offset, .. } => offset,
+            AccessAddr::BasePlusImm {
+                scratch,
+                base,
+                offset,
+            } => {
+                self.push_add_sub_imm(out, helper, scratch, self.phys(base).enc, offset)?;
+                0
             }
-            None => (base, mem.first_offset),
+            AccessAddr::BasePlusIndex {
+                scratch,
+                base,
+                index,
+                option,
+                shift,
+            } => {
+                push_rephrased(
+                    out,
+                    helper(A64Insn::AddAddsubExtAdd64AddsubExt {
+                        rm: x(self.phys(index).enc),
+                        option,
+                        imm3: uimm(u32::from(shift), 3),
+                        rn: A64Reg::x_sp(self.phys(base).enc),
+                        rd: A64Reg::x_sp(scratch),
+                    }),
+                )?;
+                0
+            }
+            AccessAddr::Absolute { scratch, address } => {
+                push_mov_address(out, pc, scratch, address)?;
+                0
+            }
         };
+        let access_base = self.access_base(mem.addr);
+        let op = shape.op;
+        let second_offset = first_offset + i64::from(op.size());
 
         let rt = self.phys(shape.rt);
-        match (shape.dir, shape.rt2) {
-            (MemDir::Load, None) => {
+        match (op.dir(), shape.rt2) {
+            (_, None) => {
                 push_rephrased(
                     out,
-                    RephrasedInsn::user_access(pc, ldtr(shape.size, rt, access_base, first_offset)),
-                )?;
-            }
-            (MemDir::Store, None) => {
-                push_rephrased(
-                    out,
-                    RephrasedInsn::user_access(pc, sttr(shape.size, rt, access_base, first_offset)),
+                    RephrasedInsn::user_access(pc, op.insn(rt, access_base, first_offset)),
                 )?;
             }
             (MemDir::Load, Some(rt2)) => {
                 let first_dest = match mem.first_load_scratch {
-                    Some(scratch) => A64Reg::x(scratch),
+                    Some(scratch) => A64Reg::new(scratch, rt.width, A64Reg31Mode::Xzr),
                     None => rt,
                 };
-                let second_offset = first_offset + i64::from(shape.size);
                 push_rephrased(
                     out,
-                    RephrasedInsn::user_access(
-                        pc,
-                        ldtr(shape.size, first_dest, access_base, first_offset),
-                    ),
+                    RephrasedInsn::user_access(pc, op.insn(first_dest, access_base, first_offset)),
                 )?;
                 push_rephrased(
                     out,
                     RephrasedInsn::user_access(
                         pc,
-                        ldtr(shape.size, self.phys(rt2), access_base, second_offset),
+                        op.insn(self.phys(rt2), access_base, second_offset),
                     ),
                 )?;
                 if let Some(scratch) = mem.first_load_scratch {
+                    // Every pair load (LDP W/X, LDPSW) writes the full X register, so a
+                    // 64-bit move is exact.
                     push_rephrased(
                         out,
                         RephrasedInsn {
@@ -825,7 +1177,7 @@ impl RewritePlan {
                                 rm: x(scratch),
                                 imm6: uimm(0, 6),
                                 rn: xzr(),
-                                rd: rt,
+                                rd: x(rt.enc),
                             },
                             ..rephrased
                         },
@@ -833,22 +1185,22 @@ impl RewritePlan {
                 }
             }
             (MemDir::Store, Some(rt2)) => {
-                let second_offset = first_offset + i64::from(shape.size);
                 push_rephrased(
                     out,
-                    RephrasedInsn::user_access(pc, sttr(shape.size, rt, access_base, first_offset)),
+                    RephrasedInsn::user_access(pc, op.insn(rt, access_base, first_offset)),
                 )?;
                 push_rephrased(
                     out,
                     RephrasedInsn::user_access(
                         pc,
-                        sttr(shape.size, self.phys(rt2), access_base, second_offset),
+                        op.insn(self.phys(rt2), access_base, second_offset),
                     ),
                 )?;
             }
         }
 
-        if let Some(amount) = mem.writeback {
+        if let Some(Writeback { base, amount }) = mem.writeback {
+            let base = self.phys(base).enc;
             self.push_add_sub_imm(
                 out,
                 |insn| RephrasedInsn { insn, ..rephrased },
@@ -1025,25 +1377,42 @@ impl RewritePlan {
     }
 }
 
-fn user_access_mem(base: u8, offset: i64) -> A64Mem {
-    debug_assert!(fits_simm9(offset));
-    mem_off(A64Reg::x_sp(base), simm((offset as u32) & 0x1FF, 9))
-}
-
-fn ldtr(size: u8, rt: A64Reg, base: u8, offset: i64) -> A64Insn {
-    let mem = user_access_mem(base, offset);
-    match size {
-        4 => A64Insn::LdtrLdtr32LdstUnpriv { rt, mem },
-        _ => A64Insn::LdtrLdtr64LdstUnpriv { rt, mem },
+/// `rd = address`: `MOVZ` of the low halfword, then a `MOVK` for every other
+/// non-zero halfword. Writes only `rd` (a scratch register).
+fn push_mov_address(
+    out: &mut SharedVec<RephrasedInsn>,
+    pc: u64,
+    rd: u8,
+    address: u64,
+) -> SharedResult<(), RegVirtError> {
+    let halfword = |hw: u8| uimm(((address >> (16 * u32::from(hw))) & 0xFFFF) as u32, 16);
+    push_rephrased(
+        out,
+        RephrasedInsn::reg_virt_helper(
+            pc,
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: halfword(0),
+                rd: x(rd),
+            },
+        ),
+    )?;
+    for hw in 1..4 {
+        if halfword(hw).raw() != 0 {
+            push_rephrased(
+                out,
+                RephrasedInsn::reg_virt_helper(
+                    pc,
+                    A64Insn::MovkMovk64Movewide {
+                        hw,
+                        imm16: halfword(hw),
+                        rd: x(rd),
+                    },
+                ),
+            )?;
+        }
     }
-}
-
-fn sttr(size: u8, rt: A64Reg, base: u8, offset: i64) -> A64Insn {
-    let mem = user_access_mem(base, offset);
-    match size {
-        4 => A64Insn::SttrSttr32LdstUnpriv { rt, mem },
-        _ => A64Insn::SttrSttr64LdstUnpriv { rt, mem },
-    }
+    Ok(())
 }
 
 fn validate_runtime_exit_payload(rephrased: RephrasedInsn) -> SharedResult<(), RegVirtError> {
@@ -1745,6 +2114,316 @@ mod tests {
         );
     }
 
+    fn access(insn: A64Insn) -> RephrasedInsn {
+        RephrasedInsn::user_access(0x1000, insn)
+    }
+
+    fn helper(insn: A64Insn) -> RephrasedInsn {
+        RephrasedInsn::reg_virt_helper(0x1000, insn)
+    }
+
+    #[test]
+    fn narrow_and_signed_loads_use_the_matching_unprivileged_form() {
+        let base = A64Reg::x_sp(1);
+        let cases = [
+            (
+                A64Insn::LdrbImmLdrb32LdstPos {
+                    rt: A64Reg::w(0),
+                    mem: A64Mem::offset(base, A64Imm::unsigned(3, 12)),
+                },
+                A64Insn::LdtrbLdtrb32LdstUnpriv {
+                    rt: A64Reg::w(0),
+                    mem: unpriv_mem(1, 3),
+                },
+            ),
+            (
+                A64Insn::LdrshImmLdrsh64LdstPos {
+                    rt: x(0),
+                    mem: A64Mem::offset(base, A64Imm::scaled_unsigned(2, 12, 1)),
+                },
+                A64Insn::LdtrshLdtrsh64LdstUnpriv {
+                    rt: x(0),
+                    mem: unpriv_mem(1, 4),
+                },
+            ),
+            (
+                A64Insn::LdursbLdursb32LdstUnscaled {
+                    rt: A64Reg::w(0),
+                    mem: A64Mem::offset(base, A64Imm::signed(signed9(-1), 9)),
+                },
+                A64Insn::LdtrsbLdtrsb32LdstUnpriv {
+                    rt: A64Reg::w(0),
+                    mem: unpriv_mem(1, -1),
+                },
+            ),
+            (
+                A64Insn::LdrswImmLdrsw64LdstPos {
+                    rt: x(0),
+                    mem: A64Mem::offset(base, A64Imm::scaled_unsigned(1, 12, 2)),
+                },
+                A64Insn::LdtrswLdtrsw64LdstUnpriv {
+                    rt: x(0),
+                    mem: unpriv_mem(1, 4),
+                },
+            ),
+            (
+                A64Insn::SturhSturh32LdstUnscaled {
+                    rt: A64Reg::w(0),
+                    mem: A64Mem::offset(base, A64Imm::signed(signed9(-3), 9)),
+                },
+                A64Insn::SttrhSttrh32LdstUnpriv {
+                    rt: A64Reg::w(0),
+                    mem: unpriv_mem(1, -3),
+                },
+            ),
+            (
+                A64Insn::StrbImmStrb32LdstPos {
+                    rt: A64Reg::w(31),
+                    mem: A64Mem::offset(base, A64Imm::unsigned(255, 12)),
+                },
+                A64Insn::SttrbSttrb32LdstUnpriv {
+                    rt: A64Reg::w(31),
+                    mem: unpriv_mem(1, 255),
+                },
+            ),
+        ];
+        for (original, expected) in cases {
+            assert_eq!(&lowered(original)[..], [access(expected)], "{original:?}");
+        }
+    }
+
+    #[test]
+    fn byte_post_index_store_writes_back_after_its_access() {
+        assert_eq!(
+            &lowered(A64Insn::StrbImmStrb32LdstImmpost {
+                rt: A64Reg::w(2),
+                mem: A64Mem::post_index(A64Reg::x_sp(12), A64Imm::signed(1, 9)),
+            })[..],
+            [
+                fill(12, 12),
+                access(A64Insn::SttrbSttrb32LdstUnpriv {
+                    rt: A64Reg::w(2),
+                    mem: unpriv_mem(12, 0),
+                }),
+                RephrasedInsn::original(0x1000, add_imm(12, 12, 0, 1)),
+                spill(12, 12),
+            ]
+        );
+    }
+
+    #[test]
+    fn register_offset_computes_the_address_with_add_extended_then_accesses_at_zero() {
+        // ldr x12, [x13, w14, sxtw #3]: three stack-backed registers plus the
+        // address scratch use the whole pool.
+        assert_eq!(
+            &lowered(A64Insn::LdrRegGenLdr64LdstRegoff {
+                rm: x(14),
+                option: 0b110,
+                s: 1,
+                rn: A64Reg::x_sp(13),
+                rt: x(12),
+            })[..],
+            // Scratch in operand-role order: base x13 -> x12, index x14 -> x13,
+            // target x12 -> x14, then the address -> x15.
+            [
+                fill(12, 13),
+                fill(13, 14),
+                helper(A64Insn::AddAddsubExtAdd64AddsubExt {
+                    rm: x(13),
+                    option: 0b110,
+                    imm3: uimm(3, 3),
+                    rn: A64Reg::x_sp(12),
+                    rd: A64Reg::x_sp(15),
+                }),
+                ldtr_x(x(14), 15, 0),
+                spill(14, 12),
+            ]
+        );
+        // ldrh w0, [sp, x29, lsl #1]: SP and x29 through their stable mappings.
+        assert_eq!(
+            &lowered(A64Insn::LdrhRegLdrh32LdstRegoff {
+                rm: x(29),
+                option: 0b011,
+                s: 1,
+                rn: A64Reg::x_sp(31),
+                rt: A64Reg::w(0),
+            })[..],
+            [
+                helper(A64Insn::AddAddsubExtAdd64AddsubExt {
+                    rm: x(16),
+                    option: 0b011,
+                    imm3: uimm(1, 3),
+                    rn: A64Reg::x_sp(17),
+                    rd: A64Reg::x_sp(12),
+                }),
+                access(A64Insn::LdtrhLdtrh32LdstUnpriv {
+                    rt: A64Reg::w(0),
+                    mem: unpriv_mem(12, 0),
+                }),
+            ]
+        );
+        // The LSL form of LDRSB: S = 1 still means a shift of 0 for bytes; the
+        // index XZR stays XZR.
+        assert_eq!(
+            &lowered(A64Insn::LdrsbRegLdrsb64blLdstRegoff {
+                rm: xzr(),
+                s: 1,
+                rn: A64Reg::x_sp(1),
+                rt: x(1),
+            })[..],
+            [
+                helper(A64Insn::AddAddsubExtAdd64AddsubExt {
+                    rm: xzr(),
+                    option: 0b011,
+                    imm3: uimm(0, 3),
+                    rn: A64Reg::x_sp(1),
+                    rd: A64Reg::x_sp(12),
+                }),
+                access(A64Insn::LdtrsbLdtrsb64LdstUnpriv {
+                    rt: x(1),
+                    mem: unpriv_mem(12, 0),
+                }),
+            ]
+        );
+    }
+
+    #[test]
+    fn literal_load_materializes_the_absolute_address_in_scratch() {
+        // At pc 0x1000, imm19 = -2 words: the literal is at 0xff8.
+        assert_eq!(
+            &lowered(A64Insn::LdrswLitLdrsw64Loadlit {
+                imm19: A64Imm::scaled_signed(0x7fffe, 19, 2),
+                rt: x(13),
+            })[..],
+            // Target x13 takes scratch x12; the address takes x13.
+            [
+                helper(A64Insn::MovzMovz64Movewide {
+                    hw: 0,
+                    imm16: uimm(0xff8, 16),
+                    rd: x(13),
+                }),
+                access(A64Insn::LdtrswLdtrsw64LdstUnpriv {
+                    rt: x(12),
+                    mem: unpriv_mem(13, 0),
+                }),
+                spill(12, 13),
+            ]
+        );
+        // A literal below the PC that wraps: every non-zero halfword is written.
+        let program = virtualize_registers(one_insn(RephrasedInsn::original(
+            0x0001_0002_0003_0000,
+            A64Insn::LdrLitGenLdr64Loadlit {
+                imm19: A64Imm::scaled_signed(0x40000, 19, 2),
+                rt: x(0),
+            },
+        )))
+        .unwrap();
+        let address = 0x0001_0002_0003_0000_u64 - (1 << 20);
+        let movs = program[0]
+            .insns
+            .iter()
+            .filter_map(|insn| match insn.insn {
+                A64Insn::MovzMovz64Movewide { hw, imm16, .. }
+                | A64Insn::MovkMovk64Movewide { hw, imm16, .. } => {
+                    Some(u64::from(imm16.raw()) << (16 * u32::from(hw)))
+                }
+                _ => None,
+            })
+            .sum::<u64>();
+        assert_eq!(movs, address);
+    }
+
+    #[test]
+    fn narrow_pairs_split_into_two_element_accesses() {
+        let base = A64Reg::x_sp(2);
+        let pair32 = A64Imm::scaled_signed(signed7(-2), 7, 2);
+        assert_eq!(
+            &lowered(A64Insn::LdpGenLdp32LdstpairPre {
+                rt2: A64Reg::w(1),
+                rt: A64Reg::w(0),
+                mem: A64Mem::pre_index(base, pair32),
+            })[..],
+            [
+                access(A64Insn::LdtrLdtr32LdstUnpriv {
+                    rt: A64Reg::w(12),
+                    mem: unpriv_mem(2, -8),
+                }),
+                access(A64Insn::LdtrLdtr32LdstUnpriv {
+                    rt: A64Reg::w(1),
+                    mem: unpriv_mem(2, -4),
+                }),
+                RephrasedInsn::original(0x1000, mov(0, 12)),
+                RephrasedInsn::original(0x1000, sub_imm(2, 2, 8)),
+            ]
+        );
+        assert_eq!(
+            &lowered(A64Insn::LdpswLdpsw64LdstpairOff {
+                rt2: x(13),
+                rt: x(12),
+                mem: A64Mem::offset(base, A64Imm::scaled_signed(1, 7, 2)),
+            })[..],
+            [
+                access(A64Insn::LdtrswLdtrsw64LdstUnpriv {
+                    rt: x(12),
+                    mem: unpriv_mem(2, 4),
+                }),
+                access(A64Insn::LdtrswLdtrsw64LdstUnpriv {
+                    rt: x(13),
+                    mem: unpriv_mem(2, 8),
+                }),
+                spill(12, 12),
+                spill(13, 13),
+            ]
+        );
+        assert_eq!(
+            &lowered(A64Insn::StpGenStp32LdstpairOff {
+                rt2: A64Reg::w(31),
+                rt: A64Reg::w(31),
+                mem: A64Mem::offset(base, A64Imm::scaled_signed(0, 7, 2)),
+            })[..],
+            [
+                access(A64Insn::SttrSttr32LdstUnpriv {
+                    rt: A64Reg::w(31),
+                    mem: unpriv_mem(2, 0),
+                }),
+                access(A64Insn::SttrSttr32LdstUnpriv {
+                    rt: A64Reg::w(31),
+                    mem: unpriv_mem(2, 4),
+                }),
+            ]
+        );
+    }
+
+    #[test]
+    fn prefetch_becomes_a_nop_without_a_user_access_or_fault_stub() {
+        use crate::shared::trans::rephrase::rephrase_insn;
+        let prfm = A64Insn::PrfmRegPrfmPLdstRegoff {
+            rm: x(1),
+            option: 0b011,
+            s: 1,
+            rn: A64Reg::x_sp(0),
+            rt: 0,
+        };
+        assert!(!prfm.accesses_memory());
+        let rephrased = rephrase_insn(IrInsn {
+            pc: 0x1000,
+            word: prfm.encode().unwrap(),
+            inner: prfm,
+        })
+        .unwrap();
+        assert_eq!(
+            &rephrased[..],
+            [RephrasedInsn::user_synthetic(
+                0x1000,
+                A64Insn::NopNopHiHints {}
+            )]
+        );
+    }
+
+    fn signed7(value: i64) -> u32 {
+        (value as u32) & 0x7F
+    }
+
     fn signed9(value: i64) -> u32 {
         (value as u32) & 0x1FF
     }
@@ -1829,6 +2508,90 @@ mod tests {
                 });
             }
         }
+        // A7b forms: narrow/signed single accesses, unscaled, 32-bit pairs, LDPSW,
+        // register offset (rt2 doubles as the index register) and literals.
+        let w = A64Reg::w;
+        for offset in [-256i64, -1, 0, 255] {
+            let imm = A64Imm::signed(signed9(offset), 9);
+            for mem in [
+                A64Mem::offset(base, imm),
+                A64Mem::pre_index(base, imm),
+                A64Mem::post_index(base, imm),
+            ] {
+                forms.push(A64Insn::LdrsbImmLdrsb64LdstImmpre { rt: x(rt), mem });
+                forms.push(A64Insn::StrhImmStrh32LdstImmpost { rt: w(rt), mem });
+                forms.push(A64Insn::LdurswLdursw64LdstUnscaled { rt: x(rt), mem });
+                forms.push(A64Insn::SturbSturb32LdstUnscaled { rt: w(rt), mem });
+            }
+        }
+        for raw in [0u32, 1, 4095] {
+            let mem = A64Mem::offset(base, A64Imm::scaled_unsigned(raw, 12, 1));
+            forms.push(A64Insn::LdrshImmLdrsh32LdstPos { rt: w(rt), mem });
+            forms.push(A64Insn::StrhImmStrh32LdstPos { rt: w(rt), mem });
+            let mem = A64Mem::offset(base, A64Imm::unsigned(raw, 12));
+            forms.push(A64Insn::LdrbImmLdrb32LdstPos { rt: w(rt), mem });
+        }
+        for raw in [0x40u32, 0x3f, 0] {
+            let imm = A64Imm::scaled_signed(raw, 7, 2);
+            for mem in [
+                A64Mem::offset(base, imm),
+                A64Mem::pre_index(base, imm),
+                A64Mem::post_index(base, imm),
+            ] {
+                forms.push(A64Insn::LdpGenLdp32LdstpairPost {
+                    rt2: w(rt2),
+                    rt: w(rt),
+                    mem,
+                });
+                forms.push(A64Insn::LdpswLdpsw64LdstpairOff {
+                    rt2: x(rt2),
+                    rt: x(rt),
+                    mem,
+                });
+                forms.push(A64Insn::StpGenStp32LdstpairPre {
+                    rt2: w(rt2),
+                    rt: w(rt),
+                    mem,
+                });
+            }
+        }
+        for (option, s) in [(0b010, 1), (0b011, 0), (0b110, 1), (0b111, 1)] {
+            forms.push(A64Insn::LdrRegGenLdr64LdstRegoff {
+                rm: x(rt2),
+                option,
+                s,
+                rn: base,
+                rt: x(rt),
+            });
+            forms.push(A64Insn::StrhRegStrh32LdstRegoff {
+                rm: x(rt2),
+                option,
+                s,
+                rn: base,
+                rt: w(rt),
+            });
+            forms.push(A64Insn::LdrswRegLdrsw64LdstRegoff {
+                rm: x(rt2),
+                option,
+                s,
+                rn: base,
+                rt: x(rt),
+            });
+        }
+        forms.push(A64Insn::StrbRegStrb32blLdstRegoff {
+            rm: x(rt2),
+            s: 1,
+            rn: base,
+            rt: w(rt),
+        });
+        forms.push(A64Insn::LdrLitGenLdr32Loadlit {
+            imm19: A64Imm::scaled_signed(0x40000, 19, 2),
+            rt: w(rt),
+        });
+        forms.push(A64Insn::LdrswLitLdrsw64Loadlit {
+            imm19: A64Imm::scaled_signed(0x3ffff, 19, 2),
+            rt: x(rt),
+        });
         forms
     }
 
@@ -1845,10 +2608,7 @@ mod tests {
             .iter()
             .filter(|insn| insn.kind == RephrasedInsnKind::UserAccess)
             .count();
-        let expected = if matches!(
-            original,
-            A64Insn::LdpGenLdp64LdstpairOff { .. } | A64Insn::StpGenStp64LdstpairPre { .. }
-        ) {
+        let expected = if original.get_reg("Rt2").is_some() {
             2
         } else {
             1
@@ -1936,6 +2696,58 @@ mod tests {
                 insn: "LDP_gen.LDP_64_ldstpair_off",
             })
         );
+        // A7b forms reach the same role-driven rule.
+        let unpredictable = [
+            A64Insn::LdrbImmLdrb32LdstImmpost {
+                rt: A64Reg::w(3),
+                mem: A64Mem::post_index(A64Reg::x_sp(3), A64Imm::signed(1, 9)),
+            },
+            A64Insn::StrhImmStrh32LdstImmpre {
+                rt: A64Reg::w(4),
+                mem: A64Mem::pre_index(A64Reg::x_sp(4), A64Imm::signed(2, 9)),
+            },
+            A64Insn::LdrswImmLdrsw64LdstImmpre {
+                rt: x(5),
+                mem: A64Mem::pre_index(A64Reg::x_sp(5), A64Imm::signed(4, 9)),
+            },
+            A64Insn::LdpGenLdp32LdstpairOff {
+                rt2: A64Reg::w(6),
+                rt: A64Reg::w(6),
+                mem: A64Mem::offset(A64Reg::x_sp(0), A64Imm::scaled_signed(0, 7, 2)),
+            },
+            A64Insn::LdpswLdpsw64LdstpairPost {
+                rt2: x(7),
+                rt: x(8),
+                mem: A64Mem::post_index(A64Reg::x_sp(7), A64Imm::scaled_signed(2, 7, 2)),
+            },
+            A64Insn::StpGenStp32LdstpairPre {
+                rt2: A64Reg::w(1),
+                rt: A64Reg::w(2),
+                mem: A64Mem::pre_index(A64Reg::x_sp(1), A64Imm::scaled_signed(2, 7, 2)),
+            },
+        ];
+        for insn in unpredictable {
+            assert_eq!(
+                validate_one(RephrasedInsn::original(0x1000, insn)),
+                Err(RegVirtError::UnpredictableMemoryOp {
+                    pc: 0x1000,
+                    insn: insn.key(),
+                }),
+                "{insn:?}"
+            );
+        }
+        // No writeback, so rt == rn (and rt == rm) is well defined.
+        validate_one(RephrasedInsn::original(
+            0x1000,
+            A64Insn::LdrRegGenLdr64LdstRegoff {
+                rm: x(1),
+                option: 0b011,
+                s: 0,
+                rn: A64Reg::x_sp(1),
+                rt: x(1),
+            },
+        ))
+        .unwrap();
         // Base SP (reg 31) with transfer XZR (also reg 31) is not an overlap.
         validate_one(RephrasedInsn::original(
             0x1000,

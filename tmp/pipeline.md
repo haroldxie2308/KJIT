@@ -114,8 +114,17 @@ to it is a design change and gets recorded here first.
 
 - Every memory access in a fragment is either a **user access** or a **runtime
   access**, decided by the emitted instruction, never by the address:
-  - user access = `LDTR`/`STTR` (and later unprivileged forms). These are the
-    only instructions that touch user memory. EL0 permissions apply in hardware.
+  - user access = LDTR/STTR family: `LDTR.LDTR_32_ldst_unpriv`,
+    `LDTR.LDTR_64_ldst_unpriv`, `LDTRB.LDTRB_32_ldst_unpriv`,
+    `LDTRH.LDTRH_32_ldst_unpriv`, `LDTRSB.LDTRSB_32_ldst_unpriv`,
+    `LDTRSB.LDTRSB_64_ldst_unpriv`, `LDTRSH.LDTRSH_32_ldst_unpriv`,
+    `LDTRSH.LDTRSH_64_ldst_unpriv`, `LDTRSW.LDTRSW_64_ldst_unpriv`,
+    `STTR.STTR_32_ldst_unpriv`, `STTR.STTR_64_ldst_unpriv`,
+    `STTRB.STTRB_32_ldst_unpriv`, `STTRH.STTRH_32_ldst_unpriv` (13 forms;
+    `A64Insn::is_unprivileged_access`, pinned by a test against the generated
+    `LDTR*`/`STTR*` mnemonics). These are the only instructions that touch user
+    memory. EL0 permissions apply in hardware. Reg-virt emits them with an
+    unscaled `simm9` offset only, and never admits one from user code.
   - runtime access = any other load/store. Allowed only on the runtime frame
     (kernel stack, `sp`-based) and the `pt_regs` / extra-params blocks.
 - Kernel assumptions this relies on (pinned in K1): hardware PAN on,
@@ -142,10 +151,9 @@ to it is a design change and gets recorded here first.
 
 ## Memory rewrite (A5)
 
-- Reg-virt lowers every user load/store to `LDTR`/`STTR` (forms
-  `LDTR.LDTR_{32,64}_ldst_unpriv`, `STTR.STTR_{32,64}_ldst_unpriv`), using the
-  same per-instruction scratch pool it already owns (x12–x15). No second
-  scratch allocator.
+- Reg-virt lowers every user load/store to the LDTR/STTR family (see
+  "Privilege model"), using the same per-instruction scratch pool it already
+  owns (x12–x15). No second scratch allocator.
 - Addressing: `LDTR`/`STTR` take only an unscaled `simm9`. Offsets outside it
   are materialized with `ADD`/`SUB` (imm, optionally `lsl #12`) into scratch.
   Pre/post-index writeback is a separate `ADD`/`SUB` of the base after the
@@ -631,3 +639,109 @@ Written before implementation. Facts checked against `dep/linux` 7.1-rc1:
   `KBUILD_OUTPUT` defaults to `$KJIT_BUILD_ROOT/$KJIT_KERNEL_PROFILE`. kjit.ko
   (Kbuild `MO=`) and the K0 golden initramfs live in that build dir, so a
   module is always paired with the kernel it was built against.
+
+
+# Memory form coverage (A7b, 2026-09-27)
+
+## Forms
+
+Added to the subset (exact XML names in `spec/arm64/subset.toml`):
+
+- byte/halfword/signed, unsigned offset + pre + post: `LDRB_imm.LDRB_32_*`,
+  `STRB_imm.STRB_32_*`, `LDRH_imm.LDRH_32_*`, `STRH_imm.STRH_32_*`,
+  `LDRSB_imm.LDRSB_{32,64}_*`, `LDRSH_imm.LDRSH_{32,64}_*`,
+  `LDRSW_imm.LDRSW_64_*` (`*` = `ldst_pos`, `ldst_immpre`, `ldst_immpost`);
+- unscaled: `LDUR_gen.LDUR_{32,64}`, `STUR_gen.STUR_{32,64}`, `LDURB`,
+  `STURB`, `LDURH`, `STURH`, `LDURSB_{32,64}`, `LDURSH_{32,64}`, `LDURSW_64`
+  (all `_ldst_unscaled`);
+- register offset: `LDR_reg_gen.LDR_{32,64}`, `STR_reg_gen.STR_{32,64}`,
+  `LDRB_reg.LDRB_{32B,32BL}`, `STRB_reg.STRB_{32B,32BL}`, `LDRH_reg.LDRH_32`,
+  `STRH_reg.STRH_32`, `LDRSB_reg.LDRSB_{32B,32BL,64B,64BL}`,
+  `LDRSH_reg.LDRSH_{32,64}`, `LDRSW_reg.LDRSW_64` (all `_ldst_regoff`);
+- pairs: `LDP_gen.LDP_32_ldstpair_*`, `STP_gen.STP_32_ldstpair_*`,
+  `LDPSW.LDPSW_64_ldstpair_*` (`off`, `pre`, `post`);
+- literal: `LDR_lit_gen.LDR_{32,64}_loadlit`, `LDRSW_lit.LDRSW_64_loadlit`;
+- prefetch: `PRFM_imm.PRFM_P_ldst_pos`, `PRFM_lit.PRFM_P_loadlit`,
+  `PRFM_reg.PRFM_P_ldst_regoff`;
+- unprivileged (emitted only): `LDTRB`, `STTRB`, `LDTRH`, `STTRH`,
+  `LDTRSB_{32,64}`, `LDTRSH_{32,64}`, `LDTRSW_64` (`_ldst_unpriv`).
+
+Still out, so undecodable and an Unsupported exit (unit test + fixture cases):
+exclusives, acquire/release, LSE atomics, LDNP/STNP, PRFUM, RPRFM (excluded from
+`PRFM_reg` by its diagram), and every FP/SIMD load/store.
+
+## Lowering (one path: `MemShape` -> `plan_mem` -> `emit_mem_lowering`)
+
+`MemShape` = the `LDTR*`/`STTR*` op (element size + extension), `rt`, optional
+`rt2`, and an address mode. Every access uses the op with the user form's element
+size and extension, so the loaded value needs no fix-up.
+
+| user form class | address into | accesses |
+| --- | --- | --- |
+| imm offset/pre/post, unscaled (`simm9`-reachable) | base itself, `#off` | 1 (pair: 2 at `off`, `off+size`) |
+| same, offset outside `simm9` | scratch = base ± imm (`ADD`/`SUB`, opt. `lsl #12`) | at `#0` (`#size`) |
+| register offset `[Xn, Rm, ext #s]` | scratch = `ADD Xs, Xn, Rm, ext #s` (extended register) | 1 at `#0` |
+| literal | scratch = absolute `pc + imm19*4` (`MOVZ` + `MOVK` per non-zero halfword) | 1 at `#0` |
+| PRFM (any) | none: rephrase emits one `NOP` | 0, no fault stub |
+
+- Ops: `LDR W`/`LDUR W`/`LDP W` -> `LDTR W`; `LDRB` -> `LDTRB`; `LDRH` -> `LDTRH`;
+  `LDRSB W/X` -> `LDTRSB W/X`; `LDRSH W/X` -> `LDTRSH W/X`; `LDRSW`, `LDPSW`,
+  `LDRSW (literal)` -> `LDTRSW`; stores likewise with `STTR`/`STTRB`/`STTRH`.
+- Register offset: the shift is `S ? log2(size) : 0`; the `*BL` byte forms are
+  option `LSL` (0b011). No writeback. Scratch worst case stays 4
+  (`ldr x12, [x13, x14, lsl #3]`: three stack-backed registers + the address).
+- Literal: the address is fixed at translation time from the instruction's
+  original PC, exactly as ADR's rephrase. Reading it is a user access, so an
+  unmapped or execute-only literal page faults into the `Mem` stub and
+  userspace re-executes the load.
+- Pair first-load scratch takes `rt`'s width; the follow-up move is a 64-bit
+  `MOV`, exact because every pair load (LDP W zero-extends, LDPSW sign-extends)
+  writes the whole X register.
+- Commit-after-last-access is unchanged: all new address materialization writes
+  only scratch, before the first access.
+
+## PRFM is dropped
+
+- A prefetch is a hint: it has no architectural effect on registers or memory
+  and never generates a synchronous data abort, whatever the address. Replacing
+  it with a `NOP` (kept so the original PC still maps to code) is exact.
+- It also keeps the fragment from issuing EL1 prefetches of user addresses.
+- Its metadata has no `Memory` role (the specgen `Memory` role now requires an
+  actual `Mem{..}` access), so rephrase gives it no fault stub.
+
+## Constrained unpredictable / UNDEFINED
+
+- `is_decode_undefined`: register-offset forms with `option<1> == 0` (sub-word
+  index) are UNDEFINED. The `*BL` byte forms and PRFM (register) fix it in their
+  diagrams. No other new form has a decode-time UNDEFINED case.
+- The generic role-driven reg-virt rule covers every new form: writeback base ==
+  transfer register (loads and stores, base not SP) and LDP/LDPSW `rt == rt2`
+  are `UnpredictableMemoryOp`. Register offset has no writeback, so `rt == rn`
+  or `rt == rm` is well defined and translated.
+
+## specgen changes
+
+- `!=` diagram constraints are generated: a box cell `!= <pattern>` or per-bit
+  `Z`/`N` cells (e.g. `LDRB_32B_ldst_regoff`'s `option != 011`) become
+  `excludes` `(mask, value)` pairs, checked by the generated decoder and
+  `GeneratedInsnSpec::matches`. Without it `LDRB_32B` would claim `LSL` words.
+- Load/store operand roles come from the XML, not mnemonic lists: direction
+  from the execute pseudocode's `CreateAccDescGPR(MemOp_LOAD|STORE|PREFETCH)`,
+  writeback from `address-form`, `Rm` as a 64-bit read (as for ADD extended),
+  every `imm*` as `MemOffset`. Roles of the pre-A7b forms are unchanged
+  (checked by regenerating before adding forms).
+- A register-named field is only a register if a role reads/writes it (PRFM's
+  `Rt` is its prefetch operation, a plain `u8`).
+- A `MemOffset` field that encodes a `<label>` decodes as a signed word offset.
+
+## Known gaps
+
+- SP alignment: Linux checks SP alignment for SP-based accesses at EL0; a
+  misaligned SP base faults natively. Fragments address through x17 with
+  `LDTR*`, so they do not fault, and the interpreter does not model the check.
+  Only code with a misaligned SP (already broken) is affected; fixtures keep SP
+  16-byte aligned.
+- Literal pools inside the text are not exercised by fixtures: the harness user
+  page map covers the data window only. `mem_literal.s` targets the data window
+  through `.Ltext + (DATA_BASE - TEXT_BASE)` and so assumes the default text
+  base.

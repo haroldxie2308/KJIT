@@ -395,6 +395,12 @@ pub(crate) fn rephrase_insn(
             )?;
             push_branch_to_stub(&mut ret, insn.pc)?;
         }
+        // PRFM is a hint: no architectural effect, and it never raises a data abort.
+        // Dropping it is exact; one NOP keeps the original PC mapped to fragment code.
+        inner if inner.is_prefetch() => ret.push(
+            RephrasedInsn::user_synthetic(insn.pc, A64Insn::NopNopHiHints {}),
+            GFP_KERNEL,
+        )?,
         _ => ret.append(a64_ori!(insn.pc, insn.inner)?, GFP_KERNEL)?,
     }
     Ok(ret)

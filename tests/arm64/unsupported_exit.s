@@ -31,3 +31,28 @@ unsupported_insn:
     // Only TPIDR_EL0 is decodable among system-register reads.
     mrs x0, tpidrro_el0
     ret
+
+// A7b: exclusive, atomic and FP/SIMD memory forms stay outside the subset, so
+// each ends its block with an Unsupported exit at its own PC.
+.global ldxr_unsupported_mark
+ldxr_unsupported_mark:
+    svc #0
+    add x0, x12, #0x40
+    str x0, [x0]
+    ldxr x1, [x0]
+    ret
+
+.arch_extension lse
+.global ldadd_unsupported_mark
+ldadd_unsupported_mark:
+    svc #0
+    movz x2, #1
+    ldadd x2, x3, [x12]
+    ret
+
+.global ldr_q_unsupported_mark
+ldr_q_unsupported_mark:
+    svc #0
+    ldrb w4, [x12, #1]
+    ldr q0, [x12]
+    ret
