@@ -9,7 +9,7 @@ use std::fmt::Write as _;
 
 use crate::shared::trans::input::{TranslationRequest, TranslationTrigger};
 use crate::shared::trans::translate::compile_request;
-use crate::{encode_fragment, MockCodeProvider};
+use crate::{encode_fragment, verify_encoded_fragment, MockCodeProvider};
 
 pub struct GoldenInput<'a> {
     /// Fixture path as passed to `scripts/compile-asm-fixture.sh`.
@@ -20,7 +20,8 @@ pub struct GoldenInput<'a> {
     pub text_words: &'a [u32],
 }
 
-/// Runs the harness translation path and returns the encoded fragment.
+/// Runs the harness translation path and returns the encoded fragment, which must
+/// pass the verifier: the module only ever gets bytes the verifier accepted.
 fn harness_fragment_bytes(
     text_base: u64,
     entry_pc: u64,
@@ -39,7 +40,10 @@ fn harness_fragment_bytes(
         regs: None,
     };
     let fragment = compile_request(&request, &code).map_err(|err| err.to_string())?;
-    encode_fragment(&fragment)
+    let encoded = encode_fragment(&fragment)?;
+    verify_encoded_fragment(&fragment, &encoded)
+        .map_err(|err| format!("verifier rejected the golden fragment: {err:?}"))?;
+    Ok(encoded)
 }
 
 /// Renders the golden Rust source for `input`.

@@ -8,6 +8,7 @@
 //!
 //! Each interpreter case also runs the fault self-check (`check_fault_injection`)
 //! and the fragment fault differential (`check_fragment_fault_injection`).
+//! `run_entry_fixture` runs the verifier (V3) on every fragment before executing it.
 
 use std::collections::BTreeMap;
 use std::panic::{self, AssertUnwindSafe};
@@ -32,10 +33,10 @@ struct CaseFailure {
 }
 
 /// One assembled fixture case, as `compile-asm-fixture.sh` resolved it.
-struct CompiledCase {
-    text_base: u64,
-    text_bytes: Vec<u8>,
-    entry_pc: u64,
+pub(crate) struct CompiledCase {
+    pub(crate) text_base: u64,
+    pub(crate) text_bytes: Vec<u8>,
+    pub(crate) entry_pc: u64,
 }
 
 #[test]
@@ -91,7 +92,10 @@ fn every_asm_fixture_case_matches_native() {
 
 /// Runs `check` on every `_mark` case of every `tests/arm64/*.s` fixture and
 /// fails listing every failed case. `check` returns a detail line on success.
-fn run_every_case(suite: &str, check: &mut dyn FnMut(&CompiledCase) -> Result<String, String>) {
+pub(crate) fn run_every_case(
+    suite: &str,
+    check: &mut dyn FnMut(&CompiledCase) -> Result<String, String>,
+) {
     require_llvm_tools();
 
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))

@@ -19,6 +19,8 @@ pub mod trace;
 mod asm_fixture_tests;
 #[cfg(test)]
 mod encoding_tests;
+#[cfg(test)]
+mod verify_mutation_tests;
 
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::trans::cfg::RuntimeExitReason;
@@ -26,6 +28,7 @@ use crate::shared::trans::input::{
     CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
 };
 use crate::shared::trans::translate::{compile_request, translate_request, TranslatedProgram};
+use crate::shared::verify::{verify_fragment, FaultSiteEntry, VerifyError, VerifyInput};
 use arm64::OriginalStepper;
 use model::{ExecutionResult, HaltReason, MachineState, PagePerm, PAGE_SIZE};
 use runtime::{URuntime, URuntimeHalt, URuntimeReport, URuntimeStepper};
@@ -148,9 +151,12 @@ pub fn run_entry_fixture(
     // The fragment runs first: a Budget exit decides where the original stops.
     let fragment =
         compile_fixture_fragment(text_base, text_bytes.clone(), entry_pc, initial_state)?;
+    let encoded_fragment = encode_fragment(&fragment)?;
+    // The kernel runs only verified fragments; so does every fixture case.
+    verify_encoded_fragment(&fragment, &encoded_fragment)
+        .map_err(|err| format!("verifier rejected `{name}`: {err:?}"))?;
     let mut runtime = URuntime::new(fragment, initial_state.clone());
     let (report, original_cap) = run_fragment_counting_instances(&mut runtime)?;
-    let encoded_fragment = encode_fragment(&runtime.fragment)?;
     let original = execute_original_with_mocked_svc(
         &text_bytes,
         text_base,
@@ -485,6 +491,51 @@ pub fn encode_fragment(fragment: &ExecutionFragment) -> Result<Vec<u8>, String> 
         bytes.extend_from_slice(&word.to_le_bytes());
     }
     Ok(bytes)
+}
+
+/// The side tables the kernel holds next to a fragment's code, in the verifier's
+/// input shape. Built from translator types here; the verifier never sees them.
+pub struct FragmentTables {
+    pub fault_sites: Vec<FaultSiteEntry>,
+    /// `entry_offset` and every `vlabels` offset: any of them can be the runtime's
+    /// entry address (`offset_for_pc` after a runtime exit).
+    pub entry_offsets: Vec<usize>,
+}
+
+impl FragmentTables {
+    pub fn of(fragment: &ExecutionFragment) -> Self {
+        let fault_sites = fragment
+            .fault_sites
+            .iter()
+            .map(|site| FaultSiteEntry {
+                access_offset: site.access_offset,
+                stub_offset: site.stub_offset,
+            })
+            .collect();
+        let entry_offsets = core::iter::once(fragment.entry_offset)
+            .chain(fragment.vlabels.iter().map(|&(_, offset)| offset))
+            .collect();
+        Self {
+            fault_sites,
+            entry_offsets,
+        }
+    }
+
+    pub fn input<'a>(&'a self, code: &'a [u8]) -> VerifyInput<'a> {
+        VerifyInput {
+            code,
+            fault_sites: &self.fault_sites,
+            entry_offsets: &self.entry_offsets,
+        }
+    }
+}
+
+/// Runs the independent verifier over `code`, the encoding of `fragment`.
+pub fn verify_encoded_fragment(
+    fragment: &ExecutionFragment,
+    code: &[u8],
+) -> Result<(), VerifyError> {
+    verify_fragment(&FragmentTables::of(fragment).input(code))
 }
 
 fn register_snapshot(state: &MachineState, pc: u64) -> RegisterSnapshot {
