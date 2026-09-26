@@ -2086,6 +2086,7 @@ fn execute_mem(
         }
         Addr::Literal(address) => (address, None),
     };
+    let address = untagged(address);
     if let (Addr::Imm(mem), Some(_), Elem::Load { .. }, Some(rt2)) = (addr, writeback, elem, rt2) {
         let base = mem.base();
         if base.enc() != 31 && (base.enc() == rt.enc() || base.enc() == rt2.enc()) {
@@ -2254,6 +2255,17 @@ pub(crate) fn access_in_ranges(ranges: &[(u64, u64)], access: MemAccess) -> bool
 
 /// The access address and, for pre/post-index forms, the base register's new
 /// value. Pure: writeback is applied by the caller after the access checks.
+/// Top-byte-ignore for data (Linux sets TCR_EL1.TBI0): bits 63:56 of a user data
+/// address take no part in translation when bit 55 is clear. With bit 55 set the
+/// address is in the kernel half and faults at EL0 whatever its top byte. This is
+/// Linux's `untagged_addr` (`addr & sign_extend64(addr, 55)`), which is also the
+/// fault address it reports. The same holds for a fragment's LDTR/STTR, which
+/// translate through the EL0 regime. A base writeback keeps the tag: only the
+/// access address is untagged.
+pub(crate) fn untagged(address: u64) -> u64 {
+    address & ((((address << 8) as i64) >> 8) as u64)
+}
+
 fn mem_addressing(state: &MachineState, mem: A64Mem) -> (u64, Option<u64>) {
     let base = state.read_reg(mem.base());
     let offset = mem.offset_imm().value();
@@ -2904,6 +2916,38 @@ mod tests {
         .unwrap();
         assert_eq!(state.sp(), 0x0ff0);
         assert_eq!(state.read_x(31), 0);
+    }
+
+    /// Top-byte-ignore: a tagged pointer into a mapped page accesses that page,
+    /// the base keeps its tag on writeback, and a fault reports the untagged
+    /// address.
+    #[test]
+    fn data_accesses_ignore_the_top_byte() {
+        let mut state = rw_page_at_0x9000();
+        state.seed_memory_u64(0x9008, 0x55);
+        state.write_x(1, 0xab00_0000_0000_9000);
+        exec_user(
+            A64Insn::LdrImmGenLdr64LdstImmpre {
+                rt: x(0),
+                mem: A64Mem::pre_index(A64Reg::x_sp(1), A64Imm::signed(8, 9)),
+            },
+            0x4000,
+            &mut state,
+        )
+        .unwrap();
+        assert_eq!(state.read_x(0), 0x55);
+        assert_eq!(state.read_x(1), 0xab00_0000_0000_9008);
+
+        state.write_x(1, 0xab00_0000_0000_a000);
+        let fault = expect_fault(
+            A64Insn::LdrImmGenLdr64LdstPos {
+                rt: x(0),
+                mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_unsigned(0, 12, 3)),
+            },
+            &state,
+            None,
+        );
+        assert_eq!(fault.access.addr, 0xa000);
     }
 
     /// EL0 SP alignment checking: an SP-based access faults when SP is not
