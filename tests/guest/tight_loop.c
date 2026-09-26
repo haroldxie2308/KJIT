@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	s1 = kjit_snap();
 	kjit_report("tight_loop", s0, s1);
 	printf("tight_loop outer=%ld a=%llu\n", outer, (unsigned long long)a);
-	if (kjit_expect("budget") && s1.exit_budget - s0.exit_budget < outer)
+	if (kjit_expect("budget") && s1.exit_budget - s0.exit_budget < outer - kjit_auto_warmup())
 		die("tight_loop: %lld Budget exits for %ld outer iterations",
 		    s1.exit_budget - s0.exit_budget, outer);
 	return 0;

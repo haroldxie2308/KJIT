@@ -12,8 +12,14 @@ use super::stats::{self, Stat};
 use crate::shared::abi::RetStatus;
 
 /// Fragment entries per hook call through branch exits (chaining). Each entry
-/// is budget-bounded, so this bounds the time between run-condition checks.
+/// is budget-bounded, and every run condition is re-checked before each one,
+/// so this bounds the time one hook call spends in fragments without a
+/// syscall in between.
 const MAX_CHAIN: u32 = 16;
+
+/// `kjit_profile` kinds (`enum kjit_hot_kind` in kjit_glue.c).
+const HOT_SVC_RESUME: u32 = 0;
+const HOT_EXIT_TARGET: u32 = 1;
 
 /// "Return to userspace at regs->pc."
 const TO_USER: c_long = -1;
@@ -68,6 +74,13 @@ fn can_run(regs: *mut PtRegs) -> bool {
     unsafe { ffi::kjit_can_run(regs) }
 }
 
+/// Auto mode: one more hit of `pc`, where userspace resumes and current's mm
+/// has no fragment. A no-op unless auto mode is on.
+fn profile(pc: u64, kind: u32) {
+    // SAFETY: called on the syscall path of the current task.
+    unsafe { ffi::kjit_profile(pc, kind) }
+}
+
 /// Called by the kernel after a syscall without syscall work (0001's hook).
 /// Returns a syscall number for the kernel to invoke next, or -1 to return to
 /// userspace at `regs->pc`. Any user state the fragment produced is already in
@@ -82,6 +95,7 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
     }
     let mut entry = 0u64;
     let Some(mut run) = Running::lookup(pc, &mut entry) else {
+        profile(pc, HOT_SVC_RESUME);
         return TO_USER;
     };
     let mut chained = 0u32;
@@ -125,7 +139,9 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
                 });
                 // x10 = branch target; BL/BLR already wrote x30.
                 let target = param0;
-                if chained < MAX_CHAIN && can_run(regs) {
+                if chained == MAX_CHAIN {
+                    stats::inc(Stat::ChainCap);
+                } else if can_run(regs) {
                     if let Some(next) = run.entry_for(target) {
                         entry = next;
                         chained += 1;
@@ -138,6 +154,9 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
                         stats::inc(Stat::Chains);
                         continue;
                     }
+                    // Exit-target learning: userspace resumes at `target`.
+                    drop(run);
+                    profile(target, HOT_EXIT_TARGET);
                 }
                 // SAFETY: as above.
                 unsafe { (*regs).pc = target };
@@ -151,6 +170,10 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
                     UNSUPPORTED => Stat::ExitUnsupported,
                     _ => Stat::ExitBudget,
                 });
+                if status == UNSUPPORTED {
+                    // x10 = the word (or UNSUPPORTED_WORD_UNREADABLE).
+                    stats::note_unsupported(param0);
+                }
                 // SAFETY: as above.
                 unsafe { (*regs).pc = param1 };
                 return TO_USER;

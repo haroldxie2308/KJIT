@@ -113,7 +113,9 @@ grep -q 'CPU features: detected: Privileged Access Never' "$log" \
     || failures+=("hardware PAN not detected (K1 invariant)")
 # Kernel lines carry a printk timestamp (PRINTK_TIME); user output (e.g. redis
 # "WARNING:" lines) does not, so only kernel reports match.
-splat_re='^\[ *[0-9]+\.[0-9]+\] .*(BUG:|WARNING:|Oops|Kernel panic|Call trace:|INFO: (possible|inconsistent|trying|task))'
+# RCU stalls print "rcu: INFO: rcu_preempt detected stalls ..." (or
+# "self-detected stall").
+splat_re='^\[ *[0-9]+\.[0-9]+\] .*(BUG:|WARNING:|Oops|Kernel panic|Call trace:|INFO: (possible|inconsistent|trying|task)|detected stall)'
 if grep -Eq "$splat_re" "$log"; then
     failures+=("kernel reported a BUG/WARNING/oops:")
     while IFS= read -r line; do failures+=("  $line"); done < <(grep -E "$splat_re" "$log" | head -20)

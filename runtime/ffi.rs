@@ -71,4 +71,6 @@ extern "C" {
     pub(crate) fn kjit_bad_status(status: u64, pc: u64);
     pub(crate) fn kjit_call_fragment(regs: *mut PtRegs, extra: *mut u64, entry: u64, base: u64)
         -> u64;
+    pub(crate) fn kjit_profile(pc: u64, kind: u32);
+    pub(crate) fn kjit_hook_calls() -> u64;
 }

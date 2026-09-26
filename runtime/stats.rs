@@ -1,9 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0
 
-//! Global counters, read through `/sys/kernel/debug/kjit/stats`.
+//! Global counters, read through `/sys/kernel/debug/kjit/stats`, and the
+//! Unsupported-word histogram behind `/sys/kernel/debug/kjit/unsupported_top`.
 
 use core::fmt::Write;
 use core::sync::atomic::{AtomicU64, Ordering};
+
+use kernel::alloc::flags::GFP_KERNEL;
+use kernel::prelude::*;
+
+use super::ffi;
+use crate::shared::abi::UNSUPPORTED_WORD_UNREADABLE;
 
 #[derive(Clone, Copy)]
 pub(crate) enum Stat {
@@ -13,6 +20,8 @@ pub(crate) enum Stat {
     FragmentEntries,
     /// Chained entries (branch exits continued in a fragment).
     Chains,
+    /// Branch exits not chained because the hook call reached `MAX_CHAIN`.
+    ChainCap,
     ExitSvc,
     ExitBl,
     ExitBlr,
@@ -32,6 +41,9 @@ pub(crate) enum Stat {
     /// The text could not be read: not in an executable, non-writable VMA,
     /// unmapped, or over the per-translation read budget.
     TranslateTextUnreadable,
+    /// The entry instruction is not translatable (Unsupported exit at entry):
+    /// refused, no fragment.
+    TranslateEntryUnsupported,
     TranslateCompileFailed,
     TranslateEncodeFailed,
     TranslateVerifyRejected,
@@ -41,6 +53,8 @@ pub(crate) enum Stat {
     /// An invalidation raced with a translation attempt (each attempt counts;
     /// the translation is retried a few times, then counted as failed here too).
     TranslateRaced,
+    /// Install refused: a per-mm or global fragment cap is reached.
+    TranslateCapped,
     /// Install failed (memory, mm gone).
     TranslateInstallFailed,
     /// Fragments removed by an mmu_notifier range invalidation.
@@ -50,14 +64,34 @@ pub(crate) enum Stat {
     Released,
     /// SVC words found by `translate_svc_sites`.
     SvcSitesScanned,
+    // Auto mode (kjit_glue.c, "Auto mode"), bumped through `kjit_rs_note`.
+    MmCreated,
+    MmSetupFailed,
+    ProfFull,
+    HotNegative,
+    HotCapped,
+    HotQueueFull,
+    ReqSvcResume,
+    ReqExitTarget,
+    ReqDropped,
+    ReqStale,
+    NegAdded,
+    NegEvicted,
+    TranslateNs,
+    /// Unsupported exits whose word did not fit in `unsupported_top`.
+    UnsupportedTopDropped,
+    /// Unsupported exits whose x10 was neither a word nor the unreadable
+    /// sentinel (a translator bug; not recorded in `unsupported_top`).
+    UnsupportedBadWord,
 }
 
-const COUNT: usize = Stat::SvcSitesScanned as usize + 1;
+const COUNT: usize = Stat::UnsupportedBadWord as usize + 1;
 
 const NAMES: [&str; COUNT] = [
     "syscalls_in_kernel",
     "fragment_entries",
     "chains",
+    "chain_cap",
     "exit_svc",
     "exit_bl",
     "exit_blr",
@@ -71,15 +105,32 @@ const NAMES: [&str; COUNT] = [
     "translate_ok",
     "translate_exists",
     "translate_text_unreadable",
+    "translate_entry_unsupported",
     "translate_compile_failed",
     "translate_encode_failed",
     "translate_verify_rejected",
     "translate_verify_falls_off_end",
     "translate_raced",
+    "translate_capped",
     "translate_install_failed",
     "invalidated_fragments",
     "released_fragments",
     "svc_sites_scanned",
+    "auto_mm_created",
+    "auto_mm_setup_failed",
+    "auto_prof_full",
+    "auto_hot_negative",
+    "auto_hot_capped",
+    "auto_hot_queue_full",
+    "auto_req_svc_resume",
+    "auto_req_exit_target",
+    "auto_req_dropped",
+    "auto_req_stale",
+    "auto_neg_added",
+    "auto_neg_evicted",
+    "auto_translate_ns",
+    "unsupported_top_dropped",
+    "unsupported_bad_word",
 ];
 
 #[allow(clippy::declare_interior_mutable_const)]
@@ -94,19 +145,133 @@ pub(crate) fn inc(stat: Stat) {
     add(stat, 1);
 }
 
-#[no_mangle]
-extern "C" fn kjit_rs_note_invalidated(fragments: u64) {
-    add(Stat::Invalidated, fragments);
+/// The counters `kjit_glue.c` bumps: `enum kjit_note` there, same values.
+fn note_stat(note: u32) -> Option<Stat> {
+    Some(match note {
+        0 => Stat::Invalidated,
+        1 => Stat::Released,
+        2 => Stat::SvcSitesScanned,
+        3 => Stat::MmCreated,
+        4 => Stat::MmSetupFailed,
+        5 => Stat::ProfFull,
+        6 => Stat::HotNegative,
+        7 => Stat::HotCapped,
+        8 => Stat::HotQueueFull,
+        9 => Stat::ReqSvcResume,
+        10 => Stat::ReqExitTarget,
+        11 => Stat::ReqDropped,
+        12 => Stat::ReqStale,
+        13 => Stat::NegAdded,
+        14 => Stat::NegEvicted,
+        15 => Stat::TranslateNs,
+        _ => return None,
+    })
 }
 
 #[no_mangle]
-extern "C" fn kjit_rs_note_released(fragments: u64) {
-    add(Stat::Released, fragments);
+extern "C" fn kjit_rs_note(note: u32, n: u64) {
+    match note_stat(note) {
+        Some(stat) => add(stat, n),
+        // A C/Rust mismatch of `enum kjit_note`: a build bug, not user input.
+        None => pr_warn!("kjit: unknown note {note}\n"),
+    }
 }
 
+/// `unsupported_top` slots: open addressing, a word may sit in any of the
+/// `UNSUPPORTED_PROBE` slots from its hash slot. Lock-free: a slot's key is
+/// claimed once (compare-exchange from empty) and never changes afterwards,
+/// so a count is never attributed to another word.
+const UNSUPPORTED_SLOTS: usize = 1024;
+const UNSUPPORTED_PROBE: usize = 16;
+/// Key of a slot: 0 = empty, else the word with bit 63 set (words are
+/// <= u32::MAX), or `UNSUPPORTED_WORD_UNREADABLE` (u64::MAX) itself.
+const WORD_TAG: u64 = 1 << 63;
+
+#[allow(clippy::declare_interior_mutable_const)]
+static UNSUPPORTED_KEYS: [AtomicU64; UNSUPPORTED_SLOTS] = [ZERO; UNSUPPORTED_SLOTS];
+/// Unsupported exits at the word.
+static UNSUPPORTED_EXITS: [AtomicU64; UNSUPPORTED_SLOTS] = [ZERO; UNSUPPORTED_SLOTS];
+/// Branch exits to (or syscall returns at) a PC whose first word it is: no
+/// fragment can start there, so the in-kernel path stops (kjit_glue.c,
+/// `stop_word`; counted once the PC is in the negative cache).
+static UNSUPPORTED_ENTRY_STOPS: [AtomicU64; UNSUPPORTED_SLOTS] = [ZERO; UNSUPPORTED_SLOTS];
+
+/// Counts one Unsupported exit with x10 = `word`.
+pub(crate) fn note_unsupported(word: u64) {
+    note_word(word, &UNSUPPORTED_EXITS);
+}
+
+/// Counts one path stop at an untranslatable entry word.
 #[no_mangle]
-extern "C" fn kjit_rs_note_svc_scan(sites: u64) {
-    add(Stat::SvcSitesScanned, sites);
+extern "C" fn kjit_rs_note_entry_stop(word: u32) {
+    note_word(u64::from(word), &UNSUPPORTED_ENTRY_STOPS);
+}
+
+fn note_word(word: u64, counts: &[AtomicU64; UNSUPPORTED_SLOTS]) {
+    let key = if word == UNSUPPORTED_WORD_UNREADABLE {
+        word
+    } else if word <= u64::from(u32::MAX) {
+        word | WORD_TAG
+    } else {
+        inc(Stat::UnsupportedBadWord);
+        return;
+    };
+    // Fibonacci hashing of the word.
+    let hash = (word.wrapping_mul(0x9e37_79b9_7f4a_7c15) >> 54) as usize;
+    for i in 0..UNSUPPORTED_PROBE {
+        let slot = (hash + i) % UNSUPPORTED_SLOTS;
+        let current = UNSUPPORTED_KEYS[slot].load(Ordering::Relaxed);
+        let owned = current == key
+            || (current == 0
+                && match UNSUPPORTED_KEYS[slot].compare_exchange(
+                    0,
+                    key,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => true,
+                    Err(actual) => actual == key,
+                });
+        if owned {
+            counts[slot].fetch_add(1, Ordering::Relaxed);
+            return;
+        }
+    }
+    inc(Stat::UnsupportedTopDropped);
+}
+
+/// `word exits entry_stops` per line (`unreadable ...` for the sentinel),
+/// highest `exits + entry_stops` first. Returns the number of bytes written to
+/// `buf`.
+#[no_mangle]
+extern "C" fn kjit_rs_unsupported_show(buf: *mut u8, len: usize) -> usize {
+    // SAFETY: the C caller passes a writable buffer of `len` bytes.
+    let buf = unsafe { core::slice::from_raw_parts_mut(buf, len) };
+    let mut out = BufWriter { buf, len: 0 };
+    let mut rows: KVec<(u64, u64, u64)> = KVec::new();
+    for slot in 0..UNSUPPORTED_SLOTS {
+        let key = UNSUPPORTED_KEYS[slot].load(Ordering::Relaxed);
+        let exits = UNSUPPORTED_EXITS[slot].load(Ordering::Relaxed);
+        let stops = UNSUPPORTED_ENTRY_STOPS[slot].load(Ordering::Relaxed);
+        if key != 0 && exits + stops != 0 && rows.push((key, exits, stops), GFP_KERNEL).is_err() {
+            let _ = writeln!(out, "error: out of memory");
+            return out.len;
+        }
+    }
+    rows.sort_unstable_by(|a, b| (b.1 + b.2).cmp(&(a.1 + a.2)).then(a.0.cmp(&b.0)));
+    for &(key, exits, stops) in rows.iter() {
+        // Whole lines only: the longest is well under 64 bytes.
+        if out.buf.len() - out.len < 64 {
+            break;
+        }
+        // `BufWriter` never fails.
+        let _ = if key == UNSUPPORTED_WORD_UNREADABLE {
+            writeln!(out, "unreadable {exits} {stops}")
+        } else {
+            writeln!(out, "{:#010x} {exits} {stops}", key & !WORD_TAG)
+        };
+    }
+    out.len
 }
 
 /// Writes into a byte buffer, silently stopping at its end (the caller sized
@@ -136,5 +301,8 @@ extern "C" fn kjit_rs_stats_show(buf: *mut u8, len: usize) -> usize {
         // `BufWriter` never fails.
         let _ = writeln!(out, "{name} {}", value.load(Ordering::Relaxed));
     }
+    // SAFETY: plain read of per-CPU counters.
+    let hook_calls = unsafe { ffi::kjit_hook_calls() };
+    let _ = writeln!(out, "hook_calls {hook_calls}");
     out.len
 }

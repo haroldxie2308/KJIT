@@ -50,7 +50,8 @@ int main(void)
 	__builtin___clear_cache(code, (char *)code + len);
 	if (mprotect(code, 4096, PROT_READ | PROT_EXEC))
 		die("mprotect: %s", strerror(errno));
-	err = kjit_translate_self((uintptr_t)code + svc_off + 4);
+	/* Auto mode finds the hot loop in the anonymous RX mapping itself. */
+	err = kjit_auto_mode() ? 0 : kjit_translate_self((uintptr_t)code + svc_off + 4);
 	if (err)
 		die("translate: %s", strerror(err));
 	s0 = kjit_snap();
