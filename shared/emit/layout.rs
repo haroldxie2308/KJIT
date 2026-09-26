@@ -221,6 +221,8 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
     let mut stub_labels: LayoutVLabels = SharedVec::new();
     // Budget-check `CBZ`s: (instruction index, original PC of the back-edge).
     let mut budget_branches: SharedVec<(usize, u64)> = SharedVec::new();
+    // SP alignment check `CBNZ`s: (instruction index, original PC of the access).
+    let mut sp_align_branches: SharedVec<(usize, u64)> = SharedVec::new();
     // Original PC whose budget check has been emitted in the current run of
     // instructions with that PC.
     let mut budget_checked_pc = None;
@@ -251,6 +253,10 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
                     },
                     GFP_KERNEL,
                 )?;
+            } else if rephrased.kind == RephrasedInsnKind::SpAlignCheck {
+                if branch_target_role(rephrased.insn).is_some() {
+                    sp_align_branches.push((insn_index, rephrased.ori_pc), GFP_KERNEL)?;
+                }
             } else if rephrased.kind == RephrasedInsnKind::BudgetCheck {
                 if branch_target_role(rephrased.insn).is_some() {
                     budget_branches.push((insn_index, rephrased.ori_pc), GFP_KERNEL)?;
@@ -301,6 +307,12 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
                 insn_index: site.access_offset / 4,
                 ori_pc: site.ori_pc,
             })?;
+    }
+
+    for &(insn_index, ori_pc) in &sp_align_branches {
+        let stub_offset = find_vlabel(&stub_labels, ori_pc)
+            .ok_or(LayoutError::MissingFaultStub { insn_index, ori_pc })?;
+        rewrite_branch_to_offset(&mut fragment, insn_index, stub_offset, ori_pc)?;
     }
 
     for &(insn_index, ori_pc) in &budget_branches {

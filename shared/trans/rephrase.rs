@@ -20,6 +20,12 @@ pub enum RephrasedInsnKind {
     /// puts before a back-edge's lowered sequence. Runtime-owned: reg-virt passes it
     /// through unchanged; its `CBZ` targets the `Budget` stub of the same `ori_pc`.
     BudgetCheck,
+    /// One instruction of the SP alignment check reg-virt puts before a user
+    /// access based on SP: `and xS, x17, #15; cbnz xS, <Mem stub of ori_pc>`. EL0
+    /// SP alignment checking faults such an access natively when SP is not
+    /// 16-byte aligned; the mapped SP (x17) is never checked, so the fragment
+    /// leaves through the Mem stub and userspace takes the fault itself.
+    SpAlignCheck,
     RuntimeExitPayload,
     RuntimeExitBranch,
 }
@@ -31,6 +37,7 @@ impl RephrasedInsnKind {
             Self::RegVirtHelper
             | Self::UserAccess
             | Self::BudgetCheck
+            | Self::SpAlignCheck
             | Self::RuntimeExitPayload
             | Self::RuntimeExitBranch => false,
         }
@@ -43,7 +50,8 @@ impl RephrasedInsnKind {
             | Self::UserSynthetic
             | Self::RegVirtHelper
             | Self::UserAccess
-            | Self::BudgetCheck => false,
+            | Self::BudgetCheck
+            | Self::SpAlignCheck => false,
         }
     }
 
@@ -103,6 +111,14 @@ impl RephrasedInsn {
     pub const fn budget_check(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
             kind: RephrasedInsnKind::BudgetCheck,
+            ori_pc,
+            insn,
+        }
+    }
+
+    pub const fn sp_align_check(ori_pc: u64, insn: A64Insn) -> Self {
+        Self {
+            kind: RephrasedInsnKind::SpAlignCheck,
             ori_pc,
             insn,
         }

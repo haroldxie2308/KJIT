@@ -5,7 +5,7 @@ use crate::shared::abi::{
     REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START, RET_PARAM0_REG, RET_PARAM1_REG,
     RET_STATUS_REG, RUNTIME_FRAME_PT_REGS_PTR_OFFSET,
 };
-use crate::shared::arm64::ergo::{ldst64_offset, mem_off, simm, sp, uimm, x, xzr};
+use crate::shared::arm64::ergo::{ldst64_offset, mem_off, scaled_simm, simm, sp, uimm, x, xzr};
 use crate::shared::arm64::{
     A64Insn, A64Mem, A64OperandRole, A64Reg, A64Reg31Mode, A64RegWidth, IrInsn,
 };
@@ -211,12 +211,12 @@ fn virtualize_insn(
         // Runtime-owned (frame counter + branch to its stub) and placed at an
         // instruction boundary, where every scratch register is dead: nothing to map.
         RephrasedInsnKind::BudgetCheck => push_rephrased(out, rephrased),
-        // Both kinds are reg-virt output; seeing one on its input is a pipeline bug.
-        RephrasedInsnKind::RegVirtHelper | RephrasedInsnKind::UserAccess => {
-            Err(RegVirtError::UnexpectedRegVirtHelper {
-                pc: rephrased.ori_pc,
-            })
-        }
+        // These kinds are reg-virt output; seeing one on its input is a pipeline bug.
+        RephrasedInsnKind::RegVirtHelper
+        | RephrasedInsnKind::UserAccess
+        | RephrasedInsnKind::SpAlignCheck => Err(RegVirtError::UnexpectedRegVirtHelper {
+            pc: rephrased.ori_pc,
+        }),
         RephrasedInsnKind::Original | RephrasedInsnKind::UserSynthetic => unreachable!(),
     }
 }
@@ -834,6 +834,10 @@ struct MemLowering {
     /// Pair loads only: the first load's destination when `rt` cannot take it
     /// without writing a user-visible location or the access base.
     first_load_scratch: Option<u8>,
+    /// SP-based user access: scratch for the SP alignment check
+    /// (`RephrasedInsnKind::SpAlignCheck`), which runs before anything else of
+    /// the instruction, so it may share the address or first-load scratch.
+    sp_align_scratch: Option<u8>,
 }
 
 const fn fits_simm9(offset: i64) -> bool {
@@ -1017,11 +1021,31 @@ impl RewritePlan {
             _ => None,
         };
 
+        let sp_based = match shape.addr {
+            MemAddr::Imm(mem) => classify_reg(mem.base()) == RegClass::Sp,
+            MemAddr::RegOffset { base, .. } => classify_reg(base) == RegClass::Sp,
+            MemAddr::Literal(_) => false,
+        };
+        let sp_align_scratch = if sp_based {
+            let shared = match addr {
+                AccessAddr::BasePlusImm { scratch, .. }
+                | AccessAddr::BasePlusIndex { scratch, .. } => Some(scratch),
+                AccessAddr::Base { .. } | AccessAddr::Absolute { .. } => first_load_scratch,
+            };
+            Some(match shared {
+                Some(scratch) => scratch,
+                None => self.alloc_scratch()?,
+            })
+        } else {
+            None
+        };
+
         Ok(MemLowering {
             shape,
             addr,
             writeback,
             first_load_scratch,
+            sp_align_scratch,
         })
     }
 
@@ -1103,6 +1127,36 @@ impl RewritePlan {
         let pc = rephrased.ori_pc;
         let shape = mem.shape;
         let helper = |insn| RephrasedInsn::reg_virt_helper(pc, insn);
+
+        if let Some(scratch) = mem.sp_align_scratch {
+            // `and xS, <mapped SP>, #15` (N=1, immr=0, imms=3: four ones), then
+            // `cbnz xS` to this instruction's Mem stub; layout resolves the target.
+            // Flags are untouched.
+            let sp = A64Reg::x(REG_VIRT_STABLE_MAPPED_SP_PHYS_REG);
+            push_rephrased(
+                out,
+                RephrasedInsn::sp_align_check(
+                    pc,
+                    A64Insn::AndLogImmAnd64LogImm {
+                        n: 1,
+                        immr: uimm(0, 6),
+                        imms: uimm(3, 6),
+                        rn: sp,
+                        rd: A64Reg::x_sp(scratch),
+                    },
+                ),
+            )?;
+            push_rephrased(
+                out,
+                RephrasedInsn::sp_align_check(
+                    pc,
+                    A64Insn::CbnzCbnz64Compbranch {
+                        imm19: scaled_simm(0, 19, 2),
+                        rt: x(scratch),
+                    },
+                ),
+            )?;
+        }
 
         let first_offset = match mem.addr {
             AccessAddr::Base { offset, .. } => offset,
@@ -1859,6 +1913,29 @@ mod tests {
     }
 
     /// Fill of user register `virt` into scratch `scratch`.
+    /// The SP alignment check before an SP-based user access, through `scratch`.
+    fn sp_align_check(scratch: u8) -> [RephrasedInsn; 2] {
+        [
+            RephrasedInsn::sp_align_check(
+                0x1000,
+                A64Insn::AndLogImmAnd64LogImm {
+                    n: 1,
+                    immr: uimm(0, 6),
+                    imms: uimm(3, 6),
+                    rn: x(17),
+                    rd: A64Reg::x_sp(scratch),
+                },
+            ),
+            RephrasedInsn::sp_align_check(
+                0x1000,
+                A64Insn::CbnzCbnz64Compbranch {
+                    imm19: scaled_simm(0, 19, 2),
+                    rt: x(scratch),
+                },
+            ),
+        ]
+    }
+
     fn fill(scratch: u8, virt: u8) -> RephrasedInsn {
         RephrasedInsn::reg_virt_helper(
             0x1000,
@@ -1962,6 +2039,9 @@ mod tests {
             [
                 fill(12, 12),
                 fill(13, 13),
+                // A fresh scratch: x12/x13 hold the filled transfer registers.
+                sp_align_check(14)[0],
+                sp_align_check(14)[1],
                 sttr_x(x(12), 17, -16),
                 sttr_x(x(13), 17, -8),
                 RephrasedInsn::original(0x1000, sub_imm(17, 17, 16)),
@@ -1979,6 +2059,9 @@ mod tests {
                 mem: A64Mem::post_index(A64Reg::x_sp(31), ldstpair64_offset(16)),
             })[..],
             [
+                // Shares the first-load scratch: the check runs before any load.
+                sp_align_check(12)[0],
+                sp_align_check(12)[1],
                 ldtr_x(x(12), 17, 0),
                 ldtr_x(x(30), 17, 8),
                 RephrasedInsn::original(0x1000, mov(16, 12)),
@@ -2249,6 +2332,9 @@ mod tests {
                 rt: A64Reg::w(0),
             })[..],
             [
+                // Shares the address scratch: the check runs before the add.
+                sp_align_check(12)[0],
+                sp_align_check(12)[1],
                 helper(A64Insn::AddAddsubExtAdd64AddsubExt {
                     rm: x(16),
                     option: 0b011,

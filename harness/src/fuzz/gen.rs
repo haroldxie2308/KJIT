@@ -13,7 +13,7 @@ use super::forms::{BranchField, Catalog, FieldKind, Form, FormClass};
 use super::program::{branch_field_value, slot_pc, Program, Slot, TEXT_BASE};
 use super::rng::Rng;
 use crate::model::{Flags, MachineState, PAGE_SIZE};
-use crate::shared::arm64::{A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode};
+use crate::shared::arm64::{A64Imm, A64Insn, A64Reg, A64Reg31Mode};
 use crate::shared::trans::cfg::admit_word;
 use crate::{default_fixture_state, FIXTURE_DATA_BASE, FIXTURE_DATA_LEN, FIXTURE_RO_BASE};
 
@@ -23,11 +23,6 @@ pub struct GenConfig {
     /// Chance, per mille and per memory instruction, that its base is the
     /// fault pointer (a register aimed at a read-only or unmapped page).
     pub fault_per_mille: u32,
-    /// Keep SP 16-byte aligned: no ALU writes to SP and SP writeback only by
-    /// multiples of 16. Linux enables SP alignment checking at EL0, which the
-    /// interpreter does not model and the translated code (SP lives in x17)
-    /// cannot reproduce, so a native run faults where neither side does.
-    pub sp_aligned: bool,
 }
 
 impl Default for GenConfig {
@@ -35,7 +30,6 @@ impl Default for GenConfig {
         Self {
             max_len: 64,
             fault_per_mille: 10,
-            sp_aligned: false,
         }
     }
 }
@@ -377,13 +371,7 @@ impl Gen<'_> {
                     {
                         self.rng.pick(&self.index_regs.clone()) as u32
                     }
-                    FieldKind::Reg { reg31, written } => {
-                        if written && reg31 == A64Reg31Mode::Sp && self.config.sp_aligned {
-                            self.operand_reg(written, &with_sp(forbid)) as u32
-                        } else {
-                            self.operand_reg(written, forbid) as u32
-                        }
-                    }
+                    FieldKind::Reg { written, .. } => self.operand_reg(written, forbid) as u32,
                     FieldKind::Imm => self.imm_raw(field.width()),
                 };
                 word = field.set(word, raw);
@@ -399,15 +387,6 @@ impl Gen<'_> {
             );
             if matches!(form.class, FormClass::Straight | FormClass::Memory)
                 && form.implicit_writes.iter().any(|reg| forbid.contains(reg))
-            {
-                continue;
-            }
-            if self.config.sp_aligned
-                && insn.mem_operand().is_some_and(|mem| {
-                    mem.base().enc() == 31
-                        && !matches!(mem, A64Mem::Offset { .. })
-                        && mem.offset_imm().value() % 16 != 0
-                })
             {
                 continue;
             }
@@ -674,12 +653,6 @@ impl Gen<'_> {
             }
         }
     }
-}
-
-fn with_sp(forbid: &[u8]) -> Vec<u8> {
-    let mut regs = forbid.to_vec();
-    regs.push(31);
-    regs
 }
 
 fn field_mask(width: u8) -> u32 {
