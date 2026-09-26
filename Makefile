@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0
 
-KDIR ?= $(CURDIR)/dep/linux
 ARCH ?= arm64
 LLVM ?= 1
 ARM64_ISA_XML_DIR ?= $(CURDIR)/tmp/isa_a64_2026_03/ISA_A64_xml_A_profile-2026-03
@@ -14,19 +13,23 @@ KERNEL_GOLDEN := tests/arm64/golden/toy_cfg_hot_svc_mark.rs
 # is built next to that kernel (Kbuild MO=). Same defaults as scripts/kjit-env.sh.
 KJIT_BUILD_ROOT ?= $(CURDIR)/.kjit/build
 KJIT_KERNEL_PROFILE ?= tiny-qemu-debug
+# Every profile builds from the patched tree: kernel-patches/ applied to a
+# worktree of the dep/linux submodule by scripts/kjit-kernel-tree.sh.
+KJIT_PATCHED_KDIR ?= $(KJIT_BUILD_ROOT)/linux-kjit
+KDIR ?= $(KJIT_PATCHED_KDIR)
 KBUILD_OUTPUT ?= $(KJIT_BUILD_ROOT)/$(KJIT_KERNEL_PROFILE)
 KJIT_MODULE_DIR ?= $(abspath $(KBUILD_OUTPUT))/kjit-module
 GUEST_PROFILE ?= kjit-guest
 
 # The scripts get the same selection, so every target keys off one build dir.
-SCRIPT_ENV = KDIR=$(KDIR) KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) \
+SCRIPT_ENV = KDIR=$(KDIR) KJIT_PATCHED_KDIR=$(KJIT_PATCHED_KDIR) KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) \
 	KJIT_KERNEL_PROFILE=$(KJIT_KERNEL_PROFILE) KBUILD_OUTPUT=$(KBUILD_OUTPUT) \
 	KJIT_MODULE_DIR=$(KJIT_MODULE_DIR)
 
 KMAKE = $(MAKE) -C $(KDIR) ARCH=$(ARCH) LLVM=$(LLVM) O=$(KBUILD_OUTPUT)
 MODULE_MAKE = mkdir -p $(KJIT_MODULE_DIR) && $(KMAKE) M=$(CURDIR) MO=$(KJIT_MODULE_DIR)
 
-.PHONY: initramfs guest-kernel guest-kernel-debug guest-rootfs guest-run e0-bench
+.PHONY: initramfs kernel-tree guest-kernel guest-kernel-debug guest-rootfs guest-run e0-bench guest-tests
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
 	harness-test harness-test-native harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan kernel-golden help
@@ -101,6 +104,12 @@ pack:
 
 module-build: default
 
+# Host (needs dep/linux's git dir; override KJIT_LINUX_GIT from a git worktree of
+# this repo): create/update the patched tree. setup-kernel-build.sh runs the
+# same script and is a no-op when the tree is current.
+kernel-tree:
+	$(SCRIPT_ENV) bash ./scripts/kjit-kernel-tree.sh
+
 guest-kernel:
 	$(MAKE) kernel-build KJIT_KERNEL_PROFILE=kjit-guest
 	$(MAKE) module-build KJIT_KERNEL_PROFILE=kjit-guest
@@ -117,6 +126,12 @@ guest-rootfs:
 guest-run:
 	@if [ -z "$(CMD)" ]; then echo "usage: make guest-run CMD='shell command' [GUEST_PROFILE=kjit-guest|kjit-guest-debug]" >&2; exit 2; fi
 	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/guest-run.sh --profile $(GUEST_PROFILE) -- "$$CMD"
+
+# K2 guest suite (tests/guest/run-k2.sh, in the rootfs since make guest-rootfs).
+K2_ITERATIONS ?= 1
+guest-tests:
+	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/guest-run.sh --profile $(GUEST_PROFILE) \
+		--timeout 3600 -- "sh /opt/kjit-tests/run-k2.sh $(K2_ITERATIONS)"
 
 e0-bench:
 	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/e0-bench.sh --profile $(GUEST_PROFILE)
@@ -170,9 +185,11 @@ help:
 		'rustavailable-check' 'Check Rust-for-Linux toolchain readiness' \
 		'module-build' 'Build kjit.ko into <profile build dir>/kjit-module' \
 		'initramfs' 'Container: K0 golden initramfs for the profile (after module-build)' \
+		'kernel-tree' 'Host: git worktree of dep/linux + kernel-patches/ at $$KJIT_BUILD_ROOT/linux-kjit (K2 profiles)' \
 		'guest-kernel' 'Container: configure+build kjit-guest and its kjit.ko in $$KJIT_BUILD_ROOT/kjit-guest' \
 		'guest-kernel-debug' 'Container: same for kjit-guest-debug (KASAN, lockdep)' \
-		'guest-rootfs' 'Host: build the Debian bookworm + redis initramfs' \
+		'guest-rootfs' 'Host: build the Debian bookworm + redis initramfs (+ K2 guest tests in /opt/kjit-tests)' \
+		'guest-tests' 'Host: run the K2 guest suite on GUEST_PROFILE, K2_ITERATIONS times' \
 		'guest-run' "Host: boot GUEST_PROFILE under QEMU, insmod kjit.ko, run CMD='...', power off" \
 		'e0-bench' 'Host: E0 syscall microbenchmark in the guest and in a plain Docker container' \
 		'spec-gen' 'Generate the checked-in ARM64 subset tables from the Arm XML bundle' \

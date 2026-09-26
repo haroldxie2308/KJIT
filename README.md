@@ -74,7 +74,7 @@ The repo now includes a local kernel/QEMU workflow so the Rust module, kernel so
 ### Notes
 
 - Docker is intended for development and build tooling. QEMU remains the target for actual in-kernel execution, deployment, and debug
-- Kernels build out of tree only. `dep/linux/` (`KDIR`) is the source tree and stays git-clean; the selected profile `KJIT_KERNEL_PROFILE` (default `tiny-qemu-debug`, fragments under `kernel-config/`) builds in `KBUILD_OUTPUT=$KJIT_BUILD_ROOT/$KJIT_KERNEL_PROFILE`. `KJIT_BUILD_ROOT` defaults to `.kjit/build`. Native kernel config/build steps still require Linux, but the Docker wrapper provides a Linux userspace for those steps
+- Kernels build out of tree only, from the patched tree `$KJIT_BUILD_ROOT/linux-kjit` (`KDIR`; a git worktree of `dep/linux/` with `kernel-patches/` applied, see "K2 kernel runtime"). `dep/linux/` stays git-clean; the selected profile `KJIT_KERNEL_PROFILE` (default `tiny-qemu-debug`, fragments under `kernel-config/`) builds in `KBUILD_OUTPUT=$KJIT_BUILD_ROOT/$KJIT_KERNEL_PROFILE`. `KJIT_BUILD_ROOT` defaults to `.kjit/build`. Native kernel config/build steps still require Linux, but the Docker wrapper provides a Linux userspace for those steps
 - `kernel-prepare`, `kernel-build`, `module-build` (`kjit.ko` in `<build dir>/kjit-module/`), `initramfs`, `rust-analyzer` and `qemu-run` all use the selected profile's build dir; pass `KJIT_KERNEL_PROFILE=...` to switch
 - `scripts/qemu-run.sh` boots `<build dir>/arch/arm64/boot/Image` with the profile's golden initramfs by default (`QEMU_INITRAMFS=` boots without one)
 - `make pack` writes a tar.gz of tracked files to `tmp/pack/` by default; override `OUT=...` if you want a different destination
@@ -86,15 +86,16 @@ The repo now includes a local kernel/QEMU workflow so the Rust module, kernel so
 
 ### Kernel bring-up (K0 golden check)
 
-The module currently runs the translator once at init: it compiles a built-in
-fixture with `compile_request`, encodes it, and compares the bytes with the
-harness reference in `tests/arm64/golden/toy_cfg_hot_svc_mark.rs`. It never
-executes the emitted bytes. On mismatch it logs the first differing offset and
-`insmod` fails with `EINVAL`.
+At init the module runs the translator once: it compiles a built-in fixture
+with `compile_request`, encodes it, and compares the bytes with the harness
+reference in `tests/arm64/golden/toy_cfg_hot_svc_mark.rs`. It never executes
+those bytes. On mismatch it logs the first differing offset and `insmod` fails
+with `EINVAL`. Then it starts the K2 runtime (below).
 
 Build steps (Docker Desktop on an Apple Silicon Mac; the image is native arm64):
 
 ```sh
+make kernel-tree                                         # host: patched tree (K2 kernel runtime)
 ./scripts/docker-dev.sh --build-image -- true            # dev image
 ./scripts/docker-dev.sh -- make kernel-clean             # optional, for a clean rebuild
 ./scripts/docker-dev.sh -- make kernel-prepare
@@ -134,8 +135,13 @@ a fragment requests is missing from the final `.config` with the requested value
 | Profile | Fragments | Use |
 |---|---|---|
 | `tiny-qemu`, `tiny-qemu-debug` | `tiny-qemu-base` + `tiny-qemu-rust` (+ `tiny-qemu-debug`: debug info) | K0 golden boot |
-| `kjit-guest` | tiny-qemu-debug + `kjit-guest.conf` | Debian bookworm + redis in an initramfs, E0 |
+| `kjit-guest` | tiny-qemu-debug + `kjit-guest.conf` | Debian bookworm + redis in an initramfs, E0, K2 guest tests |
 | `kjit-guest-debug` | kjit-guest + `kjit-guest-debug.conf` | + generic KASAN, lockdep, `DEBUG_ATOMIC_SLEEP`, `DEBUG_LIST` |
+
+Every profile builds from the patched tree `$KJIT_BUILD_ROOT/linux-kjit`
+(`dep/linux` plus `kernel-patches/`, see "K2 kernel runtime" below);
+`kjit-invariants.conf` enables its `ARM64_KJIT`, and `kjit-guest.conf` adds
+debugfs and seccomp for the K2 tests.
 
 `kjit-guest` starts from tinyconfig rather than defconfig because a defconfig
 build with debug info needs several GB per profile and much longer builds; every
@@ -158,7 +164,7 @@ Build (container) and run (host):
 export KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/kjit-build   # optional
 ./scripts/docker-dev.sh -- make guest-kernel         # kernel + kjit.ko
 ./scripts/docker-dev.sh -- make guest-kernel-debug   # KASAN/lockdep
-make guest-rootfs          # host: docker export of debian:bookworm + redis -> $KJIT_BUILD_ROOT/guest-rootfs/rootfs.cpio
+make guest-rootfs          # host: debian:bookworm + redis (base.cpio, built once) + K2 tests (tests.cpio) -> rootfs.cpio
 make guest-run GUEST_PROFILE=kjit-guest CMD='redis-server --daemonize yes --save "" --appendonly no; sleep 1; redis-benchmark -q -n 10000'
 make e0-bench GUEST_PROFILE=kjit-guest
 ```
@@ -177,6 +183,10 @@ exit 0, if QEMU hit the timeout, if `CPU features: detected: Privileged Access
 Never` is missing (K1: hardware PAN), or if any timestamped kernel line reports
 `BUG:`, `WARNING:`, an oops, a panic, `Call trace:` or a lockdep `INFO:`.
 
+`rootfs.cpio` is `base.cpio` (the Debian export; rebuilt only when missing or
+with `scripts/mk-guest-rootfs.sh --rebuild-base`) followed by `tests.cpio` (the
+K2 guest tests, rebuilt every run); the kernel unpacks both archives in order.
+
 `make e0-bench` (`scripts/e0-bench.sh`, `tools/e0/syscall_bench.c`) builds a
 static benchmark in the dev image. It runs the benchmark in a plain
 `debian:bookworm` container on the Docker VM and in the guest without
@@ -185,6 +195,90 @@ static benchmark in the dev image. It runs the benchmark in a plain
 thread, plus the kernel version, CPU features and
 `/sys/devices/system/cpu/vulnerabilities/*`. Results go to
 `$KJIT_BUILD_ROOT/e0/<profile>-<time>/{docker,guest}.txt`.
+
+### K2 kernel runtime
+
+`kjit.ko` runs translated user code in the kernel right after a syscall
+returns, so a hot syscall loop issues its next syscall without going back to
+EL0. Contract and design: `tmp/pipeline.md`, "K2 contract: kernel runtime" and
+"K2 implementation".
+
+**Patched kernel.** `kernel-patches/` is a three-patch series on the pinned
+`dep/linux` commit (7.1-rc1):
+
+1. `arm64: syscall: add a KJIT syscall-return hook`: `ARM64_KJIT`, a static key
+   plus an SRCU-protected ops pointer that one module registers; after a
+   syscall without syscall work, `el0_svc_common()` invokes further syscalls
+   while the hook returns a syscall number (at most 4096 per kernel entry).
+2. `extable: consult KJIT fragment exception tables last`: fragment
+   `LDTR`/`STTR` faults are handled like `copy_from_user` (demand paging, CoW);
+   an unresolvable one jumps to the access's `Mem` exit stub.
+3. `mm, arm64: export execmem and set_memory_{ro,x} for the KJIT runtime`.
+
+`scripts/kjit-kernel-tree.sh` (`make kernel-tree`) creates the patched tree as a
+git worktree of `dep/linux` at `$KJIT_BUILD_ROOT/linux-kjit` (shared objects, no
+second clone) and applies the series with `git am`. It is idempotent (a stamp
+records the base commit and every patch hash) and fail-fast (local changes, a
+half-applied series or a patch that does not apply stop it; nothing is reset).
+`setup-kernel-build.sh` runs it before every kernel build (all profiles build
+from this tree) and needs no git when the stamp is current. Creating or updating
+the tree needs `dep/linux`'s git dir, which a container or a git worktree of this
+repo does not have, so do that on the host first:
+
+```sh
+export KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/kjit-build
+make kernel-tree KJIT_LINUX_GIT=/path/to/KJIT/dep/linux   # host, once per series change
+./scripts/docker-dev.sh -- make guest-kernel               # patched kernel + kjit.ko
+./scripts/docker-dev.sh -- make guest-kernel-debug
+make guest-rootfs                                          # host: adds the K2 tests
+```
+
+To change the series, commit in `$KJIT_BUILD_ROOT/linux-kjit`, then
+`git -C $KJIT_BUILD_ROOT/linux-kjit format-patch --no-signature --zero-commit -o kernel-patches <base>`.
+
+**Module.** `rust_kjit.rs` + `runtime/` (Rust: translation, verification,
+image layout, the exit decision table, stats) and `kjit_glue.c` (C: hook
+registration, the per-mm code cache and its `mmu_notifier`, fragment memory
+and exception tables, reading user text, the call trampoline, debugfs). Init
+still runs the K0 golden check first. A fragment is installed only if
+`verify_fragment` accepts exactly the bytes, fault-site table and entry table
+that get installed; it is refused unless every text page it came from is in an
+executable, non-writable mapping.
+
+**Trigger and stats** (`/sys/kernel/debug/kjit/`, root only):
+
+| File | |
+|---|---|
+| `translate` | write `"<pid> <pc>"`: translate that entry PC (logs the result) |
+| `translate_svc_sites` | write `"<pid>"`: translate `svc_pc + 4` for every SVC word in the process's executable, non-writable mappings |
+| `stats` | counters: `syscalls_in_kernel`, `fragment_entries`, `chains`, exits per status, `svc_declined`, translations ok/exists/unreadable/compile/encode/verify-rejected (and FallsOffEnd)/raced/install-failed, `invalidated_fragments`, `released_fragments`, `svc_sites_scanned` |
+| `enable` | `Y`/`N` (global) |
+
+```sh
+mount -t debugfs debugfs /sys/kernel/debug
+echo $PID > /sys/kernel/debug/kjit/translate_svc_sites
+cat /sys/kernel/debug/kjit/stats
+```
+
+**Guest tests** (`tests/guest/`, static binaries in `/opt/kjit-tests`,
+`run-k2.sh`): every test runs with KJIT disabled and enabled and must print the
+same output with the same exit status. `toy_loop` (the G2 gate: raw
+`getppid`/`write` loop, at least 99% of its syscalls in the kernel),
+`mem_loop` (LDP/STP/LDR/STR on heap and stack, a byte load taking the
+Unsupported exit, pipe and /dev/null I/O), `fault_segv` (NULL, unmapped and
+read-only stores after a hot SVC: same SIGSEGV code, address and PC, via a Mem
+exit), `fork_cow` (fragment stores to CoW pages in parent and child, no Mem
+exit), `tight_loop` (countdown past the back-edge budget: Budget exits,
+progress), `signal_loop` (1 ms SIGALRM during the hot loop), `munmap_race`
+(hot text unmapped while another thread runs it: SIGSEGV, fragment
+invalidated), `seccomp_loop` and `ptrace_loop` (no fragment entry at all), plus
+`kill -9` of a hot `toy_loop` and `tight_loop`, and a hot process left running
+while `/init` unloads the module.
+
+```sh
+make guest-tests GUEST_PROFILE=kjit-guest
+make guest-tests GUEST_PROFILE=kjit-guest-debug K2_ITERATIONS=100
+```
 
 ### Harness
 

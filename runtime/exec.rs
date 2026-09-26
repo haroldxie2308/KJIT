@@ -1,0 +1,169 @@
+// SPDX-License-Identifier: GPL-2.0
+
+//! `kjit_after_syscall(regs)`: the decision table of tmp/pipeline.md, "K2
+//! contract: kernel runtime". The kernel-side mirror of the harness's
+//! `decide_runtime_return` (harness/src/runtime.rs), with the kernel's run
+//! conditions re-checked before every entry and every in-kernel syscall.
+
+use kernel::ffi::c_long;
+
+use super::ffi::{self, KjitFrag, PtRegs};
+use super::stats::{self, Stat};
+use crate::shared::abi::RetStatus;
+
+/// Fragment entries per hook call through branch exits (chaining). Each entry
+/// is budget-bounded, so this bounds the time between run-condition checks.
+const MAX_CHAIN: u32 = 16;
+
+/// "Return to userspace at regs->pc."
+const TO_USER: c_long = -1;
+
+const SVC: u64 = RetStatus::Svc.as_reg();
+const BL: u64 = RetStatus::Bl.as_reg();
+const BLR: u64 = RetStatus::Blr.as_reg();
+const BR: u64 = RetStatus::Br.as_reg();
+const RET: u64 = RetStatus::Ret.as_reg();
+const MEM: u64 = RetStatus::Mem.as_reg();
+const UNSUPPORTED: u64 = RetStatus::Unsupported.as_reg();
+const BUDGET: u64 = RetStatus::Budget.as_reg();
+
+/// A fragment reference taken by `kjit_lookup`, dropped on every path.
+struct Running {
+    frag: *mut KjitFrag,
+    base: u64,
+}
+
+impl Running {
+    fn lookup(pc: u64, entry: &mut u64) -> Option<Self> {
+        // SAFETY: called on the syscall path of the current task.
+        let frag = unsafe { ffi::kjit_lookup(pc, entry) };
+        if frag.is_null() {
+            return None;
+        }
+        // SAFETY: `frag` is referenced until `Drop`.
+        let base = unsafe { ffi::kjit_frag_base(frag) };
+        Some(Self { frag, base })
+    }
+
+    /// The entry address for `pc` inside this fragment (one of its verified
+    /// entry offsets), if it has one.
+    fn entry_for(&self, pc: u64) -> Option<u64> {
+        // SAFETY: `frag` is referenced.
+        let offset = unsafe { ffi::kjit_frag_offset_for_pc(self.frag, pc) };
+        u64::try_from(offset)
+            .ok()
+            .map(|offset| self.base.wrapping_add(offset))
+    }
+}
+
+impl Drop for Running {
+    fn drop(&mut self) {
+        // SAFETY: drops the reference `kjit_lookup` took.
+        unsafe { ffi::kjit_frag_put(self.frag) }
+    }
+}
+
+fn can_run(regs: *mut PtRegs) -> bool {
+    // SAFETY: `regs` is the current task's pt_regs.
+    unsafe { ffi::kjit_can_run(regs) }
+}
+
+/// Called by the kernel after a syscall without syscall work (0001's hook).
+/// Returns a syscall number for the kernel to invoke next, or -1 to return to
+/// userspace at `regs->pc`. Any user state the fragment produced is already in
+/// `regs` (epilogue), so either way is exact.
+#[no_mangle]
+extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
+    // SAFETY: the kernel passes the current task's pt_regs; nothing else
+    // accesses them while this task runs this function.
+    let pc = unsafe { (*regs).pc };
+    if !can_run(regs) {
+        return TO_USER;
+    }
+    let mut entry = 0u64;
+    let Some(mut run) = Running::lookup(pc, &mut entry) else {
+        return TO_USER;
+    };
+    let mut chained = 0u32;
+
+    loop {
+        let mut extra = [0u64; 2];
+        // SAFETY: `entry` is `base` + a verified entry offset of the referenced
+        // fragment; `extra` receives x10/x11 (epilogue `stp x10, x11, [x1]`).
+        let status =
+            unsafe { ffi::kjit_call_fragment(regs, extra.as_mut_ptr(), entry, run.base) };
+        stats::inc(Stat::FragmentEntries);
+        let [param0, param1] = extra;
+
+        match status {
+            SVC => {
+                // x11 = PC after the SVC; x8 holds the syscall number.
+                stats::inc(Stat::ExitSvc);
+                drop(run);
+                // SAFETY: as above.
+                let scno = unsafe { (*regs).regs[8] } as i32;
+                // The kernel's own entry uses the low 32 bits of x8 as a signed
+                // int; a negative one is left to the native SVC so its handling
+                // stays the kernel's.
+                if can_run(regs) && scno >= 0 {
+                    // SAFETY: as above.
+                    unsafe { (*regs).pc = param1 };
+                    stats::inc(Stat::SyscallsInKernel);
+                    return scno as c_long;
+                }
+                stats::inc(Stat::SvcDeclined);
+                // SAFETY: as above. Userspace re-executes the SVC itself.
+                unsafe { (*regs).pc = param1.wrapping_sub(4) };
+                return TO_USER;
+            }
+            BL | BLR | BR | RET => {
+                stats::inc(match status {
+                    BL => Stat::ExitBl,
+                    BLR => Stat::ExitBlr,
+                    BR => Stat::ExitBr,
+                    _ => Stat::ExitRet,
+                });
+                // x10 = branch target; BL/BLR already wrote x30.
+                let target = param0;
+                if chained < MAX_CHAIN && can_run(regs) {
+                    if let Some(next) = run.entry_for(target) {
+                        entry = next;
+                        chained += 1;
+                        stats::inc(Stat::Chains);
+                        continue;
+                    }
+                    if let Some(next) = Running::lookup(target, &mut entry) {
+                        run = next;
+                        chained += 1;
+                        stats::inc(Stat::Chains);
+                        continue;
+                    }
+                }
+                // SAFETY: as above.
+                unsafe { (*regs).pc = target };
+                return TO_USER;
+            }
+            // Never re-entered at x11: userspace executes that instruction (and
+            // takes its fault, or runs the back-edge) natively.
+            MEM | UNSUPPORTED | BUDGET => {
+                stats::inc(match status {
+                    MEM => Stat::ExitMem,
+                    UNSUPPORTED => Stat::ExitUnsupported,
+                    _ => Stat::ExitBudget,
+                });
+                // SAFETY: as above.
+                unsafe { (*regs).pc = param1 };
+                return TO_USER;
+            }
+            _ => {
+                stats::inc(Stat::ExitInvalid);
+                drop(run);
+                // SAFETY: current task context; WARN_ONCE + disable this mm.
+                unsafe { ffi::kjit_bad_status(status, pc) };
+                // SAFETY: as above.
+                unsafe { (*regs).pc = param1 };
+                return TO_USER;
+            }
+        }
+    }
+}

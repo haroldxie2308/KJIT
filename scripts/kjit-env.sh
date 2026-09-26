@@ -7,7 +7,6 @@ if [[ "${KJIT_IGNORE_LOCAL_ENV:-0}" != "1" && -f "$ROOT_DIR/.kjit.env" ]]; then
     source "$ROOT_DIR/.kjit.env"
 fi
 
-: "${KDIR:=$ROOT_DIR/dep/linux}"
 : "${ARCH:=arm64}"
 : "${LLVM:=1}"
 : "${DEFCONFIG:=tinyconfig}"
@@ -19,6 +18,12 @@ fi
 # mounts it at the same absolute path in the container. The Makefile derives
 # the same defaults.
 : "${KJIT_BUILD_ROOT:=$ROOT_DIR/.kjit/build}"
+# Every profile builds from the patched tree: a git worktree of the dep/linux
+# submodule ($KJIT_LINUX_GIT, never modified) at the pinned commit with
+# kernel-patches/*.patch applied (scripts/kjit-kernel-tree.sh).
+: "${KJIT_LINUX_GIT:=$ROOT_DIR/dep/linux}"
+: "${KJIT_PATCHED_KDIR:=$KJIT_BUILD_ROOT/linux-kjit}"
+: "${KDIR:=$KJIT_PATCHED_KDIR}"
 : "${KBUILD_OUTPUT:=$KJIT_BUILD_ROOT/$KJIT_KERNEL_PROFILE}"
 # kjit.ko is built next to its kernel (Kbuild MO=), so a module can never be
 # paired with a kernel it was not built against.

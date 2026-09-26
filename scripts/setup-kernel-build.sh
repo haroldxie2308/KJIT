@@ -63,6 +63,13 @@ ensure_linux_host
 require_cmd make
 require_cmd python3
 
+# Kernels build from the patched tree (kernel-patches/); make sure it exists and
+# carries exactly the checked-in series before building. (An explicit KDIR
+# elsewhere is used as is.)
+if [[ "$(realpath -m "$KDIR")" == "$(realpath -m "$KJIT_PATCHED_KDIR")" ]]; then
+    bash "$ROOT_DIR/scripts/kjit-kernel-tree.sh"
+fi
+
 if [[ ! -f "$KDIR/Makefile" ]]; then
     echo "Kernel source tree not found: $KDIR" >&2
     exit 1
@@ -81,6 +88,9 @@ kernel_make=(make -C "$KDIR" ARCH="$ARCH" LLVM="$LLVM" O="$KBUILD_OUTPUT" -j"$(n
 
 profile_stamp="$KBUILD_OUTPUT/$profile_stamp_name"
 profile="$KJIT_KERNEL_PROFILE"
+# The stamp names the source tree too: switching a build dir to another tree
+# (pristine dep/linux vs the patched tree) forces a clean reconfigure.
+profile_id="$profile $(realpath -m "$KDIR")"
 
 cfg="$ROOT_DIR/kernel-config"
 case "$profile" in
@@ -167,7 +177,7 @@ fi
 
 needs_profile_refresh=0
 if [[ ${#profile_fragments[@]} -gt 0 ]]; then
-    if [[ ! -f "$profile_stamp" ]] || [[ "$(<"$profile_stamp")" != "$profile" ]]; then
+    if [[ ! -f "$profile_stamp" ]] || [[ "$(<"$profile_stamp")" != "$profile_id" ]]; then
         needs_profile_refresh=1
     fi
 fi
@@ -184,7 +194,7 @@ if [[ ${#profile_fragments[@]} -gt 0 ]]; then
     KCONFIG_CONFIG="$KBUILD_OUTPUT/.config" \
         "$KDIR/scripts/kconfig/merge_config.sh" -m -O "$KBUILD_OUTPUT" \
         "$merged_config" "${profile_fragments[@]}"
-    printf '%s' "$profile" > "$profile_stamp"
+    printf '%s' "$profile_id" > "$profile_stamp"
 elif [[ ! -f "$KBUILD_OUTPUT/.config" ]]; then
     "${kernel_make[@]}" "$DEFCONFIG"
 fi
