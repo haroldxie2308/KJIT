@@ -2367,7 +2367,7 @@ fn append_original_step_lines(
         )));
     }
     if let Some(halt) = step.halt_reason {
-        lines.push(Line::from(format!("halt={halt:?}")));
+        lines.push(Line::from(format!("halt={halt}")));
     }
 }
 
@@ -2917,12 +2917,12 @@ fn flags_value_label(flags: Flags) -> String {
 fn active_halt_label(halt: &ActiveStepHalt) -> String {
     match halt {
         ActiveStepHalt::Running => "running".to_string(),
-        ActiveStepHalt::Original(reason) => format!("original:{reason:?}"),
+        ActiveStepHalt::Original(reason) => format!("original:{reason}"),
         ActiveStepHalt::Translated(reason) => format!("translated:{reason:?}"),
         ActiveStepHalt::Both {
             original,
             translated,
-        } => format!("original:{original:?} translated:{translated:?}"),
+        } => format!("original:{original} translated:{translated:?}"),
         ActiveStepHalt::Error(message) => format!("error:{}", first_line(message)),
     }
 }

@@ -779,6 +779,9 @@ mod tests {
             A64Insn::RetRet64rBranchReg { rn: x(30) },
         ]);
         let mut state = MachineState::new();
+        state
+            .map_user_range(0x9000, 0xa000, crate::model::PagePerm::ReadWrite)
+            .unwrap();
         state.write_x(12, 0x9000);
         state.write_x(30, 0xfeed_0000);
         let request = request_for_trace(entry_pc, TranslationTrigger::Manual, &state);

@@ -1,5 +1,5 @@
-use crate::arm64::execute_insn;
-use crate::model::MachineState;
+use crate::arm64::{access_in_ranges, execute_insn, AccessContext, InsnError};
+use crate::model::{MachineState, MemAccess, Privilege, PAGE_SIZE};
 use crate::shared::abi::{
     RetStatus, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
     PROLOGUE_ENTRY_BRANCH_OFFSET, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
@@ -257,6 +257,23 @@ impl URuntime {
             .without_memory_ranges(&self.runtime_owned_ranges())
     }
 
+    /// Runtime-owned memory is never user-accessible: no page it touches may
+    /// be in the user page map.
+    fn check_runtime_memory_not_user_mapped(&self) -> Result<(), String> {
+        for (start, end) in self.runtime_owned_ranges() {
+            let first_page = start - start % PAGE_SIZE;
+            for page in (first_page..end).step_by(PAGE_SIZE as usize) {
+                if self.state.user_page_perm(page).is_some() {
+                    return Err(format!(
+                        "runtime-owned range {start:#x}..{end:#x} overlaps user-mapped page \
+                         {page:#x}; runtime memory is never user-accessible"
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub(crate) fn runtime_owned_ranges(&self) -> [(u64, u64); 3] {
         [
             (
@@ -287,6 +304,7 @@ struct URuntimeCursor {
 
 impl URuntimeCursor {
     fn new(runtime: &mut URuntime) -> Result<Self, String> {
+        runtime.check_runtime_memory_not_user_mapped()?;
         let entry_offset = runtime.fragment.entry_offset;
         let base_pc = runtime.config.base_pc;
         runtime.prepare_entry_at(entry_offset)?;
@@ -345,9 +363,21 @@ impl URuntimeCursor {
         let insn = runtime.fragment.insns[index];
         self.steps += 1;
 
-        let mut next_pc = match execute_insn(insn, insn_pc, &mut runtime.state) {
+        let runtime_ranges = runtime.runtime_owned_ranges();
+        let mut ctx = AccessContext::Fragment {
+            runtime_ranges: &runtime_ranges,
+        };
+        let mut next_pc = match execute_insn(insn, insn_pc, &mut runtime.state, &mut ctx) {
             Ok(next_pc) => next_pc,
-            Err(message) => {
+            Err(err) => {
+                let message = match err {
+                    // A5 replaces this with a jump to the fault stub from the
+                    // fragment's fault-site table.
+                    InsnError::Fault(fault) => {
+                        format!("{fault} inside the fragment: no fault-site table exists yet")
+                    }
+                    InsnError::Error(message) => message,
+                };
                 self.stopped = true;
                 let halt = URuntimeHalt::ExecutionError {
                     pc: insn_pc,
@@ -552,6 +582,23 @@ enum RuntimeAction {
     Stop(URuntimeHalt),
 }
 
+/// Privilege of a fragment memory access: runtime iff it lies entirely inside
+/// runtime-owned memory, user otherwise.
+///
+/// A4 stopgap. Delete when A5 lands: A5 classifies by instruction instead
+/// (`LDTR`/`STTR` = user access, every other load/store = runtime access,
+/// PAN-checked), never by address.
+pub(crate) fn fragment_access_privilege(
+    runtime_ranges: &[(u64, u64)],
+    access: MemAccess,
+) -> Privilege {
+    if access_in_ranges(runtime_ranges, access) {
+        Privilege::Runtime
+    } else {
+        Privilege::User
+    }
+}
+
 fn seed_pt_regs(state: &mut MachineState, config: &URuntimeConfig) {
     for reg in 0..31 {
         state.write_u64(config.pt_regs_addr + (reg as u64) * 8, state.read_x(reg));
@@ -564,9 +611,11 @@ fn seed_pt_regs(state: &mut MachineState, config: &URuntimeConfig) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::arm64::OriginalStepper;
+    use crate::model::{AccessKind, HaltReason, PagePerm};
     use crate::shared::abi::PROLOGUE_ENTRY_BRANCH_OFFSET;
     use crate::shared::arm64::ergo::{uimm, x};
-    use crate::shared::arm64::{A64Imm, A64Insn};
+    use crate::shared::arm64::{A64Imm, A64Insn, A64Mem, A64Reg};
     use crate::shared::trans::input::{TranslationRequest, TranslationTrigger};
     use crate::shared::trans::translate::compile_request;
     use crate::MockCodeProvider;
@@ -752,5 +801,64 @@ mod tests {
                 target_pc: 0x7777_0000
             }
         );
+    }
+
+    fn ldr_x0_from_x1() -> A64Insn {
+        A64Insn::LdrImmGenLdr64LdstPos {
+            rt: x(0),
+            mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_unsigned(0, 12, 3)),
+        }
+    }
+
+    #[test]
+    fn runtime_owned_memory_is_never_user_accessible() {
+        // A user access to runtime-owned memory faults: it is never user-mapped.
+        let program = ldr_x0_from_x1().encode().unwrap().to_le_bytes();
+        let mut state = MachineState::new();
+        state.write_x(1, DEFAULT_PT_REGS_ADDR);
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state).unwrap();
+        let step = stepper.step().unwrap().unwrap();
+        match step.halt_reason {
+            Some(HaltReason::Fault(fault)) => {
+                assert_eq!(fault.access.addr, DEFAULT_PT_REGS_ADDR);
+                assert_eq!(fault.access.kind, AccessKind::Read);
+            }
+            other => panic!("expected a fault, got {other:?}"),
+        }
+
+        // And a runtime refuses a user page map that covers runtime-owned memory.
+        state
+            .map_user_range(
+                DEFAULT_PT_REGS_ADDR,
+                DEFAULT_PT_REGS_ADDR + PAGE_SIZE,
+                PagePerm::ReadOnly,
+            )
+            .unwrap();
+        let fragment = compile_insns(0x4000, &[A64Insn::RetRet64rBranchReg { rn: x(30) }]);
+        let report = URuntime::new(fragment, state).run();
+        match report.halt {
+            URuntimeHalt::ExecutionError { message, .. } => {
+                assert!(message.contains("never user-accessible"), "{message}");
+            }
+            other => panic!("expected an execution error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn user_access_fault_inside_fragment_is_a_hard_error_until_fault_sites_exist() {
+        let fragment = compile_insns(
+            0x4000,
+            &[ldr_x0_from_x1(), A64Insn::RetRet64rBranchReg { rn: x(30) }],
+        );
+        let mut state = MachineState::new();
+        state.write_x(1, 0x9000);
+        let report = URuntime::new(fragment, state).run();
+        match report.halt {
+            URuntimeHalt::ExecutionError { message, .. } => {
+                assert!(message.contains("user read fault"), "{message}");
+                assert!(message.contains("no fault-site table"), "{message}");
+            }
+            other => panic!("expected an execution error, got {other:?}"),
+        }
     }
 }
