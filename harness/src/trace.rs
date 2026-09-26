@@ -442,7 +442,10 @@ fn layout_original_pcs(program: &RephrasedProgram) -> Vec<Option<u64>> {
     use crate::shared::abi::{EPILOGUE_LEN_BYTES, PROLOGUE_LEN_BYTES};
 
     let wrapper_insns = (PROLOGUE_LEN_BYTES + EPILOGUE_LEN_BYTES) / 4;
-    let body_insns = program.iter().map(|block| block.insns.len()).sum::<usize>();
+    let body_insns = program
+        .iter()
+        .map(|block| block.insns.len() + block.cold.len())
+        .sum::<usize>();
     let mut origins = Vec::with_capacity(wrapper_insns + body_insns);
 
     for _ in 0..wrapper_insns {
@@ -450,6 +453,12 @@ fn layout_original_pcs(program: &RephrasedProgram) -> Vec<Option<u64>> {
     }
     for block in program {
         for insn in &block.insns {
+            origins.push(Some(insn.ori_pc));
+        }
+    }
+    // Layout places every block's cold region after all bodies.
+    for block in program {
+        for insn in &block.cold {
             origins.push(Some(insn.ori_pc));
         }
     }
@@ -711,6 +720,7 @@ mod tests {
                     prev: SharedVec::new(),
                     next: SharedVec::new(),
                     insns,
+                    cold: SharedVec::new(),
                 },
                 GFP_KERNEL,
             )
@@ -808,6 +818,12 @@ fn copy_rephrased_program(program: &RephrasedProgram) -> Result<RephrasedProgram
                 .push(*insn, GFP_KERNEL)
                 .map_err(|err| format!("{err:?}"))?;
         }
+        let mut cold = SharedVec::with_capacity(block.cold.len(), GFP_KERNEL)
+            .map_err(|err| format!("{err:?}"))?;
+        for insn in &block.cold {
+            cold.push(*insn, GFP_KERNEL)
+                .map_err(|err| format!("{err:?}"))?;
+        }
         out.push(
             RephrasedBlock {
                 start_addr: block.start_addr,
@@ -815,6 +831,7 @@ fn copy_rephrased_program(program: &RephrasedProgram) -> Result<RephrasedProgram
                 prev: copy_u64_vec(&block.prev)?,
                 next: copy_u64_vec(&block.next)?,
                 insns,
+                cold,
             },
             GFP_KERNEL,
         )
@@ -848,10 +865,18 @@ fn copy_fragment(fragment: &ExecutionFragment) -> Result<ExecutionFragment, Stri
             .push(*label, GFP_KERNEL)
             .map_err(|err| format!("{err:?}"))?;
     }
+    let mut fault_sites = SharedVec::with_capacity(fragment.fault_sites.len(), GFP_KERNEL)
+        .map_err(|err| format!("{err:?}"))?;
+    for site in &fragment.fault_sites {
+        fault_sites
+            .push(*site, GFP_KERNEL)
+            .map_err(|err| format!("{err:?}"))?;
+    }
     Ok(ExecutionFragment {
         insns,
         entry_offset: fragment.entry_offset,
         vlabels,
+        fault_sites,
     })
 }
 

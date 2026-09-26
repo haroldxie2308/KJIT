@@ -177,6 +177,50 @@ struct NativeCtx {
     /// In: user state to start (enter_user). Out: register snapshot at the event.
     user: UserRegs,
     event: Event,
+    /// In: the fragment's fault-site redirects while a fragment call runs.
+    fault_fixup: FaultFixup,
+    /// Out: data aborts redirected to a fault stub during the call.
+    fault_redirects: u64,
+}
+
+/// The kernel's user-access fixup (tmp/pipeline.md, "Fault sites (A5)"): a data
+/// abort at `base + access_offset` resumes at `base + stub_offset`, nothing else
+/// changes. `sites` is sorted by access offset. Empty outside fragment calls.
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct FaultFixup {
+    base: u64,
+    len: u64,
+    sites: *const FixupSite,
+    sites_len: usize,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct FixupSite {
+    access_offset: u64,
+    stub_offset: u64,
+}
+
+impl FaultFixup {
+    const NONE: Self = Self {
+        base: 0,
+        len: 0,
+        sites: ptr::null(),
+        sites_len: 0,
+    };
+
+    /// Async-signal-safe: reads only the caller-owned site slice.
+    unsafe fn stub_for(&self, pc: u64) -> Option<u64> {
+        let offset = pc
+            .checked_sub(self.base)
+            .filter(|offset| *offset < self.len)?;
+        let sites = core::slice::from_raw_parts(self.sites, self.sites_len);
+        sites
+            .binary_search_by_key(&offset, |site| site.access_offset)
+            .ok()
+            .map(|index| self.base + sites[index].stub_offset)
+    }
 }
 
 #[repr(C)]
@@ -220,6 +264,8 @@ impl NativeCtx {
             nzcv: 0,
             user,
             event: Event::default(),
+            fault_fixup: FaultFixup::NONE,
+            fault_redirects: 0,
         }
     }
 }
@@ -432,6 +478,22 @@ extern "C" fn on_signal(sig: i32, info: *mut SigInfo, uc: *mut c_void) {
             return;
         }
 
+        // A user access of the fragment faulted: exactly the kernel's fixup. Only
+        // the PC changes; then the fragment's own TPIDR_EL0 (a fragment never
+        // writes it, so it is still the run's value) goes back, last.
+        if sig == SIGSEGV || sig == SIGBUS {
+            if let Some(stub) = (*ctx).fault_fixup.stub_for(mc.pc) {
+                mc.pc = stub;
+                (*ctx).fault_redirects += 1;
+                asm!(
+                    "msr tpidr_el0, {}",
+                    in(reg) USER_TPIDR.load(Ordering::SeqCst),
+                    options(nostack)
+                );
+                return;
+            }
+        }
+
         // A BRK was fetched from pc, so the word is readable.
         let brk_word = if sig == SIGTRAP && (*info).si_code == TRAP_BRKPT {
             ptr::read_volatile(mc.pc as *const u32)
@@ -531,10 +593,18 @@ impl NativeSession {
         extra_params: &mut [u64; 2],
         entry_addr: u64,
         fragment_base: u64,
+        fragment_len: u64,
+        fault_sites: &[FixupSite],
         nzcv: u64,
         tpidr: u64,
     ) -> Result<Box<NativeCtx>, String> {
         let mut ctx = Box::new(NativeCtx::new(UserRegs::default()));
+        ctx.fault_fixup = FaultFixup {
+            base: fragment_base,
+            len: fragment_len,
+            sites: fault_sites.as_ptr(),
+            sites_len: fault_sites.len(),
+        };
         let _tpidr = UserTpidr::set(tpidr)?;
         let _active = ActiveCtx::set(&mut ctx);
         unsafe {
@@ -1051,6 +1121,8 @@ pub struct NativeFragment {
     pub state: MachineState,
     pub halt: URuntimeHalt,
     pub calls: usize,
+    /// Hardware data aborts redirected to a fault stub.
+    pub fault_redirects: usize,
 }
 
 /// Calls the encoded fragment through the ABI boundary until the shared runtime
@@ -1090,6 +1162,15 @@ pub fn run_fragment(
     let mut extra_params = [0u64; 2];
     let mut nzcv = flags_to_nzcv(initial.flags);
     let mut offset = fragment.entry_offset;
+    let fault_sites = fragment
+        .fault_sites
+        .iter()
+        .map(|site| FixupSite {
+            access_offset: site.access_offset as u64,
+            stub_offset: site.stub_offset as u64,
+        })
+        .collect::<Vec<_>>();
+    let mut fault_redirects = 0;
 
     for calls in 1..=MAX_RUNTIME_EXITS {
         validate_entry_offset(fragment, offset)?;
@@ -1098,9 +1179,12 @@ pub fn run_fragment(
             &mut extra_params,
             fragment_base + offset as u64,
             fragment_base,
+            encoded.len() as u64,
+            &fault_sites,
             nzcv,
             initial.tpidr_el0,
         )?;
+        fault_redirects += ctx.fault_redirects as usize;
 
         let user_state = |nzcv: u64| {
             let mut regs = UserRegs {
@@ -1122,10 +1206,16 @@ pub fn run_fragment(
                     state: user_state(ctx.user.pstate & NZCV_MASK),
                     halt: URuntimeHalt::FellOffFragment { pc: event.pc },
                     calls,
+                    fault_redirects,
                 });
             }
+            // A data abort in the fragment reaches here only without a fault-site
+            // entry: a runtime access or an untagged user access. Hard failure.
             let at = if code.contains(event.pc) {
-                format!(" (fragment offset {:#x})", event.pc - fragment_base)
+                format!(
+                    " (fragment offset {:#x}, no fault-site entry)",
+                    event.pc - fragment_base
+                )
             } else {
                 String::new()
             };
@@ -1146,6 +1236,7 @@ pub fn run_fragment(
                     state: user_state(nzcv),
                     halt,
                     calls,
+                    fault_redirects,
                 })
             }
         }
@@ -1282,8 +1373,13 @@ pub fn check_case(
 
     if problems.is_empty() {
         Ok(format!(
-            "halt={:?} native-original={:?} native-fragment={:?} fragment-calls={}",
-            report.original.halt_reason, original.stop, fragment.halt, fragment.calls
+            "halt={:?} native-original={:?} native-fragment={:?} fragment-calls={} \
+             fault-redirects={}",
+            report.original.halt_reason,
+            original.stop,
+            fragment.halt,
+            fragment.calls,
+            fragment.fault_redirects
         ))
     } else {
         Err(problems.join("\n"))

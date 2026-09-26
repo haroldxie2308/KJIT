@@ -627,6 +627,46 @@ fn encoding_cases() -> Vec<EncodingCase> {
                 mem: A64Mem::offset(A64Reg::x_sp(31), A64Imm::scaled_signed(3, 7, 3)),
             },
         ),
+        case(
+            "LDTR.LDTR_32_ldst_unpriv",
+            "    ldtr w3, [x4, #-256]",
+            A64Insn::LdtrLdtr32LdstUnpriv {
+                rt: A64Reg::w(3),
+                mem: A64Mem::offset(A64Reg::x_sp(4), A64Imm::signed(signed_field(-256, 9), 9)),
+            },
+        ),
+        case(
+            "LDTR.LDTR_64_ldst_unpriv",
+            "    ldtr x12, [sp, #255]",
+            A64Insn::LdtrLdtr64LdstUnpriv {
+                rt: A64Reg::x(12),
+                mem: A64Mem::offset(A64Reg::x_sp(31), A64Imm::signed(255, 9)),
+            },
+        ),
+        case(
+            "LDTR.LDTR_64_ldst_unpriv",
+            "    ldtr x0, [x17]",
+            A64Insn::LdtrLdtr64LdstUnpriv {
+                rt: A64Reg::x(0),
+                mem: A64Mem::offset(A64Reg::x_sp(17), A64Imm::signed(0, 9)),
+            },
+        ),
+        case(
+            "STTR.STTR_32_ldst_unpriv",
+            "    sttr wzr, [x5, #3]",
+            A64Insn::SttrSttr32LdstUnpriv {
+                rt: A64Reg::w(31),
+                mem: A64Mem::offset(A64Reg::x_sp(5), A64Imm::signed(3, 9)),
+            },
+        ),
+        case(
+            "STTR.STTR_64_ldst_unpriv",
+            "    sttr x30, [x16, #-8]",
+            A64Insn::SttrSttr64LdstUnpriv {
+                rt: A64Reg::x(30),
+                mem: A64Mem::offset(A64Reg::x_sp(16), A64Imm::signed(signed_field(-8, 9), 9)),
+            },
+        ),
         case("NOP.NOP_HI_hints", "    nop", A64Insn::NopNopHiHints {}),
         case(
             "BL.BL_only_branch_imm",

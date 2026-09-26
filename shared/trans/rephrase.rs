@@ -9,6 +9,10 @@ pub enum RephrasedInsnKind {
     Original,
     UserSynthetic,
     RegVirtHelper,
+    /// A user memory access (`LDTR`/`STTR`) emitted by reg-virt. It is a fault site:
+    /// a fault on it resumes at the `Mem` stub of the same `ori_pc` (one stub per
+    /// original instruction, so `ori_pc` alone names the stub; no extra field).
+    UserAccess,
     RuntimeExitPayload,
     RuntimeExitBranch,
 }
@@ -17,14 +21,17 @@ impl RephrasedInsnKind {
     pub const fn is_user_semantic(self) -> bool {
         match self {
             Self::Original | Self::UserSynthetic => true,
-            Self::RegVirtHelper | Self::RuntimeExitPayload | Self::RuntimeExitBranch => false,
+            Self::RegVirtHelper
+            | Self::UserAccess
+            | Self::RuntimeExitPayload
+            | Self::RuntimeExitBranch => false,
         }
     }
 
     pub const fn is_runtime_exit(self) -> bool {
         match self {
             Self::RuntimeExitPayload | Self::RuntimeExitBranch => true,
-            Self::Original | Self::UserSynthetic | Self::RegVirtHelper => false,
+            Self::Original | Self::UserSynthetic | Self::RegVirtHelper | Self::UserAccess => false,
         }
     }
 
@@ -73,6 +80,14 @@ impl RephrasedInsn {
         }
     }
 
+    pub const fn user_access(ori_pc: u64, insn: A64Insn) -> Self {
+        Self {
+            kind: RephrasedInsnKind::UserAccess,
+            ori_pc,
+            insn,
+        }
+    }
+
     pub const fn runtime_exit_payload(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
             kind: RephrasedInsnKind::RuntimeExitPayload,
@@ -91,6 +106,10 @@ impl RephrasedInsn {
 }
 
 /// Basic block after rephrasing, still over the original half-open PC range.
+///
+/// `cold` holds out-of-line runtime-exit groups: one `RetStatus::Mem` fault stub per
+/// original memory instruction of this block, in instruction order. Layout places
+/// every block's `cold` after all block bodies, so nothing falls through into it.
 #[derive(Debug, PartialEq, Eq)]
 pub struct RephrasedBlock {
     pub start_addr: u64,
@@ -98,6 +117,7 @@ pub struct RephrasedBlock {
     pub prev: SharedVec<u64>,
     pub next: SharedVec<u64>,
     pub insns: SharedVec<RephrasedInsn>,
+    pub cold: SharedVec<RephrasedInsn>,
 }
 
 pub type RephrasedProgram = SharedVec<RephrasedBlock>;
@@ -441,17 +461,19 @@ fn push_branch_to_stub(
     )
 }
 
-/// Return to userspace at the undecodable instruction so it executes natively there.
-fn push_unsupported_exit(
+/// Exit group that returns to userspace at `pc` so the instruction `word` executes
+/// natively there: `Unsupported` (undecodable or rejected) and `Mem` (fault stub).
+fn push_native_resume_exit(
     out: &mut SharedVec<RephrasedInsn>,
-    unsupported: UnsupportedInsn,
+    status: RetStatus,
+    pc: u64,
+    word: u32,
 ) -> SharedResult<(), SharedAllocError> {
-    let UnsupportedInsn { pc, word } = unsupported;
     push_mov_imm64(
         out,
         pc,
         x(RET_STATUS_REG),
-        RetStatus::Unsupported.as_reg(),
+        status.as_reg(),
         RephrasedInsnKind::RuntimeExitPayload,
     )?;
     push_mov_imm64(
@@ -475,11 +497,16 @@ pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
     let mut blocks = SharedVec::with_capacity(cfg.blocks.len(), GFP_KERNEL)?;
     for block in &cfg.blocks {
         let mut insns = SharedVec::with_capacity(block.insns.len() * 10, GFP_KERNEL)?;
+        let mut cold = SharedVec::new();
         for insn in &block.insns {
             insns.append(rephrase_insn(*insn)?, GFP_KERNEL)?;
+            if insn.inner.accesses_memory() {
+                // Fault stub: userspace re-executes the instruction and takes the fault.
+                push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, insn.word)?;
+            }
         }
-        if let Some(unsupported) = block.unsupported_exit {
-            push_unsupported_exit(&mut insns, unsupported)?;
+        if let Some(UnsupportedInsn { pc, word }) = block.unsupported_exit {
+            push_native_resume_exit(&mut insns, RetStatus::Unsupported, pc, word)?;
         }
 
         blocks.push(
@@ -489,6 +516,7 @@ pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
                 prev: copy_u64_vec(&block.prev)?,
                 next: copy_u64_vec(&block.next)?,
                 insns,
+                cold,
             },
             GFP_KERNEL,
         )?;
@@ -665,5 +693,73 @@ mod tests {
                 insn.key()
             );
         }
+    }
+
+    #[test]
+    fn memory_instructions_get_one_mem_fault_stub_in_the_cold_region() {
+        use crate::shared::arm64::{A64Mem, A64Reg};
+        use crate::shared::trans::cfg::BasicBlock;
+
+        let ldp = A64Insn::LdpGenLdp64LdstpairOff {
+            rt2: x(1),
+            rt: x(0),
+            mem: A64Mem::offset(A64Reg::x_sp(2), scaled_simm(0, 7, 3)),
+        };
+        let mut insns = SharedVec::new();
+        for (pc, inner) in [(0x1000, A64Insn::NopNopHiHints {}), (0x1004, ldp)] {
+            insns
+                .push(
+                    IrInsn {
+                        pc,
+                        word: inner.encode().unwrap(),
+                        inner,
+                    },
+                    GFP_KERNEL,
+                )
+                .unwrap();
+        }
+        let mut blocks = SharedVec::new();
+        blocks
+            .push(
+                BasicBlock {
+                    start_addr: 0x1000,
+                    end_addr: 0x1008,
+                    insns,
+                    prev: SharedVec::new(),
+                    next: SharedVec::new(),
+                    unsupported_exit: None,
+                },
+                GFP_KERNEL,
+            )
+            .unwrap();
+        let program = rephrase(Cfg {
+            entry_pc: 0x1000,
+            blocks,
+        })
+        .unwrap();
+
+        let cold = &program[0].cold;
+        assert!(cold.iter().all(|insn| insn.ori_pc == 0x1004));
+        assert_eq!(
+            cold.iter()
+                .filter(|insn| insn.kind.is_runtime_exit_branch())
+                .count(),
+            1
+        );
+        assert!(cold[..cold.len() - 1]
+            .iter()
+            .all(|insn| insn.kind == RephrasedInsnKind::RuntimeExitPayload));
+        // x9 = Mem, x10 = the original word, x11 = its PC (MOVZ/MOVK x3 of four).
+        let imm = |index: usize| match cold[index].insn {
+            A64Insn::MovzMovz64Movewide { imm16, .. }
+            | A64Insn::MovkMovk64Movewide { imm16, .. } => {
+                u64::from(imm16.raw()) << (16 * (3 - index % 4))
+            }
+            other => panic!("unexpected payload {other:?}"),
+        };
+        let value = |group: usize| (0..4).map(|i| imm(group * 4 + i)).sum::<u64>();
+        assert_eq!(value(0), RetStatus::Mem.as_reg());
+        assert_eq!(value(1), u64::from(ldp.encode().unwrap()));
+        assert_eq!(value(2), 0x1004);
     }
 }

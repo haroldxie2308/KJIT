@@ -6,15 +6,22 @@
 //! the same `run_entry_fixture` call `trace-tui --check` makes, from the same
 //! initial state. On Linux arm64 the same cases also run on the host CPU.
 //!
-//! Each interpreter case also runs the fault self-check (`check_fault_injection`).
+//! Each interpreter case also runs the fault self-check (`check_fault_injection`)
+//! and the fragment fault differential (`check_fragment_fault_injection`).
 
 use std::collections::BTreeMap;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::model::{HaltReason, MachineState};
-use crate::{default_fixture_state, run_entry_fixture, run_original_with_mocked_svc};
+use crate::arm64::LoggedAccess;
+use crate::model::{AccessKind, HaltReason, MachineState, Privilege};
+use crate::runtime::{URuntime, URuntimeHalt};
+use crate::shared::abi::RetStatus;
+use crate::{
+    compile_fixture_fragment, default_fixture_state, run_entry_fixture,
+    run_original_with_mocked_svc,
+};
 
 const LLVM_TOOLS: [&str; 3] = ["llvm-mc", "llvm-nm", "llvm-objcopy"];
 
@@ -42,10 +49,23 @@ fn every_asm_fixture_case_matches_original() {
             case.entry_pc,
             &initial_state,
         )?;
-        let user_accesses =
-            check_fault_injection(case.text_base, &case.text_bytes, case.entry_pc, &initial_state)
-                .map_err(|message| format!("fault self-check: {message}"))?;
-        Ok(format!("injected_user_accesses={user_accesses}"))
+        let user_accesses = check_fault_injection(
+            case.text_base,
+            &case.text_bytes,
+            case.entry_pc,
+            &initial_state,
+        )
+        .map_err(|message| format!("fault self-check: {message}"))?;
+        let fragment_faults = check_fragment_fault_injection(
+            case.text_base,
+            &case.text_bytes,
+            case.entry_pc,
+            &initial_state,
+        )
+        .map_err(|message| format!("fragment fault differential: {message}"))?;
+        Ok(format!(
+            "injected_user_accesses={user_accesses} injected_fragment_faults={fragment_faults}"
+        ))
     });
 }
 
@@ -234,16 +254,11 @@ fn check_fault_injection(
             })
         },
     )?;
-    if let HaltReason::Fault(fault) = clean.halt_reason {
-        return Err(format!("uninjected run faulted: {fault}"));
-    }
     // The halting step is a runtime exit, the end of the text or an
-    // undecodable word; none of them accesses memory. Injecting one past the
-    // total below confirms it.
-    let total = pre_steps
-        .last()
-        .ok_or("uninjected run took no steps")?
-        .accesses_before;
+    // undecodable word, none of which accesses memory, or an instruction that
+    // faults on its own. `total` counts the accesses before it.
+    let halting = pre_steps.last().ok_or("uninjected run took no steps")?;
+    let total = halting.accesses_before;
 
     let past_end = run_original_with_mocked_svc(
         text_bytes,
@@ -253,11 +268,29 @@ fn check_fault_injection(
         Some(total + 1),
         &mut |_| {},
     )?;
-    if past_end != clean {
-        return Err(format!(
-            "injecting access {} (past the {total} counted) changed the run",
-            total + 1
-        ));
+    match clean.halt_reason {
+        // Injecting the faulting instruction's first access must fault it at the
+        // same pc with the same state (the natural fault may be a later access).
+        HaltReason::Fault(_) => match past_end.halt_reason {
+            HaltReason::Fault(fault)
+                if fault.pc == halting.pc && past_end.state == clean.state => {}
+            other => {
+                return Err(format!(
+                    "injecting access {} of the naturally faulting instruction at pc={:#x} \
+                     gave {other}",
+                    total + 1,
+                    halting.pc
+                ))
+            }
+        },
+        // Injecting one past the total must not change a run that never faults.
+        _ if past_end != clean => {
+            return Err(format!(
+                "injecting access {} (past the {total} counted) changed the run",
+                total + 1
+            ));
+        }
+        _ => {}
     }
 
     for k in 1..=total {
@@ -289,6 +322,219 @@ fn check_fault_injection(
                 "access {k}: faulting instruction at pc={:#x} changed state\n\
                  before: {:#?}\nafter: {:#?}",
                 owner.pc, owner.state, injected.state
+            ));
+        }
+    }
+    Ok(total)
+}
+
+/// The A5 acceptance check (tmp/pipeline.md, "Fault sites (A5)").
+///
+/// Uninjected, the fragment's accesses must be sandboxed: no runtime access
+/// touches user memory, and every user access is an `LDTR`/`STTR` with a
+/// fault-site entry. Its user accesses are matched to the original's by
+/// (original PC, dynamic instance, sub-access), never by position. Then, for
+/// every original user access k, the fragment runs with a fault injected on the
+/// matching fragment access and must exit with `Mem` at the original faulting
+/// instruction, with the user state the original had just before it, except
+/// that each unit of that instruction's store footprint may be old or new.
+/// Returns the number of injected fragment faults (== original accesses).
+fn check_fragment_fault_injection(
+    text_base: u64,
+    text_bytes: &[u8],
+    entry_pc: u64,
+    initial_state: &MachineState,
+) -> Result<u64, String> {
+    // Original clean run: pre-instruction states and the access log.
+    struct PreStep {
+        pc: u64,
+        state: MachineState,
+        accesses_before: u64,
+    }
+    let mut pre_steps = Vec::new();
+    let mut original_log: Vec<LoggedAccess> = Vec::new();
+    let clean = run_original_with_mocked_svc(
+        text_bytes,
+        text_base,
+        entry_pc,
+        initial_state,
+        None,
+        &mut |stepper| {
+            let log = stepper.access_log().expect("original runs record accesses");
+            original_log.extend_from_slice(&log[original_log.len()..]);
+            pre_steps.push(PreStep {
+                pc: stepper.pc(),
+                state: stepper.state().clone(),
+                accesses_before: stepper.user_accesses(),
+            });
+        },
+    )?;
+    // A natural fault ends the run at its instruction; its accesses are not counted.
+    let natural_fault_pc = match clean.halt_reason {
+        HaltReason::Fault(fault) => Some(fault.pc),
+        _ => None,
+    };
+    let total = pre_steps
+        .last()
+        .ok_or("original run took no steps")?
+        .accesses_before;
+    if original_log.len() as u64 != total {
+        return Err(format!(
+            "original log has {} accesses, counter says {total}",
+            original_log.len()
+        ));
+    }
+
+    // Key of original access k: (pc, dynamic instance of that pc, sub-access).
+    let mut original_keys = Vec::with_capacity(total as usize);
+    let mut owners = Vec::with_capacity(total as usize);
+    for k in 1..=total {
+        let owner = pre_steps
+            .iter()
+            .rposition(|step| step.accesses_before < k)
+            .expect("the first step starts with zero accesses");
+        let pc = pre_steps[owner].pc;
+        let instance = pre_steps[..owner]
+            .iter()
+            .filter(|step| step.pc == pc)
+            .count();
+        let sub = (k - pre_steps[owner].accesses_before - 1) as usize;
+        original_keys.push((pc, instance, sub));
+        owners.push(owner);
+    }
+
+    // Fragment clean run.
+    let fragment =
+        compile_fixture_fragment(text_base, text_bytes.to_vec(), entry_pc, initial_state)?;
+    let mut runtime = URuntime::new(fragment, initial_state.clone()).record_accesses();
+    let report = runtime.run();
+    if let URuntimeHalt::ExecutionError { pc, message } = &report.halt {
+        return Err(format!(
+            "uninjected fragment run failed at {pc:#x}: {message}"
+        ));
+    }
+    let base_pc = runtime.config.base_pc;
+    let fragment_log = runtime
+        .access_log()
+        .expect("recording was enabled")
+        .to_vec();
+
+    let mut fragment_keys = BTreeMap::new();
+    let mut site_executions: BTreeMap<usize, usize> = BTreeMap::new();
+    let mut user_index = 0u64;
+    for logged in &fragment_log {
+        let offset = (logged.pc - base_pc) as usize;
+        match logged.privilege {
+            Privilege::Runtime => {
+                let last = logged.access.addr + logged.access.size as u64 - 1;
+                if [logged.access.addr, last]
+                    .iter()
+                    .any(|addr| initial_state.user_page_perm(*addr).is_some())
+                {
+                    return Err(format!(
+                        "runtime access at fragment offset {offset:#x} touched user memory: {:?}",
+                        logged.access
+                    ));
+                }
+            }
+            Privilege::User => {
+                user_index += 1;
+                if !runtime.fragment.insns[offset / 4].is_unprivileged_access() {
+                    return Err(format!("user access at {offset:#x} is not LDTR/STTR"));
+                }
+                let site = runtime
+                    .fragment
+                    .fault_site(offset)
+                    .ok_or_else(|| format!("user access at {offset:#x} has no fault site"))?;
+                let rank = runtime
+                    .fragment
+                    .fault_sites
+                    .iter()
+                    .filter(|other| other.ori_pc == site.ori_pc)
+                    .position(|other| other.access_offset == offset)
+                    .expect("the site is among its own pc's sites");
+                let executions = site_executions.entry(offset).or_default();
+                fragment_keys.insert((site.ori_pc, *executions, rank), (user_index, *logged));
+                *executions += 1;
+            }
+        }
+    }
+    // Beyond the original's count, only the naturally faulting instruction's
+    // own accesses may appear (the last of them faulted into its stub).
+    let extras_ok = fragment_log
+        .iter()
+        .filter(|logged| logged.privilege == Privilege::User)
+        .skip(total as usize)
+        .all(|logged| {
+            let offset = (logged.pc - base_pc) as usize;
+            runtime.fragment.fault_site(offset).map(|site| site.ori_pc) == natural_fault_pc
+        });
+    if user_index < total || !extras_ok {
+        return Err(format!(
+            "fragment made {user_index} user accesses, original made {total} \
+             (natural fault at {natural_fault_pc:x?})"
+        ));
+    }
+
+    for k in 1..=total {
+        let key = original_keys[k as usize - 1];
+        let &(f, logged) = fragment_keys
+            .get(&key)
+            .ok_or_else(|| format!("original access {k} {key:x?} has no fragment access"))?;
+        let original_access = original_log[k as usize - 1];
+        if logged.access != original_access.access {
+            return Err(format!(
+                "access {k}: fragment {:?} != original {:?}",
+                logged.access, original_access.access
+            ));
+        }
+
+        let owner = &pre_steps[owners[k as usize - 1]];
+        let fragment =
+            compile_fixture_fragment(text_base, text_bytes.to_vec(), entry_pc, initial_state)?;
+        let mut injected = URuntime::new(fragment, initial_state.clone()).fail_user_access(f);
+        let report = injected.run();
+        let expected_halt = URuntimeHalt::ReturnedToUserspace {
+            status: RetStatus::Mem,
+            target_pc: owner.pc,
+        };
+        if report.halt != expected_halt {
+            return Err(format!(
+                "access {k} (fragment access {f}): expected {expected_halt:?}, got {:?}",
+                report.halt
+            ));
+        }
+        if injected.user_accesses() != f {
+            return Err(format!(
+                "access {k}: the fragment continued past the injected access {f}"
+            ));
+        }
+
+        // Store footprint: every store unit of the faulting instruction may hold
+        // its old or its new value; normalize new units back to old, then the
+        // state must be exactly the pre-instruction state.
+        let post = &pre_steps
+            .get(owners[k as usize - 1] + 1)
+            .ok_or("faulting instruction is the halting step")?
+            .state;
+        let mut state = report.state.clone();
+        let first = owner.accesses_before as usize;
+        for unit in original_log[first..]
+            .iter()
+            .take_while(|logged| logged.pc == owner.pc)
+            .filter(|logged| logged.access.kind == AccessKind::Write)
+        {
+            let (addr, size) = (unit.access.addr, unit.access.size);
+            let (got, old) = (state.read_le(addr, size), owner.state.read_le(addr, size));
+            if got != old && got == post.read_le(addr, size) {
+                state.write_le(addr, size, old);
+            }
+        }
+        if state != owner.state {
+            return Err(format!(
+                "access {k}: user state after the Mem exit at pc={:#x} differs from the \
+                 state before the instruction\nexpected: {:#?}\ngot: {:#?}",
+                owner.pc, owner.state, report.state
             ));
         }
     }

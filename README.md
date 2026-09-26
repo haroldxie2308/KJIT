@@ -151,6 +151,17 @@ stack-backed `x12..x17`, stable-mapped user `x29`, and stable-mapped user `SP`,
 including LDP/STP and pre/post-index loads/stores. Constrained-unpredictable
 register overlaps in those forms are rejected rather than translated, and so
 take the `Unsupported` exit.
+
+Every user load/store is lowered to unprivileged `LDTR`/`STTR` (one per access;
+out-of-`simm9` offsets are materialized in scratch, writeback follows the
+accesses), and no user-visible register is written before the instruction's last
+access. Each access is a fault site: `ExecutionFragment.fault_sites` maps it to
+an out-of-line `Mem` exit stub for its original instruction, placed after the
+body, and a faulting access resumes there, so userspace re-executes the
+instruction and takes the fault itself. The harness classifies fragment
+accesses by instruction: `LDTR`/`STTR` check user page permissions, any other
+load/store must stay in runtime-owned memory. User code that contains
+`LDTR`/`STTR` itself takes the `Unsupported` exit.
 Runtime-exit sequencing now preserves user-visible `x9`, `x10`, and `x11`
 to `pt_regs` before those physical registers become the runtime return channel.
 Dynamic exit targets such as `br x9`, stack-backed branch registers, and

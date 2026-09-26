@@ -167,6 +167,23 @@ impl A64Insn {
         Some((taken, pc.wrapping_add(4)))
     }
 
+    /// `LDTR`/`STTR`: the only instructions a fragment may use to touch user memory.
+    /// Emitted by reg-virt only; never admitted from user code.
+    pub const fn is_unprivileged_access(self) -> bool {
+        matches!(
+            self,
+            Self::LdtrLdtr32LdstUnpriv { .. }
+                | Self::LdtrLdtr64LdstUnpriv { .. }
+                | Self::SttrSttr32LdstUnpriv { .. }
+                | Self::SttrSttr64LdstUnpriv { .. }
+        )
+    }
+
+    /// Whether the generated metadata marks this form as accessing memory.
+    pub fn accesses_memory(self) -> bool {
+        self.operand_roles().contains(&A64OperandRole::Memory)
+    }
+
     pub fn runtime_exit_reason(self, pc: u64) -> Option<RuntimeExitReason> {
         match self {
             Self::BlBlOnlyBranchImm { imm26 } => Some(RuntimeExitReason::Bl {
@@ -357,6 +374,10 @@ impl A64Insn {
             | Self::StpGenStp64LdstpairPost { .. }
             | Self::StpGenStp64LdstpairPre { .. }
             | Self::StpGenStp64LdstpairOff { .. }
+            | Self::LdtrLdtr32LdstUnpriv { .. }
+            | Self::LdtrLdtr64LdstUnpriv { .. }
+            | Self::SttrSttr32LdstUnpriv { .. }
+            | Self::SttrSttr64LdstUnpriv { .. }
             | Self::NopNopHiHints {}
             | Self::BlBlOnlyBranchImm { .. }
             | Self::BrBr64BranchReg { .. }

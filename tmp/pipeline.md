@@ -135,9 +135,10 @@ to it is a design change and gets recorded here first.
   halts with the fault (pc, address, read/write).
 - Fault injection: fail the k-th dynamic user access of a run regardless of
   permissions.
-- Until A5 lands, fragment accesses are classified by address (runtime-owned →
-  runtime access, anything else → user access). A5 deletes that rule and
-  classifies by instruction as above.
+- Fragment accesses are classified by instruction (A5): `LDTR`/`STTR` are user
+  accesses (page permissions, fault injection counts only them); every other
+  load/store is a runtime access and must lie in the runtime-owned ranges. The
+  A4 address-based rule is gone.
 
 ## Memory rewrite (A5)
 
@@ -159,6 +160,28 @@ to it is a design change and gets recorded here first.
 - If the instruction can't be lowered within the scratch pool, it is an
   intrinsic reg-virt rejection → `Unsupported` exit at that PC (A1 path).
 
+Implementation decisions (A5):
+
+- `RewritePlan::build` is the single decision for admission and rewriting: it
+  now also plans the lowering (`MemLowering`) and allocates all scratch through
+  one counter — stack-backed mappings first (operand-role order), then the
+  address scratch, then the pair first-load scratch — so admission sees exactly
+  the capacity the rewrite uses. Worst case is 4 (`ldp x12, x13, [x14, #496]`:
+  base, two targets, address), so `ScratchPoolExhausted` (renamed from
+  `TooManyStackBackedRegs`) is unreachable for the current memory forms.
+- A pair's first load targets its final register directly only when that is
+  XZR or a stack-backed register's scratch that is not the access base;
+  otherwise it loads into scratch and a `MOV` follows the second access.
+- A writeback of `#0` emits nothing. Offsets beyond 24 bits would be
+  `UnencodableMemOffset` (intrinsic); none of the current forms reach it.
+- User code containing `LDTR`/`STTR` is rejected by `build` as
+  `UnprivilegedUserAccess` (intrinsic → `Unsupported` exit): at EL0 they are
+  plain loads/stores, but a fragment runs them at EL1 as its user-access
+  instruction. A form whose generated metadata has a `Memory` role but no
+  lowering is `UnloweredMemoryForm`, a hard translator error.
+- specgen gives `LDTR`/`STTR` the `LDR`/`STR` role inference (Rt written for
+  `LDTR`, `A64Mem` offset operand with an unscaled `simm9`).
+
 ## Fault sites (A5)
 
 - Each emitted user access is a fault site. `ExecutionFragment` carries a
@@ -170,12 +193,38 @@ to it is a design change and gets recorded here first.
   original memory instruction; its accesses share it.
 - Stub labels are their own label kind. `vlabels` stay the body-entry map
   keyed by original PC.
+- Representation: rephrase puts each stub in `RephrasedBlock.cold` (exit groups
+  only; reg-virt rejects anything else there). Layout order is prologue,
+  epilogue, every block body, then every block's `cold` in block order. Each
+  emitted access carries `RephrasedInsnKind::UserAccess`; its stub is named by
+  its `ori_pc`, which is unique per original instruction because CFG blocks
+  partition the PC space, so no extra field is needed. Layout fails
+  (`UntaggedUserAccess`) if the kind and the `LDTR`/`STTR` form ever disagree,
+  and (`MissingFaultStub`) if a user access has no stub.
 - The kernel's fault fixup (K2) only sets the faulting PC to the stub offset.
   The harness does the same: a user-access fault at a fragment offset jumps to
   the table's stub, and an offset without an entry is a hard error.
 - On `Mem` the runtime returns to userspace at x11. Userspace re-executes the
   instruction natively and takes the fault itself, so signals and SIGSEGV
-  behave exactly as they do without KJIT.
+  behave exactly as they do without KJIT. In the harness this is
+  `decide_runtime_return` (`URuntimeHalt::ReturnedToUserspace { Mem, x11 }`),
+  shared with the native runner.
+- The native runner does the same fixup on real hardware: its SIGSEGV/SIGBUS
+  handler looks the faulting PC up in the fragment's fault sites, sets the
+  ucontext PC to the stub and resumes the fragment; a data abort in the
+  fragment without an entry stays a hard failure. `default_fixture_state` maps
+  one read-only page after the data window (x12 + 0x4000; x12 + 0x5000 is
+  unmapped), and `tests/arm64/mem_faults.s` faults on its own (store to the
+  read-only page, pre-index load and split LDP into the unmapped page), so the
+  Mem exit is checked interpreter, native original and native fragment.
+- Acceptance check (`check_fragment_fault_injection`, every fixture case):
+  fragment user accesses are matched to original accesses by (PC, dynamic
+  instance, sub-access) and must have equal address/size/kind; for every
+  original access k the matching fragment access is failed and the fragment
+  must exit `Mem` at the original PC with the pre-instruction user state, store
+  units of that instruction excepted. A case whose original run faults on its
+  own counts only the accesses before that instruction; the fragment's extra
+  accesses must all belong to it.
 - Store footprint: when a split `STP` faults on its second access, the first
   8 bytes may already be written. Architecturally that's allowed, and it is
   invisible to a single thread because userspace re-executes the whole `STP`.

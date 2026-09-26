@@ -386,8 +386,8 @@ fn reg_virt_err_info(err: RegVirtError) -> ErrInfo {
             Some(insn),
             format!("reg={reg} width={width:?}"),
         ),
-        RegVirtError::TooManyStackBackedRegs { pc, insn, limit } => (
-            "TooManyStackBackedRegs",
+        RegVirtError::ScratchPoolExhausted { pc, insn, limit } => (
+            "ScratchPoolExhausted",
             Some(pc),
             Some(insn),
             format!("limit={limit}"),
@@ -429,6 +429,21 @@ fn reg_virt_err_info(err: RegVirtError) -> ErrInfo {
         ),
         RegVirtError::UnpredictableMemoryOp { pc, insn } => {
             ("UnpredictableMemoryOp", Some(pc), Some(insn), String::new())
+        }
+        RegVirtError::UnprivilegedUserAccess { pc, insn } => (
+            "UnprivilegedUserAccess",
+            Some(pc),
+            Some(insn),
+            String::new(),
+        ),
+        RegVirtError::UnencodableMemOffset { pc, insn, offset } => (
+            "UnencodableMemOffset",
+            Some(pc),
+            Some(insn),
+            format!("offset={offset}"),
+        ),
+        RegVirtError::UnloweredMemoryForm { pc, insn } => {
+            ("UnloweredMemoryForm", Some(pc), Some(insn), String::new())
         }
         RegVirtError::UnsupportedRuntimeExitSource {
             pc,
@@ -475,6 +490,16 @@ fn layout_err_info(err: LayoutError) -> ErrInfo {
             "UnsupportedBranchField",
             format!("insn_index={insn_index} field={field}"),
         ),
+        LayoutError::MissingFaultStub { insn_index, ori_pc } => (
+            "MissingFaultStub",
+            format!("insn_index={insn_index} pc={ori_pc:#x}"),
+        ),
+        LayoutError::UntaggedUserAccess { insn_index } => {
+            ("UntaggedUserAccess", format!("insn_index={insn_index}"))
+        }
+        LayoutError::DuplicateFaultStub { ori_pc } => {
+            ("DuplicateFaultStub", format!("pc={ori_pc:#x}"))
+        }
     };
     ErrInfo {
         variant: format!("Layout::{name}"),

@@ -1,5 +1,4 @@
 use crate::model::{AccessKind, Flags, HaltReason, MachineState, MemAccess, MemFault, Privilege};
-use crate::runtime::fragment_access_privilege;
 use crate::shared::arm64::{A64Condition, A64Imm, A64Insn, A64Mem, A64Reg};
 use crate::shared::trans::cfg::{admit_word, RuntimeExitReason, UnsupportedInsn};
 
@@ -47,15 +46,32 @@ impl UserAccessCounter {
     }
 }
 
+/// One attempted memory access, in execution order. A faulting access is
+/// recorded too (it is the last one of its run).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LoggedAccess {
+    pub pc: u64,
+    pub access: MemAccess,
+    pub privilege: Privilege,
+}
+
 /// Who executes the instruction, which decides each access's privilege.
 pub(crate) enum AccessContext<'a> {
     /// Original code runs at EL0: every access is a user access. `counter`
     /// numbers them for fault injection.
     Original {
         counter: Option<&'a mut UserAccessCounter>,
+        log: Option<&'a mut Vec<LoggedAccess>>,
     },
-    /// Translated fragment: see `fragment_access_privilege`.
-    Fragment { runtime_ranges: &'a [(u64, u64)] },
+    /// Translated fragment at EL1. Privilege is decided by the instruction, never
+    /// the address: `LDTR`/`STTR` are user accesses (EL0 permissions, numbered by
+    /// `counter`); every other load/store is a runtime access and must stay inside
+    /// `runtime_ranges` (else a PAN violation).
+    Fragment {
+        runtime_ranges: &'a [(u64, u64)],
+        counter: &'a mut UserAccessCounter,
+        log: Option<&'a mut Vec<LoggedAccess>>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -76,6 +92,7 @@ pub struct OriginalStepper<'a> {
     state: MachineState,
     stopped: bool,
     user_accesses: UserAccessCounter,
+    access_log: Option<Vec<LoggedAccess>>,
 }
 
 impl<'a> OriginalStepper<'a> {
@@ -95,7 +112,19 @@ impl<'a> OriginalStepper<'a> {
             state: initial_state.clone(),
             stopped: false,
             user_accesses: UserAccessCounter::default(),
+            access_log: None,
         })
+    }
+
+    /// Records every attempted access of this stepper's run.
+    pub fn record_accesses(mut self) -> Self {
+        self.access_log = Some(Vec::new());
+        self
+    }
+
+    /// The recorded accesses; `None` unless `record_accesses` was called.
+    pub fn access_log(&self) -> Option<&[LoggedAccess]> {
+        self.access_log.as_deref()
     }
 
     /// Fails the `k`-th dynamic user access of this stepper's run (1-based,
@@ -184,6 +213,7 @@ impl<'a> OriginalStepper<'a> {
         let pc = self.pc;
         let mut ctx = AccessContext::Original {
             counter: Some(&mut self.user_accesses),
+            log: self.access_log.as_mut(),
         };
         let next_pc = match execute_insn(decoded.inner, pc, &mut self.state, &mut ctx) {
             Ok(next_pc) => next_pc,
@@ -986,25 +1016,44 @@ pub(crate) fn execute_insn(
         A64Insn::LdrImmGenLdr32LdstPos { rt, mem }
         | A64Insn::LdrImmGenLdr32LdstImmpre { rt, mem }
         | A64Insn::LdrImmGenLdr32LdstImmpost { rt, mem } => {
-            execute_ldr(ctx, state, pc, mem, rt, 4)?;
+            execute_ldr(ctx, state, pc, mem, rt, 4, false)?;
             Ok(pc + 4)
         }
         A64Insn::LdrImmGenLdr64LdstPos { rt, mem }
         | A64Insn::LdrImmGenLdr64LdstImmpre { rt, mem }
         | A64Insn::LdrImmGenLdr64LdstImmpost { rt, mem } => {
-            execute_ldr(ctx, state, pc, mem, rt, 8)?;
+            execute_ldr(ctx, state, pc, mem, rt, 8, false)?;
             Ok(pc + 4)
         }
         A64Insn::StrImmGenStr32LdstPos { rt, mem }
         | A64Insn::StrImmGenStr32LdstImmpre { rt, mem }
         | A64Insn::StrImmGenStr32LdstImmpost { rt, mem } => {
-            execute_str(ctx, state, pc, mem, rt, 4)?;
+            execute_str(ctx, state, pc, mem, rt, 4, false)?;
             Ok(pc + 4)
         }
         A64Insn::StrImmGenStr64LdstPos { rt, mem }
         | A64Insn::StrImmGenStr64LdstImmpre { rt, mem }
         | A64Insn::StrImmGenStr64LdstImmpost { rt, mem } => {
-            execute_str(ctx, state, pc, mem, rt, 8)?;
+            execute_str(ctx, state, pc, mem, rt, 8, false)?;
+            Ok(pc + 4)
+        }
+
+        // Unscaled simm9 offset (the decoder builds it unscaled); the 32-bit load
+        // zero-extends like LDR W.
+        A64Insn::LdtrLdtr32LdstUnpriv { rt, mem } => {
+            execute_ldr(ctx, state, pc, mem, rt, 4, true)?;
+            Ok(pc + 4)
+        }
+        A64Insn::LdtrLdtr64LdstUnpriv { rt, mem } => {
+            execute_ldr(ctx, state, pc, mem, rt, 8, true)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SttrSttr32LdstUnpriv { rt, mem } => {
+            execute_str(ctx, state, pc, mem, rt, 4, true)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SttrSttr64LdstUnpriv { rt, mem } => {
+            execute_str(ctx, state, pc, mem, rt, 8, true)?;
             Ok(pc + 4)
         }
 
@@ -1563,9 +1612,10 @@ fn execute_ldr(
     mem: A64Mem,
     rt: A64Reg,
     size: u8,
+    unprivileged: bool,
 ) -> Result<(), InsnError> {
     let (addr, writeback) = mem_addressing(state, mem);
-    check_accesses(ctx, state, pc, &[read_access(addr, size)])?;
+    check_accesses(ctx, state, pc, &[read_access(addr, size)], unprivileged)?;
     let value = state.read_le(addr, size);
     if let Some(new_base) = writeback {
         state.write_reg(mem.base(), new_base);
@@ -1584,10 +1634,11 @@ fn execute_str(
     mem: A64Mem,
     rt: A64Reg,
     size: u8,
+    unprivileged: bool,
 ) -> Result<(), InsnError> {
     let value = read_reg_sized(state, rt, size * 8);
     let (addr, writeback) = mem_addressing(state, mem);
-    check_accesses(ctx, state, pc, &[write_access(addr, size)])?;
+    check_accesses(ctx, state, pc, &[write_access(addr, size)], unprivileged)?;
     state.write_le(addr, size, value);
     if let Some(new_base) = writeback {
         state.write_reg(mem.base(), new_base);
@@ -1620,6 +1671,7 @@ fn execute_ldp64(
         state,
         pc,
         &[read_access(addr, 8), read_access(second_addr, 8)],
+        false,
     )?;
     let first = state.read_le(addr, 8);
     let second = state.read_le(second_addr, 8);
@@ -1648,6 +1700,7 @@ fn execute_stp64(
         state,
         pc,
         &[write_access(addr, 8), write_access(second_addr, 8)],
+        false,
     )?;
     state.write_le(addr, 8, first);
     state.write_le(second_addr, 8, second);
@@ -1676,34 +1729,51 @@ fn write_access(addr: u64, size: u8) -> MemAccess {
 /// Validates every access of one instruction, in order, before it mutates
 /// anything. A user access that is not permitted (or is the injected one)
 /// faults; a runtime access outside runtime-owned memory is a PAN violation,
-/// which is a hard error because in the kernel it is an oops.
+/// which is a hard error because in the kernel it is an oops. `unprivileged`:
+/// the instruction is `LDTR`/`STTR`.
 fn check_accesses(
     ctx: &mut AccessContext<'_>,
     state: &MachineState,
     pc: u64,
     accesses: &[MemAccess],
+    unprivileged: bool,
 ) -> Result<(), InsnError> {
     for &access in accesses {
-        let injected = match ctx {
-            AccessContext::Original { counter } => {
-                counter.as_mut().is_some_and(|counter| counter.record())
+        let (privilege, counter, log) = match ctx {
+            AccessContext::Original { counter, log } => {
+                (Privilege::User, counter.as_deref_mut(), log.as_deref_mut())
             }
-            AccessContext::Fragment { runtime_ranges } => {
-                match fragment_access_privilege(runtime_ranges, access) {
-                    Privilege::User => false,
-                    Privilege::Runtime => {
-                        if !access_in_ranges(runtime_ranges, access) {
-                            return Err(InsnError::Error(format!(
-                                "PAN violation: runtime access at pc={pc:#x} to {:#x} (size {}) \
-                                 is outside runtime-owned memory",
-                                access.addr, access.size
-                            )));
-                        }
-                        continue;
-                    }
+            AccessContext::Fragment {
+                runtime_ranges,
+                counter,
+                log,
+            } => {
+                if !unprivileged && !access_in_ranges(runtime_ranges, access) {
+                    return Err(InsnError::Error(format!(
+                        "PAN violation: runtime access at pc={pc:#x} to {:#x} (size {}) \
+                         is outside runtime-owned memory",
+                        access.addr, access.size
+                    )));
                 }
+                let privilege = if unprivileged {
+                    Privilege::User
+                } else {
+                    Privilege::Runtime
+                };
+                (privilege, Some(&mut **counter), log.as_deref_mut())
             }
         };
+        if let Some(log) = log {
+            log.push(LoggedAccess {
+                pc,
+                access,
+                privilege,
+            });
+        }
+        if privilege == Privilege::Runtime {
+            continue;
+        }
+        let injected = counter.is_some_and(|counter| counter.record());
         if injected || !state.user_access_allowed(access) {
             return Err(InsnError::Fault(MemFault { pc, access }));
         }
@@ -1845,7 +1915,10 @@ mod tests {
             insn,
             pc,
             state,
-            &mut AccessContext::Original { counter: None },
+            &mut AccessContext::Original {
+                counter: None,
+                log: None,
+            },
         )
     }
 
@@ -2053,6 +2126,143 @@ mod tests {
         assert_eq!(step.state.read_x(0), 0x11);
         assert_eq!(step.state.read_x(1), 0x22);
         assert_eq!(stepper.user_accesses(), 2);
+    }
+
+    fn exec_fragment(
+        insn: A64Insn,
+        state: &mut MachineState,
+        counter: &mut UserAccessCounter,
+    ) -> Result<u64, InsnError> {
+        execute_insn(
+            insn,
+            0x4000,
+            state,
+            &mut AccessContext::Fragment {
+                runtime_ranges: &[(0x7000, 0x8000)],
+                counter,
+                log: None,
+            },
+        )
+    }
+
+    fn simm9(value: i32) -> A64Imm {
+        A64Imm::signed(value as u32 & 0x1FF, 9)
+    }
+
+    #[test]
+    fn ldtr_sttr_use_unscaled_simm9_and_zero_extend_32_bit_loads() {
+        let mut state = rw_page_at_0x9000();
+        state.write_x(1, 0x9010);
+        state.write_x(2, 0xffff_ffff_8765_4321);
+        let mut counter = UserAccessCounter::default();
+
+        // STTR w2, [x1, #-3]: 4 bytes at 0x900d.
+        exec_fragment(
+            A64Insn::SttrSttr32LdstUnpriv {
+                rt: A64Reg::w(2),
+                mem: A64Mem::offset(A64Reg::x_sp(1), simm9(-3)),
+            },
+            &mut state,
+            &mut counter,
+        )
+        .unwrap();
+        assert_eq!(state.read_le(0x900d, 4), 0x8765_4321);
+        assert_eq!(state.read_le(0x9011, 1), 0);
+
+        // LDTR w3 zero-extends; LDTR x4 reads 8 bytes; STTR x keeps writeback-free base.
+        state.write_x(3, u64::MAX);
+        exec_fragment(
+            A64Insn::LdtrLdtr32LdstUnpriv {
+                rt: A64Reg::w(3),
+                mem: A64Mem::offset(A64Reg::x_sp(1), simm9(-3)),
+            },
+            &mut state,
+            &mut counter,
+        )
+        .unwrap();
+        assert_eq!(state.read_x(3), 0x8765_4321);
+        exec_fragment(
+            A64Insn::SttrSttr64LdstUnpriv {
+                rt: x(2),
+                mem: A64Mem::offset(A64Reg::x_sp(1), simm9(255)),
+            },
+            &mut state,
+            &mut counter,
+        )
+        .unwrap();
+        exec_fragment(
+            A64Insn::LdtrLdtr64LdstUnpriv {
+                rt: x(4),
+                mem: A64Mem::offset(A64Reg::x_sp(1), simm9(255)),
+            },
+            &mut state,
+            &mut counter,
+        )
+        .unwrap();
+        assert_eq!(state.read_x(4), 0xffff_ffff_8765_4321);
+        assert_eq!(state.read_x(1), 0x9010);
+        assert_eq!(counter.seen(), 4);
+    }
+
+    #[test]
+    fn fragment_ldtr_is_a_user_access_and_plain_ldr_a_runtime_access() {
+        let mut state = rw_page_at_0x9000();
+        state.write_x(1, 0xa000); // unmapped user page
+        let ldtr = A64Insn::LdtrLdtr64LdstUnpriv {
+            rt: x(0),
+            mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::signed(0, 9)),
+        };
+        let mut counter = UserAccessCounter::default();
+        let before = state.clone();
+        match exec_fragment(ldtr, &mut state, &mut counter) {
+            Err(InsnError::Fault(fault)) => assert_eq!(fault.access.addr, 0xa000),
+            other => panic!("expected a user fault, got {other:?}"),
+        }
+        assert_eq!(state, before);
+
+        // Injection counts only LDTR/STTR.
+        state.write_x(1, 0x9000);
+        let mut counter = UserAccessCounter::failing_at(1);
+        assert!(matches!(
+            exec_fragment(ldtr, &mut state, &mut counter),
+            Err(InsnError::Fault(_))
+        ));
+
+        // A plain LDR of the same, readable, user page is a PAN violation.
+        let ldr = A64Insn::LdrImmGenLdr64LdstPos {
+            rt: x(0),
+            mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_unsigned(0, 12, 3)),
+        };
+        match exec_fragment(ldr, &mut state, &mut UserAccessCounter::default()) {
+            Err(InsnError::Error(message)) => assert!(message.contains("PAN violation")),
+            other => panic!("expected a PAN violation, got {other:?}"),
+        }
+        // ...and inside runtime memory it is fine and not a user access.
+        state.write_x(1, 0x7000);
+        let mut counter = UserAccessCounter::failing_at(1);
+        exec_fragment(ldr, &mut state, &mut counter).unwrap();
+        assert_eq!(counter.seen(), 0);
+    }
+
+    #[test]
+    fn user_ldtr_in_original_code_is_an_unsupported_exit() {
+        let ldtr = A64Insn::LdtrLdtr64LdstUnpriv {
+            rt: x(0),
+            mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::signed(0, 9)),
+        };
+        let program = encode_insns(&[ldtr]);
+        let state = rw_page_at_0x9000();
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state).unwrap();
+        let step = stepper.step().unwrap().unwrap();
+        assert_eq!(
+            step.halt_reason,
+            Some(HaltReason::RuntimeExit {
+                reason: RuntimeExitReason::Unsupported {
+                    pc: 0x4000,
+                    word: ldtr.encode().unwrap(),
+                }
+            })
+        );
     }
 
     fn encode_insns(insns: &[A64Insn]) -> Vec<u8> {
@@ -2337,7 +2547,10 @@ mod alu_tests {
 
     fn run(state: &mut MachineState, insn: A64Insn) {
         assert!(!insn.is_decode_undefined(), "{} is UNDEFINED", insn.key());
-        let mut ctx = AccessContext::Original { counter: None };
+        let mut ctx = AccessContext::Original {
+            counter: None,
+            log: None,
+        };
         assert_eq!(execute_insn(insn, 0x4000, state, &mut ctx).unwrap(), 0x4004);
     }
 

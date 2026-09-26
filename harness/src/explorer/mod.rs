@@ -1226,6 +1226,7 @@ fn rephrased_kind_label(kind: RephrasedInsnKind) -> &'static str {
         RephrasedInsnKind::Original => "ORI",
         RephrasedInsnKind::UserSynthetic => "USY",
         RephrasedInsnKind::RegVirtHelper => "RVH",
+        RephrasedInsnKind::UserAccess => "UAC",
         RephrasedInsnKind::RuntimeExitPayload => "RTP",
         RephrasedInsnKind::RuntimeExitBranch => "REB",
     }

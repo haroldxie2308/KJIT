@@ -17730,6 +17730,516 @@
     ]
   },
   {
+    "source_file": "ldtr.xml",
+    "section_id": "LDTR",
+    "heading": "LDTR",
+    "title": "LDTR -- A64",
+    "docvars": {
+      "address-form": "base-plus-offset",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "LDTR",
+      "offset-type": "off9s_u"
+    },
+    "variants": [
+      {
+        "section_id": "LDTR",
+        "heading": "LDTR",
+        "title": "LDTR -- A64",
+        "iclass": "Unscaled offset",
+        "encoding_name": "LDTR_32_ldst_unpriv",
+        "encoding_label": "32-bit",
+        "mnemonic": "LDTR",
+        "docvars": {
+          "address-form": "base-plus-offset",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDTR",
+          "offset-type": "off9s_u",
+          "datatype": "32"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm",
+            "hover": "Is the optional signed immediate byte offset, in the range -256 to 255, defaulting to 0 and encoded in the \"imm9\" field."
+          }
+        ],
+        "mask": "0xffe00c00",
+        "value": "0xb8400800",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000",
+            "variable": false
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "LDTR <Wt> , [ <Xn|SP> {, # <simm> }]"
+      },
+      {
+        "section_id": "LDTR",
+        "heading": "LDTR",
+        "title": "LDTR -- A64",
+        "iclass": "Unscaled offset",
+        "encoding_name": "LDTR_64_ldst_unpriv",
+        "encoding_label": "64-bit",
+        "mnemonic": "LDTR",
+        "docvars": {
+          "address-form": "base-plus-offset",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "LDTR",
+          "offset-type": "off9s_u",
+          "datatype": "64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__11",
+            "hover": "Is the 64-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm",
+            "hover": "Is the optional signed immediate byte offset, in the range -256 to 255, defaulting to 0 and encoded in the \"imm9\" field."
+          }
+        ],
+        "mask": "0xffe00c00",
+        "value": "0xf8400800",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000",
+            "variable": false
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
+        "asm": "LDTR <Xt> , [ <Xn|SP> {, # <simm> }]"
+      }
+    ]
+  },
+  {
+    "source_file": "sttr.xml",
+    "section_id": "STTR",
+    "heading": "STTR",
+    "title": "STTR -- A64",
+    "docvars": {
+      "address-form": "base-plus-offset",
+      "instr-class": "general",
+      "isa": "A64",
+      "mnemonic": "STTR",
+      "offset-type": "off9s_u"
+    },
+    "variants": [
+      {
+        "section_id": "STTR",
+        "heading": "STTR",
+        "title": "STTR -- A64",
+        "iclass": "Unscaled offset",
+        "encoding_name": "STTR_32_ldst_unpriv",
+        "encoding_label": "32-bit",
+        "mnemonic": "STTR",
+        "docvars": {
+          "address-form": "base-plus-offset",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STTR",
+          "offset-type": "off9s_u",
+          "datatype": "32"
+        },
+        "asm_operands": [
+          {
+            "text": "<Wt>",
+            "link": "WtOrWZR__4",
+            "hover": "Is the 32-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm",
+            "hover": "Is the optional signed immediate byte offset, in the range -256 to 255, defaulting to 0 and encoded in the \"imm9\" field."
+          }
+        ],
+        "mask": "0xffe00c00",
+        "value": "0xb8000800",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000",
+            "variable": false
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "W32"
+          }
+        ],
+        "asm": "STTR <Wt> , [ <Xn|SP> {, # <simm> }]"
+      },
+      {
+        "section_id": "STTR",
+        "heading": "STTR",
+        "title": "STTR -- A64",
+        "iclass": "Unscaled offset",
+        "encoding_name": "STTR_64_ldst_unpriv",
+        "encoding_label": "64-bit",
+        "mnemonic": "STTR",
+        "docvars": {
+          "address-form": "base-plus-offset",
+          "instr-class": "general",
+          "isa": "A64",
+          "mnemonic": "STTR",
+          "offset-type": "off9s_u",
+          "datatype": "64"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__11",
+            "hover": "Is the 64-bit name of the general-purpose register to be transferred, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<Xn|SP>",
+            "link": "XnSP_option",
+            "hover": "Is the 64-bit name of the general-purpose base register or stack pointer, encoded in the \"Rn\" field."
+          },
+          {
+            "text": "<simm>",
+            "link": "simm",
+            "hover": "Is the optional signed immediate byte offset, in the range -256 to 255, defaulting to 0 and encoded in the \"imm9\" field."
+          }
+        ],
+        "mask": "0xffe00c00",
+        "value": "0xf8000800",
+        "fields": [
+          {
+            "name": "size",
+            "hi": 31,
+            "lo": 30,
+            "width": 2,
+            "shift": 30,
+            "mask": "0xc0000000",
+            "variable": false
+          },
+          {
+            "name": "VR",
+            "hi": 26,
+            "lo": 26,
+            "width": 1,
+            "shift": 26,
+            "mask": "0x04000000",
+            "variable": false
+          },
+          {
+            "name": "opc",
+            "hi": 23,
+            "lo": 22,
+            "width": 2,
+            "shift": 22,
+            "mask": "0x00c00000",
+            "variable": false
+          },
+          {
+            "name": "imm9",
+            "hi": 20,
+            "lo": 12,
+            "width": 9,
+            "shift": 12,
+            "mask": "0x001ff000",
+            "variable": true
+          },
+          {
+            "name": "Rn",
+            "hi": 9,
+            "lo": 5,
+            "width": 5,
+            "shift": 5,
+            "mask": "0x000003e0",
+            "variable": true
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "MemBase",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "MemOffset",
+            "field": "imm9",
+            "width": "Unknown"
+          },
+          {
+            "kind": "Memory",
+            "field": "",
+            "width": "Unknown"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rn",
+            "width": "X64"
+          },
+          {
+            "kind": "RegRead",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
+        "asm": "STTR <Xt> , [ <Xn|SP> {, # <simm> }]"
+      }
+    ]
+  },
+  {
     "source_file": "nop.xml",
     "section_id": "NOP",
     "heading": "NOP",
