@@ -162,3 +162,83 @@ to it is a design change and gets recorded here first.
 - V3 (the independent verifier) checks rules that only exist after A5 and A6
   land (user memory only via LDTR/STTR, fault table coverage, the budget
   sequence). It is written against this section and merged after A6.
+
+# K2 contract: kernel runtime (2026-09-27)
+
+Written before implementation. Facts checked against `dep/linux` 7.1-rc1:
+`arch/arm64/kernel/syscall.c` (`el0_svc_common`, static `invoke_syscall`),
+`arch/arm64/mm/fault.c` (`do_page_fault`, `is_el1_permission_fault`),
+`arch/arm64/mm/extable.c` (`insn_may_access_user`, `fixup_exception`),
+`kernel/extable.c` (`search_exception_tables`), `mm/execmem.c` (no exports).
+
+## Preconditions
+
+- No fragment executes in the kernel until the verifier (V3) and the budget
+  (A6) are merged, and every fragment is verified in-kernel before install.
+- Kernel config invariants live in `kernel-config/` (K1): shadow call stack
+  off (the fragment owns x18), kCFI off, kernel BTI off (the prologue ends
+  in `br x12`), hardware PAN on, `ARM64_SW_TTBR0_PAN` off, and `UAO` clear.
+
+## Patch series (`kernel-patches/`, applied by the setup script)
+
+1. **Syscall-return loop** in `el0_svc_common`, after `invoke_syscall` and
+   only on the path where `has_syscall_work(flags)` is false:
+   `while ((scno = kjit_after_syscall(regs)) >= 0) { orig_x0/syscallno
+   setup; invoke_syscall(regs, scno, ...); re-read flags; break on
+   syscall work }`. The hook is a static key plus an RCU-protected ops
+   pointer that the module registers. It is a no-op when unregistered.
+2. **`search_kjit_extables(addr)`**, consulted last in
+   `search_exception_tables`. This makes `insn_may_access_user` accept a
+   fragment `LDTR`/`STTR`, so demand paging and CoW work exactly like
+   `copy_from_user`. A truly bad address reaches `fixup_exception` and
+   `regs->pc` is set to the site's `Mem` stub.
+   - Entries use the arm64 `exception_table_entry` format with type
+     `EX_TYPE_UACCESS_ERR_ZERO` and both registers = 31, so the handler only
+     redirects the PC.
+   - `insn` and `fixup` are self-relative, so the entries live in the same
+     allocation as the code.
+3. **Exports** the module needs for RX code memory and I-cache maintenance
+   (`execmem_alloc`/`execmem_free` or equivalent, `set_memory_rox`).
+
+## `kjit_after_syscall(regs)` decision
+
+- Return -1 (normal syscall return) unless all of these hold: 64-bit task,
+  no pending signal, no `need_resched`, no syscall-work flags, no
+  single-step, `regs->regs[0]` not a restart errno, and a fragment exists for
+  `(current->mm, regs->pc)`.
+- Otherwise run fragments: call the entry with x0 = `regs`, x1 = the extra
+  params, x2 = the entry address. On exit the epilogue has written the full
+  user state into `regs`. Then:
+  - `Svc`, with x11 = the PC after the svc: re-check every condition above.
+    If they all still hold, set `regs->pc = x11` and return `regs->regs[8]`,
+    so the kernel invokes that syscall. Otherwise set `regs->pc = x11 - 4`
+    and return -1; userspace executes the `svc` natively. This makes
+    declining always exact.
+  - `Ret`/`Br`/`Blr`/`Bl`, target in x10: if a fragment exists for
+    `(mm, target)` and the conditions hold, continue there (runtime-loop
+    chaining, bounded by a per-syscall iteration cap). Otherwise set
+    `regs->pc = target` and return -1.
+  - `Unsupported`/`Mem`/`Budget`: set `regs->pc = x11` and return -1.
+  - Any other status is a kernel bug: `WARN_ONCE`, then disable KJIT for the
+    mm and return -1 with `regs->pc = x11`.
+
+## Code cache
+
+- A per-mm table maps an original PC to a fragment. A fragment is one
+  allocation holding: code (ROX after install), its extable, and the PC→offset
+  entry table the runtime uses to compute x2. Lookup takes a reference that is
+  dropped after the run, because fragments may sleep (page faults) and so
+  can't run under `rcu_read_lock`.
+- Only text from VMAs that are not writable is translated. An
+  `mmu_notifier` on the mm removes fragments whose source pages are
+  invalidated, and removes all of them at mm teardown. A fragment already
+  running finishes its bounded run; that is equivalent to the old code
+  having executed just before the unmap.
+- Translation reads user text with `access_process_vm` for the manual trigger
+  (debugfs `translate <pid> <pc>`), and in the task's own context
+  (`task_work`) for the P3 automatic trigger.
+
+## Known limitation
+
+- rseq critical sections are not honoured inside fragments. glibc only reads
+  `cpu_id`, and redis defines no critical sections.
