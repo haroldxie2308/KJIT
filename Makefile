@@ -15,7 +15,7 @@ endif
 
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
-	harness-test harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen help
+	harness-test harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan help
 
 default:
 	$(KMAKE) M=$$PWD
@@ -98,6 +98,12 @@ harness-tui:
 
 tui: harness-tui
 
+COVERAGE_OUT ?= tmp/coverage-scan
+
+coverage-scan:
+	@if [ -z "$(ELF)" ]; then echo "usage: make coverage-scan ELF=path/to/aarch64.elf [COVERAGE_OUT=dir]" >&2; exit 2; fi
+	cargo run --manifest-path harness/Cargo.toml --bin coverage-scan -- "$(ELF)" "$(COVERAGE_OUT)"
+
 spec-test-encoding:
 	cargo test --manifest-path harness/Cargo.toml encoding_matches_llvm_for_handwritten_cases -- --ignored --nocapture
 
@@ -123,6 +129,7 @@ help:
 		'tui' 'Alias for harness-tui' \
 		'harness-test-asm' 'Run assembly fixture validation; use ASM=path/to/file.s or select interactively' \
 		'spec-test-encoding' 'Compare generated A64Insn encoding against LLVM assembler output' \
+		'coverage-scan' 'Translate from every SVC site in ELF=path and report exits/unsupported forms' \
 		'qemu-run' 'Boot the local kernel image in QEMU (foreground)' \
 		'qemu-run-bg' 'Boot the local kernel image in QEMU (background)' \
 		'qemu-reset' 'Reset the running QEMU guest through QMP' \

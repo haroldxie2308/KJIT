@@ -133,6 +133,20 @@ failing (fixture, case) in one run. `llvm-mc`, `llvm-nm` and `llvm-objcopy`
 must be on `PATH` (for example Homebrew `llvm`); `make harness-test` fails if
 they are missing.
 
+#### Coverage scan
+
+`make coverage-scan ELF=path/to/aarch64.elf` measures how far the translator
+gets on a real binary. It loads the ELF's executable sections, treats every
+aligned `SVC #imm` word as a hot-syscall site, and runs `compile_request` from
+`site + 4`. Per site it records the compile result and the CFG-level runtime
+exits (`Svc`, `Bl`, `Blr`, `Br`, `Ret`, `Unsupported`); exits are taken from
+`build_cfg`, so they are still reported when a later pass fails. Unsupported
+words are disassembled with `llvm-mc` (override with `LLVM_MC=...`) and grouped
+by operand shape, e.g. `cmn x, #imm`. Reports go to
+`$(COVERAGE_OUT)/<elf-name>.coverage.{json,md}` (default
+`tmp/coverage-scan/`). A CFG stops at the first unsupported word on each path,
+so the ranking shows first blockers, not every unsupported instruction.
+
 For now the TUI and noninteractive fixture workflows accept AArch64 `.s`
 fixtures. Pass `ASM=path/to/file.s`, or run the command interactively and choose
 from the fixture prompt. The script assembles the fixture with LLVM tools,
