@@ -20,12 +20,18 @@
 //! and resumes at `kjit_native_landing`, which restores the host's callee-saved
 //! registers and returns to Rust. SIGSEGV/SIGBUS/SIGILL are reported as events,
 //! never as a crash.
+//!
+//! TPIDR_EL0 is the host thread's TLS pointer, but user code and fragments read
+//! the fixture's (`MachineState::tpidr_el0`, via `MRS`). It is switched to the
+//! fixture value only while user code or a fragment runs; `kjit_native_signal_entry`
+//! switches it back before any Rust (and so any TLS access) runs in the handler.
 
 use core::arch::{asm, global_asm};
 use core::cell::Cell;
 use core::ffi::c_void;
 use core::mem::{offset_of, size_of};
 use core::ptr;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
 use crate::model::{ExecutionResult, Flags, HaltReason, MachineState, PagePerm, PAGE_SIZE};
@@ -257,12 +263,18 @@ global_asm!(
     "    sub sp, sp, #16",
     "    str x0, [sp]",
     "    msr nzcv, x5",
+    "    adrp x10, {user_tpidr}",
+    "    ldr x10, [x10, :lo12:{user_tpidr}]",
+    "    msr tpidr_el0, x10",
     "    mov x9, x4",
     "    mov x0, x1",
     "    mov x1, x2",
     "    mov x2, x3",
     "    blr x9",
     "    mrs x10, nzcv",
+    "    adrp x11, {host_tpidr}",
+    "    ldr x11, [x11, :lo12:{host_tpidr}]",
+    "    msr tpidr_el0, x11",
     "    ldr x9, [sp]",
     "    add sp, sp, #16",
     "    str x18, [x9, #176]",
@@ -295,8 +307,65 @@ global_asm!(
     "    ldp d14, d15, [x9, #160]",
     "    ret",
     ".size kjit_native_call_fragment, . - kjit_native_call_fragment",
+    "",
+    // The installed sa_sigaction. If TPIDR_EL0 holds the fixture value of the
+    // run in progress, restores the host's before `on_signal` touches TLS. Any
+    // other thread's TPIDR_EL0 is a real TLS pointer and never that value: the
+    // fixture value lies in the fixture data window, which the run maps fixed.
+    ".globl kjit_native_signal_entry",
+    ".type kjit_native_signal_entry, %function",
+    "kjit_native_signal_entry:",
+    "    adrp x9, {user_tpidr}",
+    "    ldr x9, [x9, :lo12:{user_tpidr}]",
+    "    cbz x9, 1f",
+    "    mrs x10, tpidr_el0",
+    "    cmp x9, x10",
+    "    b.ne 1f",
+    "    adrp x10, {host_tpidr}",
+    "    ldr x10, [x10, :lo12:{host_tpidr}]",
+    "    msr tpidr_el0, x10",
+    "1:",
+    "    b {on_signal}",
+    ".size kjit_native_signal_entry, . - kjit_native_signal_entry",
     enter = const BRK_ENTER_IMM,
+    user_tpidr = sym USER_TPIDR,
+    host_tpidr = sym HOST_TPIDR,
+    on_signal = sym on_signal,
 );
+
+/// TPIDR_EL0 of the native run in progress, or 0 when none is (read by the asm).
+static USER_TPIDR: AtomicU64 = AtomicU64::new(0);
+/// The session thread's own TPIDR_EL0, restored whenever Rust runs again.
+static HOST_TPIDR: AtomicU64 = AtomicU64::new(0);
+
+fn read_tpidr_el0() -> u64 {
+    let value: u64;
+    unsafe { asm!("mrs {}, tpidr_el0", out(reg) value, options(nomem, nostack)) };
+    value
+}
+
+/// Publishes the fixture TPIDR_EL0 for one native run; cleared on drop.
+struct UserTpidr;
+
+impl UserTpidr {
+    fn set(user: u64) -> Result<Self, String> {
+        let host = read_tpidr_el0();
+        if user == 0 || user == host {
+            return Err(format!(
+                "fixture TPIDR_EL0 {user:#x} must be nonzero and differ from the host's {host:#x}"
+            ));
+        }
+        HOST_TPIDR.store(host, Ordering::SeqCst);
+        USER_TPIDR.store(user, Ordering::SeqCst);
+        Ok(Self)
+    }
+}
+
+impl Drop for UserTpidr {
+    fn drop(&mut self) {
+        USER_TPIDR.store(0, Ordering::SeqCst);
+    }
+}
 
 extern "C" {
     fn kjit_native_enter_user(ctx: *mut NativeCtx);
@@ -310,6 +379,7 @@ extern "C" {
         nzcv: u64,
     );
     fn kjit_native_landing();
+    fn kjit_native_signal_entry();
 }
 
 // ---------------------------------------------------------------------------
@@ -353,6 +423,12 @@ extern "C" fn on_signal(sig: i32, info: *mut SigInfo, uc: *mut c_void) {
             mc.sp = user.sp;
             mc.pc = user.pc;
             mc.pstate = (mc.pstate & !NZCV_MASK) | (user.pstate & NZCV_MASK);
+            // Last: no TLS access may follow until the next signal switches back.
+            asm!(
+                "msr tpidr_el0, {}",
+                in(reg) USER_TPIDR.load(Ordering::SeqCst),
+                options(nostack)
+            );
             return;
         }
 
@@ -416,7 +492,7 @@ impl NativeSession {
         }
 
         let action = SigAction {
-            sa_sigaction: on_signal as usize,
+            sa_sigaction: kjit_native_signal_entry as usize,
             sa_mask: [0; 16],
             sa_flags: SA_SIGINFO | SA_ONSTACK,
             sa_restorer: 0,
@@ -441,11 +517,12 @@ impl NativeSession {
 
     /// Starts user code at `regs.pc` with every register from `regs` and runs it
     /// until the first trap or fault.
-    fn enter_user(&self, regs: UserRegs) -> (Event, UserRegs) {
+    fn enter_user(&self, regs: UserRegs, tpidr: u64) -> Result<(Event, UserRegs), String> {
         let mut ctx = NativeCtx::new(regs);
+        let _tpidr = UserTpidr::set(tpidr)?;
         let _active = ActiveCtx::set(&mut ctx);
         unsafe { kjit_native_enter_user(&mut ctx) };
-        (ctx.event, ctx.user)
+        Ok((ctx.event, ctx.user))
     }
 
     fn call_fragment(
@@ -455,8 +532,10 @@ impl NativeSession {
         entry_addr: u64,
         fragment_base: u64,
         nzcv: u64,
-    ) -> Box<NativeCtx> {
+        tpidr: u64,
+    ) -> Result<Box<NativeCtx>, String> {
         let mut ctx = Box::new(NativeCtx::new(UserRegs::default()));
+        let _tpidr = UserTpidr::set(tpidr)?;
         let _active = ActiveCtx::set(&mut ctx);
         unsafe {
             kjit_native_call_fragment(
@@ -468,7 +547,7 @@ impl NativeSession {
                 nzcv,
             )
         };
-        ctx
+        Ok(ctx)
     }
 }
 
@@ -809,7 +888,7 @@ pub fn run_original(
 
     let mut regs = user_regs(initial, entry_pc);
     for _ in 0..MAX_RUNTIME_EXITS {
-        let (event, snapshot) = session.enter_user(regs);
+        let (event, snapshot) = session.enter_user(regs, initial.tpidr_el0)?;
         let pc = event.pc;
         match (event.signal, event.brk()) {
             (SIGTRAP, Some(BRK_SVC)) => {
@@ -874,7 +953,7 @@ fn execute_branch_exit(
     solo[index] = words[index];
     text_map.install_code(&solo)?;
 
-    let (event, snapshot) = session.enter_user(at);
+    let (event, snapshot) = session.enter_user(at, initial.tpidr_el0)?;
     let target_pc = match (event.signal, event.brk()) {
         (SIGTRAP, Some(BRK_FILL)) if text_map.contains(event.pc) => event.pc,
         // Instruction abort: the branch left every executable mapping.
@@ -1020,7 +1099,8 @@ pub fn run_fragment(
             fragment_base + offset as u64,
             fragment_base,
             nzcv,
-        );
+            initial.tpidr_el0,
+        )?;
 
         let user_state = |nzcv: u64| {
             let mut regs = UserRegs {

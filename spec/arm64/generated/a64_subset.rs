@@ -266,6 +266,130 @@ pub enum A64Insn {
         rn: A64Reg,
         rd: A64Reg,
     },
+    AddsAddsubImmAdds32sAddsubImm {
+        sh: u8,
+        imm12: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AddsAddsubImmAdds64sAddsubImm {
+        sh: u8,
+        imm12: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AddAddsubShiftAdd32AddsubShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AddAddsubShiftAdd64AddsubShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AddsAddsubShiftAdds32AddsubShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AddsAddsubShiftAdds64AddsubShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SubAddsubShiftSub32AddsubShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SubAddsubShiftSub64AddsubShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SubsAddsubShiftSubs32AddsubShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SubsAddsubShiftSubs64AddsubShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AddAddsubExtAdd32AddsubExt {
+        rm: A64Reg,
+        option: u8,
+        imm3: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AddAddsubExtAdd64AddsubExt {
+        rm: A64Reg,
+        option: u8,
+        imm3: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AddsAddsubExtAdds32sAddsubExt {
+        rm: A64Reg,
+        option: u8,
+        imm3: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AddsAddsubExtAdds64sAddsubExt {
+        rm: A64Reg,
+        option: u8,
+        imm3: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SubAddsubExtSub32AddsubExt {
+        rm: A64Reg,
+        option: u8,
+        imm3: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SubAddsubExtSub64AddsubExt {
+        rm: A64Reg,
+        option: u8,
+        imm3: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SubsAddsubExtSubs32sAddsubExt {
+        rm: A64Reg,
+        option: u8,
+        imm3: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SubsAddsubExtSubs64sAddsubExt {
+        rm: A64Reg,
+        option: u8,
+        imm3: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
     BUncondBOnlyBranchImm {
         imm26: A64Imm,
     },
@@ -309,12 +433,468 @@ pub enum A64Insn {
         imm16: A64Imm,
         rd: A64Reg,
     },
+    MovnMovn32Movewide {
+        hw: u8,
+        imm16: A64Imm,
+        rd: A64Reg,
+    },
+    MovnMovn64Movewide {
+        hw: u8,
+        imm16: A64Imm,
+        rd: A64Reg,
+    },
+    AndLogShiftAnd32LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AndLogShiftAnd64LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AndsLogShiftAnds32LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AndsLogShiftAnds64LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    OrrLogShiftOrr32LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
     OrrLogShiftOrr64LogShift {
         shift: u8,
         rm: A64Reg,
         imm6: A64Imm,
         rn: A64Reg,
         rd: A64Reg,
+    },
+    EorLogShiftEor32LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    EorLogShiftEor64LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    EonEon32LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    EonEon64LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    BicLogShiftBic32LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    BicLogShiftBic64LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    BicsBics32LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    BicsBics64LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    OrnLogShiftOrn32LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    OrnLogShiftOrn64LogShift {
+        shift: u8,
+        rm: A64Reg,
+        imm6: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AndLogImmAnd32LogImm {
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AndLogImmAnd64LogImm {
+        n: u8,
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AndsLogImmAnds32sLogImm {
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AndsLogImmAnds64sLogImm {
+        n: u8,
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    OrrLogImmOrr32LogImm {
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    OrrLogImmOrr64LogImm {
+        n: u8,
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    EorLogImmEor32LogImm {
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    EorLogImmEor64LogImm {
+        n: u8,
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SbfmSbfm32mBitfield {
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SbfmSbfm64mBitfield {
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    UbfmUbfm32mBitfield {
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    UbfmUbfm64mBitfield {
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    BfmBfm32mBitfield {
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    BfmBfm64mBitfield {
+        immr: A64Imm,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    ExtrExtr32Extract {
+        rm: A64Reg,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    ExtrExtr64Extract {
+        rm: A64Reg,
+        imms: A64Imm,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    CselCsel32Condsel {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    CselCsel64Condsel {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    CsincCsinc32Condsel {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    CsincCsinc64Condsel {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    CsinvCsinv32Condsel {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    CsinvCsinv64Condsel {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    CsnegCsneg32Condsel {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    CsnegCsneg64Condsel {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    CcmpImmCcmp32CondcmpImm {
+        imm5: A64Imm,
+        cond: u8,
+        rn: A64Reg,
+        nzcv: u8,
+    },
+    CcmpImmCcmp64CondcmpImm {
+        imm5: A64Imm,
+        cond: u8,
+        rn: A64Reg,
+        nzcv: u8,
+    },
+    CcmpRegCcmp32CondcmpReg {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        nzcv: u8,
+    },
+    CcmpRegCcmp64CondcmpReg {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        nzcv: u8,
+    },
+    CcmnImmCcmn32CondcmpImm {
+        imm5: A64Imm,
+        cond: u8,
+        rn: A64Reg,
+        nzcv: u8,
+    },
+    CcmnImmCcmn64CondcmpImm {
+        imm5: A64Imm,
+        cond: u8,
+        rn: A64Reg,
+        nzcv: u8,
+    },
+    CcmnRegCcmn32CondcmpReg {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        nzcv: u8,
+    },
+    CcmnRegCcmn64CondcmpReg {
+        rm: A64Reg,
+        cond: u8,
+        rn: A64Reg,
+        nzcv: u8,
+    },
+    LslvLslv32Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    LslvLslv64Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    LsrvLsrv32Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    LsrvLsrv64Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AsrvAsrv32Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    AsrvAsrv64Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    RorvRorv32Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    RorvRorv64Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    UdivUdiv32Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    UdivUdiv64Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SdivSdiv32Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SdivSdiv64Dp2src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    MaddMadd32aDp3src {
+        rm: A64Reg,
+        ra: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    MaddMadd64aDp3src {
+        rm: A64Reg,
+        ra: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    MsubMsub32aDp3src {
+        rm: A64Reg,
+        ra: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    MsubMsub64aDp3src {
+        rm: A64Reg,
+        ra: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SmaddlSmaddl64waDp3src {
+        rm: A64Reg,
+        ra: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    UmaddlUmaddl64waDp3src {
+        rm: A64Reg,
+        ra: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    SmulhSmulh64Dp3src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    UmulhUmulh64Dp3src {
+        rm: A64Reg,
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    ClzIntClz32Dp1src {
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    ClzIntClz64Dp1src {
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    RbitIntRbit32Dp1src {
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    RbitIntRbit64Dp1src {
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    RevRev32Dp1src {
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    RevRev64Dp1src {
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Rev16IntRev1632Dp1src {
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Rev16IntRev1664Dp1src {
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    Rev32IntRev3264Dp1src {
+        rn: A64Reg,
+        rd: A64Reg,
+    },
+    MrsMrsRsSystemmove {
+        rt: A64Reg,
     },
     TbzTbzOnlyTestbranch {
         b5: u8,
@@ -498,6 +1078,24 @@ impl A64Insn {
             Self::SubAddsubImmSub64AddsubImm { .. } => "SUB_addsub_imm.SUB_64_addsub_imm",
             Self::SubsAddsubImmSubs32sAddsubImm { .. } => "SUBS_addsub_imm.SUBS_32S_addsub_imm",
             Self::SubsAddsubImmSubs64sAddsubImm { .. } => "SUBS_addsub_imm.SUBS_64S_addsub_imm",
+            Self::AddsAddsubImmAdds32sAddsubImm { .. } => "ADDS_addsub_imm.ADDS_32S_addsub_imm",
+            Self::AddsAddsubImmAdds64sAddsubImm { .. } => "ADDS_addsub_imm.ADDS_64S_addsub_imm",
+            Self::AddAddsubShiftAdd32AddsubShift { .. } => "ADD_addsub_shift.ADD_32_addsub_shift",
+            Self::AddAddsubShiftAdd64AddsubShift { .. } => "ADD_addsub_shift.ADD_64_addsub_shift",
+            Self::AddsAddsubShiftAdds32AddsubShift { .. } => "ADDS_addsub_shift.ADDS_32_addsub_shift",
+            Self::AddsAddsubShiftAdds64AddsubShift { .. } => "ADDS_addsub_shift.ADDS_64_addsub_shift",
+            Self::SubAddsubShiftSub32AddsubShift { .. } => "SUB_addsub_shift.SUB_32_addsub_shift",
+            Self::SubAddsubShiftSub64AddsubShift { .. } => "SUB_addsub_shift.SUB_64_addsub_shift",
+            Self::SubsAddsubShiftSubs32AddsubShift { .. } => "SUBS_addsub_shift.SUBS_32_addsub_shift",
+            Self::SubsAddsubShiftSubs64AddsubShift { .. } => "SUBS_addsub_shift.SUBS_64_addsub_shift",
+            Self::AddAddsubExtAdd32AddsubExt { .. } => "ADD_addsub_ext.ADD_32_addsub_ext",
+            Self::AddAddsubExtAdd64AddsubExt { .. } => "ADD_addsub_ext.ADD_64_addsub_ext",
+            Self::AddsAddsubExtAdds32sAddsubExt { .. } => "ADDS_addsub_ext.ADDS_32S_addsub_ext",
+            Self::AddsAddsubExtAdds64sAddsubExt { .. } => "ADDS_addsub_ext.ADDS_64S_addsub_ext",
+            Self::SubAddsubExtSub32AddsubExt { .. } => "SUB_addsub_ext.SUB_32_addsub_ext",
+            Self::SubAddsubExtSub64AddsubExt { .. } => "SUB_addsub_ext.SUB_64_addsub_ext",
+            Self::SubsAddsubExtSubs32sAddsubExt { .. } => "SUBS_addsub_ext.SUBS_32S_addsub_ext",
+            Self::SubsAddsubExtSubs64sAddsubExt { .. } => "SUBS_addsub_ext.SUBS_64S_addsub_ext",
             Self::BUncondBOnlyBranchImm { .. } => "B_uncond.B_only_branch_imm",
             Self::BCondBOnlyCondbranch { .. } => "B_cond.B_only_condbranch",
             Self::CbzCbz32Compbranch { .. } => "CBZ.CBZ_32_compbranch",
@@ -508,7 +1106,86 @@ impl A64Insn {
             Self::MovzMovz64Movewide { .. } => "MOVZ.MOVZ_64_movewide",
             Self::MovkMovk32Movewide { .. } => "MOVK.MOVK_32_movewide",
             Self::MovkMovk64Movewide { .. } => "MOVK.MOVK_64_movewide",
+            Self::MovnMovn32Movewide { .. } => "MOVN.MOVN_32_movewide",
+            Self::MovnMovn64Movewide { .. } => "MOVN.MOVN_64_movewide",
+            Self::AndLogShiftAnd32LogShift { .. } => "AND_log_shift.AND_32_log_shift",
+            Self::AndLogShiftAnd64LogShift { .. } => "AND_log_shift.AND_64_log_shift",
+            Self::AndsLogShiftAnds32LogShift { .. } => "ANDS_log_shift.ANDS_32_log_shift",
+            Self::AndsLogShiftAnds64LogShift { .. } => "ANDS_log_shift.ANDS_64_log_shift",
+            Self::OrrLogShiftOrr32LogShift { .. } => "ORR_log_shift.ORR_32_log_shift",
             Self::OrrLogShiftOrr64LogShift { .. } => "ORR_log_shift.ORR_64_log_shift",
+            Self::EorLogShiftEor32LogShift { .. } => "EOR_log_shift.EOR_32_log_shift",
+            Self::EorLogShiftEor64LogShift { .. } => "EOR_log_shift.EOR_64_log_shift",
+            Self::EonEon32LogShift { .. } => "EON.EON_32_log_shift",
+            Self::EonEon64LogShift { .. } => "EON.EON_64_log_shift",
+            Self::BicLogShiftBic32LogShift { .. } => "BIC_log_shift.BIC_32_log_shift",
+            Self::BicLogShiftBic64LogShift { .. } => "BIC_log_shift.BIC_64_log_shift",
+            Self::BicsBics32LogShift { .. } => "BICS.BICS_32_log_shift",
+            Self::BicsBics64LogShift { .. } => "BICS.BICS_64_log_shift",
+            Self::OrnLogShiftOrn32LogShift { .. } => "ORN_log_shift.ORN_32_log_shift",
+            Self::OrnLogShiftOrn64LogShift { .. } => "ORN_log_shift.ORN_64_log_shift",
+            Self::AndLogImmAnd32LogImm { .. } => "AND_log_imm.AND_32_log_imm",
+            Self::AndLogImmAnd64LogImm { .. } => "AND_log_imm.AND_64_log_imm",
+            Self::AndsLogImmAnds32sLogImm { .. } => "ANDS_log_imm.ANDS_32S_log_imm",
+            Self::AndsLogImmAnds64sLogImm { .. } => "ANDS_log_imm.ANDS_64S_log_imm",
+            Self::OrrLogImmOrr32LogImm { .. } => "ORR_log_imm.ORR_32_log_imm",
+            Self::OrrLogImmOrr64LogImm { .. } => "ORR_log_imm.ORR_64_log_imm",
+            Self::EorLogImmEor32LogImm { .. } => "EOR_log_imm.EOR_32_log_imm",
+            Self::EorLogImmEor64LogImm { .. } => "EOR_log_imm.EOR_64_log_imm",
+            Self::SbfmSbfm32mBitfield { .. } => "SBFM.SBFM_32M_bitfield",
+            Self::SbfmSbfm64mBitfield { .. } => "SBFM.SBFM_64M_bitfield",
+            Self::UbfmUbfm32mBitfield { .. } => "UBFM.UBFM_32M_bitfield",
+            Self::UbfmUbfm64mBitfield { .. } => "UBFM.UBFM_64M_bitfield",
+            Self::BfmBfm32mBitfield { .. } => "BFM.BFM_32M_bitfield",
+            Self::BfmBfm64mBitfield { .. } => "BFM.BFM_64M_bitfield",
+            Self::ExtrExtr32Extract { .. } => "EXTR.EXTR_32_extract",
+            Self::ExtrExtr64Extract { .. } => "EXTR.EXTR_64_extract",
+            Self::CselCsel32Condsel { .. } => "CSEL.CSEL_32_condsel",
+            Self::CselCsel64Condsel { .. } => "CSEL.CSEL_64_condsel",
+            Self::CsincCsinc32Condsel { .. } => "CSINC.CSINC_32_condsel",
+            Self::CsincCsinc64Condsel { .. } => "CSINC.CSINC_64_condsel",
+            Self::CsinvCsinv32Condsel { .. } => "CSINV.CSINV_32_condsel",
+            Self::CsinvCsinv64Condsel { .. } => "CSINV.CSINV_64_condsel",
+            Self::CsnegCsneg32Condsel { .. } => "CSNEG.CSNEG_32_condsel",
+            Self::CsnegCsneg64Condsel { .. } => "CSNEG.CSNEG_64_condsel",
+            Self::CcmpImmCcmp32CondcmpImm { .. } => "CCMP_imm.CCMP_32_condcmp_imm",
+            Self::CcmpImmCcmp64CondcmpImm { .. } => "CCMP_imm.CCMP_64_condcmp_imm",
+            Self::CcmpRegCcmp32CondcmpReg { .. } => "CCMP_reg.CCMP_32_condcmp_reg",
+            Self::CcmpRegCcmp64CondcmpReg { .. } => "CCMP_reg.CCMP_64_condcmp_reg",
+            Self::CcmnImmCcmn32CondcmpImm { .. } => "CCMN_imm.CCMN_32_condcmp_imm",
+            Self::CcmnImmCcmn64CondcmpImm { .. } => "CCMN_imm.CCMN_64_condcmp_imm",
+            Self::CcmnRegCcmn32CondcmpReg { .. } => "CCMN_reg.CCMN_32_condcmp_reg",
+            Self::CcmnRegCcmn64CondcmpReg { .. } => "CCMN_reg.CCMN_64_condcmp_reg",
+            Self::LslvLslv32Dp2src { .. } => "LSLV.LSLV_32_dp_2src",
+            Self::LslvLslv64Dp2src { .. } => "LSLV.LSLV_64_dp_2src",
+            Self::LsrvLsrv32Dp2src { .. } => "LSRV.LSRV_32_dp_2src",
+            Self::LsrvLsrv64Dp2src { .. } => "LSRV.LSRV_64_dp_2src",
+            Self::AsrvAsrv32Dp2src { .. } => "ASRV.ASRV_32_dp_2src",
+            Self::AsrvAsrv64Dp2src { .. } => "ASRV.ASRV_64_dp_2src",
+            Self::RorvRorv32Dp2src { .. } => "RORV.RORV_32_dp_2src",
+            Self::RorvRorv64Dp2src { .. } => "RORV.RORV_64_dp_2src",
+            Self::UdivUdiv32Dp2src { .. } => "UDIV.UDIV_32_dp_2src",
+            Self::UdivUdiv64Dp2src { .. } => "UDIV.UDIV_64_dp_2src",
+            Self::SdivSdiv32Dp2src { .. } => "SDIV.SDIV_32_dp_2src",
+            Self::SdivSdiv64Dp2src { .. } => "SDIV.SDIV_64_dp_2src",
+            Self::MaddMadd32aDp3src { .. } => "MADD.MADD_32A_dp_3src",
+            Self::MaddMadd64aDp3src { .. } => "MADD.MADD_64A_dp_3src",
+            Self::MsubMsub32aDp3src { .. } => "MSUB.MSUB_32A_dp_3src",
+            Self::MsubMsub64aDp3src { .. } => "MSUB.MSUB_64A_dp_3src",
+            Self::SmaddlSmaddl64waDp3src { .. } => "SMADDL.SMADDL_64WA_dp_3src",
+            Self::UmaddlUmaddl64waDp3src { .. } => "UMADDL.UMADDL_64WA_dp_3src",
+            Self::SmulhSmulh64Dp3src { .. } => "SMULH.SMULH_64_dp_3src",
+            Self::UmulhUmulh64Dp3src { .. } => "UMULH.UMULH_64_dp_3src",
+            Self::ClzIntClz32Dp1src { .. } => "CLZ_int.CLZ_32_dp_1src",
+            Self::ClzIntClz64Dp1src { .. } => "CLZ_int.CLZ_64_dp_1src",
+            Self::RbitIntRbit32Dp1src { .. } => "RBIT_int.RBIT_32_dp_1src",
+            Self::RbitIntRbit64Dp1src { .. } => "RBIT_int.RBIT_64_dp_1src",
+            Self::RevRev32Dp1src { .. } => "REV.REV_32_dp_1src",
+            Self::RevRev64Dp1src { .. } => "REV.REV_64_dp_1src",
+            Self::Rev16IntRev1632Dp1src { .. } => "REV16_int.REV16_32_dp_1src",
+            Self::Rev16IntRev1664Dp1src { .. } => "REV16_int.REV16_64_dp_1src",
+            Self::Rev32IntRev3264Dp1src { .. } => "REV32_int.REV32_64_dp_1src",
+            Self::MrsMrsRsSystemmove { .. } => "MRS.MRS_RS_systemmove",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ.TBZ_only_testbranch",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ.TBNZ_only_testbranch",
             Self::LdrImmGenLdr32LdstImmpost { .. } => "LDR_imm_gen.LDR_32_ldst_immpost",
@@ -548,6 +1225,24 @@ impl A64Insn {
             Self::SubAddsubImmSub64AddsubImm { .. } => "SUB",
             Self::SubsAddsubImmSubs32sAddsubImm { .. } => "SUBS",
             Self::SubsAddsubImmSubs64sAddsubImm { .. } => "SUBS",
+            Self::AddsAddsubImmAdds32sAddsubImm { .. } => "ADDS",
+            Self::AddsAddsubImmAdds64sAddsubImm { .. } => "ADDS",
+            Self::AddAddsubShiftAdd32AddsubShift { .. } => "ADD",
+            Self::AddAddsubShiftAdd64AddsubShift { .. } => "ADD",
+            Self::AddsAddsubShiftAdds32AddsubShift { .. } => "ADDS",
+            Self::AddsAddsubShiftAdds64AddsubShift { .. } => "ADDS",
+            Self::SubAddsubShiftSub32AddsubShift { .. } => "SUB",
+            Self::SubAddsubShiftSub64AddsubShift { .. } => "SUB",
+            Self::SubsAddsubShiftSubs32AddsubShift { .. } => "SUBS",
+            Self::SubsAddsubShiftSubs64AddsubShift { .. } => "SUBS",
+            Self::AddAddsubExtAdd32AddsubExt { .. } => "ADD",
+            Self::AddAddsubExtAdd64AddsubExt { .. } => "ADD",
+            Self::AddsAddsubExtAdds32sAddsubExt { .. } => "ADDS",
+            Self::AddsAddsubExtAdds64sAddsubExt { .. } => "ADDS",
+            Self::SubAddsubExtSub32AddsubExt { .. } => "SUB",
+            Self::SubAddsubExtSub64AddsubExt { .. } => "SUB",
+            Self::SubsAddsubExtSubs32sAddsubExt { .. } => "SUBS",
+            Self::SubsAddsubExtSubs64sAddsubExt { .. } => "SUBS",
             Self::BUncondBOnlyBranchImm { .. } => "B",
             Self::BCondBOnlyCondbranch { .. } => "B",
             Self::CbzCbz32Compbranch { .. } => "CBZ",
@@ -558,7 +1253,86 @@ impl A64Insn {
             Self::MovzMovz64Movewide { .. } => "MOVZ",
             Self::MovkMovk32Movewide { .. } => "MOVK",
             Self::MovkMovk64Movewide { .. } => "MOVK",
+            Self::MovnMovn32Movewide { .. } => "MOVN",
+            Self::MovnMovn64Movewide { .. } => "MOVN",
+            Self::AndLogShiftAnd32LogShift { .. } => "AND",
+            Self::AndLogShiftAnd64LogShift { .. } => "AND",
+            Self::AndsLogShiftAnds32LogShift { .. } => "ANDS",
+            Self::AndsLogShiftAnds64LogShift { .. } => "ANDS",
+            Self::OrrLogShiftOrr32LogShift { .. } => "ORR",
             Self::OrrLogShiftOrr64LogShift { .. } => "ORR",
+            Self::EorLogShiftEor32LogShift { .. } => "EOR",
+            Self::EorLogShiftEor64LogShift { .. } => "EOR",
+            Self::EonEon32LogShift { .. } => "EON",
+            Self::EonEon64LogShift { .. } => "EON",
+            Self::BicLogShiftBic32LogShift { .. } => "BIC",
+            Self::BicLogShiftBic64LogShift { .. } => "BIC",
+            Self::BicsBics32LogShift { .. } => "BICS",
+            Self::BicsBics64LogShift { .. } => "BICS",
+            Self::OrnLogShiftOrn32LogShift { .. } => "ORN",
+            Self::OrnLogShiftOrn64LogShift { .. } => "ORN",
+            Self::AndLogImmAnd32LogImm { .. } => "AND",
+            Self::AndLogImmAnd64LogImm { .. } => "AND",
+            Self::AndsLogImmAnds32sLogImm { .. } => "ANDS",
+            Self::AndsLogImmAnds64sLogImm { .. } => "ANDS",
+            Self::OrrLogImmOrr32LogImm { .. } => "ORR",
+            Self::OrrLogImmOrr64LogImm { .. } => "ORR",
+            Self::EorLogImmEor32LogImm { .. } => "EOR",
+            Self::EorLogImmEor64LogImm { .. } => "EOR",
+            Self::SbfmSbfm32mBitfield { .. } => "SBFM",
+            Self::SbfmSbfm64mBitfield { .. } => "SBFM",
+            Self::UbfmUbfm32mBitfield { .. } => "UBFM",
+            Self::UbfmUbfm64mBitfield { .. } => "UBFM",
+            Self::BfmBfm32mBitfield { .. } => "BFM",
+            Self::BfmBfm64mBitfield { .. } => "BFM",
+            Self::ExtrExtr32Extract { .. } => "EXTR",
+            Self::ExtrExtr64Extract { .. } => "EXTR",
+            Self::CselCsel32Condsel { .. } => "CSEL",
+            Self::CselCsel64Condsel { .. } => "CSEL",
+            Self::CsincCsinc32Condsel { .. } => "CSINC",
+            Self::CsincCsinc64Condsel { .. } => "CSINC",
+            Self::CsinvCsinv32Condsel { .. } => "CSINV",
+            Self::CsinvCsinv64Condsel { .. } => "CSINV",
+            Self::CsnegCsneg32Condsel { .. } => "CSNEG",
+            Self::CsnegCsneg64Condsel { .. } => "CSNEG",
+            Self::CcmpImmCcmp32CondcmpImm { .. } => "CCMP",
+            Self::CcmpImmCcmp64CondcmpImm { .. } => "CCMP",
+            Self::CcmpRegCcmp32CondcmpReg { .. } => "CCMP",
+            Self::CcmpRegCcmp64CondcmpReg { .. } => "CCMP",
+            Self::CcmnImmCcmn32CondcmpImm { .. } => "CCMN",
+            Self::CcmnImmCcmn64CondcmpImm { .. } => "CCMN",
+            Self::CcmnRegCcmn32CondcmpReg { .. } => "CCMN",
+            Self::CcmnRegCcmn64CondcmpReg { .. } => "CCMN",
+            Self::LslvLslv32Dp2src { .. } => "LSLV",
+            Self::LslvLslv64Dp2src { .. } => "LSLV",
+            Self::LsrvLsrv32Dp2src { .. } => "LSRV",
+            Self::LsrvLsrv64Dp2src { .. } => "LSRV",
+            Self::AsrvAsrv32Dp2src { .. } => "ASRV",
+            Self::AsrvAsrv64Dp2src { .. } => "ASRV",
+            Self::RorvRorv32Dp2src { .. } => "RORV",
+            Self::RorvRorv64Dp2src { .. } => "RORV",
+            Self::UdivUdiv32Dp2src { .. } => "UDIV",
+            Self::UdivUdiv64Dp2src { .. } => "UDIV",
+            Self::SdivSdiv32Dp2src { .. } => "SDIV",
+            Self::SdivSdiv64Dp2src { .. } => "SDIV",
+            Self::MaddMadd32aDp3src { .. } => "MADD",
+            Self::MaddMadd64aDp3src { .. } => "MADD",
+            Self::MsubMsub32aDp3src { .. } => "MSUB",
+            Self::MsubMsub64aDp3src { .. } => "MSUB",
+            Self::SmaddlSmaddl64waDp3src { .. } => "SMADDL",
+            Self::UmaddlUmaddl64waDp3src { .. } => "UMADDL",
+            Self::SmulhSmulh64Dp3src { .. } => "SMULH",
+            Self::UmulhUmulh64Dp3src { .. } => "UMULH",
+            Self::ClzIntClz32Dp1src { .. } => "CLZ",
+            Self::ClzIntClz64Dp1src { .. } => "CLZ",
+            Self::RbitIntRbit32Dp1src { .. } => "RBIT",
+            Self::RbitIntRbit64Dp1src { .. } => "RBIT",
+            Self::RevRev32Dp1src { .. } => "REV",
+            Self::RevRev64Dp1src { .. } => "REV",
+            Self::Rev16IntRev1632Dp1src { .. } => "REV16",
+            Self::Rev16IntRev1664Dp1src { .. } => "REV16",
+            Self::Rev32IntRev3264Dp1src { .. } => "REV32",
+            Self::MrsMrsRsSystemmove { .. } => "MRS",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ",
             Self::LdrImmGenLdr32LdstImmpost { .. } => "LDR",
@@ -598,6 +1372,24 @@ impl A64Insn {
             Self::SubAddsubImmSub64AddsubImm { .. } => "SUB <Xd|SP> , <Xn|SP> , # <imm> {, <shift> }",
             Self::SubsAddsubImmSubs32sAddsubImm { .. } => "SUBS <Wd> , <Wn|WSP> , # <imm> {, <shift> }",
             Self::SubsAddsubImmSubs64sAddsubImm { .. } => "SUBS <Xd> , <Xn|SP> , # <imm> {, <shift> }",
+            Self::AddsAddsubImmAdds32sAddsubImm { .. } => "ADDS <Wd> , <Wn|WSP> , # <imm> {, <shift> }",
+            Self::AddsAddsubImmAdds64sAddsubImm { .. } => "ADDS <Xd> , <Xn|SP> , # <imm> {, <shift> }",
+            Self::AddAddsubShiftAdd32AddsubShift { .. } => "ADD <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::AddAddsubShiftAdd64AddsubShift { .. } => "ADD <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::AddsAddsubShiftAdds32AddsubShift { .. } => "ADDS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::AddsAddsubShiftAdds64AddsubShift { .. } => "ADDS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::SubAddsubShiftSub32AddsubShift { .. } => "SUB <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::SubAddsubShiftSub64AddsubShift { .. } => "SUB <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::SubsAddsubShiftSubs32AddsubShift { .. } => "SUBS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::SubsAddsubShiftSubs64AddsubShift { .. } => "SUBS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::AddAddsubExtAdd32AddsubExt { .. } => "ADD <Wd|WSP> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
+            Self::AddAddsubExtAdd64AddsubExt { .. } => "ADD <Xd|SP> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
+            Self::AddsAddsubExtAdds32sAddsubExt { .. } => "ADDS <Wd> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
+            Self::AddsAddsubExtAdds64sAddsubExt { .. } => "ADDS <Xd> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
+            Self::SubAddsubExtSub32AddsubExt { .. } => "SUB <Wd|WSP> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
+            Self::SubAddsubExtSub64AddsubExt { .. } => "SUB <Xd|SP> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
+            Self::SubsAddsubExtSubs32sAddsubExt { .. } => "SUBS <Wd> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
+            Self::SubsAddsubExtSubs64sAddsubExt { .. } => "SUBS <Xd> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
             Self::BUncondBOnlyBranchImm { .. } => "B <label>",
             Self::BCondBOnlyCondbranch { .. } => "B. <cond> <label>",
             Self::CbzCbz32Compbranch { .. } => "CBZ <Wt> , <label>",
@@ -608,7 +1400,86 @@ impl A64Insn {
             Self::MovzMovz64Movewide { .. } => "MOVZ <Xd> , # <imm> {, LSL # <shift> }",
             Self::MovkMovk32Movewide { .. } => "MOVK <Wd> , # <imm> {, LSL # <shift> }",
             Self::MovkMovk64Movewide { .. } => "MOVK <Xd> , # <imm> {, LSL # <shift> }",
+            Self::MovnMovn32Movewide { .. } => "MOVN <Wd> , # <imm> {, LSL # <shift> }",
+            Self::MovnMovn64Movewide { .. } => "MOVN <Xd> , # <imm> {, LSL # <shift> }",
+            Self::AndLogShiftAnd32LogShift { .. } => "AND <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::AndLogShiftAnd64LogShift { .. } => "AND <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::AndsLogShiftAnds32LogShift { .. } => "ANDS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::AndsLogShiftAnds64LogShift { .. } => "ANDS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::OrrLogShiftOrr32LogShift { .. } => "ORR <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
             Self::OrrLogShiftOrr64LogShift { .. } => "ORR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::EorLogShiftEor32LogShift { .. } => "EOR <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::EorLogShiftEor64LogShift { .. } => "EOR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::EonEon32LogShift { .. } => "EON <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::EonEon64LogShift { .. } => "EON <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::BicLogShiftBic32LogShift { .. } => "BIC <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::BicLogShiftBic64LogShift { .. } => "BIC <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::BicsBics32LogShift { .. } => "BICS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::BicsBics64LogShift { .. } => "BICS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::OrnLogShiftOrn32LogShift { .. } => "ORN <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+            Self::OrnLogShiftOrn64LogShift { .. } => "ORN <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+            Self::AndLogImmAnd32LogImm { .. } => "AND <Wd|WSP> , <Wn> , # <imm>",
+            Self::AndLogImmAnd64LogImm { .. } => "AND <Xd|SP> , <Xn> , # <imm>",
+            Self::AndsLogImmAnds32sLogImm { .. } => "ANDS <Wd> , <Wn> , # <imm>",
+            Self::AndsLogImmAnds64sLogImm { .. } => "ANDS <Xd> , <Xn> , # <imm>",
+            Self::OrrLogImmOrr32LogImm { .. } => "ORR <Wd|WSP> , <Wn> , # <imm>",
+            Self::OrrLogImmOrr64LogImm { .. } => "ORR <Xd|SP> , <Xn> , # <imm>",
+            Self::EorLogImmEor32LogImm { .. } => "EOR <Wd|WSP> , <Wn> , # <imm>",
+            Self::EorLogImmEor64LogImm { .. } => "EOR <Xd|SP> , <Xn> , # <imm>",
+            Self::SbfmSbfm32mBitfield { .. } => "SBFM <Wd> , <Wn> , # <immr> , # <imms>",
+            Self::SbfmSbfm64mBitfield { .. } => "SBFM <Xd> , <Xn> , # <immr> , # <imms>",
+            Self::UbfmUbfm32mBitfield { .. } => "UBFM <Wd> , <Wn> , # <immr> , # <imms>",
+            Self::UbfmUbfm64mBitfield { .. } => "UBFM <Xd> , <Xn> , # <immr> , # <imms>",
+            Self::BfmBfm32mBitfield { .. } => "BFM <Wd> , <Wn> , # <immr> , # <imms>",
+            Self::BfmBfm64mBitfield { .. } => "BFM <Xd> , <Xn> , # <immr> , # <imms>",
+            Self::ExtrExtr32Extract { .. } => "EXTR <Wd> , <Wn> , <Wm> , # <lsb>",
+            Self::ExtrExtr64Extract { .. } => "EXTR <Xd> , <Xn> , <Xm> , # <lsb>",
+            Self::CselCsel32Condsel { .. } => "CSEL <Wd> , <Wn> , <Wm> , <cond>",
+            Self::CselCsel64Condsel { .. } => "CSEL <Xd> , <Xn> , <Xm> , <cond>",
+            Self::CsincCsinc32Condsel { .. } => "CSINC <Wd> , <Wn> , <Wm> , <cond>",
+            Self::CsincCsinc64Condsel { .. } => "CSINC <Xd> , <Xn> , <Xm> , <cond>",
+            Self::CsinvCsinv32Condsel { .. } => "CSINV <Wd> , <Wn> , <Wm> , <cond>",
+            Self::CsinvCsinv64Condsel { .. } => "CSINV <Xd> , <Xn> , <Xm> , <cond>",
+            Self::CsnegCsneg32Condsel { .. } => "CSNEG <Wd> , <Wn> , <Wm> , <cond>",
+            Self::CsnegCsneg64Condsel { .. } => "CSNEG <Xd> , <Xn> , <Xm> , <cond>",
+            Self::CcmpImmCcmp32CondcmpImm { .. } => "CCMP <Wn> , # <imm> , # <nzcv> , <cond>",
+            Self::CcmpImmCcmp64CondcmpImm { .. } => "CCMP <Xn> , # <imm> , # <nzcv> , <cond>",
+            Self::CcmpRegCcmp32CondcmpReg { .. } => "CCMP <Wn> , <Wm> , # <nzcv> , <cond>",
+            Self::CcmpRegCcmp64CondcmpReg { .. } => "CCMP <Xn> , <Xm> , # <nzcv> , <cond>",
+            Self::CcmnImmCcmn32CondcmpImm { .. } => "CCMN <Wn> , # <imm> , # <nzcv> , <cond>",
+            Self::CcmnImmCcmn64CondcmpImm { .. } => "CCMN <Xn> , # <imm> , # <nzcv> , <cond>",
+            Self::CcmnRegCcmn32CondcmpReg { .. } => "CCMN <Wn> , <Wm> , # <nzcv> , <cond>",
+            Self::CcmnRegCcmn64CondcmpReg { .. } => "CCMN <Xn> , <Xm> , # <nzcv> , <cond>",
+            Self::LslvLslv32Dp2src { .. } => "LSLV <Wd> , <Wn> , <Wm>",
+            Self::LslvLslv64Dp2src { .. } => "LSLV <Xd> , <Xn> , <Xm>",
+            Self::LsrvLsrv32Dp2src { .. } => "LSRV <Wd> , <Wn> , <Wm>",
+            Self::LsrvLsrv64Dp2src { .. } => "LSRV <Xd> , <Xn> , <Xm>",
+            Self::AsrvAsrv32Dp2src { .. } => "ASRV <Wd> , <Wn> , <Wm>",
+            Self::AsrvAsrv64Dp2src { .. } => "ASRV <Xd> , <Xn> , <Xm>",
+            Self::RorvRorv32Dp2src { .. } => "RORV <Wd> , <Wn> , <Wm>",
+            Self::RorvRorv64Dp2src { .. } => "RORV <Xd> , <Xn> , <Xm>",
+            Self::UdivUdiv32Dp2src { .. } => "UDIV <Wd> , <Wn> , <Wm>",
+            Self::UdivUdiv64Dp2src { .. } => "UDIV <Xd> , <Xn> , <Xm>",
+            Self::SdivSdiv32Dp2src { .. } => "SDIV <Wd> , <Wn> , <Wm>",
+            Self::SdivSdiv64Dp2src { .. } => "SDIV <Xd> , <Xn> , <Xm>",
+            Self::MaddMadd32aDp3src { .. } => "MADD <Wd> , <Wn> , <Wm> , <Wa>",
+            Self::MaddMadd64aDp3src { .. } => "MADD <Xd> , <Xn> , <Xm> , <Xa>",
+            Self::MsubMsub32aDp3src { .. } => "MSUB <Wd> , <Wn> , <Wm> , <Wa>",
+            Self::MsubMsub64aDp3src { .. } => "MSUB <Xd> , <Xn> , <Xm> , <Xa>",
+            Self::SmaddlSmaddl64waDp3src { .. } => "SMADDL <Xd> , <Wn> , <Wm> , <Xa>",
+            Self::UmaddlUmaddl64waDp3src { .. } => "UMADDL <Xd> , <Wn> , <Wm> , <Xa>",
+            Self::SmulhSmulh64Dp3src { .. } => "SMULH <Xd> , <Xn> , <Xm>",
+            Self::UmulhUmulh64Dp3src { .. } => "UMULH <Xd> , <Xn> , <Xm>",
+            Self::ClzIntClz32Dp1src { .. } => "CLZ <Wd> , <Wn>",
+            Self::ClzIntClz64Dp1src { .. } => "CLZ <Xd> , <Xn>",
+            Self::RbitIntRbit32Dp1src { .. } => "RBIT <Wd> , <Wn>",
+            Self::RbitIntRbit64Dp1src { .. } => "RBIT <Xd> , <Xn>",
+            Self::RevRev32Dp1src { .. } => "REV <Wd> , <Wn>",
+            Self::RevRev64Dp1src { .. } => "REV <Xd> , <Xn>",
+            Self::Rev16IntRev1632Dp1src { .. } => "REV16 <Wd> , <Wn>",
+            Self::Rev16IntRev1664Dp1src { .. } => "REV16 <Xd> , <Xn>",
+            Self::Rev32IntRev3264Dp1src { .. } => "REV32 <Xd> , <Xn>",
+            Self::MrsMrsRsSystemmove { .. } => "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ <R> <t> , # <imm> , <label>",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ <R> <t> , # <imm> , <label>",
             Self::LdrImmGenLdr32LdstImmpost { .. } => "LDR <Wt> , [ <Xn|SP> ], # <simm>",
@@ -706,6 +1577,166 @@ impl A64Insn {
                 word |= encode_a64_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
+            Self::AddsAddsubImmAdds32sAddsubImm { sh, imm12, rn, rd } => {
+                let mut word = 0x31000000;
+                word |= encode_a64_field("ADDS_addsub_imm.ADDS_32S_addsub_imm", "sh", sh as u32, 1, 22)?;
+                word |= encode_a64_field("ADDS_addsub_imm.ADDS_32S_addsub_imm", "imm12", imm12.raw(), 12, 10)?;
+                word |= encode_a64_field("ADDS_addsub_imm.ADDS_32S_addsub_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADDS_addsub_imm.ADDS_32S_addsub_imm", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AddsAddsubImmAdds64sAddsubImm { sh, imm12, rn, rd } => {
+                let mut word = 0xb1000000;
+                word |= encode_a64_field("ADDS_addsub_imm.ADDS_64S_addsub_imm", "sh", sh as u32, 1, 22)?;
+                word |= encode_a64_field("ADDS_addsub_imm.ADDS_64S_addsub_imm", "imm12", imm12.raw(), 12, 10)?;
+                word |= encode_a64_field("ADDS_addsub_imm.ADDS_64S_addsub_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADDS_addsub_imm.ADDS_64S_addsub_imm", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AddAddsubShiftAdd32AddsubShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x0b000000;
+                word |= encode_a64_field("ADD_addsub_shift.ADD_32_addsub_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("ADD_addsub_shift.ADD_32_addsub_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADD_addsub_shift.ADD_32_addsub_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("ADD_addsub_shift.ADD_32_addsub_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADD_addsub_shift.ADD_32_addsub_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AddAddsubShiftAdd64AddsubShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x8b000000;
+                word |= encode_a64_field("ADD_addsub_shift.ADD_64_addsub_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("ADD_addsub_shift.ADD_64_addsub_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADD_addsub_shift.ADD_64_addsub_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("ADD_addsub_shift.ADD_64_addsub_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADD_addsub_shift.ADD_64_addsub_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AddsAddsubShiftAdds32AddsubShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x2b000000;
+                word |= encode_a64_field("ADDS_addsub_shift.ADDS_32_addsub_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("ADDS_addsub_shift.ADDS_32_addsub_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADDS_addsub_shift.ADDS_32_addsub_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("ADDS_addsub_shift.ADDS_32_addsub_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADDS_addsub_shift.ADDS_32_addsub_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AddsAddsubShiftAdds64AddsubShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0xab000000;
+                word |= encode_a64_field("ADDS_addsub_shift.ADDS_64_addsub_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("ADDS_addsub_shift.ADDS_64_addsub_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADDS_addsub_shift.ADDS_64_addsub_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("ADDS_addsub_shift.ADDS_64_addsub_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADDS_addsub_shift.ADDS_64_addsub_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SubAddsubShiftSub32AddsubShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x4b000000;
+                word |= encode_a64_field("SUB_addsub_shift.SUB_32_addsub_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("SUB_addsub_shift.SUB_32_addsub_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SUB_addsub_shift.SUB_32_addsub_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("SUB_addsub_shift.SUB_32_addsub_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUB_addsub_shift.SUB_32_addsub_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SubAddsubShiftSub64AddsubShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0xcb000000;
+                word |= encode_a64_field("SUB_addsub_shift.SUB_64_addsub_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("SUB_addsub_shift.SUB_64_addsub_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SUB_addsub_shift.SUB_64_addsub_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("SUB_addsub_shift.SUB_64_addsub_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUB_addsub_shift.SUB_64_addsub_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SubsAddsubShiftSubs32AddsubShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x6b000000;
+                word |= encode_a64_field("SUBS_addsub_shift.SUBS_32_addsub_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("SUBS_addsub_shift.SUBS_32_addsub_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SUBS_addsub_shift.SUBS_32_addsub_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("SUBS_addsub_shift.SUBS_32_addsub_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUBS_addsub_shift.SUBS_32_addsub_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SubsAddsubShiftSubs64AddsubShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0xeb000000;
+                word |= encode_a64_field("SUBS_addsub_shift.SUBS_64_addsub_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("SUBS_addsub_shift.SUBS_64_addsub_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SUBS_addsub_shift.SUBS_64_addsub_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("SUBS_addsub_shift.SUBS_64_addsub_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUBS_addsub_shift.SUBS_64_addsub_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AddAddsubExtAdd32AddsubExt { rm, option, imm3, rn, rd } => {
+                let mut word = 0x0b200000;
+                word |= encode_a64_field("ADD_addsub_ext.ADD_32_addsub_ext", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADD_addsub_ext.ADD_32_addsub_ext", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("ADD_addsub_ext.ADD_32_addsub_ext", "imm3", imm3.raw(), 3, 10)?;
+                word |= encode_a64_field("ADD_addsub_ext.ADD_32_addsub_ext", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADD_addsub_ext.ADD_32_addsub_ext", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AddAddsubExtAdd64AddsubExt { rm, option, imm3, rn, rd } => {
+                let mut word = 0x8b200000;
+                word |= encode_a64_field("ADD_addsub_ext.ADD_64_addsub_ext", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADD_addsub_ext.ADD_64_addsub_ext", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("ADD_addsub_ext.ADD_64_addsub_ext", "imm3", imm3.raw(), 3, 10)?;
+                word |= encode_a64_field("ADD_addsub_ext.ADD_64_addsub_ext", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADD_addsub_ext.ADD_64_addsub_ext", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AddsAddsubExtAdds32sAddsubExt { rm, option, imm3, rn, rd } => {
+                let mut word = 0x2b200000;
+                word |= encode_a64_field("ADDS_addsub_ext.ADDS_32S_addsub_ext", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADDS_addsub_ext.ADDS_32S_addsub_ext", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("ADDS_addsub_ext.ADDS_32S_addsub_ext", "imm3", imm3.raw(), 3, 10)?;
+                word |= encode_a64_field("ADDS_addsub_ext.ADDS_32S_addsub_ext", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADDS_addsub_ext.ADDS_32S_addsub_ext", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AddsAddsubExtAdds64sAddsubExt { rm, option, imm3, rn, rd } => {
+                let mut word = 0xab200000;
+                word |= encode_a64_field("ADDS_addsub_ext.ADDS_64S_addsub_ext", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ADDS_addsub_ext.ADDS_64S_addsub_ext", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("ADDS_addsub_ext.ADDS_64S_addsub_ext", "imm3", imm3.raw(), 3, 10)?;
+                word |= encode_a64_field("ADDS_addsub_ext.ADDS_64S_addsub_ext", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ADDS_addsub_ext.ADDS_64S_addsub_ext", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SubAddsubExtSub32AddsubExt { rm, option, imm3, rn, rd } => {
+                let mut word = 0x4b200000;
+                word |= encode_a64_field("SUB_addsub_ext.SUB_32_addsub_ext", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SUB_addsub_ext.SUB_32_addsub_ext", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("SUB_addsub_ext.SUB_32_addsub_ext", "imm3", imm3.raw(), 3, 10)?;
+                word |= encode_a64_field("SUB_addsub_ext.SUB_32_addsub_ext", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUB_addsub_ext.SUB_32_addsub_ext", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SubAddsubExtSub64AddsubExt { rm, option, imm3, rn, rd } => {
+                let mut word = 0xcb200000;
+                word |= encode_a64_field("SUB_addsub_ext.SUB_64_addsub_ext", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SUB_addsub_ext.SUB_64_addsub_ext", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("SUB_addsub_ext.SUB_64_addsub_ext", "imm3", imm3.raw(), 3, 10)?;
+                word |= encode_a64_field("SUB_addsub_ext.SUB_64_addsub_ext", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUB_addsub_ext.SUB_64_addsub_ext", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SubsAddsubExtSubs32sAddsubExt { rm, option, imm3, rn, rd } => {
+                let mut word = 0x6b200000;
+                word |= encode_a64_field("SUBS_addsub_ext.SUBS_32S_addsub_ext", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SUBS_addsub_ext.SUBS_32S_addsub_ext", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("SUBS_addsub_ext.SUBS_32S_addsub_ext", "imm3", imm3.raw(), 3, 10)?;
+                word |= encode_a64_field("SUBS_addsub_ext.SUBS_32S_addsub_ext", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUBS_addsub_ext.SUBS_32S_addsub_ext", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SubsAddsubExtSubs64sAddsubExt { rm, option, imm3, rn, rd } => {
+                let mut word = 0xeb200000;
+                word |= encode_a64_field("SUBS_addsub_ext.SUBS_64S_addsub_ext", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SUBS_addsub_ext.SUBS_64S_addsub_ext", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("SUBS_addsub_ext.SUBS_64S_addsub_ext", "imm3", imm3.raw(), 3, 10)?;
+                word |= encode_a64_field("SUBS_addsub_ext.SUBS_64S_addsub_ext", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SUBS_addsub_ext.SUBS_64S_addsub_ext", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
             Self::BUncondBOnlyBranchImm { imm26 } => {
                 let mut word = 0x14000000;
                 word |= encode_a64_field("B_uncond.B_only_branch_imm", "imm26", imm26.raw(), 26, 0)?;
@@ -769,6 +1800,65 @@ impl A64Insn {
                 word |= encode_a64_field("MOVK.MOVK_64_movewide", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
+            Self::MovnMovn32Movewide { hw, imm16, rd } => {
+                let mut word = 0x12800000;
+                word |= encode_a64_field("MOVN.MOVN_32_movewide", "hw", hw as u32, 2, 21)?;
+                word |= encode_a64_field("MOVN.MOVN_32_movewide", "imm16", imm16.raw(), 16, 5)?;
+                word |= encode_a64_field("MOVN.MOVN_32_movewide", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MovnMovn64Movewide { hw, imm16, rd } => {
+                let mut word = 0x92800000;
+                word |= encode_a64_field("MOVN.MOVN_64_movewide", "hw", hw as u32, 2, 21)?;
+                word |= encode_a64_field("MOVN.MOVN_64_movewide", "imm16", imm16.raw(), 16, 5)?;
+                word |= encode_a64_field("MOVN.MOVN_64_movewide", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AndLogShiftAnd32LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x0a000000;
+                word |= encode_a64_field("AND_log_shift.AND_32_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("AND_log_shift.AND_32_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("AND_log_shift.AND_32_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("AND_log_shift.AND_32_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("AND_log_shift.AND_32_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AndLogShiftAnd64LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x8a000000;
+                word |= encode_a64_field("AND_log_shift.AND_64_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("AND_log_shift.AND_64_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("AND_log_shift.AND_64_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("AND_log_shift.AND_64_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("AND_log_shift.AND_64_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AndsLogShiftAnds32LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x6a000000;
+                word |= encode_a64_field("ANDS_log_shift.ANDS_32_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("ANDS_log_shift.ANDS_32_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ANDS_log_shift.ANDS_32_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("ANDS_log_shift.ANDS_32_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ANDS_log_shift.ANDS_32_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AndsLogShiftAnds64LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0xea000000;
+                word |= encode_a64_field("ANDS_log_shift.ANDS_64_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("ANDS_log_shift.ANDS_64_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ANDS_log_shift.ANDS_64_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("ANDS_log_shift.ANDS_64_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ANDS_log_shift.ANDS_64_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::OrrLogShiftOrr32LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x2a000000;
+                word |= encode_a64_field("ORR_log_shift.ORR_32_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_32_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_32_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_32_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ORR_log_shift.ORR_32_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
             Self::OrrLogShiftOrr64LogShift { shift, rm, imm6, rn, rd } => {
                 let mut word = 0xaa000000;
                 word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "shift", shift as u32, 2, 22)?;
@@ -776,6 +1866,561 @@ impl A64Insn {
                 word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "imm6", imm6.raw(), 6, 10)?;
                 word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
                 word |= encode_a64_field("ORR_log_shift.ORR_64_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::EorLogShiftEor32LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x4a000000;
+                word |= encode_a64_field("EOR_log_shift.EOR_32_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("EOR_log_shift.EOR_32_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("EOR_log_shift.EOR_32_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("EOR_log_shift.EOR_32_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("EOR_log_shift.EOR_32_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::EorLogShiftEor64LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0xca000000;
+                word |= encode_a64_field("EOR_log_shift.EOR_64_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("EOR_log_shift.EOR_64_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("EOR_log_shift.EOR_64_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("EOR_log_shift.EOR_64_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("EOR_log_shift.EOR_64_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::EonEon32LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x4a200000;
+                word |= encode_a64_field("EON.EON_32_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("EON.EON_32_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("EON.EON_32_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("EON.EON_32_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("EON.EON_32_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::EonEon64LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0xca200000;
+                word |= encode_a64_field("EON.EON_64_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("EON.EON_64_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("EON.EON_64_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("EON.EON_64_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("EON.EON_64_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::BicLogShiftBic32LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x0a200000;
+                word |= encode_a64_field("BIC_log_shift.BIC_32_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("BIC_log_shift.BIC_32_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("BIC_log_shift.BIC_32_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("BIC_log_shift.BIC_32_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("BIC_log_shift.BIC_32_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::BicLogShiftBic64LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x8a200000;
+                word |= encode_a64_field("BIC_log_shift.BIC_64_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("BIC_log_shift.BIC_64_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("BIC_log_shift.BIC_64_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("BIC_log_shift.BIC_64_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("BIC_log_shift.BIC_64_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::BicsBics32LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x6a200000;
+                word |= encode_a64_field("BICS.BICS_32_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("BICS.BICS_32_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("BICS.BICS_32_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("BICS.BICS_32_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("BICS.BICS_32_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::BicsBics64LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0xea200000;
+                word |= encode_a64_field("BICS.BICS_64_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("BICS.BICS_64_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("BICS.BICS_64_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("BICS.BICS_64_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("BICS.BICS_64_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::OrnLogShiftOrn32LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0x2a200000;
+                word |= encode_a64_field("ORN_log_shift.ORN_32_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("ORN_log_shift.ORN_32_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ORN_log_shift.ORN_32_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("ORN_log_shift.ORN_32_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ORN_log_shift.ORN_32_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::OrnLogShiftOrn64LogShift { shift, rm, imm6, rn, rd } => {
+                let mut word = 0xaa200000;
+                word |= encode_a64_field("ORN_log_shift.ORN_64_log_shift", "shift", shift as u32, 2, 22)?;
+                word |= encode_a64_field("ORN_log_shift.ORN_64_log_shift", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ORN_log_shift.ORN_64_log_shift", "imm6", imm6.raw(), 6, 10)?;
+                word |= encode_a64_field("ORN_log_shift.ORN_64_log_shift", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ORN_log_shift.ORN_64_log_shift", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AndLogImmAnd32LogImm { immr, imms, rn, rd } => {
+                let mut word = 0x12000000;
+                word |= encode_a64_field("AND_log_imm.AND_32_log_imm", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("AND_log_imm.AND_32_log_imm", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("AND_log_imm.AND_32_log_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("AND_log_imm.AND_32_log_imm", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AndLogImmAnd64LogImm { n, immr, imms, rn, rd } => {
+                let mut word = 0x92000000;
+                word |= encode_a64_field("AND_log_imm.AND_64_log_imm", "N", n as u32, 1, 22)?;
+                word |= encode_a64_field("AND_log_imm.AND_64_log_imm", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("AND_log_imm.AND_64_log_imm", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("AND_log_imm.AND_64_log_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("AND_log_imm.AND_64_log_imm", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AndsLogImmAnds32sLogImm { immr, imms, rn, rd } => {
+                let mut word = 0x72000000;
+                word |= encode_a64_field("ANDS_log_imm.ANDS_32S_log_imm", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("ANDS_log_imm.ANDS_32S_log_imm", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("ANDS_log_imm.ANDS_32S_log_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ANDS_log_imm.ANDS_32S_log_imm", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AndsLogImmAnds64sLogImm { n, immr, imms, rn, rd } => {
+                let mut word = 0xf2000000;
+                word |= encode_a64_field("ANDS_log_imm.ANDS_64S_log_imm", "N", n as u32, 1, 22)?;
+                word |= encode_a64_field("ANDS_log_imm.ANDS_64S_log_imm", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("ANDS_log_imm.ANDS_64S_log_imm", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("ANDS_log_imm.ANDS_64S_log_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ANDS_log_imm.ANDS_64S_log_imm", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::OrrLogImmOrr32LogImm { immr, imms, rn, rd } => {
+                let mut word = 0x32000000;
+                word |= encode_a64_field("ORR_log_imm.ORR_32_log_imm", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("ORR_log_imm.ORR_32_log_imm", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("ORR_log_imm.ORR_32_log_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ORR_log_imm.ORR_32_log_imm", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::OrrLogImmOrr64LogImm { n, immr, imms, rn, rd } => {
+                let mut word = 0xb2000000;
+                word |= encode_a64_field("ORR_log_imm.ORR_64_log_imm", "N", n as u32, 1, 22)?;
+                word |= encode_a64_field("ORR_log_imm.ORR_64_log_imm", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("ORR_log_imm.ORR_64_log_imm", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("ORR_log_imm.ORR_64_log_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ORR_log_imm.ORR_64_log_imm", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::EorLogImmEor32LogImm { immr, imms, rn, rd } => {
+                let mut word = 0x52000000;
+                word |= encode_a64_field("EOR_log_imm.EOR_32_log_imm", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("EOR_log_imm.EOR_32_log_imm", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("EOR_log_imm.EOR_32_log_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("EOR_log_imm.EOR_32_log_imm", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::EorLogImmEor64LogImm { n, immr, imms, rn, rd } => {
+                let mut word = 0xd2000000;
+                word |= encode_a64_field("EOR_log_imm.EOR_64_log_imm", "N", n as u32, 1, 22)?;
+                word |= encode_a64_field("EOR_log_imm.EOR_64_log_imm", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("EOR_log_imm.EOR_64_log_imm", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("EOR_log_imm.EOR_64_log_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("EOR_log_imm.EOR_64_log_imm", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SbfmSbfm32mBitfield { immr, imms, rn, rd } => {
+                let mut word = 0x13000000;
+                word |= encode_a64_field("SBFM.SBFM_32M_bitfield", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("SBFM.SBFM_32M_bitfield", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("SBFM.SBFM_32M_bitfield", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SBFM.SBFM_32M_bitfield", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SbfmSbfm64mBitfield { immr, imms, rn, rd } => {
+                let mut word = 0x93400000;
+                word |= encode_a64_field("SBFM.SBFM_64M_bitfield", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("SBFM.SBFM_64M_bitfield", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("SBFM.SBFM_64M_bitfield", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SBFM.SBFM_64M_bitfield", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UbfmUbfm32mBitfield { immr, imms, rn, rd } => {
+                let mut word = 0x53000000;
+                word |= encode_a64_field("UBFM.UBFM_32M_bitfield", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("UBFM.UBFM_32M_bitfield", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("UBFM.UBFM_32M_bitfield", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UBFM.UBFM_32M_bitfield", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UbfmUbfm64mBitfield { immr, imms, rn, rd } => {
+                let mut word = 0xd3400000;
+                word |= encode_a64_field("UBFM.UBFM_64M_bitfield", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("UBFM.UBFM_64M_bitfield", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("UBFM.UBFM_64M_bitfield", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UBFM.UBFM_64M_bitfield", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::BfmBfm32mBitfield { immr, imms, rn, rd } => {
+                let mut word = 0x33000000;
+                word |= encode_a64_field("BFM.BFM_32M_bitfield", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("BFM.BFM_32M_bitfield", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("BFM.BFM_32M_bitfield", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("BFM.BFM_32M_bitfield", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::BfmBfm64mBitfield { immr, imms, rn, rd } => {
+                let mut word = 0xb3400000;
+                word |= encode_a64_field("BFM.BFM_64M_bitfield", "immr", immr.raw(), 6, 16)?;
+                word |= encode_a64_field("BFM.BFM_64M_bitfield", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("BFM.BFM_64M_bitfield", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("BFM.BFM_64M_bitfield", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::ExtrExtr32Extract { rm, imms, rn, rd } => {
+                let mut word = 0x13800000;
+                word |= encode_a64_field("EXTR.EXTR_32_extract", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("EXTR.EXTR_32_extract", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("EXTR.EXTR_32_extract", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("EXTR.EXTR_32_extract", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::ExtrExtr64Extract { rm, imms, rn, rd } => {
+                let mut word = 0x93c00000;
+                word |= encode_a64_field("EXTR.EXTR_64_extract", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("EXTR.EXTR_64_extract", "imms", imms.raw(), 6, 10)?;
+                word |= encode_a64_field("EXTR.EXTR_64_extract", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("EXTR.EXTR_64_extract", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CselCsel32Condsel { rm, cond, rn, rd } => {
+                let mut word = 0x1a800000;
+                word |= encode_a64_field("CSEL.CSEL_32_condsel", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CSEL.CSEL_32_condsel", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CSEL.CSEL_32_condsel", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CSEL.CSEL_32_condsel", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CselCsel64Condsel { rm, cond, rn, rd } => {
+                let mut word = 0x9a800000;
+                word |= encode_a64_field("CSEL.CSEL_64_condsel", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CSEL.CSEL_64_condsel", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CSEL.CSEL_64_condsel", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CSEL.CSEL_64_condsel", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CsincCsinc32Condsel { rm, cond, rn, rd } => {
+                let mut word = 0x1a800400;
+                word |= encode_a64_field("CSINC.CSINC_32_condsel", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CSINC.CSINC_32_condsel", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CSINC.CSINC_32_condsel", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CSINC.CSINC_32_condsel", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CsincCsinc64Condsel { rm, cond, rn, rd } => {
+                let mut word = 0x9a800400;
+                word |= encode_a64_field("CSINC.CSINC_64_condsel", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CSINC.CSINC_64_condsel", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CSINC.CSINC_64_condsel", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CSINC.CSINC_64_condsel", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CsinvCsinv32Condsel { rm, cond, rn, rd } => {
+                let mut word = 0x5a800000;
+                word |= encode_a64_field("CSINV.CSINV_32_condsel", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CSINV.CSINV_32_condsel", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CSINV.CSINV_32_condsel", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CSINV.CSINV_32_condsel", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CsinvCsinv64Condsel { rm, cond, rn, rd } => {
+                let mut word = 0xda800000;
+                word |= encode_a64_field("CSINV.CSINV_64_condsel", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CSINV.CSINV_64_condsel", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CSINV.CSINV_64_condsel", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CSINV.CSINV_64_condsel", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CsnegCsneg32Condsel { rm, cond, rn, rd } => {
+                let mut word = 0x5a800400;
+                word |= encode_a64_field("CSNEG.CSNEG_32_condsel", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CSNEG.CSNEG_32_condsel", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CSNEG.CSNEG_32_condsel", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CSNEG.CSNEG_32_condsel", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CsnegCsneg64Condsel { rm, cond, rn, rd } => {
+                let mut word = 0xda800400;
+                word |= encode_a64_field("CSNEG.CSNEG_64_condsel", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CSNEG.CSNEG_64_condsel", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CSNEG.CSNEG_64_condsel", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CSNEG.CSNEG_64_condsel", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CcmpImmCcmp32CondcmpImm { imm5, cond, rn, nzcv } => {
+                let mut word = 0x7a400800;
+                word |= encode_a64_field("CCMP_imm.CCMP_32_condcmp_imm", "imm5", imm5.raw(), 5, 16)?;
+                word |= encode_a64_field("CCMP_imm.CCMP_32_condcmp_imm", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CCMP_imm.CCMP_32_condcmp_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CCMP_imm.CCMP_32_condcmp_imm", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::CcmpImmCcmp64CondcmpImm { imm5, cond, rn, nzcv } => {
+                let mut word = 0xfa400800;
+                word |= encode_a64_field("CCMP_imm.CCMP_64_condcmp_imm", "imm5", imm5.raw(), 5, 16)?;
+                word |= encode_a64_field("CCMP_imm.CCMP_64_condcmp_imm", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CCMP_imm.CCMP_64_condcmp_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CCMP_imm.CCMP_64_condcmp_imm", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::CcmpRegCcmp32CondcmpReg { rm, cond, rn, nzcv } => {
+                let mut word = 0x7a400000;
+                word |= encode_a64_field("CCMP_reg.CCMP_32_condcmp_reg", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CCMP_reg.CCMP_32_condcmp_reg", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CCMP_reg.CCMP_32_condcmp_reg", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CCMP_reg.CCMP_32_condcmp_reg", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::CcmpRegCcmp64CondcmpReg { rm, cond, rn, nzcv } => {
+                let mut word = 0xfa400000;
+                word |= encode_a64_field("CCMP_reg.CCMP_64_condcmp_reg", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CCMP_reg.CCMP_64_condcmp_reg", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CCMP_reg.CCMP_64_condcmp_reg", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CCMP_reg.CCMP_64_condcmp_reg", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::CcmnImmCcmn32CondcmpImm { imm5, cond, rn, nzcv } => {
+                let mut word = 0x3a400800;
+                word |= encode_a64_field("CCMN_imm.CCMN_32_condcmp_imm", "imm5", imm5.raw(), 5, 16)?;
+                word |= encode_a64_field("CCMN_imm.CCMN_32_condcmp_imm", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CCMN_imm.CCMN_32_condcmp_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CCMN_imm.CCMN_32_condcmp_imm", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::CcmnImmCcmn64CondcmpImm { imm5, cond, rn, nzcv } => {
+                let mut word = 0xba400800;
+                word |= encode_a64_field("CCMN_imm.CCMN_64_condcmp_imm", "imm5", imm5.raw(), 5, 16)?;
+                word |= encode_a64_field("CCMN_imm.CCMN_64_condcmp_imm", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CCMN_imm.CCMN_64_condcmp_imm", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CCMN_imm.CCMN_64_condcmp_imm", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::CcmnRegCcmn32CondcmpReg { rm, cond, rn, nzcv } => {
+                let mut word = 0x3a400000;
+                word |= encode_a64_field("CCMN_reg.CCMN_32_condcmp_reg", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CCMN_reg.CCMN_32_condcmp_reg", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CCMN_reg.CCMN_32_condcmp_reg", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CCMN_reg.CCMN_32_condcmp_reg", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::CcmnRegCcmn64CondcmpReg { rm, cond, rn, nzcv } => {
+                let mut word = 0xba400000;
+                word |= encode_a64_field("CCMN_reg.CCMN_64_condcmp_reg", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CCMN_reg.CCMN_64_condcmp_reg", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("CCMN_reg.CCMN_64_condcmp_reg", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CCMN_reg.CCMN_64_condcmp_reg", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::LslvLslv32Dp2src { rm, rn, rd } => {
+                let mut word = 0x1ac02000;
+                word |= encode_a64_field("LSLV.LSLV_32_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LSLV.LSLV_32_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LSLV.LSLV_32_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LslvLslv64Dp2src { rm, rn, rd } => {
+                let mut word = 0x9ac02000;
+                word |= encode_a64_field("LSLV.LSLV_64_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LSLV.LSLV_64_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LSLV.LSLV_64_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LsrvLsrv32Dp2src { rm, rn, rd } => {
+                let mut word = 0x1ac02400;
+                word |= encode_a64_field("LSRV.LSRV_32_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LSRV.LSRV_32_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LSRV.LSRV_32_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LsrvLsrv64Dp2src { rm, rn, rd } => {
+                let mut word = 0x9ac02400;
+                word |= encode_a64_field("LSRV.LSRV_64_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LSRV.LSRV_64_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LSRV.LSRV_64_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AsrvAsrv32Dp2src { rm, rn, rd } => {
+                let mut word = 0x1ac02800;
+                word |= encode_a64_field("ASRV.ASRV_32_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ASRV.ASRV_32_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ASRV.ASRV_32_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::AsrvAsrv64Dp2src { rm, rn, rd } => {
+                let mut word = 0x9ac02800;
+                word |= encode_a64_field("ASRV.ASRV_64_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("ASRV.ASRV_64_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("ASRV.ASRV_64_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::RorvRorv32Dp2src { rm, rn, rd } => {
+                let mut word = 0x1ac02c00;
+                word |= encode_a64_field("RORV.RORV_32_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("RORV.RORV_32_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("RORV.RORV_32_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::RorvRorv64Dp2src { rm, rn, rd } => {
+                let mut word = 0x9ac02c00;
+                word |= encode_a64_field("RORV.RORV_64_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("RORV.RORV_64_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("RORV.RORV_64_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UdivUdiv32Dp2src { rm, rn, rd } => {
+                let mut word = 0x1ac00800;
+                word |= encode_a64_field("UDIV.UDIV_32_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("UDIV.UDIV_32_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UDIV.UDIV_32_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UdivUdiv64Dp2src { rm, rn, rd } => {
+                let mut word = 0x9ac00800;
+                word |= encode_a64_field("UDIV.UDIV_64_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("UDIV.UDIV_64_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UDIV.UDIV_64_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SdivSdiv32Dp2src { rm, rn, rd } => {
+                let mut word = 0x1ac00c00;
+                word |= encode_a64_field("SDIV.SDIV_32_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SDIV.SDIV_32_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SDIV.SDIV_32_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SdivSdiv64Dp2src { rm, rn, rd } => {
+                let mut word = 0x9ac00c00;
+                word |= encode_a64_field("SDIV.SDIV_64_dp_2src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SDIV.SDIV_64_dp_2src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SDIV.SDIV_64_dp_2src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MaddMadd32aDp3src { rm, ra, rn, rd } => {
+                let mut word = 0x1b000000;
+                word |= encode_a64_field("MADD.MADD_32A_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("MADD.MADD_32A_dp_3src", "Ra", ra.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("MADD.MADD_32A_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("MADD.MADD_32A_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MaddMadd64aDp3src { rm, ra, rn, rd } => {
+                let mut word = 0x9b000000;
+                word |= encode_a64_field("MADD.MADD_64A_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("MADD.MADD_64A_dp_3src", "Ra", ra.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("MADD.MADD_64A_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("MADD.MADD_64A_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MsubMsub32aDp3src { rm, ra, rn, rd } => {
+                let mut word = 0x1b008000;
+                word |= encode_a64_field("MSUB.MSUB_32A_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("MSUB.MSUB_32A_dp_3src", "Ra", ra.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("MSUB.MSUB_32A_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("MSUB.MSUB_32A_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MsubMsub64aDp3src { rm, ra, rn, rd } => {
+                let mut word = 0x9b008000;
+                word |= encode_a64_field("MSUB.MSUB_64A_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("MSUB.MSUB_64A_dp_3src", "Ra", ra.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("MSUB.MSUB_64A_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("MSUB.MSUB_64A_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SmaddlSmaddl64waDp3src { rm, ra, rn, rd } => {
+                let mut word = 0x9b200000;
+                word |= encode_a64_field("SMADDL.SMADDL_64WA_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SMADDL.SMADDL_64WA_dp_3src", "Ra", ra.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("SMADDL.SMADDL_64WA_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SMADDL.SMADDL_64WA_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UmaddlUmaddl64waDp3src { rm, ra, rn, rd } => {
+                let mut word = 0x9ba00000;
+                word |= encode_a64_field("UMADDL.UMADDL_64WA_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("UMADDL.UMADDL_64WA_dp_3src", "Ra", ra.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("UMADDL.UMADDL_64WA_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UMADDL.UMADDL_64WA_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SmulhSmulh64Dp3src { rm, rn, rd } => {
+                let mut word = 0x9b407c00;
+                word |= encode_a64_field("SMULH.SMULH_64_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SMULH.SMULH_64_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SMULH.SMULH_64_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UmulhUmulh64Dp3src { rm, rn, rd } => {
+                let mut word = 0x9bc07c00;
+                word |= encode_a64_field("UMULH.UMULH_64_dp_3src", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("UMULH.UMULH_64_dp_3src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UMULH.UMULH_64_dp_3src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::ClzIntClz32Dp1src { rn, rd } => {
+                let mut word = 0x5ac01000;
+                word |= encode_a64_field("CLZ_int.CLZ_32_dp_1src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CLZ_int.CLZ_32_dp_1src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::ClzIntClz64Dp1src { rn, rd } => {
+                let mut word = 0xdac01000;
+                word |= encode_a64_field("CLZ_int.CLZ_64_dp_1src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CLZ_int.CLZ_64_dp_1src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::RbitIntRbit32Dp1src { rn, rd } => {
+                let mut word = 0x5ac00000;
+                word |= encode_a64_field("RBIT_int.RBIT_32_dp_1src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("RBIT_int.RBIT_32_dp_1src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::RbitIntRbit64Dp1src { rn, rd } => {
+                let mut word = 0xdac00000;
+                word |= encode_a64_field("RBIT_int.RBIT_64_dp_1src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("RBIT_int.RBIT_64_dp_1src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::RevRev32Dp1src { rn, rd } => {
+                let mut word = 0x5ac00800;
+                word |= encode_a64_field("REV.REV_32_dp_1src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("REV.REV_32_dp_1src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::RevRev64Dp1src { rn, rd } => {
+                let mut word = 0xdac00c00;
+                word |= encode_a64_field("REV.REV_64_dp_1src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("REV.REV_64_dp_1src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Rev16IntRev1632Dp1src { rn, rd } => {
+                let mut word = 0x5ac00400;
+                word |= encode_a64_field("REV16_int.REV16_32_dp_1src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("REV16_int.REV16_32_dp_1src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Rev16IntRev1664Dp1src { rn, rd } => {
+                let mut word = 0xdac00400;
+                word |= encode_a64_field("REV16_int.REV16_64_dp_1src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("REV16_int.REV16_64_dp_1src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::Rev32IntRev3264Dp1src { rn, rd } => {
+                let mut word = 0xdac00800;
+                word |= encode_a64_field("REV32_int.REV32_64_dp_1src", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("REV32_int.REV32_64_dp_1src", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MrsMrsRsSystemmove { rt } => {
+                let mut word = 0xd53bd040;
+                word |= encode_a64_field("MRS.MRS_RS_systemmove", "Rt", rt.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::TbzTbzOnlyTestbranch { b5, b40, imm14, rt } => {
@@ -974,6 +2619,58 @@ impl A64Insn {
             Self::SubsAddsubImmSubs32sAddsubImm { rd, .. } if field == "Rd" => Some(*rd),
             Self::SubsAddsubImmSubs64sAddsubImm { rn, .. } if field == "Rn" => Some(*rn),
             Self::SubsAddsubImmSubs64sAddsubImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddsAddsubImmAdds32sAddsubImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddsAddsubImmAdds32sAddsubImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddsAddsubImmAdds64sAddsubImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddsAddsubImmAdds64sAddsubImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddAddsubShiftAdd32AddsubShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AddAddsubShiftAdd32AddsubShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddAddsubShiftAdd32AddsubShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddAddsubShiftAdd64AddsubShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AddAddsubShiftAdd64AddsubShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddAddsubShiftAdd64AddsubShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddsAddsubShiftAdds32AddsubShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AddsAddsubShiftAdds32AddsubShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddsAddsubShiftAdds32AddsubShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddsAddsubShiftAdds64AddsubShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AddsAddsubShiftAdds64AddsubShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddsAddsubShiftAdds64AddsubShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubAddsubShiftSub32AddsubShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SubAddsubShiftSub32AddsubShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubAddsubShiftSub32AddsubShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubAddsubShiftSub64AddsubShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SubAddsubShiftSub64AddsubShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubAddsubShiftSub64AddsubShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubsAddsubShiftSubs32AddsubShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SubsAddsubShiftSubs32AddsubShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubsAddsubShiftSubs32AddsubShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubsAddsubShiftSubs64AddsubShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SubsAddsubShiftSubs64AddsubShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubsAddsubShiftSubs64AddsubShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddAddsubExtAdd32AddsubExt { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AddAddsubExtAdd32AddsubExt { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddAddsubExtAdd32AddsubExt { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddAddsubExtAdd64AddsubExt { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AddAddsubExtAdd64AddsubExt { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddAddsubExtAdd64AddsubExt { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddsAddsubExtAdds32sAddsubExt { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AddsAddsubExtAdds32sAddsubExt { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddsAddsubExtAdds32sAddsubExt { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AddsAddsubExtAdds64sAddsubExt { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AddsAddsubExtAdds64sAddsubExt { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AddsAddsubExtAdds64sAddsubExt { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubAddsubExtSub32AddsubExt { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SubAddsubExtSub32AddsubExt { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubAddsubExtSub32AddsubExt { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubAddsubExtSub64AddsubExt { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SubAddsubExtSub64AddsubExt { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubAddsubExtSub64AddsubExt { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubsAddsubExtSubs32sAddsubExt { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SubsAddsubExtSubs32sAddsubExt { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubsAddsubExtSubs32sAddsubExt { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SubsAddsubExtSubs64sAddsubExt { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SubsAddsubExtSubs64sAddsubExt { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SubsAddsubExtSubs64sAddsubExt { rd, .. } if field == "Rd" => Some(*rd),
             Self::CbzCbz32Compbranch { rt, .. } if field == "Rt" => Some(*rt),
             Self::CbzCbz64Compbranch { rt, .. } if field == "Rt" => Some(*rt),
             Self::CbnzCbnz32Compbranch { rt, .. } if field == "Rt" => Some(*rt),
@@ -982,9 +2679,211 @@ impl A64Insn {
             Self::MovzMovz64Movewide { rd, .. } if field == "Rd" => Some(*rd),
             Self::MovkMovk32Movewide { rd, .. } if field == "Rd" => Some(*rd),
             Self::MovkMovk64Movewide { rd, .. } if field == "Rd" => Some(*rd),
+            Self::MovnMovn32Movewide { rd, .. } if field == "Rd" => Some(*rd),
+            Self::MovnMovn64Movewide { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AndLogShiftAnd32LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AndLogShiftAnd32LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AndLogShiftAnd32LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AndLogShiftAnd64LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AndLogShiftAnd64LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AndLogShiftAnd64LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AndsLogShiftAnds32LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AndsLogShiftAnds32LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AndsLogShiftAnds32LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AndsLogShiftAnds64LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AndsLogShiftAnds64LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AndsLogShiftAnds64LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::OrrLogShiftOrr32LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::OrrLogShiftOrr32LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::OrrLogShiftOrr32LogShift { rd, .. } if field == "Rd" => Some(*rd),
             Self::OrrLogShiftOrr64LogShift { rm, .. } if field == "Rm" => Some(*rm),
             Self::OrrLogShiftOrr64LogShift { rn, .. } if field == "Rn" => Some(*rn),
             Self::OrrLogShiftOrr64LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::EorLogShiftEor32LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::EorLogShiftEor32LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::EorLogShiftEor32LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::EorLogShiftEor64LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::EorLogShiftEor64LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::EorLogShiftEor64LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::EonEon32LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::EonEon32LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::EonEon32LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::EonEon64LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::EonEon64LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::EonEon64LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::BicLogShiftBic32LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::BicLogShiftBic32LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::BicLogShiftBic32LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::BicLogShiftBic64LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::BicLogShiftBic64LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::BicLogShiftBic64LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::BicsBics32LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::BicsBics32LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::BicsBics32LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::BicsBics64LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::BicsBics64LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::BicsBics64LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::OrnLogShiftOrn32LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::OrnLogShiftOrn32LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::OrnLogShiftOrn32LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::OrnLogShiftOrn64LogShift { rm, .. } if field == "Rm" => Some(*rm),
+            Self::OrnLogShiftOrn64LogShift { rn, .. } if field == "Rn" => Some(*rn),
+            Self::OrnLogShiftOrn64LogShift { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AndLogImmAnd32LogImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AndLogImmAnd32LogImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AndLogImmAnd64LogImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AndLogImmAnd64LogImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AndsLogImmAnds32sLogImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AndsLogImmAnds32sLogImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AndsLogImmAnds64sLogImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AndsLogImmAnds64sLogImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::OrrLogImmOrr32LogImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::OrrLogImmOrr32LogImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::OrrLogImmOrr64LogImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::OrrLogImmOrr64LogImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::EorLogImmEor32LogImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::EorLogImmEor32LogImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::EorLogImmEor64LogImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::EorLogImmEor64LogImm { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SbfmSbfm32mBitfield { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SbfmSbfm32mBitfield { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SbfmSbfm64mBitfield { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SbfmSbfm64mBitfield { rd, .. } if field == "Rd" => Some(*rd),
+            Self::UbfmUbfm32mBitfield { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UbfmUbfm32mBitfield { rd, .. } if field == "Rd" => Some(*rd),
+            Self::UbfmUbfm64mBitfield { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UbfmUbfm64mBitfield { rd, .. } if field == "Rd" => Some(*rd),
+            Self::BfmBfm32mBitfield { rn, .. } if field == "Rn" => Some(*rn),
+            Self::BfmBfm32mBitfield { rd, .. } if field == "Rd" => Some(*rd),
+            Self::BfmBfm64mBitfield { rn, .. } if field == "Rn" => Some(*rn),
+            Self::BfmBfm64mBitfield { rd, .. } if field == "Rd" => Some(*rd),
+            Self::ExtrExtr32Extract { rm, .. } if field == "Rm" => Some(*rm),
+            Self::ExtrExtr32Extract { rn, .. } if field == "Rn" => Some(*rn),
+            Self::ExtrExtr32Extract { rd, .. } if field == "Rd" => Some(*rd),
+            Self::ExtrExtr64Extract { rm, .. } if field == "Rm" => Some(*rm),
+            Self::ExtrExtr64Extract { rn, .. } if field == "Rn" => Some(*rn),
+            Self::ExtrExtr64Extract { rd, .. } if field == "Rd" => Some(*rd),
+            Self::CselCsel32Condsel { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CselCsel32Condsel { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CselCsel32Condsel { rd, .. } if field == "Rd" => Some(*rd),
+            Self::CselCsel64Condsel { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CselCsel64Condsel { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CselCsel64Condsel { rd, .. } if field == "Rd" => Some(*rd),
+            Self::CsincCsinc32Condsel { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CsincCsinc32Condsel { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CsincCsinc32Condsel { rd, .. } if field == "Rd" => Some(*rd),
+            Self::CsincCsinc64Condsel { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CsincCsinc64Condsel { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CsincCsinc64Condsel { rd, .. } if field == "Rd" => Some(*rd),
+            Self::CsinvCsinv32Condsel { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CsinvCsinv32Condsel { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CsinvCsinv32Condsel { rd, .. } if field == "Rd" => Some(*rd),
+            Self::CsinvCsinv64Condsel { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CsinvCsinv64Condsel { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CsinvCsinv64Condsel { rd, .. } if field == "Rd" => Some(*rd),
+            Self::CsnegCsneg32Condsel { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CsnegCsneg32Condsel { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CsnegCsneg32Condsel { rd, .. } if field == "Rd" => Some(*rd),
+            Self::CsnegCsneg64Condsel { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CsnegCsneg64Condsel { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CsnegCsneg64Condsel { rd, .. } if field == "Rd" => Some(*rd),
+            Self::CcmpImmCcmp32CondcmpImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CcmpImmCcmp64CondcmpImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CcmpRegCcmp32CondcmpReg { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CcmpRegCcmp32CondcmpReg { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CcmpRegCcmp64CondcmpReg { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CcmpRegCcmp64CondcmpReg { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CcmnImmCcmn32CondcmpImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CcmnImmCcmn64CondcmpImm { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CcmnRegCcmn32CondcmpReg { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CcmnRegCcmn32CondcmpReg { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CcmnRegCcmn64CondcmpReg { rm, .. } if field == "Rm" => Some(*rm),
+            Self::CcmnRegCcmn64CondcmpReg { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LslvLslv32Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LslvLslv32Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LslvLslv32Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::LslvLslv64Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LslvLslv64Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LslvLslv64Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::LsrvLsrv32Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LsrvLsrv32Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LsrvLsrv32Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::LsrvLsrv64Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LsrvLsrv64Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LsrvLsrv64Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AsrvAsrv32Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AsrvAsrv32Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AsrvAsrv32Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::AsrvAsrv64Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::AsrvAsrv64Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::AsrvAsrv64Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::RorvRorv32Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::RorvRorv32Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::RorvRorv32Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::RorvRorv64Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::RorvRorv64Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::RorvRorv64Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::UdivUdiv32Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::UdivUdiv32Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UdivUdiv32Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::UdivUdiv64Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::UdivUdiv64Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UdivUdiv64Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SdivSdiv32Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SdivSdiv32Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SdivSdiv32Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SdivSdiv64Dp2src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SdivSdiv64Dp2src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SdivSdiv64Dp2src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::MaddMadd32aDp3src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::MaddMadd32aDp3src { ra, .. } if field == "Ra" => Some(*ra),
+            Self::MaddMadd32aDp3src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::MaddMadd32aDp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::MaddMadd64aDp3src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::MaddMadd64aDp3src { ra, .. } if field == "Ra" => Some(*ra),
+            Self::MaddMadd64aDp3src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::MaddMadd64aDp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::MsubMsub32aDp3src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::MsubMsub32aDp3src { ra, .. } if field == "Ra" => Some(*ra),
+            Self::MsubMsub32aDp3src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::MsubMsub32aDp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::MsubMsub64aDp3src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::MsubMsub64aDp3src { ra, .. } if field == "Ra" => Some(*ra),
+            Self::MsubMsub64aDp3src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::MsubMsub64aDp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SmaddlSmaddl64waDp3src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SmaddlSmaddl64waDp3src { ra, .. } if field == "Ra" => Some(*ra),
+            Self::SmaddlSmaddl64waDp3src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SmaddlSmaddl64waDp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::UmaddlUmaddl64waDp3src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::UmaddlUmaddl64waDp3src { ra, .. } if field == "Ra" => Some(*ra),
+            Self::UmaddlUmaddl64waDp3src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UmaddlUmaddl64waDp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::SmulhSmulh64Dp3src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::SmulhSmulh64Dp3src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SmulhSmulh64Dp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::UmulhUmulh64Dp3src { rm, .. } if field == "Rm" => Some(*rm),
+            Self::UmulhUmulh64Dp3src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UmulhUmulh64Dp3src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::ClzIntClz32Dp1src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::ClzIntClz32Dp1src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::ClzIntClz64Dp1src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::ClzIntClz64Dp1src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::RbitIntRbit32Dp1src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::RbitIntRbit32Dp1src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::RbitIntRbit64Dp1src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::RbitIntRbit64Dp1src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::RevRev32Dp1src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::RevRev32Dp1src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::RevRev64Dp1src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::RevRev64Dp1src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Rev16IntRev1632Dp1src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Rev16IntRev1632Dp1src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Rev16IntRev1664Dp1src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Rev16IntRev1664Dp1src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::Rev32IntRev3264Dp1src { rn, .. } if field == "Rn" => Some(*rn),
+            Self::Rev32IntRev3264Dp1src { rd, .. } if field == "Rd" => Some(*rd),
+            Self::MrsMrsRsSystemmove { rt, .. } if field == "Rt" => Some(*rt),
             Self::TbzTbzOnlyTestbranch { rt, .. } if field == "Rt" => Some(*rt),
             Self::TbnzTbnzOnlyTestbranch { rt, .. } if field == "Rt" => Some(*rt),
             Self::LdrImmGenLdr32LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
@@ -1100,6 +2999,214 @@ impl A64Insn {
                 validate_a64_rewrite_field("SUBS_addsub_imm.SUBS_64S_addsub_imm", "Rd", encoded, 5)?;
                 Ok(Self::SubsAddsubImmSubs64sAddsubImm { sh, imm12, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
             }
+            Self::AddsAddsubImmAdds32sAddsubImm { sh, imm12, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADDS_addsub_imm.ADDS_32S_addsub_imm", "Rn", encoded, 5)?;
+                Ok(Self::AddsAddsubImmAdds32sAddsubImm { sh, imm12, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp), rd })
+            }
+            Self::AddsAddsubImmAdds32sAddsubImm { sh, imm12, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADDS_addsub_imm.ADDS_32S_addsub_imm", "Rd", encoded, 5)?;
+                Ok(Self::AddsAddsubImmAdds32sAddsubImm { sh, imm12, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::AddsAddsubImmAdds64sAddsubImm { sh, imm12, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADDS_addsub_imm.ADDS_64S_addsub_imm", "Rn", encoded, 5)?;
+                Ok(Self::AddsAddsubImmAdds64sAddsubImm { sh, imm12, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rd })
+            }
+            Self::AddsAddsubImmAdds64sAddsubImm { sh, imm12, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADDS_addsub_imm.ADDS_64S_addsub_imm", "Rd", encoded, 5)?;
+                Ok(Self::AddsAddsubImmAdds64sAddsubImm { sh, imm12, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AddAddsubShiftAdd32AddsubShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADD_addsub_shift.ADD_32_addsub_shift", "Rm", encoded, 5)?;
+                Ok(Self::AddAddsubShiftAdd32AddsubShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::AddAddsubShiftAdd32AddsubShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADD_addsub_shift.ADD_32_addsub_shift", "Rn", encoded, 5)?;
+                Ok(Self::AddAddsubShiftAdd32AddsubShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AddAddsubShiftAdd32AddsubShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADD_addsub_shift.ADD_32_addsub_shift", "Rd", encoded, 5)?;
+                Ok(Self::AddAddsubShiftAdd32AddsubShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::AddAddsubShiftAdd64AddsubShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADD_addsub_shift.ADD_64_addsub_shift", "Rm", encoded, 5)?;
+                Ok(Self::AddAddsubShiftAdd64AddsubShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::AddAddsubShiftAdd64AddsubShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADD_addsub_shift.ADD_64_addsub_shift", "Rn", encoded, 5)?;
+                Ok(Self::AddAddsubShiftAdd64AddsubShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AddAddsubShiftAdd64AddsubShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADD_addsub_shift.ADD_64_addsub_shift", "Rd", encoded, 5)?;
+                Ok(Self::AddAddsubShiftAdd64AddsubShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AddsAddsubShiftAdds32AddsubShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADDS_addsub_shift.ADDS_32_addsub_shift", "Rm", encoded, 5)?;
+                Ok(Self::AddsAddsubShiftAdds32AddsubShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::AddsAddsubShiftAdds32AddsubShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADDS_addsub_shift.ADDS_32_addsub_shift", "Rn", encoded, 5)?;
+                Ok(Self::AddsAddsubShiftAdds32AddsubShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AddsAddsubShiftAdds32AddsubShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADDS_addsub_shift.ADDS_32_addsub_shift", "Rd", encoded, 5)?;
+                Ok(Self::AddsAddsubShiftAdds32AddsubShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::AddsAddsubShiftAdds64AddsubShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADDS_addsub_shift.ADDS_64_addsub_shift", "Rm", encoded, 5)?;
+                Ok(Self::AddsAddsubShiftAdds64AddsubShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::AddsAddsubShiftAdds64AddsubShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADDS_addsub_shift.ADDS_64_addsub_shift", "Rn", encoded, 5)?;
+                Ok(Self::AddsAddsubShiftAdds64AddsubShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AddsAddsubShiftAdds64AddsubShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADDS_addsub_shift.ADDS_64_addsub_shift", "Rd", encoded, 5)?;
+                Ok(Self::AddsAddsubShiftAdds64AddsubShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SubAddsubShiftSub32AddsubShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SUB_addsub_shift.SUB_32_addsub_shift", "Rm", encoded, 5)?;
+                Ok(Self::SubAddsubShiftSub32AddsubShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::SubAddsubShiftSub32AddsubShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUB_addsub_shift.SUB_32_addsub_shift", "Rn", encoded, 5)?;
+                Ok(Self::SubAddsubShiftSub32AddsubShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SubAddsubShiftSub32AddsubShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUB_addsub_shift.SUB_32_addsub_shift", "Rd", encoded, 5)?;
+                Ok(Self::SubAddsubShiftSub32AddsubShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SubAddsubShiftSub64AddsubShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SUB_addsub_shift.SUB_64_addsub_shift", "Rm", encoded, 5)?;
+                Ok(Self::SubAddsubShiftSub64AddsubShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::SubAddsubShiftSub64AddsubShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUB_addsub_shift.SUB_64_addsub_shift", "Rn", encoded, 5)?;
+                Ok(Self::SubAddsubShiftSub64AddsubShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SubAddsubShiftSub64AddsubShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUB_addsub_shift.SUB_64_addsub_shift", "Rd", encoded, 5)?;
+                Ok(Self::SubAddsubShiftSub64AddsubShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SubsAddsubShiftSubs32AddsubShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SUBS_addsub_shift.SUBS_32_addsub_shift", "Rm", encoded, 5)?;
+                Ok(Self::SubsAddsubShiftSubs32AddsubShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::SubsAddsubShiftSubs32AddsubShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUBS_addsub_shift.SUBS_32_addsub_shift", "Rn", encoded, 5)?;
+                Ok(Self::SubsAddsubShiftSubs32AddsubShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SubsAddsubShiftSubs32AddsubShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUBS_addsub_shift.SUBS_32_addsub_shift", "Rd", encoded, 5)?;
+                Ok(Self::SubsAddsubShiftSubs32AddsubShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SubsAddsubShiftSubs64AddsubShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SUBS_addsub_shift.SUBS_64_addsub_shift", "Rm", encoded, 5)?;
+                Ok(Self::SubsAddsubShiftSubs64AddsubShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::SubsAddsubShiftSubs64AddsubShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUBS_addsub_shift.SUBS_64_addsub_shift", "Rn", encoded, 5)?;
+                Ok(Self::SubsAddsubShiftSubs64AddsubShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SubsAddsubShiftSubs64AddsubShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUBS_addsub_shift.SUBS_64_addsub_shift", "Rd", encoded, 5)?;
+                Ok(Self::SubsAddsubShiftSubs64AddsubShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AddAddsubExtAdd32AddsubExt { option, imm3, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADD_addsub_ext.ADD_32_addsub_ext", "Rm", encoded, 5)?;
+                Ok(Self::AddAddsubExtAdd32AddsubExt { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), option, imm3, rn, rd })
+            }
+            Self::AddAddsubExtAdd32AddsubExt { rm, option, imm3, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADD_addsub_ext.ADD_32_addsub_ext", "Rn", encoded, 5)?;
+                Ok(Self::AddAddsubExtAdd32AddsubExt { rm, option, imm3, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp), rd })
+            }
+            Self::AddAddsubExtAdd32AddsubExt { rm, option, imm3, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADD_addsub_ext.ADD_32_addsub_ext", "Rd", encoded, 5)?;
+                Ok(Self::AddAddsubExtAdd32AddsubExt { rm, option, imm3, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp) })
+            }
+            Self::AddAddsubExtAdd64AddsubExt { option, imm3, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADD_addsub_ext.ADD_64_addsub_ext", "Rm", encoded, 5)?;
+                Ok(Self::AddAddsubExtAdd64AddsubExt { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, imm3, rn, rd })
+            }
+            Self::AddAddsubExtAdd64AddsubExt { rm, option, imm3, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADD_addsub_ext.ADD_64_addsub_ext", "Rn", encoded, 5)?;
+                Ok(Self::AddAddsubExtAdd64AddsubExt { rm, option, imm3, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rd })
+            }
+            Self::AddAddsubExtAdd64AddsubExt { rm, option, imm3, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADD_addsub_ext.ADD_64_addsub_ext", "Rd", encoded, 5)?;
+                Ok(Self::AddAddsubExtAdd64AddsubExt { rm, option, imm3, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp) })
+            }
+            Self::AddsAddsubExtAdds32sAddsubExt { option, imm3, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADDS_addsub_ext.ADDS_32S_addsub_ext", "Rm", encoded, 5)?;
+                Ok(Self::AddsAddsubExtAdds32sAddsubExt { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), option, imm3, rn, rd })
+            }
+            Self::AddsAddsubExtAdds32sAddsubExt { rm, option, imm3, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADDS_addsub_ext.ADDS_32S_addsub_ext", "Rn", encoded, 5)?;
+                Ok(Self::AddsAddsubExtAdds32sAddsubExt { rm, option, imm3, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp), rd })
+            }
+            Self::AddsAddsubExtAdds32sAddsubExt { rm, option, imm3, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADDS_addsub_ext.ADDS_32S_addsub_ext", "Rd", encoded, 5)?;
+                Ok(Self::AddsAddsubExtAdds32sAddsubExt { rm, option, imm3, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::AddsAddsubExtAdds64sAddsubExt { option, imm3, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ADDS_addsub_ext.ADDS_64S_addsub_ext", "Rm", encoded, 5)?;
+                Ok(Self::AddsAddsubExtAdds64sAddsubExt { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, imm3, rn, rd })
+            }
+            Self::AddsAddsubExtAdds64sAddsubExt { rm, option, imm3, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ADDS_addsub_ext.ADDS_64S_addsub_ext", "Rn", encoded, 5)?;
+                Ok(Self::AddsAddsubExtAdds64sAddsubExt { rm, option, imm3, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rd })
+            }
+            Self::AddsAddsubExtAdds64sAddsubExt { rm, option, imm3, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ADDS_addsub_ext.ADDS_64S_addsub_ext", "Rd", encoded, 5)?;
+                Ok(Self::AddsAddsubExtAdds64sAddsubExt { rm, option, imm3, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SubAddsubExtSub32AddsubExt { option, imm3, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SUB_addsub_ext.SUB_32_addsub_ext", "Rm", encoded, 5)?;
+                Ok(Self::SubAddsubExtSub32AddsubExt { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), option, imm3, rn, rd })
+            }
+            Self::SubAddsubExtSub32AddsubExt { rm, option, imm3, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUB_addsub_ext.SUB_32_addsub_ext", "Rn", encoded, 5)?;
+                Ok(Self::SubAddsubExtSub32AddsubExt { rm, option, imm3, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp), rd })
+            }
+            Self::SubAddsubExtSub32AddsubExt { rm, option, imm3, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUB_addsub_ext.SUB_32_addsub_ext", "Rd", encoded, 5)?;
+                Ok(Self::SubAddsubExtSub32AddsubExt { rm, option, imm3, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp) })
+            }
+            Self::SubAddsubExtSub64AddsubExt { option, imm3, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SUB_addsub_ext.SUB_64_addsub_ext", "Rm", encoded, 5)?;
+                Ok(Self::SubAddsubExtSub64AddsubExt { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, imm3, rn, rd })
+            }
+            Self::SubAddsubExtSub64AddsubExt { rm, option, imm3, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUB_addsub_ext.SUB_64_addsub_ext", "Rn", encoded, 5)?;
+                Ok(Self::SubAddsubExtSub64AddsubExt { rm, option, imm3, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rd })
+            }
+            Self::SubAddsubExtSub64AddsubExt { rm, option, imm3, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUB_addsub_ext.SUB_64_addsub_ext", "Rd", encoded, 5)?;
+                Ok(Self::SubAddsubExtSub64AddsubExt { rm, option, imm3, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp) })
+            }
+            Self::SubsAddsubExtSubs32sAddsubExt { option, imm3, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SUBS_addsub_ext.SUBS_32S_addsub_ext", "Rm", encoded, 5)?;
+                Ok(Self::SubsAddsubExtSubs32sAddsubExt { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), option, imm3, rn, rd })
+            }
+            Self::SubsAddsubExtSubs32sAddsubExt { rm, option, imm3, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUBS_addsub_ext.SUBS_32S_addsub_ext", "Rn", encoded, 5)?;
+                Ok(Self::SubsAddsubExtSubs32sAddsubExt { rm, option, imm3, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp), rd })
+            }
+            Self::SubsAddsubExtSubs32sAddsubExt { rm, option, imm3, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUBS_addsub_ext.SUBS_32S_addsub_ext", "Rd", encoded, 5)?;
+                Ok(Self::SubsAddsubExtSubs32sAddsubExt { rm, option, imm3, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SubsAddsubExtSubs64sAddsubExt { option, imm3, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SUBS_addsub_ext.SUBS_64S_addsub_ext", "Rm", encoded, 5)?;
+                Ok(Self::SubsAddsubExtSubs64sAddsubExt { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, imm3, rn, rd })
+            }
+            Self::SubsAddsubExtSubs64sAddsubExt { rm, option, imm3, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SUBS_addsub_ext.SUBS_64S_addsub_ext", "Rn", encoded, 5)?;
+                Ok(Self::SubsAddsubExtSubs64sAddsubExt { rm, option, imm3, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rd })
+            }
+            Self::SubsAddsubExtSubs64sAddsubExt { rm, option, imm3, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SUBS_addsub_ext.SUBS_64S_addsub_ext", "Rd", encoded, 5)?;
+                Ok(Self::SubsAddsubExtSubs64sAddsubExt { rm, option, imm3, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
             Self::CbzCbz32Compbranch { imm19, .. } if field == "Rt" => {
                 validate_a64_rewrite_field("CBZ.CBZ_32_compbranch", "Rt", encoded, 5)?;
                 Ok(Self::CbzCbz32Compbranch { imm19, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
@@ -1132,6 +3239,74 @@ impl A64Insn {
                 validate_a64_rewrite_field("MOVK.MOVK_64_movewide", "Rd", encoded, 5)?;
                 Ok(Self::MovkMovk64Movewide { hw, imm16, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
             }
+            Self::MovnMovn32Movewide { hw, imm16, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("MOVN.MOVN_32_movewide", "Rd", encoded, 5)?;
+                Ok(Self::MovnMovn32Movewide { hw, imm16, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::MovnMovn64Movewide { hw, imm16, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("MOVN.MOVN_64_movewide", "Rd", encoded, 5)?;
+                Ok(Self::MovnMovn64Movewide { hw, imm16, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AndLogShiftAnd32LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("AND_log_shift.AND_32_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::AndLogShiftAnd32LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::AndLogShiftAnd32LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("AND_log_shift.AND_32_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::AndLogShiftAnd32LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AndLogShiftAnd32LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("AND_log_shift.AND_32_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::AndLogShiftAnd32LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::AndLogShiftAnd64LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("AND_log_shift.AND_64_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::AndLogShiftAnd64LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::AndLogShiftAnd64LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("AND_log_shift.AND_64_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::AndLogShiftAnd64LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AndLogShiftAnd64LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("AND_log_shift.AND_64_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::AndLogShiftAnd64LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AndsLogShiftAnds32LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ANDS_log_shift.ANDS_32_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::AndsLogShiftAnds32LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::AndsLogShiftAnds32LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ANDS_log_shift.ANDS_32_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::AndsLogShiftAnds32LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AndsLogShiftAnds32LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ANDS_log_shift.ANDS_32_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::AndsLogShiftAnds32LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::AndsLogShiftAnds64LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ANDS_log_shift.ANDS_64_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::AndsLogShiftAnds64LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::AndsLogShiftAnds64LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ANDS_log_shift.ANDS_64_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::AndsLogShiftAnds64LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AndsLogShiftAnds64LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ANDS_log_shift.ANDS_64_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::AndsLogShiftAnds64LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::OrrLogShiftOrr32LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ORR_log_shift.ORR_32_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::OrrLogShiftOrr32LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::OrrLogShiftOrr32LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ORR_log_shift.ORR_32_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::OrrLogShiftOrr32LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::OrrLogShiftOrr32LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ORR_log_shift.ORR_32_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::OrrLogShiftOrr32LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
             Self::OrrLogShiftOrr64LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
                 validate_a64_rewrite_field("ORR_log_shift.ORR_64_log_shift", "Rm", encoded, 5)?;
                 Ok(Self::OrrLogShiftOrr64LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
@@ -1143,6 +3318,746 @@ impl A64Insn {
             Self::OrrLogShiftOrr64LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
                 validate_a64_rewrite_field("ORR_log_shift.ORR_64_log_shift", "Rd", encoded, 5)?;
                 Ok(Self::OrrLogShiftOrr64LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::EorLogShiftEor32LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("EOR_log_shift.EOR_32_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::EorLogShiftEor32LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::EorLogShiftEor32LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("EOR_log_shift.EOR_32_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::EorLogShiftEor32LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::EorLogShiftEor32LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("EOR_log_shift.EOR_32_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::EorLogShiftEor32LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::EorLogShiftEor64LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("EOR_log_shift.EOR_64_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::EorLogShiftEor64LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::EorLogShiftEor64LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("EOR_log_shift.EOR_64_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::EorLogShiftEor64LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::EorLogShiftEor64LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("EOR_log_shift.EOR_64_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::EorLogShiftEor64LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::EonEon32LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("EON.EON_32_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::EonEon32LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::EonEon32LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("EON.EON_32_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::EonEon32LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::EonEon32LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("EON.EON_32_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::EonEon32LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::EonEon64LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("EON.EON_64_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::EonEon64LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::EonEon64LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("EON.EON_64_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::EonEon64LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::EonEon64LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("EON.EON_64_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::EonEon64LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::BicLogShiftBic32LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("BIC_log_shift.BIC_32_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::BicLogShiftBic32LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::BicLogShiftBic32LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("BIC_log_shift.BIC_32_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::BicLogShiftBic32LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::BicLogShiftBic32LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("BIC_log_shift.BIC_32_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::BicLogShiftBic32LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::BicLogShiftBic64LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("BIC_log_shift.BIC_64_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::BicLogShiftBic64LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::BicLogShiftBic64LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("BIC_log_shift.BIC_64_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::BicLogShiftBic64LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::BicLogShiftBic64LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("BIC_log_shift.BIC_64_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::BicLogShiftBic64LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::BicsBics32LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("BICS.BICS_32_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::BicsBics32LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::BicsBics32LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("BICS.BICS_32_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::BicsBics32LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::BicsBics32LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("BICS.BICS_32_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::BicsBics32LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::BicsBics64LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("BICS.BICS_64_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::BicsBics64LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::BicsBics64LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("BICS.BICS_64_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::BicsBics64LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::BicsBics64LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("BICS.BICS_64_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::BicsBics64LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::OrnLogShiftOrn32LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ORN_log_shift.ORN_32_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::OrnLogShiftOrn32LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::OrnLogShiftOrn32LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ORN_log_shift.ORN_32_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::OrnLogShiftOrn32LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::OrnLogShiftOrn32LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ORN_log_shift.ORN_32_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::OrnLogShiftOrn32LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::OrnLogShiftOrn64LogShift { shift, imm6, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ORN_log_shift.ORN_64_log_shift", "Rm", encoded, 5)?;
+                Ok(Self::OrnLogShiftOrn64LogShift { shift, rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imm6, rn, rd })
+            }
+            Self::OrnLogShiftOrn64LogShift { shift, rm, imm6, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ORN_log_shift.ORN_64_log_shift", "Rn", encoded, 5)?;
+                Ok(Self::OrnLogShiftOrn64LogShift { shift, rm, imm6, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::OrnLogShiftOrn64LogShift { shift, rm, imm6, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ORN_log_shift.ORN_64_log_shift", "Rd", encoded, 5)?;
+                Ok(Self::OrnLogShiftOrn64LogShift { shift, rm, imm6, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AndLogImmAnd32LogImm { immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("AND_log_imm.AND_32_log_imm", "Rn", encoded, 5)?;
+                Ok(Self::AndLogImmAnd32LogImm { immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AndLogImmAnd32LogImm { immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("AND_log_imm.AND_32_log_imm", "Rd", encoded, 5)?;
+                Ok(Self::AndLogImmAnd32LogImm { immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp) })
+            }
+            Self::AndLogImmAnd64LogImm { n, immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("AND_log_imm.AND_64_log_imm", "Rn", encoded, 5)?;
+                Ok(Self::AndLogImmAnd64LogImm { n, immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AndLogImmAnd64LogImm { n, immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("AND_log_imm.AND_64_log_imm", "Rd", encoded, 5)?;
+                Ok(Self::AndLogImmAnd64LogImm { n, immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp) })
+            }
+            Self::AndsLogImmAnds32sLogImm { immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ANDS_log_imm.ANDS_32S_log_imm", "Rn", encoded, 5)?;
+                Ok(Self::AndsLogImmAnds32sLogImm { immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AndsLogImmAnds32sLogImm { immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ANDS_log_imm.ANDS_32S_log_imm", "Rd", encoded, 5)?;
+                Ok(Self::AndsLogImmAnds32sLogImm { immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::AndsLogImmAnds64sLogImm { n, immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ANDS_log_imm.ANDS_64S_log_imm", "Rn", encoded, 5)?;
+                Ok(Self::AndsLogImmAnds64sLogImm { n, immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AndsLogImmAnds64sLogImm { n, immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ANDS_log_imm.ANDS_64S_log_imm", "Rd", encoded, 5)?;
+                Ok(Self::AndsLogImmAnds64sLogImm { n, immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::OrrLogImmOrr32LogImm { immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ORR_log_imm.ORR_32_log_imm", "Rn", encoded, 5)?;
+                Ok(Self::OrrLogImmOrr32LogImm { immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::OrrLogImmOrr32LogImm { immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ORR_log_imm.ORR_32_log_imm", "Rd", encoded, 5)?;
+                Ok(Self::OrrLogImmOrr32LogImm { immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp) })
+            }
+            Self::OrrLogImmOrr64LogImm { n, immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ORR_log_imm.ORR_64_log_imm", "Rn", encoded, 5)?;
+                Ok(Self::OrrLogImmOrr64LogImm { n, immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::OrrLogImmOrr64LogImm { n, immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ORR_log_imm.ORR_64_log_imm", "Rd", encoded, 5)?;
+                Ok(Self::OrrLogImmOrr64LogImm { n, immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp) })
+            }
+            Self::EorLogImmEor32LogImm { immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("EOR_log_imm.EOR_32_log_imm", "Rn", encoded, 5)?;
+                Ok(Self::EorLogImmEor32LogImm { immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::EorLogImmEor32LogImm { immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("EOR_log_imm.EOR_32_log_imm", "Rd", encoded, 5)?;
+                Ok(Self::EorLogImmEor32LogImm { immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Sp) })
+            }
+            Self::EorLogImmEor64LogImm { n, immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("EOR_log_imm.EOR_64_log_imm", "Rn", encoded, 5)?;
+                Ok(Self::EorLogImmEor64LogImm { n, immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::EorLogImmEor64LogImm { n, immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("EOR_log_imm.EOR_64_log_imm", "Rd", encoded, 5)?;
+                Ok(Self::EorLogImmEor64LogImm { n, immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp) })
+            }
+            Self::SbfmSbfm32mBitfield { immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SBFM.SBFM_32M_bitfield", "Rn", encoded, 5)?;
+                Ok(Self::SbfmSbfm32mBitfield { immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SbfmSbfm32mBitfield { immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SBFM.SBFM_32M_bitfield", "Rd", encoded, 5)?;
+                Ok(Self::SbfmSbfm32mBitfield { immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SbfmSbfm64mBitfield { immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SBFM.SBFM_64M_bitfield", "Rn", encoded, 5)?;
+                Ok(Self::SbfmSbfm64mBitfield { immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SbfmSbfm64mBitfield { immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SBFM.SBFM_64M_bitfield", "Rd", encoded, 5)?;
+                Ok(Self::SbfmSbfm64mBitfield { immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::UbfmUbfm32mBitfield { immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UBFM.UBFM_32M_bitfield", "Rn", encoded, 5)?;
+                Ok(Self::UbfmUbfm32mBitfield { immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UbfmUbfm32mBitfield { immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("UBFM.UBFM_32M_bitfield", "Rd", encoded, 5)?;
+                Ok(Self::UbfmUbfm32mBitfield { immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::UbfmUbfm64mBitfield { immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UBFM.UBFM_64M_bitfield", "Rn", encoded, 5)?;
+                Ok(Self::UbfmUbfm64mBitfield { immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UbfmUbfm64mBitfield { immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("UBFM.UBFM_64M_bitfield", "Rd", encoded, 5)?;
+                Ok(Self::UbfmUbfm64mBitfield { immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::BfmBfm32mBitfield { immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("BFM.BFM_32M_bitfield", "Rn", encoded, 5)?;
+                Ok(Self::BfmBfm32mBitfield { immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::BfmBfm32mBitfield { immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("BFM.BFM_32M_bitfield", "Rd", encoded, 5)?;
+                Ok(Self::BfmBfm32mBitfield { immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::BfmBfm64mBitfield { immr, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("BFM.BFM_64M_bitfield", "Rn", encoded, 5)?;
+                Ok(Self::BfmBfm64mBitfield { immr, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::BfmBfm64mBitfield { immr, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("BFM.BFM_64M_bitfield", "Rd", encoded, 5)?;
+                Ok(Self::BfmBfm64mBitfield { immr, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::ExtrExtr32Extract { imms, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("EXTR.EXTR_32_extract", "Rm", encoded, 5)?;
+                Ok(Self::ExtrExtr32Extract { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), imms, rn, rd })
+            }
+            Self::ExtrExtr32Extract { rm, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("EXTR.EXTR_32_extract", "Rn", encoded, 5)?;
+                Ok(Self::ExtrExtr32Extract { rm, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::ExtrExtr32Extract { rm, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("EXTR.EXTR_32_extract", "Rd", encoded, 5)?;
+                Ok(Self::ExtrExtr32Extract { rm, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::ExtrExtr64Extract { imms, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("EXTR.EXTR_64_extract", "Rm", encoded, 5)?;
+                Ok(Self::ExtrExtr64Extract { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), imms, rn, rd })
+            }
+            Self::ExtrExtr64Extract { rm, imms, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("EXTR.EXTR_64_extract", "Rn", encoded, 5)?;
+                Ok(Self::ExtrExtr64Extract { rm, imms, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::ExtrExtr64Extract { rm, imms, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("EXTR.EXTR_64_extract", "Rd", encoded, 5)?;
+                Ok(Self::ExtrExtr64Extract { rm, imms, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CselCsel32Condsel { cond, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CSEL.CSEL_32_condsel", "Rm", encoded, 5)?;
+                Ok(Self::CselCsel32Condsel { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), cond, rn, rd })
+            }
+            Self::CselCsel32Condsel { rm, cond, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CSEL.CSEL_32_condsel", "Rn", encoded, 5)?;
+                Ok(Self::CselCsel32Condsel { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::CselCsel32Condsel { rm, cond, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CSEL.CSEL_32_condsel", "Rd", encoded, 5)?;
+                Ok(Self::CselCsel32Condsel { rm, cond, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CselCsel64Condsel { cond, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CSEL.CSEL_64_condsel", "Rm", encoded, 5)?;
+                Ok(Self::CselCsel64Condsel { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), cond, rn, rd })
+            }
+            Self::CselCsel64Condsel { rm, cond, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CSEL.CSEL_64_condsel", "Rn", encoded, 5)?;
+                Ok(Self::CselCsel64Condsel { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::CselCsel64Condsel { rm, cond, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CSEL.CSEL_64_condsel", "Rd", encoded, 5)?;
+                Ok(Self::CselCsel64Condsel { rm, cond, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CsincCsinc32Condsel { cond, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CSINC.CSINC_32_condsel", "Rm", encoded, 5)?;
+                Ok(Self::CsincCsinc32Condsel { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), cond, rn, rd })
+            }
+            Self::CsincCsinc32Condsel { rm, cond, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CSINC.CSINC_32_condsel", "Rn", encoded, 5)?;
+                Ok(Self::CsincCsinc32Condsel { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::CsincCsinc32Condsel { rm, cond, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CSINC.CSINC_32_condsel", "Rd", encoded, 5)?;
+                Ok(Self::CsincCsinc32Condsel { rm, cond, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CsincCsinc64Condsel { cond, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CSINC.CSINC_64_condsel", "Rm", encoded, 5)?;
+                Ok(Self::CsincCsinc64Condsel { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), cond, rn, rd })
+            }
+            Self::CsincCsinc64Condsel { rm, cond, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CSINC.CSINC_64_condsel", "Rn", encoded, 5)?;
+                Ok(Self::CsincCsinc64Condsel { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::CsincCsinc64Condsel { rm, cond, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CSINC.CSINC_64_condsel", "Rd", encoded, 5)?;
+                Ok(Self::CsincCsinc64Condsel { rm, cond, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CsinvCsinv32Condsel { cond, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CSINV.CSINV_32_condsel", "Rm", encoded, 5)?;
+                Ok(Self::CsinvCsinv32Condsel { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), cond, rn, rd })
+            }
+            Self::CsinvCsinv32Condsel { rm, cond, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CSINV.CSINV_32_condsel", "Rn", encoded, 5)?;
+                Ok(Self::CsinvCsinv32Condsel { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::CsinvCsinv32Condsel { rm, cond, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CSINV.CSINV_32_condsel", "Rd", encoded, 5)?;
+                Ok(Self::CsinvCsinv32Condsel { rm, cond, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CsinvCsinv64Condsel { cond, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CSINV.CSINV_64_condsel", "Rm", encoded, 5)?;
+                Ok(Self::CsinvCsinv64Condsel { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), cond, rn, rd })
+            }
+            Self::CsinvCsinv64Condsel { rm, cond, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CSINV.CSINV_64_condsel", "Rn", encoded, 5)?;
+                Ok(Self::CsinvCsinv64Condsel { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::CsinvCsinv64Condsel { rm, cond, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CSINV.CSINV_64_condsel", "Rd", encoded, 5)?;
+                Ok(Self::CsinvCsinv64Condsel { rm, cond, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CsnegCsneg32Condsel { cond, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CSNEG.CSNEG_32_condsel", "Rm", encoded, 5)?;
+                Ok(Self::CsnegCsneg32Condsel { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), cond, rn, rd })
+            }
+            Self::CsnegCsneg32Condsel { rm, cond, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CSNEG.CSNEG_32_condsel", "Rn", encoded, 5)?;
+                Ok(Self::CsnegCsneg32Condsel { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::CsnegCsneg32Condsel { rm, cond, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CSNEG.CSNEG_32_condsel", "Rd", encoded, 5)?;
+                Ok(Self::CsnegCsneg32Condsel { rm, cond, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CsnegCsneg64Condsel { cond, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CSNEG.CSNEG_64_condsel", "Rm", encoded, 5)?;
+                Ok(Self::CsnegCsneg64Condsel { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), cond, rn, rd })
+            }
+            Self::CsnegCsneg64Condsel { rm, cond, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CSNEG.CSNEG_64_condsel", "Rn", encoded, 5)?;
+                Ok(Self::CsnegCsneg64Condsel { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::CsnegCsneg64Condsel { rm, cond, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CSNEG.CSNEG_64_condsel", "Rd", encoded, 5)?;
+                Ok(Self::CsnegCsneg64Condsel { rm, cond, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CcmpImmCcmp32CondcmpImm { imm5, cond, nzcv, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CCMP_imm.CCMP_32_condcmp_imm", "Rn", encoded, 5)?;
+                Ok(Self::CcmpImmCcmp32CondcmpImm { imm5, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), nzcv })
+            }
+            Self::CcmpImmCcmp64CondcmpImm { imm5, cond, nzcv, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CCMP_imm.CCMP_64_condcmp_imm", "Rn", encoded, 5)?;
+                Ok(Self::CcmpImmCcmp64CondcmpImm { imm5, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), nzcv })
+            }
+            Self::CcmpRegCcmp32CondcmpReg { cond, rn, nzcv, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CCMP_reg.CCMP_32_condcmp_reg", "Rm", encoded, 5)?;
+                Ok(Self::CcmpRegCcmp32CondcmpReg { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), cond, rn, nzcv })
+            }
+            Self::CcmpRegCcmp32CondcmpReg { rm, cond, nzcv, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CCMP_reg.CCMP_32_condcmp_reg", "Rn", encoded, 5)?;
+                Ok(Self::CcmpRegCcmp32CondcmpReg { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), nzcv })
+            }
+            Self::CcmpRegCcmp64CondcmpReg { cond, rn, nzcv, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CCMP_reg.CCMP_64_condcmp_reg", "Rm", encoded, 5)?;
+                Ok(Self::CcmpRegCcmp64CondcmpReg { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), cond, rn, nzcv })
+            }
+            Self::CcmpRegCcmp64CondcmpReg { rm, cond, nzcv, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CCMP_reg.CCMP_64_condcmp_reg", "Rn", encoded, 5)?;
+                Ok(Self::CcmpRegCcmp64CondcmpReg { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), nzcv })
+            }
+            Self::CcmnImmCcmn32CondcmpImm { imm5, cond, nzcv, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CCMN_imm.CCMN_32_condcmp_imm", "Rn", encoded, 5)?;
+                Ok(Self::CcmnImmCcmn32CondcmpImm { imm5, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), nzcv })
+            }
+            Self::CcmnImmCcmn64CondcmpImm { imm5, cond, nzcv, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CCMN_imm.CCMN_64_condcmp_imm", "Rn", encoded, 5)?;
+                Ok(Self::CcmnImmCcmn64CondcmpImm { imm5, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), nzcv })
+            }
+            Self::CcmnRegCcmn32CondcmpReg { cond, rn, nzcv, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CCMN_reg.CCMN_32_condcmp_reg", "Rm", encoded, 5)?;
+                Ok(Self::CcmnRegCcmn32CondcmpReg { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), cond, rn, nzcv })
+            }
+            Self::CcmnRegCcmn32CondcmpReg { rm, cond, nzcv, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CCMN_reg.CCMN_32_condcmp_reg", "Rn", encoded, 5)?;
+                Ok(Self::CcmnRegCcmn32CondcmpReg { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), nzcv })
+            }
+            Self::CcmnRegCcmn64CondcmpReg { cond, rn, nzcv, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("CCMN_reg.CCMN_64_condcmp_reg", "Rm", encoded, 5)?;
+                Ok(Self::CcmnRegCcmn64CondcmpReg { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), cond, rn, nzcv })
+            }
+            Self::CcmnRegCcmn64CondcmpReg { rm, cond, nzcv, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CCMN_reg.CCMN_64_condcmp_reg", "Rn", encoded, 5)?;
+                Ok(Self::CcmnRegCcmn64CondcmpReg { rm, cond, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), nzcv })
+            }
+            Self::LslvLslv32Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LSLV.LSLV_32_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::LslvLslv32Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::LslvLslv32Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LSLV.LSLV_32_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::LslvLslv32Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::LslvLslv32Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("LSLV.LSLV_32_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::LslvLslv32Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LslvLslv64Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LSLV.LSLV_64_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::LslvLslv64Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::LslvLslv64Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LSLV.LSLV_64_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::LslvLslv64Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::LslvLslv64Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("LSLV.LSLV_64_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::LslvLslv64Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LsrvLsrv32Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LSRV.LSRV_32_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::LsrvLsrv32Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::LsrvLsrv32Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LSRV.LSRV_32_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::LsrvLsrv32Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::LsrvLsrv32Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("LSRV.LSRV_32_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::LsrvLsrv32Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LsrvLsrv64Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LSRV.LSRV_64_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::LsrvLsrv64Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::LsrvLsrv64Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LSRV.LSRV_64_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::LsrvLsrv64Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::LsrvLsrv64Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("LSRV.LSRV_64_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::LsrvLsrv64Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::AsrvAsrv32Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ASRV.ASRV_32_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::AsrvAsrv32Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::AsrvAsrv32Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ASRV.ASRV_32_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::AsrvAsrv32Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AsrvAsrv32Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ASRV.ASRV_32_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::AsrvAsrv32Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::AsrvAsrv64Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("ASRV.ASRV_64_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::AsrvAsrv64Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::AsrvAsrv64Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("ASRV.ASRV_64_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::AsrvAsrv64Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::AsrvAsrv64Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("ASRV.ASRV_64_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::AsrvAsrv64Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::RorvRorv32Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("RORV.RORV_32_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::RorvRorv32Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::RorvRorv32Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("RORV.RORV_32_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::RorvRorv32Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::RorvRorv32Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("RORV.RORV_32_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::RorvRorv32Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::RorvRorv64Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("RORV.RORV_64_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::RorvRorv64Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::RorvRorv64Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("RORV.RORV_64_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::RorvRorv64Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::RorvRorv64Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("RORV.RORV_64_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::RorvRorv64Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::UdivUdiv32Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("UDIV.UDIV_32_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::UdivUdiv32Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::UdivUdiv32Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UDIV.UDIV_32_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::UdivUdiv32Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UdivUdiv32Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("UDIV.UDIV_32_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::UdivUdiv32Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::UdivUdiv64Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("UDIV.UDIV_64_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::UdivUdiv64Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::UdivUdiv64Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UDIV.UDIV_64_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::UdivUdiv64Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UdivUdiv64Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("UDIV.UDIV_64_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::UdivUdiv64Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SdivSdiv32Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SDIV.SDIV_32_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::SdivSdiv32Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::SdivSdiv32Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SDIV.SDIV_32_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::SdivSdiv32Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SdivSdiv32Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SDIV.SDIV_32_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::SdivSdiv32Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SdivSdiv64Dp2src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SDIV.SDIV_64_dp_2src", "Rm", encoded, 5)?;
+                Ok(Self::SdivSdiv64Dp2src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::SdivSdiv64Dp2src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SDIV.SDIV_64_dp_2src", "Rn", encoded, 5)?;
+                Ok(Self::SdivSdiv64Dp2src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SdivSdiv64Dp2src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SDIV.SDIV_64_dp_2src", "Rd", encoded, 5)?;
+                Ok(Self::SdivSdiv64Dp2src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::MaddMadd32aDp3src { ra, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("MADD.MADD_32A_dp_3src", "Rm", encoded, 5)?;
+                Ok(Self::MaddMadd32aDp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), ra, rn, rd })
+            }
+            Self::MaddMadd32aDp3src { rm, rn, rd, .. } if field == "Ra" => {
+                validate_a64_rewrite_field("MADD.MADD_32A_dp_3src", "Ra", encoded, 5)?;
+                Ok(Self::MaddMadd32aDp3src { rm, ra: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::MaddMadd32aDp3src { rm, ra, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("MADD.MADD_32A_dp_3src", "Rn", encoded, 5)?;
+                Ok(Self::MaddMadd32aDp3src { rm, ra, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::MaddMadd32aDp3src { rm, ra, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("MADD.MADD_32A_dp_3src", "Rd", encoded, 5)?;
+                Ok(Self::MaddMadd32aDp3src { rm, ra, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::MaddMadd64aDp3src { ra, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("MADD.MADD_64A_dp_3src", "Rm", encoded, 5)?;
+                Ok(Self::MaddMadd64aDp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), ra, rn, rd })
+            }
+            Self::MaddMadd64aDp3src { rm, rn, rd, .. } if field == "Ra" => {
+                validate_a64_rewrite_field("MADD.MADD_64A_dp_3src", "Ra", encoded, 5)?;
+                Ok(Self::MaddMadd64aDp3src { rm, ra: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::MaddMadd64aDp3src { rm, ra, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("MADD.MADD_64A_dp_3src", "Rn", encoded, 5)?;
+                Ok(Self::MaddMadd64aDp3src { rm, ra, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::MaddMadd64aDp3src { rm, ra, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("MADD.MADD_64A_dp_3src", "Rd", encoded, 5)?;
+                Ok(Self::MaddMadd64aDp3src { rm, ra, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::MsubMsub32aDp3src { ra, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("MSUB.MSUB_32A_dp_3src", "Rm", encoded, 5)?;
+                Ok(Self::MsubMsub32aDp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), ra, rn, rd })
+            }
+            Self::MsubMsub32aDp3src { rm, rn, rd, .. } if field == "Ra" => {
+                validate_a64_rewrite_field("MSUB.MSUB_32A_dp_3src", "Ra", encoded, 5)?;
+                Ok(Self::MsubMsub32aDp3src { rm, ra: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::MsubMsub32aDp3src { rm, ra, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("MSUB.MSUB_32A_dp_3src", "Rn", encoded, 5)?;
+                Ok(Self::MsubMsub32aDp3src { rm, ra, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::MsubMsub32aDp3src { rm, ra, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("MSUB.MSUB_32A_dp_3src", "Rd", encoded, 5)?;
+                Ok(Self::MsubMsub32aDp3src { rm, ra, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::MsubMsub64aDp3src { ra, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("MSUB.MSUB_64A_dp_3src", "Rm", encoded, 5)?;
+                Ok(Self::MsubMsub64aDp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), ra, rn, rd })
+            }
+            Self::MsubMsub64aDp3src { rm, rn, rd, .. } if field == "Ra" => {
+                validate_a64_rewrite_field("MSUB.MSUB_64A_dp_3src", "Ra", encoded, 5)?;
+                Ok(Self::MsubMsub64aDp3src { rm, ra: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::MsubMsub64aDp3src { rm, ra, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("MSUB.MSUB_64A_dp_3src", "Rn", encoded, 5)?;
+                Ok(Self::MsubMsub64aDp3src { rm, ra, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::MsubMsub64aDp3src { rm, ra, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("MSUB.MSUB_64A_dp_3src", "Rd", encoded, 5)?;
+                Ok(Self::MsubMsub64aDp3src { rm, ra, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SmaddlSmaddl64waDp3src { ra, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SMADDL.SMADDL_64WA_dp_3src", "Rm", encoded, 5)?;
+                Ok(Self::SmaddlSmaddl64waDp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), ra, rn, rd })
+            }
+            Self::SmaddlSmaddl64waDp3src { rm, rn, rd, .. } if field == "Ra" => {
+                validate_a64_rewrite_field("SMADDL.SMADDL_64WA_dp_3src", "Ra", encoded, 5)?;
+                Ok(Self::SmaddlSmaddl64waDp3src { rm, ra: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::SmaddlSmaddl64waDp3src { rm, ra, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SMADDL.SMADDL_64WA_dp_3src", "Rn", encoded, 5)?;
+                Ok(Self::SmaddlSmaddl64waDp3src { rm, ra, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SmaddlSmaddl64waDp3src { rm, ra, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SMADDL.SMADDL_64WA_dp_3src", "Rd", encoded, 5)?;
+                Ok(Self::SmaddlSmaddl64waDp3src { rm, ra, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::UmaddlUmaddl64waDp3src { ra, rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("UMADDL.UMADDL_64WA_dp_3src", "Rm", encoded, 5)?;
+                Ok(Self::UmaddlUmaddl64waDp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), ra, rn, rd })
+            }
+            Self::UmaddlUmaddl64waDp3src { rm, rn, rd, .. } if field == "Ra" => {
+                validate_a64_rewrite_field("UMADDL.UMADDL_64WA_dp_3src", "Ra", encoded, 5)?;
+                Ok(Self::UmaddlUmaddl64waDp3src { rm, ra: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::UmaddlUmaddl64waDp3src { rm, ra, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UMADDL.UMADDL_64WA_dp_3src", "Rn", encoded, 5)?;
+                Ok(Self::UmaddlUmaddl64waDp3src { rm, ra, rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UmaddlUmaddl64waDp3src { rm, ra, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("UMADDL.UMADDL_64WA_dp_3src", "Rd", encoded, 5)?;
+                Ok(Self::UmaddlUmaddl64waDp3src { rm, ra, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SmulhSmulh64Dp3src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("SMULH.SMULH_64_dp_3src", "Rm", encoded, 5)?;
+                Ok(Self::SmulhSmulh64Dp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::SmulhSmulh64Dp3src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SMULH.SMULH_64_dp_3src", "Rn", encoded, 5)?;
+                Ok(Self::SmulhSmulh64Dp3src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::SmulhSmulh64Dp3src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("SMULH.SMULH_64_dp_3src", "Rd", encoded, 5)?;
+                Ok(Self::SmulhSmulh64Dp3src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::UmulhUmulh64Dp3src { rn, rd, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("UMULH.UMULH_64_dp_3src", "Rm", encoded, 5)?;
+                Ok(Self::UmulhUmulh64Dp3src { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rd })
+            }
+            Self::UmulhUmulh64Dp3src { rm, rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UMULH.UMULH_64_dp_3src", "Rn", encoded, 5)?;
+                Ok(Self::UmulhUmulh64Dp3src { rm, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UmulhUmulh64Dp3src { rm, rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("UMULH.UMULH_64_dp_3src", "Rd", encoded, 5)?;
+                Ok(Self::UmulhUmulh64Dp3src { rm, rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::ClzIntClz32Dp1src { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CLZ_int.CLZ_32_dp_1src", "Rn", encoded, 5)?;
+                Ok(Self::ClzIntClz32Dp1src { rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::ClzIntClz32Dp1src { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CLZ_int.CLZ_32_dp_1src", "Rd", encoded, 5)?;
+                Ok(Self::ClzIntClz32Dp1src { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::ClzIntClz64Dp1src { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CLZ_int.CLZ_64_dp_1src", "Rn", encoded, 5)?;
+                Ok(Self::ClzIntClz64Dp1src { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::ClzIntClz64Dp1src { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("CLZ_int.CLZ_64_dp_1src", "Rd", encoded, 5)?;
+                Ok(Self::ClzIntClz64Dp1src { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::RbitIntRbit32Dp1src { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("RBIT_int.RBIT_32_dp_1src", "Rn", encoded, 5)?;
+                Ok(Self::RbitIntRbit32Dp1src { rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::RbitIntRbit32Dp1src { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("RBIT_int.RBIT_32_dp_1src", "Rd", encoded, 5)?;
+                Ok(Self::RbitIntRbit32Dp1src { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::RbitIntRbit64Dp1src { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("RBIT_int.RBIT_64_dp_1src", "Rn", encoded, 5)?;
+                Ok(Self::RbitIntRbit64Dp1src { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::RbitIntRbit64Dp1src { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("RBIT_int.RBIT_64_dp_1src", "Rd", encoded, 5)?;
+                Ok(Self::RbitIntRbit64Dp1src { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::RevRev32Dp1src { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("REV.REV_32_dp_1src", "Rn", encoded, 5)?;
+                Ok(Self::RevRev32Dp1src { rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::RevRev32Dp1src { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("REV.REV_32_dp_1src", "Rd", encoded, 5)?;
+                Ok(Self::RevRev32Dp1src { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::RevRev64Dp1src { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("REV.REV_64_dp_1src", "Rn", encoded, 5)?;
+                Ok(Self::RevRev64Dp1src { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::RevRev64Dp1src { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("REV.REV_64_dp_1src", "Rd", encoded, 5)?;
+                Ok(Self::RevRev64Dp1src { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::Rev16IntRev1632Dp1src { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("REV16_int.REV16_32_dp_1src", "Rn", encoded, 5)?;
+                Ok(Self::Rev16IntRev1632Dp1src { rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Rev16IntRev1632Dp1src { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("REV16_int.REV16_32_dp_1src", "Rd", encoded, 5)?;
+                Ok(Self::Rev16IntRev1632Dp1src { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::Rev16IntRev1664Dp1src { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("REV16_int.REV16_64_dp_1src", "Rn", encoded, 5)?;
+                Ok(Self::Rev16IntRev1664Dp1src { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Rev16IntRev1664Dp1src { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("REV16_int.REV16_64_dp_1src", "Rd", encoded, 5)?;
+                Ok(Self::Rev16IntRev1664Dp1src { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::Rev32IntRev3264Dp1src { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("REV32_int.REV32_64_dp_1src", "Rn", encoded, 5)?;
+                Ok(Self::Rev32IntRev3264Dp1src { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::Rev32IntRev3264Dp1src { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("REV32_int.REV32_64_dp_1src", "Rd", encoded, 5)?;
+                Ok(Self::Rev32IntRev3264Dp1src { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::MrsMrsRsSystemmove { .. } if field == "Rt" => {
+                validate_a64_rewrite_field("MRS.MRS_RS_systemmove", "Rt", encoded, 5)?;
+                Ok(Self::MrsMrsRsSystemmove { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
             }
             Self::TbzTbzOnlyTestbranch { b5, b40, imm14, .. } if field == "Rt" => {
                 validate_a64_rewrite_field("TBZ.TBZ_only_testbranch", "Rt", encoded, 5)?;
@@ -1414,6 +4329,24 @@ impl A64Insn {
             Self::SubAddsubImmSub64AddsubImm { .. } => OPERANDS_SUB_ADDSUB_IMM_SUB_64_ADDSUB_IMM,
             Self::SubsAddsubImmSubs32sAddsubImm { .. } => OPERANDS_SUBS_ADDSUB_IMM_SUBS_32S_ADDSUB_IMM,
             Self::SubsAddsubImmSubs64sAddsubImm { .. } => OPERANDS_SUBS_ADDSUB_IMM_SUBS_64S_ADDSUB_IMM,
+            Self::AddsAddsubImmAdds32sAddsubImm { .. } => OPERANDS_ADDS_ADDSUB_IMM_ADDS_32S_ADDSUB_IMM,
+            Self::AddsAddsubImmAdds64sAddsubImm { .. } => OPERANDS_ADDS_ADDSUB_IMM_ADDS_64S_ADDSUB_IMM,
+            Self::AddAddsubShiftAdd32AddsubShift { .. } => OPERANDS_ADD_ADDSUB_SHIFT_ADD_32_ADDSUB_SHIFT,
+            Self::AddAddsubShiftAdd64AddsubShift { .. } => OPERANDS_ADD_ADDSUB_SHIFT_ADD_64_ADDSUB_SHIFT,
+            Self::AddsAddsubShiftAdds32AddsubShift { .. } => OPERANDS_ADDS_ADDSUB_SHIFT_ADDS_32_ADDSUB_SHIFT,
+            Self::AddsAddsubShiftAdds64AddsubShift { .. } => OPERANDS_ADDS_ADDSUB_SHIFT_ADDS_64_ADDSUB_SHIFT,
+            Self::SubAddsubShiftSub32AddsubShift { .. } => OPERANDS_SUB_ADDSUB_SHIFT_SUB_32_ADDSUB_SHIFT,
+            Self::SubAddsubShiftSub64AddsubShift { .. } => OPERANDS_SUB_ADDSUB_SHIFT_SUB_64_ADDSUB_SHIFT,
+            Self::SubsAddsubShiftSubs32AddsubShift { .. } => OPERANDS_SUBS_ADDSUB_SHIFT_SUBS_32_ADDSUB_SHIFT,
+            Self::SubsAddsubShiftSubs64AddsubShift { .. } => OPERANDS_SUBS_ADDSUB_SHIFT_SUBS_64_ADDSUB_SHIFT,
+            Self::AddAddsubExtAdd32AddsubExt { .. } => OPERANDS_ADD_ADDSUB_EXT_ADD_32_ADDSUB_EXT,
+            Self::AddAddsubExtAdd64AddsubExt { .. } => OPERANDS_ADD_ADDSUB_EXT_ADD_64_ADDSUB_EXT,
+            Self::AddsAddsubExtAdds32sAddsubExt { .. } => OPERANDS_ADDS_ADDSUB_EXT_ADDS_32S_ADDSUB_EXT,
+            Self::AddsAddsubExtAdds64sAddsubExt { .. } => OPERANDS_ADDS_ADDSUB_EXT_ADDS_64S_ADDSUB_EXT,
+            Self::SubAddsubExtSub32AddsubExt { .. } => OPERANDS_SUB_ADDSUB_EXT_SUB_32_ADDSUB_EXT,
+            Self::SubAddsubExtSub64AddsubExt { .. } => OPERANDS_SUB_ADDSUB_EXT_SUB_64_ADDSUB_EXT,
+            Self::SubsAddsubExtSubs32sAddsubExt { .. } => OPERANDS_SUBS_ADDSUB_EXT_SUBS_32S_ADDSUB_EXT,
+            Self::SubsAddsubExtSubs64sAddsubExt { .. } => OPERANDS_SUBS_ADDSUB_EXT_SUBS_64S_ADDSUB_EXT,
             Self::BUncondBOnlyBranchImm { .. } => OPERANDS_B_UNCOND_B_ONLY_BRANCH_IMM,
             Self::BCondBOnlyCondbranch { .. } => OPERANDS_B_COND_B_ONLY_CONDBRANCH,
             Self::CbzCbz32Compbranch { .. } => OPERANDS_CBZ_CBZ_32_COMPBRANCH,
@@ -1424,7 +4357,86 @@ impl A64Insn {
             Self::MovzMovz64Movewide { .. } => OPERANDS_MOVZ_MOVZ_64_MOVEWIDE,
             Self::MovkMovk32Movewide { .. } => OPERANDS_MOVK_MOVK_32_MOVEWIDE,
             Self::MovkMovk64Movewide { .. } => OPERANDS_MOVK_MOVK_64_MOVEWIDE,
+            Self::MovnMovn32Movewide { .. } => OPERANDS_MOVN_MOVN_32_MOVEWIDE,
+            Self::MovnMovn64Movewide { .. } => OPERANDS_MOVN_MOVN_64_MOVEWIDE,
+            Self::AndLogShiftAnd32LogShift { .. } => OPERANDS_AND_LOG_SHIFT_AND_32_LOG_SHIFT,
+            Self::AndLogShiftAnd64LogShift { .. } => OPERANDS_AND_LOG_SHIFT_AND_64_LOG_SHIFT,
+            Self::AndsLogShiftAnds32LogShift { .. } => OPERANDS_ANDS_LOG_SHIFT_ANDS_32_LOG_SHIFT,
+            Self::AndsLogShiftAnds64LogShift { .. } => OPERANDS_ANDS_LOG_SHIFT_ANDS_64_LOG_SHIFT,
+            Self::OrrLogShiftOrr32LogShift { .. } => OPERANDS_ORR_LOG_SHIFT_ORR_32_LOG_SHIFT,
             Self::OrrLogShiftOrr64LogShift { .. } => OPERANDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT,
+            Self::EorLogShiftEor32LogShift { .. } => OPERANDS_EOR_LOG_SHIFT_EOR_32_LOG_SHIFT,
+            Self::EorLogShiftEor64LogShift { .. } => OPERANDS_EOR_LOG_SHIFT_EOR_64_LOG_SHIFT,
+            Self::EonEon32LogShift { .. } => OPERANDS_EON_EON_32_LOG_SHIFT,
+            Self::EonEon64LogShift { .. } => OPERANDS_EON_EON_64_LOG_SHIFT,
+            Self::BicLogShiftBic32LogShift { .. } => OPERANDS_BIC_LOG_SHIFT_BIC_32_LOG_SHIFT,
+            Self::BicLogShiftBic64LogShift { .. } => OPERANDS_BIC_LOG_SHIFT_BIC_64_LOG_SHIFT,
+            Self::BicsBics32LogShift { .. } => OPERANDS_BICS_BICS_32_LOG_SHIFT,
+            Self::BicsBics64LogShift { .. } => OPERANDS_BICS_BICS_64_LOG_SHIFT,
+            Self::OrnLogShiftOrn32LogShift { .. } => OPERANDS_ORN_LOG_SHIFT_ORN_32_LOG_SHIFT,
+            Self::OrnLogShiftOrn64LogShift { .. } => OPERANDS_ORN_LOG_SHIFT_ORN_64_LOG_SHIFT,
+            Self::AndLogImmAnd32LogImm { .. } => OPERANDS_AND_LOG_IMM_AND_32_LOG_IMM,
+            Self::AndLogImmAnd64LogImm { .. } => OPERANDS_AND_LOG_IMM_AND_64_LOG_IMM,
+            Self::AndsLogImmAnds32sLogImm { .. } => OPERANDS_ANDS_LOG_IMM_ANDS_32S_LOG_IMM,
+            Self::AndsLogImmAnds64sLogImm { .. } => OPERANDS_ANDS_LOG_IMM_ANDS_64S_LOG_IMM,
+            Self::OrrLogImmOrr32LogImm { .. } => OPERANDS_ORR_LOG_IMM_ORR_32_LOG_IMM,
+            Self::OrrLogImmOrr64LogImm { .. } => OPERANDS_ORR_LOG_IMM_ORR_64_LOG_IMM,
+            Self::EorLogImmEor32LogImm { .. } => OPERANDS_EOR_LOG_IMM_EOR_32_LOG_IMM,
+            Self::EorLogImmEor64LogImm { .. } => OPERANDS_EOR_LOG_IMM_EOR_64_LOG_IMM,
+            Self::SbfmSbfm32mBitfield { .. } => OPERANDS_SBFM_SBFM_32M_BITFIELD,
+            Self::SbfmSbfm64mBitfield { .. } => OPERANDS_SBFM_SBFM_64M_BITFIELD,
+            Self::UbfmUbfm32mBitfield { .. } => OPERANDS_UBFM_UBFM_32M_BITFIELD,
+            Self::UbfmUbfm64mBitfield { .. } => OPERANDS_UBFM_UBFM_64M_BITFIELD,
+            Self::BfmBfm32mBitfield { .. } => OPERANDS_BFM_BFM_32M_BITFIELD,
+            Self::BfmBfm64mBitfield { .. } => OPERANDS_BFM_BFM_64M_BITFIELD,
+            Self::ExtrExtr32Extract { .. } => OPERANDS_EXTR_EXTR_32_EXTRACT,
+            Self::ExtrExtr64Extract { .. } => OPERANDS_EXTR_EXTR_64_EXTRACT,
+            Self::CselCsel32Condsel { .. } => OPERANDS_CSEL_CSEL_32_CONDSEL,
+            Self::CselCsel64Condsel { .. } => OPERANDS_CSEL_CSEL_64_CONDSEL,
+            Self::CsincCsinc32Condsel { .. } => OPERANDS_CSINC_CSINC_32_CONDSEL,
+            Self::CsincCsinc64Condsel { .. } => OPERANDS_CSINC_CSINC_64_CONDSEL,
+            Self::CsinvCsinv32Condsel { .. } => OPERANDS_CSINV_CSINV_32_CONDSEL,
+            Self::CsinvCsinv64Condsel { .. } => OPERANDS_CSINV_CSINV_64_CONDSEL,
+            Self::CsnegCsneg32Condsel { .. } => OPERANDS_CSNEG_CSNEG_32_CONDSEL,
+            Self::CsnegCsneg64Condsel { .. } => OPERANDS_CSNEG_CSNEG_64_CONDSEL,
+            Self::CcmpImmCcmp32CondcmpImm { .. } => OPERANDS_CCMP_IMM_CCMP_32_CONDCMP_IMM,
+            Self::CcmpImmCcmp64CondcmpImm { .. } => OPERANDS_CCMP_IMM_CCMP_64_CONDCMP_IMM,
+            Self::CcmpRegCcmp32CondcmpReg { .. } => OPERANDS_CCMP_REG_CCMP_32_CONDCMP_REG,
+            Self::CcmpRegCcmp64CondcmpReg { .. } => OPERANDS_CCMP_REG_CCMP_64_CONDCMP_REG,
+            Self::CcmnImmCcmn32CondcmpImm { .. } => OPERANDS_CCMN_IMM_CCMN_32_CONDCMP_IMM,
+            Self::CcmnImmCcmn64CondcmpImm { .. } => OPERANDS_CCMN_IMM_CCMN_64_CONDCMP_IMM,
+            Self::CcmnRegCcmn32CondcmpReg { .. } => OPERANDS_CCMN_REG_CCMN_32_CONDCMP_REG,
+            Self::CcmnRegCcmn64CondcmpReg { .. } => OPERANDS_CCMN_REG_CCMN_64_CONDCMP_REG,
+            Self::LslvLslv32Dp2src { .. } => OPERANDS_LSLV_LSLV_32_DP_2SRC,
+            Self::LslvLslv64Dp2src { .. } => OPERANDS_LSLV_LSLV_64_DP_2SRC,
+            Self::LsrvLsrv32Dp2src { .. } => OPERANDS_LSRV_LSRV_32_DP_2SRC,
+            Self::LsrvLsrv64Dp2src { .. } => OPERANDS_LSRV_LSRV_64_DP_2SRC,
+            Self::AsrvAsrv32Dp2src { .. } => OPERANDS_ASRV_ASRV_32_DP_2SRC,
+            Self::AsrvAsrv64Dp2src { .. } => OPERANDS_ASRV_ASRV_64_DP_2SRC,
+            Self::RorvRorv32Dp2src { .. } => OPERANDS_RORV_RORV_32_DP_2SRC,
+            Self::RorvRorv64Dp2src { .. } => OPERANDS_RORV_RORV_64_DP_2SRC,
+            Self::UdivUdiv32Dp2src { .. } => OPERANDS_UDIV_UDIV_32_DP_2SRC,
+            Self::UdivUdiv64Dp2src { .. } => OPERANDS_UDIV_UDIV_64_DP_2SRC,
+            Self::SdivSdiv32Dp2src { .. } => OPERANDS_SDIV_SDIV_32_DP_2SRC,
+            Self::SdivSdiv64Dp2src { .. } => OPERANDS_SDIV_SDIV_64_DP_2SRC,
+            Self::MaddMadd32aDp3src { .. } => OPERANDS_MADD_MADD_32A_DP_3SRC,
+            Self::MaddMadd64aDp3src { .. } => OPERANDS_MADD_MADD_64A_DP_3SRC,
+            Self::MsubMsub32aDp3src { .. } => OPERANDS_MSUB_MSUB_32A_DP_3SRC,
+            Self::MsubMsub64aDp3src { .. } => OPERANDS_MSUB_MSUB_64A_DP_3SRC,
+            Self::SmaddlSmaddl64waDp3src { .. } => OPERANDS_SMADDL_SMADDL_64WA_DP_3SRC,
+            Self::UmaddlUmaddl64waDp3src { .. } => OPERANDS_UMADDL_UMADDL_64WA_DP_3SRC,
+            Self::SmulhSmulh64Dp3src { .. } => OPERANDS_SMULH_SMULH_64_DP_3SRC,
+            Self::UmulhUmulh64Dp3src { .. } => OPERANDS_UMULH_UMULH_64_DP_3SRC,
+            Self::ClzIntClz32Dp1src { .. } => OPERANDS_CLZ_INT_CLZ_32_DP_1SRC,
+            Self::ClzIntClz64Dp1src { .. } => OPERANDS_CLZ_INT_CLZ_64_DP_1SRC,
+            Self::RbitIntRbit32Dp1src { .. } => OPERANDS_RBIT_INT_RBIT_32_DP_1SRC,
+            Self::RbitIntRbit64Dp1src { .. } => OPERANDS_RBIT_INT_RBIT_64_DP_1SRC,
+            Self::RevRev32Dp1src { .. } => OPERANDS_REV_REV_32_DP_1SRC,
+            Self::RevRev64Dp1src { .. } => OPERANDS_REV_REV_64_DP_1SRC,
+            Self::Rev16IntRev1632Dp1src { .. } => OPERANDS_REV16_INT_REV16_32_DP_1SRC,
+            Self::Rev16IntRev1664Dp1src { .. } => OPERANDS_REV16_INT_REV16_64_DP_1SRC,
+            Self::Rev32IntRev3264Dp1src { .. } => OPERANDS_REV32_INT_REV32_64_DP_1SRC,
+            Self::MrsMrsRsSystemmove { .. } => OPERANDS_MRS_MRS_RS_SYSTEMMOVE,
             Self::TbzTbzOnlyTestbranch { .. } => OPERANDS_TBZ_TBZ_ONLY_TESTBRANCH,
             Self::TbnzTbnzOnlyTestbranch { .. } => OPERANDS_TBNZ_TBNZ_ONLY_TESTBRANCH,
             Self::LdrImmGenLdr32LdstImmpost { .. } => OPERANDS_LDR_IMM_GEN_LDR_32_LDST_IMMPOST,
@@ -1519,6 +4531,166 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
+    if (word & 0xff800000) == 0x31000000 {
+        return Some(A64Insn::AddsAddsubImmAdds32sAddsubImm {
+            sh: ((word & 0x00400000) >> 22) as u8,
+            imm12: A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff800000) == 0xb1000000 {
+        return Some(A64Insn::AddsAddsubImmAdds64sAddsubImm {
+            sh: ((word & 0x00400000) >> 22) as u8,
+            imm12: A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x0b000000 {
+        return Some(A64Insn::AddAddsubShiftAdd32AddsubShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x8b000000 {
+        return Some(A64Insn::AddAddsubShiftAdd64AddsubShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x2b000000 {
+        return Some(A64Insn::AddsAddsubShiftAdds32AddsubShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0xab000000 {
+        return Some(A64Insn::AddsAddsubShiftAdds64AddsubShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x4b000000 {
+        return Some(A64Insn::SubAddsubShiftSub32AddsubShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0xcb000000 {
+        return Some(A64Insn::SubAddsubShiftSub64AddsubShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x6b000000 {
+        return Some(A64Insn::SubsAddsubShiftSubs32AddsubShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0xeb000000 {
+        return Some(A64Insn::SubsAddsubShiftSubs64AddsubShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00000) == 0x0b200000 {
+        return Some(A64Insn::AddAddsubExtAdd32AddsubExt {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            imm3: A64Imm::unsigned(((word & 0x00001c00) >> 10) as u32, 3),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+        });
+    }
+    if (word & 0xffe00000) == 0x8b200000 {
+        return Some(A64Insn::AddAddsubExtAdd64AddsubExt {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            imm3: A64Imm::unsigned(((word & 0x00001c00) >> 10) as u32, 3),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+        });
+    }
+    if (word & 0xffe00000) == 0x2b200000 {
+        return Some(A64Insn::AddsAddsubExtAdds32sAddsubExt {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            imm3: A64Imm::unsigned(((word & 0x00001c00) >> 10) as u32, 3),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00000) == 0xab200000 {
+        return Some(A64Insn::AddsAddsubExtAdds64sAddsubExt {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            imm3: A64Imm::unsigned(((word & 0x00001c00) >> 10) as u32, 3),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00000) == 0x4b200000 {
+        return Some(A64Insn::SubAddsubExtSub32AddsubExt {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            imm3: A64Imm::unsigned(((word & 0x00001c00) >> 10) as u32, 3),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+        });
+    }
+    if (word & 0xffe00000) == 0xcb200000 {
+        return Some(A64Insn::SubAddsubExtSub64AddsubExt {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            imm3: A64Imm::unsigned(((word & 0x00001c00) >> 10) as u32, 3),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+        });
+    }
+    if (word & 0xffe00000) == 0x6b200000 {
+        return Some(A64Insn::SubsAddsubExtSubs32sAddsubExt {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            imm3: A64Imm::unsigned(((word & 0x00001c00) >> 10) as u32, 3),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00000) == 0xeb200000 {
+        return Some(A64Insn::SubsAddsubExtSubs64sAddsubExt {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            imm3: A64Imm::unsigned(((word & 0x00001c00) >> 10) as u32, 3),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
     if (word & 0xfc000000) == 0x14000000 {
         return Some(A64Insn::BUncondBOnlyBranchImm {
             imm26: A64Imm::scaled_signed(((word & 0x03ffffff) >> 0) as u32, 26, 2),
@@ -1582,6 +4754,65 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
+    if (word & 0xffc00000) == 0x12800000 {
+        return Some(A64Insn::MovnMovn32Movewide {
+            hw: ((word & 0x00600000) >> 21) as u8,
+            imm16: A64Imm::unsigned(((word & 0x001fffe0) >> 5) as u32, 16),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff800000) == 0x92800000 {
+        return Some(A64Insn::MovnMovn64Movewide {
+            hw: ((word & 0x00600000) >> 21) as u8,
+            imm16: A64Imm::unsigned(((word & 0x001fffe0) >> 5) as u32, 16),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x0a000000 {
+        return Some(A64Insn::AndLogShiftAnd32LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x8a000000 {
+        return Some(A64Insn::AndLogShiftAnd64LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x6a000000 {
+        return Some(A64Insn::AndsLogShiftAnds32LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0xea000000 {
+        return Some(A64Insn::AndsLogShiftAnds64LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x2a000000 {
+        return Some(A64Insn::OrrLogShiftOrr32LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
     if (word & 0xff200000) == 0xaa000000 {
         return Some(A64Insn::OrrLogShiftOrr64LogShift {
             shift: ((word & 0x00c00000) >> 22) as u8,
@@ -1589,6 +4820,561 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
             rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
             rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x4a000000 {
+        return Some(A64Insn::EorLogShiftEor32LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0xca000000 {
+        return Some(A64Insn::EorLogShiftEor64LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x4a200000 {
+        return Some(A64Insn::EonEon32LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0xca200000 {
+        return Some(A64Insn::EonEon64LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x0a200000 {
+        return Some(A64Insn::BicLogShiftBic32LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x8a200000 {
+        return Some(A64Insn::BicLogShiftBic64LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x6a200000 {
+        return Some(A64Insn::BicsBics32LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0xea200000 {
+        return Some(A64Insn::BicsBics64LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0x2a200000 {
+        return Some(A64Insn::OrnLogShiftOrn32LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff200000) == 0xaa200000 {
+        return Some(A64Insn::OrnLogShiftOrn64LogShift {
+            shift: ((word & 0x00c00000) >> 22) as u8,
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imm6: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffc00000) == 0x12000000 {
+        return Some(A64Insn::AndLogImmAnd32LogImm {
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+        });
+    }
+    if (word & 0xff800000) == 0x92000000 {
+        return Some(A64Insn::AndLogImmAnd64LogImm {
+            n: ((word & 0x00400000) >> 22) as u8,
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+        });
+    }
+    if (word & 0xffc00000) == 0x72000000 {
+        return Some(A64Insn::AndsLogImmAnds32sLogImm {
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff800000) == 0xf2000000 {
+        return Some(A64Insn::AndsLogImmAnds64sLogImm {
+            n: ((word & 0x00400000) >> 22) as u8,
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffc00000) == 0x32000000 {
+        return Some(A64Insn::OrrLogImmOrr32LogImm {
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+        });
+    }
+    if (word & 0xff800000) == 0xb2000000 {
+        return Some(A64Insn::OrrLogImmOrr64LogImm {
+            n: ((word & 0x00400000) >> 22) as u8,
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+        });
+    }
+    if (word & 0xffc00000) == 0x52000000 {
+        return Some(A64Insn::EorLogImmEor32LogImm {
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Sp),
+        });
+    }
+    if (word & 0xff800000) == 0xd2000000 {
+        return Some(A64Insn::EorLogImmEor64LogImm {
+            n: ((word & 0x00400000) >> 22) as u8,
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+        });
+    }
+    if (word & 0xffc00000) == 0x13000000 {
+        return Some(A64Insn::SbfmSbfm32mBitfield {
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffc00000) == 0x93400000 {
+        return Some(A64Insn::SbfmSbfm64mBitfield {
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffc00000) == 0x53000000 {
+        return Some(A64Insn::UbfmUbfm32mBitfield {
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffc00000) == 0xd3400000 {
+        return Some(A64Insn::UbfmUbfm64mBitfield {
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffc00000) == 0x33000000 {
+        return Some(A64Insn::BfmBfm32mBitfield {
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffc00000) == 0xb3400000 {
+        return Some(A64Insn::BfmBfm64mBitfield {
+            immr: A64Imm::unsigned(((word & 0x003f0000) >> 16) as u32, 6),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe08000) == 0x13800000 {
+        return Some(A64Insn::ExtrExtr32Extract {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00000) == 0x93c00000 {
+        return Some(A64Insn::ExtrExtr64Extract {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            imms: A64Imm::unsigned(((word & 0x0000fc00) >> 10) as u32, 6),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x1a800000 {
+        return Some(A64Insn::CselCsel32Condsel {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x9a800000 {
+        return Some(A64Insn::CselCsel64Condsel {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x1a800400 {
+        return Some(A64Insn::CsincCsinc32Condsel {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x9a800400 {
+        return Some(A64Insn::CsincCsinc64Condsel {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x5a800000 {
+        return Some(A64Insn::CsinvCsinv32Condsel {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0xda800000 {
+        return Some(A64Insn::CsinvCsinv64Condsel {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x5a800400 {
+        return Some(A64Insn::CsnegCsneg32Condsel {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0xda800400 {
+        return Some(A64Insn::CsnegCsneg64Condsel {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c10) == 0x7a400800 {
+        return Some(A64Insn::CcmpImmCcmp32CondcmpImm {
+            imm5: A64Imm::unsigned(((word & 0x001f0000) >> 16) as u32, 5),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0xfa400800 {
+        return Some(A64Insn::CcmpImmCcmp64CondcmpImm {
+            imm5: A64Imm::unsigned(((word & 0x001f0000) >> 16) as u32, 5),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0x7a400000 {
+        return Some(A64Insn::CcmpRegCcmp32CondcmpReg {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0xfa400000 {
+        return Some(A64Insn::CcmpRegCcmp64CondcmpReg {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0x3a400800 {
+        return Some(A64Insn::CcmnImmCcmn32CondcmpImm {
+            imm5: A64Imm::unsigned(((word & 0x001f0000) >> 16) as u32, 5),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0xba400800 {
+        return Some(A64Insn::CcmnImmCcmn64CondcmpImm {
+            imm5: A64Imm::unsigned(((word & 0x001f0000) >> 16) as u32, 5),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0x3a400000 {
+        return Some(A64Insn::CcmnRegCcmn32CondcmpReg {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0xba400000 {
+        return Some(A64Insn::CcmnRegCcmn64CondcmpReg {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac02000 {
+        return Some(A64Insn::LslvLslv32Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9ac02000 {
+        return Some(A64Insn::LslvLslv64Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac02400 {
+        return Some(A64Insn::LsrvLsrv32Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9ac02400 {
+        return Some(A64Insn::LsrvLsrv64Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac02800 {
+        return Some(A64Insn::AsrvAsrv32Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9ac02800 {
+        return Some(A64Insn::AsrvAsrv64Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac02c00 {
+        return Some(A64Insn::RorvRorv32Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9ac02c00 {
+        return Some(A64Insn::RorvRorv64Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac00800 {
+        return Some(A64Insn::UdivUdiv32Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9ac00800 {
+        return Some(A64Insn::UdivUdiv64Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1ac00c00 {
+        return Some(A64Insn::SdivSdiv32Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9ac00c00 {
+        return Some(A64Insn::SdivSdiv64Dp2src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe08000) == 0x1b000000 {
+        return Some(A64Insn::MaddMadd32aDp3src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            ra: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe08000) == 0x9b000000 {
+        return Some(A64Insn::MaddMadd64aDp3src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            ra: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe08000) == 0x1b008000 {
+        return Some(A64Insn::MsubMsub32aDp3src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            ra: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe08000) == 0x9b008000 {
+        return Some(A64Insn::MsubMsub64aDp3src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            ra: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe08000) == 0x9b200000 {
+        return Some(A64Insn::SmaddlSmaddl64waDp3src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            ra: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe08000) == 0x9ba00000 {
+        return Some(A64Insn::UmaddlUmaddl64waDp3src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            ra: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9b407c00 {
+        return Some(A64Insn::SmulhSmulh64Dp3src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x9bc07c00 {
+        return Some(A64Insn::UmulhUmulh64Dp3src {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x5ac01000 {
+        return Some(A64Insn::ClzIntClz32Dp1src {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0xdac01000 {
+        return Some(A64Insn::ClzIntClz64Dp1src {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x5ac00000 {
+        return Some(A64Insn::RbitIntRbit32Dp1src {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0xdac00000 {
+        return Some(A64Insn::RbitIntRbit64Dp1src {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x5ac00800 {
+        return Some(A64Insn::RevRev32Dp1src {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0xdac00c00 {
+        return Some(A64Insn::RevRev64Dp1src {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x5ac00400 {
+        return Some(A64Insn::Rev16IntRev1632Dp1src {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0xdac00400 {
+        return Some(A64Insn::Rev16IntRev1664Dp1src {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0xdac00800 {
+        return Some(A64Insn::Rev32IntRev3264Dp1src {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffffffe0) == 0xd53bd040 {
+        return Some(A64Insn::MrsMrsRsSystemmove {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
     if (word & 0x7f000000) == 0x36000000 {
@@ -1883,6 +5669,362 @@ pub const OPERANDS_SUBS_ADDSUB_IMM_SUBS_64S_ADDSUB_IMM: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
+pub const FIELDS_ADDS_ADDSUB_IMM_ADDS_32S_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "sh", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADDS_ADDSUB_IMM_ADDS_32S_ADDSUB_IMM: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADDS_ADDSUB_IMM_ADDS_64S_ADDSUB_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "sh", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADDS_ADDSUB_IMM_ADDS_64S_ADDSUB_IMM: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADD_ADDSUB_SHIFT_ADD_32_ADDSUB_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADD_ADDSUB_SHIFT_ADD_32_ADDSUB_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADD_ADDSUB_SHIFT_ADD_64_ADDSUB_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADD_ADDSUB_SHIFT_ADD_64_ADDSUB_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADDS_ADDSUB_SHIFT_ADDS_32_ADDSUB_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADDS_ADDSUB_SHIFT_ADDS_32_ADDSUB_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADDS_ADDSUB_SHIFT_ADDS_64_ADDSUB_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADDS_ADDSUB_SHIFT_ADDS_64_ADDSUB_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SUB_ADDSUB_SHIFT_SUB_32_ADDSUB_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SUB_ADDSUB_SHIFT_SUB_32_ADDSUB_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SUB_ADDSUB_SHIFT_SUB_64_ADDSUB_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SUB_ADDSUB_SHIFT_SUB_64_ADDSUB_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SUBS_ADDSUB_SHIFT_SUBS_32_ADDSUB_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SUBS_ADDSUB_SHIFT_SUBS_32_ADDSUB_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SUBS_ADDSUB_SHIFT_SUBS_64_ADDSUB_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SUBS_ADDSUB_SHIFT_SUBS_64_ADDSUB_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADD_ADDSUB_EXT_ADD_32_ADDSUB_EXT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opt", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "imm3", hi: 12, lo: 10, width: 3, mask: 0x00001c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADD_ADDSUB_EXT_ADD_32_ADDSUB_EXT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADD_ADDSUB_EXT_ADD_64_ADDSUB_EXT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opt", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "imm3", hi: 12, lo: 10, width: 3, mask: 0x00001c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADD_ADDSUB_EXT_ADD_64_ADDSUB_EXT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADDS_ADDSUB_EXT_ADDS_32S_ADDSUB_EXT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opt", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "imm3", hi: 12, lo: 10, width: 3, mask: 0x00001c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADDS_ADDSUB_EXT_ADDS_32S_ADDSUB_EXT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ADDS_ADDSUB_EXT_ADDS_64S_ADDSUB_EXT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opt", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "imm3", hi: 12, lo: 10, width: 3, mask: 0x00001c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ADDS_ADDSUB_EXT_ADDS_64S_ADDSUB_EXT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SUB_ADDSUB_EXT_SUB_32_ADDSUB_EXT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opt", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "imm3", hi: 12, lo: 10, width: 3, mask: 0x00001c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SUB_ADDSUB_EXT_SUB_32_ADDSUB_EXT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SUB_ADDSUB_EXT_SUB_64_ADDSUB_EXT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opt", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "imm3", hi: 12, lo: 10, width: 3, mask: 0x00001c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SUB_ADDSUB_EXT_SUB_64_ADDSUB_EXT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SUBS_ADDSUB_EXT_SUBS_32S_ADDSUB_EXT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opt", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "imm3", hi: 12, lo: 10, width: 3, mask: 0x00001c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SUBS_ADDSUB_EXT_SUBS_32S_ADDSUB_EXT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SUBS_ADDSUB_EXT_SUBS_64S_ADDSUB_EXT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opt", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "imm3", hi: 12, lo: 10, width: 3, mask: 0x00001c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SUBS_ADDSUB_EXT_SUBS_64S_ADDSUB_EXT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_B_UNCOND_B_ONLY_BRANCH_IMM: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "op", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "imm26", hi: 25, lo: 0, width: 26, mask: 0x03ffffff },
@@ -2027,6 +6169,131 @@ pub const OPERANDS_MOVK_MOVK_64_MOVEWIDE: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
+pub const FIELDS_MOVN_MOVN_32_MOVEWIDE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "hw", hi: 22, lo: 21, width: 2, mask: 0x00600000 },
+    GeneratedFieldSpec { name: "imm16", hi: 20, lo: 5, width: 16, mask: 0x001fffe0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MOVN_MOVN_32_MOVEWIDE: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MOVN_MOVN_64_MOVEWIDE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "hw", hi: 22, lo: 21, width: 2, mask: 0x00600000 },
+    GeneratedFieldSpec { name: "imm16", hi: 20, lo: 5, width: 16, mask: 0x001fffe0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MOVN_MOVN_64_MOVEWIDE: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_AND_LOG_SHIFT_AND_32_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_AND_LOG_SHIFT_AND_32_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_AND_LOG_SHIFT_AND_64_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_AND_LOG_SHIFT_AND_64_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ANDS_LOG_SHIFT_ANDS_32_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ANDS_LOG_SHIFT_ANDS_32_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ANDS_LOG_SHIFT_ANDS_64_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ANDS_LOG_SHIFT_ANDS_64_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ORR_LOG_SHIFT_ORR_32_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ORR_LOG_SHIFT_ORR_32_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
     GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
@@ -2043,6 +6310,1328 @@ pub const OPERANDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT: &[A64OperandRole] = &[
     A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
     A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
     A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_EOR_LOG_SHIFT_EOR_32_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_EOR_LOG_SHIFT_EOR_32_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_EOR_LOG_SHIFT_EOR_64_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_EOR_LOG_SHIFT_EOR_64_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_EON_EON_32_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_EON_EON_32_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_EON_EON_64_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_EON_EON_64_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_BIC_LOG_SHIFT_BIC_32_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_BIC_LOG_SHIFT_BIC_32_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_BIC_LOG_SHIFT_BIC_64_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_BIC_LOG_SHIFT_BIC_64_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_BICS_BICS_32_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_BICS_BICS_32_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_BICS_BICS_64_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_BICS_BICS_64_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ORN_LOG_SHIFT_ORN_32_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ORN_LOG_SHIFT_ORN_32_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ORN_LOG_SHIFT_ORN_64_LOG_SHIFT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "shift", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "N", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imm6", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ORN_LOG_SHIFT_ORN_64_LOG_SHIFT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_AND_LOG_IMM_AND_32_LOG_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_AND_LOG_IMM_AND_32_LOG_IMM: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_AND_LOG_IMM_AND_64_LOG_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_AND_LOG_IMM_AND_64_LOG_IMM: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ANDS_LOG_IMM_ANDS_32S_LOG_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ANDS_LOG_IMM_ANDS_32S_LOG_IMM: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ANDS_LOG_IMM_ANDS_64S_LOG_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ANDS_LOG_IMM_ANDS_64S_LOG_IMM: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ORR_LOG_IMM_ORR_32_LOG_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ORR_LOG_IMM_ORR_32_LOG_IMM: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ORR_LOG_IMM_ORR_64_LOG_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ORR_LOG_IMM_ORR_64_LOG_IMM: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_EOR_LOG_IMM_EOR_32_LOG_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_EOR_LOG_IMM_EOR_32_LOG_IMM: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_EOR_LOG_IMM_EOR_64_LOG_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_EOR_LOG_IMM_EOR_64_LOG_IMM: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SBFM_SBFM_32M_BITFIELD: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SBFM_SBFM_32M_BITFIELD: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SBFM_SBFM_64M_BITFIELD: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SBFM_SBFM_64M_BITFIELD: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UBFM_UBFM_32M_BITFIELD: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UBFM_UBFM_32M_BITFIELD: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UBFM_UBFM_64M_BITFIELD: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UBFM_UBFM_64M_BITFIELD: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_BFM_BFM_32M_BITFIELD: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_BFM_BFM_32M_BITFIELD: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_BFM_BFM_64M_BITFIELD: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "opc", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "immr", hi: 21, lo: 16, width: 6, mask: 0x003f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_BFM_BFM_64M_BITFIELD: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_EXTR_EXTR_32_EXTRACT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op21", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "o0", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_EXTR_EXTR_32_EXTRACT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_EXTR_EXTR_64_EXTRACT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op21", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "N", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "o0", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "imms", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_EXTR_EXTR_64_EXTRACT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CSEL_CSEL_32_CONDSEL: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CSEL_CSEL_32_CONDSEL: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CSEL_CSEL_64_CONDSEL: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CSEL_CSEL_64_CONDSEL: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CSINC_CSINC_32_CONDSEL: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CSINC_CSINC_32_CONDSEL: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CSINC_CSINC_64_CONDSEL: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CSINC_CSINC_64_CONDSEL: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CSINV_CSINV_32_CONDSEL: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CSINV_CSINV_32_CONDSEL: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CSINV_CSINV_64_CONDSEL: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CSINV_CSINV_64_CONDSEL: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CSNEG_CSNEG_32_CONDSEL: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CSNEG_CSNEG_32_CONDSEL: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CSNEG_CSNEG_64_CONDSEL: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CSNEG_CSNEG_64_CONDSEL: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CCMP_IMM_CCMP_32_CONDCMP_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "imm5", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "o3", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CCMP_IMM_CCMP_32_CONDCMP_IMM: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CCMP_IMM_CCMP_64_CONDCMP_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "imm5", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "o3", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CCMP_IMM_CCMP_64_CONDCMP_IMM: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CCMP_REG_CCMP_32_CONDCMP_REG: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "o3", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CCMP_REG_CCMP_32_CONDCMP_REG: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CCMP_REG_CCMP_64_CONDCMP_REG: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "o3", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CCMP_REG_CCMP_64_CONDCMP_REG: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CCMN_IMM_CCMN_32_CONDCMP_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "imm5", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "o3", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CCMN_IMM_CCMN_32_CONDCMP_IMM: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CCMN_IMM_CCMN_64_CONDCMP_IMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "imm5", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "o3", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CCMN_IMM_CCMN_64_CONDCMP_IMM: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CCMN_REG_CCMN_32_CONDCMP_REG: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "o3", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CCMN_REG_CCMN_32_CONDCMP_REG: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CCMN_REG_CCMN_64_CONDCMP_REG: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op", hi: 30, lo: 30, width: 1, mask: 0x40000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "o2", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "o3", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CCMN_REG_CCMN_64_CONDCMP_REG: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LSLV_LSLV_32_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op2", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LSLV_LSLV_32_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LSLV_LSLV_64_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op2", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LSLV_LSLV_64_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LSRV_LSRV_32_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op2", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LSRV_LSRV_32_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LSRV_LSRV_64_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op2", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LSRV_LSRV_64_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ASRV_ASRV_32_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op2", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ASRV_ASRV_32_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_ASRV_ASRV_64_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op2", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_ASRV_ASRV_64_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_RORV_RORV_32_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op2", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_RORV_RORV_32_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_RORV_RORV_64_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op2", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_RORV_RORV_64_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UDIV_UDIV_32_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o1", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UDIV_UDIV_32_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UDIV_UDIV_64_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o1", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UDIV_UDIV_64_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SDIV_SDIV_32_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o1", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SDIV_SDIV_32_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SDIV_SDIV_64_DP_2SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o1", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SDIV_SDIV_64_DP_2SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MADD_MADD_32A_DP_3SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op54", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "op31", hi: 23, lo: 21, width: 3, mask: 0x00e00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MADD_MADD_32A_DP_3SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Ra", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MADD_MADD_64A_DP_3SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op54", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "op31", hi: 23, lo: 21, width: 3, mask: 0x00e00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MADD_MADD_64A_DP_3SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Ra", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MSUB_MSUB_32A_DP_3SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op54", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "op31", hi: 23, lo: 21, width: 3, mask: 0x00e00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MSUB_MSUB_32A_DP_3SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Ra", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MSUB_MSUB_64A_DP_3SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op54", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "op31", hi: 23, lo: 21, width: 3, mask: 0x00e00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MSUB_MSUB_64A_DP_3SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Ra", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SMADDL_SMADDL_64WA_DP_3SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op54", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "U", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SMADDL_SMADDL_64WA_DP_3SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Ra", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UMADDL_UMADDL_64WA_DP_3SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op54", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "U", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UMADDL_UMADDL_64WA_DP_3SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Ra", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SMULH_SMULH_64_DP_3SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op54", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "U", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SMULH_SMULH_64_DP_3SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UMULH_UMULH_64_DP_3SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "op54", hi: 30, lo: 29, width: 2, mask: 0x60000000 },
+    GeneratedFieldSpec { name: "U", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UMULH_UMULH_64_DP_3SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CLZ_INT_CLZ_32_DP_1SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opcode2", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CLZ_INT_CLZ_32_DP_1SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CLZ_INT_CLZ_64_DP_1SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opcode2", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 10, lo: 10, width: 1, mask: 0x00000400 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CLZ_INT_CLZ_64_DP_1SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_RBIT_INT_RBIT_32_DP_1SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opcode2", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "opcode", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_RBIT_INT_RBIT_32_DP_1SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_RBIT_INT_RBIT_64_DP_1SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opcode2", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "opcode", hi: 15, lo: 10, width: 6, mask: 0x0000fc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_RBIT_INT_RBIT_64_DP_1SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_REV_REV_32_DP_1SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opcode2", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "opc", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_REV_REV_32_DP_1SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_REV_REV_64_DP_1SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opcode2", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "opc", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_REV_REV_64_DP_1SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_REV16_INT_REV16_32_DP_1SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opcode2", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "opc", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_REV16_INT_REV16_32_DP_1SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_REV16_INT_REV16_64_DP_1SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opcode2", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "opc", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_REV16_INT_REV16_64_DP_1SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_REV32_INT_REV32_64_DP_1SRC: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "opcode2", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "opc", hi: 11, lo: 10, width: 2, mask: 0x00000c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_REV32_INT_REV32_64_DP_1SRC: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MRS_MRS_RS_SYSTEMMOVE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "L", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "o0", hi: 19, lo: 19, width: 1, mask: 0x00080000 },
+    GeneratedFieldSpec { name: "op1", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "CRn", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "CRm", hi: 11, lo: 8, width: 4, mask: 0x00000f00 },
+    GeneratedFieldSpec { name: "op2", hi: 7, lo: 5, width: 3, mask: 0x000000e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MRS_MRS_RS_SYSTEMMOVE: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -2617,6 +8206,222 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         asm: "SUBS <Xd> , <Xn|SP> , # <imm> {, <shift> }",
     },
     GeneratedInsnSpec {
+        key: "ADDS_addsub_imm.ADDS_32S_addsub_imm",
+        mnemonic: "ADDS",
+        heading: "ADDS (immediate)",
+        title: "ADDS (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff800000,
+        value: 0x31000000,
+        fields: FIELDS_ADDS_ADDSUB_IMM_ADDS_32S_ADDSUB_IMM,
+        operands: OPERANDS_ADDS_ADDSUB_IMM_ADDS_32S_ADDSUB_IMM,
+        asm: "ADDS <Wd> , <Wn|WSP> , # <imm> {, <shift> }",
+    },
+    GeneratedInsnSpec {
+        key: "ADDS_addsub_imm.ADDS_64S_addsub_imm",
+        mnemonic: "ADDS",
+        heading: "ADDS (immediate)",
+        title: "ADDS (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff800000,
+        value: 0xb1000000,
+        fields: FIELDS_ADDS_ADDSUB_IMM_ADDS_64S_ADDSUB_IMM,
+        operands: OPERANDS_ADDS_ADDSUB_IMM_ADDS_64S_ADDSUB_IMM,
+        asm: "ADDS <Xd> , <Xn|SP> , # <imm> {, <shift> }",
+    },
+    GeneratedInsnSpec {
+        key: "ADD_addsub_shift.ADD_32_addsub_shift",
+        mnemonic: "ADD",
+        heading: "ADD (shifted register)",
+        title: "ADD (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x0b000000,
+        fields: FIELDS_ADD_ADDSUB_SHIFT_ADD_32_ADDSUB_SHIFT,
+        operands: OPERANDS_ADD_ADDSUB_SHIFT_ADD_32_ADDSUB_SHIFT,
+        asm: "ADD <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "ADD_addsub_shift.ADD_64_addsub_shift",
+        mnemonic: "ADD",
+        heading: "ADD (shifted register)",
+        title: "ADD (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0x8b000000,
+        fields: FIELDS_ADD_ADDSUB_SHIFT_ADD_64_ADDSUB_SHIFT,
+        operands: OPERANDS_ADD_ADDSUB_SHIFT_ADD_64_ADDSUB_SHIFT,
+        asm: "ADD <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "ADDS_addsub_shift.ADDS_32_addsub_shift",
+        mnemonic: "ADDS",
+        heading: "ADDS (shifted register)",
+        title: "ADDS (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x2b000000,
+        fields: FIELDS_ADDS_ADDSUB_SHIFT_ADDS_32_ADDSUB_SHIFT,
+        operands: OPERANDS_ADDS_ADDSUB_SHIFT_ADDS_32_ADDSUB_SHIFT,
+        asm: "ADDS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "ADDS_addsub_shift.ADDS_64_addsub_shift",
+        mnemonic: "ADDS",
+        heading: "ADDS (shifted register)",
+        title: "ADDS (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0xab000000,
+        fields: FIELDS_ADDS_ADDSUB_SHIFT_ADDS_64_ADDSUB_SHIFT,
+        operands: OPERANDS_ADDS_ADDSUB_SHIFT_ADDS_64_ADDSUB_SHIFT,
+        asm: "ADDS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "SUB_addsub_shift.SUB_32_addsub_shift",
+        mnemonic: "SUB",
+        heading: "SUB (shifted register)",
+        title: "SUB (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x4b000000,
+        fields: FIELDS_SUB_ADDSUB_SHIFT_SUB_32_ADDSUB_SHIFT,
+        operands: OPERANDS_SUB_ADDSUB_SHIFT_SUB_32_ADDSUB_SHIFT,
+        asm: "SUB <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "SUB_addsub_shift.SUB_64_addsub_shift",
+        mnemonic: "SUB",
+        heading: "SUB (shifted register)",
+        title: "SUB (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0xcb000000,
+        fields: FIELDS_SUB_ADDSUB_SHIFT_SUB_64_ADDSUB_SHIFT,
+        operands: OPERANDS_SUB_ADDSUB_SHIFT_SUB_64_ADDSUB_SHIFT,
+        asm: "SUB <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "SUBS_addsub_shift.SUBS_32_addsub_shift",
+        mnemonic: "SUBS",
+        heading: "SUBS (shifted register)",
+        title: "SUBS (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x6b000000,
+        fields: FIELDS_SUBS_ADDSUB_SHIFT_SUBS_32_ADDSUB_SHIFT,
+        operands: OPERANDS_SUBS_ADDSUB_SHIFT_SUBS_32_ADDSUB_SHIFT,
+        asm: "SUBS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "SUBS_addsub_shift.SUBS_64_addsub_shift",
+        mnemonic: "SUBS",
+        heading: "SUBS (shifted register)",
+        title: "SUBS (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0xeb000000,
+        fields: FIELDS_SUBS_ADDSUB_SHIFT_SUBS_64_ADDSUB_SHIFT,
+        operands: OPERANDS_SUBS_ADDSUB_SHIFT_SUBS_64_ADDSUB_SHIFT,
+        asm: "SUBS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "ADD_addsub_ext.ADD_32_addsub_ext",
+        mnemonic: "ADD",
+        heading: "ADD (extended register)",
+        title: "ADD (extended register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00000,
+        value: 0x0b200000,
+        fields: FIELDS_ADD_ADDSUB_EXT_ADD_32_ADDSUB_EXT,
+        operands: OPERANDS_ADD_ADDSUB_EXT_ADD_32_ADDSUB_EXT,
+        asm: "ADD <Wd|WSP> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
+    },
+    GeneratedInsnSpec {
+        key: "ADD_addsub_ext.ADD_64_addsub_ext",
+        mnemonic: "ADD",
+        heading: "ADD (extended register)",
+        title: "ADD (extended register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00000,
+        value: 0x8b200000,
+        fields: FIELDS_ADD_ADDSUB_EXT_ADD_64_ADDSUB_EXT,
+        operands: OPERANDS_ADD_ADDSUB_EXT_ADD_64_ADDSUB_EXT,
+        asm: "ADD <Xd|SP> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
+    },
+    GeneratedInsnSpec {
+        key: "ADDS_addsub_ext.ADDS_32S_addsub_ext",
+        mnemonic: "ADDS",
+        heading: "ADDS (extended register)",
+        title: "ADDS (extended register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00000,
+        value: 0x2b200000,
+        fields: FIELDS_ADDS_ADDSUB_EXT_ADDS_32S_ADDSUB_EXT,
+        operands: OPERANDS_ADDS_ADDSUB_EXT_ADDS_32S_ADDSUB_EXT,
+        asm: "ADDS <Wd> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
+    },
+    GeneratedInsnSpec {
+        key: "ADDS_addsub_ext.ADDS_64S_addsub_ext",
+        mnemonic: "ADDS",
+        heading: "ADDS (extended register)",
+        title: "ADDS (extended register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00000,
+        value: 0xab200000,
+        fields: FIELDS_ADDS_ADDSUB_EXT_ADDS_64S_ADDSUB_EXT,
+        operands: OPERANDS_ADDS_ADDSUB_EXT_ADDS_64S_ADDSUB_EXT,
+        asm: "ADDS <Xd> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
+    },
+    GeneratedInsnSpec {
+        key: "SUB_addsub_ext.SUB_32_addsub_ext",
+        mnemonic: "SUB",
+        heading: "SUB (extended register)",
+        title: "SUB (extended register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00000,
+        value: 0x4b200000,
+        fields: FIELDS_SUB_ADDSUB_EXT_SUB_32_ADDSUB_EXT,
+        operands: OPERANDS_SUB_ADDSUB_EXT_SUB_32_ADDSUB_EXT,
+        asm: "SUB <Wd|WSP> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
+    },
+    GeneratedInsnSpec {
+        key: "SUB_addsub_ext.SUB_64_addsub_ext",
+        mnemonic: "SUB",
+        heading: "SUB (extended register)",
+        title: "SUB (extended register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00000,
+        value: 0xcb200000,
+        fields: FIELDS_SUB_ADDSUB_EXT_SUB_64_ADDSUB_EXT,
+        operands: OPERANDS_SUB_ADDSUB_EXT_SUB_64_ADDSUB_EXT,
+        asm: "SUB <Xd|SP> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
+    },
+    GeneratedInsnSpec {
+        key: "SUBS_addsub_ext.SUBS_32S_addsub_ext",
+        mnemonic: "SUBS",
+        heading: "SUBS (extended register)",
+        title: "SUBS (extended register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00000,
+        value: 0x6b200000,
+        fields: FIELDS_SUBS_ADDSUB_EXT_SUBS_32S_ADDSUB_EXT,
+        operands: OPERANDS_SUBS_ADDSUB_EXT_SUBS_32S_ADDSUB_EXT,
+        asm: "SUBS <Wd> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
+    },
+    GeneratedInsnSpec {
+        key: "SUBS_addsub_ext.SUBS_64S_addsub_ext",
+        mnemonic: "SUBS",
+        heading: "SUBS (extended register)",
+        title: "SUBS (extended register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00000,
+        value: 0xeb200000,
+        fields: FIELDS_SUBS_ADDSUB_EXT_SUBS_64S_ADDSUB_EXT,
+        operands: OPERANDS_SUBS_ADDSUB_EXT_SUBS_64S_ADDSUB_EXT,
+        asm: "SUBS <Xd> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
+    },
+    GeneratedInsnSpec {
         key: "B_uncond.B_only_branch_imm",
         mnemonic: "B",
         heading: "B",
@@ -2737,6 +8542,90 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         asm: "MOVK <Xd> , # <imm> {, LSL # <shift> }",
     },
     GeneratedInsnSpec {
+        key: "MOVN.MOVN_32_movewide",
+        mnemonic: "MOVN",
+        heading: "MOVN",
+        title: "MOVN -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x12800000,
+        fields: FIELDS_MOVN_MOVN_32_MOVEWIDE,
+        operands: OPERANDS_MOVN_MOVN_32_MOVEWIDE,
+        asm: "MOVN <Wd> , # <imm> {, LSL # <shift> }",
+    },
+    GeneratedInsnSpec {
+        key: "MOVN.MOVN_64_movewide",
+        mnemonic: "MOVN",
+        heading: "MOVN",
+        title: "MOVN -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff800000,
+        value: 0x92800000,
+        fields: FIELDS_MOVN_MOVN_64_MOVEWIDE,
+        operands: OPERANDS_MOVN_MOVN_64_MOVEWIDE,
+        asm: "MOVN <Xd> , # <imm> {, LSL # <shift> }",
+    },
+    GeneratedInsnSpec {
+        key: "AND_log_shift.AND_32_log_shift",
+        mnemonic: "AND",
+        heading: "AND (shifted register)",
+        title: "AND (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x0a000000,
+        fields: FIELDS_AND_LOG_SHIFT_AND_32_LOG_SHIFT,
+        operands: OPERANDS_AND_LOG_SHIFT_AND_32_LOG_SHIFT,
+        asm: "AND <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "AND_log_shift.AND_64_log_shift",
+        mnemonic: "AND",
+        heading: "AND (shifted register)",
+        title: "AND (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0x8a000000,
+        fields: FIELDS_AND_LOG_SHIFT_AND_64_LOG_SHIFT,
+        operands: OPERANDS_AND_LOG_SHIFT_AND_64_LOG_SHIFT,
+        asm: "AND <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "ANDS_log_shift.ANDS_32_log_shift",
+        mnemonic: "ANDS",
+        heading: "ANDS (shifted register)",
+        title: "ANDS (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x6a000000,
+        fields: FIELDS_ANDS_LOG_SHIFT_ANDS_32_LOG_SHIFT,
+        operands: OPERANDS_ANDS_LOG_SHIFT_ANDS_32_LOG_SHIFT,
+        asm: "ANDS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "ANDS_log_shift.ANDS_64_log_shift",
+        mnemonic: "ANDS",
+        heading: "ANDS (shifted register)",
+        title: "ANDS (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0xea000000,
+        fields: FIELDS_ANDS_LOG_SHIFT_ANDS_64_LOG_SHIFT,
+        operands: OPERANDS_ANDS_LOG_SHIFT_ANDS_64_LOG_SHIFT,
+        asm: "ANDS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "ORR_log_shift.ORR_32_log_shift",
+        mnemonic: "ORR",
+        heading: "ORR (shifted register)",
+        title: "ORR (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x2a000000,
+        fields: FIELDS_ORR_LOG_SHIFT_ORR_32_LOG_SHIFT,
+        operands: OPERANDS_ORR_LOG_SHIFT_ORR_32_LOG_SHIFT,
+        asm: "ORR <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
         key: "ORR_log_shift.ORR_64_log_shift",
         mnemonic: "ORR",
         heading: "ORR (shifted register)",
@@ -2747,6 +8636,870 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         fields: FIELDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT,
         operands: OPERANDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT,
         asm: "ORR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "EOR_log_shift.EOR_32_log_shift",
+        mnemonic: "EOR",
+        heading: "EOR (shifted register)",
+        title: "EOR (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x4a000000,
+        fields: FIELDS_EOR_LOG_SHIFT_EOR_32_LOG_SHIFT,
+        operands: OPERANDS_EOR_LOG_SHIFT_EOR_32_LOG_SHIFT,
+        asm: "EOR <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "EOR_log_shift.EOR_64_log_shift",
+        mnemonic: "EOR",
+        heading: "EOR (shifted register)",
+        title: "EOR (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0xca000000,
+        fields: FIELDS_EOR_LOG_SHIFT_EOR_64_LOG_SHIFT,
+        operands: OPERANDS_EOR_LOG_SHIFT_EOR_64_LOG_SHIFT,
+        asm: "EOR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "EON.EON_32_log_shift",
+        mnemonic: "EON",
+        heading: "EON (shifted register)",
+        title: "EON (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x4a200000,
+        fields: FIELDS_EON_EON_32_LOG_SHIFT,
+        operands: OPERANDS_EON_EON_32_LOG_SHIFT,
+        asm: "EON <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "EON.EON_64_log_shift",
+        mnemonic: "EON",
+        heading: "EON (shifted register)",
+        title: "EON (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0xca200000,
+        fields: FIELDS_EON_EON_64_LOG_SHIFT,
+        operands: OPERANDS_EON_EON_64_LOG_SHIFT,
+        asm: "EON <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "BIC_log_shift.BIC_32_log_shift",
+        mnemonic: "BIC",
+        heading: "BIC (shifted register)",
+        title: "BIC (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x0a200000,
+        fields: FIELDS_BIC_LOG_SHIFT_BIC_32_LOG_SHIFT,
+        operands: OPERANDS_BIC_LOG_SHIFT_BIC_32_LOG_SHIFT,
+        asm: "BIC <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "BIC_log_shift.BIC_64_log_shift",
+        mnemonic: "BIC",
+        heading: "BIC (shifted register)",
+        title: "BIC (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0x8a200000,
+        fields: FIELDS_BIC_LOG_SHIFT_BIC_64_LOG_SHIFT,
+        operands: OPERANDS_BIC_LOG_SHIFT_BIC_64_LOG_SHIFT,
+        asm: "BIC <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "BICS.BICS_32_log_shift",
+        mnemonic: "BICS",
+        heading: "BICS (shifted register)",
+        title: "BICS (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x6a200000,
+        fields: FIELDS_BICS_BICS_32_LOG_SHIFT,
+        operands: OPERANDS_BICS_BICS_32_LOG_SHIFT,
+        asm: "BICS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "BICS.BICS_64_log_shift",
+        mnemonic: "BICS",
+        heading: "BICS (shifted register)",
+        title: "BICS (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0xea200000,
+        fields: FIELDS_BICS_BICS_64_LOG_SHIFT,
+        operands: OPERANDS_BICS_BICS_64_LOG_SHIFT,
+        asm: "BICS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "ORN_log_shift.ORN_32_log_shift",
+        mnemonic: "ORN",
+        heading: "ORN (shifted register)",
+        title: "ORN (shifted register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff200000,
+        value: 0x2a200000,
+        fields: FIELDS_ORN_LOG_SHIFT_ORN_32_LOG_SHIFT,
+        operands: OPERANDS_ORN_LOG_SHIFT_ORN_32_LOG_SHIFT,
+        asm: "ORN <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "ORN_log_shift.ORN_64_log_shift",
+        mnemonic: "ORN",
+        heading: "ORN (shifted register)",
+        title: "ORN (shifted register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff200000,
+        value: 0xaa200000,
+        fields: FIELDS_ORN_LOG_SHIFT_ORN_64_LOG_SHIFT,
+        operands: OPERANDS_ORN_LOG_SHIFT_ORN_64_LOG_SHIFT,
+        asm: "ORN <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
+    },
+    GeneratedInsnSpec {
+        key: "AND_log_imm.AND_32_log_imm",
+        mnemonic: "AND",
+        heading: "AND (immediate)",
+        title: "AND (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x12000000,
+        fields: FIELDS_AND_LOG_IMM_AND_32_LOG_IMM,
+        operands: OPERANDS_AND_LOG_IMM_AND_32_LOG_IMM,
+        asm: "AND <Wd|WSP> , <Wn> , # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "AND_log_imm.AND_64_log_imm",
+        mnemonic: "AND",
+        heading: "AND (immediate)",
+        title: "AND (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff800000,
+        value: 0x92000000,
+        fields: FIELDS_AND_LOG_IMM_AND_64_LOG_IMM,
+        operands: OPERANDS_AND_LOG_IMM_AND_64_LOG_IMM,
+        asm: "AND <Xd|SP> , <Xn> , # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "ANDS_log_imm.ANDS_32S_log_imm",
+        mnemonic: "ANDS",
+        heading: "ANDS (immediate)",
+        title: "ANDS (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x72000000,
+        fields: FIELDS_ANDS_LOG_IMM_ANDS_32S_LOG_IMM,
+        operands: OPERANDS_ANDS_LOG_IMM_ANDS_32S_LOG_IMM,
+        asm: "ANDS <Wd> , <Wn> , # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "ANDS_log_imm.ANDS_64S_log_imm",
+        mnemonic: "ANDS",
+        heading: "ANDS (immediate)",
+        title: "ANDS (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff800000,
+        value: 0xf2000000,
+        fields: FIELDS_ANDS_LOG_IMM_ANDS_64S_LOG_IMM,
+        operands: OPERANDS_ANDS_LOG_IMM_ANDS_64S_LOG_IMM,
+        asm: "ANDS <Xd> , <Xn> , # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "ORR_log_imm.ORR_32_log_imm",
+        mnemonic: "ORR",
+        heading: "ORR (immediate)",
+        title: "ORR (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x32000000,
+        fields: FIELDS_ORR_LOG_IMM_ORR_32_LOG_IMM,
+        operands: OPERANDS_ORR_LOG_IMM_ORR_32_LOG_IMM,
+        asm: "ORR <Wd|WSP> , <Wn> , # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "ORR_log_imm.ORR_64_log_imm",
+        mnemonic: "ORR",
+        heading: "ORR (immediate)",
+        title: "ORR (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff800000,
+        value: 0xb2000000,
+        fields: FIELDS_ORR_LOG_IMM_ORR_64_LOG_IMM,
+        operands: OPERANDS_ORR_LOG_IMM_ORR_64_LOG_IMM,
+        asm: "ORR <Xd|SP> , <Xn> , # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "EOR_log_imm.EOR_32_log_imm",
+        mnemonic: "EOR",
+        heading: "EOR (immediate)",
+        title: "EOR (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x52000000,
+        fields: FIELDS_EOR_LOG_IMM_EOR_32_LOG_IMM,
+        operands: OPERANDS_EOR_LOG_IMM_EOR_32_LOG_IMM,
+        asm: "EOR <Wd|WSP> , <Wn> , # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "EOR_log_imm.EOR_64_log_imm",
+        mnemonic: "EOR",
+        heading: "EOR (immediate)",
+        title: "EOR (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff800000,
+        value: 0xd2000000,
+        fields: FIELDS_EOR_LOG_IMM_EOR_64_LOG_IMM,
+        operands: OPERANDS_EOR_LOG_IMM_EOR_64_LOG_IMM,
+        asm: "EOR <Xd|SP> , <Xn> , # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "SBFM.SBFM_32M_bitfield",
+        mnemonic: "SBFM",
+        heading: "SBFM",
+        title: "SBFM -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x13000000,
+        fields: FIELDS_SBFM_SBFM_32M_BITFIELD,
+        operands: OPERANDS_SBFM_SBFM_32M_BITFIELD,
+        asm: "SBFM <Wd> , <Wn> , # <immr> , # <imms>",
+    },
+    GeneratedInsnSpec {
+        key: "SBFM.SBFM_64M_bitfield",
+        mnemonic: "SBFM",
+        heading: "SBFM",
+        title: "SBFM -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0x93400000,
+        fields: FIELDS_SBFM_SBFM_64M_BITFIELD,
+        operands: OPERANDS_SBFM_SBFM_64M_BITFIELD,
+        asm: "SBFM <Xd> , <Xn> , # <immr> , # <imms>",
+    },
+    GeneratedInsnSpec {
+        key: "UBFM.UBFM_32M_bitfield",
+        mnemonic: "UBFM",
+        heading: "UBFM",
+        title: "UBFM -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x53000000,
+        fields: FIELDS_UBFM_UBFM_32M_BITFIELD,
+        operands: OPERANDS_UBFM_UBFM_32M_BITFIELD,
+        asm: "UBFM <Wd> , <Wn> , # <immr> , # <imms>",
+    },
+    GeneratedInsnSpec {
+        key: "UBFM.UBFM_64M_bitfield",
+        mnemonic: "UBFM",
+        heading: "UBFM",
+        title: "UBFM -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0xd3400000,
+        fields: FIELDS_UBFM_UBFM_64M_BITFIELD,
+        operands: OPERANDS_UBFM_UBFM_64M_BITFIELD,
+        asm: "UBFM <Xd> , <Xn> , # <immr> , # <imms>",
+    },
+    GeneratedInsnSpec {
+        key: "BFM.BFM_32M_bitfield",
+        mnemonic: "BFM",
+        heading: "BFM",
+        title: "BFM -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x33000000,
+        fields: FIELDS_BFM_BFM_32M_BITFIELD,
+        operands: OPERANDS_BFM_BFM_32M_BITFIELD,
+        asm: "BFM <Wd> , <Wn> , # <immr> , # <imms>",
+    },
+    GeneratedInsnSpec {
+        key: "BFM.BFM_64M_bitfield",
+        mnemonic: "BFM",
+        heading: "BFM",
+        title: "BFM -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0xb3400000,
+        fields: FIELDS_BFM_BFM_64M_BITFIELD,
+        operands: OPERANDS_BFM_BFM_64M_BITFIELD,
+        asm: "BFM <Xd> , <Xn> , # <immr> , # <imms>",
+    },
+    GeneratedInsnSpec {
+        key: "EXTR.EXTR_32_extract",
+        mnemonic: "EXTR",
+        heading: "EXTR",
+        title: "EXTR -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe08000,
+        value: 0x13800000,
+        fields: FIELDS_EXTR_EXTR_32_EXTRACT,
+        operands: OPERANDS_EXTR_EXTR_32_EXTRACT,
+        asm: "EXTR <Wd> , <Wn> , <Wm> , # <lsb>",
+    },
+    GeneratedInsnSpec {
+        key: "EXTR.EXTR_64_extract",
+        mnemonic: "EXTR",
+        heading: "EXTR",
+        title: "EXTR -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00000,
+        value: 0x93c00000,
+        fields: FIELDS_EXTR_EXTR_64_EXTRACT,
+        operands: OPERANDS_EXTR_EXTR_64_EXTRACT,
+        asm: "EXTR <Xd> , <Xn> , <Xm> , # <lsb>",
+    },
+    GeneratedInsnSpec {
+        key: "CSEL.CSEL_32_condsel",
+        mnemonic: "CSEL",
+        heading: "CSEL",
+        title: "CSEL -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x1a800000,
+        fields: FIELDS_CSEL_CSEL_32_CONDSEL,
+        operands: OPERANDS_CSEL_CSEL_32_CONDSEL,
+        asm: "CSEL <Wd> , <Wn> , <Wm> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CSEL.CSEL_64_condsel",
+        mnemonic: "CSEL",
+        heading: "CSEL",
+        title: "CSEL -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x9a800000,
+        fields: FIELDS_CSEL_CSEL_64_CONDSEL,
+        operands: OPERANDS_CSEL_CSEL_64_CONDSEL,
+        asm: "CSEL <Xd> , <Xn> , <Xm> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CSINC.CSINC_32_condsel",
+        mnemonic: "CSINC",
+        heading: "CSINC",
+        title: "CSINC -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x1a800400,
+        fields: FIELDS_CSINC_CSINC_32_CONDSEL,
+        operands: OPERANDS_CSINC_CSINC_32_CONDSEL,
+        asm: "CSINC <Wd> , <Wn> , <Wm> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CSINC.CSINC_64_condsel",
+        mnemonic: "CSINC",
+        heading: "CSINC",
+        title: "CSINC -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x9a800400,
+        fields: FIELDS_CSINC_CSINC_64_CONDSEL,
+        operands: OPERANDS_CSINC_CSINC_64_CONDSEL,
+        asm: "CSINC <Xd> , <Xn> , <Xm> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CSINV.CSINV_32_condsel",
+        mnemonic: "CSINV",
+        heading: "CSINV",
+        title: "CSINV -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x5a800000,
+        fields: FIELDS_CSINV_CSINV_32_CONDSEL,
+        operands: OPERANDS_CSINV_CSINV_32_CONDSEL,
+        asm: "CSINV <Wd> , <Wn> , <Wm> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CSINV.CSINV_64_condsel",
+        mnemonic: "CSINV",
+        heading: "CSINV",
+        title: "CSINV -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0xda800000,
+        fields: FIELDS_CSINV_CSINV_64_CONDSEL,
+        operands: OPERANDS_CSINV_CSINV_64_CONDSEL,
+        asm: "CSINV <Xd> , <Xn> , <Xm> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CSNEG.CSNEG_32_condsel",
+        mnemonic: "CSNEG",
+        heading: "CSNEG",
+        title: "CSNEG -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x5a800400,
+        fields: FIELDS_CSNEG_CSNEG_32_CONDSEL,
+        operands: OPERANDS_CSNEG_CSNEG_32_CONDSEL,
+        asm: "CSNEG <Wd> , <Wn> , <Wm> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CSNEG.CSNEG_64_condsel",
+        mnemonic: "CSNEG",
+        heading: "CSNEG",
+        title: "CSNEG -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0xda800400,
+        fields: FIELDS_CSNEG_CSNEG_64_CONDSEL,
+        operands: OPERANDS_CSNEG_CSNEG_64_CONDSEL,
+        asm: "CSNEG <Xd> , <Xn> , <Xm> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CCMP_imm.CCMP_32_condcmp_imm",
+        mnemonic: "CCMP",
+        heading: "CCMP (immediate)",
+        title: "CCMP (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c10,
+        value: 0x7a400800,
+        fields: FIELDS_CCMP_IMM_CCMP_32_CONDCMP_IMM,
+        operands: OPERANDS_CCMP_IMM_CCMP_32_CONDCMP_IMM,
+        asm: "CCMP <Wn> , # <imm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CCMP_imm.CCMP_64_condcmp_imm",
+        mnemonic: "CCMP",
+        heading: "CCMP (immediate)",
+        title: "CCMP (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c10,
+        value: 0xfa400800,
+        fields: FIELDS_CCMP_IMM_CCMP_64_CONDCMP_IMM,
+        operands: OPERANDS_CCMP_IMM_CCMP_64_CONDCMP_IMM,
+        asm: "CCMP <Xn> , # <imm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CCMP_reg.CCMP_32_condcmp_reg",
+        mnemonic: "CCMP",
+        heading: "CCMP (register)",
+        title: "CCMP (register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c10,
+        value: 0x7a400000,
+        fields: FIELDS_CCMP_REG_CCMP_32_CONDCMP_REG,
+        operands: OPERANDS_CCMP_REG_CCMP_32_CONDCMP_REG,
+        asm: "CCMP <Wn> , <Wm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CCMP_reg.CCMP_64_condcmp_reg",
+        mnemonic: "CCMP",
+        heading: "CCMP (register)",
+        title: "CCMP (register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c10,
+        value: 0xfa400000,
+        fields: FIELDS_CCMP_REG_CCMP_64_CONDCMP_REG,
+        operands: OPERANDS_CCMP_REG_CCMP_64_CONDCMP_REG,
+        asm: "CCMP <Xn> , <Xm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CCMN_imm.CCMN_32_condcmp_imm",
+        mnemonic: "CCMN",
+        heading: "CCMN (immediate)",
+        title: "CCMN (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c10,
+        value: 0x3a400800,
+        fields: FIELDS_CCMN_IMM_CCMN_32_CONDCMP_IMM,
+        operands: OPERANDS_CCMN_IMM_CCMN_32_CONDCMP_IMM,
+        asm: "CCMN <Wn> , # <imm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CCMN_imm.CCMN_64_condcmp_imm",
+        mnemonic: "CCMN",
+        heading: "CCMN (immediate)",
+        title: "CCMN (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c10,
+        value: 0xba400800,
+        fields: FIELDS_CCMN_IMM_CCMN_64_CONDCMP_IMM,
+        operands: OPERANDS_CCMN_IMM_CCMN_64_CONDCMP_IMM,
+        asm: "CCMN <Xn> , # <imm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CCMN_reg.CCMN_32_condcmp_reg",
+        mnemonic: "CCMN",
+        heading: "CCMN (register)",
+        title: "CCMN (register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c10,
+        value: 0x3a400000,
+        fields: FIELDS_CCMN_REG_CCMN_32_CONDCMP_REG,
+        operands: OPERANDS_CCMN_REG_CCMN_32_CONDCMP_REG,
+        asm: "CCMN <Wn> , <Wm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "CCMN_reg.CCMN_64_condcmp_reg",
+        mnemonic: "CCMN",
+        heading: "CCMN (register)",
+        title: "CCMN (register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c10,
+        value: 0xba400000,
+        fields: FIELDS_CCMN_REG_CCMN_64_CONDCMP_REG,
+        operands: OPERANDS_CCMN_REG_CCMN_64_CONDCMP_REG,
+        asm: "CCMN <Xn> , <Xm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "LSLV.LSLV_32_dp_2src",
+        mnemonic: "LSLV",
+        heading: "LSLV",
+        title: "LSLV -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe0fc00,
+        value: 0x1ac02000,
+        fields: FIELDS_LSLV_LSLV_32_DP_2SRC,
+        operands: OPERANDS_LSLV_LSLV_32_DP_2SRC,
+        asm: "LSLV <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "LSLV.LSLV_64_dp_2src",
+        mnemonic: "LSLV",
+        heading: "LSLV",
+        title: "LSLV -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe0fc00,
+        value: 0x9ac02000,
+        fields: FIELDS_LSLV_LSLV_64_DP_2SRC,
+        operands: OPERANDS_LSLV_LSLV_64_DP_2SRC,
+        asm: "LSLV <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "LSRV.LSRV_32_dp_2src",
+        mnemonic: "LSRV",
+        heading: "LSRV",
+        title: "LSRV -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe0fc00,
+        value: 0x1ac02400,
+        fields: FIELDS_LSRV_LSRV_32_DP_2SRC,
+        operands: OPERANDS_LSRV_LSRV_32_DP_2SRC,
+        asm: "LSRV <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "LSRV.LSRV_64_dp_2src",
+        mnemonic: "LSRV",
+        heading: "LSRV",
+        title: "LSRV -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe0fc00,
+        value: 0x9ac02400,
+        fields: FIELDS_LSRV_LSRV_64_DP_2SRC,
+        operands: OPERANDS_LSRV_LSRV_64_DP_2SRC,
+        asm: "LSRV <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "ASRV.ASRV_32_dp_2src",
+        mnemonic: "ASRV",
+        heading: "ASRV",
+        title: "ASRV -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe0fc00,
+        value: 0x1ac02800,
+        fields: FIELDS_ASRV_ASRV_32_DP_2SRC,
+        operands: OPERANDS_ASRV_ASRV_32_DP_2SRC,
+        asm: "ASRV <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "ASRV.ASRV_64_dp_2src",
+        mnemonic: "ASRV",
+        heading: "ASRV",
+        title: "ASRV -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe0fc00,
+        value: 0x9ac02800,
+        fields: FIELDS_ASRV_ASRV_64_DP_2SRC,
+        operands: OPERANDS_ASRV_ASRV_64_DP_2SRC,
+        asm: "ASRV <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "RORV.RORV_32_dp_2src",
+        mnemonic: "RORV",
+        heading: "RORV",
+        title: "RORV -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe0fc00,
+        value: 0x1ac02c00,
+        fields: FIELDS_RORV_RORV_32_DP_2SRC,
+        operands: OPERANDS_RORV_RORV_32_DP_2SRC,
+        asm: "RORV <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "RORV.RORV_64_dp_2src",
+        mnemonic: "RORV",
+        heading: "RORV",
+        title: "RORV -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe0fc00,
+        value: 0x9ac02c00,
+        fields: FIELDS_RORV_RORV_64_DP_2SRC,
+        operands: OPERANDS_RORV_RORV_64_DP_2SRC,
+        asm: "RORV <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "UDIV.UDIV_32_dp_2src",
+        mnemonic: "UDIV",
+        heading: "UDIV (quotient)",
+        title: "UDIV (quotient) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe0fc00,
+        value: 0x1ac00800,
+        fields: FIELDS_UDIV_UDIV_32_DP_2SRC,
+        operands: OPERANDS_UDIV_UDIV_32_DP_2SRC,
+        asm: "UDIV <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "UDIV.UDIV_64_dp_2src",
+        mnemonic: "UDIV",
+        heading: "UDIV (quotient)",
+        title: "UDIV (quotient) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe0fc00,
+        value: 0x9ac00800,
+        fields: FIELDS_UDIV_UDIV_64_DP_2SRC,
+        operands: OPERANDS_UDIV_UDIV_64_DP_2SRC,
+        asm: "UDIV <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "SDIV.SDIV_32_dp_2src",
+        mnemonic: "SDIV",
+        heading: "SDIV (quotient)",
+        title: "SDIV (quotient) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe0fc00,
+        value: 0x1ac00c00,
+        fields: FIELDS_SDIV_SDIV_32_DP_2SRC,
+        operands: OPERANDS_SDIV_SDIV_32_DP_2SRC,
+        asm: "SDIV <Wd> , <Wn> , <Wm>",
+    },
+    GeneratedInsnSpec {
+        key: "SDIV.SDIV_64_dp_2src",
+        mnemonic: "SDIV",
+        heading: "SDIV (quotient)",
+        title: "SDIV (quotient) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe0fc00,
+        value: 0x9ac00c00,
+        fields: FIELDS_SDIV_SDIV_64_DP_2SRC,
+        operands: OPERANDS_SDIV_SDIV_64_DP_2SRC,
+        asm: "SDIV <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "MADD.MADD_32A_dp_3src",
+        mnemonic: "MADD",
+        heading: "MADD",
+        title: "MADD -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe08000,
+        value: 0x1b000000,
+        fields: FIELDS_MADD_MADD_32A_DP_3SRC,
+        operands: OPERANDS_MADD_MADD_32A_DP_3SRC,
+        asm: "MADD <Wd> , <Wn> , <Wm> , <Wa>",
+    },
+    GeneratedInsnSpec {
+        key: "MADD.MADD_64A_dp_3src",
+        mnemonic: "MADD",
+        heading: "MADD",
+        title: "MADD -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe08000,
+        value: 0x9b000000,
+        fields: FIELDS_MADD_MADD_64A_DP_3SRC,
+        operands: OPERANDS_MADD_MADD_64A_DP_3SRC,
+        asm: "MADD <Xd> , <Xn> , <Xm> , <Xa>",
+    },
+    GeneratedInsnSpec {
+        key: "MSUB.MSUB_32A_dp_3src",
+        mnemonic: "MSUB",
+        heading: "MSUB",
+        title: "MSUB -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe08000,
+        value: 0x1b008000,
+        fields: FIELDS_MSUB_MSUB_32A_DP_3SRC,
+        operands: OPERANDS_MSUB_MSUB_32A_DP_3SRC,
+        asm: "MSUB <Wd> , <Wn> , <Wm> , <Wa>",
+    },
+    GeneratedInsnSpec {
+        key: "MSUB.MSUB_64A_dp_3src",
+        mnemonic: "MSUB",
+        heading: "MSUB",
+        title: "MSUB -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe08000,
+        value: 0x9b008000,
+        fields: FIELDS_MSUB_MSUB_64A_DP_3SRC,
+        operands: OPERANDS_MSUB_MSUB_64A_DP_3SRC,
+        asm: "MSUB <Xd> , <Xn> , <Xm> , <Xa>",
+    },
+    GeneratedInsnSpec {
+        key: "SMADDL.SMADDL_64WA_dp_3src",
+        mnemonic: "SMADDL",
+        heading: "SMADDL",
+        title: "SMADDL -- A64",
+        encoding_label: "",
+        mask: 0xffe08000,
+        value: 0x9b200000,
+        fields: FIELDS_SMADDL_SMADDL_64WA_DP_3SRC,
+        operands: OPERANDS_SMADDL_SMADDL_64WA_DP_3SRC,
+        asm: "SMADDL <Xd> , <Wn> , <Wm> , <Xa>",
+    },
+    GeneratedInsnSpec {
+        key: "UMADDL.UMADDL_64WA_dp_3src",
+        mnemonic: "UMADDL",
+        heading: "UMADDL",
+        title: "UMADDL -- A64",
+        encoding_label: "",
+        mask: 0xffe08000,
+        value: 0x9ba00000,
+        fields: FIELDS_UMADDL_UMADDL_64WA_DP_3SRC,
+        operands: OPERANDS_UMADDL_UMADDL_64WA_DP_3SRC,
+        asm: "UMADDL <Xd> , <Wn> , <Wm> , <Xa>",
+    },
+    GeneratedInsnSpec {
+        key: "SMULH.SMULH_64_dp_3src",
+        mnemonic: "SMULH",
+        heading: "SMULH",
+        title: "SMULH -- A64",
+        encoding_label: "",
+        mask: 0xffe0fc00,
+        value: 0x9b407c00,
+        fields: FIELDS_SMULH_SMULH_64_DP_3SRC,
+        operands: OPERANDS_SMULH_SMULH_64_DP_3SRC,
+        asm: "SMULH <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "UMULH.UMULH_64_dp_3src",
+        mnemonic: "UMULH",
+        heading: "UMULH",
+        title: "UMULH -- A64",
+        encoding_label: "",
+        mask: 0xffe0fc00,
+        value: 0x9bc07c00,
+        fields: FIELDS_UMULH_UMULH_64_DP_3SRC,
+        operands: OPERANDS_UMULH_UMULH_64_DP_3SRC,
+        asm: "UMULH <Xd> , <Xn> , <Xm>",
+    },
+    GeneratedInsnSpec {
+        key: "CLZ_int.CLZ_32_dp_1src",
+        mnemonic: "CLZ",
+        heading: "CLZ",
+        title: "CLZ -- A64",
+        encoding_label: "32-bit",
+        mask: 0xfffffc00,
+        value: 0x5ac01000,
+        fields: FIELDS_CLZ_INT_CLZ_32_DP_1SRC,
+        operands: OPERANDS_CLZ_INT_CLZ_32_DP_1SRC,
+        asm: "CLZ <Wd> , <Wn>",
+    },
+    GeneratedInsnSpec {
+        key: "CLZ_int.CLZ_64_dp_1src",
+        mnemonic: "CLZ",
+        heading: "CLZ",
+        title: "CLZ -- A64",
+        encoding_label: "64-bit",
+        mask: 0xfffffc00,
+        value: 0xdac01000,
+        fields: FIELDS_CLZ_INT_CLZ_64_DP_1SRC,
+        operands: OPERANDS_CLZ_INT_CLZ_64_DP_1SRC,
+        asm: "CLZ <Xd> , <Xn>",
+    },
+    GeneratedInsnSpec {
+        key: "RBIT_int.RBIT_32_dp_1src",
+        mnemonic: "RBIT",
+        heading: "RBIT",
+        title: "RBIT -- A64",
+        encoding_label: "32-bit",
+        mask: 0xfffffc00,
+        value: 0x5ac00000,
+        fields: FIELDS_RBIT_INT_RBIT_32_DP_1SRC,
+        operands: OPERANDS_RBIT_INT_RBIT_32_DP_1SRC,
+        asm: "RBIT <Wd> , <Wn>",
+    },
+    GeneratedInsnSpec {
+        key: "RBIT_int.RBIT_64_dp_1src",
+        mnemonic: "RBIT",
+        heading: "RBIT",
+        title: "RBIT -- A64",
+        encoding_label: "64-bit",
+        mask: 0xfffffc00,
+        value: 0xdac00000,
+        fields: FIELDS_RBIT_INT_RBIT_64_DP_1SRC,
+        operands: OPERANDS_RBIT_INT_RBIT_64_DP_1SRC,
+        asm: "RBIT <Xd> , <Xn>",
+    },
+    GeneratedInsnSpec {
+        key: "REV.REV_32_dp_1src",
+        mnemonic: "REV",
+        heading: "REV",
+        title: "REV -- A64",
+        encoding_label: "32-bit",
+        mask: 0xfffffc00,
+        value: 0x5ac00800,
+        fields: FIELDS_REV_REV_32_DP_1SRC,
+        operands: OPERANDS_REV_REV_32_DP_1SRC,
+        asm: "REV <Wd> , <Wn>",
+    },
+    GeneratedInsnSpec {
+        key: "REV.REV_64_dp_1src",
+        mnemonic: "REV",
+        heading: "REV",
+        title: "REV -- A64",
+        encoding_label: "64-bit",
+        mask: 0xfffffc00,
+        value: 0xdac00c00,
+        fields: FIELDS_REV_REV_64_DP_1SRC,
+        operands: OPERANDS_REV_REV_64_DP_1SRC,
+        asm: "REV <Xd> , <Xn>",
+    },
+    GeneratedInsnSpec {
+        key: "REV16_int.REV16_32_dp_1src",
+        mnemonic: "REV16",
+        heading: "REV16",
+        title: "REV16 -- A64",
+        encoding_label: "32-bit",
+        mask: 0xfffffc00,
+        value: 0x5ac00400,
+        fields: FIELDS_REV16_INT_REV16_32_DP_1SRC,
+        operands: OPERANDS_REV16_INT_REV16_32_DP_1SRC,
+        asm: "REV16 <Wd> , <Wn>",
+    },
+    GeneratedInsnSpec {
+        key: "REV16_int.REV16_64_dp_1src",
+        mnemonic: "REV16",
+        heading: "REV16",
+        title: "REV16 -- A64",
+        encoding_label: "64-bit",
+        mask: 0xfffffc00,
+        value: 0xdac00400,
+        fields: FIELDS_REV16_INT_REV16_64_DP_1SRC,
+        operands: OPERANDS_REV16_INT_REV16_64_DP_1SRC,
+        asm: "REV16 <Xd> , <Xn>",
+    },
+    GeneratedInsnSpec {
+        key: "REV32_int.REV32_64_dp_1src",
+        mnemonic: "REV32",
+        heading: "REV32",
+        title: "REV32 -- A64",
+        encoding_label: "",
+        mask: 0xfffffc00,
+        value: 0xdac00800,
+        fields: FIELDS_REV32_INT_REV32_64_DP_1SRC,
+        operands: OPERANDS_REV32_INT_REV32_64_DP_1SRC,
+        asm: "REV32 <Xd> , <Xn>",
+    },
+    GeneratedInsnSpec {
+        key: "MRS.MRS_RS_systemmove",
+        mnemonic: "MRS",
+        heading: "MRS",
+        title: "MRS -- A64",
+        encoding_label: "",
+        mask: 0xffffffe0,
+        value: 0xd53bd040,
+        fields: FIELDS_MRS_MRS_RS_SYSTEMMOVE,
+        operands: OPERANDS_MRS_MRS_RS_SYSTEMMOVE,
+        asm: "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
     },
     GeneratedInsnSpec {
         key: "TBZ.TBZ_only_testbranch",

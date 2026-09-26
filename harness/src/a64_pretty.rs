@@ -1,3 +1,4 @@
+use crate::arm64::decode_bit_masks;
 use crate::shared::arm64::{
     A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode, A64RegWidth,
 };
@@ -25,6 +26,381 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
         | SubsAddsubImmSubs64sAddsubImm { sh, imm12, rn, rd } => {
             pretty_add_sub("subs", sh, imm12, rn, rd)
         }
+        AddsAddsubImmAdds32sAddsubImm { sh, imm12, rn, rd }
+        | AddsAddsubImmAdds64sAddsubImm { sh, imm12, rn, rd } => {
+            pretty_add_sub("adds", sh, imm12, rn, rd)
+        }
+        AddAddsubShiftAdd32AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | AddAddsubShiftAdd64AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("add", rd, rn, rm, shift, imm6),
+        AddsAddsubShiftAdds32AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | AddsAddsubShiftAdds64AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("adds", rd, rn, rm, shift, imm6),
+        SubAddsubShiftSub32AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | SubAddsubShiftSub64AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("sub", rd, rn, rm, shift, imm6),
+        SubsAddsubShiftSubs32AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | SubsAddsubShiftSubs64AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("subs", rd, rn, rm, shift, imm6),
+        AddAddsubExtAdd32AddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        }
+        | AddAddsubExtAdd64AddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => pretty_extended_reg("add", rd, rn, rm, option, imm3),
+        AddsAddsubExtAdds32sAddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        }
+        | AddsAddsubExtAdds64sAddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => pretty_extended_reg("adds", rd, rn, rm, option, imm3),
+        SubAddsubExtSub32AddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        }
+        | SubAddsubExtSub64AddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => pretty_extended_reg("sub", rd, rn, rm, option, imm3),
+        SubsAddsubExtSubs32sAddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        }
+        | SubsAddsubExtSubs64sAddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => pretty_extended_reg("subs", rd, rn, rm, option, imm3),
+        MovnMovn32Movewide { hw, imm16, rd } | MovnMovn64Movewide { hw, imm16, rd } => {
+            pretty_move_wide("movn", rd, imm16, hw)
+        }
+        AndLogShiftAnd32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | AndLogShiftAnd64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("and", rd, rn, rm, shift, imm6),
+        AndsLogShiftAnds32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | AndsLogShiftAnds64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("ands", rd, rn, rm, shift, imm6),
+        OrrLogShiftOrr32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | OrrLogShiftOrr64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("orr", rd, rn, rm, shift, imm6),
+        EorLogShiftEor32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | EorLogShiftEor64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("eor", rd, rn, rm, shift, imm6),
+        EonEon32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | EonEon64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("eon", rd, rn, rm, shift, imm6),
+        BicLogShiftBic32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | BicLogShiftBic64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("bic", rd, rn, rm, shift, imm6),
+        BicsBics32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | BicsBics64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("bics", rd, rn, rm, shift, imm6),
+        OrnLogShiftOrn32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        }
+        | OrnLogShiftOrn64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => pretty_shifted_reg("orn", rd, rn, rm, shift, imm6),
+        AndLogImmAnd32LogImm { immr, imms, rn, rd } => {
+            pretty_logical_imm("and", rd, rn, 0, immr, imms, 32)
+        }
+        AndLogImmAnd64LogImm {
+            n,
+            immr,
+            imms,
+            rn,
+            rd,
+        } => pretty_logical_imm("and", rd, rn, n, immr, imms, 64),
+        AndsLogImmAnds32sLogImm { immr, imms, rn, rd } => {
+            pretty_logical_imm("ands", rd, rn, 0, immr, imms, 32)
+        }
+        AndsLogImmAnds64sLogImm {
+            n,
+            immr,
+            imms,
+            rn,
+            rd,
+        } => pretty_logical_imm("ands", rd, rn, n, immr, imms, 64),
+        OrrLogImmOrr32LogImm { immr, imms, rn, rd } => {
+            pretty_logical_imm("orr", rd, rn, 0, immr, imms, 32)
+        }
+        OrrLogImmOrr64LogImm {
+            n,
+            immr,
+            imms,
+            rn,
+            rd,
+        } => pretty_logical_imm("orr", rd, rn, n, immr, imms, 64),
+        EorLogImmEor32LogImm { immr, imms, rn, rd } => {
+            pretty_logical_imm("eor", rd, rn, 0, immr, imms, 32)
+        }
+        EorLogImmEor64LogImm {
+            n,
+            immr,
+            imms,
+            rn,
+            rd,
+        } => pretty_logical_imm("eor", rd, rn, n, immr, imms, 64),
+        SbfmSbfm32mBitfield { immr, imms, rn, rd } | SbfmSbfm64mBitfield { immr, imms, rn, rd } => {
+            pretty_bitfield("sbfm", rd, rn, immr, imms)
+        }
+        UbfmUbfm32mBitfield { immr, imms, rn, rd } | UbfmUbfm64mBitfield { immr, imms, rn, rd } => {
+            pretty_bitfield("ubfm", rd, rn, immr, imms)
+        }
+        BfmBfm32mBitfield { immr, imms, rn, rd } | BfmBfm64mBitfield { immr, imms, rn, rd } => {
+            pretty_bitfield("bfm", rd, rn, immr, imms)
+        }
+        ExtrExtr32Extract { rm, imms, rn, rd } | ExtrExtr64Extract { rm, imms, rn, rd } => {
+            format!(
+                "extr {}, {}, {}, #{}",
+                reg_name(rd),
+                reg_name(rn),
+                reg_name(rm),
+                imms.raw()
+            )
+        }
+        CselCsel32Condsel { rm, cond, rn, rd } | CselCsel64Condsel { rm, cond, rn, rd } => {
+            pretty_cond_select("csel", rd, rn, rm, cond)
+        }
+        CsincCsinc32Condsel { rm, cond, rn, rd } | CsincCsinc64Condsel { rm, cond, rn, rd } => {
+            pretty_cond_select("csinc", rd, rn, rm, cond)
+        }
+        CsinvCsinv32Condsel { rm, cond, rn, rd } | CsinvCsinv64Condsel { rm, cond, rn, rd } => {
+            pretty_cond_select("csinv", rd, rn, rm, cond)
+        }
+        CsnegCsneg32Condsel { rm, cond, rn, rd } | CsnegCsneg64Condsel { rm, cond, rn, rd } => {
+            pretty_cond_select("csneg", rd, rn, rm, cond)
+        }
+        CcmpImmCcmp32CondcmpImm {
+            imm5,
+            cond,
+            rn,
+            nzcv,
+        }
+        | CcmpImmCcmp64CondcmpImm {
+            imm5,
+            cond,
+            rn,
+            nzcv,
+        } => pretty_cond_compare("ccmp", rn, unsigned_imm(imm5.raw() as u64), nzcv, cond),
+        CcmpRegCcmp32CondcmpReg { rm, cond, rn, nzcv }
+        | CcmpRegCcmp64CondcmpReg { rm, cond, rn, nzcv } => {
+            pretty_cond_compare("ccmp", rn, reg_name(rm), nzcv, cond)
+        }
+        CcmnImmCcmn32CondcmpImm {
+            imm5,
+            cond,
+            rn,
+            nzcv,
+        }
+        | CcmnImmCcmn64CondcmpImm {
+            imm5,
+            cond,
+            rn,
+            nzcv,
+        } => pretty_cond_compare("ccmn", rn, unsigned_imm(imm5.raw() as u64), nzcv, cond),
+        CcmnRegCcmn32CondcmpReg { rm, cond, rn, nzcv }
+        | CcmnRegCcmn64CondcmpReg { rm, cond, rn, nzcv } => {
+            pretty_cond_compare("ccmn", rn, reg_name(rm), nzcv, cond)
+        }
+        LslvLslv32Dp2src { rm, rn, rd } | LslvLslv64Dp2src { rm, rn, rd } => {
+            pretty_three_reg("lslv", rd, rn, rm)
+        }
+        LsrvLsrv32Dp2src { rm, rn, rd } | LsrvLsrv64Dp2src { rm, rn, rd } => {
+            pretty_three_reg("lsrv", rd, rn, rm)
+        }
+        AsrvAsrv32Dp2src { rm, rn, rd } | AsrvAsrv64Dp2src { rm, rn, rd } => {
+            pretty_three_reg("asrv", rd, rn, rm)
+        }
+        RorvRorv32Dp2src { rm, rn, rd } | RorvRorv64Dp2src { rm, rn, rd } => {
+            pretty_three_reg("rorv", rd, rn, rm)
+        }
+        UdivUdiv32Dp2src { rm, rn, rd } | UdivUdiv64Dp2src { rm, rn, rd } => {
+            pretty_three_reg("udiv", rd, rn, rm)
+        }
+        SdivSdiv32Dp2src { rm, rn, rd } | SdivSdiv64Dp2src { rm, rn, rd } => {
+            pretty_three_reg("sdiv", rd, rn, rm)
+        }
+        MaddMadd32aDp3src { rm, ra, rn, rd } | MaddMadd64aDp3src { rm, ra, rn, rd } => {
+            pretty_four_reg("madd", rd, rn, rm, ra)
+        }
+        MsubMsub32aDp3src { rm, ra, rn, rd } | MsubMsub64aDp3src { rm, ra, rn, rd } => {
+            pretty_four_reg("msub", rd, rn, rm, ra)
+        }
+        SmaddlSmaddl64waDp3src { rm, ra, rn, rd } => pretty_four_reg("smaddl", rd, rn, rm, ra),
+        UmaddlUmaddl64waDp3src { rm, ra, rn, rd } => pretty_four_reg("umaddl", rd, rn, rm, ra),
+        SmulhSmulh64Dp3src { rm, rn, rd } => pretty_three_reg("smulh", rd, rn, rm),
+        UmulhUmulh64Dp3src { rm, rn, rd } => pretty_three_reg("umulh", rd, rn, rm),
+        ClzIntClz32Dp1src { rn, rd } | ClzIntClz64Dp1src { rn, rd } => {
+            format!("clz {}, {}", reg_name(rd), reg_name(rn))
+        }
+        RbitIntRbit32Dp1src { rn, rd } | RbitIntRbit64Dp1src { rn, rd } => {
+            format!("rbit {}, {}", reg_name(rd), reg_name(rn))
+        }
+        RevRev32Dp1src { rn, rd } | RevRev64Dp1src { rn, rd } => {
+            format!("rev {}, {}", reg_name(rd), reg_name(rn))
+        }
+        Rev16IntRev1632Dp1src { rn, rd } | Rev16IntRev1664Dp1src { rn, rd } => {
+            format!("rev16 {}, {}", reg_name(rd), reg_name(rn))
+        }
+        Rev32IntRev3264Dp1src { rn, rd } => format!("rev32 {}, {}", reg_name(rd), reg_name(rn)),
+        MrsMrsRsSystemmove { rt } => format!("mrs {}, tpidr_el0", reg_name(rt)),
         BUncondBOnlyBranchImm { imm26 } => pretty_branch("b", pc, imm26),
         BCondBOnlyCondbranch { imm19, cond } => {
             let mnemonic = format!("b.{}", condition_name(cond));
@@ -42,13 +418,6 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
         MovkMovk32Movewide { hw, imm16, rd } | MovkMovk64Movewide { hw, imm16, rd } => {
             pretty_move_wide("movk", rd, imm16, hw)
         }
-        OrrLogShiftOrr64LogShift {
-            shift,
-            rm,
-            imm6,
-            rn,
-            rd,
-        } => pretty_shifted_reg("orr", rd, rn, rm, shift, imm6),
         TbzTbzOnlyTestbranch { b5, b40, imm14, rt } => {
             pretty_test_branch("tbz", rt, bit_index(b5, b40), pc, imm14)
         }
@@ -233,6 +602,102 @@ fn pretty_shifted_reg(
     }
 }
 
+fn pretty_extended_reg(
+    mnemonic: &str,
+    rd: A64Reg,
+    rn: A64Reg,
+    rm: A64Reg,
+    option: u8,
+    imm3: A64Imm,
+) -> String {
+    let extend = match option {
+        0 => "uxtb",
+        1 => "uxth",
+        2 => "uxtw",
+        3 => "uxtx",
+        4 => "sxtb",
+        5 => "sxth",
+        6 => "sxtw",
+        7 => "sxtx",
+        _ => "extend",
+    };
+    format!(
+        "{mnemonic} {}, {}, {}, {extend} #{}",
+        reg_name(rd),
+        reg_name(rn),
+        reg_name(rm),
+        imm3.raw()
+    )
+}
+
+fn pretty_logical_imm(
+    mnemonic: &str,
+    rd: A64Reg,
+    rn: A64Reg,
+    n: u8,
+    immr: A64Imm,
+    imms: A64Imm,
+    bits: u8,
+) -> String {
+    match decode_bit_masks(n, imms.raw(), immr.raw(), true, bits) {
+        Ok((imm, _)) => format!("{mnemonic} {}, {}, #{imm:#x}", reg_name(rd), reg_name(rn)),
+        Err(_) => format!(
+            "{mnemonic} {}, {}, <reserved N={n} immr={} imms={}>",
+            reg_name(rd),
+            reg_name(rn),
+            immr.raw(),
+            imms.raw()
+        ),
+    }
+}
+
+fn pretty_bitfield(mnemonic: &str, rd: A64Reg, rn: A64Reg, immr: A64Imm, imms: A64Imm) -> String {
+    format!(
+        "{mnemonic} {}, {}, #{}, #{}",
+        reg_name(rd),
+        reg_name(rn),
+        immr.raw(),
+        imms.raw()
+    )
+}
+
+fn pretty_cond_select(mnemonic: &str, rd: A64Reg, rn: A64Reg, rm: A64Reg, cond: u8) -> String {
+    format!(
+        "{mnemonic} {}, {}, {}, {}",
+        reg_name(rd),
+        reg_name(rn),
+        reg_name(rm),
+        condition_name(cond)
+    )
+}
+
+fn pretty_cond_compare(mnemonic: &str, rn: A64Reg, operand2: String, nzcv: u8, cond: u8) -> String {
+    format!(
+        "{mnemonic} {}, {operand2}, #{nzcv}, {}",
+        reg_name(rn),
+        condition_name(cond)
+    )
+}
+
+fn pretty_three_reg(mnemonic: &str, rd: A64Reg, rn: A64Reg, rm: A64Reg) -> String {
+    format!(
+        "{mnemonic} {}, {}, {}",
+        reg_name(rd),
+        reg_name(rn),
+        reg_name(rm)
+    )
+}
+
+fn pretty_four_reg(mnemonic: &str, rd: A64Reg, rn: A64Reg, rm: A64Reg, ra: A64Reg) -> String {
+    format!(
+        "{mnemonic} {}, {}, {}, {}",
+        reg_name(rd),
+        reg_name(rn),
+        reg_name(rm),
+        reg_name(ra)
+    )
+}
+
 fn reg_name(reg: A64Reg) -> String {
     match (reg.enc(), reg.width, reg.reg31) {
         (31, A64RegWidth::X64, A64Reg31Mode::Xzr) => "xzr".to_string(),
@@ -264,11 +729,20 @@ fn condition_name(cond: u8) -> &'static str {
     match A64Condition::from_bits(cond) {
         Some(A64Condition::Eq) => "eq",
         Some(A64Condition::Ne) => "ne",
+        Some(A64Condition::Hs) => "hs",
+        Some(A64Condition::Lo) => "lo",
+        Some(A64Condition::Mi) => "mi",
+        Some(A64Condition::Pl) => "pl",
+        Some(A64Condition::Vs) => "vs",
+        Some(A64Condition::Vc) => "vc",
+        Some(A64Condition::Hi) => "hi",
+        Some(A64Condition::Ls) => "ls",
         Some(A64Condition::Ge) => "ge",
         Some(A64Condition::Lt) => "lt",
         Some(A64Condition::Gt) => "gt",
         Some(A64Condition::Le) => "le",
         Some(A64Condition::Al) => "al",
+        Some(A64Condition::Nv) => "nv",
         None => "unknown",
     }
 }

@@ -12,14 +12,16 @@ const SUBSET_TOML: &str = include_str!("../../spec/arm64/subset.toml");
 
 struct EncodingCase {
     form: &'static str,
-    asm: &'static str,
+    asm: String,
     expected: A64Insn,
 }
 
 #[test]
 #[ignore = "requires llvm-mc and llvm-objcopy in PATH"]
 fn encoding_matches_llvm_for_handwritten_cases() {
-    let cases = encoding_cases();
+    let mut cases = encoding_cases();
+    cases.extend(alu_encoding_cases());
+    cases.extend(condition_code_cases());
     let decode_forms = decode_forms_from_subset_toml(SUBSET_TOML);
     let decode_form_set = decode_forms.iter().cloned().collect::<BTreeSet<_>>();
     let covered_forms = cases.iter().map(|case| case.form).collect::<BTreeSet<_>>();
@@ -212,7 +214,7 @@ fn assemble_with_llvm(case: &EncodingCase) -> [u8; 4] {
     let obj_path = dir.path().join("case.o");
     let bin_path = dir.path().join("case.text.bin");
 
-    fs::write(&asm_path, asm_source(case.asm))
+    fs::write(&asm_path, asm_source(&case.asm))
         .unwrap_or_else(|err| panic!("{}: failed to write assembly: {err}", case.form));
 
     let mc_output = Command::new(&llvm_mc)
@@ -658,12 +660,1206 @@ fn encoding_cases() -> Vec<EncodingCase> {
     ]
 }
 
-fn case(form: &'static str, asm: &'static str, expected: A64Insn) -> EncodingCase {
+fn case(form: &'static str, asm: impl Into<String>, expected: A64Insn) -> EncodingCase {
     EncodingCase {
         form,
-        asm,
+        asm: asm.into(),
         expected,
     }
+}
+/// Register constructors matching the generated register-31 mode of each field.
+fn w(enc: u8) -> A64Reg {
+    A64Reg::w(enc)
+}
+
+fn x(enc: u8) -> A64Reg {
+    A64Reg::x(enc)
+}
+
+fn wsp(enc: u8) -> A64Reg {
+    A64Reg::w_sp(enc)
+}
+
+fn xsp(enc: u8) -> A64Reg {
+    A64Reg::x_sp(enc)
+}
+
+fn uimm(raw: u32, bits: u8) -> A64Imm {
+    A64Imm::unsigned(raw, bits)
+}
+
+const CONDITION_NAMES: [&str; 16] = [
+    "eq", "ne", "hs", "lo", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "nv",
+];
+
+/// `b.<cond>` for all 16 condition codes. `A64Condition` round-trips every value,
+/// including NV (0b1111), which must not be re-encoded as AL.
+fn condition_code_cases() -> Vec<EncodingCase> {
+    CONDITION_NAMES
+        .iter()
+        .enumerate()
+        .map(|(bits, name)| {
+            let bits = bits as u8;
+            let condition = A64Condition::from_bits(bits).expect("4-bit condition");
+            assert_eq!(condition.bits(), bits);
+            case(
+                "B_cond.B_only_condbranch",
+                format!("    b.{name} .Ltarget\n.Ltarget:"),
+                A64Insn::BCondBOnlyCondbranch {
+                    imm19: A64Imm::scaled_signed(branch_imm(4, 19), 19, 2),
+                    cond: condition.bits(),
+                },
+            )
+        })
+        .collect()
+}
+
+fn alu_encoding_cases() -> Vec<EncodingCase> {
+    vec![
+        // ADDS (immediate): cmn is ADDS with Rd = ZR; Rn may be SP.
+        case(
+            "ADDS_addsub_imm.ADDS_32S_addsub_imm",
+            "    adds w0, w1, #4095",
+            A64Insn::AddsAddsubImmAdds32sAddsubImm {
+                sh: 0,
+                imm12: uimm(4095, 12),
+                rn: wsp(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "ADDS_addsub_imm.ADDS_32S_addsub_imm",
+            "    cmn wsp, #4095",
+            A64Insn::AddsAddsubImmAdds32sAddsubImm {
+                sh: 0,
+                imm12: uimm(4095, 12),
+                rn: wsp(31),
+                rd: w(31),
+            },
+        ),
+        case(
+            "ADDS_addsub_imm.ADDS_64S_addsub_imm",
+            "    cmn x0, #1, lsl #12",
+            A64Insn::AddsAddsubImmAdds64sAddsubImm {
+                sh: 1,
+                imm12: uimm(1, 12),
+                rn: xsp(0),
+                rd: x(31),
+            },
+        ),
+        case(
+            "ADDS_addsub_imm.ADDS_64S_addsub_imm",
+            "    adds x2, sp, #8",
+            A64Insn::AddsAddsubImmAdds64sAddsubImm {
+                sh: 0,
+                imm12: uimm(8, 12),
+                rn: xsp(31),
+                rd: x(2),
+            },
+        ),
+        case(
+            "SUBS_addsub_imm.SUBS_64S_addsub_imm",
+            "    cmp x0, #4095",
+            A64Insn::SubsAddsubImmSubs64sAddsubImm {
+                sh: 0,
+                imm12: uimm(4095, 12),
+                rn: xsp(0),
+                rd: x(31),
+            },
+        ),
+        case(
+            "SUB_addsub_imm.SUB_64_addsub_imm",
+            "    sub sp, sp, #4095, lsl #12",
+            A64Insn::SubAddsubImmSub64AddsubImm {
+                sh: 1,
+                imm12: uimm(4095, 12),
+                rn: xsp(31),
+                rd: xsp(31),
+            },
+        ),
+        case(
+            "ADD_addsub_imm.ADD_64_addsub_imm",
+            "    mov x29, sp",
+            A64Insn::AddAddsubImmAdd64AddsubImm {
+                sh: 0,
+                imm12: uimm(0, 12),
+                rn: xsp(31),
+                rd: xsp(29),
+            },
+        ),
+        // ADD/ADDS/SUB/SUBS (shifted register): register 31 is ZR everywhere.
+        case(
+            "ADD_addsub_shift.ADD_32_addsub_shift",
+            "    add w0, w1, w2, lsl #31",
+            A64Insn::AddAddsubShiftAdd32AddsubShift {
+                shift: 0,
+                rm: w(2),
+                imm6: uimm(31, 6),
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "ADD_addsub_shift.ADD_64_addsub_shift",
+            "    add x0, xzr, x2, asr #63",
+            A64Insn::AddAddsubShiftAdd64AddsubShift {
+                shift: 2,
+                rm: x(2),
+                imm6: uimm(63, 6),
+                rn: x(31),
+                rd: x(0),
+            },
+        ),
+        case(
+            "ADD_addsub_shift.ADD_64_addsub_shift",
+            "    add x3, x4, x5",
+            A64Insn::AddAddsubShiftAdd64AddsubShift {
+                shift: 0,
+                rm: x(5),
+                imm6: uimm(0, 6),
+                rn: x(4),
+                rd: x(3),
+            },
+        ),
+        case(
+            "ADDS_addsub_shift.ADDS_32_addsub_shift",
+            "    adds w3, w4, w5, lsr #7",
+            A64Insn::AddsAddsubShiftAdds32AddsubShift {
+                shift: 1,
+                rm: w(5),
+                imm6: uimm(7, 6),
+                rn: w(4),
+                rd: w(3),
+            },
+        ),
+        case(
+            "ADDS_addsub_shift.ADDS_64_addsub_shift",
+            "    cmn x6, x7, lsl #2",
+            A64Insn::AddsAddsubShiftAdds64AddsubShift {
+                shift: 0,
+                rm: x(7),
+                imm6: uimm(2, 6),
+                rn: x(6),
+                rd: x(31),
+            },
+        ),
+        case(
+            "SUB_addsub_shift.SUB_32_addsub_shift",
+            "    neg w0, w1",
+            A64Insn::SubAddsubShiftSub32AddsubShift {
+                shift: 0,
+                rm: w(1),
+                imm6: uimm(0, 6),
+                rn: w(31),
+                rd: w(0),
+            },
+        ),
+        case(
+            "SUB_addsub_shift.SUB_64_addsub_shift",
+            "    sub x8, x9, x10, asr #63",
+            A64Insn::SubAddsubShiftSub64AddsubShift {
+                shift: 2,
+                rm: x(10),
+                imm6: uimm(63, 6),
+                rn: x(9),
+                rd: x(8),
+            },
+        ),
+        case(
+            "SUBS_addsub_shift.SUBS_32_addsub_shift",
+            "    cmp w1, w2",
+            A64Insn::SubsAddsubShiftSubs32AddsubShift {
+                shift: 0,
+                rm: w(2),
+                imm6: uimm(0, 6),
+                rn: w(1),
+                rd: w(31),
+            },
+        ),
+        case(
+            "SUBS_addsub_shift.SUBS_64_addsub_shift",
+            "    subs x11, x12, x13, lsl #63",
+            A64Insn::SubsAddsubShiftSubs64AddsubShift {
+                shift: 0,
+                rm: x(13),
+                imm6: uimm(63, 6),
+                rn: x(12),
+                rd: x(11),
+            },
+        ),
+        case(
+            "SUBS_addsub_shift.SUBS_64_addsub_shift",
+            "    negs x0, x1",
+            A64Insn::SubsAddsubShiftSubs64AddsubShift {
+                shift: 0,
+                rm: x(1),
+                imm6: uimm(0, 6),
+                rn: x(31),
+                rd: x(0),
+            },
+        ),
+        // ADD/ADDS/SUB/SUBS (extended register): Rn is SP-capable; Rd is SP-capable
+        // only for the non-flag-setting forms; Rm is always ZR.
+        case(
+            "ADD_addsub_ext.ADD_32_addsub_ext",
+            "    add w0, wsp, w1, uxtb #4",
+            A64Insn::AddAddsubExtAdd32AddsubExt {
+                rm: w(1),
+                option: 0,
+                imm3: uimm(4, 3),
+                rn: wsp(31),
+                rd: wsp(0),
+            },
+        ),
+        case(
+            "ADD_addsub_ext.ADD_64_addsub_ext",
+            "    add x0, sp, w1, uxtw",
+            A64Insn::AddAddsubExtAdd64AddsubExt {
+                rm: x(1),
+                option: 2,
+                imm3: uimm(0, 3),
+                rn: xsp(31),
+                rd: xsp(0),
+            },
+        ),
+        case(
+            "ADD_addsub_ext.ADD_64_addsub_ext",
+            "    add sp, x1, xzr, sxtx #3",
+            A64Insn::AddAddsubExtAdd64AddsubExt {
+                rm: x(31),
+                option: 7,
+                imm3: uimm(3, 3),
+                rn: xsp(1),
+                rd: xsp(31),
+            },
+        ),
+        case(
+            "ADD_addsub_ext.ADD_64_addsub_ext",
+            "    add x2, x3, w4, sxtw #2",
+            A64Insn::AddAddsubExtAdd64AddsubExt {
+                rm: x(4),
+                option: 6,
+                imm3: uimm(2, 3),
+                rn: xsp(3),
+                rd: xsp(2),
+            },
+        ),
+        case(
+            "ADDS_addsub_ext.ADDS_32S_addsub_ext",
+            "    adds w3, w4, w5, sxth #2",
+            A64Insn::AddsAddsubExtAdds32sAddsubExt {
+                rm: w(5),
+                option: 5,
+                imm3: uimm(2, 3),
+                rn: wsp(4),
+                rd: w(3),
+            },
+        ),
+        case(
+            "ADDS_addsub_ext.ADDS_64S_addsub_ext",
+            "    cmn sp, w6, sxtw",
+            A64Insn::AddsAddsubExtAdds64sAddsubExt {
+                rm: x(6),
+                option: 6,
+                imm3: uimm(0, 3),
+                rn: xsp(31),
+                rd: x(31),
+            },
+        ),
+        case(
+            "SUB_addsub_ext.SUB_32_addsub_ext",
+            "    sub wsp, wsp, w7, uxth",
+            A64Insn::SubAddsubExtSub32AddsubExt {
+                rm: w(7),
+                option: 1,
+                imm3: uimm(0, 3),
+                rn: wsp(31),
+                rd: wsp(31),
+            },
+        ),
+        case(
+            "SUB_addsub_ext.SUB_64_addsub_ext",
+            "    sub x8, sp, x9, uxtx #1",
+            A64Insn::SubAddsubExtSub64AddsubExt {
+                rm: x(9),
+                option: 3,
+                imm3: uimm(1, 3),
+                rn: xsp(31),
+                rd: xsp(8),
+            },
+        ),
+        case(
+            "SUBS_addsub_ext.SUBS_32S_addsub_ext",
+            "    cmp wsp, w10, uxtw #1",
+            A64Insn::SubsAddsubExtSubs32sAddsubExt {
+                rm: w(10),
+                option: 2,
+                imm3: uimm(1, 3),
+                rn: wsp(31),
+                rd: w(31),
+            },
+        ),
+        case(
+            "SUBS_addsub_ext.SUBS_64S_addsub_ext",
+            "    subs x11, x12, w13, sxtb #4",
+            A64Insn::SubsAddsubExtSubs64sAddsubExt {
+                rm: x(13),
+                option: 4,
+                imm3: uimm(4, 3),
+                rn: xsp(12),
+                rd: x(11),
+            },
+        ),
+        // MOVN
+        case(
+            "MOVN.MOVN_32_movewide",
+            "    movn w0, #0xffff, lsl #16",
+            A64Insn::MovnMovn32Movewide {
+                hw: 1,
+                imm16: uimm(0xffff, 16),
+                rd: w(0),
+            },
+        ),
+        case(
+            "MOVN.MOVN_64_movewide",
+            "    movn x1, #0x1234, lsl #48",
+            A64Insn::MovnMovn64Movewide {
+                hw: 3,
+                imm16: uimm(0x1234, 16),
+                rd: x(1),
+            },
+        ),
+        case(
+            "MOVN.MOVN_64_movewide",
+            "    mov xzr, #-1",
+            A64Insn::MovnMovn64Movewide {
+                hw: 0,
+                imm16: uimm(0, 16),
+                rd: x(31),
+            },
+        ),
+        // Logical (shifted register): ROR is a valid shift here.
+        case(
+            "AND_log_shift.AND_32_log_shift",
+            "    and w0, w1, w2, ror #31",
+            A64Insn::AndLogShiftAnd32LogShift {
+                shift: 3,
+                rm: w(2),
+                imm6: uimm(31, 6),
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "AND_log_shift.AND_64_log_shift",
+            "    and x0, x1, x2, asr #63",
+            A64Insn::AndLogShiftAnd64LogShift {
+                shift: 2,
+                rm: x(2),
+                imm6: uimm(63, 6),
+                rn: x(1),
+                rd: x(0),
+            },
+        ),
+        case(
+            "ANDS_log_shift.ANDS_32_log_shift",
+            "    tst w3, w4",
+            A64Insn::AndsLogShiftAnds32LogShift {
+                shift: 0,
+                rm: w(4),
+                imm6: uimm(0, 6),
+                rn: w(3),
+                rd: w(31),
+            },
+        ),
+        case(
+            "ANDS_log_shift.ANDS_64_log_shift",
+            "    ands x5, x6, x7, lsr #1",
+            A64Insn::AndsLogShiftAnds64LogShift {
+                shift: 1,
+                rm: x(7),
+                imm6: uimm(1, 6),
+                rn: x(6),
+                rd: x(5),
+            },
+        ),
+        case(
+            "ORR_log_shift.ORR_32_log_shift",
+            "    mov w0, w19",
+            A64Insn::OrrLogShiftOrr32LogShift {
+                shift: 0,
+                rm: w(19),
+                imm6: uimm(0, 6),
+                rn: w(31),
+                rd: w(0),
+            },
+        ),
+        case(
+            "ORR_log_shift.ORR_64_log_shift",
+            "    orr xzr, xzr, xzr, ror #63",
+            A64Insn::OrrLogShiftOrr64LogShift {
+                shift: 3,
+                rm: x(31),
+                imm6: uimm(63, 6),
+                rn: x(31),
+                rd: x(31),
+            },
+        ),
+        case(
+            "EOR_log_shift.EOR_32_log_shift",
+            "    eor w8, w9, w10, lsl #5",
+            A64Insn::EorLogShiftEor32LogShift {
+                shift: 0,
+                rm: w(10),
+                imm6: uimm(5, 6),
+                rn: w(9),
+                rd: w(8),
+            },
+        ),
+        case(
+            "EOR_log_shift.EOR_64_log_shift",
+            "    eor x8, x9, x10, lsr #33",
+            A64Insn::EorLogShiftEor64LogShift {
+                shift: 1,
+                rm: x(10),
+                imm6: uimm(33, 6),
+                rn: x(9),
+                rd: x(8),
+            },
+        ),
+        case(
+            "EON.EON_32_log_shift",
+            "    eon w11, w12, w13",
+            A64Insn::EonEon32LogShift {
+                shift: 0,
+                rm: w(13),
+                imm6: uimm(0, 6),
+                rn: w(12),
+                rd: w(11),
+            },
+        ),
+        case(
+            "EON.EON_64_log_shift",
+            "    eon x11, x12, x13, asr #2",
+            A64Insn::EonEon64LogShift {
+                shift: 2,
+                rm: x(13),
+                imm6: uimm(2, 6),
+                rn: x(12),
+                rd: x(11),
+            },
+        ),
+        case(
+            "BIC_log_shift.BIC_32_log_shift",
+            "    bic w14, w15, w16, ror #1",
+            A64Insn::BicLogShiftBic32LogShift {
+                shift: 3,
+                rm: w(16),
+                imm6: uimm(1, 6),
+                rn: w(15),
+                rd: w(14),
+            },
+        ),
+        case(
+            "BIC_log_shift.BIC_64_log_shift",
+            "    bic x14, x15, x16",
+            A64Insn::BicLogShiftBic64LogShift {
+                shift: 0,
+                rm: x(16),
+                imm6: uimm(0, 6),
+                rn: x(15),
+                rd: x(14),
+            },
+        ),
+        case(
+            "BICS.BICS_32_log_shift",
+            "    bics w17, w18, w19, lsl #31",
+            A64Insn::BicsBics32LogShift {
+                shift: 0,
+                rm: w(19),
+                imm6: uimm(31, 6),
+                rn: w(18),
+                rd: w(17),
+            },
+        ),
+        case(
+            "BICS.BICS_64_log_shift",
+            "    bics xzr, x18, x19",
+            A64Insn::BicsBics64LogShift {
+                shift: 0,
+                rm: x(19),
+                imm6: uimm(0, 6),
+                rn: x(18),
+                rd: x(31),
+            },
+        ),
+        case(
+            "ORN_log_shift.ORN_32_log_shift",
+            "    mvn w0, w1",
+            A64Insn::OrnLogShiftOrn32LogShift {
+                shift: 0,
+                rm: w(1),
+                imm6: uimm(0, 6),
+                rn: w(31),
+                rd: w(0),
+            },
+        ),
+        case(
+            "ORN_log_shift.ORN_64_log_shift",
+            "    orn x20, x21, x22, lsr #63",
+            A64Insn::OrnLogShiftOrn64LogShift {
+                shift: 1,
+                rm: x(22),
+                imm6: uimm(63, 6),
+                rn: x(21),
+                rd: x(20),
+            },
+        ),
+        // Logical (immediate): Rd is SP-capable except for ANDS; Rn is always ZR.
+        case(
+            "AND_log_imm.AND_32_log_imm",
+            "    and w0, w1, #0xff",
+            A64Insn::AndLogImmAnd32LogImm {
+                immr: uimm(0, 6),
+                imms: uimm(7, 6),
+                rn: w(1),
+                rd: wsp(0),
+            },
+        ),
+        case(
+            "AND_log_imm.AND_64_log_imm",
+            "    and sp, x1, #0xfffffffffffffff0",
+            A64Insn::AndLogImmAnd64LogImm {
+                n: 1,
+                immr: uimm(60, 6),
+                imms: uimm(59, 6),
+                rn: x(1),
+                rd: xsp(31),
+            },
+        ),
+        case(
+            "ANDS_log_imm.ANDS_32S_log_imm",
+            "    tst w0, #0x80000000",
+            A64Insn::AndsLogImmAnds32sLogImm {
+                immr: uimm(1, 6),
+                imms: uimm(0, 6),
+                rn: w(0),
+                rd: w(31),
+            },
+        ),
+        case(
+            "ANDS_log_imm.ANDS_64S_log_imm",
+            "    ands x1, x2, #0x5555555555555555",
+            A64Insn::AndsLogImmAnds64sLogImm {
+                n: 0,
+                immr: uimm(0, 6),
+                imms: uimm(0b111100, 6),
+                rn: x(2),
+                rd: x(1),
+            },
+        ),
+        case(
+            "ORR_log_imm.ORR_32_log_imm",
+            "    orr wsp, w1, #0x3",
+            A64Insn::OrrLogImmOrr32LogImm {
+                immr: uimm(0, 6),
+                imms: uimm(1, 6),
+                rn: w(1),
+                rd: wsp(31),
+            },
+        ),
+        case(
+            "ORR_log_imm.ORR_64_log_imm",
+            "    orr x0, xzr, #0x00ff00ff00ff00ff",
+            A64Insn::OrrLogImmOrr64LogImm {
+                n: 0,
+                immr: uimm(0, 6),
+                imms: uimm(0b100111, 6),
+                rn: x(31),
+                rd: xsp(0),
+            },
+        ),
+        case(
+            "EOR_log_imm.EOR_32_log_imm",
+            "    eor w0, w1, #0xfffffffe",
+            A64Insn::EorLogImmEor32LogImm {
+                immr: uimm(31, 6),
+                imms: uimm(30, 6),
+                rn: w(1),
+                rd: wsp(0),
+            },
+        ),
+        case(
+            "EOR_log_imm.EOR_64_log_imm",
+            "    eor x0, x1, #0x8000000000000000",
+            A64Insn::EorLogImmEor64LogImm {
+                n: 1,
+                immr: uimm(1, 6),
+                imms: uimm(0, 6),
+                rn: x(1),
+                rd: xsp(0),
+            },
+        ),
+        // Bitfield moves: immr/imms edge values and the common aliases.
+        case(
+            "SBFM.SBFM_32M_bitfield",
+            "    asr w0, w1, #31",
+            A64Insn::SbfmSbfm32mBitfield {
+                immr: uimm(31, 6),
+                imms: uimm(31, 6),
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "SBFM.SBFM_32M_bitfield",
+            "    sxtb w2, w3",
+            A64Insn::SbfmSbfm32mBitfield {
+                immr: uimm(0, 6),
+                imms: uimm(7, 6),
+                rn: w(3),
+                rd: w(2),
+            },
+        ),
+        case(
+            "SBFM.SBFM_64M_bitfield",
+            "    sxtw x0, w1",
+            A64Insn::SbfmSbfm64mBitfield {
+                immr: uimm(0, 6),
+                imms: uimm(31, 6),
+                rn: x(1),
+                rd: x(0),
+            },
+        ),
+        case(
+            "SBFM.SBFM_64M_bitfield",
+            "    sbfm x2, x3, #63, #63",
+            A64Insn::SbfmSbfm64mBitfield {
+                immr: uimm(63, 6),
+                imms: uimm(63, 6),
+                rn: x(3),
+                rd: x(2),
+            },
+        ),
+        case(
+            "UBFM.UBFM_32M_bitfield",
+            "    lsl w0, w1, #1",
+            A64Insn::UbfmUbfm32mBitfield {
+                immr: uimm(31, 6),
+                imms: uimm(30, 6),
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "UBFM.UBFM_32M_bitfield",
+            "    uxtb w2, w3",
+            A64Insn::UbfmUbfm32mBitfield {
+                immr: uimm(0, 6),
+                imms: uimm(7, 6),
+                rn: w(3),
+                rd: w(2),
+            },
+        ),
+        case(
+            "UBFM.UBFM_64M_bitfield",
+            "    lsl x0, x1, #63",
+            A64Insn::UbfmUbfm64mBitfield {
+                immr: uimm(1, 6),
+                imms: uimm(0, 6),
+                rn: x(1),
+                rd: x(0),
+            },
+        ),
+        case(
+            "UBFM.UBFM_64M_bitfield",
+            "    lsr x2, x3, #63",
+            A64Insn::UbfmUbfm64mBitfield {
+                immr: uimm(63, 6),
+                imms: uimm(63, 6),
+                rn: x(3),
+                rd: x(2),
+            },
+        ),
+        case(
+            "UBFM.UBFM_64M_bitfield",
+            "    ubfx x4, x5, #4, #8",
+            A64Insn::UbfmUbfm64mBitfield {
+                immr: uimm(4, 6),
+                imms: uimm(11, 6),
+                rn: x(5),
+                rd: x(4),
+            },
+        ),
+        case(
+            "BFM.BFM_32M_bitfield",
+            "    bfi w0, w1, #3, #4",
+            A64Insn::BfmBfm32mBitfield {
+                immr: uimm(29, 6),
+                imms: uimm(3, 6),
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "BFM.BFM_64M_bitfield",
+            "    bfm x0, x1, #63, #0",
+            A64Insn::BfmBfm64mBitfield {
+                immr: uimm(63, 6),
+                imms: uimm(0, 6),
+                rn: x(1),
+                rd: x(0),
+            },
+        ),
+        case(
+            "BFM.BFM_64M_bitfield",
+            "    bfxil x2, x3, #8, #56",
+            A64Insn::BfmBfm64mBitfield {
+                immr: uimm(8, 6),
+                imms: uimm(63, 6),
+                rn: x(3),
+                rd: x(2),
+            },
+        ),
+        // EXTR (ror immediate is EXTR with Rn == Rm)
+        case(
+            "EXTR.EXTR_32_extract",
+            "    extr w0, w1, w2, #31",
+            A64Insn::ExtrExtr32Extract {
+                rm: w(2),
+                imms: uimm(31, 6),
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "EXTR.EXTR_64_extract",
+            "    ror x0, x1, #63",
+            A64Insn::ExtrExtr64Extract {
+                rm: x(1),
+                imms: uimm(63, 6),
+                rn: x(1),
+                rd: x(0),
+            },
+        ),
+        case(
+            "EXTR.EXTR_64_extract",
+            "    extr x3, x4, x5, #0",
+            A64Insn::ExtrExtr64Extract {
+                rm: x(5),
+                imms: uimm(0, 6),
+                rn: x(4),
+                rd: x(3),
+            },
+        ),
+        // Conditional select and its aliases (cset/csetm/cinc/cneg invert cond).
+        case(
+            "CSEL.CSEL_32_condsel",
+            "    csel w0, w1, w2, eq",
+            A64Insn::CselCsel32Condsel {
+                rm: w(2),
+                cond: 0x0,
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "CSEL.CSEL_64_condsel",
+            "    csel x0, x1, xzr, nv",
+            A64Insn::CselCsel64Condsel {
+                rm: x(31),
+                cond: 0xf,
+                rn: x(1),
+                rd: x(0),
+            },
+        ),
+        case(
+            "CSINC.CSINC_32_condsel",
+            "    cset w0, hi",
+            A64Insn::CsincCsinc32Condsel {
+                rm: w(31),
+                cond: 0x9,
+                rn: w(31),
+                rd: w(0),
+            },
+        ),
+        case(
+            "CSINC.CSINC_64_condsel",
+            "    cinc x0, x1, lo",
+            A64Insn::CsincCsinc64Condsel {
+                rm: x(1),
+                cond: 0x2,
+                rn: x(1),
+                rd: x(0),
+            },
+        ),
+        case(
+            "CSINV.CSINV_32_condsel",
+            "    csinv w3, w4, w5, vs",
+            A64Insn::CsinvCsinv32Condsel {
+                rm: w(5),
+                cond: 0x6,
+                rn: w(4),
+                rd: w(3),
+            },
+        ),
+        case(
+            "CSINV.CSINV_64_condsel",
+            "    csetm x0, ne",
+            A64Insn::CsinvCsinv64Condsel {
+                rm: x(31),
+                cond: 0x0,
+                rn: x(31),
+                rd: x(0),
+            },
+        ),
+        case(
+            "CSNEG.CSNEG_32_condsel",
+            "    cneg w0, w1, mi",
+            A64Insn::CsnegCsneg32Condsel {
+                rm: w(1),
+                cond: 0x5,
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "CSNEG.CSNEG_64_condsel",
+            "    csneg x6, x7, x8, le",
+            A64Insn::CsnegCsneg64Condsel {
+                rm: x(8),
+                cond: 0xd,
+                rn: x(7),
+                rd: x(6),
+            },
+        ),
+        // Conditional compare
+        case(
+            "CCMP_imm.CCMP_32_condcmp_imm",
+            "    ccmp w0, #31, #15, hs",
+            A64Insn::CcmpImmCcmp32CondcmpImm {
+                imm5: uimm(31, 5),
+                cond: 0x2,
+                rn: w(0),
+                nzcv: 0xf,
+            },
+        ),
+        case(
+            "CCMP_imm.CCMP_64_condcmp_imm",
+            "    ccmp x1, #0, #0, vc",
+            A64Insn::CcmpImmCcmp64CondcmpImm {
+                imm5: uimm(0, 5),
+                cond: 0x7,
+                rn: x(1),
+                nzcv: 0x0,
+            },
+        ),
+        case(
+            "CCMP_reg.CCMP_32_condcmp_reg",
+            "    ccmp w2, w3, #4, gt",
+            A64Insn::CcmpRegCcmp32CondcmpReg {
+                rm: w(3),
+                cond: 0xc,
+                rn: w(2),
+                nzcv: 0x4,
+            },
+        ),
+        case(
+            "CCMP_reg.CCMP_64_condcmp_reg",
+            "    ccmp x4, xzr, #8, ls",
+            A64Insn::CcmpRegCcmp64CondcmpReg {
+                rm: x(31),
+                cond: 0x9,
+                rn: x(4),
+                nzcv: 0x8,
+            },
+        ),
+        case(
+            "CCMN_imm.CCMN_32_condcmp_imm",
+            "    ccmn w5, #1, #2, pl",
+            A64Insn::CcmnImmCcmn32CondcmpImm {
+                imm5: uimm(1, 5),
+                cond: 0x5,
+                rn: w(5),
+                nzcv: 0x2,
+            },
+        ),
+        case(
+            "CCMN_imm.CCMN_64_condcmp_imm",
+            "    ccmn xzr, #16, #1, al",
+            A64Insn::CcmnImmCcmn64CondcmpImm {
+                imm5: uimm(16, 5),
+                cond: 0xe,
+                rn: x(31),
+                nzcv: 0x1,
+            },
+        ),
+        case(
+            "CCMN_reg.CCMN_32_condcmp_reg",
+            "    ccmn w6, w7, #9, lt",
+            A64Insn::CcmnRegCcmn32CondcmpReg {
+                rm: w(7),
+                cond: 0xb,
+                rn: w(6),
+                nzcv: 0x9,
+            },
+        ),
+        case(
+            "CCMN_reg.CCMN_64_condcmp_reg",
+            "    ccmn x8, x9, #6, ge",
+            A64Insn::CcmnRegCcmn64CondcmpReg {
+                rm: x(9),
+                cond: 0xa,
+                rn: x(8),
+                nzcv: 0x6,
+            },
+        ),
+        // Data-processing (2 source)
+        case(
+            "LSLV.LSLV_32_dp_2src",
+            "    lsl w0, w1, w2",
+            A64Insn::LslvLslv32Dp2src {
+                rm: w(2),
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "LSLV.LSLV_64_dp_2src",
+            "    lslv x0, x1, xzr",
+            A64Insn::LslvLslv64Dp2src {
+                rm: x(31),
+                rn: x(1),
+                rd: x(0),
+            },
+        ),
+        case(
+            "LSRV.LSRV_32_dp_2src",
+            "    lsrv w3, w4, w5",
+            A64Insn::LsrvLsrv32Dp2src {
+                rm: w(5),
+                rn: w(4),
+                rd: w(3),
+            },
+        ),
+        case(
+            "LSRV.LSRV_64_dp_2src",
+            "    lsr x3, x4, x5",
+            A64Insn::LsrvLsrv64Dp2src {
+                rm: x(5),
+                rn: x(4),
+                rd: x(3),
+            },
+        ),
+        case(
+            "ASRV.ASRV_32_dp_2src",
+            "    asr w6, w7, w8",
+            A64Insn::AsrvAsrv32Dp2src {
+                rm: w(8),
+                rn: w(7),
+                rd: w(6),
+            },
+        ),
+        case(
+            "ASRV.ASRV_64_dp_2src",
+            "    asrv x6, x7, x8",
+            A64Insn::AsrvAsrv64Dp2src {
+                rm: x(8),
+                rn: x(7),
+                rd: x(6),
+            },
+        ),
+        case(
+            "RORV.RORV_32_dp_2src",
+            "    ror w9, w10, w11",
+            A64Insn::RorvRorv32Dp2src {
+                rm: w(11),
+                rn: w(10),
+                rd: w(9),
+            },
+        ),
+        case(
+            "RORV.RORV_64_dp_2src",
+            "    rorv x9, x10, x11",
+            A64Insn::RorvRorv64Dp2src {
+                rm: x(11),
+                rn: x(10),
+                rd: x(9),
+            },
+        ),
+        case(
+            "UDIV.UDIV_32_dp_2src",
+            "    udiv w12, w13, w14",
+            A64Insn::UdivUdiv32Dp2src {
+                rm: w(14),
+                rn: w(13),
+                rd: w(12),
+            },
+        ),
+        case(
+            "UDIV.UDIV_64_dp_2src",
+            "    udiv x12, x13, x14",
+            A64Insn::UdivUdiv64Dp2src {
+                rm: x(14),
+                rn: x(13),
+                rd: x(12),
+            },
+        ),
+        case(
+            "SDIV.SDIV_32_dp_2src",
+            "    sdiv w15, w16, w17",
+            A64Insn::SdivSdiv32Dp2src {
+                rm: w(17),
+                rn: w(16),
+                rd: w(15),
+            },
+        ),
+        case(
+            "SDIV.SDIV_64_dp_2src",
+            "    sdiv x15, x16, x17",
+            A64Insn::SdivSdiv64Dp2src {
+                rm: x(17),
+                rn: x(16),
+                rd: x(15),
+            },
+        ),
+        // Data-processing (3 source)
+        case(
+            "MADD.MADD_32A_dp_3src",
+            "    mul w0, w1, w2",
+            A64Insn::MaddMadd32aDp3src {
+                rm: w(2),
+                ra: w(31),
+                rn: w(1),
+                rd: w(0),
+            },
+        ),
+        case(
+            "MADD.MADD_64A_dp_3src",
+            "    madd x0, x1, x2, x3",
+            A64Insn::MaddMadd64aDp3src {
+                rm: x(2),
+                ra: x(3),
+                rn: x(1),
+                rd: x(0),
+            },
+        ),
+        case(
+            "MSUB.MSUB_32A_dp_3src",
+            "    mneg w4, w5, w6",
+            A64Insn::MsubMsub32aDp3src {
+                rm: w(6),
+                ra: w(31),
+                rn: w(5),
+                rd: w(4),
+            },
+        ),
+        case(
+            "MSUB.MSUB_64A_dp_3src",
+            "    msub x4, x5, x6, x7",
+            A64Insn::MsubMsub64aDp3src {
+                rm: x(6),
+                ra: x(7),
+                rn: x(5),
+                rd: x(4),
+            },
+        ),
+        case(
+            "SMADDL.SMADDL_64WA_dp_3src",
+            "    smull x8, w9, w10",
+            A64Insn::SmaddlSmaddl64waDp3src {
+                rm: w(10),
+                ra: x(31),
+                rn: w(9),
+                rd: x(8),
+            },
+        ),
+        case(
+            "UMADDL.UMADDL_64WA_dp_3src",
+            "    umaddl x8, w9, w10, x11",
+            A64Insn::UmaddlUmaddl64waDp3src {
+                rm: w(10),
+                ra: x(11),
+                rn: w(9),
+                rd: x(8),
+            },
+        ),
+        case(
+            "SMULH.SMULH_64_dp_3src",
+            "    smulh x12, x13, x14",
+            A64Insn::SmulhSmulh64Dp3src {
+                rm: x(14),
+                rn: x(13),
+                rd: x(12),
+            },
+        ),
+        case(
+            "UMULH.UMULH_64_dp_3src",
+            "    umulh x12, x13, x14",
+            A64Insn::UmulhUmulh64Dp3src {
+                rm: x(14),
+                rn: x(13),
+                rd: x(12),
+            },
+        ),
+        // Data-processing (1 source)
+        case(
+            "CLZ_int.CLZ_32_dp_1src",
+            "    clz w0, w1",
+            A64Insn::ClzIntClz32Dp1src { rn: w(1), rd: w(0) },
+        ),
+        case(
+            "CLZ_int.CLZ_64_dp_1src",
+            "    clz x0, x1",
+            A64Insn::ClzIntClz64Dp1src { rn: x(1), rd: x(0) },
+        ),
+        case(
+            "RBIT_int.RBIT_32_dp_1src",
+            "    rbit w2, w3",
+            A64Insn::RbitIntRbit32Dp1src { rn: w(3), rd: w(2) },
+        ),
+        case(
+            "RBIT_int.RBIT_64_dp_1src",
+            "    rbit x2, x3",
+            A64Insn::RbitIntRbit64Dp1src { rn: x(3), rd: x(2) },
+        ),
+        case(
+            "REV.REV_32_dp_1src",
+            "    rev w4, w5",
+            A64Insn::RevRev32Dp1src { rn: w(5), rd: w(4) },
+        ),
+        case(
+            "REV.REV_64_dp_1src",
+            "    rev x4, x5",
+            A64Insn::RevRev64Dp1src { rn: x(5), rd: x(4) },
+        ),
+        case(
+            "REV16_int.REV16_32_dp_1src",
+            "    rev16 w6, w7",
+            A64Insn::Rev16IntRev1632Dp1src { rn: w(7), rd: w(6) },
+        ),
+        case(
+            "REV16_int.REV16_64_dp_1src",
+            "    rev16 x6, x7",
+            A64Insn::Rev16IntRev1664Dp1src { rn: x(7), rd: x(6) },
+        ),
+        case(
+            "REV32_int.REV32_64_dp_1src",
+            "    rev32 x8, x9",
+            A64Insn::Rev32IntRev3264Dp1src { rn: x(9), rd: x(8) },
+        ),
+        // MRS: TPIDR_EL0 only.
+        case(
+            "MRS.MRS_RS_systemmove",
+            "    mrs x1, tpidr_el0",
+            A64Insn::MrsMrsRsSystemmove { rt: x(1) },
+        ),
+        case(
+            "MRS.MRS_RS_systemmove",
+            "    mrs xzr, tpidr_el0",
+            A64Insn::MrsMrsRsSystemmove { rt: x(31) },
+        ),
+    ]
 }
 
 fn decode_forms_from_subset_toml(toml: &str) -> Vec<String> {

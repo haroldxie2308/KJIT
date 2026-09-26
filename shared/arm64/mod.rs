@@ -11,15 +11,26 @@ pub use generated::{
     A64RewriteError,
 };
 
+/// A64 condition code (`cond` field), all 16 encodings. `Nv` (0b1111) is kept
+/// distinct from `Al` so re-encoding preserves the exact word; both always hold.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum A64Condition {
     Eq,
     Ne,
+    Hs,
+    Lo,
+    Mi,
+    Pl,
+    Vs,
+    Vc,
+    Hi,
+    Ls,
     Ge,
     Lt,
     Gt,
     Le,
     Al,
+    Nv,
 }
 
 impl A64Condition {
@@ -27,11 +38,20 @@ impl A64Condition {
         match bits {
             0x0 => Some(Self::Eq),
             0x1 => Some(Self::Ne),
+            0x2 => Some(Self::Hs),
+            0x3 => Some(Self::Lo),
+            0x4 => Some(Self::Mi),
+            0x5 => Some(Self::Pl),
+            0x6 => Some(Self::Vs),
+            0x7 => Some(Self::Vc),
+            0x8 => Some(Self::Hi),
+            0x9 => Some(Self::Ls),
             0xA => Some(Self::Ge),
             0xB => Some(Self::Lt),
             0xC => Some(Self::Gt),
             0xD => Some(Self::Le),
-            0xE | 0xF => Some(Self::Al),
+            0xE => Some(Self::Al),
+            0xF => Some(Self::Nv),
             _ => None,
         }
     }
@@ -40,11 +60,20 @@ impl A64Condition {
         match self {
             Self::Eq => 0x0,
             Self::Ne => 0x1,
+            Self::Hs => 0x2,
+            Self::Lo => 0x3,
+            Self::Mi => 0x4,
+            Self::Pl => 0x5,
+            Self::Vs => 0x6,
+            Self::Vc => 0x7,
+            Self::Hi => 0x8,
+            Self::Ls => 0x9,
             Self::Ge => 0xA,
             Self::Lt => 0xB,
             Self::Gt => 0xC,
             Self::Le => 0xD,
             Self::Al => 0xE,
+            Self::Nv => 0xF,
         }
     }
 }
@@ -162,8 +191,194 @@ impl A64Insn {
 }
 
 pub fn decode_word(word: u32, pc: u64) -> Result<IrInsn, DecodeError> {
-    let inner = A64Insn::decode(word).ok_or(DecodeError::UnsupportedWord { pc, word })?;
+    let inner = A64Insn::decode(word)
+        .filter(|insn| !insn.is_decode_undefined())
+        .ok_or(DecodeError::UnsupportedWord { pc, word })?;
     Ok(IrInsn { pc, word, inner })
+}
+
+impl A64Insn {
+    /// `true` when the word matches the form's encoding diagram but the form's
+    /// decode pseudocode makes it UNDEFINED (`EndOfDecode(Decode_UNDEF)`, or
+    /// `DecodeBitMasks` rejecting a logical immediate). The generated mask/value
+    /// cannot express these value rules. Such a word must stay undecodable: it takes
+    /// the Unsupported exit and userspace gets its SIGILL natively, instead of the
+    /// fragment raising an undefined-instruction exception at EL1.
+    ///
+    /// Exhaustive on purpose: a new form must decide here whether it has such rules.
+    pub const fn is_decode_undefined(self) -> bool {
+        match self {
+            Self::AddAddsubShiftAdd32AddsubShift { shift, imm6, .. }
+            | Self::AddsAddsubShiftAdds32AddsubShift { shift, imm6, .. }
+            | Self::SubAddsubShiftSub32AddsubShift { shift, imm6, .. }
+            | Self::SubsAddsubShiftSubs32AddsubShift { shift, imm6, .. } => {
+                shift == 0b11 || imm6.raw() & 0b10_0000 != 0
+            }
+            Self::AddAddsubShiftAdd64AddsubShift { shift, .. }
+            | Self::AddsAddsubShiftAdds64AddsubShift { shift, .. }
+            | Self::SubAddsubShiftSub64AddsubShift { shift, .. }
+            | Self::SubsAddsubShiftSubs64AddsubShift { shift, .. } => shift == 0b11,
+
+            Self::AddAddsubExtAdd32AddsubExt { imm3, .. }
+            | Self::AddAddsubExtAdd64AddsubExt { imm3, .. }
+            | Self::AddsAddsubExtAdds32sAddsubExt { imm3, .. }
+            | Self::AddsAddsubExtAdds64sAddsubExt { imm3, .. }
+            | Self::SubAddsubExtSub32AddsubExt { imm3, .. }
+            | Self::SubAddsubExtSub64AddsubExt { imm3, .. }
+            | Self::SubsAddsubExtSubs32sAddsubExt { imm3, .. }
+            | Self::SubsAddsubExtSubs64sAddsubExt { imm3, .. } => imm3.raw() > 4,
+
+            Self::AndLogShiftAnd32LogShift { imm6, .. }
+            | Self::AndsLogShiftAnds32LogShift { imm6, .. }
+            | Self::OrrLogShiftOrr32LogShift { imm6, .. }
+            | Self::EorLogShiftEor32LogShift { imm6, .. }
+            | Self::EonEon32LogShift { imm6, .. }
+            | Self::BicLogShiftBic32LogShift { imm6, .. }
+            | Self::BicsBics32LogShift { imm6, .. }
+            | Self::OrnLogShiftOrn32LogShift { imm6, .. } => imm6.raw() & 0b10_0000 != 0,
+
+            Self::AndLogImmAnd32LogImm { imms, .. }
+            | Self::AndsLogImmAnds32sLogImm { imms, .. }
+            | Self::OrrLogImmOrr32LogImm { imms, .. }
+            | Self::EorLogImmEor32LogImm { imms, .. } => logical_imm_undefined(0, imms),
+            Self::AndLogImmAnd64LogImm { n, imms, .. }
+            | Self::AndsLogImmAnds64sLogImm { n, imms, .. }
+            | Self::OrrLogImmOrr64LogImm { n, imms, .. }
+            | Self::EorLogImmEor64LogImm { n, imms, .. } => logical_imm_undefined(n, imms),
+
+            // The 32-bit encodings fix N = 0; immr/imms bit 5 must also be clear.
+            Self::SbfmSbfm32mBitfield { immr, imms, .. }
+            | Self::UbfmUbfm32mBitfield { immr, imms, .. }
+            | Self::BfmBfm32mBitfield { immr, imms, .. } => {
+                (immr.raw() | imms.raw()) & 0b10_0000 != 0
+            }
+
+            // Every remaining rule of these forms is fixed by the encoding diagram
+            // (MOVZ/MOVK/MOVN 32-bit hw<1>, bitfield/EXTR N == sf, EXTR 32-bit
+            // imms<5>, REV opc), or the form has no decode-time UNDEFINED case.
+            Self::AdrAdrOnlyPcreladdr { .. }
+            | Self::AdrpAdrpOnlyPcreladdr { .. }
+            | Self::AddAddsubImmAdd32AddsubImm { .. }
+            | Self::AddAddsubImmAdd64AddsubImm { .. }
+            | Self::SubAddsubImmSub32AddsubImm { .. }
+            | Self::SubAddsubImmSub64AddsubImm { .. }
+            | Self::SubsAddsubImmSubs32sAddsubImm { .. }
+            | Self::SubsAddsubImmSubs64sAddsubImm { .. }
+            | Self::AddsAddsubImmAdds32sAddsubImm { .. }
+            | Self::AddsAddsubImmAdds64sAddsubImm { .. }
+            | Self::BUncondBOnlyBranchImm { .. }
+            | Self::BCondBOnlyCondbranch { .. }
+            | Self::CbzCbz32Compbranch { .. }
+            | Self::CbzCbz64Compbranch { .. }
+            | Self::CbnzCbnz32Compbranch { .. }
+            | Self::CbnzCbnz64Compbranch { .. }
+            | Self::MovzMovz32Movewide { .. }
+            | Self::MovzMovz64Movewide { .. }
+            | Self::MovkMovk32Movewide { .. }
+            | Self::MovkMovk64Movewide { .. }
+            | Self::MovnMovn32Movewide { .. }
+            | Self::MovnMovn64Movewide { .. }
+            | Self::AndLogShiftAnd64LogShift { .. }
+            | Self::AndsLogShiftAnds64LogShift { .. }
+            | Self::OrrLogShiftOrr64LogShift { .. }
+            | Self::EorLogShiftEor64LogShift { .. }
+            | Self::EonEon64LogShift { .. }
+            | Self::BicLogShiftBic64LogShift { .. }
+            | Self::BicsBics64LogShift { .. }
+            | Self::OrnLogShiftOrn64LogShift { .. }
+            | Self::SbfmSbfm64mBitfield { .. }
+            | Self::UbfmUbfm64mBitfield { .. }
+            | Self::BfmBfm64mBitfield { .. }
+            | Self::ExtrExtr32Extract { .. }
+            | Self::ExtrExtr64Extract { .. }
+            | Self::CselCsel32Condsel { .. }
+            | Self::CselCsel64Condsel { .. }
+            | Self::CsincCsinc32Condsel { .. }
+            | Self::CsincCsinc64Condsel { .. }
+            | Self::CsinvCsinv32Condsel { .. }
+            | Self::CsinvCsinv64Condsel { .. }
+            | Self::CsnegCsneg32Condsel { .. }
+            | Self::CsnegCsneg64Condsel { .. }
+            | Self::CcmpImmCcmp32CondcmpImm { .. }
+            | Self::CcmpImmCcmp64CondcmpImm { .. }
+            | Self::CcmpRegCcmp32CondcmpReg { .. }
+            | Self::CcmpRegCcmp64CondcmpReg { .. }
+            | Self::CcmnImmCcmn32CondcmpImm { .. }
+            | Self::CcmnImmCcmn64CondcmpImm { .. }
+            | Self::CcmnRegCcmn32CondcmpReg { .. }
+            | Self::CcmnRegCcmn64CondcmpReg { .. }
+            | Self::LslvLslv32Dp2src { .. }
+            | Self::LslvLslv64Dp2src { .. }
+            | Self::LsrvLsrv32Dp2src { .. }
+            | Self::LsrvLsrv64Dp2src { .. }
+            | Self::AsrvAsrv32Dp2src { .. }
+            | Self::AsrvAsrv64Dp2src { .. }
+            | Self::RorvRorv32Dp2src { .. }
+            | Self::RorvRorv64Dp2src { .. }
+            | Self::UdivUdiv32Dp2src { .. }
+            | Self::UdivUdiv64Dp2src { .. }
+            | Self::SdivSdiv32Dp2src { .. }
+            | Self::SdivSdiv64Dp2src { .. }
+            | Self::MaddMadd32aDp3src { .. }
+            | Self::MaddMadd64aDp3src { .. }
+            | Self::MsubMsub32aDp3src { .. }
+            | Self::MsubMsub64aDp3src { .. }
+            | Self::SmaddlSmaddl64waDp3src { .. }
+            | Self::UmaddlUmaddl64waDp3src { .. }
+            | Self::SmulhSmulh64Dp3src { .. }
+            | Self::UmulhUmulh64Dp3src { .. }
+            | Self::ClzIntClz32Dp1src { .. }
+            | Self::ClzIntClz64Dp1src { .. }
+            | Self::RbitIntRbit32Dp1src { .. }
+            | Self::RbitIntRbit64Dp1src { .. }
+            | Self::RevRev32Dp1src { .. }
+            | Self::RevRev64Dp1src { .. }
+            | Self::Rev16IntRev1632Dp1src { .. }
+            | Self::Rev16IntRev1664Dp1src { .. }
+            | Self::Rev32IntRev3264Dp1src { .. }
+            | Self::MrsMrsRsSystemmove { .. }
+            | Self::TbzTbzOnlyTestbranch { .. }
+            | Self::TbnzTbnzOnlyTestbranch { .. }
+            | Self::LdrImmGenLdr32LdstImmpost { .. }
+            | Self::LdrImmGenLdr64LdstImmpost { .. }
+            | Self::LdrImmGenLdr32LdstImmpre { .. }
+            | Self::LdrImmGenLdr64LdstImmpre { .. }
+            | Self::LdrImmGenLdr32LdstPos { .. }
+            | Self::LdrImmGenLdr64LdstPos { .. }
+            | Self::StrImmGenStr32LdstImmpost { .. }
+            | Self::StrImmGenStr64LdstImmpost { .. }
+            | Self::StrImmGenStr32LdstImmpre { .. }
+            | Self::StrImmGenStr64LdstImmpre { .. }
+            | Self::StrImmGenStr32LdstPos { .. }
+            | Self::StrImmGenStr64LdstPos { .. }
+            | Self::LdpGenLdp64LdstpairPost { .. }
+            | Self::LdpGenLdp64LdstpairPre { .. }
+            | Self::LdpGenLdp64LdstpairOff { .. }
+            | Self::StpGenStp64LdstpairPost { .. }
+            | Self::StpGenStp64LdstpairPre { .. }
+            | Self::StpGenStp64LdstpairOff { .. }
+            | Self::NopNopHiHints {}
+            | Self::BlBlOnlyBranchImm { .. }
+            | Self::BrBr64BranchReg { .. }
+            | Self::BlrBlr64BranchReg { .. }
+            | Self::RetRet64rBranchReg { .. }
+            | Self::SvcSvcExException { .. } => false,
+        }
+    }
+}
+
+/// The UNDEFINED cases of `DecodeBitMasks(N, imms, immr, immediate = TRUE)`:
+/// `N:NOT(imms)` has no set bit above bit 0 (element size below 2), or `imms`
+/// selects an all-ones element.
+const fn logical_imm_undefined(n: u8, imms: A64Imm) -> bool {
+    let imms = imms.raw() & 0x3f;
+    let n_not_imms = ((n as u32 & 1) << 6) | (!imms & 0x3f);
+    if n_not_imms >> 1 == 0 {
+        return true;
+    }
+    let len = 31 - n_not_imms.leading_zeros();
+    let levels = (1_u32 << len) - 1;
+    imms & levels == levels
 }
 
 pub fn decode_program(program: &[u8], base_pc: u64) -> Result<SharedVec<IrInsn>, DecodeError> {
@@ -193,4 +408,72 @@ fn pc_relative_target(pc: u64, encoded: u32, bits: u8) -> u64 {
 fn sign_extend(value: u32, bits: u8) -> i64 {
     let shift = 64 - bits as u32;
     ((value as i64) << shift) >> shift
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Words that match a generated encoding diagram but are UNDEFINED by the
+    /// form's decode pseudocode, each next to a defined neighbour.
+    #[test]
+    fn decode_word_rejects_pseudocode_undefined_encodings() {
+        let cases: [(u32, u32, &str); 9] = [
+            (0x0b02_0020, 0x0bc2_0020, "add w0, w1, w2 / shift == 0b11"),
+            (
+                0x0b02_7c20,
+                0x0b02_8020,
+                "add w0, w1, w2, lsl #31 / imm6 = 32",
+            ),
+            (
+                0x8b22_5020,
+                0x8b22_5420,
+                "add x0, x1, w2, uxtw #4 / imm3 = 5",
+            ),
+            (
+                0x0a02_7c20,
+                0x0a02_8020,
+                "and w0, w1, w2, lsl #31 / imm6 = 32",
+            ),
+            (
+                0x1200_7820,
+                0x1200_f820,
+                "and w0, w1, #0x7fffffff / N:NOT(imms) = 0b000000x",
+            ),
+            (
+                0x9240_f820,
+                0x9240_fc20,
+                "and x0, x1, #0x7fff.. / N = 1, imms all ones",
+            ),
+            (
+                0x9200_f020,
+                0x9200_f420,
+                "and x0, x1, #0x5555.. / 2-bit element all ones",
+            ),
+            (0x131f_7c20, 0x1320_7c20, "asr w0, w1, #31 / immr<5> set"),
+            (
+                0x1300_7c20,
+                0x1300_fc20,
+                "sbfm w0, w1, #0, #31 / imms<5> set",
+            ),
+        ];
+        for (defined, undefined, what) in cases {
+            assert!(
+                decode_word(defined, 0).is_ok(),
+                "{what}: {defined:#010x} must decode"
+            );
+            assert!(
+                A64Insn::decode(undefined).is_some(),
+                "{what}: {undefined:#010x} must match the encoding diagram"
+            );
+            assert_eq!(
+                decode_word(undefined, 0x40),
+                Err(DecodeError::UnsupportedWord {
+                    pc: 0x40,
+                    word: undefined
+                }),
+                "{what}"
+            );
+        }
+    }
 }

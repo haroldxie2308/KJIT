@@ -301,3 +301,43 @@ Written before implementation. Facts checked against `dep/linux` 7.1-rc1:
   with the first mismatching offset; FAIL returns `EINVAL` from init.
 - Invariant: the module never executes or branches into the emitted bytes. That
   waits for an independent in-kernel verifier.
+
+# A64 subset contracts (A7a, 2026-09-27)
+
+## Decode admission
+
+- A word decodes only if it matches a generated form's mask/value **and**
+  `A64Insn::is_decode_undefined` is false. That function carries the value
+  rules the XML keeps in decode pseudocode (`EndOfDecode(Decode_UNDEF)` and
+  `DecodeBitMasks` rejections: add/sub shifted `shift == 11` and 32-bit
+  `imm6<5>`, add/sub extended `imm3 > 4`, 32-bit logical shifted `imm6<5>`,
+  reserved logical immediates, 32-bit bitfield `immr<5>`/`imms<5>`). It is an
+  exhaustive match, so a new form must decide whether it has such rules.
+- Why: reg-virt only rewrites register fields, so an admitted word's non-register
+  fields reach the emitted fragment unchanged. An UNDEFINED encoding admitted
+  here would trap at EL1; rejected, it takes the Unsupported exit and userspace
+  gets its SIGILL natively.
+- Cross-checked against the LLVM disassembler on 300 random words per form
+  (all 142 forms): the only disagreements are the known constrained-unpredictable
+  memory overlaps, which reg-virt rejects.
+
+## Field constraints in subset.toml
+
+- `[decode.field_constraints]` pins non-operand fields of an exact form to fixed
+  values; specgen folds them into mask/value and drops them from the generated
+  operands. A constraint on an unconfigured form, a missing/fixed field, a field
+  with an operand role, or an out-of-range value fails generation.
+- `MRS.MRS_RS_systemmove` is constrained to TPIDR_EL0 (`o0=1 op1=3 CRn=13 CRm=0
+  op2=2`). Kernel assumption (pin in K-tasks): while a fragment runs at EL1,
+  TPIDR_EL0 still holds the current task's user TLS pointer (Linux switches it
+  only on context switch), so the MRS is exact without rewriting.
+- SMULH/UMULH pin their should-be-one `Ra` to 31; other values are constrained
+  unpredictable and stay undecodable.
+
+## Flags metadata
+
+- `FlagsWrite` is inferred from an assignment to `PSTATE.[N,Z,C,V]` in the
+  execute pseudocode (ADDS/SUBS, ANDS/BICS, CCMP/CCMN). The earlier heuristic
+  (`AddWithCarry` + `nzcv`) missed ANDS/BICS and CCMP/CCMN. No pass consumes
+  flag roles yet.
+

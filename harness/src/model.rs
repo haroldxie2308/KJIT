@@ -70,6 +70,9 @@ pub struct MachineState {
     regs: [u64; 31],
     sp: u64,
     pub flags: Flags,
+    /// User TLS pointer. Read-only for translated code: `MRS Xt, TPIDR_EL0` is the
+    /// only admitted system-register access.
+    pub tpidr_el0: u64,
     memory: BTreeMap<u64, u8>,
     /// User page map keyed by page base address.
     user_pages: BTreeMap<u64, PagePerm>,
@@ -289,13 +292,6 @@ impl MachineState {
                 .any(|(start, end)| *start <= *addr && *addr < *end)
         });
         cloned
-    }
-
-    pub fn update_sub_flags(&mut self, lhs: u64, rhs: u64, result: u64) {
-        self.flags.n = (result >> 63) != 0;
-        self.flags.z = result == 0;
-        self.flags.c = lhs >= rhs;
-        self.flags.v = ((lhs ^ rhs) & (lhs ^ result) & (1_u64 << 63)) != 0;
     }
 }
 
