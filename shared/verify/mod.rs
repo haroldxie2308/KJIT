@@ -79,8 +79,9 @@ pub enum VerifyRule {
     /// 3: a fault-site entry that is not on a user access.
     FaultSiteNotUserAccess,
     /// 3: a user-code load/store/prefetch form (byte/half/signed, unscaled,
-    /// register offset, literal, 32-bit pair, PRFM, acquire/release): translation
-    /// lowers these, so one in a fragment is neither a user nor a runtime access.
+    /// register offset, literal, 32-bit pair, PRFM, acquire/release), or BTI:
+    /// translation lowers these, so one in a fragment is neither a user nor a
+    /// runtime access (nor an allowlisted system instruction).
     UserOnlyForm,
     /// 3: a runtime access with base writeback.
     RuntimeAccessWriteback,

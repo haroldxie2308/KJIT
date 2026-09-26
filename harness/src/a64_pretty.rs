@@ -385,8 +385,38 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
         }
         SmaddlSmaddl64waDp3src { rm, ra, rn, rd } => pretty_four_reg("smaddl", rd, rn, rm, ra),
         UmaddlUmaddl64waDp3src { rm, ra, rn, rd } => pretty_four_reg("umaddl", rd, rn, rm, ra),
+        SmsublSmsubl64waDp3src { rm, ra, rn, rd } => pretty_four_reg("smsubl", rd, rn, rm, ra),
+        UmsublUmsubl64waDp3src { rm, ra, rn, rd } => pretty_four_reg("umsubl", rd, rn, rm, ra),
         SmulhSmulh64Dp3src { rm, rn, rd } => pretty_three_reg("smulh", rd, rn, rm),
         UmulhUmulh64Dp3src { rm, rn, rd } => pretty_three_reg("umulh", rd, rn, rm),
+        AdcAdc32AddsubCarry { rm, rn, rd } | AdcAdc64AddsubCarry { rm, rn, rd } => {
+            pretty_three_reg("adc", rd, rn, rm)
+        }
+        AdcsAdcs32AddsubCarry { rm, rn, rd } | AdcsAdcs64AddsubCarry { rm, rn, rd } => {
+            pretty_three_reg("adcs", rd, rn, rm)
+        }
+        SbcSbc32AddsubCarry { rm, rn, rd } | SbcSbc64AddsubCarry { rm, rn, rd } => {
+            if rn.enc() == 31 {
+                format!("ngc {}, {}", reg_name(rd), reg_name(rm))
+            } else {
+                pretty_three_reg("sbc", rd, rn, rm)
+            }
+        }
+        SbcsSbcs32AddsubCarry { rm, rn, rd } | SbcsSbcs64AddsubCarry { rm, rn, rd } => {
+            if rn.enc() == 31 {
+                format!("ngcs {}, {}", reg_name(rd), reg_name(rm))
+            } else {
+                pretty_three_reg("sbcs", rd, rn, rm)
+            }
+        }
+        Crc32Crc32b32cDp2src { rm, rn, rd } => pretty_three_reg("crc32b", rd, rn, rm),
+        Crc32Crc32h32cDp2src { rm, rn, rd } => pretty_three_reg("crc32h", rd, rn, rm),
+        Crc32Crc32w32cDp2src { rm, rn, rd } => pretty_three_reg("crc32w", rd, rn, rm),
+        Crc32Crc32x64cDp2src { rm, rn, rd } => pretty_three_reg("crc32x", rd, rn, rm),
+        Crc32cCrc32cb32cDp2src { rm, rn, rd } => pretty_three_reg("crc32cb", rd, rn, rm),
+        Crc32cCrc32ch32cDp2src { rm, rn, rd } => pretty_three_reg("crc32ch", rd, rn, rm),
+        Crc32cCrc32cw32cDp2src { rm, rn, rd } => pretty_three_reg("crc32cw", rd, rn, rm),
+        Crc32cCrc32cx64cDp2src { rm, rn, rd } => pretty_three_reg("crc32cx", rd, rn, rm),
         ClzIntClz32Dp1src { rn, rd } | ClzIntClz64Dp1src { rn, rd } => {
             format!("clz {}, {}", reg_name(rd), reg_name(rn))
         }
@@ -644,6 +674,12 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
             index_operand(rm, option, if s == 1 { 3 } else { 0 })
         ),
         NopNopHiHints {} => "nop".to_string(),
+        BtiBtiHbHints { op2 } => match op2 >> 1 {
+            0b00 => "bti".to_string(),
+            0b01 => "bti c".to_string(),
+            0b10 => "bti j".to_string(),
+            _ => "bti jc".to_string(),
+        },
         DmbDmbBoBarriers { crm } => format!("dmb {}", barrier_option(crm)),
         DsbDsbBoBarriers { crm: 0b0000 } => "ssbb".to_string(),
         DsbDsbBoBarriers { crm: 0b0100 } => "pssbb".to_string(),

@@ -1380,6 +1380,7 @@ static const struct file_operations kjit_unsupported_fops = {
 static int kjit_check_cpu(void)
 {
 	u64 mmfr2 = read_sanitised_ftr_reg(SYS_ID_AA64MMFR2_EL1);
+	u64 isar0 = read_sanitised_ftr_reg(SYS_ID_AA64ISAR0_EL1);
 	u64 isar1 = read_sanitised_ftr_reg(SYS_ID_AA64ISAR1_EL1);
 
 	/*
@@ -1399,6 +1400,14 @@ static int kjit_check_cpu(void)
 	/* FEAT_LRCPC: else user LDAPR is UNDEFINED natively but would run in a fragment. */
 	if (!cpuid_feature_extract_unsigned_field(isar1, ID_AA64ISAR1_EL1_LRCPC_SHIFT)) {
 		pr_err("kjit: CPU lacks FEAT_LRCPC (ID_AA64ISAR1_EL1.LRCPC == 0): user LDAPR is UNDEFINED natively but would run in a fragment; refusing to load\n");
+		return -ENODEV;
+	}
+	/*
+	 * FEAT_CRC32: else user CRC32* / CRC32C* are UNDEFINED natively, and in a
+	 * fragment they would be an undefined instruction at EL1.
+	 */
+	if (!cpuid_feature_extract_unsigned_field(isar0, ID_AA64ISAR0_EL1_CRC32_SHIFT)) {
+		pr_err("kjit: CPU lacks FEAT_CRC32 (ID_AA64ISAR0_EL1.CRC32 == 0): user CRC32 is UNDEFINED natively but would run in a fragment; refusing to load\n");
 		return -ENODEV;
 	}
 	return 0;

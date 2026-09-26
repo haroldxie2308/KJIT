@@ -40,7 +40,7 @@ pub fn infer_operand_roles(
     // hold for each form.
     let load_store = gpr_mem_op(execute_text).is_some();
     roles.extend(
-        infer_roles_from_pseudocode(&field_names, &var_map, docvars, execute_text)
+        infer_roles_from_pseudocode(&field_names, &var_map, docvars, operands, execute_text)
             .into_iter()
             .filter(|(kind, _, _)| {
                 !(load_store && matches!(kind.as_str(), "RegRead" | "RegWrite" | "RegReadWrite"))
@@ -97,6 +97,14 @@ fn operand_width(docvars: &IndexMap<String, String>, operand: Option<&AsmOperand
         .unwrap_or_default();
     let text = operand.map(|operand| operand.text.as_str()).unwrap_or("");
 
+    // An operand's own `<W..>`/`<X..>` wins over the form's datatype: CRC32X is a
+    // 64-bit datatype form whose accumulator and result are `<Wn>`/`<Wd>`.
+    if text.starts_with("<W") {
+        return "W32".to_string();
+    }
+    if text.starts_with("<X") {
+        return "X64".to_string();
+    }
     if datatype == Some("32")
         || reg_type.starts_with("32-")
         || hover.contains("32-bit")
@@ -122,6 +130,7 @@ fn infer_roles_from_pseudocode(
     fields: &BTreeSet<String>,
     var_map: &BTreeMap<String, String>,
     docvars: &IndexMap<String, String>,
+    operands: &[AsmOperand],
     execute_text: &str,
 ) -> BTreeSet<RoleTuple> {
     let mut roles = BTreeSet::new();
@@ -145,7 +154,8 @@ fn infer_roles_from_pseudocode(
         } else {
             "RegRead"
         };
-        roles.insert(role_tuple(kind, &field, &operand_width(docvars, None)));
+        let width = operand_width(docvars, encoding_operand(operands, &field));
+        roles.insert(role_tuple(kind, &field, &width));
     }
 
     let bracket_accessors = Regex::new(r"\b(?:X|W|SP)\[([^\],\]]+)(?:,[^\]]*)?\]").unwrap();
@@ -166,10 +176,11 @@ fn infer_roles_from_pseudocode(
         } else {
             "RegRead"
         };
-        roles.insert(role_tuple(kind, &field, &operand_width(docvars, None)));
+        let width = operand_width(docvars, encoding_operand(operands, &field));
+        roles.insert(role_tuple(kind, &field, &width));
     }
 
-    if execute_text.contains("ConditionHolds") {
+    if execute_text.contains("ConditionHolds") || reads_single_flag(execute_text) {
         roles.insert(role_tuple("FlagsRead", "", "Unknown"));
     }
     // Every flag-setting form assigns all four flags, e.g. `PSTATE.[N,Z,C,V] = nzcv;`
@@ -188,6 +199,18 @@ fn infer_roles_from_pseudocode(
     }
 
     roles
+}
+
+/// A read of one flag, e.g. ADC/SBC's carry in `AddWithCarry(x, y, PSTATE.C)`. An
+/// assignment to it (`PSTATE.C = ...`, not `==`) is a write, not a read. The
+/// flattened XML text may split a linked `PSTATE` from `.C` with a space.
+fn reads_single_flag(execute_text: &str) -> bool {
+    let flag = Regex::new(r"PSTATE\s*\.[NZCV]\b").unwrap();
+    let assignment = Regex::new(r"^\s*=([^=]|$)").unwrap();
+    let read = flag
+        .find_iter(execute_text)
+        .any(|found| !assignment.is_match(&execute_text[found.end()..]));
+    read
 }
 
 fn infer_roles_from_docvars_and_asm(
@@ -393,13 +416,11 @@ mod tests {
         let fields = BTreeSet::new();
         let vars = BTreeMap::new();
         let docvars = IndexMap::new();
-        let writes = |text: &str| {
-            infer_roles_from_pseudocode(&fields, &vars, &docvars, text).contains(&role_tuple(
-                "FlagsWrite",
-                "",
-                "Unknown",
-            ))
-        };
+        let writes =
+            |text: &str| {
+                infer_roles_from_pseudocode(&fields, &vars, &docvars, &[], text)
+                    .contains(&role_tuple("FlagsWrite", "", "Unknown"))
+            };
 
         assert!(writes(
             "(result, nzcv) = AddWithCarry(a, b, '1'); PSTATE.[N,Z,C,V] = nzcv;"
@@ -412,6 +433,46 @@ mod tests {
             "(result, -) = AddWithCarry(a, b, '0'); X(d) = result;"
         ));
         assert!(!writes("if ConditionHolds(c) then result = X(n); end;"));
+    }
+
+    #[test]
+    fn flags_read_is_inferred_from_condition_or_single_flag_read() {
+        let fields = BTreeSet::new();
+        let vars = BTreeMap::new();
+        let docvars = IndexMap::new();
+        let reads =
+            |text: &str| {
+                infer_roles_from_pseudocode(&fields, &vars, &docvars, &[], text)
+                    .contains(&role_tuple("FlagsRead", "", "Unknown"))
+            };
+
+        assert!(reads(
+            "(result, -) = AddWithCarry{datasize}(operand1, operand2, PSTATE.C);"
+        ));
+        assert!(reads("if PSTATE.C == '1' then X(d) = a; end;"));
+        assert!(reads(
+            "AddWithCarry {datasize} (operand1, operand2, PSTATE .C);"
+        ));
+        assert!(reads("if ConditionHolds(cond) then result = X(n); end;"));
+        assert!(!reads(
+            "(result, nzcv) = AddWithCarry(a, b, '0'); PSTATE.[N,Z,C,V] = nzcv;"
+        ));
+        assert!(!reads("PSTATE.C = '1';"));
+    }
+
+    #[test]
+    fn operand_text_width_wins_over_datatype() {
+        let mut docvars = IndexMap::new();
+        docvars.insert("datatype".to_string(), "64".to_string());
+        let operand = |text: &str| AsmOperand {
+            text: text.to_string(),
+            link: String::new(),
+            hover: String::new(),
+        };
+        // CRC32X: 64-bit datatype, `<Wd>, <Wn>, <Xm>`.
+        assert_eq!(operand_width(&docvars, Some(&operand("<Wd>"))), "W32");
+        assert_eq!(operand_width(&docvars, Some(&operand("<Xm>"))), "X64");
+        assert_eq!(operand_width(&docvars, None), "X64");
     }
 
     #[test]
