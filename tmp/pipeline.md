@@ -931,7 +931,10 @@ size and extension, so the loaded value needs no fix-up.
   (an SVC in an endless loop restarts the budget) is discarded; one side
   halting alone is a failure. A verifier rejection is its own failure class. A
   fault matches `ReturnedToUserspace { Mem }` at the same PC (the A5 contract)
-  and is a verdict like every other halt.
+  and is a verdict like every other halt. The A5 store footprint applies to
+  natural faults too (found by the fuzzer: an `STP` straddling into the
+  read-only page): the store units written before the faulting access may hold
+  their new value (`faulting_store_footprint`, `compare_differential`).
 - Generation is driven by the generated metadata only: `GENERATED_A64_SUBSET`
   (fixed mask/value, fields), operand roles, `get_reg` (SP/ZR mode), the
   generated `mem_operand()` accessor (offset signedness and scale are read back

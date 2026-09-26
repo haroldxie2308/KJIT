@@ -258,7 +258,7 @@ fn classify(run: &DifferentialRun) -> Outcome {
                 run.original.halt_reason
             ),
         ),
-        _ => match compare_differential("fuzz", &run.original, &run.report) {
+        _ => match compare_differential("fuzz", run) {
             Ok(()) => Outcome::Pass,
             Err(mismatch) => fail(
                 match mismatch.kind {

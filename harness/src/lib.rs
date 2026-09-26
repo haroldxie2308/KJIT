@@ -27,7 +27,7 @@ mod verify_mutation_tests;
 use std::fmt;
 
 use crate::shared::emit::layout::ExecutionFragment;
-use crate::shared::trans::cfg::RuntimeExitReason;
+use crate::shared::trans::cfg::{admit_at, RuntimeExitReason};
 use crate::shared::trans::input::{
     CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
 };
@@ -168,7 +168,7 @@ pub fn run_entry_fixture(
         DifferentialError::Verify(message) => format!("verifier rejected `{name}`: {message}"),
         other => other.to_string(),
     })?;
-    compare_differential(name, &run.original, &run.report).map_err(|mismatch| mismatch.message)?;
+    compare_differential(name, &run).map_err(|mismatch| mismatch.message)?;
 
     Ok(CaseReport {
         name,
@@ -201,7 +201,18 @@ pub struct DifferentialRun {
     pub original: ExecutionResult,
     /// Where the original was stopped to match a `Budget` exit of the fragment.
     pub original_cap: Option<InstanceCap>,
+    /// When the original faulted: the store units the fragment may already have
+    /// written (`faulting_store_footprint`). Empty otherwise.
+    pub original_footprint: Vec<StoreUnit>,
     pub report: URuntimeReport,
+}
+
+/// One store unit (one access) of an instruction, with the value it writes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StoreUnit {
+    pub addr: u64,
+    pub size: u8,
+    pub value: u64,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -271,14 +282,91 @@ pub fn run_differential(
         }
         _ => DifferentialError::Original(err),
     })?;
+    let original_footprint = faulting_store_footprint(&text_bytes, text_base, &original)
+        .map_err(|message| DifferentialError::Original(OriginalRunError::Harness(message)))?;
     Ok(DifferentialRun {
         fragment: runtime.fragment,
         encoded_fragment,
         original,
         original_cap,
+        original_footprint,
         report,
     })
 }
+
+/// pipeline.md "Fault sites (A5)", store footprint: a store split into several
+/// user accesses (STP) that faults on a later one has already written the earlier
+/// units, which userspace then rewrites when it re-executes the instruction. So
+/// each of those units may hold its old or its new value. Returns them with the
+/// value the store writes there; empty unless a write before the faulting access
+/// of the faulting instruction succeeded.
+fn faulting_store_footprint(
+    text: &[u8],
+    text_base: u64,
+    original: &ExecutionResult,
+) -> Result<Vec<StoreUnit>, String> {
+    let HaltReason::Fault(fault) = original.halt_reason else {
+        return Ok(Vec::new());
+    };
+    let insn = match admit_at(&MockCodeProvider::new(text_base, text), fault.pc)
+        .map_err(|err| err.to_string())?
+    {
+        Ok(insn) => insn.inner,
+        Err(exit) => return Err(format!("faulting pc {:#x} is an exit: {exit:?}", fault.pc)),
+    };
+    let execute = |state: &mut MachineState| {
+        let mut log = Vec::new();
+        let result = arm64::execute_insn(
+            insn,
+            fault.pc,
+            state,
+            &mut arm64::AccessContext::Original {
+                counter: None,
+                log: Some(&mut log),
+            },
+        );
+        (result, log)
+    };
+
+    // The accesses before the faulting one passed their checks. (An SP alignment
+    // fault logs none: it happens before any access.)
+    let (_, log) = execute(&mut original.state.clone());
+    let written_before_fault = log
+        .iter()
+        .take(log.len().saturating_sub(1))
+        .filter(|logged| logged.access.kind == model::AccessKind::Write)
+        .map(|logged| logged.access)
+        .collect::<Vec<_>>();
+    if written_before_fault.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Their new values: rerun with the faulting access's pages writable.
+    let mut state = original.state.clone();
+    let end = fault
+        .access
+        .addr
+        .checked_add(u64::from(fault.access.size))
+        .ok_or_else(|| format!("faulting access at {:#x} wraps", fault.access.addr))?;
+    let first_page = fault.access.addr & !(PAGE_SIZE - 1);
+    let end_page = (end + PAGE_SIZE - 1) & !(PAGE_SIZE - 1);
+    state.map_user_range(first_page, end_page, PagePerm::ReadWrite)?;
+    match execute(&mut state) {
+        (Ok(_), _) => Ok(written_before_fault
+            .iter()
+            .map(|access| StoreUnit {
+                addr: access.addr,
+                size: access.size,
+                value: state.read_le(access.addr, access.size),
+            })
+            .collect()),
+        (Err(err), _) => Err(format!(
+            "instruction at {:#x} still fails with its faulting page writable: {err:?}",
+            fault.pc
+        )),
+    }
+}
+
 
 /// Runs a fragment to its halt like `URuntime::run`, and, when it ends in a `Budget`
 /// exit at back-edge `pc`, returns where the original run must stop to match it.
@@ -413,14 +501,23 @@ pub struct Mismatch {
 }
 
 /// The differential oracle: the fragment must end in the original's user
-/// state with a corresponding halt. The only copy of this check; the fixture
+/// state with a corresponding halt, except that each unit of a faulting store's
+/// footprint may hold its new value. The only copy of this check; the fixture
 /// suite, `trace-tui --check` and the fuzzer all use it.
-pub fn compare_differential(
-    name: &str,
-    original: &ExecutionResult,
-    report: &URuntimeReport,
-) -> Result<(), Mismatch> {
-    if original.state != report.state {
+pub fn compare_differential(name: &str, run: &DifferentialRun) -> Result<(), Mismatch> {
+    let (original, report) = (&run.original, &run.report);
+    let mut fragment_state = report.state.clone();
+    for unit in &run.original_footprint {
+        let got = fragment_state.read_le(unit.addr, unit.size);
+        if got != original.state.read_le(unit.addr, unit.size) && got == unit.value {
+            fragment_state.write_le(
+                unit.addr,
+                unit.size,
+                original.state.read_le(unit.addr, unit.size),
+            );
+        }
+    }
+    if original.state != fragment_state {
         return Err(Mismatch {
             kind: MismatchKind::State,
             message: format!(
@@ -958,6 +1055,44 @@ mod tests {
             &[cfg.blocks[0].start_addr, base_pc + 8]
         );
         assert_eq!(&*cfg.blocks[3].next, &[base_pc + 8]);
+    }
+
+    /// A pair store whose second unit faults (read-only page): the fragment has
+    /// already stored the first unit, which the oracle accepts as the store
+    /// footprint (pipeline.md "Fault sites (A5)").
+    #[test]
+    fn faulting_pair_store_may_leave_its_first_unit_written() {
+        let text_base = FIXTURE_TEXT_BASE;
+        let svc = encode(A64Insn::SvcSvcExException {
+            imm16: A64Imm::unsigned(0, 16),
+        });
+        let stp = encode(A64Insn::StpGenStp64LdstpairOff {
+            rt2: A64Reg::x(1),
+            rt: A64Reg::x(0),
+            mem: A64Mem::offset(A64Reg::x_sp(2), A64Imm::scaled_signed(0, 7, 3)),
+        });
+        let text = [svc, stp]
+            .iter()
+            .flat_map(|word| word.to_le_bytes())
+            .collect::<Vec<u8>>();
+        let mut state = default_fixture_state();
+        state.write_x(0, 0x1111);
+        state.write_x(1, 0x2222);
+        state.write_x(2, FIXTURE_RO_BASE - 8);
+
+        let run = run_differential(text_base, text, text_base + 4, &state, None, &mut |_| {})
+            .unwrap();
+        assert_eq!(
+            run.original_footprint,
+            [StoreUnit {
+                addr: FIXTURE_RO_BASE - 8,
+                size: 8,
+                value: 0x1111,
+            }]
+        );
+        assert_eq!(run.report.state.read_u64(FIXTURE_RO_BASE - 8), 0x1111);
+        assert_eq!(run.original.state.read_u64(FIXTURE_RO_BASE - 8), 0);
+        compare_differential("pair-store-footprint", &run).unwrap();
     }
 
     fn encode(insn: A64Insn) -> u32 {
