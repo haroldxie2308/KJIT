@@ -678,8 +678,12 @@ pub fn pretty_runtime_exit(exit: RuntimeExitReason) -> String {
         RuntimeExitReason::Ret { lr_reg } => {
             format!("runtime_exit=ret lr={}", reg_name(A64Reg::x(lr_reg)))
         }
-        RuntimeExitReason::Unsupported { pc, word } => {
-            format!("runtime_exit=unsupported pc={pc:#x} word={word:#010x}")
+        RuntimeExitReason::Unsupported {
+            pc,
+            word: Some(word),
+        } => format!("runtime_exit=unsupported pc={pc:#x} word={word:#010x}"),
+        RuntimeExitReason::Unsupported { pc, word: None } => {
+            format!("runtime_exit=unsupported pc={pc:#x} word=unreadable")
         }
     }
 }

@@ -27,7 +27,7 @@ fn harness_fragment_bytes(
     entry_pc: u64,
     text_words: &[u32],
 ) -> Result<Vec<u8>, String> {
-    let text_bytes = text_words
+    let text_bytes: Vec<u8> = text_words
         .iter()
         .flat_map(|word| word.to_le_bytes())
         .collect();

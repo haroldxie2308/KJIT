@@ -204,7 +204,7 @@ help:
 		'spec-gen' 'Generate the checked-in ARM64 subset tables from the Arm XML bundle' \
 		'harness-test' 'Run the standalone harness tests' \
 		'harness-test-native' 'Run the harness tests plus the native hardware oracle on Linux arm64 (container on macOS)' \
-		'fuzz' 'Differential fuzzer: SEED=, ITERS=, MAX_LEN=, FUZZ_ARGS= (e.g. --no-fall-off, --native)' \
+		'fuzz' 'Differential fuzzer: SEED=, ITERS=, MAX_LEN=, FUZZ_ARGS= (e.g. --native)' \
 		'harness-dump-cfg' 'Assemble the toy AArch64 fixture and print its basic blocks' \
 		'harness-tui' 'Open the full-pipeline trace TUI; use ASM=path/to/file.s to select a fixture' \
 		'tui' 'Alias for harness-tui' \

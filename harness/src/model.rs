@@ -80,7 +80,6 @@ pub struct MachineState {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HaltReason {
-    FellOffEnd,
     RuntimeExit {
         reason: RuntimeExitReason,
     },

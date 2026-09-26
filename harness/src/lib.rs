@@ -63,19 +63,21 @@ pub struct InstanceCap {
     pub instance: u64,
 }
 
-pub struct MockCodeProvider {
+/// Text at `base_pc`, owned (`Vec<u8>`) or borrowed (`&[u8]`, as the original
+/// interpreter holds it).
+pub struct MockCodeProvider<B = Vec<u8>> {
     base_pc: u64,
-    bytes: Vec<u8>,
+    bytes: B,
 }
 
-impl MockCodeProvider {
-    pub fn new(base_pc: u64, bytes: Vec<u8>) -> Self {
+impl<B: AsRef<[u8]>> MockCodeProvider<B> {
+    pub fn new(base_pc: u64, bytes: B) -> Self {
         Self { base_pc, bytes }
     }
 
     pub fn slice_from(&self, pc: u64) -> Result<&[u8], String> {
         let offset = self.offset(pc, 0).map_err(|err| err.to_string())?;
-        Ok(&self.bytes[offset..])
+        Ok(&self.bytes.as_ref()[offset..])
     }
 
     fn offset(&self, pc: u64, len: usize) -> Result<usize, CodeReadError> {
@@ -88,21 +90,21 @@ impl MockCodeProvider {
         let Some(end) = offset.checked_add(len) else {
             return Err(CodeReadError::Unmapped { pc, len });
         };
-        if relative % 4 != 0 || end > self.bytes.len() {
+        if relative % 4 != 0 || end > self.bytes.as_ref().len() {
             return Err(CodeReadError::Unmapped { pc, len });
         }
         Ok(offset)
     }
 }
 
-impl CodeProvider for MockCodeProvider {
+impl<B: AsRef<[u8]>> CodeProvider for MockCodeProvider<B> {
     fn entry_addr(&self) -> u64 {
         self.base_pc
     }
 
     fn read_exact(&self, pc: u64, dst: &mut [u8]) -> Result<(), CodeReadError> {
         let offset = self.offset(pc, dst.len())?;
-        dst.copy_from_slice(&self.bytes[offset..offset + dst.len()]);
+        dst.copy_from_slice(&self.bytes.as_ref()[offset..offset + dst.len()]);
         Ok(())
     }
 }
@@ -638,7 +640,6 @@ pub(crate) fn runtime_halt_matches_original(original: &ExecutionResult, halt: &U
                 target_pc,
             },
         ) => pc == *target_pc,
-        (HaltReason::FellOffEnd, URuntimeHalt::FellOffFragment { .. }) => true,
         _ => false,
     }
 }

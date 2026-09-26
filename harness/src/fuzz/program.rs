@@ -78,21 +78,20 @@ impl Program {
     }
 
     /// Structural invariants every generated or minimized program keeps:
-    /// - every branch target is a slot (translation can't start past the text);
-    /// - the last slot is not a conditional branch or SVC, whose fallthrough
-    ///   would be past the text (the CFG builder can't read it);
+    /// - every branch target is a slot or the first PC past the text (where the
+    ///   translated code takes an `Unreadable` exit, as it does when falling off);
     /// - no ADR/ADRP computes an address inside the body: a register branch to
     ///   it would chain into the fragment, which the original interpreter does
     ///   not model;
     /// - every slot encodes.
     pub fn validate(&self) -> Result<(), String> {
-        let Some(last) = self.slots.last() else {
+        if self.slots.is_empty() {
             return Err("empty program".to_string());
-        };
+        }
         let words = self.words()?;
         for (index, slot) in self.slots.iter().enumerate() {
             if let Slot::Branch { target, .. } = slot {
-                if *target >= self.slots.len() {
+                if *target > self.slots.len() {
                     return Err(format!(
                         "slot {index}: branch target {target} past the text"
                     ));
@@ -107,19 +106,6 @@ impl Program {
                     ));
                 }
             }
-        }
-        let last_pc = slot_pc(self.slots.len() - 1);
-        let falls_past_end = match *last {
-            Slot::Branch { insn, .. } => insn.conditional_targets(last_pc).is_some(),
-            Slot::Word(word) => A64Insn::decode(word).is_some_and(|insn| {
-                matches!(
-                    insn.runtime_exit_reason(last_pc),
-                    Some(crate::shared::trans::cfg::RuntimeExitReason::Svc { .. })
-                ) || insn.conditional_targets(last_pc).is_some()
-            }),
-        };
-        if falls_past_end {
-            return Err("last slot falls through past the text".to_string());
         }
         Ok(())
     }

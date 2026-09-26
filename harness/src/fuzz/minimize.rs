@@ -356,16 +356,11 @@ pub fn write_fixture(
     ));
     text.push_str(&format!(
         "// Found by: cargo run --release --manifest-path harness/Cargo.toml --bin fuzz -- \\\n\
-         //   --seed {:#x} --start {} --iters 1 --max-len {} --fault-per-mille {}{}{}\n",
+         //   --seed {:#x} --start {} --iters 1 --max-len {} --fault-per-mille {}{}\n",
         origin.seed,
         origin.index,
         origin.gen.max_len,
         origin.gen.fault_per_mille,
-        if origin.gen.fall_off {
-            ""
-        } else {
-            " --no-fall-off"
-        },
         if origin.gen.sp_aligned {
             " --sp-aligned"
         } else {

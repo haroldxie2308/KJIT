@@ -316,7 +316,10 @@ fn unsupported_trace_insn(
     unsupported: UnsupportedInsn,
 ) -> Result<TraceInsn, String> {
     let UnsupportedInsn { pc, word } = unsupported;
-    let runtime_exit = Some(RuntimeExitReason::Unsupported { pc, word });
+    let runtime_exit = Some(RuntimeExitReason::Unsupported {
+        pc,
+        word: Some(word),
+    });
     match decode_word(word, pc) {
         Ok(decoded) => Ok(TraceInsn {
             direct_branch_target: None,

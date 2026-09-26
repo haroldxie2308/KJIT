@@ -27,6 +27,11 @@ pub const fn reg_virt_scratch_gpr(index: usize) -> Option<u8> {
     Some(REG_VIRT_SCRATCH_GPR_START + index as u8)
 }
 
+/// RET_PARAM0 of an `Unsupported` exit at a PC whose word could not be read (the
+/// translated code ran into the end of the readable text). A real word is always
+/// <= `u32::MAX`, so this never collides with one.
+pub const UNSUPPORTED_WORD_UNREADABLE: u64 = u64::MAX;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RetStatus {
     Svc,
@@ -35,8 +40,10 @@ pub enum RetStatus {
     Br,
     Ret,
     Mem,
-    /// Undecodable instruction; userspace resumes natively at it.
-    /// RET_PARAM0 = raw word (zero-extended), RET_PARAM1 = its PC.
+    /// Undecodable or rejected instruction, or a PC past the readable text;
+    /// userspace resumes natively at it. RET_PARAM0 = raw word (zero-extended),
+    /// or `UNSUPPORTED_WORD_UNREADABLE` when no word could be read; RET_PARAM1 =
+    /// its PC.
     Unsupported,
     /// The back-edge budget ran out before a back-edge branch; userspace resumes
     /// natively at it. RET_PARAM0 = the branch's raw word, RET_PARAM1 = its PC.
