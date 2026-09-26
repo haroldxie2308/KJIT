@@ -3,6 +3,7 @@ extern crate alloc;
 pub mod a64_pretty;
 pub mod active_step;
 pub mod explorer;
+pub mod golden;
 pub mod arm64;
 pub mod model;
 pub mod runtime;
@@ -295,7 +296,7 @@ pub fn encode_legacy_translated_program(program: &TranslatedProgram) -> Result<V
     Ok(bytes)
 }
 
-fn encode_fragment(fragment: &ExecutionFragment) -> Result<Vec<u8>, String> {
+pub fn encode_fragment(fragment: &ExecutionFragment) -> Result<Vec<u8>, String> {
     let mut bytes = Vec::with_capacity(fragment.insns.len() * 4);
     for insn in &fragment.insns {
         let word = insn

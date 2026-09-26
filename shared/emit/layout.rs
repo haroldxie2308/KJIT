@@ -298,8 +298,17 @@ fn encode_branch_delta(
         });
     }
 
-    let align = 1_i128 << scale;
-    let delta = target_offset as i128 - source_offset as i128;
+    // No i128 here: the kernel has no 128-bit division builtins (__divti3).
+    // Both offsets are non-negative once in i64, so the subtraction cannot overflow.
+    let (Ok(source), Ok(target)) = (i64::try_from(source_offset), i64::try_from(target_offset))
+    else {
+        return Err(LayoutError::BranchOutOfRange {
+            insn_index,
+            target_original_pc,
+        });
+    };
+    let align = 1_i64 << scale;
+    let delta = target - source;
     if delta % align != 0 {
         return Err(LayoutError::UnalignedBranchTarget {
             insn_index,
@@ -308,8 +317,8 @@ fn encode_branch_delta(
     }
 
     let scaled = delta / align;
-    let min = -(1_i128 << (bits - 1));
-    let max = (1_i128 << (bits - 1)) - 1;
+    let min = -(1_i64 << (bits - 1));
+    let max = (1_i64 << (bits - 1)) - 1;
     if scaled < min || scaled > max {
         return Err(LayoutError::BranchOutOfRange {
             insn_index,
@@ -317,7 +326,7 @@ fn encode_branch_delta(
         });
     }
 
-    Ok((scaled & ((1_i128 << bits) - 1)) as u32)
+    Ok((scaled & ((1_i64 << bits) - 1)) as u32)
 }
 
 fn pc_relative_target(pc: u64, encoded: u32, bits: u8, scale: u8) -> u64 {
