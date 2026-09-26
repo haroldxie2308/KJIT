@@ -129,7 +129,7 @@ guest-run:
 
 # K2 guest suite (tests/guest/run-k2.sh, in the rootfs since make guest-rootfs).
 K2_ITERATIONS ?= 1
-guest-tests:
+guest-tests: guest-rootfs
 	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/guest-run.sh --profile $(GUEST_PROFILE) \
 		--timeout 3600 -- "sh /opt/kjit-tests/run-k2.sh $(K2_ITERATIONS)"
 
