@@ -29,6 +29,10 @@ pub(super) enum Form {
     UserAccess {
         mem: A64Mem,
     },
+    /// A user-code load/store/prefetch form the translator only ever lowers (to
+    /// `LDTR*`/`STTR*`, or a `NOP` for PRFM): never valid in a fragment, not even on
+    /// runtime memory, because it has no role there.
+    UserOnly,
     /// Every other load/store: allowed only on the runtime frame or `pt_regs`.
     /// `bytes` is the whole contiguous footprint (16 for a 64-bit pair).
     RuntimeAccess {
@@ -44,11 +48,94 @@ pub(super) enum Form {
 pub(super) fn classify(insn: A64Insn) -> Form {
     match insn {
         // The one list of user-access forms (tmp/pipeline.md, "Privilege model").
-        // Unprivileged byte/half/signed forms join this arm when specgen adds them.
         A64Insn::LdtrLdtr32LdstUnpriv { mem, .. }
         | A64Insn::LdtrLdtr64LdstUnpriv { mem, .. }
+        | A64Insn::LdtrbLdtrb32LdstUnpriv { mem, .. }
+        | A64Insn::LdtrhLdtrh32LdstUnpriv { mem, .. }
+        | A64Insn::LdtrsbLdtrsb32LdstUnpriv { mem, .. }
+        | A64Insn::LdtrsbLdtrsb64LdstUnpriv { mem, .. }
+        | A64Insn::LdtrshLdtrsh32LdstUnpriv { mem, .. }
+        | A64Insn::LdtrshLdtrsh64LdstUnpriv { mem, .. }
+        | A64Insn::LdtrswLdtrsw64LdstUnpriv { mem, .. }
         | A64Insn::SttrSttr32LdstUnpriv { mem, .. }
-        | A64Insn::SttrSttr64LdstUnpriv { mem, .. } => Form::UserAccess { mem },
+        | A64Insn::SttrSttr64LdstUnpriv { mem, .. }
+        | A64Insn::SttrbSttrb32LdstUnpriv { mem, .. }
+        | A64Insn::SttrhSttrh32LdstUnpriv { mem, .. } => Form::UserAccess { mem },
+
+        // User-code memory forms (A7b). The runtime never needs them and a user
+        // access must be `LDTR*`/`STTR*`, so they are rejected wherever they appear.
+        A64Insn::LdpGenLdp32LdstpairPost { .. }
+        | A64Insn::LdpGenLdp32LdstpairPre { .. }
+        | A64Insn::LdpGenLdp32LdstpairOff { .. }
+        | A64Insn::StpGenStp32LdstpairPost { .. }
+        | A64Insn::StpGenStp32LdstpairPre { .. }
+        | A64Insn::StpGenStp32LdstpairOff { .. }
+        | A64Insn::LdpswLdpsw64LdstpairPost { .. }
+        | A64Insn::LdpswLdpsw64LdstpairPre { .. }
+        | A64Insn::LdpswLdpsw64LdstpairOff { .. }
+        | A64Insn::LdrbImmLdrb32LdstImmpost { .. }
+        | A64Insn::LdrbImmLdrb32LdstImmpre { .. }
+        | A64Insn::LdrbImmLdrb32LdstPos { .. }
+        | A64Insn::StrbImmStrb32LdstImmpost { .. }
+        | A64Insn::StrbImmStrb32LdstImmpre { .. }
+        | A64Insn::StrbImmStrb32LdstPos { .. }
+        | A64Insn::LdrhImmLdrh32LdstImmpost { .. }
+        | A64Insn::LdrhImmLdrh32LdstImmpre { .. }
+        | A64Insn::LdrhImmLdrh32LdstPos { .. }
+        | A64Insn::StrhImmStrh32LdstImmpost { .. }
+        | A64Insn::StrhImmStrh32LdstImmpre { .. }
+        | A64Insn::StrhImmStrh32LdstPos { .. }
+        | A64Insn::LdrsbImmLdrsb32LdstImmpost { .. }
+        | A64Insn::LdrsbImmLdrsb64LdstImmpost { .. }
+        | A64Insn::LdrsbImmLdrsb32LdstImmpre { .. }
+        | A64Insn::LdrsbImmLdrsb64LdstImmpre { .. }
+        | A64Insn::LdrsbImmLdrsb32LdstPos { .. }
+        | A64Insn::LdrsbImmLdrsb64LdstPos { .. }
+        | A64Insn::LdrshImmLdrsh32LdstImmpost { .. }
+        | A64Insn::LdrshImmLdrsh64LdstImmpost { .. }
+        | A64Insn::LdrshImmLdrsh32LdstImmpre { .. }
+        | A64Insn::LdrshImmLdrsh64LdstImmpre { .. }
+        | A64Insn::LdrshImmLdrsh32LdstPos { .. }
+        | A64Insn::LdrshImmLdrsh64LdstPos { .. }
+        | A64Insn::LdrswImmLdrsw64LdstImmpost { .. }
+        | A64Insn::LdrswImmLdrsw64LdstImmpre { .. }
+        | A64Insn::LdrswImmLdrsw64LdstPos { .. }
+        | A64Insn::LdurGenLdur32LdstUnscaled { .. }
+        | A64Insn::LdurGenLdur64LdstUnscaled { .. }
+        | A64Insn::SturGenStur32LdstUnscaled { .. }
+        | A64Insn::SturGenStur64LdstUnscaled { .. }
+        | A64Insn::LdurbLdurb32LdstUnscaled { .. }
+        | A64Insn::SturbSturb32LdstUnscaled { .. }
+        | A64Insn::LdurhLdurh32LdstUnscaled { .. }
+        | A64Insn::SturhSturh32LdstUnscaled { .. }
+        | A64Insn::LdursbLdursb32LdstUnscaled { .. }
+        | A64Insn::LdursbLdursb64LdstUnscaled { .. }
+        | A64Insn::LdurshLdursh32LdstUnscaled { .. }
+        | A64Insn::LdurshLdursh64LdstUnscaled { .. }
+        | A64Insn::LdurswLdursw64LdstUnscaled { .. }
+        | A64Insn::LdrRegGenLdr32LdstRegoff { .. }
+        | A64Insn::LdrRegGenLdr64LdstRegoff { .. }
+        | A64Insn::StrRegGenStr32LdstRegoff { .. }
+        | A64Insn::StrRegGenStr64LdstRegoff { .. }
+        | A64Insn::LdrbRegLdrb32bLdstRegoff { .. }
+        | A64Insn::LdrbRegLdrb32blLdstRegoff { .. }
+        | A64Insn::StrbRegStrb32bLdstRegoff { .. }
+        | A64Insn::StrbRegStrb32blLdstRegoff { .. }
+        | A64Insn::LdrhRegLdrh32LdstRegoff { .. }
+        | A64Insn::StrhRegStrh32LdstRegoff { .. }
+        | A64Insn::LdrsbRegLdrsb32bLdstRegoff { .. }
+        | A64Insn::LdrsbRegLdrsb32blLdstRegoff { .. }
+        | A64Insn::LdrsbRegLdrsb64bLdstRegoff { .. }
+        | A64Insn::LdrsbRegLdrsb64blLdstRegoff { .. }
+        | A64Insn::LdrshRegLdrsh32LdstRegoff { .. }
+        | A64Insn::LdrshRegLdrsh64LdstRegoff { .. }
+        | A64Insn::LdrswRegLdrsw64LdstRegoff { .. }
+        | A64Insn::LdrLitGenLdr32Loadlit { .. }
+        | A64Insn::LdrLitGenLdr64Loadlit { .. }
+        | A64Insn::LdrswLitLdrsw64Loadlit { .. }
+        | A64Insn::PrfmImmPrfmPLdstPos { .. }
+        | A64Insn::PrfmLitPrfmPLoadlit { .. }
+        | A64Insn::PrfmRegPrfmPLdstRegoff { .. } => Form::UserOnly,
 
         A64Insn::LdrImmGenLdr32LdstImmpost { mem, .. }
         | A64Insn::LdrImmGenLdr32LdstImmpre { mem, .. }

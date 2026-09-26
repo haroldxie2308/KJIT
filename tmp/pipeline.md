@@ -390,10 +390,16 @@ address.
      reg-virt keeps user x29 in x16, so an unwinder interrupting a fragment still
      follows a valid frame record.
 3. Memory. Every load/store is one of:
-   - a user access: `LDTR`/`STTR` (the single list in `rules::classify`; A7b's
-     byte/half/signed unprivileged forms join that arm). It has a fault-site
-     entry at its offset and its base is not SP. The table is strictly
-     increasing and every entry is on a user access.
+   - a user access: the LDTR/STTR family (the single list in `rules::classify`,
+     all 13 forms of "Privilege model", byte/half/signed included; the rule is
+     the same for every size). It has a fault-site entry at its offset and its
+     base is not SP. The table is strictly increasing and every entry is on a
+     user access.
+   - never a user-code memory form of the subset (A7b: byte/half/signed
+     immediate, unscaled, register offset, literal, 32-bit pairs, LDPSW, PRFM):
+     translation only lowers them, so one in a fragment is `UserOnlyForm`, even
+     on runtime memory and even with a fault-site entry
+     (`FaultSiteNotUserAccess`). PRFM is emitted as `NOP`.
    - a runtime access, offset addressing only (no writeback), either
      - SP-based inside the user-state frame slots `[16, 80)` (stack-backed
        x12..x17, user x29, user sp), or the single kernel-slot read
@@ -407,7 +413,7 @@ address.
        accessible. Proof is forward dataflow in straight-line code: the register
        was loaded by `ldr xN, [sp, #176]` and not written since, with no join
        point in between.
-   - Everything else is rejected: exclusives, atomics, SIMD, prefetch, DC/IC/AT
+   - Everything else is rejected: exclusives, atomics, SIMD, PRFUM/RPRFM, DC/IC/AT
      are outside the decoded subset (rule 1); pair or pre/post forms not
      matching the above fail the base/range/writeback checks.
 4. Control flow.

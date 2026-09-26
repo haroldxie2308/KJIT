@@ -42,11 +42,45 @@ const FOREIGN_WORDS: &[(&str, u32)] = &[
     ("stxr w2, x0, [x1]", 0xc802_7c20),
     ("ldadd x0, x1, [x2]", 0xf820_0041),
     ("ldr q0, [x1]", 0x3dc0_0020),
+    ("ldr d0, [x1, #8]", 0xfd40_0420),
+    ("ldr q0, <literal>", 0x9c00_0000),
+    ("ldnp x0, x1, [x2]", 0xa840_0440),
+    ("ldapr x0, [x1]", 0xf8bf_c020),
+    ("prfum pldl1keep, [x0, #1]", 0xf880_1000),
+    ("rprfm pldkeep, x22, [x30]", 0xf8b6_4bd8),
+    // Register offset with a sub-word index: matches the diagram, UNDEFINED.
+    ("ldr x0, [x1, w2, uxtb]", 0xf862_0820),
+];
+
+/// User-code memory forms of the subset (A7b). Translation only lowers them, so
+/// each is rejected anywhere in a fragment, even on runtime memory.
+const USER_ONLY_WORDS: &[(&str, u32)] = &[
     ("prfm pldl1keep, [x1]", 0xf980_0020),
+    ("prfm pldl1keep, <literal>", 0xd800_0020),
+    ("prfm pldl2strm, [x0, x1, lsl #3]", 0xf8a1_7803),
     ("ldur x0, [x1, #-8]", 0xf85f_8020),
+    ("sturb w0, [sp, #16]", 0x3801_03e0),
     ("ldr x0, [x1, x2]", 0xf862_6820),
+    ("str x0, [sp, x1, lsl #3]", 0xf821_7be0),
+    ("ldrb w0, [x1, x2, lsl #0]", 0x3862_7820),
     ("ldr x0, <literal>", 0x5800_0000),
+    ("ldrsw x0, <literal>", 0x9800_0000),
+    ("ldrb w0, [sp, #16]", 0x3940_43e0),
+    ("ldrsh x0, [x1, #2]", 0x7980_0420),
+    ("ldrsw x0, [sp, #16]", 0xb980_13e0),
+    ("strh w0, [x1], #2", 0x7800_2420),
+    ("ldp w0, w1, [sp, #16]", 0x2942_07e0),
+    ("stp wzr, wzr, [sp, #16]", 0x2902_7fff),
+    ("ldpsw x0, x1, [x2]", 0x6940_0440),
+];
+
+/// Unprivileged forms beyond `LDTR`/`STTR` (A7b), for insertion without a
+/// fault-site entry.
+const UNPRIVILEGED_WORDS: &[(&str, u32)] = &[
     ("ldtrb w0, [x1]", 0x3840_0820),
+    ("ldtrsh x0, [x1, #-2]", 0x789f_e820),
+    ("ldtrsw x0, [x1, #4]", 0xb880_4820),
+    ("sttrh w0, [x1]", 0x7800_0820),
 ];
 
 #[derive(Default)]
@@ -195,60 +229,36 @@ impl Suite {
         self.random_words(fixture);
     }
 
-    /// LDTR -> LDR / STTR -> STR with the same registers and offset (0 when the
-    /// unscaled offset has no scaled form), table intact and with the site dropped.
+    /// Every `LDTR*`/`STTR*` turned into the plain user form of the same size and
+    /// extension (`LDTRB` -> `LDRB`, ...): the scaled immediate form (offset 0 when
+    /// the unscaled offset has no scaled form) and the unscaled `LDUR*`/`STUR*` form
+    /// with the identical offset. Table intact, and with the site dropped.
     fn unprivileged_to_plain(&mut self, fixture: &Fixture) {
         for index in fixture.body() {
             let Some(insn) = fixture.decoded(index) else {
                 continue;
             };
-            let (class, plain) = match insn {
-                A64Insn::LdtrLdtr64LdstUnpriv { rt, mem } => (
-                    "LDTR -> LDR",
-                    A64Insn::LdrImmGenLdr64LdstPos {
-                        rt,
-                        mem: scaled_offset(mem, 3),
-                    },
-                ),
-                A64Insn::LdtrLdtr32LdstUnpriv { rt, mem } => (
-                    "LDTR -> LDR",
-                    A64Insn::LdrImmGenLdr32LdstPos {
-                        rt,
-                        mem: scaled_offset(mem, 2),
-                    },
-                ),
-                A64Insn::SttrSttr64LdstUnpriv { rt, mem } => (
-                    "STTR -> STR",
-                    A64Insn::StrImmGenStr64LdstPos {
-                        rt,
-                        mem: scaled_offset(mem, 3),
-                    },
-                ),
-                A64Insn::SttrSttr32LdstUnpriv { rt, mem } => (
-                    "STTR -> STR",
-                    A64Insn::StrImmGenStr32LdstPos {
-                        rt,
-                        mem: scaled_offset(mem, 2),
-                    },
-                ),
-                _ => continue,
+            let Some((class, plain, unscaled)) = plain_forms(insn) else {
+                continue;
             };
-            let word = enc(plain);
-            self.replace(class, fixture, index, word, plain.key());
+            for (class, plain) in [(class, plain), ("LDTR*/STTR* -> LDUR*/STUR*", unscaled)] {
+                let word = enc(plain);
+                self.replace(class, fixture, index, word, plain.key());
 
-            let mut words = fixture.words.clone();
-            words[index] = word;
-            let mut tables = clone_tables(&fixture.tables);
-            tables
-                .fault_sites
-                .retain(|site| site.access_offset != index * 4);
-            self.expect_reject(
-                "LDTR/STTR -> LDR/STR, site dropped",
-                fixture,
-                format!("{} at {:#x}", plain.key(), index * 4),
-                &words,
-                &tables,
-            );
+                let mut words = fixture.words.clone();
+                words[index] = word;
+                let mut tables = clone_tables(&fixture.tables);
+                tables
+                    .fault_sites
+                    .retain(|site| site.access_offset != index * 4);
+                self.expect_reject(
+                    "LDTR*/STTR* -> plain form, site dropped",
+                    fixture,
+                    format!("{} at {:#x}", plain.key(), index * 4),
+                    &words,
+                    &tables,
+                );
+            }
         }
     }
 
@@ -362,6 +372,30 @@ impl Suite {
                 *word,
                 what,
             );
+        }
+        for (what, word) in USER_ONLY_WORDS {
+            self.replace_everywhere("insert user-only memory form (A7b)", fixture, *word, what);
+        }
+        // A user access where the table has no entry. (Swapping one user access for
+        // another at a fault site is not a violation, so those words are skipped.)
+        for (what, word) in UNPRIVILEGED_WORDS {
+            for index in fixture.body() {
+                if fixture
+                    .tables
+                    .fault_sites
+                    .iter()
+                    .any(|site| site.access_offset == index * 4)
+                {
+                    continue;
+                }
+                self.replace(
+                    "insert LDTR*/STTR* without a fault site",
+                    fixture,
+                    index,
+                    *word,
+                    what,
+                );
+            }
         }
         for insn in [
             A64Insn::AdrAdrOnlyPcreladdr {
@@ -926,6 +960,118 @@ fn branch_role(insn: A64Insn) -> Option<(&'static str, u8, u8)> {
     })
 }
 
+/// For an unprivileged access: (class, scaled plain form, unscaled plain form).
+fn plain_forms(insn: A64Insn) -> Option<(&'static str, A64Insn, A64Insn)> {
+    use A64Insn as I;
+    Some(match insn {
+        I::LdtrLdtr64LdstUnpriv { rt, mem } => (
+            "LDTR -> LDR",
+            I::LdrImmGenLdr64LdstPos {
+                rt,
+                mem: scaled_offset(mem, 3),
+            },
+            I::LdurGenLdur64LdstUnscaled { rt, mem },
+        ),
+        I::LdtrLdtr32LdstUnpriv { rt, mem } => (
+            "LDTR -> LDR",
+            I::LdrImmGenLdr32LdstPos {
+                rt,
+                mem: scaled_offset(mem, 2),
+            },
+            I::LdurGenLdur32LdstUnscaled { rt, mem },
+        ),
+        I::SttrSttr64LdstUnpriv { rt, mem } => (
+            "STTR -> STR",
+            I::StrImmGenStr64LdstPos {
+                rt,
+                mem: scaled_offset(mem, 3),
+            },
+            I::SturGenStur64LdstUnscaled { rt, mem },
+        ),
+        I::SttrSttr32LdstUnpriv { rt, mem } => (
+            "STTR -> STR",
+            I::StrImmGenStr32LdstPos {
+                rt,
+                mem: scaled_offset(mem, 2),
+            },
+            I::SturGenStur32LdstUnscaled { rt, mem },
+        ),
+        I::LdtrbLdtrb32LdstUnpriv { rt, mem } => (
+            "LDTRB/H/SB/SH/SW -> LDRB/H/SB/SH/SW",
+            I::LdrbImmLdrb32LdstPos {
+                rt,
+                mem: scaled_offset(mem, 0),
+            },
+            I::LdurbLdurb32LdstUnscaled { rt, mem },
+        ),
+        I::LdtrhLdtrh32LdstUnpriv { rt, mem } => (
+            "LDTRB/H/SB/SH/SW -> LDRB/H/SB/SH/SW",
+            I::LdrhImmLdrh32LdstPos {
+                rt,
+                mem: scaled_offset(mem, 1),
+            },
+            I::LdurhLdurh32LdstUnscaled { rt, mem },
+        ),
+        I::LdtrsbLdtrsb32LdstUnpriv { rt, mem } => (
+            "LDTRB/H/SB/SH/SW -> LDRB/H/SB/SH/SW",
+            I::LdrsbImmLdrsb32LdstPos {
+                rt,
+                mem: scaled_offset(mem, 0),
+            },
+            I::LdursbLdursb32LdstUnscaled { rt, mem },
+        ),
+        I::LdtrsbLdtrsb64LdstUnpriv { rt, mem } => (
+            "LDTRB/H/SB/SH/SW -> LDRB/H/SB/SH/SW",
+            I::LdrsbImmLdrsb64LdstPos {
+                rt,
+                mem: scaled_offset(mem, 0),
+            },
+            I::LdursbLdursb64LdstUnscaled { rt, mem },
+        ),
+        I::LdtrshLdtrsh32LdstUnpriv { rt, mem } => (
+            "LDTRB/H/SB/SH/SW -> LDRB/H/SB/SH/SW",
+            I::LdrshImmLdrsh32LdstPos {
+                rt,
+                mem: scaled_offset(mem, 1),
+            },
+            I::LdurshLdursh32LdstUnscaled { rt, mem },
+        ),
+        I::LdtrshLdtrsh64LdstUnpriv { rt, mem } => (
+            "LDTRB/H/SB/SH/SW -> LDRB/H/SB/SH/SW",
+            I::LdrshImmLdrsh64LdstPos {
+                rt,
+                mem: scaled_offset(mem, 1),
+            },
+            I::LdurshLdursh64LdstUnscaled { rt, mem },
+        ),
+        I::LdtrswLdtrsw64LdstUnpriv { rt, mem } => (
+            "LDTRB/H/SB/SH/SW -> LDRB/H/SB/SH/SW",
+            I::LdrswImmLdrsw64LdstPos {
+                rt,
+                mem: scaled_offset(mem, 2),
+            },
+            I::LdurswLdursw64LdstUnscaled { rt, mem },
+        ),
+        I::SttrbSttrb32LdstUnpriv { rt, mem } => (
+            "STTRB/H -> STRB/H",
+            I::StrbImmStrb32LdstPos {
+                rt,
+                mem: scaled_offset(mem, 0),
+            },
+            I::SturbSturb32LdstUnscaled { rt, mem },
+        ),
+        I::SttrhSttrh32LdstUnpriv { rt, mem } => (
+            "STTRB/H -> STRB/H",
+            I::StrhImmStrh32LdstPos {
+                rt,
+                mem: scaled_offset(mem, 1),
+            },
+            I::SturhSturh32LdstUnscaled { rt, mem },
+        ),
+        _ => return None,
+    })
+}
+
 fn scaled_offset(mem: A64Mem, log2: u8) -> A64Mem {
     let value = mem.offset_imm().value();
     let size = 1_i64 << log2;
@@ -1039,4 +1185,22 @@ fn verifier_rejects_every_mutation_of_every_fixture_fragment() {
         "verifier escapes:\n{}",
         failures.join("\n")
     );
+}
+
+/// The word lists mean what their names say: foreign words do not decode, the
+/// user-only and unprivileged words do (so their classes test the classification,
+/// not the decoder).
+#[test]
+fn mutation_word_lists_are_classified_as_named() {
+    for (what, word) in FOREIGN_WORDS {
+        assert!(decode(*word).is_none(), "{what} decodes");
+    }
+    for (what, word) in USER_ONLY_WORDS {
+        let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
+        assert!(!insn.is_unprivileged_access(), "{what}");
+    }
+    for (what, word) in UNPRIVILEGED_WORDS {
+        let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
+        assert!(insn.is_unprivileged_access(), "{what}");
+    }
 }
