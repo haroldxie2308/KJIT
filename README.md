@@ -402,6 +402,39 @@ broken fault tables, dropped/retargeted/altered budget checks, stray counter
 writes, random words) and requires every deterministic mutation to
 be rejected; it prints a per-class table.
 
+#### Differential fuzzer
+
+`make fuzz SEED=1 ITERS=200000` generates random programs over the supported
+subset and holds each to the fixture oracle (`compare_differential`): the
+interpreter runs the original, `URuntime` runs the translated fragment, and
+final user state and halt must agree. Operands come from the generated form
+metadata (`GENERATED_A64_SUBSET`, operand roles, `mem_operand()`), so a form
+added to `spec/arm64/subset.toml` is fuzzed without fuzzer changes. Programs
+use the fixture layout (hot `svc #0` at `0x10000`), mix ALU, memory, forward
+branches, bounded counter loops, extra `svc #0`, and end in a register exit,
+`bl` out of the text, an undecodable word, or by falling off the end. Registers
+are biased toward x9-x11, x12-x17, x29, x30, SP and XZR; memory bases point
+into the data window, plus a read-only page after it, and a small fraction
+(`--fault-per-mille`) aim at read-only or unmapped pages.
+
+Programs that do not halt within the step limit are discarded, and exits whose
+target is a translated PC (the runtime chains, the interpreter stops) are
+counted as `chained`; neither counts as a pass. A fault is a verdict like any
+other halt: the fragment must leave through that instruction's `Mem` exit with
+the original's state. Every failure
+is minimized (slot deletion, NOP/zero-field simplification, initial state
+pulled toward `default_fixture_state()`), lifted into a `movz/movk/str/add/subs`
+prelude so it runs from the fixture state, and written as a verified `.s`
+fixture under `tmp/fuzz-regress/`. Promote one per bug to
+`tests/arm64/fuzz-pending/` while it fails (the suite skips that directory),
+and to `tests/arm64/` once fixed. `make harness-test` runs a fixed-seed slice
+(2000 programs); its failure count is pinned to the open bugs in
+`fuzz-pending/`. `FUZZ_ARGS` passes `--no-fall-off`, `--sp-aligned`,
+`--max-len`, `--start`, `--regress-dir`, and, on Linux arm64 only, `--native`,
+which also runs every agreeing program on the CPU (interpreter original ==
+native original == native fragment); on macOS run it in the container
+`scripts/native-test.sh` uses.
+
 #### Coverage scan
 
 `make coverage-scan ELF=path/to/aarch64.elf` measures how far the translator

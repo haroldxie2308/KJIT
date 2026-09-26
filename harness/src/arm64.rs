@@ -84,6 +84,16 @@ pub struct OriginalStep {
     pub state: MachineState,
 }
 
+/// An `OriginalStep` without its state snapshot; see `OriginalStepper::advance`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OriginalAdvance {
+    pub pc: u64,
+    pub next_pc: Option<u64>,
+    pub executed: bool,
+    pub runtime_exit: Option<RuntimeExitReason>,
+    pub halt_reason: Option<HaltReason>,
+}
+
 #[derive(Debug)]
 pub struct OriginalStepper<'a> {
     program: &'a [u8],
@@ -153,6 +163,19 @@ impl<'a> OriginalStepper<'a> {
     }
 
     pub fn step(&mut self) -> Result<Option<OriginalStep>, String> {
+        Ok(self.advance()?.map(|advanced| OriginalStep {
+            pc: advanced.pc,
+            next_pc: advanced.next_pc,
+            executed: advanced.executed,
+            runtime_exit: advanced.runtime_exit,
+            halt_reason: advanced.halt_reason,
+            state: self.state.clone(),
+        }))
+    }
+
+    /// `step` without the state snapshot (a full memory copy); read
+    /// `state()` when it is needed.
+    pub fn advance(&mut self) -> Result<Option<OriginalAdvance>, String> {
         if self.stopped {
             return Ok(None);
         }
@@ -169,13 +192,12 @@ impl<'a> OriginalStepper<'a> {
         let insn_index = (offset / 4) as usize;
         if insn_index >= self.program.len() / 4 {
             self.stopped = true;
-            return Ok(Some(OriginalStep {
+            return Ok(Some(OriginalAdvance {
                 pc: self.pc,
                 next_pc: None,
                 executed: false,
                 runtime_exit: None,
                 halt_reason: Some(HaltReason::FellOffEnd),
-                state: self.state.clone(),
             }));
         }
 
@@ -186,13 +208,12 @@ impl<'a> OriginalStepper<'a> {
             Err(UnsupportedInsn { pc, word }) => {
                 let reason = RuntimeExitReason::Unsupported { pc, word };
                 self.stopped = true;
-                return Ok(Some(OriginalStep {
+                return Ok(Some(OriginalAdvance {
                     pc,
                     next_pc: None,
                     executed: false,
                     runtime_exit: Some(reason),
                     halt_reason: Some(HaltReason::RuntimeExit { reason }),
-                    state: self.state.clone(),
                 }));
             }
         };
@@ -200,13 +221,12 @@ impl<'a> OriginalStepper<'a> {
         if let Some(reason) = decoded.inner.runtime_exit_reason(self.pc) {
             apply_runtime_exit_side_effect(decoded.inner, self.pc, &mut self.state);
             self.stopped = true;
-            return Ok(Some(OriginalStep {
+            return Ok(Some(OriginalAdvance {
                 pc: self.pc,
                 next_pc: None,
                 executed: true,
                 runtime_exit: Some(reason),
                 halt_reason: Some(HaltReason::RuntimeExit { reason }),
-                state: self.state.clone(),
             }));
         }
 
@@ -219,25 +239,23 @@ impl<'a> OriginalStepper<'a> {
             Ok(next_pc) => next_pc,
             Err(InsnError::Fault(fault)) => {
                 self.stopped = true;
-                return Ok(Some(OriginalStep {
+                return Ok(Some(OriginalAdvance {
                     pc,
                     next_pc: None,
                     executed: false,
                     runtime_exit: None,
                     halt_reason: Some(HaltReason::Fault(fault)),
-                    state: self.state.clone(),
                 }));
             }
             Err(InsnError::Error(message)) => return Err(message),
         };
         self.pc = next_pc;
-        Ok(Some(OriginalStep {
+        Ok(Some(OriginalAdvance {
             pc,
             next_pc: Some(next_pc),
             executed: true,
             runtime_exit: None,
             halt_reason: None,
-            state: self.state.clone(),
         }))
     }
 }
@@ -1548,7 +1566,7 @@ fn sign_extend_width(value: u64, bits: u8) -> i64 {
 }
 
 /// `AddWithCarry` from the Arm pseudocode, on the low `bits` of both operands.
-fn add_with_carry(x: u64, y: u64, carry_in: bool, bits: u8) -> (u64, Flags) {
+pub(crate) fn add_with_carry(x: u64, y: u64, carry_in: bool, bits: u8) -> (u64, Flags) {
     let mask = width_mask(bits);
     let (x, y) = (x & mask, y & mask);
     let unsigned_sum = u128::from(x) + u128::from(y) + u128::from(carry_in);

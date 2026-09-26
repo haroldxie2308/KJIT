@@ -79,6 +79,12 @@ pub enum URuntimeHalt {
         pc: u64,
         message: String,
     },
+    /// A bounded run (`run_differential` with `StepLimits`) executed its
+    /// budget of fragment instructions or runtime continuations without halting.
+    StepLimit {
+        pc: u64,
+        steps: usize,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -152,8 +158,8 @@ impl URuntime {
     }
 
     pub fn run(&mut self) -> URuntimeReport {
-        match URuntimeStepper::new(self) {
-            Ok(mut stepper) => stepper.run_to_halt(),
+        match URuntimeCursor::new(self) {
+            Ok(mut cursor) => run_cursor_to_halt(self, &mut cursor),
             Err(message) => self.report(
                 URuntimeHalt::ExecutionError {
                     pc: self.config.base_pc,
@@ -305,6 +311,14 @@ impl URuntimeCursor {
     }
 
     fn step(&mut self, runtime: &mut URuntime) -> Result<Option<URuntimeStep>, String> {
+        Ok(self
+            .advance(runtime)?
+            .map(|advanced| advanced.into_step(runtime)))
+    }
+
+    /// One step without its state snapshot, which costs a full memory copy;
+    /// `run_cursor_to_halt` only needs the final report.
+    fn advance(&mut self, runtime: &mut URuntime) -> Result<Option<Advanced>, String> {
         if self.stopped {
             return Ok(None);
         }
@@ -318,14 +332,14 @@ impl URuntimeCursor {
         let Some(index) = runtime.pc_to_index(self.pc) else {
             self.stopped = true;
             let halt = URuntimeHalt::FellOffFragment { pc: self.pc };
-            return Ok(Some(URuntimeStep {
+            return Ok(Some(Advanced {
                 offset: None,
                 insn_index: None,
                 next_offset: None,
                 executed: false,
                 runtime_transition: None,
                 halt: Some(halt),
-                state: runtime.physical_user_state(),
+                snapshot: Snapshot::Physical,
             }));
         };
 
@@ -349,7 +363,7 @@ impl URuntimeCursor {
                     InsnError::Fault(fault) => match runtime.fragment.fault_site(offset) {
                         Some(site) => {
                             self.pc = runtime.config.base_pc + site.stub_offset as u64;
-                            return Ok(Some(URuntimeStep {
+                            return Ok(Some(Advanced {
                                 offset: Some(offset),
                                 insn_index: Some(index),
                                 next_offset: Some(site.stub_offset),
@@ -359,7 +373,7 @@ impl URuntimeCursor {
                                     stub_offset: site.stub_offset,
                                 }),
                                 halt: None,
-                                state: runtime.physical_user_state(),
+                                snapshot: Snapshot::Physical,
                             }));
                         }
                         None => format!(
@@ -373,14 +387,14 @@ impl URuntimeCursor {
                     pc: insn_pc,
                     message,
                 };
-                return Ok(Some(URuntimeStep {
+                return Ok(Some(Advanced {
                     offset: Some(offset),
                     insn_index: Some(index),
                     next_offset: None,
                     executed: true,
                     runtime_transition: None,
                     halt: Some(halt),
-                    state: runtime.physical_user_state(),
+                    snapshot: Snapshot::Physical,
                 }));
             }
         };
@@ -396,14 +410,14 @@ impl URuntimeCursor {
             )?));
         }
 
-        Ok(Some(URuntimeStep {
+        Ok(Some(Advanced {
             offset: Some(offset),
             insn_index: Some(index),
             next_offset: runtime.emitted_pc_to_offset(self.pc),
             executed: true,
             runtime_transition: None,
             halt: None,
-            state: runtime.physical_user_state(),
+            snapshot: Snapshot::Physical,
         }))
     }
 
@@ -414,12 +428,12 @@ impl URuntimeCursor {
         insn_index: Option<usize>,
         next_offset: Option<usize>,
         executed: bool,
-    ) -> Result<URuntimeStep, String> {
+    ) -> Result<Advanced, String> {
         match runtime.handle_runtime_return() {
             RuntimeAction::ContinueAt(offset_to_enter) => {
                 runtime.prepare_entry_at(offset_to_enter)?;
                 self.pc = runtime.config.base_pc;
-                Ok(URuntimeStep {
+                Ok(Advanced {
                     offset,
                     insn_index,
                     next_offset,
@@ -428,21 +442,58 @@ impl URuntimeCursor {
                         offset: offset_to_enter,
                     }),
                     halt: None,
-                    state: runtime.user_state_from_pt_regs(),
+                    snapshot: Snapshot::UserFromPtRegs,
                 })
             }
             RuntimeAction::Stop(halt) => {
                 self.stopped = true;
-                Ok(URuntimeStep {
+                Ok(Advanced {
                     offset,
                     insn_index,
                     next_offset,
                     executed,
                     runtime_transition: None,
                     halt: Some(halt),
-                    state: runtime.user_state_from_pt_regs(),
+                    snapshot: Snapshot::UserFromPtRegs,
                 })
             }
+        }
+    }
+}
+
+/// Which user state a step reports; see `URuntimeCursor::advance`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Snapshot {
+    /// The machine state minus runtime-owned memory (mid-fragment).
+    Physical,
+    /// Registers from `pt_regs` (at a runtime boundary).
+    UserFromPtRegs,
+}
+
+/// A `URuntimeStep` whose state has not been captured yet.
+pub(crate) struct Advanced {
+    pub(crate) offset: Option<usize>,
+    insn_index: Option<usize>,
+    next_offset: Option<usize>,
+    pub(crate) executed: bool,
+    pub(crate) runtime_transition: Option<URuntimeTransition>,
+    pub(crate) halt: Option<URuntimeHalt>,
+    snapshot: Snapshot,
+}
+
+impl Advanced {
+    fn into_step(self, runtime: &URuntime) -> URuntimeStep {
+        URuntimeStep {
+            offset: self.offset,
+            insn_index: self.insn_index,
+            next_offset: self.next_offset,
+            executed: self.executed,
+            runtime_transition: self.runtime_transition,
+            halt: self.halt,
+            state: match self.snapshot {
+                Snapshot::Physical => runtime.physical_user_state(),
+                Snapshot::UserFromPtRegs => runtime.user_state_from_pt_regs(),
+            },
         }
     }
 }
@@ -476,6 +527,12 @@ impl<'a> URuntimeStepper<'a> {
 
     pub fn step(&mut self) -> Result<Option<URuntimeStep>, String> {
         self.cursor.step(self.runtime)
+    }
+
+    /// `step` without the user-state snapshot (a full memory copy), for callers
+    /// that only need the final report.
+    pub(crate) fn advance(&mut self) -> Result<Option<Advanced>, String> {
+        self.cursor.advance(self.runtime)
     }
 
     pub fn run_to_halt(&mut self) -> URuntimeReport {
@@ -530,7 +587,7 @@ impl OwnedURuntimeStepper {
 
 fn run_cursor_to_halt(runtime: &mut URuntime, cursor: &mut URuntimeCursor) -> URuntimeReport {
     loop {
-        match cursor.step(runtime) {
+        match cursor.advance(runtime) {
             Ok(Some(step)) => {
                 if let Some(halt) = step.halt {
                     return runtime.report(halt, cursor.steps());
@@ -1044,7 +1101,7 @@ mod tests {
 
     fn run_counting(insns: &[A64Insn]) -> (URuntimeReport, Option<crate::InstanceCap>) {
         let mut runtime = URuntime::new(compile_insns(0x4000, insns), MachineState::new());
-        crate::run_fragment_counting_instances(&mut runtime).unwrap()
+        crate::run_fragment_counting_instances(&mut runtime, None).unwrap()
     }
 
     #[test]

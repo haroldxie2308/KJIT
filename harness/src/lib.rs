@@ -2,9 +2,11 @@ extern crate alloc;
 
 pub mod a64_pretty;
 pub mod active_step;
+pub(crate) mod asm_fixture;
 pub mod explorer;
 pub mod golden;
 pub mod arm64;
+pub mod fuzz;
 pub mod model;
 // Platform gate, not a skip: the native oracle executes AArch64 code on the host
 // CPU and needs Linux signal/ucontext semantics (macOS reserves x18). Run it with
@@ -21,6 +23,8 @@ mod asm_fixture_tests;
 mod encoding_tests;
 #[cfg(test)]
 mod verify_mutation_tests;
+
+use std::fmt;
 
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::trans::cfg::RuntimeExitReason;
@@ -108,6 +112,8 @@ impl CodeProvider for MockCodeProvider {
 /// `scripts/compile-asm-fixture.sh`) stay at or above Linux's `vm.mmap_min_addr`
 /// (64 KiB) so the native runner maps them at the addresses the interpreter uses.
 pub const FIXTURE_DATA_BASE: u64 = 0x20000;
+/// Must equal the `TEXT_BASE` default in `scripts/compile-asm-fixture.sh`.
+pub const FIXTURE_TEXT_BASE: u64 = 0x10000;
 pub const FIXTURE_DATA_LEN: u64 = 0x4000;
 /// TPIDR_EL0 of fixture cases: a TLS block in the last page of the data window.
 pub const FIXTURE_TLS_BASE: u64 = FIXTURE_DATA_BASE + 0x3000;
@@ -148,45 +154,127 @@ pub fn run_entry_fixture(
     entry_pc: u64,
     initial_state: &MachineState,
 ) -> Result<CaseReport, String> {
-    // The fragment runs first: a Budget exit decides where the original stops.
+    let run = run_differential(
+        text_base,
+        text_bytes,
+        entry_pc,
+        initial_state,
+        None,
+        &mut |_| {},
+    )
+    .map_err(|err| match err {
+        DifferentialError::Verify(message) => format!("verifier rejected `{name}`: {message}"),
+        other => other.to_string(),
+    })?;
+    compare_differential(name, &run.original, &run.report).map_err(|mismatch| mismatch.message)?;
+
+    Ok(CaseReport {
+        name,
+        fragment: run.fragment,
+        encoded_fragment: run.encoded_fragment,
+        original: run.original,
+        original_cap: run.original_cap,
+        fragment_state: run.report.state,
+        fragment_halt: run.report.halt,
+        fragment_steps: run.report.steps,
+    })
+}
+
+/// Bounds for `run_differential`. Hand-written fixtures run unbounded; generated
+/// programs need bounds because either side may run forever (an SVC inside an
+/// endless loop resets the back-edge budget on every re-entry).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StepLimits {
+    /// Original instructions.
+    pub original: usize,
+    /// Fragment instructions, over all runtime entries.
+    pub fragment: usize,
+}
+
+/// Both sides of one differential run, not yet compared.
+#[derive(Debug)]
+pub struct DifferentialRun {
+    pub fragment: ExecutionFragment,
+    pub encoded_fragment: Vec<u8>,
+    pub original: ExecutionResult,
+    /// Where the original was stopped to match a `Budget` exit of the fragment.
+    pub original_cap: Option<InstanceCap>,
+    pub report: URuntimeReport,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum DifferentialError {
+    /// `compile_request` rejected the code, or its fragment does not encode.
+    Translate(String),
+    /// The independent verifier rejected the encoded fragment.
+    Verify(String),
+    /// The fragment run failed outside the fragment (runtime setup, a `Budget`
+    /// exit without a body label).
+    Fragment(String),
+    /// The original-code interpreter did not reach a halt.
+    Original(OriginalRunError),
+    /// Neither side halted within its `StepLimits`: the program does not
+    /// terminate (e.g. an SVC in an endless loop, which resets the budget).
+    NoHalt,
+}
+
+impl fmt::Display for DifferentialError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Translate(message) | Self::Fragment(message) => write!(f, "{message}"),
+            Self::Verify(message) => write!(f, "verifier rejected the fragment: {message}"),
+            Self::Original(err) => write!(f, "{err}"),
+            Self::NoHalt => write!(f, "neither side halted within the step limits"),
+        }
+    }
+}
+
+/// Translates, encodes and verifies the code, runs the fragment through
+/// `URuntime`, then runs the original through the interpreter from the same
+/// initial state. The fragment runs first: a `Budget` exit decides where the
+/// original stops (`InstanceCap`). `before_original_step` sees the interpreter
+/// before each original step.
+pub fn run_differential(
+    text_base: u64,
+    text_bytes: Vec<u8>,
+    entry_pc: u64,
+    initial_state: &MachineState,
+    limits: Option<StepLimits>,
+    before_original_step: &mut dyn FnMut(&OriginalStepper),
+) -> Result<DifferentialRun, DifferentialError> {
     let fragment =
-        compile_fixture_fragment(text_base, text_bytes.clone(), entry_pc, initial_state)?;
-    let encoded_fragment = encode_fragment(&fragment)?;
-    // The kernel runs only verified fragments; so does every fixture case.
+        compile_fixture_fragment(text_base, text_bytes.clone(), entry_pc, initial_state)
+            .map_err(DifferentialError::Translate)?;
+    let encoded_fragment = encode_fragment(&fragment).map_err(DifferentialError::Translate)?;
+    // The kernel runs only verified fragments; so does every differential run.
     verify_encoded_fragment(&fragment, &encoded_fragment)
-        .map_err(|err| format!("verifier rejected `{name}`: {err:?}"))?;
+        .map_err(|err| DifferentialError::Verify(format!("{err:?}")))?;
     let mut runtime = URuntime::new(fragment, initial_state.clone());
-    let (report, original_cap) = run_fragment_counting_instances(&mut runtime)?;
-    let original = execute_original_with_mocked_svc(
+    let (report, original_cap) =
+        run_fragment_counting_instances(&mut runtime, limits.map(|limits| limits.fragment))
+            .map_err(DifferentialError::Fragment)?;
+    let original = run_original_with_mocked_svc(
         &text_bytes,
         text_base,
         entry_pc,
         initial_state,
+        None,
         original_cap,
-    )?;
-
-    if original.state != report.state {
-        return Err(format!(
-            "original vs fragment state mismatch for `{name}`\noriginal: {:#?}\nfragment: {:#?}",
-            original.state, report.state,
-        ));
-    }
-    if !runtime_halt_matches_original(&original, &report.halt) {
-        return Err(format!(
-            "original vs fragment halt mismatch for `{name}`\noriginal: {:#?}\nfragment: {:#?}",
-            original.halt_reason, report.halt,
-        ));
-    }
-
-    Ok(CaseReport {
-        name,
+        limits.map(|limits| limits.original),
+        before_original_step,
+    )
+    .map_err(|err| match (&err, &report.halt) {
+        (OriginalRunError::StepLimit { .. }, URuntimeHalt::StepLimit { .. }) => {
+            DifferentialError::NoHalt
+        }
+        _ => DifferentialError::Original(err),
+    })?;
+    Ok(DifferentialRun {
         fragment: runtime.fragment,
         encoded_fragment,
         original,
         original_cap,
-        fragment_state: report.state,
-        fragment_halt: report.halt,
-        fragment_steps: report.steps,
+        report,
     })
 }
 
@@ -197,8 +285,13 @@ pub fn run_entry_fixture(
 /// body label: every runtime entry, branch and fall-through into `pc` lands there,
 /// and for a back-edge that label is the first instruction of its budget check. So
 /// the exit happened on dynamic instance `executions(label(pc))` of `pc`.
+///
+/// `max_steps = Some(n)` halts with `StepLimit` after n fragment instructions.
+/// Unbounded, more than `MAX_RUNTIME_EXITS` runtime continuations are an error;
+/// bounded, they are a `StepLimit` halt too (the run did not end).
 pub(crate) fn run_fragment_counting_instances(
     runtime: &mut URuntime,
+    max_steps: Option<usize>,
 ) -> Result<(URuntimeReport, Option<InstanceCap>), String> {
     let mut executions = vec![0_u64; runtime.fragment.insns.len()];
     let report = {
@@ -206,7 +299,13 @@ pub(crate) fn run_fragment_counting_instances(
             .map_err(|message| format!("fragment runtime setup failed: {message}"))?;
         let mut continuations = 0usize;
         loop {
-            let step = match stepper.step() {
+            if max_steps.is_some_and(|max| stepper.steps() >= max) {
+                break stepper.report_for_halt(URuntimeHalt::StepLimit {
+                    pc: stepper.pc(),
+                    steps: stepper.steps(),
+                });
+            }
+            let step = match stepper.advance() {
                 Ok(Some(step)) => step,
                 Ok(None) => {
                     break stepper.report_for_halt(URuntimeHalt::ExecutionError {
@@ -229,6 +328,12 @@ pub(crate) fn run_fragment_counting_instances(
             }) {
                 continuations += 1;
                 if continuations >= MAX_RUNTIME_EXITS {
+                    if max_steps.is_some() {
+                        break stepper.report_for_halt(URuntimeHalt::StepLimit {
+                            pc: stepper.pc(),
+                            steps: stepper.steps(),
+                        });
+                    }
                     return Err(
                         "fragment run exceeded the runtime-exit continuation limit".to_string()
                     );
@@ -272,7 +377,7 @@ pub(crate) fn fragment_instance_cap(
     let fragment =
         compile_fixture_fragment(text_base, text_bytes.to_vec(), entry_pc, initial_state)?;
     let mut runtime = URuntime::new(fragment, initial_state.clone());
-    Ok(run_fragment_counting_instances(&mut runtime)?.1)
+    Ok(run_fragment_counting_instances(&mut runtime, None)?.1)
 }
 
 /// Translates a fixture case exactly as `run_entry_fixture` does.
@@ -291,6 +396,49 @@ pub(crate) fn compile_fixture_fragment(
     compile_request(&request, &code).map_err(|err| err.to_string())
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MismatchKind {
+    /// Final user state (registers, SP, NZCV, memory, page map) differs.
+    State,
+    /// Both states agree but the halts do not correspond.
+    Halt,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Mismatch {
+    pub kind: MismatchKind,
+    pub message: String,
+}
+
+/// The differential oracle: the fragment must end in the original's user
+/// state with a corresponding halt. The only copy of this check; the fixture
+/// suite, `trace-tui --check` and the fuzzer all use it.
+pub fn compare_differential(
+    name: &str,
+    original: &ExecutionResult,
+    report: &URuntimeReport,
+) -> Result<(), Mismatch> {
+    if original.state != report.state {
+        return Err(Mismatch {
+            kind: MismatchKind::State,
+            message: format!(
+                "original vs fragment state mismatch for `{name}`\noriginal: {:#?}\nfragment: {:#?}",
+                original.state, report.state,
+            ),
+        });
+    }
+    if !runtime_halt_matches_original(original, &report.halt) {
+        return Err(Mismatch {
+            kind: MismatchKind::Halt,
+            message: format!(
+                "original vs fragment halt mismatch for `{name}`\noriginal: {:#?}\nfragment: {:#?}",
+                original.halt_reason, report.halt,
+            ),
+        });
+    }
+    Ok(())
+}
+
 pub fn run_legacy_flattened_fixture(
     text_base: u64,
     text_bytes: Vec<u8>,
@@ -306,30 +454,45 @@ pub fn run_legacy_flattened_fixture(
     translate_request(&request, &code).map_err(|err| err.to_string())
 }
 
-fn execute_original_with_mocked_svc(
-    program: &[u8],
-    text_base: u64,
-    entry_pc: u64,
-    initial_state: &MachineState,
-    cap: Option<InstanceCap>,
-) -> Result<ExecutionResult, String> {
-    run_original_with_mocked_svc(
-        program,
-        text_base,
-        entry_pc,
-        initial_state,
-        None,
-        cap,
-        &mut |_| {},
-    )
+/// Why the original-code interpreter stopped without a halt.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum OriginalRunError {
+    /// `limit` instructions executed without a halt.
+    StepLimit { limit: usize },
+    /// Interpreter error: unsupported form, SVC continuation limit, ...
+    Harness(String),
+}
+
+impl fmt::Display for OriginalRunError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::StepLimit { limit } => {
+                write!(f, "original code did not halt within {limit} steps")
+            }
+            Self::Harness(message) => write!(f, "{message}"),
+        }
+    }
+}
+
+impl From<String> for OriginalRunError {
+    fn from(message: String) -> Self {
+        Self::Harness(message)
+    }
+}
+
+impl From<OriginalRunError> for String {
+    fn from(err: OriginalRunError) -> Self {
+        err.to_string()
+    }
 }
 
 /// Runs original code to a halt, resuming after every SVC as if the syscall
 /// returned without side effects. `fail_user_access = Some(k)` faults the k-th
 /// dynamic user access of the whole run (1-based, SVC continuations included)
 /// regardless of permissions. `cap` halts with `HaltReason::InstanceCap` before the
-/// instruction it names executes. `before_step` sees the stepper before each step,
-/// the capped one included; the stepper records its accesses
+/// instruction it names executes. `step_limit = Some(n)` fails with `StepLimit`
+/// once n instructions have executed without a halt. `before_step` sees the
+/// stepper before each step, the capped one included; the stepper records its accesses
 /// (`OriginalStepper::access_log`).
 pub(crate) fn run_original_with_mocked_svc(
     program: &[u8],
@@ -338,8 +501,9 @@ pub(crate) fn run_original_with_mocked_svc(
     initial_state: &MachineState,
     fail_user_access: Option<u64>,
     cap: Option<InstanceCap>,
+    step_limit: Option<usize>,
     before_step: &mut dyn FnMut(&OriginalStepper),
-) -> Result<ExecutionResult, String> {
+) -> Result<ExecutionResult, OriginalRunError> {
     let mut stepper =
         OriginalStepper::new(program, text_base, entry_pc, initial_state)?.record_accesses();
     if let Some(k) = fail_user_access {
@@ -350,6 +514,9 @@ pub(crate) fn run_original_with_mocked_svc(
     let mut cap_arrivals = 0u64;
 
     loop {
+        if let Some(limit) = step_limit.filter(|&limit| steps >= limit) {
+            return Err(OriginalRunError::StepLimit { limit });
+        }
         before_step(&stepper);
         if let Some(cap) = cap.filter(|cap| cap.pc == stepper.pc()) {
             cap_arrivals += 1;
@@ -364,8 +531,10 @@ pub(crate) fn run_original_with_mocked_svc(
                 });
             }
         }
-        let Some(step) = stepper.step()? else {
-            return Err("original stepper stopped without a halt reason".to_string());
+        let Some(step) = stepper.advance()? else {
+            return Err("original stepper stopped without a halt reason"
+                .to_string()
+                .into());
         };
         if step.executed {
             steps += 1;
@@ -376,16 +545,20 @@ pub(crate) fn run_original_with_mocked_svc(
                 reason: RuntimeExitReason::Svc { resume_pc, .. },
             }) => {
                 runtime_exits += 1;
+                // Bounded, endless SVC continuations are one more way not to halt.
+                if let Some(limit) = step_limit.filter(|_| runtime_exits >= MAX_RUNTIME_EXITS) {
+                    return Err(OriginalRunError::StepLimit { limit });
+                }
                 if runtime_exits >= MAX_RUNTIME_EXITS {
-                    return Err(
-                        "original fixture exceeded runtime-exit continuation limit".to_string()
-                    );
+                    return Err("original fixture exceeded runtime-exit continuation limit"
+                        .to_string()
+                        .into());
                 }
                 stepper.resume_at(resume_pc);
             }
             Some(halt_reason) => {
                 return Ok(ExecutionResult {
-                    state: step.state,
+                    state: stepper.state().clone(),
                     halt_reason,
                     steps,
                 });

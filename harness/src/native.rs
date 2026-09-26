@@ -1147,8 +1147,9 @@ fn execute_branch_exit(
     let (event, snapshot) = session.enter_user(at, initial.tpidr_el0)?;
     let target_pc = match (event.signal, event.brk()) {
         (SIGTRAP, Some(BRK_FILL)) if text_map.contains(event.pc) => event.pc,
-        // Instruction abort: the branch left every executable mapping.
-        (SIGSEGV, None) if event.pc == event.fault_addr => event.pc,
+        // Instruction abort: the branch left every executable mapping. A target
+        // that is not 4-byte aligned takes a PC alignment fault instead (SIGBUS).
+        (SIGSEGV | SIGBUS, None) if event.pc == event.fault_addr => event.pc,
         _ => {
             return Err(format!(
                 "native branch exit at {:#x}: unexpected {}",
@@ -1230,12 +1231,22 @@ pub fn original_halt_matches(
                 }
             };
             match expected_target {
-                Some(expected) if expected != target_pc => Err(mismatch()),
+                Some(expected) if !branch_reaches(expected, target_pc) => Err(mismatch()),
                 _ => Ok(()),
             }
         }
         _ => Err(mismatch()),
     }
+}
+
+/// Whether a branch to register value `target` lands at `pc`. With top-byte
+/// ignore for instruction addresses (TCR_EL1.TBI0 set, TBID0 clear) the CPU
+/// branches to the target with bits 63:56 replaced by a sign extension of bit
+/// 55 (`AArch64.BranchAddr`); with TBID0 set it keeps the tag. Both are the
+/// same instruction stream, so either is a match.
+fn branch_reaches(target: u64, pc: u64) -> bool {
+    let untagged = (((target << 8) as i64) >> 8) as u64;
+    pc == target || pc == untagged
 }
 
 // ---------------------------------------------------------------------------
@@ -1472,35 +1483,56 @@ pub fn check_case(
         entry_pc,
         initial,
     )?;
-    let original = run_original(
+    check_against_interpreter(
         session,
         text_base,
         text,
         entry_pc,
         initial,
+        &report.original,
         report.original_cap,
-    )?;
-    let fragment = run_fragment(session, &report.fragment, &report.encoded_fragment, initial)?;
+        &report.fragment,
+        &report.encoded_fragment,
+    )
+}
+
+/// The native half of `check_case`, for a case whose interpreter runs already
+/// agree: native original (capped at `original_cap`, like the interpreter's) and
+/// native fragment must both match `original`.
+#[allow(clippy::too_many_arguments)]
+pub fn check_against_interpreter(
+    session: &NativeSession,
+    text_base: u64,
+    text: &[u8],
+    entry_pc: u64,
+    initial: &MachineState,
+    original: &ExecutionResult,
+    original_cap: Option<InstanceCap>,
+    fragment: &ExecutionFragment,
+    encoded_fragment: &[u8],
+) -> Result<String, String> {
+    let native_original = run_original(session, text_base, text, entry_pc, initial, original_cap)?;
+    let native_fragment = run_fragment(session, fragment, encoded_fragment, initial)?;
 
     let mut problems = diff_states(
         "interp-original",
-        &report.original.state,
-        "native-original",
         &original.state,
+        "native-original",
+        &native_original.state,
     );
     problems.extend(diff_states(
         "interp-original",
-        &report.original.state,
+        &original.state,
         "native-fragment",
-        &fragment.state,
+        &native_fragment.state,
     ));
-    if let Err(message) = original_halt_matches(&report.original, text_base, text, &original.stop) {
+    if let Err(message) = original_halt_matches(original, text_base, text, &native_original.stop) {
         problems.push(format!("native-original {message}"));
     }
-    if !crate::runtime_halt_matches_original(&report.original, &fragment.halt) {
+    if !crate::runtime_halt_matches_original(original, &native_fragment.halt) {
         problems.push(format!(
             "native-fragment halt mismatch: interpreter {:?}, native {:?}",
-            report.original.halt_reason, fragment.halt
+            original.halt_reason, native_fragment.halt
         ));
     }
 
@@ -1508,11 +1540,11 @@ pub fn check_case(
         Ok(format!(
             "halt={:?} native-original={:?} native-fragment={:?} fragment-calls={} \
              fault-redirects={}",
-            report.original.halt_reason,
-            original.stop,
-            fragment.halt,
-            fragment.calls,
-            fragment.fault_redirects
+            original.halt_reason,
+            native_original.stop,
+            native_fragment.halt,
+            native_fragment.calls,
+            native_fragment.fault_redirects
         ))
     } else {
         Err(problems.join("\n"))

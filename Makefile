@@ -32,7 +32,7 @@ MODULE_MAKE = mkdir -p $(KJIT_MODULE_DIR) && $(KMAKE) M=$(CURDIR) MO=$(KJIT_MODU
 .PHONY: initramfs kernel-tree guest-kernel guest-kernel-debug guest-rootfs guest-run e0-bench guest-tests
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
-	harness-test harness-test-native harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan kernel-golden help
+	harness-test harness-test-native fuzz harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan kernel-golden help
 
 default:
 	$(MODULE_MAKE)
@@ -142,6 +142,15 @@ harness-test:
 harness-test-native:
 	bash ./scripts/native-test.sh
 
+SEED ?= 1
+ITERS ?= 10000
+MAX_LEN ?= 64
+FUZZ_ARGS ?=
+
+fuzz:
+	cargo run --release --manifest-path harness/Cargo.toml --bin fuzz -- \
+		--seed $(SEED) --iters $(ITERS) --max-len $(MAX_LEN) $(FUZZ_ARGS)
+
 kernel-golden: harness-sync
 	eval "$$(bash ./scripts/compile-asm-fixture.sh $(KERNEL_GOLDEN_ASM) tmp/kernel-golden)" && \
 	cargo run --quiet --manifest-path harness/Cargo.toml --bin dump-golden -- \
@@ -195,6 +204,7 @@ help:
 		'spec-gen' 'Generate the checked-in ARM64 subset tables from the Arm XML bundle' \
 		'harness-test' 'Run the standalone harness tests' \
 		'harness-test-native' 'Run the harness tests plus the native hardware oracle on Linux arm64 (container on macOS)' \
+		'fuzz' 'Differential fuzzer: SEED=, ITERS=, MAX_LEN=, FUZZ_ARGS= (e.g. --no-fall-off, --native)' \
 		'harness-dump-cfg' 'Assemble the toy AArch64 fixture and print its basic blocks' \
 		'harness-tui' 'Open the full-pipeline trace TUI; use ASM=path/to/file.s to select a fixture' \
 		'tui' 'Alias for harness-tui' \

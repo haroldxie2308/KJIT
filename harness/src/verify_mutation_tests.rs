@@ -9,7 +9,8 @@
 
 use std::collections::BTreeMap;
 
-use crate::asm_fixture_tests::{run_every_case, CompiledCase};
+use crate::asm_fixture::CompiledCase;
+use crate::asm_fixture_tests::run_every_case;
 use crate::shared::abi::{
     EPILOGUE_OFFSET, PROLOGUE_LEN_BYTES, REG_VIRT_SCRATCH_GPR_START, RUNTIME_FRAME_BUDGET_OFFSET,
     RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
