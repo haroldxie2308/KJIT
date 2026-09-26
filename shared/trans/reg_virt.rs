@@ -75,11 +75,7 @@ pub enum RegVirtError {
         field: &'static str,
         reg: A64Reg,
     },
-    UnsupportedWritebackMemory {
-        pc: u64,
-        insn: &'static str,
-    },
-    UnsupportedPairOp {
+    UnpredictableMemoryOp {
         pc: u64,
         insn: &'static str,
     },
@@ -410,18 +406,7 @@ impl RewritePlan {
     fn build(rephrased: RephrasedInsn) -> SharedResult<Self, RegVirtError> {
         let insn = rephrased.insn;
         let insn_key = insn.key();
-        if is_pair_op(insn) {
-            return Err(RegVirtError::UnsupportedPairOp {
-                pc: rephrased.ori_pc,
-                insn: insn_key,
-            });
-        }
-        if is_writeback_memory_op(insn) {
-            return Err(RegVirtError::UnsupportedWritebackMemory {
-                pc: rephrased.ori_pc,
-                insn: insn_key,
-            });
-        }
+        reject_constrained_unpredictable(rephrased)?;
 
         let mut plan = Self::new(rephrased.ori_pc, insn_key);
         for role in insn.operand_roles() {
@@ -772,36 +757,62 @@ fn classify_reg(reg: A64Reg) -> RegClass {
     RegClass::Direct
 }
 
-fn is_writeback_memory_op(insn: A64Insn) -> bool {
-    matches!(
-        insn,
-        A64Insn::LdrImmGenLdr32LdstImmpost { .. }
-            | A64Insn::LdrImmGenLdr64LdstImmpost { .. }
-            | A64Insn::LdrImmGenLdr32LdstImmpre { .. }
-            | A64Insn::LdrImmGenLdr64LdstImmpre { .. }
-            | A64Insn::StrImmGenStr32LdstImmpost { .. }
-            | A64Insn::StrImmGenStr64LdstImmpost { .. }
-            | A64Insn::StrImmGenStr32LdstImmpre { .. }
-            | A64Insn::StrImmGenStr64LdstImmpre { .. }
-    )
-}
+/// Rejects CONSTRAINED UNPREDICTABLE register overlaps. Runs before any mapping, so
+/// equality is decided on user (virtual) register numbers. Driven by generated
+/// operand roles: a writeback form is a `MemBase` whose field also has a write role.
+/// - writeback with base == a transfer register, unless the base is SP (reg 31);
+/// - two distinct written fields naming the same register (LDP rt == rt2).
+fn reject_constrained_unpredictable(rephrased: RephrasedInsn) -> SharedResult<(), RegVirtError> {
+    let insn = rephrased.insn;
+    let roles = insn.operand_roles();
+    let unpredictable = RegVirtError::UnpredictableMemoryOp {
+        pc: rephrased.ori_pc,
+        insn: insn.key(),
+    };
 
-fn is_pair_op(insn: A64Insn) -> bool {
-    matches!(
-        insn,
-        A64Insn::LdpGenLdp64LdstpairPost { .. }
-            | A64Insn::LdpGenLdp64LdstpairPre { .. }
-            | A64Insn::LdpGenLdp64LdstpairOff { .. }
-            | A64Insn::StpGenStp64LdstpairPost { .. }
-            | A64Insn::StpGenStp64LdstpairPre { .. }
-            | A64Insn::StpGenStp64LdstpairOff { .. }
-    )
+    for role in roles {
+        let A64OperandRole::MemBase { field: base_field } = *role else {
+            continue;
+        };
+        if !field_has_write_role(insn, base_field) {
+            continue;
+        }
+        let base = require_reg(rephrased, base_field)?;
+        if base.enc == 31 {
+            continue;
+        }
+        for other in roles {
+            let Some((field, _, _)) = access_mode_from_role(*other) else {
+                continue;
+            };
+            if field != base_field && require_reg(rephrased, field)?.enc == base.enc {
+                return Err(unpredictable);
+            }
+        }
+    }
+
+    for (index, role) in roles.iter().enumerate() {
+        let A64OperandRole::RegWrite { field, .. } = *role else {
+            continue;
+        };
+        let reg = require_reg(rephrased, field)?;
+        for later in &roles[index + 1..] {
+            let A64OperandRole::RegWrite { field: other, .. } = *later else {
+                continue;
+            };
+            if other != field && require_reg(rephrased, other)?.enc == reg.enc {
+                return Err(unpredictable);
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::arm64::ergo::{uimm, x, xzr};
+    use crate::shared::arm64::ergo::{ldstpair64_offset, uimm, x, xzr};
     use crate::shared::arm64::{A64Imm, A64Mem, A64Reg31Mode};
     use crate::shared::platform::{SharedVec, GFP_KERNEL};
     use crate::shared::trans::rephrase::{RephrasedBlock, RephrasedInsn};
@@ -1064,38 +1075,180 @@ mod tests {
     }
 
     #[test]
-    fn rejects_pre_and_post_index_memory_until_writeback_ordering_is_defined() {
+    fn stp_pre_index_on_sp_fills_stack_backed_pair_and_writes_back_x17() {
+        let program = validate_one(RephrasedInsn::original(
+            0x1000,
+            A64Insn::StpGenStp64LdstpairPre {
+                rt2: x(13),
+                rt: x(12),
+                mem: A64Mem::pre_index(A64Reg::x_sp(31), ldstpair64_offset(-16)),
+            },
+        ))
+        .unwrap();
+
         assert_eq!(
-            validate_one(RephrasedInsn::original(
-                0x1000,
-                A64Insn::LdrImmGenLdr64LdstImmpost {
-                    rt: x(0),
-                    mem: A64Mem::post_index(x(1), A64Imm::signed(8, 9)),
-                },
-            )),
-            Err(RegVirtError::UnsupportedWritebackMemory {
-                pc: 0x1000,
-                insn: "LDR_imm_gen.LDR_64_ldst_immpost",
-            })
+            &program[0].insns[..],
+            [
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(16),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(13),
+                        mem: frame_slot(24),
+                    },
+                ),
+                RephrasedInsn::original(
+                    0x1000,
+                    A64Insn::StpGenStp64LdstpairPre {
+                        rt2: x(13),
+                        rt: x(12),
+                        mem: A64Mem::pre_index(A64Reg::x_sp(17), ldstpair64_offset(-16)),
+                    },
+                ),
+            ]
         );
     }
 
     #[test]
-    fn rejects_pair_ops_until_overlap_policy_is_defined() {
+    fn ldp_post_index_on_sp_into_x29_x30_uses_stable_mappings() {
+        let program = validate_one(RephrasedInsn::original(
+            0x1000,
+            A64Insn::LdpGenLdp64LdstpairPost {
+                rt2: x(30),
+                rt: x(29),
+                mem: A64Mem::post_index(A64Reg::x_sp(31), ldstpair64_offset(16)),
+            },
+        ))
+        .unwrap();
+
+        assert_eq!(
+            &program[0].insns[..],
+            [RephrasedInsn::original(
+                0x1000,
+                A64Insn::LdpGenLdp64LdstpairPost {
+                    rt2: x(30),
+                    rt: x(16),
+                    mem: A64Mem::post_index(A64Reg::x_sp(17), ldstpair64_offset(16)),
+                },
+            )]
+        );
+    }
+
+    #[test]
+    fn ldr_post_index_with_stack_backed_base_fills_and_spills_base() {
+        let program = validate_one(RephrasedInsn::original(
+            0x1000,
+            A64Insn::LdrImmGenLdr64LdstImmpost {
+                rt: x(0),
+                mem: A64Mem::post_index(A64Reg::x_sp(14), A64Imm::signed(8, 9)),
+            },
+        ))
+        .unwrap();
+
+        assert_eq!(
+            &program[0].insns[..],
+            [
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(32),
+                    },
+                ),
+                RephrasedInsn::original(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstImmpost {
+                        rt: x(0),
+                        mem: A64Mem::post_index(A64Reg::x_sp(12), A64Imm::signed(8, 9)),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(32),
+                    },
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn ldr_w_pre_index_into_stack_backed_spills_zero_extended_x_register() {
+        let program = validate_one(RephrasedInsn::original(
+            0x1000,
+            A64Insn::LdrImmGenLdr32LdstImmpre {
+                rt: A64Reg::w(13),
+                mem: A64Mem::pre_index(A64Reg::x_sp(0), A64Imm::signed(4, 9)),
+            },
+        ))
+        .unwrap();
+
+        assert_eq!(
+            &program[0].insns[..],
+            [
+                RephrasedInsn::original(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr32LdstImmpre {
+                        rt: A64Reg::w(12),
+                        mem: A64Mem::pre_index(A64Reg::x_sp(0), A64Imm::signed(4, 9)),
+                    },
+                ),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos {
+                        rt: x(12),
+                        mem: frame_slot(24),
+                    },
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn rejects_constrained_unpredictable_memory_overlaps() {
         assert_eq!(
             validate_one(RephrasedInsn::original(
                 0x1000,
-                A64Insn::StpGenStp64LdstpairOff {
-                    rt2: x(1),
-                    rt: x(0),
-                    mem: A64Mem::offset(x(2), A64Imm::scaled_signed(0, 7, 3)),
+                A64Insn::LdrImmGenLdr64LdstImmpost {
+                    rt: x(1),
+                    mem: A64Mem::post_index(A64Reg::x_sp(1), A64Imm::signed(8, 9)),
                 },
             )),
-            Err(RegVirtError::UnsupportedPairOp {
+            Err(RegVirtError::UnpredictableMemoryOp {
                 pc: 0x1000,
-                insn: "STP_gen.STP_64_ldstpair_off",
+                insn: "LDR_imm_gen.LDR_64_ldst_immpost",
             })
         );
+        assert_eq!(
+            validate_one(RephrasedInsn::original(
+                0x1000,
+                A64Insn::LdpGenLdp64LdstpairOff {
+                    rt2: x(2),
+                    rt: x(2),
+                    mem: A64Mem::offset(A64Reg::x_sp(0), ldstpair64_offset(0)),
+                },
+            )),
+            Err(RegVirtError::UnpredictableMemoryOp {
+                pc: 0x1000,
+                insn: "LDP_gen.LDP_64_ldstpair_off",
+            })
+        );
+        // Base SP (reg 31) with transfer XZR (also reg 31) is not an overlap.
+        validate_one(RephrasedInsn::original(
+            0x1000,
+            A64Insn::LdrImmGenLdr64LdstImmpost {
+                rt: xzr(),
+                mem: A64Mem::post_index(A64Reg::x_sp(31), A64Imm::signed(8, 9)),
+            },
+        ))
+        .unwrap();
     }
 
     #[test]
