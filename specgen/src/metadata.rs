@@ -25,6 +25,12 @@ pub fn infer_operand_roles(
         operands,
         &field_names,
     ));
+    roles.extend(infer_load_store_roles(
+        docvars,
+        operands,
+        &field_names,
+        execute_text,
+    ));
     roles.extend(infer_roles_from_pseudocode(
         &field_names,
         &var_map,
@@ -156,7 +162,9 @@ fn infer_roles_from_pseudocode(
     if execute_text.contains("BranchTo") || execute_text.contains("BranchNotTaken") {
         roles.insert(role_tuple("ControlFlow", "", "Unknown"));
     }
-    if execute_text.contains("Mem") {
+    // An architectural memory access (`Mem{size}(address, accdesc)`). PRFM only
+    // builds a `MemOp_PREFETCH` descriptor and calls `Prefetch`: no access, no role.
+    if Regex::new(r"\bMem\s*\{").unwrap().is_match(execute_text) {
         roles.insert(role_tuple("Memory", "", "Unknown"));
     }
 
@@ -170,11 +178,6 @@ fn infer_roles_from_docvars_and_asm(
 ) -> BTreeSet<RoleTuple> {
     let mut roles = BTreeSet::new();
     let mnemonic = docvars.get("mnemonic").map(String::as_str).unwrap_or("");
-    let address_form = docvars
-        .get("address-form")
-        .map(String::as_str)
-        .unwrap_or("");
-
     if docvars.contains_key("branch-offset") {
         for field in fields {
             if field.to_lowercase().starts_with("imm") {
@@ -210,68 +213,6 @@ fn infer_roles_from_docvars_and_asm(
         }
     }
 
-    // LDTR/STTR share the single-register immediate shape; they are emitted by the
-    // translator only (never admitted from user code), but their metadata must still
-    // say which field is written so reg-virt and the harness treat them uniformly.
-    if matches!(mnemonic, "LDR" | "STR" | "LDTR" | "STTR") {
-        if fields.contains("Rn") {
-            if matches!(address_form, "pre-indexed" | "post-indexed") {
-                roles.insert(role_tuple("RegReadWrite", "Rn", "X64"));
-            } else {
-                roles.insert(role_tuple("RegRead", "Rn", "X64"));
-            }
-            roles.insert(role_tuple("MemBase", "Rn", "X64"));
-        }
-        if fields.contains("Rt") {
-            let kind = if matches!(mnemonic, "LDR" | "LDTR") {
-                "RegWrite"
-            } else {
-                "RegRead"
-            };
-            roles.insert(role_tuple(kind, "Rt", &operand_width(docvars, None)));
-        }
-        for field in fields {
-            if field.to_lowercase().starts_with("imm") {
-                roles.insert(role_tuple("MemOffset", field, "Unknown"));
-            }
-        }
-    }
-
-    if matches!(mnemonic, "LDP" | "STP") {
-        if fields.contains("Rn") {
-            if matches!(address_form, "pre-indexed" | "post-indexed") {
-                roles.insert(role_tuple("RegReadWrite", "Rn", "X64"));
-            } else {
-                roles.insert(role_tuple("RegRead", "Rn", "X64"));
-            }
-            roles.insert(role_tuple("MemBase", "Rn", "X64"));
-        }
-        let transfer_kind = if mnemonic == "LDP" {
-            "RegWrite"
-        } else {
-            "RegRead"
-        };
-        if fields.contains("Rt") {
-            roles.insert(role_tuple(
-                transfer_kind,
-                "Rt",
-                &operand_width(docvars, None),
-            ));
-        }
-        if fields.contains("Rt2") {
-            roles.insert(role_tuple(
-                transfer_kind,
-                "Rt2",
-                &operand_width(docvars, None),
-            ));
-        }
-        for field in fields {
-            if field.to_lowercase().starts_with("imm") {
-                roles.insert(role_tuple("MemOffset", field, "Unknown"));
-            }
-        }
-    }
-
     let encoded_re = Regex::new(r#"encoded (?:as|in) (?:the )?"([^"]+)" field"#).unwrap();
     for operand in operands {
         let hover = operand.hover.to_lowercase();
@@ -281,10 +222,6 @@ fn infer_roles_from_docvars_and_asm(
         let field = normalize_role_field(captures.get(1).unwrap().as_str(), fields);
         let width = operand_width(docvars, Some(operand));
 
-        if hover.contains("base register") {
-            roles.insert(role_tuple("MemBase", &field, "X64"));
-            roles.insert(role_tuple("RegRead", &field, "X64"));
-        }
         if hover.contains("destination register") || hover.contains("written") {
             roles.insert(role_tuple("RegWrite", &field, &width));
         }
@@ -295,20 +232,90 @@ fn infer_roles_from_docvars_and_asm(
         {
             roles.insert(role_tuple("RegRead", &field, &width));
         }
-        if hover.contains("register to be transferred") {
-            let kind = if matches!(mnemonic, "LDR" | "LDP" | "LDTR") {
-                "RegWrite"
-            } else {
-                "RegRead"
-            };
-            roles.insert(role_tuple(kind, &field, &width));
-        }
         if hover.contains("program label") || operand.text.contains("<label>") {
             roles.insert(role_tuple("BranchTarget", &field, "Unknown"));
         }
     }
 
     roles
+}
+
+/// Direction of a general-purpose load/store, read from the access descriptor its
+/// execute pseudocode builds: `CreateAccDescGPR(MemOp_LOAD | MemOp_STORE |
+/// MemOp_PREFETCH, ...)`. `None` for anything else, or if the text names more than
+/// one direction.
+fn gpr_mem_op(execute_text: &str) -> Option<String> {
+    let re = Regex::new(r"CreateAccDescGPR\s*\(\s*MemOp_(LOAD|STORE|PREFETCH)\b").unwrap();
+    let ops = re
+        .captures_iter(execute_text)
+        .map(|captures| captures[1].to_string())
+        .collect::<BTreeSet<_>>();
+    if ops.len() == 1 {
+        ops.into_iter().next()
+    } else {
+        None
+    }
+}
+
+/// Register and addressing roles of every general-purpose load/store form, derived
+/// from the XML rather than mnemonic lists:
+/// - `Rn` is the base (`MemBase`), read-write when `address-form` is pre/post-indexed;
+/// - `Rt`/`Rt2` are written by a load and read by a store (a prefetch's `Rt` is its
+///   operation code, not a register);
+/// - `Rm` is the register-offset index, read as a 64-bit register that `ExtendReg`
+///   then narrows (as for ADD/SUB extended register);
+/// - every `imm*` field is the address offset (`MemOffset`); with no `Rn` the offset
+///   is from the PC (literal loads).
+fn infer_load_store_roles(
+    docvars: &IndexMap<String, String>,
+    operands: &[AsmOperand],
+    fields: &BTreeSet<String>,
+    execute_text: &str,
+) -> BTreeSet<RoleTuple> {
+    let mut roles = BTreeSet::new();
+    let Some(mem_op) = gpr_mem_op(execute_text) else {
+        return roles;
+    };
+    let writeback = matches!(
+        docvars.get("address-form").map(String::as_str),
+        Some("pre-indexed" | "post-indexed")
+    );
+
+    if fields.contains("Rn") {
+        let kind = if writeback { "RegReadWrite" } else { "RegRead" };
+        roles.insert(role_tuple(kind, "Rn", "X64"));
+        roles.insert(role_tuple("MemBase", "Rn", "X64"));
+    }
+    if fields.contains("Rm") {
+        roles.insert(role_tuple("RegRead", "Rm", "X64"));
+    }
+    let transfer_kind = match mem_op.as_str() {
+        "LOAD" => Some("RegWrite"),
+        "STORE" => Some("RegRead"),
+        _ => None,
+    };
+    if let Some(kind) = transfer_kind {
+        for field in ["Rt", "Rt2"] {
+            if fields.contains(field) {
+                let width = operand_width(docvars, encoding_operand(operands, field));
+                roles.insert(role_tuple(kind, field, &width));
+            }
+        }
+    }
+    for field in fields {
+        if field.to_lowercase().starts_with("imm") {
+            roles.insert(role_tuple("MemOffset", field, "Unknown"));
+        }
+    }
+    roles
+}
+
+/// The assembler operand whose hover says it is encoded in `field`.
+fn encoding_operand<'a>(operands: &'a [AsmOperand], field: &str) -> Option<&'a AsmOperand> {
+    let encoded = format!("\"{field}\" field");
+    operands
+        .iter()
+        .find(|operand| operand.hover.contains(&encoded))
 }
 
 fn simplify_roles(roles: BTreeSet<RoleTuple>) -> BTreeSet<RoleTuple> {
@@ -368,6 +375,18 @@ mod tests {
             "(result, -) = AddWithCarry(a, b, '0'); X(d) = result;"
         ));
         assert!(!writes("if ConditionHolds(c) then result = X(n); end;"));
+    }
+
+    #[test]
+    fn load_store_direction_comes_from_the_access_descriptor() {
+        let load = "let accdesc = CreateAccDescGPR(MemOp_LOAD, nontemporal, privileged, t);";
+        let store = "let accdesc = CreateAccDescGPR ( MemOp_STORE , nontemporal );";
+        let prefetch = "CreateAccDescGPR(MemOp_PREFETCH, nontemporal); Prefetch(address, t);";
+        assert_eq!(gpr_mem_op(load).as_deref(), Some("LOAD"));
+        assert_eq!(gpr_mem_op(store).as_deref(), Some("STORE"));
+        assert_eq!(gpr_mem_op(prefetch).as_deref(), Some("PREFETCH"));
+        assert_eq!(gpr_mem_op(&format!("{load} {store}")), None);
+        assert_eq!(gpr_mem_op("X(d) = result;"), None);
     }
 
     #[test]

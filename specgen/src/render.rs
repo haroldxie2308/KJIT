@@ -233,6 +233,8 @@ pub fn render_rust(specs: &[InstructionSpec]) -> Result<String> {
         "    pub encoding_label: &'static str,".to_string(),
         "    pub mask: u32,".to_string(),
         "    pub value: u32,".to_string(),
+        "    /// `(mask, value)` patterns a matching word must not have (`!=` constraints).".to_string(),
+        "    pub excludes: &'static [(u32, u32)],".to_string(),
         "    pub fields: &'static [GeneratedFieldSpec],".to_string(),
         "    pub operands: &'static [A64OperandRole],".to_string(),
         "    pub asm: &'static str,".to_string(),
@@ -241,7 +243,18 @@ pub fn render_rust(specs: &[InstructionSpec]) -> Result<String> {
         "#[allow(dead_code)]".to_string(),
         "impl GeneratedInsnSpec {".to_string(),
         "    pub const fn matches(&self, word: u32) -> bool {".to_string(),
-        "        (word & self.mask) == self.value".to_string(),
+        "        if (word & self.mask) != self.value {".to_string(),
+        "            return false;".to_string(),
+        "        }".to_string(),
+        "        let mut index = 0;".to_string(),
+        "        while index < self.excludes.len() {".to_string(),
+        "            let (mask, value) = self.excludes[index];".to_string(),
+        "            if (word & mask) == value {".to_string(),
+        "                return false;".to_string(),
+        "            }".to_string(),
+        "            index += 1;".to_string(),
+        "        }".to_string(),
+        "        true".to_string(),
         "    }".to_string(),
         "".to_string(),
         "    pub fn field(&self, name: &str) -> Option<&'static GeneratedFieldSpec> {".to_string(),
@@ -520,7 +533,7 @@ fn render_variants(specs: &[InstructionSpec]) -> Vec<RenderVariant<'_>> {
 
 fn render_field(variant: &VariantSpec, field: &FieldSpec) -> RenderField {
     let rust_name = rust_field_ident(&field.name);
-    if is_register_field(field) {
+    if is_register_field(variant, field) {
         let width = register_width(variant, &field.name);
         let reg31 = register_31_mode(variant, &field.name);
         let raw_value = format!("((word & {}) >> {}) as u8", field.mask, field.shift);
@@ -751,8 +764,14 @@ fn render_encode_arms(variants: &[RenderVariant<'_>], lines: &mut Vec<String>) {
 
 fn render_decode_arms(variants: &[RenderVariant<'_>], lines: &mut Vec<String>) {
     for variant in variants {
+        let excludes = variant
+            .spec
+            .excludes
+            .iter()
+            .map(|exclude| format!(" && (word & {}) != {}", exclude.mask, exclude.value))
+            .collect::<String>();
         lines.push(format!(
-            "    if (word & {}) == {} {{",
+            "    if (word & {}) == {}{excludes} {{",
             variant.spec.mask, variant.spec.value
         ));
         if variant.fields.is_empty() {
@@ -875,7 +894,7 @@ fn render_tables(specs: &[InstructionSpec], lines: &mut Vec<String>) -> Result<(
             lines.push("".to_string());
 
             all_entries.push(format!(
-                "GeneratedInsnSpec {{\n    key: \"{}\",\n    mnemonic: \"{}\",\n    heading: \"{}\",\n    title: \"{}\",\n    encoding_label: \"{}\",\n    mask: {},\n    value: {},\n    fields: {},\n    operands: {},\n    asm: {},\n}},",
+                "GeneratedInsnSpec {{\n    key: \"{}\",\n    mnemonic: \"{}\",\n    heading: \"{}\",\n    title: \"{}\",\n    encoding_label: \"{}\",\n    mask: {},\n    value: {},\n    excludes: &[{}],\n    fields: {},\n    operands: {},\n    asm: {},\n}},",
                 key,
                 variant.mnemonic,
                 variant.heading,
@@ -883,6 +902,12 @@ fn render_tables(specs: &[InstructionSpec], lines: &mut Vec<String>) -> Result<(
                 variant.encoding_label,
                 variant.mask,
                 variant.value,
+                variant
+                    .excludes
+                    .iter()
+                    .map(|exclude| format!("({}, {})", exclude.mask, exclude.value))
+                    .collect::<Vec<_>>()
+                    .join(", "),
                 array_name,
                 operand_array_name,
                 rust_string(&variant.asm),
@@ -1075,8 +1100,8 @@ fn render_imm_decode(variant: &VariantSpec, field: &FieldSpec, raw: &str) -> Str
     if variant
         .operand_roles
         .iter()
-        .find(|role| role.kind == "BranchTarget" && role.field == field.name)
-        .is_some()
+        .any(|role| role.kind == "BranchTarget" && role.field == field.name)
+        || is_label_mem_offset(variant, &field.name)
     {
         return format!("A64Imm::scaled_signed({raw}, {}, 2)", field.width);
     }
@@ -1089,6 +1114,20 @@ fn render_imm_decode(variant: &VariantSpec, field: &FieldSpec, raw: &str) -> Str
     } else {
         format!("A64Imm::unsigned({raw}, {})", field.width)
     }
+}
+
+/// A literal load's offset: a `MemOffset` field that encodes a `<label>` operand,
+/// i.e. a signed word offset from the instruction's PC.
+fn is_label_mem_offset(variant: &VariantSpec, field: &str) -> bool {
+    let encoded = format!("\"{field}\"");
+    variant
+        .operand_roles
+        .iter()
+        .any(|role| role.kind == "MemOffset" && role.field == field)
+        && variant
+            .asm_operands
+            .iter()
+            .any(|operand| operand.text == "<label>" && operand.hover.contains(&encoded))
 }
 
 fn immediate_operand_text(variant: &VariantSpec, field: &str) -> Option<String> {
@@ -1122,12 +1161,21 @@ fn immediate_scale(variant: &VariantSpec, field: &str) -> u8 {
     }
 }
 
-fn is_register_field(field: &FieldSpec) -> bool {
+/// A register-named field is a register only if a role reads or writes it: PRFM
+/// names its prefetch operation `Rt`, and that field is an operation code.
+fn is_register_field(variant: &VariantSpec, field: &FieldSpec) -> bool {
     field.width == 5
         && matches!(
             field.name.as_str(),
             "Rd" | "Rn" | "Rm" | "Rt" | "Rt2" | "Ra" | "Rs"
         )
+        && variant.operand_roles.iter().any(|role| {
+            role.field == field.name
+                && matches!(
+                    role.kind.as_str(),
+                    "RegRead" | "RegWrite" | "RegReadWrite" | "MemBase"
+                )
+        })
 }
 
 fn register_width(variant: &VariantSpec, field: &str) -> &'static str {

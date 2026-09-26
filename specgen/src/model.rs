@@ -40,6 +40,14 @@ pub struct OperandRoleSpec {
     pub width: String,
 }
 
+/// A bit pattern the variant's words must not match (a `!=` constraint in the
+/// encoding diagram).
+#[derive(Clone, Debug, Serialize)]
+pub struct ExcludeSpec {
+    pub mask: String,
+    pub value: String,
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct VariantSpec {
     pub section_id: String,
@@ -53,6 +61,8 @@ pub struct VariantSpec {
     pub asm_operands: Vec<AsmOperand>,
     pub mask: String,
     pub value: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub excludes: Vec<ExcludeSpec>,
     pub fields: Vec<FieldSpec>,
     pub operand_roles: Vec<OperandRoleSpec>,
     pub asm: String,

@@ -1,6 +1,6 @@
 use crate::metadata::infer_operand_roles;
-use crate::model::{AsmOperand, FieldSlice, FieldSpec, InstructionSpec, VariantSpec};
-use anyhow::{Context, Result};
+use crate::model::{AsmOperand, ExcludeSpec, FieldSlice, FieldSpec, InstructionSpec, VariantSpec};
+use anyhow::{bail, Context, Result};
 use indexmap::IndexMap;
 use roxmltree::{Document, Node};
 use std::fs;
@@ -23,14 +23,23 @@ pub fn parse_instruction(path: &Path) -> Result<InstructionSpec> {
     for classes in children(root, "classes") {
         for iclass in children(classes, "iclass") {
             let iclass_name = iclass.attribute("name").unwrap_or("").to_string();
-            let (base_mask, base_value, fields) = parse_regdiagram(child(iclass, "regdiagram"))?;
+            let (base_mask, base_value, fields, base_excludes) =
+                parse_regdiagram(child(iclass, "regdiagram"))?;
             let iclass_docvars = parse_docvars(iclass);
             let (decode_text, execute_text) = parse_ps_texts(root, iclass);
 
             for encoding in children(iclass, "encoding") {
-                let (enc_mask, enc_value, _) = parse_regdiagram(Some(encoding))?;
+                let (enc_mask, enc_value, _, enc_excludes) = parse_regdiagram(Some(encoding))?;
                 let combined_mask = base_mask | enc_mask;
                 let combined_value = base_value | enc_value;
+                let excludes = base_excludes
+                    .iter()
+                    .chain(&enc_excludes)
+                    .map(|&(mask, value)| ExcludeSpec {
+                        mask: format!("0x{mask:08x}"),
+                        value: format!("0x{value:08x}"),
+                    })
+                    .collect();
                 let mut variant_docvars = section_docvars.clone();
                 variant_docvars.extend(iclass_docvars.clone());
                 variant_docvars.extend(parse_docvars(encoding));
@@ -55,6 +64,7 @@ pub fn parse_instruction(path: &Path) -> Result<InstructionSpec> {
                     asm_operands,
                     mask: format!("0x{combined_mask:08x}"),
                     value: format!("0x{combined_value:08x}"),
+                    excludes,
                     fields: render_fields(&fields, combined_mask),
                     operand_roles: infer_operand_roles(
                         &variant_docvars,
@@ -117,24 +127,37 @@ fn bit_positions(hibit: u8, width: u8) -> Vec<u8> {
     (0..width).map(|offset| hibit - offset).collect()
 }
 
-fn parse_regdiagram(regdiagram: Option<Node<'_, '_>>) -> Result<(u32, u32, Vec<FieldSlice>)> {
+/// A `(mask, value)` bit pattern a word must NOT match: the diagram's `!= pattern`
+/// constraints.
+type Exclude = (u32, u32);
+
+fn parse_regdiagram(
+    regdiagram: Option<Node<'_, '_>>,
+) -> Result<(u32, u32, Vec<FieldSlice>, Vec<Exclude>)> {
     let Some(regdiagram) = regdiagram else {
-        return Ok((0, 0, Vec::new()));
+        return Ok((0, 0, Vec::new(), Vec::new()));
     };
 
     let mut mask = 0;
     let mut value = 0;
     let mut fields = Vec::new();
+    let mut excludes = Vec::new();
     for box_node in children(regdiagram, "box") {
-        let (box_mask, box_value, box_fields) = parse_box(box_node)?;
+        let (box_mask, box_value, box_fields, box_exclude) = parse_box(box_node)?;
         mask |= box_mask;
         value |= box_value;
         fields.extend(box_fields);
+        excludes.extend(box_exclude);
     }
-    Ok((mask, value, fields))
+    Ok((mask, value, fields, excludes))
 }
 
-fn parse_box(box_node: Node<'_, '_>) -> Result<(u32, u32, Vec<FieldSlice>)> {
+/// One box of a register diagram: its fixed bits, its field, and its `!=`
+/// constraint if it has one. The XML writes that constraint two ways: a cell whose
+/// text is `!= <pattern>` (`x` = don't care), or per-bit `Z`/`N` cells (the
+/// excluded pattern has a 0/1 there), as in `LDRB_32B_ldst_regoff`'s
+/// `option != 011`.
+fn parse_box(box_node: Node<'_, '_>) -> Result<(u32, u32, Vec<FieldSlice>, Option<Exclude>)> {
     let hibit = attr(box_node, "hibit")?.parse::<u8>()?;
     let width = box_node.attribute("width").unwrap_or("1").parse::<u8>()?;
     let name = box_node.attribute("name").map(str::to_string);
@@ -142,6 +165,7 @@ fn parse_box(box_node: Node<'_, '_>) -> Result<(u32, u32, Vec<FieldSlice>)> {
 
     let mut mask = 0_u32;
     let mut value = 0_u32;
+    let mut exclude: Option<Exclude> = None;
     let mut used = 0_usize;
 
     for cell in children(box_node, "c") {
@@ -163,6 +187,27 @@ fn parse_box(box_node: Node<'_, '_>) -> Result<(u32, u32, Vec<FieldSlice>)> {
             if text == "1" {
                 value |= 1_u32 << bit;
             }
+        } else if let Some(pattern) = text.strip_prefix("!=") {
+            let pattern = pattern.trim();
+            if pattern.len() != span || !pattern.chars().all(|ch| matches!(ch, '0' | '1' | 'x')) {
+                bail!("unsupported `!=` constraint cell `{text}` spanning {span} bits");
+            }
+            let (ex_mask, ex_value) = exclude.get_or_insert((0, 0));
+            for (bit, ch) in cell_positions.iter().zip(pattern.chars()) {
+                if ch != 'x' {
+                    *ex_mask |= 1_u32 << bit;
+                    if ch == '1' {
+                        *ex_value |= 1_u32 << bit;
+                    }
+                }
+            }
+        } else if span == 1 && matches!(text, "Z" | "N") {
+            let bit = cell_positions[0];
+            let (ex_mask, ex_value) = exclude.get_or_insert((0, 0));
+            *ex_mask |= 1_u32 << bit;
+            if text == "N" {
+                *ex_value |= 1_u32 << bit;
+            }
         }
     }
 
@@ -179,7 +224,7 @@ fn parse_box(box_node: Node<'_, '_>) -> Result<(u32, u32, Vec<FieldSlice>)> {
         .into_iter()
         .collect();
 
-    Ok((mask, value, fields))
+    Ok((mask, value, fields, exclude))
 }
 
 fn parse_docvars(node: Node<'_, '_>) -> IndexMap<String, String> {
@@ -279,4 +324,33 @@ fn strip_doctype(xml: &str) -> String {
     ret.push_str(&xml[..start]);
     ret.push_str(&xml[start + end + 1..]);
     ret
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_one_box(xml: &str) -> (u32, u32, Option<Exclude>) {
+        let doc = Document::parse(xml).unwrap();
+        let (mask, value, _, exclude) = parse_box(doc.root_element()).unwrap();
+        (mask, value, exclude)
+    }
+
+    #[test]
+    fn not_equal_constraints_become_exclusions() {
+        // `LDRB_32B_ldst_regoff`: option (bits 15:13) != 011, as Z/N cells.
+        let zn = r#"<box hibit="15" width="3" name="option"><c>Z</c><c>N</c><c>N</c></box>"#;
+        assert_eq!(parse_one_box(zn), (0, 0, Some((0xe000, 0x6000))));
+        // Text form with a don't-care bit: opc (bits 24:22) != 11x.
+        let text = r#"<box hibit="24" width="3" name="opc"><c colspan="3">!= 11x</c></box>"#;
+        assert_eq!(
+            parse_one_box(text),
+            (0, 0, Some((0x0180_0000, 0x0180_0000)))
+        );
+        // Fixed bits and free fields carry no exclusion.
+        let fixed = r#"<box hibit="11" width="2"><c>1</c><c>0</c></box>"#;
+        assert_eq!(parse_one_box(fixed), (0xc00, 0x800, None));
+        let free = r#"<box hibit="4" width="5" name="Rt"><c colspan="5"/></box>"#;
+        assert_eq!(parse_one_box(free), (0, 0, None));
+    }
 }

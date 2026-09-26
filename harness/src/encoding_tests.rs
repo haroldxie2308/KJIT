@@ -22,6 +22,7 @@ fn encoding_matches_llvm_for_handwritten_cases() {
     let mut cases = encoding_cases();
     cases.extend(alu_encoding_cases());
     cases.extend(condition_code_cases());
+    cases.extend(mem_encoding_cases());
     let decode_forms = decode_forms_from_subset_toml(SUBSET_TOML);
     let decode_form_set = decode_forms.iter().cloned().collect::<BTreeSet<_>>();
     let covered_forms = cases.iter().map(|case| case.form).collect::<BTreeSet<_>>();
@@ -1900,6 +1901,887 @@ fn alu_encoding_cases() -> Vec<EncodingCase> {
             A64Insn::MrsMrsRsSystemmove { rt: x(31) },
         ),
     ]
+}
+
+/// A7b memory forms: every addressing mode, SP bases, XZR/WZR transfers, and the
+/// ends of every offset range.
+fn mem_encoding_cases() -> Vec<EncodingCase> {
+    vec![
+        case(
+            "LDRB_imm.LDRB_32_ldst_pos",
+            "    ldrb w1, [x2, #4095]",
+            A64Insn::LdrbImmLdrb32LdstPos {
+                rt: w(1),
+                mem: A64Mem::offset(xsp(2), A64Imm::scaled_unsigned(4095, 12, 0)),
+            },
+        ),
+        case(
+            "LDRB_imm.LDRB_32_ldst_immpre",
+            "    ldrb w3, [sp, #-256]!",
+            A64Insn::LdrbImmLdrb32LdstImmpre {
+                rt: w(3),
+                mem: A64Mem::pre_index(xsp(31), simm9(-256)),
+            },
+        ),
+        case(
+            "LDRB_imm.LDRB_32_ldst_immpost",
+            "    ldrb wzr, [x4], #255",
+            A64Insn::LdrbImmLdrb32LdstImmpost {
+                rt: w(31),
+                mem: A64Mem::post_index(xsp(4), simm9(255)),
+            },
+        ),
+        case(
+            "STRB_imm.STRB_32_ldst_pos",
+            "    strb w5, [sp, #1]",
+            A64Insn::StrbImmStrb32LdstPos {
+                rt: w(5),
+                mem: A64Mem::offset(xsp(31), A64Imm::scaled_unsigned(1, 12, 0)),
+            },
+        ),
+        case(
+            "STRB_imm.STRB_32_ldst_immpre",
+            "    strb w6, [x7, #255]!",
+            A64Insn::StrbImmStrb32LdstImmpre {
+                rt: w(6),
+                mem: A64Mem::pre_index(xsp(7), simm9(255)),
+            },
+        ),
+        case(
+            "STRB_imm.STRB_32_ldst_immpost",
+            "    strb wzr, [x8], #-1",
+            A64Insn::StrbImmStrb32LdstImmpost {
+                rt: w(31),
+                mem: A64Mem::post_index(xsp(8), simm9(-1)),
+            },
+        ),
+        case(
+            "LDRH_imm.LDRH_32_ldst_pos",
+            "    ldrh w9, [x10, #8190]",
+            A64Insn::LdrhImmLdrh32LdstPos {
+                rt: w(9),
+                mem: A64Mem::offset(xsp(10), A64Imm::scaled_unsigned(4095, 12, 1)),
+            },
+        ),
+        case(
+            "LDRH_imm.LDRH_32_ldst_immpre",
+            "    ldrh w11, [x12, #-2]!",
+            A64Insn::LdrhImmLdrh32LdstImmpre {
+                rt: w(11),
+                mem: A64Mem::pre_index(xsp(12), simm9(-2)),
+            },
+        ),
+        case(
+            "LDRH_imm.LDRH_32_ldst_immpost",
+            "    ldrh w13, [sp], #2",
+            A64Insn::LdrhImmLdrh32LdstImmpost {
+                rt: w(13),
+                mem: A64Mem::post_index(xsp(31), simm9(2)),
+            },
+        ),
+        case(
+            "STRH_imm.STRH_32_ldst_pos",
+            "    strh wzr, [x14, #2]",
+            A64Insn::StrhImmStrh32LdstPos {
+                rt: w(31),
+                mem: A64Mem::offset(xsp(14), A64Imm::scaled_unsigned(1, 12, 1)),
+            },
+        ),
+        case(
+            "STRH_imm.STRH_32_ldst_immpre",
+            "    strh w15, [x16, #-256]!",
+            A64Insn::StrhImmStrh32LdstImmpre {
+                rt: w(15),
+                mem: A64Mem::pre_index(xsp(16), simm9(-256)),
+            },
+        ),
+        case(
+            "STRH_imm.STRH_32_ldst_immpost",
+            "    strh w17, [x18], #254",
+            A64Insn::StrhImmStrh32LdstImmpost {
+                rt: w(17),
+                mem: A64Mem::post_index(xsp(18), simm9(254)),
+            },
+        ),
+        case(
+            "LDRSB_imm.LDRSB_32_ldst_pos",
+            "    ldrsb w0, [x1, #0]",
+            A64Insn::LdrsbImmLdrsb32LdstPos {
+                rt: w(0),
+                mem: A64Mem::offset(xsp(1), A64Imm::scaled_unsigned(0, 12, 0)),
+            },
+        ),
+        case(
+            "LDRSB_imm.LDRSB_32_ldst_immpre",
+            "    ldrsb w2, [x3, #-1]!",
+            A64Insn::LdrsbImmLdrsb32LdstImmpre {
+                rt: w(2),
+                mem: A64Mem::pre_index(xsp(3), simm9(-1)),
+            },
+        ),
+        case(
+            "LDRSB_imm.LDRSB_32_ldst_immpost",
+            "    ldrsb w4, [sp], #1",
+            A64Insn::LdrsbImmLdrsb32LdstImmpost {
+                rt: w(4),
+                mem: A64Mem::post_index(xsp(31), simm9(1)),
+            },
+        ),
+        case(
+            "LDRSB_imm.LDRSB_64_ldst_pos",
+            "    ldrsb x5, [x6, #4095]",
+            A64Insn::LdrsbImmLdrsb64LdstPos {
+                rt: x(5),
+                mem: A64Mem::offset(xsp(6), A64Imm::scaled_unsigned(4095, 12, 0)),
+            },
+        ),
+        case(
+            "LDRSB_imm.LDRSB_64_ldst_immpre",
+            "    ldrsb xzr, [x7, #-256]!",
+            A64Insn::LdrsbImmLdrsb64LdstImmpre {
+                rt: x(31),
+                mem: A64Mem::pre_index(xsp(7), simm9(-256)),
+            },
+        ),
+        case(
+            "LDRSB_imm.LDRSB_64_ldst_immpost",
+            "    ldrsb x8, [x9], #255",
+            A64Insn::LdrsbImmLdrsb64LdstImmpost {
+                rt: x(8),
+                mem: A64Mem::post_index(xsp(9), simm9(255)),
+            },
+        ),
+        case(
+            "LDRSH_imm.LDRSH_32_ldst_pos",
+            "    ldrsh w10, [x11, #8190]",
+            A64Insn::LdrshImmLdrsh32LdstPos {
+                rt: w(10),
+                mem: A64Mem::offset(xsp(11), A64Imm::scaled_unsigned(4095, 12, 1)),
+            },
+        ),
+        case(
+            "LDRSH_imm.LDRSH_32_ldst_immpre",
+            "    ldrsh w12, [x13, #-2]!",
+            A64Insn::LdrshImmLdrsh32LdstImmpre {
+                rt: w(12),
+                mem: A64Mem::pre_index(xsp(13), simm9(-2)),
+            },
+        ),
+        case(
+            "LDRSH_imm.LDRSH_32_ldst_immpost",
+            "    ldrsh w14, [x15], #2",
+            A64Insn::LdrshImmLdrsh32LdstImmpost {
+                rt: w(14),
+                mem: A64Mem::post_index(xsp(15), simm9(2)),
+            },
+        ),
+        case(
+            "LDRSH_imm.LDRSH_64_ldst_pos",
+            "    ldrsh x16, [sp, #2]",
+            A64Insn::LdrshImmLdrsh64LdstPos {
+                rt: x(16),
+                mem: A64Mem::offset(xsp(31), A64Imm::scaled_unsigned(1, 12, 1)),
+            },
+        ),
+        case(
+            "LDRSH_imm.LDRSH_64_ldst_immpre",
+            "    ldrsh x17, [x18, #254]!",
+            A64Insn::LdrshImmLdrsh64LdstImmpre {
+                rt: x(17),
+                mem: A64Mem::pre_index(xsp(18), simm9(254)),
+            },
+        ),
+        case(
+            "LDRSH_imm.LDRSH_64_ldst_immpost",
+            "    ldrsh xzr, [x19], #-256",
+            A64Insn::LdrshImmLdrsh64LdstImmpost {
+                rt: x(31),
+                mem: A64Mem::post_index(xsp(19), simm9(-256)),
+            },
+        ),
+        case(
+            "LDRSW_imm.LDRSW_64_ldst_pos",
+            "    ldrsw x0, [x1, #16380]",
+            A64Insn::LdrswImmLdrsw64LdstPos {
+                rt: x(0),
+                mem: A64Mem::offset(xsp(1), A64Imm::scaled_unsigned(4095, 12, 2)),
+            },
+        ),
+        case(
+            "LDRSW_imm.LDRSW_64_ldst_immpre",
+            "    ldrsw x2, [x3, #-256]!",
+            A64Insn::LdrswImmLdrsw64LdstImmpre {
+                rt: x(2),
+                mem: A64Mem::pre_index(xsp(3), simm9(-256)),
+            },
+        ),
+        case(
+            "LDRSW_imm.LDRSW_64_ldst_immpost",
+            "    ldrsw xzr, [sp], #255",
+            A64Insn::LdrswImmLdrsw64LdstImmpost {
+                rt: x(31),
+                mem: A64Mem::post_index(xsp(31), simm9(255)),
+            },
+        ),
+        case(
+            "LDUR_gen.LDUR_32_ldst_unscaled",
+            "    ldur w0, [x1, #-256]",
+            A64Insn::LdurGenLdur32LdstUnscaled {
+                rt: w(0),
+                mem: A64Mem::offset(xsp(1), simm9(-256)),
+            },
+        ),
+        case(
+            "LDUR_gen.LDUR_64_ldst_unscaled",
+            "    ldur x2, [sp, #255]",
+            A64Insn::LdurGenLdur64LdstUnscaled {
+                rt: x(2),
+                mem: A64Mem::offset(xsp(31), simm9(255)),
+            },
+        ),
+        case(
+            "STUR_gen.STUR_32_ldst_unscaled",
+            "    stur wzr, [x3, #-1]",
+            A64Insn::SturGenStur32LdstUnscaled {
+                rt: w(31),
+                mem: A64Mem::offset(xsp(3), simm9(-1)),
+            },
+        ),
+        case(
+            "STUR_gen.STUR_64_ldst_unscaled",
+            "    stur x4, [x5, #3]",
+            A64Insn::SturGenStur64LdstUnscaled {
+                rt: x(4),
+                mem: A64Mem::offset(xsp(5), simm9(3)),
+            },
+        ),
+        case(
+            "LDURB.LDURB_32_ldst_unscaled",
+            "    ldurb w6, [x7, #-7]",
+            A64Insn::LdurbLdurb32LdstUnscaled {
+                rt: w(6),
+                mem: A64Mem::offset(xsp(7), simm9(-7)),
+            },
+        ),
+        case(
+            "STURB.STURB_32_ldst_unscaled",
+            "    sturb w8, [sp]",
+            A64Insn::SturbSturb32LdstUnscaled {
+                rt: w(8),
+                mem: A64Mem::offset(xsp(31), simm9(0)),
+            },
+        ),
+        case(
+            "LDURH.LDURH_32_ldst_unscaled",
+            "    ldurh w9, [x10, #1]",
+            A64Insn::LdurhLdurh32LdstUnscaled {
+                rt: w(9),
+                mem: A64Mem::offset(xsp(10), simm9(1)),
+            },
+        ),
+        case(
+            "STURH.STURH_32_ldst_unscaled",
+            "    sturh w11, [x12, #-255]",
+            A64Insn::SturhSturh32LdstUnscaled {
+                rt: w(11),
+                mem: A64Mem::offset(xsp(12), simm9(-255)),
+            },
+        ),
+        case(
+            "LDURSB.LDURSB_32_ldst_unscaled",
+            "    ldursb w13, [x14, #5]",
+            A64Insn::LdursbLdursb32LdstUnscaled {
+                rt: w(13),
+                mem: A64Mem::offset(xsp(14), simm9(5)),
+            },
+        ),
+        case(
+            "LDURSB.LDURSB_64_ldst_unscaled",
+            "    ldursb x15, [x16, #-5]",
+            A64Insn::LdursbLdursb64LdstUnscaled {
+                rt: x(15),
+                mem: A64Mem::offset(xsp(16), simm9(-5)),
+            },
+        ),
+        case(
+            "LDURSH.LDURSH_32_ldst_unscaled",
+            "    ldursh w17, [x18, #9]",
+            A64Insn::LdurshLdursh32LdstUnscaled {
+                rt: w(17),
+                mem: A64Mem::offset(xsp(18), simm9(9)),
+            },
+        ),
+        case(
+            "LDURSH.LDURSH_64_ldst_unscaled",
+            "    ldursh xzr, [x19, #-9]",
+            A64Insn::LdurshLdursh64LdstUnscaled {
+                rt: x(31),
+                mem: A64Mem::offset(xsp(19), simm9(-9)),
+            },
+        ),
+        case(
+            "LDURSW.LDURSW_64_ldst_unscaled",
+            "    ldursw x20, [x21, #-256]",
+            A64Insn::LdurswLdursw64LdstUnscaled {
+                rt: x(20),
+                mem: A64Mem::offset(xsp(21), simm9(-256)),
+            },
+        ),
+        case(
+            "LDTRB.LDTRB_32_ldst_unpriv",
+            "    ldtrb w0, [x1, #-256]",
+            A64Insn::LdtrbLdtrb32LdstUnpriv {
+                rt: w(0),
+                mem: A64Mem::offset(xsp(1), simm9(-256)),
+            },
+        ),
+        case(
+            "STTRB.STTRB_32_ldst_unpriv",
+            "    sttrb wzr, [sp, #255]",
+            A64Insn::SttrbSttrb32LdstUnpriv {
+                rt: w(31),
+                mem: A64Mem::offset(xsp(31), simm9(255)),
+            },
+        ),
+        case(
+            "LDTRH.LDTRH_32_ldst_unpriv",
+            "    ldtrh w2, [x3]",
+            A64Insn::LdtrhLdtrh32LdstUnpriv {
+                rt: w(2),
+                mem: A64Mem::offset(xsp(3), simm9(0)),
+            },
+        ),
+        case(
+            "STTRH.STTRH_32_ldst_unpriv",
+            "    sttrh w4, [x5, #-1]",
+            A64Insn::SttrhSttrh32LdstUnpriv {
+                rt: w(4),
+                mem: A64Mem::offset(xsp(5), simm9(-1)),
+            },
+        ),
+        case(
+            "LDTRSB.LDTRSB_32_ldst_unpriv",
+            "    ldtrsb w6, [x7, #1]",
+            A64Insn::LdtrsbLdtrsb32LdstUnpriv {
+                rt: w(6),
+                mem: A64Mem::offset(xsp(7), simm9(1)),
+            },
+        ),
+        case(
+            "LDTRSB.LDTRSB_64_ldst_unpriv",
+            "    ldtrsb x8, [sp]",
+            A64Insn::LdtrsbLdtrsb64LdstUnpriv {
+                rt: x(8),
+                mem: A64Mem::offset(xsp(31), simm9(0)),
+            },
+        ),
+        case(
+            "LDTRSH.LDTRSH_32_ldst_unpriv",
+            "    ldtrsh w9, [x10, #-2]",
+            A64Insn::LdtrshLdtrsh32LdstUnpriv {
+                rt: w(9),
+                mem: A64Mem::offset(xsp(10), simm9(-2)),
+            },
+        ),
+        case(
+            "LDTRSH.LDTRSH_64_ldst_unpriv",
+            "    ldtrsh x11, [x12, #2]",
+            A64Insn::LdtrshLdtrsh64LdstUnpriv {
+                rt: x(11),
+                mem: A64Mem::offset(xsp(12), simm9(2)),
+            },
+        ),
+        case(
+            "LDTRSW.LDTRSW_64_ldst_unpriv",
+            "    ldtrsw x13, [x14, #-4]",
+            A64Insn::LdtrswLdtrsw64LdstUnpriv {
+                rt: x(13),
+                mem: A64Mem::offset(xsp(14), simm9(-4)),
+            },
+        ),
+        case(
+            "LDP_gen.LDP_32_ldstpair_post",
+            "    ldp w0, w1, [x2], #-256",
+            A64Insn::LdpGenLdp32LdstpairPost {
+                rt2: w(1),
+                rt: w(0),
+                mem: A64Mem::post_index(xsp(2), pair_imm(-256, 2)),
+            },
+        ),
+        case(
+            "LDP_gen.LDP_32_ldstpair_pre",
+            "    ldp w3, w4, [sp, #252]!",
+            A64Insn::LdpGenLdp32LdstpairPre {
+                rt2: w(4),
+                rt: w(3),
+                mem: A64Mem::pre_index(xsp(31), pair_imm(252, 2)),
+            },
+        ),
+        case(
+            "LDP_gen.LDP_32_ldstpair_off",
+            "    ldp wzr, w5, [x6]",
+            A64Insn::LdpGenLdp32LdstpairOff {
+                rt2: w(5),
+                rt: w(31),
+                mem: A64Mem::offset(xsp(6), pair_imm(0, 2)),
+            },
+        ),
+        case(
+            "STP_gen.STP_32_ldstpair_post",
+            "    stp w8, w9, [x10], #4",
+            A64Insn::StpGenStp32LdstpairPost {
+                rt2: w(9),
+                rt: w(8),
+                mem: A64Mem::post_index(xsp(10), pair_imm(4, 2)),
+            },
+        ),
+        case(
+            "STP_gen.STP_32_ldstpair_pre",
+            "    stp w7, wzr, [sp, #-4]!",
+            A64Insn::StpGenStp32LdstpairPre {
+                rt2: w(31),
+                rt: w(7),
+                mem: A64Mem::pre_index(xsp(31), pair_imm(-4, 2)),
+            },
+        ),
+        case(
+            "STP_gen.STP_32_ldstpair_off",
+            "    stp wzr, wzr, [x11, #8]",
+            A64Insn::StpGenStp32LdstpairOff {
+                rt2: w(31),
+                rt: w(31),
+                mem: A64Mem::offset(xsp(11), pair_imm(8, 2)),
+            },
+        ),
+        case(
+            "LDPSW.LDPSW_64_ldstpair_post",
+            "    ldpsw x3, x4, [sp], #252",
+            A64Insn::LdpswLdpsw64LdstpairPost {
+                rt2: x(4),
+                rt: x(3),
+                mem: A64Mem::post_index(xsp(31), pair_imm(252, 2)),
+            },
+        ),
+        case(
+            "LDPSW.LDPSW_64_ldstpair_pre",
+            "    ldpsw x0, x1, [x2, #-256]!",
+            A64Insn::LdpswLdpsw64LdstpairPre {
+                rt2: x(1),
+                rt: x(0),
+                mem: A64Mem::pre_index(xsp(2), pair_imm(-256, 2)),
+            },
+        ),
+        case(
+            "LDPSW.LDPSW_64_ldstpair_off",
+            "    ldpsw x5, x6, [x7, #4]",
+            A64Insn::LdpswLdpsw64LdstpairOff {
+                rt2: x(6),
+                rt: x(5),
+                mem: A64Mem::offset(xsp(7), pair_imm(4, 2)),
+            },
+        ),
+        case(
+            "LDR_reg_gen.LDR_64_ldst_regoff",
+            "    ldr x0, [x1, x2, lsl #3]",
+            A64Insn::LdrRegGenLdr64LdstRegoff {
+                rm: x(2),
+                option: 0b011,
+                s: 1,
+                rn: xsp(1),
+                rt: x(0),
+            },
+        ),
+        case(
+            "LDR_reg_gen.LDR_64_ldst_regoff",
+            "    ldr x3, [sp, w4, sxtw]",
+            A64Insn::LdrRegGenLdr64LdstRegoff {
+                rm: x(4),
+                option: 0b110,
+                s: 0,
+                rn: xsp(31),
+                rt: x(3),
+            },
+        ),
+        case(
+            "LDR_reg_gen.LDR_64_ldst_regoff",
+            "    ldr xzr, [x5, w6, uxtw #3]",
+            A64Insn::LdrRegGenLdr64LdstRegoff {
+                rm: x(6),
+                option: 0b010,
+                s: 1,
+                rn: xsp(5),
+                rt: x(31),
+            },
+        ),
+        case(
+            "LDR_reg_gen.LDR_64_ldst_regoff",
+            "    ldr x7, [x8, x9, sxtx #3]",
+            A64Insn::LdrRegGenLdr64LdstRegoff {
+                rm: x(9),
+                option: 0b111,
+                s: 1,
+                rn: xsp(8),
+                rt: x(7),
+            },
+        ),
+        case(
+            "LDR_reg_gen.LDR_64_ldst_regoff",
+            "    ldr x10, [x11, xzr]",
+            A64Insn::LdrRegGenLdr64LdstRegoff {
+                rm: x(31),
+                option: 0b011,
+                s: 0,
+                rn: xsp(11),
+                rt: x(10),
+            },
+        ),
+        case(
+            "LDR_reg_gen.LDR_32_ldst_regoff",
+            "    ldr w0, [x1, w2, uxtw #2]",
+            A64Insn::LdrRegGenLdr32LdstRegoff {
+                rm: x(2),
+                option: 0b010,
+                s: 1,
+                rn: xsp(1),
+                rt: w(0),
+            },
+        ),
+        case(
+            "LDR_reg_gen.LDR_32_ldst_regoff",
+            "    ldr w3, [x4, x5, sxtx]",
+            A64Insn::LdrRegGenLdr32LdstRegoff {
+                rm: x(5),
+                option: 0b111,
+                s: 0,
+                rn: xsp(4),
+                rt: w(3),
+            },
+        ),
+        case(
+            "STR_reg_gen.STR_64_ldst_regoff",
+            "    str x0, [sp, x1, lsl #3]",
+            A64Insn::StrRegGenStr64LdstRegoff {
+                rm: x(1),
+                option: 0b011,
+                s: 1,
+                rn: xsp(31),
+                rt: x(0),
+            },
+        ),
+        case(
+            "STR_reg_gen.STR_32_ldst_regoff",
+            "    str wzr, [x1, w2, sxtw #2]",
+            A64Insn::StrRegGenStr32LdstRegoff {
+                rm: x(2),
+                option: 0b110,
+                s: 1,
+                rn: xsp(1),
+                rt: w(31),
+            },
+        ),
+        case(
+            "LDRB_reg.LDRB_32B_ldst_regoff",
+            "    ldrb w0, [x1, w2, uxtw]",
+            A64Insn::LdrbRegLdrb32bLdstRegoff {
+                rm: x(2),
+                option: 0b010,
+                s: 0,
+                rn: xsp(1),
+                rt: w(0),
+            },
+        ),
+        case(
+            "LDRB_reg.LDRB_32B_ldst_regoff",
+            "    ldrb w3, [x4, w5, sxtw #0]",
+            A64Insn::LdrbRegLdrb32bLdstRegoff {
+                rm: x(5),
+                option: 0b110,
+                s: 1,
+                rn: xsp(4),
+                rt: w(3),
+            },
+        ),
+        case(
+            "LDRB_reg.LDRB_32B_ldst_regoff",
+            "    ldrb w6, [x7, x8, sxtx]",
+            A64Insn::LdrbRegLdrb32bLdstRegoff {
+                rm: x(8),
+                option: 0b111,
+                s: 0,
+                rn: xsp(7),
+                rt: w(6),
+            },
+        ),
+        case(
+            "LDRB_reg.LDRB_32BL_ldst_regoff",
+            "    ldrb w0, [x1, x2]",
+            A64Insn::LdrbRegLdrb32blLdstRegoff {
+                rm: x(2),
+                s: 0,
+                rn: xsp(1),
+                rt: w(0),
+            },
+        ),
+        case(
+            "LDRB_reg.LDRB_32BL_ldst_regoff",
+            "    ldrb w3, [x4, x5, lsl #0]",
+            A64Insn::LdrbRegLdrb32blLdstRegoff {
+                rm: x(5),
+                s: 1,
+                rn: xsp(4),
+                rt: w(3),
+            },
+        ),
+        case(
+            "STRB_reg.STRB_32B_ldst_regoff",
+            "    strb w0, [x1, w2, sxtw]",
+            A64Insn::StrbRegStrb32bLdstRegoff {
+                rm: x(2),
+                option: 0b110,
+                s: 0,
+                rn: xsp(1),
+                rt: w(0),
+            },
+        ),
+        case(
+            "STRB_reg.STRB_32BL_ldst_regoff",
+            "    strb wzr, [sp, x3]",
+            A64Insn::StrbRegStrb32blLdstRegoff {
+                rm: x(3),
+                s: 0,
+                rn: xsp(31),
+                rt: w(31),
+            },
+        ),
+        case(
+            "LDRH_reg.LDRH_32_ldst_regoff",
+            "    ldrh w0, [x1, x2, lsl #1]",
+            A64Insn::LdrhRegLdrh32LdstRegoff {
+                rm: x(2),
+                option: 0b011,
+                s: 1,
+                rn: xsp(1),
+                rt: w(0),
+            },
+        ),
+        case(
+            "LDRH_reg.LDRH_32_ldst_regoff",
+            "    ldrh w3, [x4, w5, sxtw]",
+            A64Insn::LdrhRegLdrh32LdstRegoff {
+                rm: x(5),
+                option: 0b110,
+                s: 0,
+                rn: xsp(4),
+                rt: w(3),
+            },
+        ),
+        case(
+            "STRH_reg.STRH_32_ldst_regoff",
+            "    strh w0, [x1, w2, uxtw #1]",
+            A64Insn::StrhRegStrh32LdstRegoff {
+                rm: x(2),
+                option: 0b010,
+                s: 1,
+                rn: xsp(1),
+                rt: w(0),
+            },
+        ),
+        case(
+            "LDRSB_reg.LDRSB_32B_ldst_regoff",
+            "    ldrsb w0, [x1, w2, uxtw #0]",
+            A64Insn::LdrsbRegLdrsb32bLdstRegoff {
+                rm: x(2),
+                option: 0b010,
+                s: 1,
+                rn: xsp(1),
+                rt: w(0),
+            },
+        ),
+        case(
+            "LDRSB_reg.LDRSB_32BL_ldst_regoff",
+            "    ldrsb w3, [x4, x5]",
+            A64Insn::LdrsbRegLdrsb32blLdstRegoff {
+                rm: x(5),
+                s: 0,
+                rn: xsp(4),
+                rt: w(3),
+            },
+        ),
+        case(
+            "LDRSB_reg.LDRSB_64B_ldst_regoff",
+            "    ldrsb x6, [x7, w8, sxtw]",
+            A64Insn::LdrsbRegLdrsb64bLdstRegoff {
+                rm: x(8),
+                option: 0b110,
+                s: 0,
+                rn: xsp(7),
+                rt: x(6),
+            },
+        ),
+        case(
+            "LDRSB_reg.LDRSB_64BL_ldst_regoff",
+            "    ldrsb x0, [x1, xzr, lsl #0]",
+            A64Insn::LdrsbRegLdrsb64blLdstRegoff {
+                rm: x(31),
+                s: 1,
+                rn: xsp(1),
+                rt: x(0),
+            },
+        ),
+        case(
+            "LDRSH_reg.LDRSH_32_ldst_regoff",
+            "    ldrsh w0, [x1, w2, sxtw #1]",
+            A64Insn::LdrshRegLdrsh32LdstRegoff {
+                rm: x(2),
+                option: 0b110,
+                s: 1,
+                rn: xsp(1),
+                rt: w(0),
+            },
+        ),
+        case(
+            "LDRSH_reg.LDRSH_64_ldst_regoff",
+            "    ldrsh x3, [x4, x5, lsl #1]",
+            A64Insn::LdrshRegLdrsh64LdstRegoff {
+                rm: x(5),
+                option: 0b011,
+                s: 1,
+                rn: xsp(4),
+                rt: x(3),
+            },
+        ),
+        case(
+            "LDRSW_reg.LDRSW_64_ldst_regoff",
+            "    ldrsw x0, [x1, w2, sxtw #2]",
+            A64Insn::LdrswRegLdrsw64LdstRegoff {
+                rm: x(2),
+                option: 0b110,
+                s: 1,
+                rn: xsp(1),
+                rt: x(0),
+            },
+        ),
+        case(
+            "LDRSW_reg.LDRSW_64_ldst_regoff",
+            "    ldrsw x3, [sp, x4]",
+            A64Insn::LdrswRegLdrsw64LdstRegoff {
+                rm: x(4),
+                option: 0b011,
+                s: 0,
+                rn: xsp(31),
+                rt: x(3),
+            },
+        ),
+        case(
+            "LDR_lit_gen.LDR_32_loadlit",
+            "    ldr w0, .Ltarget\n.Ltarget:",
+            A64Insn::LdrLitGenLdr32Loadlit {
+                imm19: literal_imm(1),
+                rt: w(0),
+            },
+        ),
+        case(
+            "LDR_lit_gen.LDR_32_loadlit",
+            "    ldr w1, . + 0xffffc",
+            A64Insn::LdrLitGenLdr32Loadlit {
+                imm19: literal_imm(262143),
+                rt: w(1),
+            },
+        ),
+        case(
+            "LDR_lit_gen.LDR_64_loadlit",
+            ".Ltarget:\n    ldr xzr, .Ltarget",
+            A64Insn::LdrLitGenLdr64Loadlit {
+                imm19: literal_imm(0),
+                rt: x(31),
+            },
+        ),
+        case(
+            "LDR_lit_gen.LDR_64_loadlit",
+            "    ldr x2, . - 0x100000",
+            A64Insn::LdrLitGenLdr64Loadlit {
+                imm19: literal_imm(-262144),
+                rt: x(2),
+            },
+        ),
+        case(
+            "LDRSW_lit.LDRSW_64_loadlit",
+            "    ldrsw x3, . - 4",
+            A64Insn::LdrswLitLdrsw64Loadlit {
+                imm19: literal_imm(-1),
+                rt: x(3),
+            },
+        ),
+        case(
+            "PRFM_imm.PRFM_P_ldst_pos",
+            "    prfm pldl1keep, [x0, #32760]",
+            A64Insn::PrfmImmPrfmPLdstPos {
+                imm12: uimm(4095, 12),
+                rn: xsp(0),
+                rt: 0,
+            },
+        ),
+        case(
+            "PRFM_imm.PRFM_P_ldst_pos",
+            "    prfm pstl3strm, [sp]",
+            A64Insn::PrfmImmPrfmPLdstPos {
+                imm12: uimm(0, 12),
+                rn: xsp(31),
+                rt: 0b10101,
+            },
+        ),
+        case(
+            "PRFM_imm.PRFM_P_ldst_pos",
+            "    prfm #31, [x1, #8]",
+            A64Insn::PrfmImmPrfmPLdstPos {
+                imm12: uimm(1, 12),
+                rn: xsp(1),
+                rt: 31,
+            },
+        ),
+        case(
+            "PRFM_lit.PRFM_P_loadlit",
+            "    prfm pldl1keep, .Ltarget\n.Ltarget:",
+            A64Insn::PrfmLitPrfmPLoadlit {
+                imm19: uimm(1, 19),
+                rt: 0,
+            },
+        ),
+        case(
+            "PRFM_reg.PRFM_P_ldst_regoff",
+            "    prfm pldl2strm, [x0, x1, lsl #3]",
+            A64Insn::PrfmRegPrfmPLdstRegoff {
+                rm: x(1),
+                option: 0b011,
+                s: 1,
+                rn: xsp(0),
+                rt: 3,
+            },
+        ),
+        case(
+            "PRFM_reg.PRFM_P_ldst_regoff",
+            "    prfm plil1keep, [sp, w2, sxtw]",
+            A64Insn::PrfmRegPrfmPLdstRegoff {
+                rm: x(2),
+                option: 0b110,
+                s: 0,
+                rn: xsp(31),
+                rt: 8,
+            },
+        ),
+    ]
+}
+
+fn simm9(value: i64) -> A64Imm {
+    A64Imm::signed(signed_field(value, 9), 9)
+}
+
+fn pair_imm(bytes: i64, scale: u8) -> A64Imm {
+    A64Imm::scaled_signed(signed_field(bytes >> scale, 7), 7, scale)
+}
+
+fn literal_imm(words: i64) -> A64Imm {
+    A64Imm::scaled_signed(signed_field(words, 19), 19, 2)
 }
 
 fn decode_forms_from_subset_toml(toml: &str) -> Vec<String> {

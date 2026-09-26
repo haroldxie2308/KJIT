@@ -213,16 +213,20 @@ including LDP/STP and pre/post-index loads/stores. Constrained-unpredictable
 register overlaps in those forms are rejected rather than translated, and so
 take the `Unsupported` exit.
 
-Every user load/store is lowered to unprivileged `LDTR`/`STTR` (one per access;
-out-of-`simm9` offsets are materialized in scratch, writeback follows the
-accesses), and no user-visible register is written before the instruction's last
-access. Each access is a fault site: `ExecutionFragment.fault_sites` maps it to
-an out-of-line `Mem` exit stub for its original instruction, placed after the
+Every user load/store (byte to doubleword, signed and unsigned, pairs,
+unscaled, register-offset and literal forms) is lowered to the unprivileged
+`LDTR*`/`STTR*` form of the same element size and extension (one per access;
+out-of-`simm9` offsets, register-offset addresses and literal addresses are
+materialized in scratch, writeback follows the accesses), and no user-visible
+register is written before the instruction's last access. `PRFM` is a hint and
+is translated as a `NOP`. Exclusive, atomic and FP/SIMD loads/stores stay
+outside the subset and take the `Unsupported` exit. Each access is a fault
+site: `ExecutionFragment.fault_sites` maps it to an out-of-line `Mem` exit stub for its original instruction, placed after the
 body, and a faulting access resumes there, so userspace re-executes the
 instruction and takes the fault itself. The harness classifies fragment
-accesses by instruction: `LDTR`/`STTR` check user page permissions, any other
+accesses by instruction: `LDTR*`/`STTR*` check user page permissions, any other
 load/store must stay in runtime-owned memory. User code that contains
-`LDTR`/`STTR` itself takes the `Unsupported` exit.
+`LDTR*`/`STTR*` itself takes the `Unsupported` exit.
 
 Every back-edge (a user branch whose target is at or before it in layout order,
 i.e. block order) is preceded by a budget check on a runtime-frame counter that

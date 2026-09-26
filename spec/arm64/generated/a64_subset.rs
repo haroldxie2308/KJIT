@@ -189,6 +189,8 @@ pub struct GeneratedInsnSpec {
     pub encoding_label: &'static str,
     pub mask: u32,
     pub value: u32,
+    /// `(mask, value)` patterns a matching word must not have (`!=` constraints).
+    pub excludes: &'static [(u32, u32)],
     pub fields: &'static [GeneratedFieldSpec],
     pub operands: &'static [A64OperandRole],
     pub asm: &'static str,
@@ -197,7 +199,18 @@ pub struct GeneratedInsnSpec {
 #[allow(dead_code)]
 impl GeneratedInsnSpec {
     pub const fn matches(&self, word: u32) -> bool {
-        (word & self.mask) == self.value
+        if (word & self.mask) != self.value {
+            return false;
+        }
+        let mut index = 0;
+        while index < self.excludes.len() {
+            let (mask, value) = self.excludes[index];
+            if (word & mask) == value {
+                return false;
+            }
+            index += 1;
+        }
+        true
     }
 
     pub fn field(&self, name: &str) -> Option<&'static GeneratedFieldSpec> {
@@ -956,7 +969,17 @@ pub enum A64Insn {
         rt: A64Reg,
         mem: A64Mem,
     },
+    LdpGenLdp32LdstpairPost {
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
+    },
     LdpGenLdp64LdstpairPost {
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdpGenLdp32LdstpairPre {
         rt2: A64Reg,
         rt: A64Reg,
         mem: A64Mem,
@@ -966,7 +989,17 @@ pub enum A64Insn {
         rt: A64Reg,
         mem: A64Mem,
     },
+    LdpGenLdp32LdstpairOff {
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
+    },
     LdpGenLdp64LdstpairOff {
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    StpGenStp32LdstpairPost {
         rt2: A64Reg,
         rt: A64Reg,
         mem: A64Mem,
@@ -976,7 +1009,17 @@ pub enum A64Insn {
         rt: A64Reg,
         mem: A64Mem,
     },
+    StpGenStp32LdstpairPre {
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
+    },
     StpGenStp64LdstpairPre {
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    StpGenStp32LdstpairOff {
         rt2: A64Reg,
         rt: A64Reg,
         mem: A64Mem,
@@ -985,6 +1028,324 @@ pub enum A64Insn {
         rt2: A64Reg,
         rt: A64Reg,
         mem: A64Mem,
+    },
+    LdpswLdpsw64LdstpairPost {
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdpswLdpsw64LdstpairPre {
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdpswLdpsw64LdstpairOff {
+        rt2: A64Reg,
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrbImmLdrb32LdstImmpost {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrbImmLdrb32LdstImmpre {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrbImmLdrb32LdstPos {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    StrbImmStrb32LdstImmpost {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    StrbImmStrb32LdstImmpre {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    StrbImmStrb32LdstPos {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrhImmLdrh32LdstImmpost {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrhImmLdrh32LdstImmpre {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrhImmLdrh32LdstPos {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    StrhImmStrh32LdstImmpost {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    StrhImmStrh32LdstImmpre {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    StrhImmStrh32LdstPos {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrsbImmLdrsb32LdstImmpost {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrsbImmLdrsb64LdstImmpost {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrsbImmLdrsb32LdstImmpre {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrsbImmLdrsb64LdstImmpre {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrsbImmLdrsb32LdstPos {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrsbImmLdrsb64LdstPos {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrshImmLdrsh32LdstImmpost {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrshImmLdrsh64LdstImmpost {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrshImmLdrsh32LdstImmpre {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrshImmLdrsh64LdstImmpre {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrshImmLdrsh32LdstPos {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrshImmLdrsh64LdstPos {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrswImmLdrsw64LdstImmpost {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrswImmLdrsw64LdstImmpre {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrswImmLdrsw64LdstPos {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdurGenLdur32LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdurGenLdur64LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    SturGenStur32LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    SturGenStur64LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdurbLdurb32LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    SturbSturb32LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdurhLdurh32LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    SturhSturh32LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdursbLdursb32LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdursbLdursb64LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdurshLdursh32LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdurshLdursh64LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdurswLdursw64LdstUnscaled {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdrRegGenLdr32LdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrRegGenLdr64LdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    StrRegGenStr32LdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    StrRegGenStr64LdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrbRegLdrb32bLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrbRegLdrb32blLdstRegoff {
+        rm: A64Reg,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    StrbRegStrb32bLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    StrbRegStrb32blLdstRegoff {
+        rm: A64Reg,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrhRegLdrh32LdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    StrhRegStrh32LdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrsbRegLdrsb32bLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrsbRegLdrsb32blLdstRegoff {
+        rm: A64Reg,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrsbRegLdrsb64bLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrsbRegLdrsb64blLdstRegoff {
+        rm: A64Reg,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrshRegLdrsh32LdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrshRegLdrsh64LdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrswRegLdrsw64LdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdrLitGenLdr32Loadlit {
+        imm19: A64Imm,
+        rt: A64Reg,
+    },
+    LdrLitGenLdr64Loadlit {
+        imm19: A64Imm,
+        rt: A64Reg,
+    },
+    LdrswLitLdrsw64Loadlit {
+        imm19: A64Imm,
+        rt: A64Reg,
+    },
+    PrfmImmPrfmPLdstPos {
+        imm12: A64Imm,
+        rn: A64Reg,
+        rt: u8,
+    },
+    PrfmLitPrfmPLoadlit {
+        imm19: A64Imm,
+        rt: u8,
+    },
+    PrfmRegPrfmPLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
     },
     LdtrLdtr32LdstUnpriv {
         rt: A64Reg,
@@ -999,6 +1360,42 @@ pub enum A64Insn {
         mem: A64Mem,
     },
     SttrSttr64LdstUnpriv {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdtrbLdtrb32LdstUnpriv {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    SttrbSttrb32LdstUnpriv {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdtrhLdtrh32LdstUnpriv {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    SttrhSttrh32LdstUnpriv {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdtrsbLdtrsb32LdstUnpriv {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdtrsbLdtrsb64LdstUnpriv {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdtrshLdtrsh32LdstUnpriv {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdtrshLdtrsh64LdstUnpriv {
+        rt: A64Reg,
+        mem: A64Mem,
+    },
+    LdtrswLdtrsw64LdstUnpriv {
         rt: A64Reg,
         mem: A64Mem,
     },
@@ -1216,16 +1613,97 @@ impl A64Insn {
             Self::StrImmGenStr64LdstImmpre { .. } => "STR_imm_gen.STR_64_ldst_immpre",
             Self::StrImmGenStr32LdstPos { .. } => "STR_imm_gen.STR_32_ldst_pos",
             Self::StrImmGenStr64LdstPos { .. } => "STR_imm_gen.STR_64_ldst_pos",
+            Self::LdpGenLdp32LdstpairPost { .. } => "LDP_gen.LDP_32_ldstpair_post",
             Self::LdpGenLdp64LdstpairPost { .. } => "LDP_gen.LDP_64_ldstpair_post",
+            Self::LdpGenLdp32LdstpairPre { .. } => "LDP_gen.LDP_32_ldstpair_pre",
             Self::LdpGenLdp64LdstpairPre { .. } => "LDP_gen.LDP_64_ldstpair_pre",
+            Self::LdpGenLdp32LdstpairOff { .. } => "LDP_gen.LDP_32_ldstpair_off",
             Self::LdpGenLdp64LdstpairOff { .. } => "LDP_gen.LDP_64_ldstpair_off",
+            Self::StpGenStp32LdstpairPost { .. } => "STP_gen.STP_32_ldstpair_post",
             Self::StpGenStp64LdstpairPost { .. } => "STP_gen.STP_64_ldstpair_post",
+            Self::StpGenStp32LdstpairPre { .. } => "STP_gen.STP_32_ldstpair_pre",
             Self::StpGenStp64LdstpairPre { .. } => "STP_gen.STP_64_ldstpair_pre",
+            Self::StpGenStp32LdstpairOff { .. } => "STP_gen.STP_32_ldstpair_off",
             Self::StpGenStp64LdstpairOff { .. } => "STP_gen.STP_64_ldstpair_off",
+            Self::LdpswLdpsw64LdstpairPost { .. } => "LDPSW.LDPSW_64_ldstpair_post",
+            Self::LdpswLdpsw64LdstpairPre { .. } => "LDPSW.LDPSW_64_ldstpair_pre",
+            Self::LdpswLdpsw64LdstpairOff { .. } => "LDPSW.LDPSW_64_ldstpair_off",
+            Self::LdrbImmLdrb32LdstImmpost { .. } => "LDRB_imm.LDRB_32_ldst_immpost",
+            Self::LdrbImmLdrb32LdstImmpre { .. } => "LDRB_imm.LDRB_32_ldst_immpre",
+            Self::LdrbImmLdrb32LdstPos { .. } => "LDRB_imm.LDRB_32_ldst_pos",
+            Self::StrbImmStrb32LdstImmpost { .. } => "STRB_imm.STRB_32_ldst_immpost",
+            Self::StrbImmStrb32LdstImmpre { .. } => "STRB_imm.STRB_32_ldst_immpre",
+            Self::StrbImmStrb32LdstPos { .. } => "STRB_imm.STRB_32_ldst_pos",
+            Self::LdrhImmLdrh32LdstImmpost { .. } => "LDRH_imm.LDRH_32_ldst_immpost",
+            Self::LdrhImmLdrh32LdstImmpre { .. } => "LDRH_imm.LDRH_32_ldst_immpre",
+            Self::LdrhImmLdrh32LdstPos { .. } => "LDRH_imm.LDRH_32_ldst_pos",
+            Self::StrhImmStrh32LdstImmpost { .. } => "STRH_imm.STRH_32_ldst_immpost",
+            Self::StrhImmStrh32LdstImmpre { .. } => "STRH_imm.STRH_32_ldst_immpre",
+            Self::StrhImmStrh32LdstPos { .. } => "STRH_imm.STRH_32_ldst_pos",
+            Self::LdrsbImmLdrsb32LdstImmpost { .. } => "LDRSB_imm.LDRSB_32_ldst_immpost",
+            Self::LdrsbImmLdrsb64LdstImmpost { .. } => "LDRSB_imm.LDRSB_64_ldst_immpost",
+            Self::LdrsbImmLdrsb32LdstImmpre { .. } => "LDRSB_imm.LDRSB_32_ldst_immpre",
+            Self::LdrsbImmLdrsb64LdstImmpre { .. } => "LDRSB_imm.LDRSB_64_ldst_immpre",
+            Self::LdrsbImmLdrsb32LdstPos { .. } => "LDRSB_imm.LDRSB_32_ldst_pos",
+            Self::LdrsbImmLdrsb64LdstPos { .. } => "LDRSB_imm.LDRSB_64_ldst_pos",
+            Self::LdrshImmLdrsh32LdstImmpost { .. } => "LDRSH_imm.LDRSH_32_ldst_immpost",
+            Self::LdrshImmLdrsh64LdstImmpost { .. } => "LDRSH_imm.LDRSH_64_ldst_immpost",
+            Self::LdrshImmLdrsh32LdstImmpre { .. } => "LDRSH_imm.LDRSH_32_ldst_immpre",
+            Self::LdrshImmLdrsh64LdstImmpre { .. } => "LDRSH_imm.LDRSH_64_ldst_immpre",
+            Self::LdrshImmLdrsh32LdstPos { .. } => "LDRSH_imm.LDRSH_32_ldst_pos",
+            Self::LdrshImmLdrsh64LdstPos { .. } => "LDRSH_imm.LDRSH_64_ldst_pos",
+            Self::LdrswImmLdrsw64LdstImmpost { .. } => "LDRSW_imm.LDRSW_64_ldst_immpost",
+            Self::LdrswImmLdrsw64LdstImmpre { .. } => "LDRSW_imm.LDRSW_64_ldst_immpre",
+            Self::LdrswImmLdrsw64LdstPos { .. } => "LDRSW_imm.LDRSW_64_ldst_pos",
+            Self::LdurGenLdur32LdstUnscaled { .. } => "LDUR_gen.LDUR_32_ldst_unscaled",
+            Self::LdurGenLdur64LdstUnscaled { .. } => "LDUR_gen.LDUR_64_ldst_unscaled",
+            Self::SturGenStur32LdstUnscaled { .. } => "STUR_gen.STUR_32_ldst_unscaled",
+            Self::SturGenStur64LdstUnscaled { .. } => "STUR_gen.STUR_64_ldst_unscaled",
+            Self::LdurbLdurb32LdstUnscaled { .. } => "LDURB.LDURB_32_ldst_unscaled",
+            Self::SturbSturb32LdstUnscaled { .. } => "STURB.STURB_32_ldst_unscaled",
+            Self::LdurhLdurh32LdstUnscaled { .. } => "LDURH.LDURH_32_ldst_unscaled",
+            Self::SturhSturh32LdstUnscaled { .. } => "STURH.STURH_32_ldst_unscaled",
+            Self::LdursbLdursb32LdstUnscaled { .. } => "LDURSB.LDURSB_32_ldst_unscaled",
+            Self::LdursbLdursb64LdstUnscaled { .. } => "LDURSB.LDURSB_64_ldst_unscaled",
+            Self::LdurshLdursh32LdstUnscaled { .. } => "LDURSH.LDURSH_32_ldst_unscaled",
+            Self::LdurshLdursh64LdstUnscaled { .. } => "LDURSH.LDURSH_64_ldst_unscaled",
+            Self::LdurswLdursw64LdstUnscaled { .. } => "LDURSW.LDURSW_64_ldst_unscaled",
+            Self::LdrRegGenLdr32LdstRegoff { .. } => "LDR_reg_gen.LDR_32_ldst_regoff",
+            Self::LdrRegGenLdr64LdstRegoff { .. } => "LDR_reg_gen.LDR_64_ldst_regoff",
+            Self::StrRegGenStr32LdstRegoff { .. } => "STR_reg_gen.STR_32_ldst_regoff",
+            Self::StrRegGenStr64LdstRegoff { .. } => "STR_reg_gen.STR_64_ldst_regoff",
+            Self::LdrbRegLdrb32bLdstRegoff { .. } => "LDRB_reg.LDRB_32B_ldst_regoff",
+            Self::LdrbRegLdrb32blLdstRegoff { .. } => "LDRB_reg.LDRB_32BL_ldst_regoff",
+            Self::StrbRegStrb32bLdstRegoff { .. } => "STRB_reg.STRB_32B_ldst_regoff",
+            Self::StrbRegStrb32blLdstRegoff { .. } => "STRB_reg.STRB_32BL_ldst_regoff",
+            Self::LdrhRegLdrh32LdstRegoff { .. } => "LDRH_reg.LDRH_32_ldst_regoff",
+            Self::StrhRegStrh32LdstRegoff { .. } => "STRH_reg.STRH_32_ldst_regoff",
+            Self::LdrsbRegLdrsb32bLdstRegoff { .. } => "LDRSB_reg.LDRSB_32B_ldst_regoff",
+            Self::LdrsbRegLdrsb32blLdstRegoff { .. } => "LDRSB_reg.LDRSB_32BL_ldst_regoff",
+            Self::LdrsbRegLdrsb64bLdstRegoff { .. } => "LDRSB_reg.LDRSB_64B_ldst_regoff",
+            Self::LdrsbRegLdrsb64blLdstRegoff { .. } => "LDRSB_reg.LDRSB_64BL_ldst_regoff",
+            Self::LdrshRegLdrsh32LdstRegoff { .. } => "LDRSH_reg.LDRSH_32_ldst_regoff",
+            Self::LdrshRegLdrsh64LdstRegoff { .. } => "LDRSH_reg.LDRSH_64_ldst_regoff",
+            Self::LdrswRegLdrsw64LdstRegoff { .. } => "LDRSW_reg.LDRSW_64_ldst_regoff",
+            Self::LdrLitGenLdr32Loadlit { .. } => "LDR_lit_gen.LDR_32_loadlit",
+            Self::LdrLitGenLdr64Loadlit { .. } => "LDR_lit_gen.LDR_64_loadlit",
+            Self::LdrswLitLdrsw64Loadlit { .. } => "LDRSW_lit.LDRSW_64_loadlit",
+            Self::PrfmImmPrfmPLdstPos { .. } => "PRFM_imm.PRFM_P_ldst_pos",
+            Self::PrfmLitPrfmPLoadlit { .. } => "PRFM_lit.PRFM_P_loadlit",
+            Self::PrfmRegPrfmPLdstRegoff { .. } => "PRFM_reg.PRFM_P_ldst_regoff",
             Self::LdtrLdtr32LdstUnpriv { .. } => "LDTR.LDTR_32_ldst_unpriv",
             Self::LdtrLdtr64LdstUnpriv { .. } => "LDTR.LDTR_64_ldst_unpriv",
             Self::SttrSttr32LdstUnpriv { .. } => "STTR.STTR_32_ldst_unpriv",
             Self::SttrSttr64LdstUnpriv { .. } => "STTR.STTR_64_ldst_unpriv",
+            Self::LdtrbLdtrb32LdstUnpriv { .. } => "LDTRB.LDTRB_32_ldst_unpriv",
+            Self::SttrbSttrb32LdstUnpriv { .. } => "STTRB.STTRB_32_ldst_unpriv",
+            Self::LdtrhLdtrh32LdstUnpriv { .. } => "LDTRH.LDTRH_32_ldst_unpriv",
+            Self::SttrhSttrh32LdstUnpriv { .. } => "STTRH.STTRH_32_ldst_unpriv",
+            Self::LdtrsbLdtrsb32LdstUnpriv { .. } => "LDTRSB.LDTRSB_32_ldst_unpriv",
+            Self::LdtrsbLdtrsb64LdstUnpriv { .. } => "LDTRSB.LDTRSB_64_ldst_unpriv",
+            Self::LdtrshLdtrsh32LdstUnpriv { .. } => "LDTRSH.LDTRSH_32_ldst_unpriv",
+            Self::LdtrshLdtrsh64LdstUnpriv { .. } => "LDTRSH.LDTRSH_64_ldst_unpriv",
+            Self::LdtrswLdtrsw64LdstUnpriv { .. } => "LDTRSW.LDTRSW_64_ldst_unpriv",
             Self::NopNopHiHints { .. } => "NOP.NOP_HI_hints",
             Self::BlBlOnlyBranchImm { .. } => "BL.BL_only_branch_imm",
             Self::BrBr64BranchReg { .. } => "BR.BR_64_branch_reg",
@@ -1367,16 +1845,97 @@ impl A64Insn {
             Self::StrImmGenStr64LdstImmpre { .. } => "STR",
             Self::StrImmGenStr32LdstPos { .. } => "STR",
             Self::StrImmGenStr64LdstPos { .. } => "STR",
+            Self::LdpGenLdp32LdstpairPost { .. } => "LDP",
             Self::LdpGenLdp64LdstpairPost { .. } => "LDP",
+            Self::LdpGenLdp32LdstpairPre { .. } => "LDP",
             Self::LdpGenLdp64LdstpairPre { .. } => "LDP",
+            Self::LdpGenLdp32LdstpairOff { .. } => "LDP",
             Self::LdpGenLdp64LdstpairOff { .. } => "LDP",
+            Self::StpGenStp32LdstpairPost { .. } => "STP",
             Self::StpGenStp64LdstpairPost { .. } => "STP",
+            Self::StpGenStp32LdstpairPre { .. } => "STP",
             Self::StpGenStp64LdstpairPre { .. } => "STP",
+            Self::StpGenStp32LdstpairOff { .. } => "STP",
             Self::StpGenStp64LdstpairOff { .. } => "STP",
+            Self::LdpswLdpsw64LdstpairPost { .. } => "LDPSW",
+            Self::LdpswLdpsw64LdstpairPre { .. } => "LDPSW",
+            Self::LdpswLdpsw64LdstpairOff { .. } => "LDPSW",
+            Self::LdrbImmLdrb32LdstImmpost { .. } => "LDRB",
+            Self::LdrbImmLdrb32LdstImmpre { .. } => "LDRB",
+            Self::LdrbImmLdrb32LdstPos { .. } => "LDRB",
+            Self::StrbImmStrb32LdstImmpost { .. } => "STRB",
+            Self::StrbImmStrb32LdstImmpre { .. } => "STRB",
+            Self::StrbImmStrb32LdstPos { .. } => "STRB",
+            Self::LdrhImmLdrh32LdstImmpost { .. } => "LDRH",
+            Self::LdrhImmLdrh32LdstImmpre { .. } => "LDRH",
+            Self::LdrhImmLdrh32LdstPos { .. } => "LDRH",
+            Self::StrhImmStrh32LdstImmpost { .. } => "STRH",
+            Self::StrhImmStrh32LdstImmpre { .. } => "STRH",
+            Self::StrhImmStrh32LdstPos { .. } => "STRH",
+            Self::LdrsbImmLdrsb32LdstImmpost { .. } => "LDRSB",
+            Self::LdrsbImmLdrsb64LdstImmpost { .. } => "LDRSB",
+            Self::LdrsbImmLdrsb32LdstImmpre { .. } => "LDRSB",
+            Self::LdrsbImmLdrsb64LdstImmpre { .. } => "LDRSB",
+            Self::LdrsbImmLdrsb32LdstPos { .. } => "LDRSB",
+            Self::LdrsbImmLdrsb64LdstPos { .. } => "LDRSB",
+            Self::LdrshImmLdrsh32LdstImmpost { .. } => "LDRSH",
+            Self::LdrshImmLdrsh64LdstImmpost { .. } => "LDRSH",
+            Self::LdrshImmLdrsh32LdstImmpre { .. } => "LDRSH",
+            Self::LdrshImmLdrsh64LdstImmpre { .. } => "LDRSH",
+            Self::LdrshImmLdrsh32LdstPos { .. } => "LDRSH",
+            Self::LdrshImmLdrsh64LdstPos { .. } => "LDRSH",
+            Self::LdrswImmLdrsw64LdstImmpost { .. } => "LDRSW",
+            Self::LdrswImmLdrsw64LdstImmpre { .. } => "LDRSW",
+            Self::LdrswImmLdrsw64LdstPos { .. } => "LDRSW",
+            Self::LdurGenLdur32LdstUnscaled { .. } => "LDUR",
+            Self::LdurGenLdur64LdstUnscaled { .. } => "LDUR",
+            Self::SturGenStur32LdstUnscaled { .. } => "STUR",
+            Self::SturGenStur64LdstUnscaled { .. } => "STUR",
+            Self::LdurbLdurb32LdstUnscaled { .. } => "LDURB",
+            Self::SturbSturb32LdstUnscaled { .. } => "STURB",
+            Self::LdurhLdurh32LdstUnscaled { .. } => "LDURH",
+            Self::SturhSturh32LdstUnscaled { .. } => "STURH",
+            Self::LdursbLdursb32LdstUnscaled { .. } => "LDURSB",
+            Self::LdursbLdursb64LdstUnscaled { .. } => "LDURSB",
+            Self::LdurshLdursh32LdstUnscaled { .. } => "LDURSH",
+            Self::LdurshLdursh64LdstUnscaled { .. } => "LDURSH",
+            Self::LdurswLdursw64LdstUnscaled { .. } => "LDURSW",
+            Self::LdrRegGenLdr32LdstRegoff { .. } => "LDR",
+            Self::LdrRegGenLdr64LdstRegoff { .. } => "LDR",
+            Self::StrRegGenStr32LdstRegoff { .. } => "STR",
+            Self::StrRegGenStr64LdstRegoff { .. } => "STR",
+            Self::LdrbRegLdrb32bLdstRegoff { .. } => "LDRB",
+            Self::LdrbRegLdrb32blLdstRegoff { .. } => "LDRB",
+            Self::StrbRegStrb32bLdstRegoff { .. } => "STRB",
+            Self::StrbRegStrb32blLdstRegoff { .. } => "STRB",
+            Self::LdrhRegLdrh32LdstRegoff { .. } => "LDRH",
+            Self::StrhRegStrh32LdstRegoff { .. } => "STRH",
+            Self::LdrsbRegLdrsb32bLdstRegoff { .. } => "LDRSB",
+            Self::LdrsbRegLdrsb32blLdstRegoff { .. } => "LDRSB",
+            Self::LdrsbRegLdrsb64bLdstRegoff { .. } => "LDRSB",
+            Self::LdrsbRegLdrsb64blLdstRegoff { .. } => "LDRSB",
+            Self::LdrshRegLdrsh32LdstRegoff { .. } => "LDRSH",
+            Self::LdrshRegLdrsh64LdstRegoff { .. } => "LDRSH",
+            Self::LdrswRegLdrsw64LdstRegoff { .. } => "LDRSW",
+            Self::LdrLitGenLdr32Loadlit { .. } => "LDR",
+            Self::LdrLitGenLdr64Loadlit { .. } => "LDR",
+            Self::LdrswLitLdrsw64Loadlit { .. } => "LDRSW",
+            Self::PrfmImmPrfmPLdstPos { .. } => "PRFM",
+            Self::PrfmLitPrfmPLoadlit { .. } => "PRFM",
+            Self::PrfmRegPrfmPLdstRegoff { .. } => "PRFM",
             Self::LdtrLdtr32LdstUnpriv { .. } => "LDTR",
             Self::LdtrLdtr64LdstUnpriv { .. } => "LDTR",
             Self::SttrSttr32LdstUnpriv { .. } => "STTR",
             Self::SttrSttr64LdstUnpriv { .. } => "STTR",
+            Self::LdtrbLdtrb32LdstUnpriv { .. } => "LDTRB",
+            Self::SttrbSttrb32LdstUnpriv { .. } => "STTRB",
+            Self::LdtrhLdtrh32LdstUnpriv { .. } => "LDTRH",
+            Self::SttrhSttrh32LdstUnpriv { .. } => "STTRH",
+            Self::LdtrsbLdtrsb32LdstUnpriv { .. } => "LDTRSB",
+            Self::LdtrsbLdtrsb64LdstUnpriv { .. } => "LDTRSB",
+            Self::LdtrshLdtrsh32LdstUnpriv { .. } => "LDTRSH",
+            Self::LdtrshLdtrsh64LdstUnpriv { .. } => "LDTRSH",
+            Self::LdtrswLdtrsw64LdstUnpriv { .. } => "LDTRSW",
             Self::NopNopHiHints { .. } => "NOP",
             Self::BlBlOnlyBranchImm { .. } => "BL",
             Self::BrBr64BranchReg { .. } => "BR",
@@ -1518,16 +2077,97 @@ impl A64Insn {
             Self::StrImmGenStr64LdstImmpre { .. } => "STR <Xt> , [ <Xn|SP> , # <simm> ]!",
             Self::StrImmGenStr32LdstPos { .. } => "STR <Wt> , [ <Xn|SP> {, # <pimm> }]",
             Self::StrImmGenStr64LdstPos { .. } => "STR <Xt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::LdpGenLdp32LdstpairPost { .. } => "LDP <Wt1> , <Wt2> , [ <Xn|SP> ], # <imm>",
             Self::LdpGenLdp64LdstpairPost { .. } => "LDP <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>",
+            Self::LdpGenLdp32LdstpairPre { .. } => "LDP <Wt1> , <Wt2> , [ <Xn|SP> , # <imm> ]!",
             Self::LdpGenLdp64LdstpairPre { .. } => "LDP <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!",
+            Self::LdpGenLdp32LdstpairOff { .. } => "LDP <Wt1> , <Wt2> , [ <Xn|SP> {, # <imm> }]",
             Self::LdpGenLdp64LdstpairOff { .. } => "LDP <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]",
+            Self::StpGenStp32LdstpairPost { .. } => "STP <Wt1> , <Wt2> , [ <Xn|SP> ], # <imm>",
             Self::StpGenStp64LdstpairPost { .. } => "STP <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>",
+            Self::StpGenStp32LdstpairPre { .. } => "STP <Wt1> , <Wt2> , [ <Xn|SP> , # <imm> ]!",
             Self::StpGenStp64LdstpairPre { .. } => "STP <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!",
+            Self::StpGenStp32LdstpairOff { .. } => "STP <Wt1> , <Wt2> , [ <Xn|SP> {, # <imm> }]",
             Self::StpGenStp64LdstpairOff { .. } => "STP <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]",
+            Self::LdpswLdpsw64LdstpairPost { .. } => "LDPSW <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>",
+            Self::LdpswLdpsw64LdstpairPre { .. } => "LDPSW <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!",
+            Self::LdpswLdpsw64LdstpairOff { .. } => "LDPSW <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]",
+            Self::LdrbImmLdrb32LdstImmpost { .. } => "LDRB <Wt> , [ <Xn|SP> ], # <simm>",
+            Self::LdrbImmLdrb32LdstImmpre { .. } => "LDRB <Wt> , [ <Xn|SP> , # <simm> ]!",
+            Self::LdrbImmLdrb32LdstPos { .. } => "LDRB <Wt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::StrbImmStrb32LdstImmpost { .. } => "STRB <Wt> , [ <Xn|SP> ], # <simm>",
+            Self::StrbImmStrb32LdstImmpre { .. } => "STRB <Wt> , [ <Xn|SP> , # <simm> ]!",
+            Self::StrbImmStrb32LdstPos { .. } => "STRB <Wt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::LdrhImmLdrh32LdstImmpost { .. } => "LDRH <Wt> , [ <Xn|SP> ], # <simm>",
+            Self::LdrhImmLdrh32LdstImmpre { .. } => "LDRH <Wt> , [ <Xn|SP> , # <simm> ]!",
+            Self::LdrhImmLdrh32LdstPos { .. } => "LDRH <Wt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::StrhImmStrh32LdstImmpost { .. } => "STRH <Wt> , [ <Xn|SP> ], # <simm>",
+            Self::StrhImmStrh32LdstImmpre { .. } => "STRH <Wt> , [ <Xn|SP> , # <simm> ]!",
+            Self::StrhImmStrh32LdstPos { .. } => "STRH <Wt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::LdrsbImmLdrsb32LdstImmpost { .. } => "LDRSB <Wt> , [ <Xn|SP> ], # <simm>",
+            Self::LdrsbImmLdrsb64LdstImmpost { .. } => "LDRSB <Xt> , [ <Xn|SP> ], # <simm>",
+            Self::LdrsbImmLdrsb32LdstImmpre { .. } => "LDRSB <Wt> , [ <Xn|SP> , # <simm> ]!",
+            Self::LdrsbImmLdrsb64LdstImmpre { .. } => "LDRSB <Xt> , [ <Xn|SP> , # <simm> ]!",
+            Self::LdrsbImmLdrsb32LdstPos { .. } => "LDRSB <Wt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::LdrsbImmLdrsb64LdstPos { .. } => "LDRSB <Xt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::LdrshImmLdrsh32LdstImmpost { .. } => "LDRSH <Wt> , [ <Xn|SP> ], # <simm>",
+            Self::LdrshImmLdrsh64LdstImmpost { .. } => "LDRSH <Xt> , [ <Xn|SP> ], # <simm>",
+            Self::LdrshImmLdrsh32LdstImmpre { .. } => "LDRSH <Wt> , [ <Xn|SP> , # <simm> ]!",
+            Self::LdrshImmLdrsh64LdstImmpre { .. } => "LDRSH <Xt> , [ <Xn|SP> , # <simm> ]!",
+            Self::LdrshImmLdrsh32LdstPos { .. } => "LDRSH <Wt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::LdrshImmLdrsh64LdstPos { .. } => "LDRSH <Xt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::LdrswImmLdrsw64LdstImmpost { .. } => "LDRSW <Xt> , [ <Xn|SP> ], # <simm>",
+            Self::LdrswImmLdrsw64LdstImmpre { .. } => "LDRSW <Xt> , [ <Xn|SP> , # <simm> ]!",
+            Self::LdrswImmLdrsw64LdstPos { .. } => "LDRSW <Xt> , [ <Xn|SP> {, # <pimm> }]",
+            Self::LdurGenLdur32LdstUnscaled { .. } => "LDUR <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdurGenLdur64LdstUnscaled { .. } => "LDUR <Xt> , [ <Xn|SP> {, # <simm> }]",
+            Self::SturGenStur32LdstUnscaled { .. } => "STUR <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::SturGenStur64LdstUnscaled { .. } => "STUR <Xt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdurbLdurb32LdstUnscaled { .. } => "LDURB <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::SturbSturb32LdstUnscaled { .. } => "STURB <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdurhLdurh32LdstUnscaled { .. } => "LDURH <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::SturhSturh32LdstUnscaled { .. } => "STURH <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdursbLdursb32LdstUnscaled { .. } => "LDURSB <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdursbLdursb64LdstUnscaled { .. } => "LDURSB <Xt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdurshLdursh32LdstUnscaled { .. } => "LDURSH <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdurshLdursh64LdstUnscaled { .. } => "LDURSH <Xt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdurswLdursw64LdstUnscaled { .. } => "LDURSW <Xt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdrRegGenLdr32LdstRegoff { .. } => "LDR <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::LdrRegGenLdr64LdstRegoff { .. } => "LDR <Xt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::StrRegGenStr32LdstRegoff { .. } => "STR <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::StrRegGenStr64LdstRegoff { .. } => "STR <Xt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::LdrbRegLdrb32bLdstRegoff { .. } => "LDRB <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+            Self::LdrbRegLdrb32blLdstRegoff { .. } => "LDRB <Wt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+            Self::StrbRegStrb32bLdstRegoff { .. } => "STRB <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+            Self::StrbRegStrb32blLdstRegoff { .. } => "STRB <Wt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+            Self::LdrhRegLdrh32LdstRegoff { .. } => "LDRH <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::StrhRegStrh32LdstRegoff { .. } => "STRH <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::LdrsbRegLdrsb32bLdstRegoff { .. } => "LDRSB <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+            Self::LdrsbRegLdrsb32blLdstRegoff { .. } => "LDRSB <Wt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+            Self::LdrsbRegLdrsb64bLdstRegoff { .. } => "LDRSB <Xt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+            Self::LdrsbRegLdrsb64blLdstRegoff { .. } => "LDRSB <Xt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+            Self::LdrshRegLdrsh32LdstRegoff { .. } => "LDRSH <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::LdrshRegLdrsh64LdstRegoff { .. } => "LDRSH <Xt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::LdrswRegLdrsw64LdstRegoff { .. } => "LDRSW <Xt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::LdrLitGenLdr32Loadlit { .. } => "LDR <Wt> , <label>",
+            Self::LdrLitGenLdr64Loadlit { .. } => "LDR <Xt> , <label>",
+            Self::LdrswLitLdrsw64Loadlit { .. } => "LDRSW <Xt> , <label>",
+            Self::PrfmImmPrfmPLdstPos { .. } => "PRFM  ( <prfop> |# <imm5> ), [ <Xn|SP> {, # <pimm> }]",
+            Self::PrfmLitPrfmPLoadlit { .. } => "PRFM  ( <prfop> |# <imm5> ), <label>",
+            Self::PrfmRegPrfmPLdstRegoff { .. } => "PRFM  ( <prfop> |# <imm5> ), [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
             Self::LdtrLdtr32LdstUnpriv { .. } => "LDTR <Wt> , [ <Xn|SP> {, # <simm> }]",
             Self::LdtrLdtr64LdstUnpriv { .. } => "LDTR <Xt> , [ <Xn|SP> {, # <simm> }]",
             Self::SttrSttr32LdstUnpriv { .. } => "STTR <Wt> , [ <Xn|SP> {, # <simm> }]",
             Self::SttrSttr64LdstUnpriv { .. } => "STTR <Xt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdtrbLdtrb32LdstUnpriv { .. } => "LDTRB <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::SttrbSttrb32LdstUnpriv { .. } => "STTRB <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdtrhLdtrh32LdstUnpriv { .. } => "LDTRH <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::SttrhSttrh32LdstUnpriv { .. } => "STTRH <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdtrsbLdtrsb32LdstUnpriv { .. } => "LDTRSB <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdtrsbLdtrsb64LdstUnpriv { .. } => "LDTRSB <Xt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdtrshLdtrsh32LdstUnpriv { .. } => "LDTRSH <Wt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdtrshLdtrsh64LdstUnpriv { .. } => "LDTRSH <Xt> , [ <Xn|SP> {, # <simm> }]",
+            Self::LdtrswLdtrsw64LdstUnpriv { .. } => "LDTRSW <Xt> , [ <Xn|SP> {, # <simm> }]",
             Self::NopNopHiHints { .. } => "NOP",
             Self::BlBlOnlyBranchImm { .. } => "BL <label>",
             Self::BrBr64BranchReg { .. } => "BR <Xn>",
@@ -2551,12 +3191,28 @@ impl A64Insn {
                 word |= encode_a64_field("STR_imm_gen.STR_64_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
                 Ok(word)
             }
+            Self::LdpGenLdp32LdstpairPost { rt2, rt, mem } => {
+                let mut word = 0x28c00000;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_post", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_post", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_post", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_post", "imm7", mem.offset_imm().raw(), 7, 15)?;
+                Ok(word)
+            }
             Self::LdpGenLdp64LdstpairPost { rt2, rt, mem } => {
                 let mut word = 0xa8c00000;
                 word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rt2", rt2.enc() as u32, 5, 10)?;
                 word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rt", rt.enc() as u32, 5, 0)?;
                 word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "Rn", mem.base().enc() as u32, 5, 5)?;
                 word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_post", "imm7", mem.offset_imm().raw(), 7, 15)?;
+                Ok(word)
+            }
+            Self::LdpGenLdp32LdstpairPre { rt2, rt, mem } => {
+                let mut word = 0x29c00000;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_pre", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_pre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_pre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_pre", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
             Self::LdpGenLdp64LdstpairPre { rt2, rt, mem } => {
@@ -2567,12 +3223,28 @@ impl A64Insn {
                 word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_pre", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
+            Self::LdpGenLdp32LdstpairOff { rt2, rt, mem } => {
+                let mut word = 0x29400000;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_off", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_off", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_off", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDP_gen.LDP_32_ldstpair_off", "imm7", mem.offset_imm().raw(), 7, 15)?;
+                Ok(word)
+            }
             Self::LdpGenLdp64LdstpairOff { rt2, rt, mem } => {
                 let mut word = 0xa9400000;
                 word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rt2", rt2.enc() as u32, 5, 10)?;
                 word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rt", rt.enc() as u32, 5, 0)?;
                 word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "Rn", mem.base().enc() as u32, 5, 5)?;
                 word |= encode_a64_field("LDP_gen.LDP_64_ldstpair_off", "imm7", mem.offset_imm().raw(), 7, 15)?;
+                Ok(word)
+            }
+            Self::StpGenStp32LdstpairPost { rt2, rt, mem } => {
+                let mut word = 0x28800000;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_post", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_post", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_post", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_post", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
             Self::StpGenStp64LdstpairPost { rt2, rt, mem } => {
@@ -2583,6 +3255,14 @@ impl A64Insn {
                 word |= encode_a64_field("STP_gen.STP_64_ldstpair_post", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
+            Self::StpGenStp32LdstpairPre { rt2, rt, mem } => {
+                let mut word = 0x29800000;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_pre", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_pre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_pre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_pre", "imm7", mem.offset_imm().raw(), 7, 15)?;
+                Ok(word)
+            }
             Self::StpGenStp64LdstpairPre { rt2, rt, mem } => {
                 let mut word = 0xa9800000;
                 word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "Rt2", rt2.enc() as u32, 5, 10)?;
@@ -2591,12 +3271,513 @@ impl A64Insn {
                 word |= encode_a64_field("STP_gen.STP_64_ldstpair_pre", "imm7", mem.offset_imm().raw(), 7, 15)?;
                 Ok(word)
             }
+            Self::StpGenStp32LdstpairOff { rt2, rt, mem } => {
+                let mut word = 0x29000000;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_off", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_off", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_off", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STP_gen.STP_32_ldstpair_off", "imm7", mem.offset_imm().raw(), 7, 15)?;
+                Ok(word)
+            }
             Self::StpGenStp64LdstpairOff { rt2, rt, mem } => {
                 let mut word = 0xa9000000;
                 word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rt2", rt2.enc() as u32, 5, 10)?;
                 word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rt", rt.enc() as u32, 5, 0)?;
                 word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "Rn", mem.base().enc() as u32, 5, 5)?;
                 word |= encode_a64_field("STP_gen.STP_64_ldstpair_off", "imm7", mem.offset_imm().raw(), 7, 15)?;
+                Ok(word)
+            }
+            Self::LdpswLdpsw64LdstpairPost { rt2, rt, mem } => {
+                let mut word = 0x68c00000;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_post", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_post", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_post", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_post", "imm7", mem.offset_imm().raw(), 7, 15)?;
+                Ok(word)
+            }
+            Self::LdpswLdpsw64LdstpairPre { rt2, rt, mem } => {
+                let mut word = 0x69c00000;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_pre", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_pre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_pre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_pre", "imm7", mem.offset_imm().raw(), 7, 15)?;
+                Ok(word)
+            }
+            Self::LdpswLdpsw64LdstpairOff { rt2, rt, mem } => {
+                let mut word = 0x69400000;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_off", "Rt2", rt2.enc() as u32, 5, 10)?;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_off", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_off", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDPSW.LDPSW_64_ldstpair_off", "imm7", mem.offset_imm().raw(), 7, 15)?;
+                Ok(word)
+            }
+            Self::LdrbImmLdrb32LdstImmpost { rt, mem } => {
+                let mut word = 0x38400400;
+                word |= encode_a64_field("LDRB_imm.LDRB_32_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRB_imm.LDRB_32_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRB_imm.LDRB_32_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrbImmLdrb32LdstImmpre { rt, mem } => {
+                let mut word = 0x38400c00;
+                word |= encode_a64_field("LDRB_imm.LDRB_32_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRB_imm.LDRB_32_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRB_imm.LDRB_32_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrbImmLdrb32LdstPos { rt, mem } => {
+                let mut word = 0x39400000;
+                word |= encode_a64_field("LDRB_imm.LDRB_32_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRB_imm.LDRB_32_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRB_imm.LDRB_32_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
+                Ok(word)
+            }
+            Self::StrbImmStrb32LdstImmpost { rt, mem } => {
+                let mut word = 0x38000400;
+                word |= encode_a64_field("STRB_imm.STRB_32_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STRB_imm.STRB_32_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STRB_imm.STRB_32_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::StrbImmStrb32LdstImmpre { rt, mem } => {
+                let mut word = 0x38000c00;
+                word |= encode_a64_field("STRB_imm.STRB_32_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STRB_imm.STRB_32_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STRB_imm.STRB_32_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::StrbImmStrb32LdstPos { rt, mem } => {
+                let mut word = 0x39000000;
+                word |= encode_a64_field("STRB_imm.STRB_32_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STRB_imm.STRB_32_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STRB_imm.STRB_32_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
+                Ok(word)
+            }
+            Self::LdrhImmLdrh32LdstImmpost { rt, mem } => {
+                let mut word = 0x78400400;
+                word |= encode_a64_field("LDRH_imm.LDRH_32_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRH_imm.LDRH_32_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRH_imm.LDRH_32_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrhImmLdrh32LdstImmpre { rt, mem } => {
+                let mut word = 0x78400c00;
+                word |= encode_a64_field("LDRH_imm.LDRH_32_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRH_imm.LDRH_32_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRH_imm.LDRH_32_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrhImmLdrh32LdstPos { rt, mem } => {
+                let mut word = 0x79400000;
+                word |= encode_a64_field("LDRH_imm.LDRH_32_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRH_imm.LDRH_32_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRH_imm.LDRH_32_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
+                Ok(word)
+            }
+            Self::StrhImmStrh32LdstImmpost { rt, mem } => {
+                let mut word = 0x78000400;
+                word |= encode_a64_field("STRH_imm.STRH_32_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STRH_imm.STRH_32_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STRH_imm.STRH_32_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::StrhImmStrh32LdstImmpre { rt, mem } => {
+                let mut word = 0x78000c00;
+                word |= encode_a64_field("STRH_imm.STRH_32_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STRH_imm.STRH_32_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STRH_imm.STRH_32_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::StrhImmStrh32LdstPos { rt, mem } => {
+                let mut word = 0x79000000;
+                word |= encode_a64_field("STRH_imm.STRH_32_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STRH_imm.STRH_32_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STRH_imm.STRH_32_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
+                Ok(word)
+            }
+            Self::LdrsbImmLdrsb32LdstImmpost { rt, mem } => {
+                let mut word = 0x38c00400;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_32_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_32_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_32_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrsbImmLdrsb64LdstImmpost { rt, mem } => {
+                let mut word = 0x38800400;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_64_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_64_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_64_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrsbImmLdrsb32LdstImmpre { rt, mem } => {
+                let mut word = 0x38c00c00;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_32_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_32_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_32_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrsbImmLdrsb64LdstImmpre { rt, mem } => {
+                let mut word = 0x38800c00;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_64_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_64_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_64_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrsbImmLdrsb32LdstPos { rt, mem } => {
+                let mut word = 0x39c00000;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_32_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_32_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_32_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
+                Ok(word)
+            }
+            Self::LdrsbImmLdrsb64LdstPos { rt, mem } => {
+                let mut word = 0x39800000;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_64_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_64_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSB_imm.LDRSB_64_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
+                Ok(word)
+            }
+            Self::LdrshImmLdrsh32LdstImmpost { rt, mem } => {
+                let mut word = 0x78c00400;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_32_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_32_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_32_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrshImmLdrsh64LdstImmpost { rt, mem } => {
+                let mut word = 0x78800400;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_64_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_64_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_64_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrshImmLdrsh32LdstImmpre { rt, mem } => {
+                let mut word = 0x78c00c00;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_32_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_32_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_32_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrshImmLdrsh64LdstImmpre { rt, mem } => {
+                let mut word = 0x78800c00;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_64_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_64_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_64_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrshImmLdrsh32LdstPos { rt, mem } => {
+                let mut word = 0x79c00000;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_32_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_32_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_32_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
+                Ok(word)
+            }
+            Self::LdrshImmLdrsh64LdstPos { rt, mem } => {
+                let mut word = 0x79800000;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_64_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_64_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSH_imm.LDRSH_64_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
+                Ok(word)
+            }
+            Self::LdrswImmLdrsw64LdstImmpost { rt, mem } => {
+                let mut word = 0xb8800400;
+                word |= encode_a64_field("LDRSW_imm.LDRSW_64_ldst_immpost", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSW_imm.LDRSW_64_ldst_immpost", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSW_imm.LDRSW_64_ldst_immpost", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrswImmLdrsw64LdstImmpre { rt, mem } => {
+                let mut word = 0xb8800c00;
+                word |= encode_a64_field("LDRSW_imm.LDRSW_64_ldst_immpre", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSW_imm.LDRSW_64_ldst_immpre", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSW_imm.LDRSW_64_ldst_immpre", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrswImmLdrsw64LdstPos { rt, mem } => {
+                let mut word = 0xb9800000;
+                word |= encode_a64_field("LDRSW_imm.LDRSW_64_ldst_pos", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDRSW_imm.LDRSW_64_ldst_pos", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSW_imm.LDRSW_64_ldst_pos", "imm12", mem.offset_imm().raw(), 12, 10)?;
+                Ok(word)
+            }
+            Self::LdurGenLdur32LdstUnscaled { rt, mem } => {
+                let mut word = 0xb8400000;
+                word |= encode_a64_field("LDUR_gen.LDUR_32_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDUR_gen.LDUR_32_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUR_gen.LDUR_32_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdurGenLdur64LdstUnscaled { rt, mem } => {
+                let mut word = 0xf8400000;
+                word |= encode_a64_field("LDUR_gen.LDUR_64_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDUR_gen.LDUR_64_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUR_gen.LDUR_64_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::SturGenStur32LdstUnscaled { rt, mem } => {
+                let mut word = 0xb8000000;
+                word |= encode_a64_field("STUR_gen.STUR_32_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STUR_gen.STUR_32_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STUR_gen.STUR_32_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::SturGenStur64LdstUnscaled { rt, mem } => {
+                let mut word = 0xf8000000;
+                word |= encode_a64_field("STUR_gen.STUR_64_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STUR_gen.STUR_64_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STUR_gen.STUR_64_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdurbLdurb32LdstUnscaled { rt, mem } => {
+                let mut word = 0x38400000;
+                word |= encode_a64_field("LDURB.LDURB_32_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDURB.LDURB_32_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDURB.LDURB_32_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::SturbSturb32LdstUnscaled { rt, mem } => {
+                let mut word = 0x38000000;
+                word |= encode_a64_field("STURB.STURB_32_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STURB.STURB_32_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STURB.STURB_32_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdurhLdurh32LdstUnscaled { rt, mem } => {
+                let mut word = 0x78400000;
+                word |= encode_a64_field("LDURH.LDURH_32_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDURH.LDURH_32_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDURH.LDURH_32_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::SturhSturh32LdstUnscaled { rt, mem } => {
+                let mut word = 0x78000000;
+                word |= encode_a64_field("STURH.STURH_32_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STURH.STURH_32_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STURH.STURH_32_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdursbLdursb32LdstUnscaled { rt, mem } => {
+                let mut word = 0x38c00000;
+                word |= encode_a64_field("LDURSB.LDURSB_32_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDURSB.LDURSB_32_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDURSB.LDURSB_32_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdursbLdursb64LdstUnscaled { rt, mem } => {
+                let mut word = 0x38800000;
+                word |= encode_a64_field("LDURSB.LDURSB_64_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDURSB.LDURSB_64_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDURSB.LDURSB_64_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdurshLdursh32LdstUnscaled { rt, mem } => {
+                let mut word = 0x78c00000;
+                word |= encode_a64_field("LDURSH.LDURSH_32_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDURSH.LDURSH_32_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDURSH.LDURSH_32_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdurshLdursh64LdstUnscaled { rt, mem } => {
+                let mut word = 0x78800000;
+                word |= encode_a64_field("LDURSH.LDURSH_64_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDURSH.LDURSH_64_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDURSH.LDURSH_64_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdurswLdursw64LdstUnscaled { rt, mem } => {
+                let mut word = 0xb8800000;
+                word |= encode_a64_field("LDURSW.LDURSW_64_ldst_unscaled", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDURSW.LDURSW_64_ldst_unscaled", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDURSW.LDURSW_64_ldst_unscaled", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdrRegGenLdr32LdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0xb8600800;
+                word |= encode_a64_field("LDR_reg_gen.LDR_32_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDR_reg_gen.LDR_32_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDR_reg_gen.LDR_32_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDR_reg_gen.LDR_32_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_reg_gen.LDR_32_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrRegGenLdr64LdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0xf8600800;
+                word |= encode_a64_field("LDR_reg_gen.LDR_64_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDR_reg_gen.LDR_64_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDR_reg_gen.LDR_64_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDR_reg_gen.LDR_64_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_reg_gen.LDR_64_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrRegGenStr32LdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0xb8200800;
+                word |= encode_a64_field("STR_reg_gen.STR_32_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STR_reg_gen.STR_32_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("STR_reg_gen.STR_32_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STR_reg_gen.STR_32_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_reg_gen.STR_32_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrRegGenStr64LdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0xf8200800;
+                word |= encode_a64_field("STR_reg_gen.STR_64_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STR_reg_gen.STR_64_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("STR_reg_gen.STR_64_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STR_reg_gen.STR_64_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_reg_gen.STR_64_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrbRegLdrb32bLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x38600800;
+                word |= encode_a64_field("LDRB_reg.LDRB_32B_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDRB_reg.LDRB_32B_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDRB_reg.LDRB_32B_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDRB_reg.LDRB_32B_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRB_reg.LDRB_32B_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrbRegLdrb32blLdstRegoff { rm, s, rn, rt } => {
+                let mut word = 0x38606800;
+                word |= encode_a64_field("LDRB_reg.LDRB_32BL_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDRB_reg.LDRB_32BL_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDRB_reg.LDRB_32BL_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRB_reg.LDRB_32BL_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrbRegStrb32bLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x38200800;
+                word |= encode_a64_field("STRB_reg.STRB_32B_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STRB_reg.STRB_32B_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("STRB_reg.STRB_32B_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STRB_reg.STRB_32B_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STRB_reg.STRB_32B_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrbRegStrb32blLdstRegoff { rm, s, rn, rt } => {
+                let mut word = 0x38206800;
+                word |= encode_a64_field("STRB_reg.STRB_32BL_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STRB_reg.STRB_32BL_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STRB_reg.STRB_32BL_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STRB_reg.STRB_32BL_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrhRegLdrh32LdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x78600800;
+                word |= encode_a64_field("LDRH_reg.LDRH_32_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDRH_reg.LDRH_32_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDRH_reg.LDRH_32_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDRH_reg.LDRH_32_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRH_reg.LDRH_32_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrhRegStrh32LdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x78200800;
+                word |= encode_a64_field("STRH_reg.STRH_32_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STRH_reg.STRH_32_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("STRH_reg.STRH_32_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STRH_reg.STRH_32_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STRH_reg.STRH_32_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrsbRegLdrsb32bLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x38e00800;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_32B_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_32B_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_32B_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_32B_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_32B_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrsbRegLdrsb32blLdstRegoff { rm, s, rn, rt } => {
+                let mut word = 0x38e06800;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_32BL_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_32BL_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_32BL_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_32BL_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrsbRegLdrsb64bLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x38a00800;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_64B_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_64B_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_64B_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_64B_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_64B_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrsbRegLdrsb64blLdstRegoff { rm, s, rn, rt } => {
+                let mut word = 0x38a06800;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_64BL_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_64BL_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_64BL_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSB_reg.LDRSB_64BL_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrshRegLdrsh32LdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x78e00800;
+                word |= encode_a64_field("LDRSH_reg.LDRSH_32_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDRSH_reg.LDRSH_32_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDRSH_reg.LDRSH_32_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDRSH_reg.LDRSH_32_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSH_reg.LDRSH_32_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrshRegLdrsh64LdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x78a00800;
+                word |= encode_a64_field("LDRSH_reg.LDRSH_64_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDRSH_reg.LDRSH_64_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDRSH_reg.LDRSH_64_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDRSH_reg.LDRSH_64_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSH_reg.LDRSH_64_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrswRegLdrsw64LdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0xb8a00800;
+                word |= encode_a64_field("LDRSW_reg.LDRSW_64_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDRSW_reg.LDRSW_64_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDRSW_reg.LDRSW_64_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDRSW_reg.LDRSW_64_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDRSW_reg.LDRSW_64_ldst_regoff", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrLitGenLdr32Loadlit { imm19, rt } => {
+                let mut word = 0x18000000;
+                word |= encode_a64_field("LDR_lit_gen.LDR_32_loadlit", "imm19", imm19.raw(), 19, 5)?;
+                word |= encode_a64_field("LDR_lit_gen.LDR_32_loadlit", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrLitGenLdr64Loadlit { imm19, rt } => {
+                let mut word = 0x58000000;
+                word |= encode_a64_field("LDR_lit_gen.LDR_64_loadlit", "imm19", imm19.raw(), 19, 5)?;
+                word |= encode_a64_field("LDR_lit_gen.LDR_64_loadlit", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrswLitLdrsw64Loadlit { imm19, rt } => {
+                let mut word = 0x98000000;
+                word |= encode_a64_field("LDRSW_lit.LDRSW_64_loadlit", "imm19", imm19.raw(), 19, 5)?;
+                word |= encode_a64_field("LDRSW_lit.LDRSW_64_loadlit", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::PrfmImmPrfmPLdstPos { imm12, rn, rt } => {
+                let mut word = 0xf9800000;
+                word |= encode_a64_field("PRFM_imm.PRFM_P_ldst_pos", "imm12", imm12.raw(), 12, 10)?;
+                word |= encode_a64_field("PRFM_imm.PRFM_P_ldst_pos", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("PRFM_imm.PRFM_P_ldst_pos", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::PrfmLitPrfmPLoadlit { imm19, rt } => {
+                let mut word = 0xd8000000;
+                word |= encode_a64_field("PRFM_lit.PRFM_P_loadlit", "imm19", imm19.raw(), 19, 5)?;
+                word |= encode_a64_field("PRFM_lit.PRFM_P_loadlit", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::PrfmRegPrfmPLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0xf8a04800;
+                word |= encode_a64_field("PRFM_reg.PRFM_P_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("PRFM_reg.PRFM_P_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("PRFM_reg.PRFM_P_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("PRFM_reg.PRFM_P_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("PRFM_reg.PRFM_P_ldst_regoff", "Rt", rt as u32, 5, 0)?;
                 Ok(word)
             }
             Self::LdtrLdtr32LdstUnpriv { rt, mem } => {
@@ -2625,6 +3806,69 @@ impl A64Insn {
                 word |= encode_a64_field("STTR.STTR_64_ldst_unpriv", "Rt", rt.enc() as u32, 5, 0)?;
                 word |= encode_a64_field("STTR.STTR_64_ldst_unpriv", "Rn", mem.base().enc() as u32, 5, 5)?;
                 word |= encode_a64_field("STTR.STTR_64_ldst_unpriv", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdtrbLdtrb32LdstUnpriv { rt, mem } => {
+                let mut word = 0x38400800;
+                word |= encode_a64_field("LDTRB.LDTRB_32_ldst_unpriv", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDTRB.LDTRB_32_ldst_unpriv", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDTRB.LDTRB_32_ldst_unpriv", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::SttrbSttrb32LdstUnpriv { rt, mem } => {
+                let mut word = 0x38000800;
+                word |= encode_a64_field("STTRB.STTRB_32_ldst_unpriv", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STTRB.STTRB_32_ldst_unpriv", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STTRB.STTRB_32_ldst_unpriv", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdtrhLdtrh32LdstUnpriv { rt, mem } => {
+                let mut word = 0x78400800;
+                word |= encode_a64_field("LDTRH.LDTRH_32_ldst_unpriv", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDTRH.LDTRH_32_ldst_unpriv", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDTRH.LDTRH_32_ldst_unpriv", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::SttrhSttrh32LdstUnpriv { rt, mem } => {
+                let mut word = 0x78000800;
+                word |= encode_a64_field("STTRH.STTRH_32_ldst_unpriv", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("STTRH.STTRH_32_ldst_unpriv", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STTRH.STTRH_32_ldst_unpriv", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdtrsbLdtrsb32LdstUnpriv { rt, mem } => {
+                let mut word = 0x38c00800;
+                word |= encode_a64_field("LDTRSB.LDTRSB_32_ldst_unpriv", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDTRSB.LDTRSB_32_ldst_unpriv", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDTRSB.LDTRSB_32_ldst_unpriv", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdtrsbLdtrsb64LdstUnpriv { rt, mem } => {
+                let mut word = 0x38800800;
+                word |= encode_a64_field("LDTRSB.LDTRSB_64_ldst_unpriv", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDTRSB.LDTRSB_64_ldst_unpriv", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDTRSB.LDTRSB_64_ldst_unpriv", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdtrshLdtrsh32LdstUnpriv { rt, mem } => {
+                let mut word = 0x78c00800;
+                word |= encode_a64_field("LDTRSH.LDTRSH_32_ldst_unpriv", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDTRSH.LDTRSH_32_ldst_unpriv", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDTRSH.LDTRSH_32_ldst_unpriv", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdtrshLdtrsh64LdstUnpriv { rt, mem } => {
+                let mut word = 0x78800800;
+                word |= encode_a64_field("LDTRSH.LDTRSH_64_ldst_unpriv", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDTRSH.LDTRSH_64_ldst_unpriv", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDTRSH.LDTRSH_64_ldst_unpriv", "imm9", mem.offset_imm().raw(), 9, 12)?;
+                Ok(word)
+            }
+            Self::LdtrswLdtrsw64LdstUnpriv { rt, mem } => {
+                let mut word = 0xb8800800;
+                word |= encode_a64_field("LDTRSW.LDTRSW_64_ldst_unpriv", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("LDTRSW.LDTRSW_64_ldst_unpriv", "Rn", mem.base().enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDTRSW.LDTRSW_64_ldst_unpriv", "imm9", mem.offset_imm().raw(), 9, 12)?;
                 Ok(word)
             }
             Self::NopNopHiHints { } => {
@@ -2966,24 +4210,188 @@ impl A64Insn {
             Self::StrImmGenStr32LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
             Self::StrImmGenStr64LdstPos { rt, .. } if field == "Rt" => Some(*rt),
             Self::StrImmGenStr64LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdpGenLdp32LdstpairPost { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::LdpGenLdp32LdstpairPost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdpGenLdp32LdstpairPost { mem, .. } if field == "Rn" => Some(mem.base()),
             Self::LdpGenLdp64LdstpairPost { rt2, .. } if field == "Rt2" => Some(*rt2),
             Self::LdpGenLdp64LdstpairPost { rt, .. } if field == "Rt" => Some(*rt),
             Self::LdpGenLdp64LdstpairPost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdpGenLdp32LdstpairPre { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::LdpGenLdp32LdstpairPre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdpGenLdp32LdstpairPre { mem, .. } if field == "Rn" => Some(mem.base()),
             Self::LdpGenLdp64LdstpairPre { rt2, .. } if field == "Rt2" => Some(*rt2),
             Self::LdpGenLdp64LdstpairPre { rt, .. } if field == "Rt" => Some(*rt),
             Self::LdpGenLdp64LdstpairPre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdpGenLdp32LdstpairOff { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::LdpGenLdp32LdstpairOff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdpGenLdp32LdstpairOff { mem, .. } if field == "Rn" => Some(mem.base()),
             Self::LdpGenLdp64LdstpairOff { rt2, .. } if field == "Rt2" => Some(*rt2),
             Self::LdpGenLdp64LdstpairOff { rt, .. } if field == "Rt" => Some(*rt),
             Self::LdpGenLdp64LdstpairOff { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StpGenStp32LdstpairPost { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::StpGenStp32LdstpairPost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StpGenStp32LdstpairPost { mem, .. } if field == "Rn" => Some(mem.base()),
             Self::StpGenStp64LdstpairPost { rt2, .. } if field == "Rt2" => Some(*rt2),
             Self::StpGenStp64LdstpairPost { rt, .. } if field == "Rt" => Some(*rt),
             Self::StpGenStp64LdstpairPost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StpGenStp32LdstpairPre { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::StpGenStp32LdstpairPre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StpGenStp32LdstpairPre { mem, .. } if field == "Rn" => Some(mem.base()),
             Self::StpGenStp64LdstpairPre { rt2, .. } if field == "Rt2" => Some(*rt2),
             Self::StpGenStp64LdstpairPre { rt, .. } if field == "Rt" => Some(*rt),
             Self::StpGenStp64LdstpairPre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StpGenStp32LdstpairOff { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::StpGenStp32LdstpairOff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StpGenStp32LdstpairOff { mem, .. } if field == "Rn" => Some(mem.base()),
             Self::StpGenStp64LdstpairOff { rt2, .. } if field == "Rt2" => Some(*rt2),
             Self::StpGenStp64LdstpairOff { rt, .. } if field == "Rt" => Some(*rt),
             Self::StpGenStp64LdstpairOff { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdpswLdpsw64LdstpairPost { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::LdpswLdpsw64LdstpairPost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdpswLdpsw64LdstpairPost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdpswLdpsw64LdstpairPre { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::LdpswLdpsw64LdstpairPre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdpswLdpsw64LdstpairPre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdpswLdpsw64LdstpairOff { rt2, .. } if field == "Rt2" => Some(*rt2),
+            Self::LdpswLdpsw64LdstpairOff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdpswLdpsw64LdstpairOff { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrbImmLdrb32LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrbImmLdrb32LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrbImmLdrb32LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrbImmLdrb32LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrbImmLdrb32LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrbImmLdrb32LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrbImmStrb32LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrbImmStrb32LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrbImmStrb32LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrbImmStrb32LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrbImmStrb32LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrbImmStrb32LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrhImmLdrh32LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrhImmLdrh32LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrhImmLdrh32LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrhImmLdrh32LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrhImmLdrh32LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrhImmLdrh32LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrhImmStrh32LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrhImmStrh32LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrhImmStrh32LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrhImmStrh32LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::StrhImmStrh32LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrhImmStrh32LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrsbImmLdrsb32LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrsbImmLdrsb32LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrsbImmLdrsb64LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrsbImmLdrsb64LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrsbImmLdrsb32LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrsbImmLdrsb32LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrsbImmLdrsb64LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrsbImmLdrsb64LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrsbImmLdrsb32LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrsbImmLdrsb32LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrsbImmLdrsb64LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrsbImmLdrsb64LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrshImmLdrsh32LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrshImmLdrsh32LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrshImmLdrsh64LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrshImmLdrsh64LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrshImmLdrsh32LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrshImmLdrsh32LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrshImmLdrsh64LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrshImmLdrsh64LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrshImmLdrsh32LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrshImmLdrsh32LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrshImmLdrsh64LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrshImmLdrsh64LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrswImmLdrsw64LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrswImmLdrsw64LdstImmpost { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrswImmLdrsw64LdstImmpre { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrswImmLdrsw64LdstImmpre { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrswImmLdrsw64LdstPos { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrswImmLdrsw64LdstPos { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdurGenLdur32LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdurGenLdur32LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdurGenLdur64LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdurGenLdur64LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::SturGenStur32LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SturGenStur32LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::SturGenStur64LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SturGenStur64LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdurbLdurb32LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdurbLdurb32LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::SturbSturb32LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SturbSturb32LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdurhLdurh32LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdurhLdurh32LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::SturhSturh32LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SturhSturh32LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdursbLdursb32LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdursbLdursb32LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdursbLdursb64LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdursbLdursb64LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdurshLdursh32LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdurshLdursh32LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdurshLdursh64LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdurshLdursh64LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdurswLdursw64LdstUnscaled { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdurswLdursw64LdstUnscaled { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdrRegGenLdr32LdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrRegGenLdr32LdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrRegGenLdr32LdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrRegGenLdr64LdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrRegGenLdr64LdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrRegGenLdr64LdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrRegGenStr32LdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrRegGenStr32LdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrRegGenStr32LdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrRegGenStr64LdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrRegGenStr64LdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrRegGenStr64LdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrbRegLdrb32bLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrbRegLdrb32bLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrbRegLdrb32bLdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrbRegLdrb32blLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrbRegLdrb32blLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrbRegLdrb32blLdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrbRegStrb32bLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrbRegStrb32bLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrbRegStrb32bLdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrbRegStrb32blLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrbRegStrb32blLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrbRegStrb32blLdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrhRegLdrh32LdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrhRegLdrh32LdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrhRegLdrh32LdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::StrhRegStrh32LdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrhRegStrh32LdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrhRegStrh32LdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrsbRegLdrsb32bLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrsbRegLdrsb32bLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrsbRegLdrsb32bLdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrsbRegLdrsb32blLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrsbRegLdrsb32blLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrsbRegLdrsb32blLdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrsbRegLdrsb64bLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrsbRegLdrsb64bLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrsbRegLdrsb64bLdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrsbRegLdrsb64blLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrsbRegLdrsb64blLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrsbRegLdrsb64blLdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrshRegLdrsh32LdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrshRegLdrsh32LdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrshRegLdrsh32LdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrshRegLdrsh64LdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrshRegLdrsh64LdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrshRegLdrsh64LdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrswRegLdrsw64LdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrswRegLdrsw64LdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrswRegLdrsw64LdstRegoff { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrLitGenLdr32Loadlit { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrLitGenLdr64Loadlit { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdrswLitLdrsw64Loadlit { rt, .. } if field == "Rt" => Some(*rt),
+            Self::PrfmImmPrfmPLdstPos { rn, .. } if field == "Rn" => Some(*rn),
+            Self::PrfmRegPrfmPLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::PrfmRegPrfmPLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
             Self::LdtrLdtr32LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
             Self::LdtrLdtr32LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
             Self::LdtrLdtr64LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
@@ -2992,6 +4400,24 @@ impl A64Insn {
             Self::SttrSttr32LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
             Self::SttrSttr64LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
             Self::SttrSttr64LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdtrbLdtrb32LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdtrbLdtrb32LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::SttrbSttrb32LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SttrbSttrb32LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdtrhLdtrh32LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdtrhLdtrh32LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::SttrhSttrh32LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SttrhSttrh32LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdtrsbLdtrsb32LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdtrsbLdtrsb32LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdtrsbLdtrsb64LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdtrsbLdtrsb64LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdtrshLdtrsh32LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdtrshLdtrsh32LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdtrshLdtrsh64LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdtrshLdtrsh64LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
+            Self::LdtrswLdtrsw64LdstUnpriv { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdtrswLdtrsw64LdstUnpriv { mem, .. } if field == "Rn" => Some(mem.base()),
             Self::BrBr64BranchReg { rn, .. } if field == "Rn" => Some(*rn),
             Self::BlrBlr64BranchReg { rn, .. } if field == "Rn" => Some(*rn),
             Self::RetRet64rBranchReg { rn, .. } if field == "Rn" => Some(*rn),
@@ -4227,6 +5653,18 @@ impl A64Insn {
                 validate_a64_rewrite_field("STR_imm_gen.STR_64_ldst_pos", "Rn", encoded, 5)?;
                 Ok(Self::StrImmGenStr64LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
             }
+            Self::LdpGenLdp32LdstpairPost { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_32_ldstpair_post", "Rt2", encoded, 5)?;
+                Ok(Self::LdpGenLdp32LdstpairPost { rt2: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::LdpGenLdp32LdstpairPost { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_32_ldstpair_post", "Rt", encoded, 5)?;
+                Ok(Self::LdpGenLdp32LdstpairPost { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdpGenLdp32LdstpairPost { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_32_ldstpair_post", "Rn", encoded, 5)?;
+                Ok(Self::LdpGenLdp32LdstpairPost { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
             Self::LdpGenLdp64LdstpairPost { rt, mem, .. } if field == "Rt2" => {
                 validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_post", "Rt2", encoded, 5)?;
                 Ok(Self::LdpGenLdp64LdstpairPost { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
@@ -4238,6 +5676,18 @@ impl A64Insn {
             Self::LdpGenLdp64LdstpairPost { rt2, rt, mem, .. } if field == "Rn" => {
                 validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_post", "Rn", encoded, 5)?;
                 Ok(Self::LdpGenLdp64LdstpairPost { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdpGenLdp32LdstpairPre { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_32_ldstpair_pre", "Rt2", encoded, 5)?;
+                Ok(Self::LdpGenLdp32LdstpairPre { rt2: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::LdpGenLdp32LdstpairPre { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_32_ldstpair_pre", "Rt", encoded, 5)?;
+                Ok(Self::LdpGenLdp32LdstpairPre { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdpGenLdp32LdstpairPre { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_32_ldstpair_pre", "Rn", encoded, 5)?;
+                Ok(Self::LdpGenLdp32LdstpairPre { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
             }
             Self::LdpGenLdp64LdstpairPre { rt, mem, .. } if field == "Rt2" => {
                 validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_pre", "Rt2", encoded, 5)?;
@@ -4251,6 +5701,18 @@ impl A64Insn {
                 validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_pre", "Rn", encoded, 5)?;
                 Ok(Self::LdpGenLdp64LdstpairPre { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
             }
+            Self::LdpGenLdp32LdstpairOff { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_32_ldstpair_off", "Rt2", encoded, 5)?;
+                Ok(Self::LdpGenLdp32LdstpairOff { rt2: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::LdpGenLdp32LdstpairOff { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_32_ldstpair_off", "Rt", encoded, 5)?;
+                Ok(Self::LdpGenLdp32LdstpairOff { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdpGenLdp32LdstpairOff { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDP_gen.LDP_32_ldstpair_off", "Rn", encoded, 5)?;
+                Ok(Self::LdpGenLdp32LdstpairOff { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
             Self::LdpGenLdp64LdstpairOff { rt, mem, .. } if field == "Rt2" => {
                 validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_off", "Rt2", encoded, 5)?;
                 Ok(Self::LdpGenLdp64LdstpairOff { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
@@ -4262,6 +5724,18 @@ impl A64Insn {
             Self::LdpGenLdp64LdstpairOff { rt2, rt, mem, .. } if field == "Rn" => {
                 validate_a64_rewrite_field("LDP_gen.LDP_64_ldstpair_off", "Rn", encoded, 5)?;
                 Ok(Self::LdpGenLdp64LdstpairOff { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StpGenStp32LdstpairPost { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("STP_gen.STP_32_ldstpair_post", "Rt2", encoded, 5)?;
+                Ok(Self::StpGenStp32LdstpairPost { rt2: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::StpGenStp32LdstpairPost { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STP_gen.STP_32_ldstpair_post", "Rt", encoded, 5)?;
+                Ok(Self::StpGenStp32LdstpairPost { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StpGenStp32LdstpairPost { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STP_gen.STP_32_ldstpair_post", "Rn", encoded, 5)?;
+                Ok(Self::StpGenStp32LdstpairPost { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
             }
             Self::StpGenStp64LdstpairPost { rt, mem, .. } if field == "Rt2" => {
                 validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_post", "Rt2", encoded, 5)?;
@@ -4275,6 +5749,18 @@ impl A64Insn {
                 validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_post", "Rn", encoded, 5)?;
                 Ok(Self::StpGenStp64LdstpairPost { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
             }
+            Self::StpGenStp32LdstpairPre { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("STP_gen.STP_32_ldstpair_pre", "Rt2", encoded, 5)?;
+                Ok(Self::StpGenStp32LdstpairPre { rt2: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::StpGenStp32LdstpairPre { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STP_gen.STP_32_ldstpair_pre", "Rt", encoded, 5)?;
+                Ok(Self::StpGenStp32LdstpairPre { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StpGenStp32LdstpairPre { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STP_gen.STP_32_ldstpair_pre", "Rn", encoded, 5)?;
+                Ok(Self::StpGenStp32LdstpairPre { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
             Self::StpGenStp64LdstpairPre { rt, mem, .. } if field == "Rt2" => {
                 validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_pre", "Rt2", encoded, 5)?;
                 Ok(Self::StpGenStp64LdstpairPre { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
@@ -4287,6 +5773,18 @@ impl A64Insn {
                 validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_pre", "Rn", encoded, 5)?;
                 Ok(Self::StpGenStp64LdstpairPre { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
             }
+            Self::StpGenStp32LdstpairOff { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("STP_gen.STP_32_ldstpair_off", "Rt2", encoded, 5)?;
+                Ok(Self::StpGenStp32LdstpairOff { rt2: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::StpGenStp32LdstpairOff { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STP_gen.STP_32_ldstpair_off", "Rt", encoded, 5)?;
+                Ok(Self::StpGenStp32LdstpairOff { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StpGenStp32LdstpairOff { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STP_gen.STP_32_ldstpair_off", "Rn", encoded, 5)?;
+                Ok(Self::StpGenStp32LdstpairOff { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
             Self::StpGenStp64LdstpairOff { rt, mem, .. } if field == "Rt2" => {
                 validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_off", "Rt2", encoded, 5)?;
                 Ok(Self::StpGenStp64LdstpairOff { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
@@ -4298,6 +5796,590 @@ impl A64Insn {
             Self::StpGenStp64LdstpairOff { rt2, rt, mem, .. } if field == "Rn" => {
                 validate_a64_rewrite_field("STP_gen.STP_64_ldstpair_off", "Rn", encoded, 5)?;
                 Ok(Self::StpGenStp64LdstpairOff { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdpswLdpsw64LdstpairPost { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("LDPSW.LDPSW_64_ldstpair_post", "Rt2", encoded, 5)?;
+                Ok(Self::LdpswLdpsw64LdstpairPost { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::LdpswLdpsw64LdstpairPost { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDPSW.LDPSW_64_ldstpair_post", "Rt", encoded, 5)?;
+                Ok(Self::LdpswLdpsw64LdstpairPost { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdpswLdpsw64LdstpairPost { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDPSW.LDPSW_64_ldstpair_post", "Rn", encoded, 5)?;
+                Ok(Self::LdpswLdpsw64LdstpairPost { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdpswLdpsw64LdstpairPre { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("LDPSW.LDPSW_64_ldstpair_pre", "Rt2", encoded, 5)?;
+                Ok(Self::LdpswLdpsw64LdstpairPre { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::LdpswLdpsw64LdstpairPre { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDPSW.LDPSW_64_ldstpair_pre", "Rt", encoded, 5)?;
+                Ok(Self::LdpswLdpsw64LdstpairPre { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdpswLdpsw64LdstpairPre { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDPSW.LDPSW_64_ldstpair_pre", "Rn", encoded, 5)?;
+                Ok(Self::LdpswLdpsw64LdstpairPre { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdpswLdpsw64LdstpairOff { rt, mem, .. } if field == "Rt2" => {
+                validate_a64_rewrite_field("LDPSW.LDPSW_64_ldstpair_off", "Rt2", encoded, 5)?;
+                Ok(Self::LdpswLdpsw64LdstpairOff { rt2: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rt, mem })
+            }
+            Self::LdpswLdpsw64LdstpairOff { rt2, mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDPSW.LDPSW_64_ldstpair_off", "Rt", encoded, 5)?;
+                Ok(Self::LdpswLdpsw64LdstpairOff { rt2, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdpswLdpsw64LdstpairOff { rt2, rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDPSW.LDPSW_64_ldstpair_off", "Rn", encoded, 5)?;
+                Ok(Self::LdpswLdpsw64LdstpairOff { rt2, rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrbImmLdrb32LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRB_imm.LDRB_32_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::LdrbImmLdrb32LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrbImmLdrb32LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRB_imm.LDRB_32_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::LdrbImmLdrb32LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrbImmLdrb32LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRB_imm.LDRB_32_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::LdrbImmLdrb32LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrbImmLdrb32LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRB_imm.LDRB_32_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::LdrbImmLdrb32LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrbImmLdrb32LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRB_imm.LDRB_32_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::LdrbImmLdrb32LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrbImmLdrb32LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRB_imm.LDRB_32_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::LdrbImmLdrb32LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrbImmStrb32LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STRB_imm.STRB_32_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::StrbImmStrb32LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrbImmStrb32LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STRB_imm.STRB_32_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::StrbImmStrb32LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrbImmStrb32LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STRB_imm.STRB_32_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::StrbImmStrb32LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrbImmStrb32LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STRB_imm.STRB_32_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::StrbImmStrb32LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrbImmStrb32LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STRB_imm.STRB_32_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::StrbImmStrb32LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrbImmStrb32LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STRB_imm.STRB_32_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::StrbImmStrb32LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrhImmLdrh32LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRH_imm.LDRH_32_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::LdrhImmLdrh32LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrhImmLdrh32LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRH_imm.LDRH_32_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::LdrhImmLdrh32LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrhImmLdrh32LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRH_imm.LDRH_32_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::LdrhImmLdrh32LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrhImmLdrh32LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRH_imm.LDRH_32_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::LdrhImmLdrh32LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrhImmLdrh32LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRH_imm.LDRH_32_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::LdrhImmLdrh32LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrhImmLdrh32LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRH_imm.LDRH_32_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::LdrhImmLdrh32LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrhImmStrh32LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STRH_imm.STRH_32_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::StrhImmStrh32LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrhImmStrh32LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STRH_imm.STRH_32_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::StrhImmStrh32LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrhImmStrh32LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STRH_imm.STRH_32_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::StrhImmStrh32LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrhImmStrh32LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STRH_imm.STRH_32_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::StrhImmStrh32LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::StrhImmStrh32LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STRH_imm.STRH_32_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::StrhImmStrh32LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::StrhImmStrh32LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STRH_imm.STRH_32_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::StrhImmStrh32LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrsbImmLdrsb32LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_32_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb32LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrsbImmLdrsb32LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_32_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb32LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrsbImmLdrsb64LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_64_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb64LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrsbImmLdrsb64LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_64_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb64LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrsbImmLdrsb32LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_32_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb32LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrsbImmLdrsb32LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_32_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb32LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrsbImmLdrsb64LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_64_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb64LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrsbImmLdrsb64LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_64_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb64LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrsbImmLdrsb32LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_32_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb32LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrsbImmLdrsb32LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_32_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb32LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrsbImmLdrsb64LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_64_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb64LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrsbImmLdrsb64LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSB_imm.LDRSB_64_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::LdrsbImmLdrsb64LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrshImmLdrsh32LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_32_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh32LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrshImmLdrsh32LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_32_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh32LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrshImmLdrsh64LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_64_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh64LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrshImmLdrsh64LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_64_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh64LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrshImmLdrsh32LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_32_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh32LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrshImmLdrsh32LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_32_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh32LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrshImmLdrsh64LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_64_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh64LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrshImmLdrsh64LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_64_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh64LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrshImmLdrsh32LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_32_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh32LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrshImmLdrsh32LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_32_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh32LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrshImmLdrsh64LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_64_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh64LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrshImmLdrsh64LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSH_imm.LDRSH_64_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::LdrshImmLdrsh64LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrswImmLdrsw64LdstImmpost { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSW_imm.LDRSW_64_ldst_immpost", "Rt", encoded, 5)?;
+                Ok(Self::LdrswImmLdrsw64LdstImmpost { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrswImmLdrsw64LdstImmpost { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSW_imm.LDRSW_64_ldst_immpost", "Rn", encoded, 5)?;
+                Ok(Self::LdrswImmLdrsw64LdstImmpost { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrswImmLdrsw64LdstImmpre { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSW_imm.LDRSW_64_ldst_immpre", "Rt", encoded, 5)?;
+                Ok(Self::LdrswImmLdrsw64LdstImmpre { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrswImmLdrsw64LdstImmpre { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSW_imm.LDRSW_64_ldst_immpre", "Rn", encoded, 5)?;
+                Ok(Self::LdrswImmLdrsw64LdstImmpre { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrswImmLdrsw64LdstPos { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSW_imm.LDRSW_64_ldst_pos", "Rt", encoded, 5)?;
+                Ok(Self::LdrswImmLdrsw64LdstPos { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdrswImmLdrsw64LdstPos { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSW_imm.LDRSW_64_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::LdrswImmLdrsw64LdstPos { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdurGenLdur32LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUR_gen.LDUR_32_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::LdurGenLdur32LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdurGenLdur32LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUR_gen.LDUR_32_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::LdurGenLdur32LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdurGenLdur64LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUR_gen.LDUR_64_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::LdurGenLdur64LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdurGenLdur64LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUR_gen.LDUR_64_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::LdurGenLdur64LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::SturGenStur32LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STUR_gen.STUR_32_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::SturGenStur32LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::SturGenStur32LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STUR_gen.STUR_32_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::SturGenStur32LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::SturGenStur64LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STUR_gen.STUR_64_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::SturGenStur64LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::SturGenStur64LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STUR_gen.STUR_64_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::SturGenStur64LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdurbLdurb32LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDURB.LDURB_32_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::LdurbLdurb32LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdurbLdurb32LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDURB.LDURB_32_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::LdurbLdurb32LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::SturbSturb32LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STURB.STURB_32_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::SturbSturb32LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::SturbSturb32LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STURB.STURB_32_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::SturbSturb32LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdurhLdurh32LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDURH.LDURH_32_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::LdurhLdurh32LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdurhLdurh32LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDURH.LDURH_32_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::LdurhLdurh32LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::SturhSturh32LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STURH.STURH_32_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::SturhSturh32LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::SturhSturh32LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STURH.STURH_32_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::SturhSturh32LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdursbLdursb32LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDURSB.LDURSB_32_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::LdursbLdursb32LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdursbLdursb32LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDURSB.LDURSB_32_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::LdursbLdursb32LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdursbLdursb64LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDURSB.LDURSB_64_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::LdursbLdursb64LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdursbLdursb64LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDURSB.LDURSB_64_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::LdursbLdursb64LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdurshLdursh32LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDURSH.LDURSH_32_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::LdurshLdursh32LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdurshLdursh32LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDURSH.LDURSH_32_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::LdurshLdursh32LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdurshLdursh64LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDURSH.LDURSH_64_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::LdurshLdursh64LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdurshLdursh64LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDURSH.LDURSH_64_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::LdurshLdursh64LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdurswLdursw64LdstUnscaled { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDURSW.LDURSW_64_ldst_unscaled", "Rt", encoded, 5)?;
+                Ok(Self::LdurswLdursw64LdstUnscaled { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdurswLdursw64LdstUnscaled { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDURSW.LDURSW_64_ldst_unscaled", "Rn", encoded, 5)?;
+                Ok(Self::LdurswLdursw64LdstUnscaled { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdrRegGenLdr32LdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDR_reg_gen.LDR_32_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrRegGenLdr32LdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrRegGenLdr32LdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_reg_gen.LDR_32_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrRegGenLdr32LdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrRegGenLdr32LdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDR_reg_gen.LDR_32_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrRegGenLdr32LdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrRegGenLdr64LdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDR_reg_gen.LDR_64_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrRegGenLdr64LdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrRegGenLdr64LdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_reg_gen.LDR_64_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrRegGenLdr64LdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrRegGenLdr64LdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDR_reg_gen.LDR_64_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrRegGenLdr64LdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::StrRegGenStr32LdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STR_reg_gen.STR_32_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrRegGenStr32LdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::StrRegGenStr32LdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_reg_gen.STR_32_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrRegGenStr32LdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrRegGenStr32LdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STR_reg_gen.STR_32_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::StrRegGenStr32LdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::StrRegGenStr64LdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STR_reg_gen.STR_64_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrRegGenStr64LdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::StrRegGenStr64LdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_reg_gen.STR_64_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrRegGenStr64LdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrRegGenStr64LdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STR_reg_gen.STR_64_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::StrRegGenStr64LdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrbRegLdrb32bLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDRB_reg.LDRB_32B_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrbRegLdrb32bLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrbRegLdrb32bLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRB_reg.LDRB_32B_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrbRegLdrb32bLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrbRegLdrb32bLdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRB_reg.LDRB_32B_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrbRegLdrb32bLdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrbRegLdrb32blLdstRegoff { s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDRB_reg.LDRB_32BL_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrbRegLdrb32blLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), s, rn, rt })
+            }
+            Self::LdrbRegLdrb32blLdstRegoff { rm, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRB_reg.LDRB_32BL_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrbRegLdrb32blLdstRegoff { rm, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrbRegLdrb32blLdstRegoff { rm, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRB_reg.LDRB_32BL_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrbRegLdrb32blLdstRegoff { rm, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::StrbRegStrb32bLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STRB_reg.STRB_32B_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrbRegStrb32bLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::StrbRegStrb32bLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STRB_reg.STRB_32B_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrbRegStrb32bLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrbRegStrb32bLdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STRB_reg.STRB_32B_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::StrbRegStrb32bLdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::StrbRegStrb32blLdstRegoff { s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STRB_reg.STRB_32BL_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrbRegStrb32blLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), s, rn, rt })
+            }
+            Self::StrbRegStrb32blLdstRegoff { rm, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STRB_reg.STRB_32BL_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrbRegStrb32blLdstRegoff { rm, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrbRegStrb32blLdstRegoff { rm, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STRB_reg.STRB_32BL_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::StrbRegStrb32blLdstRegoff { rm, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrhRegLdrh32LdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDRH_reg.LDRH_32_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrhRegLdrh32LdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrhRegLdrh32LdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRH_reg.LDRH_32_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrhRegLdrh32LdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrhRegLdrh32LdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRH_reg.LDRH_32_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrhRegLdrh32LdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::StrhRegStrh32LdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STRH_reg.STRH_32_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrhRegStrh32LdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::StrhRegStrh32LdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STRH_reg.STRH_32_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrhRegStrh32LdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrhRegStrh32LdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STRH_reg.STRH_32_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::StrhRegStrh32LdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrsbRegLdrsb32bLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_32B_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb32bLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrsbRegLdrsb32bLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_32B_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb32bLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrsbRegLdrsb32bLdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_32B_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb32bLdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrsbRegLdrsb32blLdstRegoff { s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_32BL_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb32blLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), s, rn, rt })
+            }
+            Self::LdrsbRegLdrsb32blLdstRegoff { rm, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_32BL_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb32blLdstRegoff { rm, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrsbRegLdrsb32blLdstRegoff { rm, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_32BL_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb32blLdstRegoff { rm, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrsbRegLdrsb64bLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_64B_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb64bLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrsbRegLdrsb64bLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_64B_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb64bLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrsbRegLdrsb64bLdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_64B_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb64bLdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrsbRegLdrsb64blLdstRegoff { s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_64BL_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb64blLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), s, rn, rt })
+            }
+            Self::LdrsbRegLdrsb64blLdstRegoff { rm, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_64BL_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb64blLdstRegoff { rm, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrsbRegLdrsb64blLdstRegoff { rm, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSB_reg.LDRSB_64BL_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrsbRegLdrsb64blLdstRegoff { rm, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrshRegLdrsh32LdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDRSH_reg.LDRSH_32_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrshRegLdrsh32LdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrshRegLdrsh32LdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSH_reg.LDRSH_32_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrshRegLdrsh32LdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrshRegLdrsh32LdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSH_reg.LDRSH_32_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrshRegLdrsh32LdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrshRegLdrsh64LdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDRSH_reg.LDRSH_64_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrshRegLdrsh64LdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrshRegLdrsh64LdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSH_reg.LDRSH_64_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrshRegLdrsh64LdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrshRegLdrsh64LdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSH_reg.LDRSH_64_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrshRegLdrsh64LdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrswRegLdrsw64LdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDRSW_reg.LDRSW_64_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrswRegLdrsw64LdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrswRegLdrsw64LdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDRSW_reg.LDRSW_64_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrswRegLdrsw64LdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrswRegLdrsw64LdstRegoff { rm, option, s, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSW_reg.LDRSW_64_ldst_regoff", "Rt", encoded, 5)?;
+                Ok(Self::LdrswRegLdrsw64LdstRegoff { rm, option, s, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrLitGenLdr32Loadlit { imm19, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDR_lit_gen.LDR_32_loadlit", "Rt", encoded, 5)?;
+                Ok(Self::LdrLitGenLdr32Loadlit { imm19, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrLitGenLdr64Loadlit { imm19, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDR_lit_gen.LDR_64_loadlit", "Rt", encoded, 5)?;
+                Ok(Self::LdrLitGenLdr64Loadlit { imm19, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrswLitLdrsw64Loadlit { imm19, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDRSW_lit.LDRSW_64_loadlit", "Rt", encoded, 5)?;
+                Ok(Self::LdrswLitLdrsw64Loadlit { imm19, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::PrfmImmPrfmPLdstPos { imm12, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("PRFM_imm.PRFM_P_ldst_pos", "Rn", encoded, 5)?;
+                Ok(Self::PrfmImmPrfmPLdstPos { imm12, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::PrfmRegPrfmPLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("PRFM_reg.PRFM_P_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::PrfmRegPrfmPLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::PrfmRegPrfmPLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("PRFM_reg.PRFM_P_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::PrfmRegPrfmPLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
             }
             Self::LdtrLdtr32LdstUnpriv { mem, .. } if field == "Rt" => {
                 validate_a64_rewrite_field("LDTR.LDTR_32_ldst_unpriv", "Rt", encoded, 5)?;
@@ -4330,6 +6412,78 @@ impl A64Insn {
             Self::SttrSttr64LdstUnpriv { rt, mem, .. } if field == "Rn" => {
                 validate_a64_rewrite_field("STTR.STTR_64_ldst_unpriv", "Rn", encoded, 5)?;
                 Ok(Self::SttrSttr64LdstUnpriv { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdtrbLdtrb32LdstUnpriv { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDTRB.LDTRB_32_ldst_unpriv", "Rt", encoded, 5)?;
+                Ok(Self::LdtrbLdtrb32LdstUnpriv { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdtrbLdtrb32LdstUnpriv { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDTRB.LDTRB_32_ldst_unpriv", "Rn", encoded, 5)?;
+                Ok(Self::LdtrbLdtrb32LdstUnpriv { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::SttrbSttrb32LdstUnpriv { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STTRB.STTRB_32_ldst_unpriv", "Rt", encoded, 5)?;
+                Ok(Self::SttrbSttrb32LdstUnpriv { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::SttrbSttrb32LdstUnpriv { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STTRB.STTRB_32_ldst_unpriv", "Rn", encoded, 5)?;
+                Ok(Self::SttrbSttrb32LdstUnpriv { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdtrhLdtrh32LdstUnpriv { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDTRH.LDTRH_32_ldst_unpriv", "Rt", encoded, 5)?;
+                Ok(Self::LdtrhLdtrh32LdstUnpriv { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdtrhLdtrh32LdstUnpriv { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDTRH.LDTRH_32_ldst_unpriv", "Rn", encoded, 5)?;
+                Ok(Self::LdtrhLdtrh32LdstUnpriv { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::SttrhSttrh32LdstUnpriv { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("STTRH.STTRH_32_ldst_unpriv", "Rt", encoded, 5)?;
+                Ok(Self::SttrhSttrh32LdstUnpriv { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::SttrhSttrh32LdstUnpriv { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STTRH.STTRH_32_ldst_unpriv", "Rn", encoded, 5)?;
+                Ok(Self::SttrhSttrh32LdstUnpriv { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdtrsbLdtrsb32LdstUnpriv { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDTRSB.LDTRSB_32_ldst_unpriv", "Rt", encoded, 5)?;
+                Ok(Self::LdtrsbLdtrsb32LdstUnpriv { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdtrsbLdtrsb32LdstUnpriv { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDTRSB.LDTRSB_32_ldst_unpriv", "Rn", encoded, 5)?;
+                Ok(Self::LdtrsbLdtrsb32LdstUnpriv { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdtrsbLdtrsb64LdstUnpriv { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDTRSB.LDTRSB_64_ldst_unpriv", "Rt", encoded, 5)?;
+                Ok(Self::LdtrsbLdtrsb64LdstUnpriv { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdtrsbLdtrsb64LdstUnpriv { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDTRSB.LDTRSB_64_ldst_unpriv", "Rn", encoded, 5)?;
+                Ok(Self::LdtrsbLdtrsb64LdstUnpriv { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdtrshLdtrsh32LdstUnpriv { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDTRSH.LDTRSH_32_ldst_unpriv", "Rt", encoded, 5)?;
+                Ok(Self::LdtrshLdtrsh32LdstUnpriv { rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdtrshLdtrsh32LdstUnpriv { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDTRSH.LDTRSH_32_ldst_unpriv", "Rn", encoded, 5)?;
+                Ok(Self::LdtrshLdtrsh32LdstUnpriv { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdtrshLdtrsh64LdstUnpriv { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDTRSH.LDTRSH_64_ldst_unpriv", "Rt", encoded, 5)?;
+                Ok(Self::LdtrshLdtrsh64LdstUnpriv { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdtrshLdtrsh64LdstUnpriv { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDTRSH.LDTRSH_64_ldst_unpriv", "Rn", encoded, 5)?;
+                Ok(Self::LdtrshLdtrsh64LdstUnpriv { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
+            }
+            Self::LdtrswLdtrsw64LdstUnpriv { mem, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDTRSW.LDTRSW_64_ldst_unpriv", "Rt", encoded, 5)?;
+                Ok(Self::LdtrswLdtrsw64LdstUnpriv { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), mem })
+            }
+            Self::LdtrswLdtrsw64LdstUnpriv { rt, mem, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDTRSW.LDTRSW_64_ldst_unpriv", "Rn", encoded, 5)?;
+                Ok(Self::LdtrswLdtrsw64LdstUnpriv { rt, mem: mem.with_base(A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp)) })
             }
             Self::BrBr64BranchReg { .. } if field == "Rn" => {
                 validate_a64_rewrite_field("BR.BR_64_branch_reg", "Rn", encoded, 5)?;
@@ -4547,16 +6701,97 @@ impl A64Insn {
             Self::StrImmGenStr64LdstImmpre { .. } => OPERANDS_STR_IMM_GEN_STR_64_LDST_IMMPRE,
             Self::StrImmGenStr32LdstPos { .. } => OPERANDS_STR_IMM_GEN_STR_32_LDST_POS,
             Self::StrImmGenStr64LdstPos { .. } => OPERANDS_STR_IMM_GEN_STR_64_LDST_POS,
+            Self::LdpGenLdp32LdstpairPost { .. } => OPERANDS_LDP_GEN_LDP_32_LDSTPAIR_POST,
             Self::LdpGenLdp64LdstpairPost { .. } => OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_POST,
+            Self::LdpGenLdp32LdstpairPre { .. } => OPERANDS_LDP_GEN_LDP_32_LDSTPAIR_PRE,
             Self::LdpGenLdp64LdstpairPre { .. } => OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_PRE,
+            Self::LdpGenLdp32LdstpairOff { .. } => OPERANDS_LDP_GEN_LDP_32_LDSTPAIR_OFF,
             Self::LdpGenLdp64LdstpairOff { .. } => OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_OFF,
+            Self::StpGenStp32LdstpairPost { .. } => OPERANDS_STP_GEN_STP_32_LDSTPAIR_POST,
             Self::StpGenStp64LdstpairPost { .. } => OPERANDS_STP_GEN_STP_64_LDSTPAIR_POST,
+            Self::StpGenStp32LdstpairPre { .. } => OPERANDS_STP_GEN_STP_32_LDSTPAIR_PRE,
             Self::StpGenStp64LdstpairPre { .. } => OPERANDS_STP_GEN_STP_64_LDSTPAIR_PRE,
+            Self::StpGenStp32LdstpairOff { .. } => OPERANDS_STP_GEN_STP_32_LDSTPAIR_OFF,
             Self::StpGenStp64LdstpairOff { .. } => OPERANDS_STP_GEN_STP_64_LDSTPAIR_OFF,
+            Self::LdpswLdpsw64LdstpairPost { .. } => OPERANDS_LDPSW_LDPSW_64_LDSTPAIR_POST,
+            Self::LdpswLdpsw64LdstpairPre { .. } => OPERANDS_LDPSW_LDPSW_64_LDSTPAIR_PRE,
+            Self::LdpswLdpsw64LdstpairOff { .. } => OPERANDS_LDPSW_LDPSW_64_LDSTPAIR_OFF,
+            Self::LdrbImmLdrb32LdstImmpost { .. } => OPERANDS_LDRB_IMM_LDRB_32_LDST_IMMPOST,
+            Self::LdrbImmLdrb32LdstImmpre { .. } => OPERANDS_LDRB_IMM_LDRB_32_LDST_IMMPRE,
+            Self::LdrbImmLdrb32LdstPos { .. } => OPERANDS_LDRB_IMM_LDRB_32_LDST_POS,
+            Self::StrbImmStrb32LdstImmpost { .. } => OPERANDS_STRB_IMM_STRB_32_LDST_IMMPOST,
+            Self::StrbImmStrb32LdstImmpre { .. } => OPERANDS_STRB_IMM_STRB_32_LDST_IMMPRE,
+            Self::StrbImmStrb32LdstPos { .. } => OPERANDS_STRB_IMM_STRB_32_LDST_POS,
+            Self::LdrhImmLdrh32LdstImmpost { .. } => OPERANDS_LDRH_IMM_LDRH_32_LDST_IMMPOST,
+            Self::LdrhImmLdrh32LdstImmpre { .. } => OPERANDS_LDRH_IMM_LDRH_32_LDST_IMMPRE,
+            Self::LdrhImmLdrh32LdstPos { .. } => OPERANDS_LDRH_IMM_LDRH_32_LDST_POS,
+            Self::StrhImmStrh32LdstImmpost { .. } => OPERANDS_STRH_IMM_STRH_32_LDST_IMMPOST,
+            Self::StrhImmStrh32LdstImmpre { .. } => OPERANDS_STRH_IMM_STRH_32_LDST_IMMPRE,
+            Self::StrhImmStrh32LdstPos { .. } => OPERANDS_STRH_IMM_STRH_32_LDST_POS,
+            Self::LdrsbImmLdrsb32LdstImmpost { .. } => OPERANDS_LDRSB_IMM_LDRSB_32_LDST_IMMPOST,
+            Self::LdrsbImmLdrsb64LdstImmpost { .. } => OPERANDS_LDRSB_IMM_LDRSB_64_LDST_IMMPOST,
+            Self::LdrsbImmLdrsb32LdstImmpre { .. } => OPERANDS_LDRSB_IMM_LDRSB_32_LDST_IMMPRE,
+            Self::LdrsbImmLdrsb64LdstImmpre { .. } => OPERANDS_LDRSB_IMM_LDRSB_64_LDST_IMMPRE,
+            Self::LdrsbImmLdrsb32LdstPos { .. } => OPERANDS_LDRSB_IMM_LDRSB_32_LDST_POS,
+            Self::LdrsbImmLdrsb64LdstPos { .. } => OPERANDS_LDRSB_IMM_LDRSB_64_LDST_POS,
+            Self::LdrshImmLdrsh32LdstImmpost { .. } => OPERANDS_LDRSH_IMM_LDRSH_32_LDST_IMMPOST,
+            Self::LdrshImmLdrsh64LdstImmpost { .. } => OPERANDS_LDRSH_IMM_LDRSH_64_LDST_IMMPOST,
+            Self::LdrshImmLdrsh32LdstImmpre { .. } => OPERANDS_LDRSH_IMM_LDRSH_32_LDST_IMMPRE,
+            Self::LdrshImmLdrsh64LdstImmpre { .. } => OPERANDS_LDRSH_IMM_LDRSH_64_LDST_IMMPRE,
+            Self::LdrshImmLdrsh32LdstPos { .. } => OPERANDS_LDRSH_IMM_LDRSH_32_LDST_POS,
+            Self::LdrshImmLdrsh64LdstPos { .. } => OPERANDS_LDRSH_IMM_LDRSH_64_LDST_POS,
+            Self::LdrswImmLdrsw64LdstImmpost { .. } => OPERANDS_LDRSW_IMM_LDRSW_64_LDST_IMMPOST,
+            Self::LdrswImmLdrsw64LdstImmpre { .. } => OPERANDS_LDRSW_IMM_LDRSW_64_LDST_IMMPRE,
+            Self::LdrswImmLdrsw64LdstPos { .. } => OPERANDS_LDRSW_IMM_LDRSW_64_LDST_POS,
+            Self::LdurGenLdur32LdstUnscaled { .. } => OPERANDS_LDUR_GEN_LDUR_32_LDST_UNSCALED,
+            Self::LdurGenLdur64LdstUnscaled { .. } => OPERANDS_LDUR_GEN_LDUR_64_LDST_UNSCALED,
+            Self::SturGenStur32LdstUnscaled { .. } => OPERANDS_STUR_GEN_STUR_32_LDST_UNSCALED,
+            Self::SturGenStur64LdstUnscaled { .. } => OPERANDS_STUR_GEN_STUR_64_LDST_UNSCALED,
+            Self::LdurbLdurb32LdstUnscaled { .. } => OPERANDS_LDURB_LDURB_32_LDST_UNSCALED,
+            Self::SturbSturb32LdstUnscaled { .. } => OPERANDS_STURB_STURB_32_LDST_UNSCALED,
+            Self::LdurhLdurh32LdstUnscaled { .. } => OPERANDS_LDURH_LDURH_32_LDST_UNSCALED,
+            Self::SturhSturh32LdstUnscaled { .. } => OPERANDS_STURH_STURH_32_LDST_UNSCALED,
+            Self::LdursbLdursb32LdstUnscaled { .. } => OPERANDS_LDURSB_LDURSB_32_LDST_UNSCALED,
+            Self::LdursbLdursb64LdstUnscaled { .. } => OPERANDS_LDURSB_LDURSB_64_LDST_UNSCALED,
+            Self::LdurshLdursh32LdstUnscaled { .. } => OPERANDS_LDURSH_LDURSH_32_LDST_UNSCALED,
+            Self::LdurshLdursh64LdstUnscaled { .. } => OPERANDS_LDURSH_LDURSH_64_LDST_UNSCALED,
+            Self::LdurswLdursw64LdstUnscaled { .. } => OPERANDS_LDURSW_LDURSW_64_LDST_UNSCALED,
+            Self::LdrRegGenLdr32LdstRegoff { .. } => OPERANDS_LDR_REG_GEN_LDR_32_LDST_REGOFF,
+            Self::LdrRegGenLdr64LdstRegoff { .. } => OPERANDS_LDR_REG_GEN_LDR_64_LDST_REGOFF,
+            Self::StrRegGenStr32LdstRegoff { .. } => OPERANDS_STR_REG_GEN_STR_32_LDST_REGOFF,
+            Self::StrRegGenStr64LdstRegoff { .. } => OPERANDS_STR_REG_GEN_STR_64_LDST_REGOFF,
+            Self::LdrbRegLdrb32bLdstRegoff { .. } => OPERANDS_LDRB_REG_LDRB_32B_LDST_REGOFF,
+            Self::LdrbRegLdrb32blLdstRegoff { .. } => OPERANDS_LDRB_REG_LDRB_32BL_LDST_REGOFF,
+            Self::StrbRegStrb32bLdstRegoff { .. } => OPERANDS_STRB_REG_STRB_32B_LDST_REGOFF,
+            Self::StrbRegStrb32blLdstRegoff { .. } => OPERANDS_STRB_REG_STRB_32BL_LDST_REGOFF,
+            Self::LdrhRegLdrh32LdstRegoff { .. } => OPERANDS_LDRH_REG_LDRH_32_LDST_REGOFF,
+            Self::StrhRegStrh32LdstRegoff { .. } => OPERANDS_STRH_REG_STRH_32_LDST_REGOFF,
+            Self::LdrsbRegLdrsb32bLdstRegoff { .. } => OPERANDS_LDRSB_REG_LDRSB_32B_LDST_REGOFF,
+            Self::LdrsbRegLdrsb32blLdstRegoff { .. } => OPERANDS_LDRSB_REG_LDRSB_32BL_LDST_REGOFF,
+            Self::LdrsbRegLdrsb64bLdstRegoff { .. } => OPERANDS_LDRSB_REG_LDRSB_64B_LDST_REGOFF,
+            Self::LdrsbRegLdrsb64blLdstRegoff { .. } => OPERANDS_LDRSB_REG_LDRSB_64BL_LDST_REGOFF,
+            Self::LdrshRegLdrsh32LdstRegoff { .. } => OPERANDS_LDRSH_REG_LDRSH_32_LDST_REGOFF,
+            Self::LdrshRegLdrsh64LdstRegoff { .. } => OPERANDS_LDRSH_REG_LDRSH_64_LDST_REGOFF,
+            Self::LdrswRegLdrsw64LdstRegoff { .. } => OPERANDS_LDRSW_REG_LDRSW_64_LDST_REGOFF,
+            Self::LdrLitGenLdr32Loadlit { .. } => OPERANDS_LDR_LIT_GEN_LDR_32_LOADLIT,
+            Self::LdrLitGenLdr64Loadlit { .. } => OPERANDS_LDR_LIT_GEN_LDR_64_LOADLIT,
+            Self::LdrswLitLdrsw64Loadlit { .. } => OPERANDS_LDRSW_LIT_LDRSW_64_LOADLIT,
+            Self::PrfmImmPrfmPLdstPos { .. } => OPERANDS_PRFM_IMM_PRFM_P_LDST_POS,
+            Self::PrfmLitPrfmPLoadlit { .. } => OPERANDS_PRFM_LIT_PRFM_P_LOADLIT,
+            Self::PrfmRegPrfmPLdstRegoff { .. } => OPERANDS_PRFM_REG_PRFM_P_LDST_REGOFF,
             Self::LdtrLdtr32LdstUnpriv { .. } => OPERANDS_LDTR_LDTR_32_LDST_UNPRIV,
             Self::LdtrLdtr64LdstUnpriv { .. } => OPERANDS_LDTR_LDTR_64_LDST_UNPRIV,
             Self::SttrSttr32LdstUnpriv { .. } => OPERANDS_STTR_STTR_32_LDST_UNPRIV,
             Self::SttrSttr64LdstUnpriv { .. } => OPERANDS_STTR_STTR_64_LDST_UNPRIV,
+            Self::LdtrbLdtrb32LdstUnpriv { .. } => OPERANDS_LDTRB_LDTRB_32_LDST_UNPRIV,
+            Self::SttrbSttrb32LdstUnpriv { .. } => OPERANDS_STTRB_STTRB_32_LDST_UNPRIV,
+            Self::LdtrhLdtrh32LdstUnpriv { .. } => OPERANDS_LDTRH_LDTRH_32_LDST_UNPRIV,
+            Self::SttrhSttrh32LdstUnpriv { .. } => OPERANDS_STTRH_STTRH_32_LDST_UNPRIV,
+            Self::LdtrsbLdtrsb32LdstUnpriv { .. } => OPERANDS_LDTRSB_LDTRSB_32_LDST_UNPRIV,
+            Self::LdtrsbLdtrsb64LdstUnpriv { .. } => OPERANDS_LDTRSB_LDTRSB_64_LDST_UNPRIV,
+            Self::LdtrshLdtrsh32LdstUnpriv { .. } => OPERANDS_LDTRSH_LDTRSH_32_LDST_UNPRIV,
+            Self::LdtrshLdtrsh64LdstUnpriv { .. } => OPERANDS_LDTRSH_LDTRSH_64_LDST_UNPRIV,
+            Self::LdtrswLdtrsw64LdstUnpriv { .. } => OPERANDS_LDTRSW_LDTRSW_64_LDST_UNPRIV,
             Self::NopNopHiHints { .. } => OPERANDS_NOP_NOP_HI_HINTS,
             Self::BlBlOnlyBranchImm { .. } => OPERANDS_BL_BL_ONLY_BRANCH_IMM,
             Self::BrBr64BranchReg { .. } => OPERANDS_BR_BR_64_BRANCH_REG,
@@ -5565,11 +7800,25 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_unsigned(((word & 0x003ffc00) >> 10) as u32, 12, 3)),
         });
     }
+    if (word & 0xffc00000) == 0x28c00000 {
+        return Some(A64Insn::LdpGenLdp32LdstpairPost {
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 2)),
+        });
+    }
     if (word & 0xffc00000) == 0xa8c00000 {
         return Some(A64Insn::LdpGenLdp64LdstpairPost {
             rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
             rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
             mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
+        });
+    }
+    if (word & 0xffc00000) == 0x29c00000 {
+        return Some(A64Insn::LdpGenLdp32LdstpairPre {
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 2)),
         });
     }
     if (word & 0xffc00000) == 0xa9c00000 {
@@ -5579,11 +7828,25 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
         });
     }
+    if (word & 0xffc00000) == 0x29400000 {
+        return Some(A64Insn::LdpGenLdp32LdstpairOff {
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 2)),
+        });
+    }
     if (word & 0xffc00000) == 0xa9400000 {
         return Some(A64Insn::LdpGenLdp64LdstpairOff {
             rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
             rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
             mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
+        });
+    }
+    if (word & 0xffc00000) == 0x28800000 {
+        return Some(A64Insn::StpGenStp32LdstpairPost {
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 2)),
         });
     }
     if (word & 0xffc00000) == 0xa8800000 {
@@ -5593,6 +7856,13 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
         });
     }
+    if (word & 0xffc00000) == 0x29800000 {
+        return Some(A64Insn::StpGenStp32LdstpairPre {
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 2)),
+        });
+    }
     if (word & 0xffc00000) == 0xa9800000 {
         return Some(A64Insn::StpGenStp64LdstpairPre {
             rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
@@ -5600,11 +7870,468 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
         });
     }
+    if (word & 0xffc00000) == 0x29000000 {
+        return Some(A64Insn::StpGenStp32LdstpairOff {
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 2)),
+        });
+    }
     if (word & 0xffc00000) == 0xa9000000 {
         return Some(A64Insn::StpGenStp64LdstpairOff {
             rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
             rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
             mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 3)),
+        });
+    }
+    if (word & 0xffc00000) == 0x68c00000 {
+        return Some(A64Insn::LdpswLdpsw64LdstpairPost {
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 2)),
+        });
+    }
+    if (word & 0xffc00000) == 0x69c00000 {
+        return Some(A64Insn::LdpswLdpsw64LdstpairPre {
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 2)),
+        });
+    }
+    if (word & 0xffc00000) == 0x69400000 {
+        return Some(A64Insn::LdpswLdpsw64LdstpairOff {
+            rt2: A64Reg::new(((word & 0x00007c00) >> 10) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_signed(((word & 0x003f8000) >> 15) as u32, 7, 2)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38400400 {
+        return Some(A64Insn::LdrbImmLdrb32LdstImmpost {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38400c00 {
+        return Some(A64Insn::LdrbImmLdrb32LdstImmpre {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffc00000) == 0x39400000 {
+        return Some(A64Insn::LdrbImmLdrb32LdstPos {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38000400 {
+        return Some(A64Insn::StrbImmStrb32LdstImmpost {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38000c00 {
+        return Some(A64Insn::StrbImmStrb32LdstImmpre {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffc00000) == 0x39000000 {
+        return Some(A64Insn::StrbImmStrb32LdstPos {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78400400 {
+        return Some(A64Insn::LdrhImmLdrh32LdstImmpost {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78400c00 {
+        return Some(A64Insn::LdrhImmLdrh32LdstImmpre {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffc00000) == 0x79400000 {
+        return Some(A64Insn::LdrhImmLdrh32LdstPos {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_unsigned(((word & 0x003ffc00) >> 10) as u32, 12, 1)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78000400 {
+        return Some(A64Insn::StrhImmStrh32LdstImmpost {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78000c00 {
+        return Some(A64Insn::StrhImmStrh32LdstImmpre {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffc00000) == 0x79000000 {
+        return Some(A64Insn::StrhImmStrh32LdstPos {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_unsigned(((word & 0x003ffc00) >> 10) as u32, 12, 1)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38c00400 {
+        return Some(A64Insn::LdrsbImmLdrsb32LdstImmpost {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38800400 {
+        return Some(A64Insn::LdrsbImmLdrsb64LdstImmpost {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38c00c00 {
+        return Some(A64Insn::LdrsbImmLdrsb32LdstImmpre {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38800c00 {
+        return Some(A64Insn::LdrsbImmLdrsb64LdstImmpre {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffc00000) == 0x39c00000 {
+        return Some(A64Insn::LdrsbImmLdrsb32LdstPos {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12)),
+        });
+    }
+    if (word & 0xffc00000) == 0x39800000 {
+        return Some(A64Insn::LdrsbImmLdrsb64LdstPos {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78c00400 {
+        return Some(A64Insn::LdrshImmLdrsh32LdstImmpost {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78800400 {
+        return Some(A64Insn::LdrshImmLdrsh64LdstImmpost {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78c00c00 {
+        return Some(A64Insn::LdrshImmLdrsh32LdstImmpre {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78800c00 {
+        return Some(A64Insn::LdrshImmLdrsh64LdstImmpre {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffc00000) == 0x79c00000 {
+        return Some(A64Insn::LdrshImmLdrsh32LdstPos {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_unsigned(((word & 0x003ffc00) >> 10) as u32, 12, 1)),
+        });
+    }
+    if (word & 0xffc00000) == 0x79800000 {
+        return Some(A64Insn::LdrshImmLdrsh64LdstPos {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_unsigned(((word & 0x003ffc00) >> 10) as u32, 12, 1)),
+        });
+    }
+    if (word & 0xffe00c00) == 0xb8800400 {
+        return Some(A64Insn::LdrswImmLdrsw64LdstImmpost {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::post_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0xb8800c00 {
+        return Some(A64Insn::LdrswImmLdrsw64LdstImmpre {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::pre_index(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffc00000) == 0xb9800000 {
+        return Some(A64Insn::LdrswImmLdrsw64LdstPos {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::scaled_unsigned(((word & 0x003ffc00) >> 10) as u32, 12, 2)),
+        });
+    }
+    if (word & 0xffe00c00) == 0xb8400000 {
+        return Some(A64Insn::LdurGenLdur32LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0xf8400000 {
+        return Some(A64Insn::LdurGenLdur64LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0xb8000000 {
+        return Some(A64Insn::SturGenStur32LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0xf8000000 {
+        return Some(A64Insn::SturGenStur64LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38400000 {
+        return Some(A64Insn::LdurbLdurb32LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38000000 {
+        return Some(A64Insn::SturbSturb32LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78400000 {
+        return Some(A64Insn::LdurhLdurh32LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78000000 {
+        return Some(A64Insn::SturhSturh32LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38c00000 {
+        return Some(A64Insn::LdursbLdursb32LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38800000 {
+        return Some(A64Insn::LdursbLdursb64LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78c00000 {
+        return Some(A64Insn::LdurshLdursh32LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78800000 {
+        return Some(A64Insn::LdurshLdursh64LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0xb8800000 {
+        return Some(A64Insn::LdurswLdursw64LdstUnscaled {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0xb8600800 {
+        return Some(A64Insn::LdrRegGenLdr32LdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0xf8600800 {
+        return Some(A64Insn::LdrRegGenLdr64LdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0xb8200800 {
+        return Some(A64Insn::StrRegGenStr32LdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0xf8200800 {
+        return Some(A64Insn::StrRegGenStr64LdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38600800 && (word & 0x0000e000) != 0x00006000 {
+        return Some(A64Insn::LdrbRegLdrb32bLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0ec00) == 0x38606800 {
+        return Some(A64Insn::LdrbRegLdrb32blLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38200800 && (word & 0x0000e000) != 0x00006000 {
+        return Some(A64Insn::StrbRegStrb32bLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0ec00) == 0x38206800 {
+        return Some(A64Insn::StrbRegStrb32blLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78600800 {
+        return Some(A64Insn::LdrhRegLdrh32LdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78200800 {
+        return Some(A64Insn::StrhRegStrh32LdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38e00800 && (word & 0x0000e000) != 0x00006000 {
+        return Some(A64Insn::LdrsbRegLdrsb32bLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0ec00) == 0x38e06800 {
+        return Some(A64Insn::LdrsbRegLdrsb32blLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38a00800 && (word & 0x0000e000) != 0x00006000 {
+        return Some(A64Insn::LdrsbRegLdrsb64bLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0ec00) == 0x38a06800 {
+        return Some(A64Insn::LdrsbRegLdrsb64blLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78e00800 {
+        return Some(A64Insn::LdrshRegLdrsh32LdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78a00800 {
+        return Some(A64Insn::LdrshRegLdrsh64LdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0xb8a00800 {
+        return Some(A64Insn::LdrswRegLdrsw64LdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff000000) == 0x18000000 {
+        return Some(A64Insn::LdrLitGenLdr32Loadlit {
+            imm19: A64Imm::scaled_signed(((word & 0x00ffffe0) >> 5) as u32, 19, 2),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff000000) == 0x58000000 {
+        return Some(A64Insn::LdrLitGenLdr64Loadlit {
+            imm19: A64Imm::scaled_signed(((word & 0x00ffffe0) >> 5) as u32, 19, 2),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xff000000) == 0x98000000 {
+        return Some(A64Insn::LdrswLitLdrsw64Loadlit {
+            imm19: A64Imm::scaled_signed(((word & 0x00ffffe0) >> 5) as u32, 19, 2),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffc00000) == 0xf9800000 {
+        return Some(A64Insn::PrfmImmPrfmPLdstPos {
+            imm12: A64Imm::unsigned(((word & 0x003ffc00) >> 10) as u32, 12),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xff000000) == 0xd8000000 {
+        return Some(A64Insn::PrfmLitPrfmPLoadlit {
+            imm19: A64Imm::unsigned(((word & 0x00ffffe0) >> 5) as u32, 19),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe04c00) == 0xf8a04800 && (word & 0x00000018) != 0x00000018 {
+        return Some(A64Insn::PrfmRegPrfmPLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
         });
     }
     if (word & 0xffe00c00) == 0xb8400800 {
@@ -5627,6 +8354,60 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
     }
     if (word & 0xffe00c00) == 0xf8000800 {
         return Some(A64Insn::SttrSttr64LdstUnpriv {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38400800 {
+        return Some(A64Insn::LdtrbLdtrb32LdstUnpriv {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38000800 {
+        return Some(A64Insn::SttrbSttrb32LdstUnpriv {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78400800 {
+        return Some(A64Insn::LdtrhLdtrh32LdstUnpriv {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78000800 {
+        return Some(A64Insn::SttrhSttrh32LdstUnpriv {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38c00800 {
+        return Some(A64Insn::LdtrsbLdtrsb32LdstUnpriv {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x38800800 {
+        return Some(A64Insn::LdtrsbLdtrsb64LdstUnpriv {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78c00800 {
+        return Some(A64Insn::LdtrshLdtrsh32LdstUnpriv {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0x78800800 {
+        return Some(A64Insn::LdtrshLdtrsh64LdstUnpriv {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
+        });
+    }
+    if (word & 0xffe00c00) == 0xb8800800 {
+        return Some(A64Insn::LdtrswLdtrsw64LdstUnpriv {
             rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
             mem: A64Mem::offset(A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp), A64Imm::signed(((word & 0x001ff000) >> 12) as u32, 9)),
         });
@@ -8019,6 +10800,27 @@ pub const OPERANDS_STR_IMM_GEN_STR_64_LDST_POS: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
+pub const FIELDS_LDP_GEN_LDP_32_LDSTPAIR_POST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDP_GEN_LDP_32_LDSTPAIR_POST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt2", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_LDP_GEN_LDP_64_LDSTPAIR_POST: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
     GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
@@ -8037,6 +10839,27 @@ pub const OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_POST: &[A64OperandRole] = &[
     A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
     A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
     A64OperandRole::RegWrite { field: "Rt2", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDP_GEN_LDP_32_LDSTPAIR_PRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDP_GEN_LDP_32_LDSTPAIR_PRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt2", width: A64RegWidth::W32 },
 ];
 
 #[allow(dead_code)]
@@ -8061,6 +10884,27 @@ pub const OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_PRE: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
+pub const FIELDS_LDP_GEN_LDP_32_LDSTPAIR_OFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDP_GEN_LDP_32_LDSTPAIR_OFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt2", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_LDP_GEN_LDP_64_LDSTPAIR_OFF: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
     GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
@@ -8082,6 +10926,27 @@ pub const OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_OFF: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
+pub const FIELDS_STP_GEN_STP_32_LDSTPAIR_POST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STP_GEN_STP_32_LDSTPAIR_POST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt2", width: A64RegWidth::W32 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_STP_GEN_STP_64_LDSTPAIR_POST: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
     GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
@@ -8099,6 +10964,27 @@ pub const OPERANDS_STP_GEN_STP_64_LDSTPAIR_POST: &[A64OperandRole] = &[
     A64OperandRole::Memory,
     A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
     A64OperandRole::RegRead { field: "Rt2", width: A64RegWidth::X64 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STP_GEN_STP_32_LDSTPAIR_PRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STP_GEN_STP_32_LDSTPAIR_PRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt2", width: A64RegWidth::W32 },
     A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
 ];
 
@@ -8124,6 +11010,27 @@ pub const OPERANDS_STP_GEN_STP_64_LDSTPAIR_PRE: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
+pub const FIELDS_STP_GEN_STP_32_LDSTPAIR_OFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STP_GEN_STP_32_LDSTPAIR_OFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt2", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
 pub const FIELDS_STP_GEN_STP_64_LDSTPAIR_OFF: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
     GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
@@ -8142,6 +11049,1279 @@ pub const OPERANDS_STP_GEN_STP_64_LDSTPAIR_OFF: &[A64OperandRole] = &[
     A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
     A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
     A64OperandRole::RegRead { field: "Rt2", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDPSW_LDPSW_64_LDSTPAIR_POST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDPSW_LDPSW_64_LDSTPAIR_POST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt2", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDPSW_LDPSW_64_LDSTPAIR_PRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDPSW_LDPSW_64_LDSTPAIR_PRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt2", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDPSW_LDPSW_64_LDSTPAIR_OFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "imm7", hi: 21, lo: 15, width: 7, mask: 0x003f8000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDPSW_LDPSW_64_LDSTPAIR_OFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm7" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt2", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRB_IMM_LDRB_32_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRB_IMM_LDRB_32_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRB_IMM_LDRB_32_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRB_IMM_LDRB_32_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRB_IMM_LDRB_32_LDST_POS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRB_IMM_LDRB_32_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STRB_IMM_STRB_32_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STRB_IMM_STRB_32_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STRB_IMM_STRB_32_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STRB_IMM_STRB_32_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STRB_IMM_STRB_32_LDST_POS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STRB_IMM_STRB_32_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRH_IMM_LDRH_32_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRH_IMM_LDRH_32_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRH_IMM_LDRH_32_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRH_IMM_LDRH_32_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRH_IMM_LDRH_32_LDST_POS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRH_IMM_LDRH_32_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STRH_IMM_STRH_32_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STRH_IMM_STRH_32_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STRH_IMM_STRH_32_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STRH_IMM_STRH_32_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STRH_IMM_STRH_32_LDST_POS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STRH_IMM_STRH_32_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSB_IMM_LDRSB_32_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSB_IMM_LDRSB_32_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSB_IMM_LDRSB_64_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSB_IMM_LDRSB_64_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSB_IMM_LDRSB_32_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSB_IMM_LDRSB_32_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSB_IMM_LDRSB_64_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSB_IMM_LDRSB_64_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSB_IMM_LDRSB_32_LDST_POS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSB_IMM_LDRSB_32_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSB_IMM_LDRSB_64_LDST_POS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSB_IMM_LDRSB_64_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSH_IMM_LDRSH_32_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSH_IMM_LDRSH_32_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSH_IMM_LDRSH_64_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSH_IMM_LDRSH_64_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSH_IMM_LDRSH_32_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSH_IMM_LDRSH_32_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSH_IMM_LDRSH_64_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSH_IMM_LDRSH_64_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSH_IMM_LDRSH_32_LDST_POS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSH_IMM_LDRSH_32_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSH_IMM_LDRSH_64_LDST_POS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSH_IMM_LDRSH_64_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSW_IMM_LDRSW_64_LDST_IMMPOST: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSW_IMM_LDRSW_64_LDST_IMMPOST: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSW_IMM_LDRSW_64_LDST_IMMPRE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSW_IMM_LDRSW_64_LDST_IMMPRE: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegReadWrite { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSW_IMM_LDRSW_64_LDST_POS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSW_IMM_LDRSW_64_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUR_GEN_LDUR_32_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUR_GEN_LDUR_32_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUR_GEN_LDUR_64_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUR_GEN_LDUR_64_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STUR_GEN_STUR_32_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STUR_GEN_STUR_32_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STUR_GEN_STUR_64_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STUR_GEN_STUR_64_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDURB_LDURB_32_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDURB_LDURB_32_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STURB_STURB_32_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STURB_STURB_32_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDURH_LDURH_32_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDURH_LDURH_32_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STURH_STURH_32_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STURH_STURH_32_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDURSB_LDURSB_32_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDURSB_LDURSB_32_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDURSB_LDURSB_64_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDURSB_LDURSB_64_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDURSH_LDURSH_32_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDURSH_LDURSH_32_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDURSH_LDURSH_64_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDURSH_LDURSH_64_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDURSW_LDURSW_64_LDST_UNSCALED: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDURSW_LDURSW_64_LDST_UNSCALED: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDR_REG_GEN_LDR_32_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_REG_GEN_LDR_32_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDR_REG_GEN_LDR_64_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_REG_GEN_LDR_64_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STR_REG_GEN_STR_32_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STR_REG_GEN_STR_32_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STR_REG_GEN_STR_64_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STR_REG_GEN_STR_64_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRB_REG_LDRB_32B_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRB_REG_LDRB_32B_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRB_REG_LDRB_32BL_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRB_REG_LDRB_32BL_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STRB_REG_STRB_32B_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STRB_REG_STRB_32B_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STRB_REG_STRB_32BL_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STRB_REG_STRB_32BL_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRH_REG_LDRH_32_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRH_REG_LDRH_32_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STRH_REG_STRH_32_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STRH_REG_STRH_32_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSB_REG_LDRSB_32B_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSB_REG_LDRSB_32B_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSB_REG_LDRSB_32BL_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSB_REG_LDRSB_32BL_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSB_REG_LDRSB_64B_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSB_REG_LDRSB_64B_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSB_REG_LDRSB_64BL_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSB_REG_LDRSB_64BL_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSH_REG_LDRSH_32_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSH_REG_LDRSH_32_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSH_REG_LDRSH_64_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSH_REG_LDRSH_64_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSW_REG_LDRSW_64_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSW_REG_LDRSW_64_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDR_LIT_GEN_LDR_32_LOADLIT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "imm19", hi: 23, lo: 5, width: 19, mask: 0x00ffffe0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_LIT_GEN_LDR_32_LOADLIT: &[A64OperandRole] = &[
+    A64OperandRole::MemOffset { field: "imm19" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDR_LIT_GEN_LDR_64_LOADLIT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "imm19", hi: 23, lo: 5, width: 19, mask: 0x00ffffe0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_LIT_GEN_LDR_64_LOADLIT: &[A64OperandRole] = &[
+    A64OperandRole::MemOffset { field: "imm19" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDRSW_LIT_LDRSW_64_LOADLIT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "imm19", hi: 23, lo: 5, width: 19, mask: 0x00ffffe0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDRSW_LIT_LDRSW_64_LOADLIT: &[A64OperandRole] = &[
+    A64OperandRole::MemOffset { field: "imm19" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_PRFM_IMM_PRFM_P_LDST_POS: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm12", hi: 21, lo: 10, width: 12, mask: 0x003ffc00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_PRFM_IMM_PRFM_P_LDST_POS: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm12" },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_PRFM_LIT_PRFM_P_LOADLIT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "opc", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "imm19", hi: 23, lo: 5, width: 19, mask: 0x00ffffe0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_PRFM_LIT_PRFM_P_LOADLIT: &[A64OperandRole] = &[
+];
+
+#[allow(dead_code)]
+pub const FIELDS_PRFM_REG_PRFM_P_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_PRFM_REG_PRFM_P_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -8218,6 +12398,177 @@ pub const OPERANDS_STTR_STTR_64_LDST_UNPRIV: &[A64OperandRole] = &[
     A64OperandRole::Memory,
     A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
     A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDTRB_LDTRB_32_LDST_UNPRIV: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDTRB_LDTRB_32_LDST_UNPRIV: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STTRB_STTRB_32_LDST_UNPRIV: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STTRB_STTRB_32_LDST_UNPRIV: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDTRH_LDTRH_32_LDST_UNPRIV: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDTRH_LDTRH_32_LDST_UNPRIV: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STTRH_STTRH_32_LDST_UNPRIV: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STTRH_STTRH_32_LDST_UNPRIV: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDTRSB_LDTRSB_32_LDST_UNPRIV: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDTRSB_LDTRSB_32_LDST_UNPRIV: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDTRSB_LDTRSB_64_LDST_UNPRIV: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDTRSB_LDTRSB_64_LDST_UNPRIV: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDTRSH_LDTRSH_32_LDST_UNPRIV: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDTRSH_LDTRSH_32_LDST_UNPRIV: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDTRSH_LDTRSH_64_LDST_UNPRIV: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDTRSH_LDTRSH_64_LDST_UNPRIV: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDTRSW_LDTRSW_64_LDST_UNPRIV: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm9", hi: 20, lo: 12, width: 9, mask: 0x001ff000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDTRSW_LDTRSW_64_LDST_UNPRIV: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::MemOffset { field: "imm9" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
 ];
 
 #[allow(dead_code)]
@@ -8317,6 +12668,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0x9f000000,
         value: 0x10000000,
+        excludes: &[],
         fields: FIELDS_ADR_ADR_ONLY_PCRELADDR,
         operands: OPERANDS_ADR_ADR_ONLY_PCRELADDR,
         asm: "ADR <Xd> , <label>",
@@ -8329,6 +12681,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0x9f000000,
         value: 0x90000000,
+        excludes: &[],
         fields: FIELDS_ADRP_ADRP_ONLY_PCRELADDR,
         operands: OPERANDS_ADRP_ADRP_ONLY_PCRELADDR,
         asm: "ADRP <Xd> , <label>",
@@ -8341,6 +12694,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff800000,
         value: 0x11000000,
+        excludes: &[],
         fields: FIELDS_ADD_ADDSUB_IMM_ADD_32_ADDSUB_IMM,
         operands: OPERANDS_ADD_ADDSUB_IMM_ADD_32_ADDSUB_IMM,
         asm: "ADD <Wd|WSP> , <Wn|WSP> , # <imm> {, <shift> }",
@@ -8353,6 +12707,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0x91000000,
+        excludes: &[],
         fields: FIELDS_ADD_ADDSUB_IMM_ADD_64_ADDSUB_IMM,
         operands: OPERANDS_ADD_ADDSUB_IMM_ADD_64_ADDSUB_IMM,
         asm: "ADD <Xd|SP> , <Xn|SP> , # <imm> {, <shift> }",
@@ -8365,6 +12720,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff800000,
         value: 0x51000000,
+        excludes: &[],
         fields: FIELDS_SUB_ADDSUB_IMM_SUB_32_ADDSUB_IMM,
         operands: OPERANDS_SUB_ADDSUB_IMM_SUB_32_ADDSUB_IMM,
         asm: "SUB <Wd|WSP> , <Wn|WSP> , # <imm> {, <shift> }",
@@ -8377,6 +12733,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0xd1000000,
+        excludes: &[],
         fields: FIELDS_SUB_ADDSUB_IMM_SUB_64_ADDSUB_IMM,
         operands: OPERANDS_SUB_ADDSUB_IMM_SUB_64_ADDSUB_IMM,
         asm: "SUB <Xd|SP> , <Xn|SP> , # <imm> {, <shift> }",
@@ -8389,6 +12746,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff800000,
         value: 0x71000000,
+        excludes: &[],
         fields: FIELDS_SUBS_ADDSUB_IMM_SUBS_32S_ADDSUB_IMM,
         operands: OPERANDS_SUBS_ADDSUB_IMM_SUBS_32S_ADDSUB_IMM,
         asm: "SUBS <Wd> , <Wn|WSP> , # <imm> {, <shift> }",
@@ -8401,6 +12759,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0xf1000000,
+        excludes: &[],
         fields: FIELDS_SUBS_ADDSUB_IMM_SUBS_64S_ADDSUB_IMM,
         operands: OPERANDS_SUBS_ADDSUB_IMM_SUBS_64S_ADDSUB_IMM,
         asm: "SUBS <Xd> , <Xn|SP> , # <imm> {, <shift> }",
@@ -8413,6 +12772,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff800000,
         value: 0x31000000,
+        excludes: &[],
         fields: FIELDS_ADDS_ADDSUB_IMM_ADDS_32S_ADDSUB_IMM,
         operands: OPERANDS_ADDS_ADDSUB_IMM_ADDS_32S_ADDSUB_IMM,
         asm: "ADDS <Wd> , <Wn|WSP> , # <imm> {, <shift> }",
@@ -8425,6 +12785,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0xb1000000,
+        excludes: &[],
         fields: FIELDS_ADDS_ADDSUB_IMM_ADDS_64S_ADDSUB_IMM,
         operands: OPERANDS_ADDS_ADDSUB_IMM_ADDS_64S_ADDSUB_IMM,
         asm: "ADDS <Xd> , <Xn|SP> , # <imm> {, <shift> }",
@@ -8437,6 +12798,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x0b000000,
+        excludes: &[],
         fields: FIELDS_ADD_ADDSUB_SHIFT_ADD_32_ADDSUB_SHIFT,
         operands: OPERANDS_ADD_ADDSUB_SHIFT_ADD_32_ADDSUB_SHIFT,
         asm: "ADD <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8449,6 +12811,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0x8b000000,
+        excludes: &[],
         fields: FIELDS_ADD_ADDSUB_SHIFT_ADD_64_ADDSUB_SHIFT,
         operands: OPERANDS_ADD_ADDSUB_SHIFT_ADD_64_ADDSUB_SHIFT,
         asm: "ADD <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8461,6 +12824,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x2b000000,
+        excludes: &[],
         fields: FIELDS_ADDS_ADDSUB_SHIFT_ADDS_32_ADDSUB_SHIFT,
         operands: OPERANDS_ADDS_ADDSUB_SHIFT_ADDS_32_ADDSUB_SHIFT,
         asm: "ADDS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8473,6 +12837,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0xab000000,
+        excludes: &[],
         fields: FIELDS_ADDS_ADDSUB_SHIFT_ADDS_64_ADDSUB_SHIFT,
         operands: OPERANDS_ADDS_ADDSUB_SHIFT_ADDS_64_ADDSUB_SHIFT,
         asm: "ADDS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8485,6 +12850,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x4b000000,
+        excludes: &[],
         fields: FIELDS_SUB_ADDSUB_SHIFT_SUB_32_ADDSUB_SHIFT,
         operands: OPERANDS_SUB_ADDSUB_SHIFT_SUB_32_ADDSUB_SHIFT,
         asm: "SUB <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8497,6 +12863,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0xcb000000,
+        excludes: &[],
         fields: FIELDS_SUB_ADDSUB_SHIFT_SUB_64_ADDSUB_SHIFT,
         operands: OPERANDS_SUB_ADDSUB_SHIFT_SUB_64_ADDSUB_SHIFT,
         asm: "SUB <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8509,6 +12876,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x6b000000,
+        excludes: &[],
         fields: FIELDS_SUBS_ADDSUB_SHIFT_SUBS_32_ADDSUB_SHIFT,
         operands: OPERANDS_SUBS_ADDSUB_SHIFT_SUBS_32_ADDSUB_SHIFT,
         asm: "SUBS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8521,6 +12889,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0xeb000000,
+        excludes: &[],
         fields: FIELDS_SUBS_ADDSUB_SHIFT_SUBS_64_ADDSUB_SHIFT,
         operands: OPERANDS_SUBS_ADDSUB_SHIFT_SUBS_64_ADDSUB_SHIFT,
         asm: "SUBS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8533,6 +12902,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00000,
         value: 0x0b200000,
+        excludes: &[],
         fields: FIELDS_ADD_ADDSUB_EXT_ADD_32_ADDSUB_EXT,
         operands: OPERANDS_ADD_ADDSUB_EXT_ADD_32_ADDSUB_EXT,
         asm: "ADD <Wd|WSP> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
@@ -8545,6 +12915,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00000,
         value: 0x8b200000,
+        excludes: &[],
         fields: FIELDS_ADD_ADDSUB_EXT_ADD_64_ADDSUB_EXT,
         operands: OPERANDS_ADD_ADDSUB_EXT_ADD_64_ADDSUB_EXT,
         asm: "ADD <Xd|SP> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
@@ -8557,6 +12928,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00000,
         value: 0x2b200000,
+        excludes: &[],
         fields: FIELDS_ADDS_ADDSUB_EXT_ADDS_32S_ADDSUB_EXT,
         operands: OPERANDS_ADDS_ADDSUB_EXT_ADDS_32S_ADDSUB_EXT,
         asm: "ADDS <Wd> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
@@ -8569,6 +12941,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00000,
         value: 0xab200000,
+        excludes: &[],
         fields: FIELDS_ADDS_ADDSUB_EXT_ADDS_64S_ADDSUB_EXT,
         operands: OPERANDS_ADDS_ADDSUB_EXT_ADDS_64S_ADDSUB_EXT,
         asm: "ADDS <Xd> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
@@ -8581,6 +12954,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00000,
         value: 0x4b200000,
+        excludes: &[],
         fields: FIELDS_SUB_ADDSUB_EXT_SUB_32_ADDSUB_EXT,
         operands: OPERANDS_SUB_ADDSUB_EXT_SUB_32_ADDSUB_EXT,
         asm: "SUB <Wd|WSP> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
@@ -8593,6 +12967,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00000,
         value: 0xcb200000,
+        excludes: &[],
         fields: FIELDS_SUB_ADDSUB_EXT_SUB_64_ADDSUB_EXT,
         operands: OPERANDS_SUB_ADDSUB_EXT_SUB_64_ADDSUB_EXT,
         asm: "SUB <Xd|SP> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
@@ -8605,6 +12980,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00000,
         value: 0x6b200000,
+        excludes: &[],
         fields: FIELDS_SUBS_ADDSUB_EXT_SUBS_32S_ADDSUB_EXT,
         operands: OPERANDS_SUBS_ADDSUB_EXT_SUBS_32S_ADDSUB_EXT,
         asm: "SUBS <Wd> , <Wn|WSP> , <Wm> {, <extend> {# <amount> }}",
@@ -8617,6 +12993,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00000,
         value: 0xeb200000,
+        excludes: &[],
         fields: FIELDS_SUBS_ADDSUB_EXT_SUBS_64S_ADDSUB_EXT,
         operands: OPERANDS_SUBS_ADDSUB_EXT_SUBS_64S_ADDSUB_EXT,
         asm: "SUBS <Xd> , <Xn|SP> , <R> <m> {, <extend> {# <amount> }}",
@@ -8629,6 +13006,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xfc000000,
         value: 0x14000000,
+        excludes: &[],
         fields: FIELDS_B_UNCOND_B_ONLY_BRANCH_IMM,
         operands: OPERANDS_B_UNCOND_B_ONLY_BRANCH_IMM,
         asm: "B <label>",
@@ -8641,6 +13019,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xff000010,
         value: 0x54000000,
+        excludes: &[],
         fields: FIELDS_B_COND_B_ONLY_CONDBRANCH,
         operands: OPERANDS_B_COND_B_ONLY_CONDBRANCH,
         asm: "B. <cond> <label>",
@@ -8653,6 +13032,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff000000,
         value: 0x34000000,
+        excludes: &[],
         fields: FIELDS_CBZ_CBZ_32_COMPBRANCH,
         operands: OPERANDS_CBZ_CBZ_32_COMPBRANCH,
         asm: "CBZ <Wt> , <label>",
@@ -8665,6 +13045,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff000000,
         value: 0xb4000000,
+        excludes: &[],
         fields: FIELDS_CBZ_CBZ_64_COMPBRANCH,
         operands: OPERANDS_CBZ_CBZ_64_COMPBRANCH,
         asm: "CBZ <Xt> , <label>",
@@ -8677,6 +13058,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff000000,
         value: 0x35000000,
+        excludes: &[],
         fields: FIELDS_CBNZ_CBNZ_32_COMPBRANCH,
         operands: OPERANDS_CBNZ_CBNZ_32_COMPBRANCH,
         asm: "CBNZ <Wt> , <label>",
@@ -8689,6 +13071,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff000000,
         value: 0xb5000000,
+        excludes: &[],
         fields: FIELDS_CBNZ_CBNZ_64_COMPBRANCH,
         operands: OPERANDS_CBNZ_CBNZ_64_COMPBRANCH,
         asm: "CBNZ <Xt> , <label>",
@@ -8701,6 +13084,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0x52800000,
+        excludes: &[],
         fields: FIELDS_MOVZ_MOVZ_32_MOVEWIDE,
         operands: OPERANDS_MOVZ_MOVZ_32_MOVEWIDE,
         asm: "MOVZ <Wd> , # <imm> {, LSL # <shift> }",
@@ -8713,6 +13097,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0xd2800000,
+        excludes: &[],
         fields: FIELDS_MOVZ_MOVZ_64_MOVEWIDE,
         operands: OPERANDS_MOVZ_MOVZ_64_MOVEWIDE,
         asm: "MOVZ <Xd> , # <imm> {, LSL # <shift> }",
@@ -8725,6 +13110,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0x72800000,
+        excludes: &[],
         fields: FIELDS_MOVK_MOVK_32_MOVEWIDE,
         operands: OPERANDS_MOVK_MOVK_32_MOVEWIDE,
         asm: "MOVK <Wd> , # <imm> {, LSL # <shift> }",
@@ -8737,6 +13123,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0xf2800000,
+        excludes: &[],
         fields: FIELDS_MOVK_MOVK_64_MOVEWIDE,
         operands: OPERANDS_MOVK_MOVK_64_MOVEWIDE,
         asm: "MOVK <Xd> , # <imm> {, LSL # <shift> }",
@@ -8749,6 +13136,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0x12800000,
+        excludes: &[],
         fields: FIELDS_MOVN_MOVN_32_MOVEWIDE,
         operands: OPERANDS_MOVN_MOVN_32_MOVEWIDE,
         asm: "MOVN <Wd> , # <imm> {, LSL # <shift> }",
@@ -8761,6 +13149,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0x92800000,
+        excludes: &[],
         fields: FIELDS_MOVN_MOVN_64_MOVEWIDE,
         operands: OPERANDS_MOVN_MOVN_64_MOVEWIDE,
         asm: "MOVN <Xd> , # <imm> {, LSL # <shift> }",
@@ -8773,6 +13162,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x0a000000,
+        excludes: &[],
         fields: FIELDS_AND_LOG_SHIFT_AND_32_LOG_SHIFT,
         operands: OPERANDS_AND_LOG_SHIFT_AND_32_LOG_SHIFT,
         asm: "AND <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8785,6 +13175,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0x8a000000,
+        excludes: &[],
         fields: FIELDS_AND_LOG_SHIFT_AND_64_LOG_SHIFT,
         operands: OPERANDS_AND_LOG_SHIFT_AND_64_LOG_SHIFT,
         asm: "AND <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8797,6 +13188,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x6a000000,
+        excludes: &[],
         fields: FIELDS_ANDS_LOG_SHIFT_ANDS_32_LOG_SHIFT,
         operands: OPERANDS_ANDS_LOG_SHIFT_ANDS_32_LOG_SHIFT,
         asm: "ANDS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8809,6 +13201,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0xea000000,
+        excludes: &[],
         fields: FIELDS_ANDS_LOG_SHIFT_ANDS_64_LOG_SHIFT,
         operands: OPERANDS_ANDS_LOG_SHIFT_ANDS_64_LOG_SHIFT,
         asm: "ANDS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8821,6 +13214,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x2a000000,
+        excludes: &[],
         fields: FIELDS_ORR_LOG_SHIFT_ORR_32_LOG_SHIFT,
         operands: OPERANDS_ORR_LOG_SHIFT_ORR_32_LOG_SHIFT,
         asm: "ORR <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8833,6 +13227,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0xaa000000,
+        excludes: &[],
         fields: FIELDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT,
         operands: OPERANDS_ORR_LOG_SHIFT_ORR_64_LOG_SHIFT,
         asm: "ORR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8845,6 +13240,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x4a000000,
+        excludes: &[],
         fields: FIELDS_EOR_LOG_SHIFT_EOR_32_LOG_SHIFT,
         operands: OPERANDS_EOR_LOG_SHIFT_EOR_32_LOG_SHIFT,
         asm: "EOR <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8857,6 +13253,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0xca000000,
+        excludes: &[],
         fields: FIELDS_EOR_LOG_SHIFT_EOR_64_LOG_SHIFT,
         operands: OPERANDS_EOR_LOG_SHIFT_EOR_64_LOG_SHIFT,
         asm: "EOR <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8869,6 +13266,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x4a200000,
+        excludes: &[],
         fields: FIELDS_EON_EON_32_LOG_SHIFT,
         operands: OPERANDS_EON_EON_32_LOG_SHIFT,
         asm: "EON <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8881,6 +13279,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0xca200000,
+        excludes: &[],
         fields: FIELDS_EON_EON_64_LOG_SHIFT,
         operands: OPERANDS_EON_EON_64_LOG_SHIFT,
         asm: "EON <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8893,6 +13292,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x0a200000,
+        excludes: &[],
         fields: FIELDS_BIC_LOG_SHIFT_BIC_32_LOG_SHIFT,
         operands: OPERANDS_BIC_LOG_SHIFT_BIC_32_LOG_SHIFT,
         asm: "BIC <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8905,6 +13305,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0x8a200000,
+        excludes: &[],
         fields: FIELDS_BIC_LOG_SHIFT_BIC_64_LOG_SHIFT,
         operands: OPERANDS_BIC_LOG_SHIFT_BIC_64_LOG_SHIFT,
         asm: "BIC <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8917,6 +13318,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x6a200000,
+        excludes: &[],
         fields: FIELDS_BICS_BICS_32_LOG_SHIFT,
         operands: OPERANDS_BICS_BICS_32_LOG_SHIFT,
         asm: "BICS <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8929,6 +13331,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0xea200000,
+        excludes: &[],
         fields: FIELDS_BICS_BICS_64_LOG_SHIFT,
         operands: OPERANDS_BICS_BICS_64_LOG_SHIFT,
         asm: "BICS <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8941,6 +13344,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xff200000,
         value: 0x2a200000,
+        excludes: &[],
         fields: FIELDS_ORN_LOG_SHIFT_ORN_32_LOG_SHIFT,
         operands: OPERANDS_ORN_LOG_SHIFT_ORN_32_LOG_SHIFT,
         asm: "ORN <Wd> , <Wn> , <Wm> {, <shift> # <amount> }",
@@ -8953,6 +13357,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff200000,
         value: 0xaa200000,
+        excludes: &[],
         fields: FIELDS_ORN_LOG_SHIFT_ORN_64_LOG_SHIFT,
         operands: OPERANDS_ORN_LOG_SHIFT_ORN_64_LOG_SHIFT,
         asm: "ORN <Xd> , <Xn> , <Xm> {, <shift> # <amount> }",
@@ -8965,6 +13370,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0x12000000,
+        excludes: &[],
         fields: FIELDS_AND_LOG_IMM_AND_32_LOG_IMM,
         operands: OPERANDS_AND_LOG_IMM_AND_32_LOG_IMM,
         asm: "AND <Wd|WSP> , <Wn> , # <imm>",
@@ -8977,6 +13383,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0x92000000,
+        excludes: &[],
         fields: FIELDS_AND_LOG_IMM_AND_64_LOG_IMM,
         operands: OPERANDS_AND_LOG_IMM_AND_64_LOG_IMM,
         asm: "AND <Xd|SP> , <Xn> , # <imm>",
@@ -8989,6 +13396,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0x72000000,
+        excludes: &[],
         fields: FIELDS_ANDS_LOG_IMM_ANDS_32S_LOG_IMM,
         operands: OPERANDS_ANDS_LOG_IMM_ANDS_32S_LOG_IMM,
         asm: "ANDS <Wd> , <Wn> , # <imm>",
@@ -9001,6 +13409,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0xf2000000,
+        excludes: &[],
         fields: FIELDS_ANDS_LOG_IMM_ANDS_64S_LOG_IMM,
         operands: OPERANDS_ANDS_LOG_IMM_ANDS_64S_LOG_IMM,
         asm: "ANDS <Xd> , <Xn> , # <imm>",
@@ -9013,6 +13422,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0x32000000,
+        excludes: &[],
         fields: FIELDS_ORR_LOG_IMM_ORR_32_LOG_IMM,
         operands: OPERANDS_ORR_LOG_IMM_ORR_32_LOG_IMM,
         asm: "ORR <Wd|WSP> , <Wn> , # <imm>",
@@ -9025,6 +13435,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0xb2000000,
+        excludes: &[],
         fields: FIELDS_ORR_LOG_IMM_ORR_64_LOG_IMM,
         operands: OPERANDS_ORR_LOG_IMM_ORR_64_LOG_IMM,
         asm: "ORR <Xd|SP> , <Xn> , # <imm>",
@@ -9037,6 +13448,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0x52000000,
+        excludes: &[],
         fields: FIELDS_EOR_LOG_IMM_EOR_32_LOG_IMM,
         operands: OPERANDS_EOR_LOG_IMM_EOR_32_LOG_IMM,
         asm: "EOR <Wd|WSP> , <Wn> , # <imm>",
@@ -9049,6 +13461,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xff800000,
         value: 0xd2000000,
+        excludes: &[],
         fields: FIELDS_EOR_LOG_IMM_EOR_64_LOG_IMM,
         operands: OPERANDS_EOR_LOG_IMM_EOR_64_LOG_IMM,
         asm: "EOR <Xd|SP> , <Xn> , # <imm>",
@@ -9061,6 +13474,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0x13000000,
+        excludes: &[],
         fields: FIELDS_SBFM_SBFM_32M_BITFIELD,
         operands: OPERANDS_SBFM_SBFM_32M_BITFIELD,
         asm: "SBFM <Wd> , <Wn> , # <immr> , # <imms>",
@@ -9073,6 +13487,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0x93400000,
+        excludes: &[],
         fields: FIELDS_SBFM_SBFM_64M_BITFIELD,
         operands: OPERANDS_SBFM_SBFM_64M_BITFIELD,
         asm: "SBFM <Xd> , <Xn> , # <immr> , # <imms>",
@@ -9085,6 +13500,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0x53000000,
+        excludes: &[],
         fields: FIELDS_UBFM_UBFM_32M_BITFIELD,
         operands: OPERANDS_UBFM_UBFM_32M_BITFIELD,
         asm: "UBFM <Wd> , <Wn> , # <immr> , # <imms>",
@@ -9097,6 +13513,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0xd3400000,
+        excludes: &[],
         fields: FIELDS_UBFM_UBFM_64M_BITFIELD,
         operands: OPERANDS_UBFM_UBFM_64M_BITFIELD,
         asm: "UBFM <Xd> , <Xn> , # <immr> , # <imms>",
@@ -9109,6 +13526,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0x33000000,
+        excludes: &[],
         fields: FIELDS_BFM_BFM_32M_BITFIELD,
         operands: OPERANDS_BFM_BFM_32M_BITFIELD,
         asm: "BFM <Wd> , <Wn> , # <immr> , # <imms>",
@@ -9121,6 +13539,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0xb3400000,
+        excludes: &[],
         fields: FIELDS_BFM_BFM_64M_BITFIELD,
         operands: OPERANDS_BFM_BFM_64M_BITFIELD,
         asm: "BFM <Xd> , <Xn> , # <immr> , # <imms>",
@@ -9133,6 +13552,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe08000,
         value: 0x13800000,
+        excludes: &[],
         fields: FIELDS_EXTR_EXTR_32_EXTRACT,
         operands: OPERANDS_EXTR_EXTR_32_EXTRACT,
         asm: "EXTR <Wd> , <Wn> , <Wm> , # <lsb>",
@@ -9145,6 +13565,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00000,
         value: 0x93c00000,
+        excludes: &[],
         fields: FIELDS_EXTR_EXTR_64_EXTRACT,
         operands: OPERANDS_EXTR_EXTR_64_EXTRACT,
         asm: "EXTR <Xd> , <Xn> , <Xm> , # <lsb>",
@@ -9157,6 +13578,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c00,
         value: 0x1a800000,
+        excludes: &[],
         fields: FIELDS_CSEL_CSEL_32_CONDSEL,
         operands: OPERANDS_CSEL_CSEL_32_CONDSEL,
         asm: "CSEL <Wd> , <Wn> , <Wm> , <cond>",
@@ -9169,6 +13591,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c00,
         value: 0x9a800000,
+        excludes: &[],
         fields: FIELDS_CSEL_CSEL_64_CONDSEL,
         operands: OPERANDS_CSEL_CSEL_64_CONDSEL,
         asm: "CSEL <Xd> , <Xn> , <Xm> , <cond>",
@@ -9181,6 +13604,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c00,
         value: 0x1a800400,
+        excludes: &[],
         fields: FIELDS_CSINC_CSINC_32_CONDSEL,
         operands: OPERANDS_CSINC_CSINC_32_CONDSEL,
         asm: "CSINC <Wd> , <Wn> , <Wm> , <cond>",
@@ -9193,6 +13617,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c00,
         value: 0x9a800400,
+        excludes: &[],
         fields: FIELDS_CSINC_CSINC_64_CONDSEL,
         operands: OPERANDS_CSINC_CSINC_64_CONDSEL,
         asm: "CSINC <Xd> , <Xn> , <Xm> , <cond>",
@@ -9205,6 +13630,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c00,
         value: 0x5a800000,
+        excludes: &[],
         fields: FIELDS_CSINV_CSINV_32_CONDSEL,
         operands: OPERANDS_CSINV_CSINV_32_CONDSEL,
         asm: "CSINV <Wd> , <Wn> , <Wm> , <cond>",
@@ -9217,6 +13643,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c00,
         value: 0xda800000,
+        excludes: &[],
         fields: FIELDS_CSINV_CSINV_64_CONDSEL,
         operands: OPERANDS_CSINV_CSINV_64_CONDSEL,
         asm: "CSINV <Xd> , <Xn> , <Xm> , <cond>",
@@ -9229,6 +13656,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c00,
         value: 0x5a800400,
+        excludes: &[],
         fields: FIELDS_CSNEG_CSNEG_32_CONDSEL,
         operands: OPERANDS_CSNEG_CSNEG_32_CONDSEL,
         asm: "CSNEG <Wd> , <Wn> , <Wm> , <cond>",
@@ -9241,6 +13669,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c00,
         value: 0xda800400,
+        excludes: &[],
         fields: FIELDS_CSNEG_CSNEG_64_CONDSEL,
         operands: OPERANDS_CSNEG_CSNEG_64_CONDSEL,
         asm: "CSNEG <Xd> , <Xn> , <Xm> , <cond>",
@@ -9253,6 +13682,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c10,
         value: 0x7a400800,
+        excludes: &[],
         fields: FIELDS_CCMP_IMM_CCMP_32_CONDCMP_IMM,
         operands: OPERANDS_CCMP_IMM_CCMP_32_CONDCMP_IMM,
         asm: "CCMP <Wn> , # <imm> , # <nzcv> , <cond>",
@@ -9265,6 +13695,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c10,
         value: 0xfa400800,
+        excludes: &[],
         fields: FIELDS_CCMP_IMM_CCMP_64_CONDCMP_IMM,
         operands: OPERANDS_CCMP_IMM_CCMP_64_CONDCMP_IMM,
         asm: "CCMP <Xn> , # <imm> , # <nzcv> , <cond>",
@@ -9277,6 +13708,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c10,
         value: 0x7a400000,
+        excludes: &[],
         fields: FIELDS_CCMP_REG_CCMP_32_CONDCMP_REG,
         operands: OPERANDS_CCMP_REG_CCMP_32_CONDCMP_REG,
         asm: "CCMP <Wn> , <Wm> , # <nzcv> , <cond>",
@@ -9289,6 +13721,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c10,
         value: 0xfa400000,
+        excludes: &[],
         fields: FIELDS_CCMP_REG_CCMP_64_CONDCMP_REG,
         operands: OPERANDS_CCMP_REG_CCMP_64_CONDCMP_REG,
         asm: "CCMP <Xn> , <Xm> , # <nzcv> , <cond>",
@@ -9301,6 +13734,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c10,
         value: 0x3a400800,
+        excludes: &[],
         fields: FIELDS_CCMN_IMM_CCMN_32_CONDCMP_IMM,
         operands: OPERANDS_CCMN_IMM_CCMN_32_CONDCMP_IMM,
         asm: "CCMN <Wn> , # <imm> , # <nzcv> , <cond>",
@@ -9313,6 +13747,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c10,
         value: 0xba400800,
+        excludes: &[],
         fields: FIELDS_CCMN_IMM_CCMN_64_CONDCMP_IMM,
         operands: OPERANDS_CCMN_IMM_CCMN_64_CONDCMP_IMM,
         asm: "CCMN <Xn> , # <imm> , # <nzcv> , <cond>",
@@ -9325,6 +13760,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c10,
         value: 0x3a400000,
+        excludes: &[],
         fields: FIELDS_CCMN_REG_CCMN_32_CONDCMP_REG,
         operands: OPERANDS_CCMN_REG_CCMN_32_CONDCMP_REG,
         asm: "CCMN <Wn> , <Wm> , # <nzcv> , <cond>",
@@ -9337,6 +13773,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c10,
         value: 0xba400000,
+        excludes: &[],
         fields: FIELDS_CCMN_REG_CCMN_64_CONDCMP_REG,
         operands: OPERANDS_CCMN_REG_CCMN_64_CONDCMP_REG,
         asm: "CCMN <Xn> , <Xm> , # <nzcv> , <cond>",
@@ -9349,6 +13786,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe0fc00,
         value: 0x1ac02000,
+        excludes: &[],
         fields: FIELDS_LSLV_LSLV_32_DP_2SRC,
         operands: OPERANDS_LSLV_LSLV_32_DP_2SRC,
         asm: "LSLV <Wd> , <Wn> , <Wm>",
@@ -9361,6 +13799,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe0fc00,
         value: 0x9ac02000,
+        excludes: &[],
         fields: FIELDS_LSLV_LSLV_64_DP_2SRC,
         operands: OPERANDS_LSLV_LSLV_64_DP_2SRC,
         asm: "LSLV <Xd> , <Xn> , <Xm>",
@@ -9373,6 +13812,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe0fc00,
         value: 0x1ac02400,
+        excludes: &[],
         fields: FIELDS_LSRV_LSRV_32_DP_2SRC,
         operands: OPERANDS_LSRV_LSRV_32_DP_2SRC,
         asm: "LSRV <Wd> , <Wn> , <Wm>",
@@ -9385,6 +13825,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe0fc00,
         value: 0x9ac02400,
+        excludes: &[],
         fields: FIELDS_LSRV_LSRV_64_DP_2SRC,
         operands: OPERANDS_LSRV_LSRV_64_DP_2SRC,
         asm: "LSRV <Xd> , <Xn> , <Xm>",
@@ -9397,6 +13838,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe0fc00,
         value: 0x1ac02800,
+        excludes: &[],
         fields: FIELDS_ASRV_ASRV_32_DP_2SRC,
         operands: OPERANDS_ASRV_ASRV_32_DP_2SRC,
         asm: "ASRV <Wd> , <Wn> , <Wm>",
@@ -9409,6 +13851,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe0fc00,
         value: 0x9ac02800,
+        excludes: &[],
         fields: FIELDS_ASRV_ASRV_64_DP_2SRC,
         operands: OPERANDS_ASRV_ASRV_64_DP_2SRC,
         asm: "ASRV <Xd> , <Xn> , <Xm>",
@@ -9421,6 +13864,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe0fc00,
         value: 0x1ac02c00,
+        excludes: &[],
         fields: FIELDS_RORV_RORV_32_DP_2SRC,
         operands: OPERANDS_RORV_RORV_32_DP_2SRC,
         asm: "RORV <Wd> , <Wn> , <Wm>",
@@ -9433,6 +13877,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe0fc00,
         value: 0x9ac02c00,
+        excludes: &[],
         fields: FIELDS_RORV_RORV_64_DP_2SRC,
         operands: OPERANDS_RORV_RORV_64_DP_2SRC,
         asm: "RORV <Xd> , <Xn> , <Xm>",
@@ -9445,6 +13890,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe0fc00,
         value: 0x1ac00800,
+        excludes: &[],
         fields: FIELDS_UDIV_UDIV_32_DP_2SRC,
         operands: OPERANDS_UDIV_UDIV_32_DP_2SRC,
         asm: "UDIV <Wd> , <Wn> , <Wm>",
@@ -9457,6 +13903,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe0fc00,
         value: 0x9ac00800,
+        excludes: &[],
         fields: FIELDS_UDIV_UDIV_64_DP_2SRC,
         operands: OPERANDS_UDIV_UDIV_64_DP_2SRC,
         asm: "UDIV <Xd> , <Xn> , <Xm>",
@@ -9469,6 +13916,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe0fc00,
         value: 0x1ac00c00,
+        excludes: &[],
         fields: FIELDS_SDIV_SDIV_32_DP_2SRC,
         operands: OPERANDS_SDIV_SDIV_32_DP_2SRC,
         asm: "SDIV <Wd> , <Wn> , <Wm>",
@@ -9481,6 +13929,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe0fc00,
         value: 0x9ac00c00,
+        excludes: &[],
         fields: FIELDS_SDIV_SDIV_64_DP_2SRC,
         operands: OPERANDS_SDIV_SDIV_64_DP_2SRC,
         asm: "SDIV <Xd> , <Xn> , <Xm>",
@@ -9493,6 +13942,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe08000,
         value: 0x1b000000,
+        excludes: &[],
         fields: FIELDS_MADD_MADD_32A_DP_3SRC,
         operands: OPERANDS_MADD_MADD_32A_DP_3SRC,
         asm: "MADD <Wd> , <Wn> , <Wm> , <Wa>",
@@ -9505,6 +13955,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe08000,
         value: 0x9b000000,
+        excludes: &[],
         fields: FIELDS_MADD_MADD_64A_DP_3SRC,
         operands: OPERANDS_MADD_MADD_64A_DP_3SRC,
         asm: "MADD <Xd> , <Xn> , <Xm> , <Xa>",
@@ -9517,6 +13968,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe08000,
         value: 0x1b008000,
+        excludes: &[],
         fields: FIELDS_MSUB_MSUB_32A_DP_3SRC,
         operands: OPERANDS_MSUB_MSUB_32A_DP_3SRC,
         asm: "MSUB <Wd> , <Wn> , <Wm> , <Wa>",
@@ -9529,6 +13981,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe08000,
         value: 0x9b008000,
+        excludes: &[],
         fields: FIELDS_MSUB_MSUB_64A_DP_3SRC,
         operands: OPERANDS_MSUB_MSUB_64A_DP_3SRC,
         asm: "MSUB <Xd> , <Xn> , <Xm> , <Xa>",
@@ -9541,6 +13994,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xffe08000,
         value: 0x9b200000,
+        excludes: &[],
         fields: FIELDS_SMADDL_SMADDL_64WA_DP_3SRC,
         operands: OPERANDS_SMADDL_SMADDL_64WA_DP_3SRC,
         asm: "SMADDL <Xd> , <Wn> , <Wm> , <Xa>",
@@ -9553,6 +14007,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xffe08000,
         value: 0x9ba00000,
+        excludes: &[],
         fields: FIELDS_UMADDL_UMADDL_64WA_DP_3SRC,
         operands: OPERANDS_UMADDL_UMADDL_64WA_DP_3SRC,
         asm: "UMADDL <Xd> , <Wn> , <Wm> , <Xa>",
@@ -9565,6 +14020,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xffe0fc00,
         value: 0x9b407c00,
+        excludes: &[],
         fields: FIELDS_SMULH_SMULH_64_DP_3SRC,
         operands: OPERANDS_SMULH_SMULH_64_DP_3SRC,
         asm: "SMULH <Xd> , <Xn> , <Xm>",
@@ -9577,6 +14033,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xffe0fc00,
         value: 0x9bc07c00,
+        excludes: &[],
         fields: FIELDS_UMULH_UMULH_64_DP_3SRC,
         operands: OPERANDS_UMULH_UMULH_64_DP_3SRC,
         asm: "UMULH <Xd> , <Xn> , <Xm>",
@@ -9589,6 +14046,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xfffffc00,
         value: 0x5ac01000,
+        excludes: &[],
         fields: FIELDS_CLZ_INT_CLZ_32_DP_1SRC,
         operands: OPERANDS_CLZ_INT_CLZ_32_DP_1SRC,
         asm: "CLZ <Wd> , <Wn>",
@@ -9601,6 +14059,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xfffffc00,
         value: 0xdac01000,
+        excludes: &[],
         fields: FIELDS_CLZ_INT_CLZ_64_DP_1SRC,
         operands: OPERANDS_CLZ_INT_CLZ_64_DP_1SRC,
         asm: "CLZ <Xd> , <Xn>",
@@ -9613,6 +14072,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xfffffc00,
         value: 0x5ac00000,
+        excludes: &[],
         fields: FIELDS_RBIT_INT_RBIT_32_DP_1SRC,
         operands: OPERANDS_RBIT_INT_RBIT_32_DP_1SRC,
         asm: "RBIT <Wd> , <Wn>",
@@ -9625,6 +14085,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xfffffc00,
         value: 0xdac00000,
+        excludes: &[],
         fields: FIELDS_RBIT_INT_RBIT_64_DP_1SRC,
         operands: OPERANDS_RBIT_INT_RBIT_64_DP_1SRC,
         asm: "RBIT <Xd> , <Xn>",
@@ -9637,6 +14098,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xfffffc00,
         value: 0x5ac00800,
+        excludes: &[],
         fields: FIELDS_REV_REV_32_DP_1SRC,
         operands: OPERANDS_REV_REV_32_DP_1SRC,
         asm: "REV <Wd> , <Wn>",
@@ -9649,6 +14111,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xfffffc00,
         value: 0xdac00c00,
+        excludes: &[],
         fields: FIELDS_REV_REV_64_DP_1SRC,
         operands: OPERANDS_REV_REV_64_DP_1SRC,
         asm: "REV <Xd> , <Xn>",
@@ -9661,6 +14124,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xfffffc00,
         value: 0x5ac00400,
+        excludes: &[],
         fields: FIELDS_REV16_INT_REV16_32_DP_1SRC,
         operands: OPERANDS_REV16_INT_REV16_32_DP_1SRC,
         asm: "REV16 <Wd> , <Wn>",
@@ -9673,6 +14137,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xfffffc00,
         value: 0xdac00400,
+        excludes: &[],
         fields: FIELDS_REV16_INT_REV16_64_DP_1SRC,
         operands: OPERANDS_REV16_INT_REV16_64_DP_1SRC,
         asm: "REV16 <Xd> , <Xn>",
@@ -9685,6 +14150,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xfffffc00,
         value: 0xdac00800,
+        excludes: &[],
         fields: FIELDS_REV32_INT_REV32_64_DP_1SRC,
         operands: OPERANDS_REV32_INT_REV32_64_DP_1SRC,
         asm: "REV32 <Xd> , <Xn>",
@@ -9697,6 +14163,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xffffffe0,
         value: 0xd53bd040,
+        excludes: &[],
         fields: FIELDS_MRS_MRS_RS_SYSTEMMOVE,
         operands: OPERANDS_MRS_MRS_RS_SYSTEMMOVE,
         asm: "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
@@ -9709,6 +14176,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0x7f000000,
         value: 0x36000000,
+        excludes: &[],
         fields: FIELDS_TBZ_TBZ_ONLY_TESTBRANCH,
         operands: OPERANDS_TBZ_TBZ_ONLY_TESTBRANCH,
         asm: "TBZ <R> <t> , # <imm> , <label>",
@@ -9721,6 +14189,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0x7f000000,
         value: 0x37000000,
+        excludes: &[],
         fields: FIELDS_TBNZ_TBNZ_ONLY_TESTBRANCH,
         operands: OPERANDS_TBNZ_TBNZ_ONLY_TESTBRANCH,
         asm: "TBNZ <R> <t> , # <imm> , <label>",
@@ -9733,6 +14202,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c00,
         value: 0xb8400400,
+        excludes: &[],
         fields: FIELDS_LDR_IMM_GEN_LDR_32_LDST_IMMPOST,
         operands: OPERANDS_LDR_IMM_GEN_LDR_32_LDST_IMMPOST,
         asm: "LDR <Wt> , [ <Xn|SP> ], # <simm>",
@@ -9745,6 +14215,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c00,
         value: 0xf8400400,
+        excludes: &[],
         fields: FIELDS_LDR_IMM_GEN_LDR_64_LDST_IMMPOST,
         operands: OPERANDS_LDR_IMM_GEN_LDR_64_LDST_IMMPOST,
         asm: "LDR <Xt> , [ <Xn|SP> ], # <simm>",
@@ -9757,6 +14228,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c00,
         value: 0xb8400c00,
+        excludes: &[],
         fields: FIELDS_LDR_IMM_GEN_LDR_32_LDST_IMMPRE,
         operands: OPERANDS_LDR_IMM_GEN_LDR_32_LDST_IMMPRE,
         asm: "LDR <Wt> , [ <Xn|SP> , # <simm> ]!",
@@ -9769,6 +14241,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c00,
         value: 0xf8400c00,
+        excludes: &[],
         fields: FIELDS_LDR_IMM_GEN_LDR_64_LDST_IMMPRE,
         operands: OPERANDS_LDR_IMM_GEN_LDR_64_LDST_IMMPRE,
         asm: "LDR <Xt> , [ <Xn|SP> , # <simm> ]!",
@@ -9781,6 +14254,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0xb9400000,
+        excludes: &[],
         fields: FIELDS_LDR_IMM_GEN_LDR_32_LDST_POS,
         operands: OPERANDS_LDR_IMM_GEN_LDR_32_LDST_POS,
         asm: "LDR <Wt> , [ <Xn|SP> {, # <pimm> }]",
@@ -9793,6 +14267,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0xf9400000,
+        excludes: &[],
         fields: FIELDS_LDR_IMM_GEN_LDR_64_LDST_POS,
         operands: OPERANDS_LDR_IMM_GEN_LDR_64_LDST_POS,
         asm: "LDR <Xt> , [ <Xn|SP> {, # <pimm> }]",
@@ -9805,6 +14280,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c00,
         value: 0xb8000400,
+        excludes: &[],
         fields: FIELDS_STR_IMM_GEN_STR_32_LDST_IMMPOST,
         operands: OPERANDS_STR_IMM_GEN_STR_32_LDST_IMMPOST,
         asm: "STR <Wt> , [ <Xn|SP> ], # <simm>",
@@ -9817,6 +14293,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c00,
         value: 0xf8000400,
+        excludes: &[],
         fields: FIELDS_STR_IMM_GEN_STR_64_LDST_IMMPOST,
         operands: OPERANDS_STR_IMM_GEN_STR_64_LDST_IMMPOST,
         asm: "STR <Xt> , [ <Xn|SP> ], # <simm>",
@@ -9829,6 +14306,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c00,
         value: 0xb8000c00,
+        excludes: &[],
         fields: FIELDS_STR_IMM_GEN_STR_32_LDST_IMMPRE,
         operands: OPERANDS_STR_IMM_GEN_STR_32_LDST_IMMPRE,
         asm: "STR <Wt> , [ <Xn|SP> , # <simm> ]!",
@@ -9841,6 +14319,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c00,
         value: 0xf8000c00,
+        excludes: &[],
         fields: FIELDS_STR_IMM_GEN_STR_64_LDST_IMMPRE,
         operands: OPERANDS_STR_IMM_GEN_STR_64_LDST_IMMPRE,
         asm: "STR <Xt> , [ <Xn|SP> , # <simm> ]!",
@@ -9853,6 +14332,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffc00000,
         value: 0xb9000000,
+        excludes: &[],
         fields: FIELDS_STR_IMM_GEN_STR_32_LDST_POS,
         operands: OPERANDS_STR_IMM_GEN_STR_32_LDST_POS,
         asm: "STR <Wt> , [ <Xn|SP> {, # <pimm> }]",
@@ -9865,9 +14345,23 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0xf9000000,
+        excludes: &[],
         fields: FIELDS_STR_IMM_GEN_STR_64_LDST_POS,
         operands: OPERANDS_STR_IMM_GEN_STR_64_LDST_POS,
         asm: "STR <Xt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDP_gen.LDP_32_ldstpair_post",
+        mnemonic: "LDP",
+        heading: "LDP",
+        title: "LDP -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x28c00000,
+        excludes: &[],
+        fields: FIELDS_LDP_GEN_LDP_32_LDSTPAIR_POST,
+        operands: OPERANDS_LDP_GEN_LDP_32_LDSTPAIR_POST,
+        asm: "LDP <Wt1> , <Wt2> , [ <Xn|SP> ], # <imm>",
     },
     GeneratedInsnSpec {
         key: "LDP_gen.LDP_64_ldstpair_post",
@@ -9877,9 +14371,23 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0xa8c00000,
+        excludes: &[],
         fields: FIELDS_LDP_GEN_LDP_64_LDSTPAIR_POST,
         operands: OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_POST,
         asm: "LDP <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDP_gen.LDP_32_ldstpair_pre",
+        mnemonic: "LDP",
+        heading: "LDP",
+        title: "LDP -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x29c00000,
+        excludes: &[],
+        fields: FIELDS_LDP_GEN_LDP_32_LDSTPAIR_PRE,
+        operands: OPERANDS_LDP_GEN_LDP_32_LDSTPAIR_PRE,
+        asm: "LDP <Wt1> , <Wt2> , [ <Xn|SP> , # <imm> ]!",
     },
     GeneratedInsnSpec {
         key: "LDP_gen.LDP_64_ldstpair_pre",
@@ -9889,9 +14397,23 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0xa9c00000,
+        excludes: &[],
         fields: FIELDS_LDP_GEN_LDP_64_LDSTPAIR_PRE,
         operands: OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_PRE,
         asm: "LDP <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "LDP_gen.LDP_32_ldstpair_off",
+        mnemonic: "LDP",
+        heading: "LDP",
+        title: "LDP -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x29400000,
+        excludes: &[],
+        fields: FIELDS_LDP_GEN_LDP_32_LDSTPAIR_OFF,
+        operands: OPERANDS_LDP_GEN_LDP_32_LDSTPAIR_OFF,
+        asm: "LDP <Wt1> , <Wt2> , [ <Xn|SP> {, # <imm> }]",
     },
     GeneratedInsnSpec {
         key: "LDP_gen.LDP_64_ldstpair_off",
@@ -9901,9 +14423,23 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0xa9400000,
+        excludes: &[],
         fields: FIELDS_LDP_GEN_LDP_64_LDSTPAIR_OFF,
         operands: OPERANDS_LDP_GEN_LDP_64_LDSTPAIR_OFF,
         asm: "LDP <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STP_gen.STP_32_ldstpair_post",
+        mnemonic: "STP",
+        heading: "STP",
+        title: "STP -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x28800000,
+        excludes: &[],
+        fields: FIELDS_STP_GEN_STP_32_LDSTPAIR_POST,
+        operands: OPERANDS_STP_GEN_STP_32_LDSTPAIR_POST,
+        asm: "STP <Wt1> , <Wt2> , [ <Xn|SP> ], # <imm>",
     },
     GeneratedInsnSpec {
         key: "STP_gen.STP_64_ldstpair_post",
@@ -9913,9 +14449,23 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0xa8800000,
+        excludes: &[],
         fields: FIELDS_STP_GEN_STP_64_LDSTPAIR_POST,
         operands: OPERANDS_STP_GEN_STP_64_LDSTPAIR_POST,
         asm: "STP <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "STP_gen.STP_32_ldstpair_pre",
+        mnemonic: "STP",
+        heading: "STP",
+        title: "STP -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x29800000,
+        excludes: &[],
+        fields: FIELDS_STP_GEN_STP_32_LDSTPAIR_PRE,
+        operands: OPERANDS_STP_GEN_STP_32_LDSTPAIR_PRE,
+        asm: "STP <Wt1> , <Wt2> , [ <Xn|SP> , # <imm> ]!",
     },
     GeneratedInsnSpec {
         key: "STP_gen.STP_64_ldstpair_pre",
@@ -9925,9 +14475,23 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0xa9800000,
+        excludes: &[],
         fields: FIELDS_STP_GEN_STP_64_LDSTPAIR_PRE,
         operands: OPERANDS_STP_GEN_STP_64_LDSTPAIR_PRE,
         asm: "STP <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "STP_gen.STP_32_ldstpair_off",
+        mnemonic: "STP",
+        heading: "STP",
+        title: "STP -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x29000000,
+        excludes: &[],
+        fields: FIELDS_STP_GEN_STP_32_LDSTPAIR_OFF,
+        operands: OPERANDS_STP_GEN_STP_32_LDSTPAIR_OFF,
+        asm: "STP <Wt1> , <Wt2> , [ <Xn|SP> {, # <imm> }]",
     },
     GeneratedInsnSpec {
         key: "STP_gen.STP_64_ldstpair_off",
@@ -9937,9 +14501,868 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffc00000,
         value: 0xa9000000,
+        excludes: &[],
         fields: FIELDS_STP_GEN_STP_64_LDSTPAIR_OFF,
         operands: OPERANDS_STP_GEN_STP_64_LDSTPAIR_OFF,
         asm: "STP <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDPSW.LDPSW_64_ldstpair_post",
+        mnemonic: "LDPSW",
+        heading: "LDPSW",
+        title: "LDPSW -- A64",
+        encoding_label: "",
+        mask: 0xffc00000,
+        value: 0x68c00000,
+        excludes: &[],
+        fields: FIELDS_LDPSW_LDPSW_64_LDSTPAIR_POST,
+        operands: OPERANDS_LDPSW_LDPSW_64_LDSTPAIR_POST,
+        asm: "LDPSW <Xt1> , <Xt2> , [ <Xn|SP> ], # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDPSW.LDPSW_64_ldstpair_pre",
+        mnemonic: "LDPSW",
+        heading: "LDPSW",
+        title: "LDPSW -- A64",
+        encoding_label: "",
+        mask: 0xffc00000,
+        value: 0x69c00000,
+        excludes: &[],
+        fields: FIELDS_LDPSW_LDPSW_64_LDSTPAIR_PRE,
+        operands: OPERANDS_LDPSW_LDPSW_64_LDSTPAIR_PRE,
+        asm: "LDPSW <Xt1> , <Xt2> , [ <Xn|SP> , # <imm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "LDPSW.LDPSW_64_ldstpair_off",
+        mnemonic: "LDPSW",
+        heading: "LDPSW",
+        title: "LDPSW -- A64",
+        encoding_label: "",
+        mask: 0xffc00000,
+        value: 0x69400000,
+        excludes: &[],
+        fields: FIELDS_LDPSW_LDPSW_64_LDSTPAIR_OFF,
+        operands: OPERANDS_LDPSW_LDPSW_64_LDSTPAIR_OFF,
+        asm: "LDPSW <Xt1> , <Xt2> , [ <Xn|SP> {, # <imm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRB_imm.LDRB_32_ldst_immpost",
+        mnemonic: "LDRB",
+        heading: "LDRB (immediate)",
+        title: "LDRB (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x38400400,
+        excludes: &[],
+        fields: FIELDS_LDRB_IMM_LDRB_32_LDST_IMMPOST,
+        operands: OPERANDS_LDRB_IMM_LDRB_32_LDST_IMMPOST,
+        asm: "LDRB <Wt> , [ <Xn|SP> ], # <simm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDRB_imm.LDRB_32_ldst_immpre",
+        mnemonic: "LDRB",
+        heading: "LDRB (immediate)",
+        title: "LDRB (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x38400c00,
+        excludes: &[],
+        fields: FIELDS_LDRB_IMM_LDRB_32_LDST_IMMPRE,
+        operands: OPERANDS_LDRB_IMM_LDRB_32_LDST_IMMPRE,
+        asm: "LDRB <Wt> , [ <Xn|SP> , # <simm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "LDRB_imm.LDRB_32_ldst_pos",
+        mnemonic: "LDRB",
+        heading: "LDRB (immediate)",
+        title: "LDRB (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffc00000,
+        value: 0x39400000,
+        excludes: &[],
+        fields: FIELDS_LDRB_IMM_LDRB_32_LDST_POS,
+        operands: OPERANDS_LDRB_IMM_LDRB_32_LDST_POS,
+        asm: "LDRB <Wt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STRB_imm.STRB_32_ldst_immpost",
+        mnemonic: "STRB",
+        heading: "STRB (immediate)",
+        title: "STRB (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x38000400,
+        excludes: &[],
+        fields: FIELDS_STRB_IMM_STRB_32_LDST_IMMPOST,
+        operands: OPERANDS_STRB_IMM_STRB_32_LDST_IMMPOST,
+        asm: "STRB <Wt> , [ <Xn|SP> ], # <simm>",
+    },
+    GeneratedInsnSpec {
+        key: "STRB_imm.STRB_32_ldst_immpre",
+        mnemonic: "STRB",
+        heading: "STRB (immediate)",
+        title: "STRB (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x38000c00,
+        excludes: &[],
+        fields: FIELDS_STRB_IMM_STRB_32_LDST_IMMPRE,
+        operands: OPERANDS_STRB_IMM_STRB_32_LDST_IMMPRE,
+        asm: "STRB <Wt> , [ <Xn|SP> , # <simm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "STRB_imm.STRB_32_ldst_pos",
+        mnemonic: "STRB",
+        heading: "STRB (immediate)",
+        title: "STRB (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffc00000,
+        value: 0x39000000,
+        excludes: &[],
+        fields: FIELDS_STRB_IMM_STRB_32_LDST_POS,
+        operands: OPERANDS_STRB_IMM_STRB_32_LDST_POS,
+        asm: "STRB <Wt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRH_imm.LDRH_32_ldst_immpost",
+        mnemonic: "LDRH",
+        heading: "LDRH (immediate)",
+        title: "LDRH (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x78400400,
+        excludes: &[],
+        fields: FIELDS_LDRH_IMM_LDRH_32_LDST_IMMPOST,
+        operands: OPERANDS_LDRH_IMM_LDRH_32_LDST_IMMPOST,
+        asm: "LDRH <Wt> , [ <Xn|SP> ], # <simm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDRH_imm.LDRH_32_ldst_immpre",
+        mnemonic: "LDRH",
+        heading: "LDRH (immediate)",
+        title: "LDRH (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x78400c00,
+        excludes: &[],
+        fields: FIELDS_LDRH_IMM_LDRH_32_LDST_IMMPRE,
+        operands: OPERANDS_LDRH_IMM_LDRH_32_LDST_IMMPRE,
+        asm: "LDRH <Wt> , [ <Xn|SP> , # <simm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "LDRH_imm.LDRH_32_ldst_pos",
+        mnemonic: "LDRH",
+        heading: "LDRH (immediate)",
+        title: "LDRH (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffc00000,
+        value: 0x79400000,
+        excludes: &[],
+        fields: FIELDS_LDRH_IMM_LDRH_32_LDST_POS,
+        operands: OPERANDS_LDRH_IMM_LDRH_32_LDST_POS,
+        asm: "LDRH <Wt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STRH_imm.STRH_32_ldst_immpost",
+        mnemonic: "STRH",
+        heading: "STRH (immediate)",
+        title: "STRH (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x78000400,
+        excludes: &[],
+        fields: FIELDS_STRH_IMM_STRH_32_LDST_IMMPOST,
+        operands: OPERANDS_STRH_IMM_STRH_32_LDST_IMMPOST,
+        asm: "STRH <Wt> , [ <Xn|SP> ], # <simm>",
+    },
+    GeneratedInsnSpec {
+        key: "STRH_imm.STRH_32_ldst_immpre",
+        mnemonic: "STRH",
+        heading: "STRH (immediate)",
+        title: "STRH (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x78000c00,
+        excludes: &[],
+        fields: FIELDS_STRH_IMM_STRH_32_LDST_IMMPRE,
+        operands: OPERANDS_STRH_IMM_STRH_32_LDST_IMMPRE,
+        asm: "STRH <Wt> , [ <Xn|SP> , # <simm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "STRH_imm.STRH_32_ldst_pos",
+        mnemonic: "STRH",
+        heading: "STRH (immediate)",
+        title: "STRH (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffc00000,
+        value: 0x79000000,
+        excludes: &[],
+        fields: FIELDS_STRH_IMM_STRH_32_LDST_POS,
+        operands: OPERANDS_STRH_IMM_STRH_32_LDST_POS,
+        asm: "STRH <Wt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSB_imm.LDRSB_32_ldst_immpost",
+        mnemonic: "LDRSB",
+        heading: "LDRSB (immediate)",
+        title: "LDRSB (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x38c00400,
+        excludes: &[],
+        fields: FIELDS_LDRSB_IMM_LDRSB_32_LDST_IMMPOST,
+        operands: OPERANDS_LDRSB_IMM_LDRSB_32_LDST_IMMPOST,
+        asm: "LDRSB <Wt> , [ <Xn|SP> ], # <simm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSB_imm.LDRSB_64_ldst_immpost",
+        mnemonic: "LDRSB",
+        heading: "LDRSB (immediate)",
+        title: "LDRSB (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x38800400,
+        excludes: &[],
+        fields: FIELDS_LDRSB_IMM_LDRSB_64_LDST_IMMPOST,
+        operands: OPERANDS_LDRSB_IMM_LDRSB_64_LDST_IMMPOST,
+        asm: "LDRSB <Xt> , [ <Xn|SP> ], # <simm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSB_imm.LDRSB_32_ldst_immpre",
+        mnemonic: "LDRSB",
+        heading: "LDRSB (immediate)",
+        title: "LDRSB (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x38c00c00,
+        excludes: &[],
+        fields: FIELDS_LDRSB_IMM_LDRSB_32_LDST_IMMPRE,
+        operands: OPERANDS_LDRSB_IMM_LDRSB_32_LDST_IMMPRE,
+        asm: "LDRSB <Wt> , [ <Xn|SP> , # <simm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSB_imm.LDRSB_64_ldst_immpre",
+        mnemonic: "LDRSB",
+        heading: "LDRSB (immediate)",
+        title: "LDRSB (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x38800c00,
+        excludes: &[],
+        fields: FIELDS_LDRSB_IMM_LDRSB_64_LDST_IMMPRE,
+        operands: OPERANDS_LDRSB_IMM_LDRSB_64_LDST_IMMPRE,
+        asm: "LDRSB <Xt> , [ <Xn|SP> , # <simm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSB_imm.LDRSB_32_ldst_pos",
+        mnemonic: "LDRSB",
+        heading: "LDRSB (immediate)",
+        title: "LDRSB (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x39c00000,
+        excludes: &[],
+        fields: FIELDS_LDRSB_IMM_LDRSB_32_LDST_POS,
+        operands: OPERANDS_LDRSB_IMM_LDRSB_32_LDST_POS,
+        asm: "LDRSB <Wt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSB_imm.LDRSB_64_ldst_pos",
+        mnemonic: "LDRSB",
+        heading: "LDRSB (immediate)",
+        title: "LDRSB (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0x39800000,
+        excludes: &[],
+        fields: FIELDS_LDRSB_IMM_LDRSB_64_LDST_POS,
+        operands: OPERANDS_LDRSB_IMM_LDRSB_64_LDST_POS,
+        asm: "LDRSB <Xt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSH_imm.LDRSH_32_ldst_immpost",
+        mnemonic: "LDRSH",
+        heading: "LDRSH (immediate)",
+        title: "LDRSH (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x78c00400,
+        excludes: &[],
+        fields: FIELDS_LDRSH_IMM_LDRSH_32_LDST_IMMPOST,
+        operands: OPERANDS_LDRSH_IMM_LDRSH_32_LDST_IMMPOST,
+        asm: "LDRSH <Wt> , [ <Xn|SP> ], # <simm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSH_imm.LDRSH_64_ldst_immpost",
+        mnemonic: "LDRSH",
+        heading: "LDRSH (immediate)",
+        title: "LDRSH (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x78800400,
+        excludes: &[],
+        fields: FIELDS_LDRSH_IMM_LDRSH_64_LDST_IMMPOST,
+        operands: OPERANDS_LDRSH_IMM_LDRSH_64_LDST_IMMPOST,
+        asm: "LDRSH <Xt> , [ <Xn|SP> ], # <simm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSH_imm.LDRSH_32_ldst_immpre",
+        mnemonic: "LDRSH",
+        heading: "LDRSH (immediate)",
+        title: "LDRSH (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x78c00c00,
+        excludes: &[],
+        fields: FIELDS_LDRSH_IMM_LDRSH_32_LDST_IMMPRE,
+        operands: OPERANDS_LDRSH_IMM_LDRSH_32_LDST_IMMPRE,
+        asm: "LDRSH <Wt> , [ <Xn|SP> , # <simm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSH_imm.LDRSH_64_ldst_immpre",
+        mnemonic: "LDRSH",
+        heading: "LDRSH (immediate)",
+        title: "LDRSH (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x78800c00,
+        excludes: &[],
+        fields: FIELDS_LDRSH_IMM_LDRSH_64_LDST_IMMPRE,
+        operands: OPERANDS_LDRSH_IMM_LDRSH_64_LDST_IMMPRE,
+        asm: "LDRSH <Xt> , [ <Xn|SP> , # <simm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSH_imm.LDRSH_32_ldst_pos",
+        mnemonic: "LDRSH",
+        heading: "LDRSH (immediate)",
+        title: "LDRSH (immediate) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffc00000,
+        value: 0x79c00000,
+        excludes: &[],
+        fields: FIELDS_LDRSH_IMM_LDRSH_32_LDST_POS,
+        operands: OPERANDS_LDRSH_IMM_LDRSH_32_LDST_POS,
+        asm: "LDRSH <Wt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSH_imm.LDRSH_64_ldst_pos",
+        mnemonic: "LDRSH",
+        heading: "LDRSH (immediate)",
+        title: "LDRSH (immediate) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffc00000,
+        value: 0x79800000,
+        excludes: &[],
+        fields: FIELDS_LDRSH_IMM_LDRSH_64_LDST_POS,
+        operands: OPERANDS_LDRSH_IMM_LDRSH_64_LDST_POS,
+        asm: "LDRSH <Xt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSW_imm.LDRSW_64_ldst_immpost",
+        mnemonic: "LDRSW",
+        heading: "LDRSW (immediate)",
+        title: "LDRSW (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0xb8800400,
+        excludes: &[],
+        fields: FIELDS_LDRSW_IMM_LDRSW_64_LDST_IMMPOST,
+        operands: OPERANDS_LDRSW_IMM_LDRSW_64_LDST_IMMPOST,
+        asm: "LDRSW <Xt> , [ <Xn|SP> ], # <simm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSW_imm.LDRSW_64_ldst_immpre",
+        mnemonic: "LDRSW",
+        heading: "LDRSW (immediate)",
+        title: "LDRSW (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0xb8800c00,
+        excludes: &[],
+        fields: FIELDS_LDRSW_IMM_LDRSW_64_LDST_IMMPRE,
+        operands: OPERANDS_LDRSW_IMM_LDRSW_64_LDST_IMMPRE,
+        asm: "LDRSW <Xt> , [ <Xn|SP> , # <simm> ]!",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSW_imm.LDRSW_64_ldst_pos",
+        mnemonic: "LDRSW",
+        heading: "LDRSW (immediate)",
+        title: "LDRSW (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffc00000,
+        value: 0xb9800000,
+        excludes: &[],
+        fields: FIELDS_LDRSW_IMM_LDRSW_64_LDST_POS,
+        operands: OPERANDS_LDRSW_IMM_LDRSW_64_LDST_POS,
+        asm: "LDRSW <Xt> , [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUR_gen.LDUR_32_ldst_unscaled",
+        mnemonic: "LDUR",
+        heading: "LDUR",
+        title: "LDUR -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0xb8400000,
+        excludes: &[],
+        fields: FIELDS_LDUR_GEN_LDUR_32_LDST_UNSCALED,
+        operands: OPERANDS_LDUR_GEN_LDUR_32_LDST_UNSCALED,
+        asm: "LDUR <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUR_gen.LDUR_64_ldst_unscaled",
+        mnemonic: "LDUR",
+        heading: "LDUR",
+        title: "LDUR -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0xf8400000,
+        excludes: &[],
+        fields: FIELDS_LDUR_GEN_LDUR_64_LDST_UNSCALED,
+        operands: OPERANDS_LDUR_GEN_LDUR_64_LDST_UNSCALED,
+        asm: "LDUR <Xt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STUR_gen.STUR_32_ldst_unscaled",
+        mnemonic: "STUR",
+        heading: "STUR",
+        title: "STUR -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0xb8000000,
+        excludes: &[],
+        fields: FIELDS_STUR_GEN_STUR_32_LDST_UNSCALED,
+        operands: OPERANDS_STUR_GEN_STUR_32_LDST_UNSCALED,
+        asm: "STUR <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STUR_gen.STUR_64_ldst_unscaled",
+        mnemonic: "STUR",
+        heading: "STUR",
+        title: "STUR -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0xf8000000,
+        excludes: &[],
+        fields: FIELDS_STUR_GEN_STUR_64_LDST_UNSCALED,
+        operands: OPERANDS_STUR_GEN_STUR_64_LDST_UNSCALED,
+        asm: "STUR <Xt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDURB.LDURB_32_ldst_unscaled",
+        mnemonic: "LDURB",
+        heading: "LDURB",
+        title: "LDURB -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x38400000,
+        excludes: &[],
+        fields: FIELDS_LDURB_LDURB_32_LDST_UNSCALED,
+        operands: OPERANDS_LDURB_LDURB_32_LDST_UNSCALED,
+        asm: "LDURB <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STURB.STURB_32_ldst_unscaled",
+        mnemonic: "STURB",
+        heading: "STURB",
+        title: "STURB -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x38000000,
+        excludes: &[],
+        fields: FIELDS_STURB_STURB_32_LDST_UNSCALED,
+        operands: OPERANDS_STURB_STURB_32_LDST_UNSCALED,
+        asm: "STURB <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDURH.LDURH_32_ldst_unscaled",
+        mnemonic: "LDURH",
+        heading: "LDURH",
+        title: "LDURH -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x78400000,
+        excludes: &[],
+        fields: FIELDS_LDURH_LDURH_32_LDST_UNSCALED,
+        operands: OPERANDS_LDURH_LDURH_32_LDST_UNSCALED,
+        asm: "LDURH <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STURH.STURH_32_ldst_unscaled",
+        mnemonic: "STURH",
+        heading: "STURH",
+        title: "STURH -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x78000000,
+        excludes: &[],
+        fields: FIELDS_STURH_STURH_32_LDST_UNSCALED,
+        operands: OPERANDS_STURH_STURH_32_LDST_UNSCALED,
+        asm: "STURH <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDURSB.LDURSB_32_ldst_unscaled",
+        mnemonic: "LDURSB",
+        heading: "LDURSB",
+        title: "LDURSB -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x38c00000,
+        excludes: &[],
+        fields: FIELDS_LDURSB_LDURSB_32_LDST_UNSCALED,
+        operands: OPERANDS_LDURSB_LDURSB_32_LDST_UNSCALED,
+        asm: "LDURSB <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDURSB.LDURSB_64_ldst_unscaled",
+        mnemonic: "LDURSB",
+        heading: "LDURSB",
+        title: "LDURSB -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x38800000,
+        excludes: &[],
+        fields: FIELDS_LDURSB_LDURSB_64_LDST_UNSCALED,
+        operands: OPERANDS_LDURSB_LDURSB_64_LDST_UNSCALED,
+        asm: "LDURSB <Xt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDURSH.LDURSH_32_ldst_unscaled",
+        mnemonic: "LDURSH",
+        heading: "LDURSH",
+        title: "LDURSH -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x78c00000,
+        excludes: &[],
+        fields: FIELDS_LDURSH_LDURSH_32_LDST_UNSCALED,
+        operands: OPERANDS_LDURSH_LDURSH_32_LDST_UNSCALED,
+        asm: "LDURSH <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDURSH.LDURSH_64_ldst_unscaled",
+        mnemonic: "LDURSH",
+        heading: "LDURSH",
+        title: "LDURSH -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x78800000,
+        excludes: &[],
+        fields: FIELDS_LDURSH_LDURSH_64_LDST_UNSCALED,
+        operands: OPERANDS_LDURSH_LDURSH_64_LDST_UNSCALED,
+        asm: "LDURSH <Xt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDURSW.LDURSW_64_ldst_unscaled",
+        mnemonic: "LDURSW",
+        heading: "LDURSW",
+        title: "LDURSW -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0xb8800000,
+        excludes: &[],
+        fields: FIELDS_LDURSW_LDURSW_64_LDST_UNSCALED,
+        operands: OPERANDS_LDURSW_LDURSW_64_LDST_UNSCALED,
+        asm: "LDURSW <Xt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDR_reg_gen.LDR_32_ldst_regoff",
+        mnemonic: "LDR",
+        heading: "LDR (register)",
+        title: "LDR (register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0xb8600800,
+        excludes: &[],
+        fields: FIELDS_LDR_REG_GEN_LDR_32_LDST_REGOFF,
+        operands: OPERANDS_LDR_REG_GEN_LDR_32_LDST_REGOFF,
+        asm: "LDR <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "LDR_reg_gen.LDR_64_ldst_regoff",
+        mnemonic: "LDR",
+        heading: "LDR (register)",
+        title: "LDR (register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0xf8600800,
+        excludes: &[],
+        fields: FIELDS_LDR_REG_GEN_LDR_64_LDST_REGOFF,
+        operands: OPERANDS_LDR_REG_GEN_LDR_64_LDST_REGOFF,
+        asm: "LDR <Xt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "STR_reg_gen.STR_32_ldst_regoff",
+        mnemonic: "STR",
+        heading: "STR (register)",
+        title: "STR (register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0xb8200800,
+        excludes: &[],
+        fields: FIELDS_STR_REG_GEN_STR_32_LDST_REGOFF,
+        operands: OPERANDS_STR_REG_GEN_STR_32_LDST_REGOFF,
+        asm: "STR <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "STR_reg_gen.STR_64_ldst_regoff",
+        mnemonic: "STR",
+        heading: "STR (register)",
+        title: "STR (register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0xf8200800,
+        excludes: &[],
+        fields: FIELDS_STR_REG_GEN_STR_64_LDST_REGOFF,
+        operands: OPERANDS_STR_REG_GEN_STR_64_LDST_REGOFF,
+        asm: "STR <Xt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRB_reg.LDRB_32B_ldst_regoff",
+        mnemonic: "LDRB",
+        heading: "LDRB (register)",
+        title: "LDRB (register) -- A64",
+        encoding_label: "Extended register",
+        mask: 0xffe00c00,
+        value: 0x38600800,
+        excludes: &[(0x0000e000, 0x00006000)],
+        fields: FIELDS_LDRB_REG_LDRB_32B_LDST_REGOFF,
+        operands: OPERANDS_LDRB_REG_LDRB_32B_LDST_REGOFF,
+        asm: "LDRB <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRB_reg.LDRB_32BL_ldst_regoff",
+        mnemonic: "LDRB",
+        heading: "LDRB (register)",
+        title: "LDRB (register) -- A64",
+        encoding_label: "Shifted register",
+        mask: 0xffe0ec00,
+        value: 0x38606800,
+        excludes: &[],
+        fields: FIELDS_LDRB_REG_LDRB_32BL_LDST_REGOFF,
+        operands: OPERANDS_LDRB_REG_LDRB_32BL_LDST_REGOFF,
+        asm: "LDRB <Wt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STRB_reg.STRB_32B_ldst_regoff",
+        mnemonic: "STRB",
+        heading: "STRB (register)",
+        title: "STRB (register) -- A64",
+        encoding_label: "Extended register",
+        mask: 0xffe00c00,
+        value: 0x38200800,
+        excludes: &[(0x0000e000, 0x00006000)],
+        fields: FIELDS_STRB_REG_STRB_32B_LDST_REGOFF,
+        operands: OPERANDS_STRB_REG_STRB_32B_LDST_REGOFF,
+        asm: "STRB <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STRB_reg.STRB_32BL_ldst_regoff",
+        mnemonic: "STRB",
+        heading: "STRB (register)",
+        title: "STRB (register) -- A64",
+        encoding_label: "Shifted register",
+        mask: 0xffe0ec00,
+        value: 0x38206800,
+        excludes: &[],
+        fields: FIELDS_STRB_REG_STRB_32BL_LDST_REGOFF,
+        operands: OPERANDS_STRB_REG_STRB_32BL_LDST_REGOFF,
+        asm: "STRB <Wt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRH_reg.LDRH_32_ldst_regoff",
+        mnemonic: "LDRH",
+        heading: "LDRH (register)",
+        title: "LDRH (register) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x78600800,
+        excludes: &[],
+        fields: FIELDS_LDRH_REG_LDRH_32_LDST_REGOFF,
+        operands: OPERANDS_LDRH_REG_LDRH_32_LDST_REGOFF,
+        asm: "LDRH <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "STRH_reg.STRH_32_ldst_regoff",
+        mnemonic: "STRH",
+        heading: "STRH (register)",
+        title: "STRH (register) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x78200800,
+        excludes: &[],
+        fields: FIELDS_STRH_REG_STRH_32_LDST_REGOFF,
+        operands: OPERANDS_STRH_REG_STRH_32_LDST_REGOFF,
+        asm: "STRH <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSB_reg.LDRSB_32B_ldst_regoff",
+        mnemonic: "LDRSB",
+        heading: "LDRSB (register)",
+        title: "LDRSB (register) -- A64",
+        encoding_label: "32-bit with extended register offset",
+        mask: 0xffe00c00,
+        value: 0x38e00800,
+        excludes: &[(0x0000e000, 0x00006000)],
+        fields: FIELDS_LDRSB_REG_LDRSB_32B_LDST_REGOFF,
+        operands: OPERANDS_LDRSB_REG_LDRSB_32B_LDST_REGOFF,
+        asm: "LDRSB <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSB_reg.LDRSB_32BL_ldst_regoff",
+        mnemonic: "LDRSB",
+        heading: "LDRSB (register)",
+        title: "LDRSB (register) -- A64",
+        encoding_label: "32-bit with shifted register offset",
+        mask: 0xffe0ec00,
+        value: 0x38e06800,
+        excludes: &[],
+        fields: FIELDS_LDRSB_REG_LDRSB_32BL_LDST_REGOFF,
+        operands: OPERANDS_LDRSB_REG_LDRSB_32BL_LDST_REGOFF,
+        asm: "LDRSB <Wt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSB_reg.LDRSB_64B_ldst_regoff",
+        mnemonic: "LDRSB",
+        heading: "LDRSB (register)",
+        title: "LDRSB (register) -- A64",
+        encoding_label: "64-bit with extended register offset",
+        mask: 0xffe00c00,
+        value: 0x38a00800,
+        excludes: &[(0x0000e000, 0x00006000)],
+        fields: FIELDS_LDRSB_REG_LDRSB_64B_LDST_REGOFF,
+        operands: OPERANDS_LDRSB_REG_LDRSB_64B_LDST_REGOFF,
+        asm: "LDRSB <Xt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSB_reg.LDRSB_64BL_ldst_regoff",
+        mnemonic: "LDRSB",
+        heading: "LDRSB (register)",
+        title: "LDRSB (register) -- A64",
+        encoding_label: "64-bit with shifted register offset",
+        mask: 0xffe0ec00,
+        value: 0x38a06800,
+        excludes: &[],
+        fields: FIELDS_LDRSB_REG_LDRSB_64BL_LDST_REGOFF,
+        operands: OPERANDS_LDRSB_REG_LDRSB_64BL_LDST_REGOFF,
+        asm: "LDRSB <Xt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSH_reg.LDRSH_32_ldst_regoff",
+        mnemonic: "LDRSH",
+        heading: "LDRSH (register)",
+        title: "LDRSH (register) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x78e00800,
+        excludes: &[],
+        fields: FIELDS_LDRSH_REG_LDRSH_32_LDST_REGOFF,
+        operands: OPERANDS_LDRSH_REG_LDRSH_32_LDST_REGOFF,
+        asm: "LDRSH <Wt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSH_reg.LDRSH_64_ldst_regoff",
+        mnemonic: "LDRSH",
+        heading: "LDRSH (register)",
+        title: "LDRSH (register) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x78a00800,
+        excludes: &[],
+        fields: FIELDS_LDRSH_REG_LDRSH_64_LDST_REGOFF,
+        operands: OPERANDS_LDRSH_REG_LDRSH_64_LDST_REGOFF,
+        asm: "LDRSH <Xt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSW_reg.LDRSW_64_ldst_regoff",
+        mnemonic: "LDRSW",
+        heading: "LDRSW (register)",
+        title: "LDRSW (register) -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0xb8a00800,
+        excludes: &[],
+        fields: FIELDS_LDRSW_REG_LDRSW_64_LDST_REGOFF,
+        operands: OPERANDS_LDRSW_REG_LDRSW_64_LDST_REGOFF,
+        asm: "LDRSW <Xt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "LDR_lit_gen.LDR_32_loadlit",
+        mnemonic: "LDR",
+        heading: "LDR (literal)",
+        title: "LDR (literal) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xff000000,
+        value: 0x18000000,
+        excludes: &[],
+        fields: FIELDS_LDR_LIT_GEN_LDR_32_LOADLIT,
+        operands: OPERANDS_LDR_LIT_GEN_LDR_32_LOADLIT,
+        asm: "LDR <Wt> , <label>",
+    },
+    GeneratedInsnSpec {
+        key: "LDR_lit_gen.LDR_64_loadlit",
+        mnemonic: "LDR",
+        heading: "LDR (literal)",
+        title: "LDR (literal) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xff000000,
+        value: 0x58000000,
+        excludes: &[],
+        fields: FIELDS_LDR_LIT_GEN_LDR_64_LOADLIT,
+        operands: OPERANDS_LDR_LIT_GEN_LDR_64_LOADLIT,
+        asm: "LDR <Xt> , <label>",
+    },
+    GeneratedInsnSpec {
+        key: "LDRSW_lit.LDRSW_64_loadlit",
+        mnemonic: "LDRSW",
+        heading: "LDRSW (literal)",
+        title: "LDRSW (literal) -- A64",
+        encoding_label: "",
+        mask: 0xff000000,
+        value: 0x98000000,
+        excludes: &[],
+        fields: FIELDS_LDRSW_LIT_LDRSW_64_LOADLIT,
+        operands: OPERANDS_LDRSW_LIT_LDRSW_64_LOADLIT,
+        asm: "LDRSW <Xt> , <label>",
+    },
+    GeneratedInsnSpec {
+        key: "PRFM_imm.PRFM_P_ldst_pos",
+        mnemonic: "PRFM",
+        heading: "PRFM (immediate)",
+        title: "PRFM (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xffc00000,
+        value: 0xf9800000,
+        excludes: &[],
+        fields: FIELDS_PRFM_IMM_PRFM_P_LDST_POS,
+        operands: OPERANDS_PRFM_IMM_PRFM_P_LDST_POS,
+        asm: "PRFM  ( <prfop> |# <imm5> ), [ <Xn|SP> {, # <pimm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "PRFM_lit.PRFM_P_loadlit",
+        mnemonic: "PRFM",
+        heading: "PRFM (literal)",
+        title: "PRFM (literal) -- A64",
+        encoding_label: "",
+        mask: 0xff000000,
+        value: 0xd8000000,
+        excludes: &[],
+        fields: FIELDS_PRFM_LIT_PRFM_P_LOADLIT,
+        operands: OPERANDS_PRFM_LIT_PRFM_P_LOADLIT,
+        asm: "PRFM  ( <prfop> |# <imm5> ), <label>",
+    },
+    GeneratedInsnSpec {
+        key: "PRFM_reg.PRFM_P_ldst_regoff",
+        mnemonic: "PRFM",
+        heading: "PRFM (register)",
+        title: "PRFM (register) -- A64",
+        encoding_label: "",
+        mask: 0xffe04c00,
+        value: 0xf8a04800,
+        excludes: &[(0x00000018, 0x00000018)],
+        fields: FIELDS_PRFM_REG_PRFM_P_LDST_REGOFF,
+        operands: OPERANDS_PRFM_REG_PRFM_P_LDST_REGOFF,
+        asm: "PRFM  ( <prfop> |# <imm5> ), [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
     },
     GeneratedInsnSpec {
         key: "LDTR.LDTR_32_ldst_unpriv",
@@ -9949,6 +15372,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c00,
         value: 0xb8400800,
+        excludes: &[],
         fields: FIELDS_LDTR_LDTR_32_LDST_UNPRIV,
         operands: OPERANDS_LDTR_LDTR_32_LDST_UNPRIV,
         asm: "LDTR <Wt> , [ <Xn|SP> {, # <simm> }]",
@@ -9961,6 +15385,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c00,
         value: 0xf8400800,
+        excludes: &[],
         fields: FIELDS_LDTR_LDTR_64_LDST_UNPRIV,
         operands: OPERANDS_LDTR_LDTR_64_LDST_UNPRIV,
         asm: "LDTR <Xt> , [ <Xn|SP> {, # <simm> }]",
@@ -9973,6 +15398,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "32-bit",
         mask: 0xffe00c00,
         value: 0xb8000800,
+        excludes: &[],
         fields: FIELDS_STTR_STTR_32_LDST_UNPRIV,
         operands: OPERANDS_STTR_STTR_32_LDST_UNPRIV,
         asm: "STTR <Wt> , [ <Xn|SP> {, # <simm> }]",
@@ -9985,9 +15411,127 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "64-bit",
         mask: 0xffe00c00,
         value: 0xf8000800,
+        excludes: &[],
         fields: FIELDS_STTR_STTR_64_LDST_UNPRIV,
         operands: OPERANDS_STTR_STTR_64_LDST_UNPRIV,
         asm: "STTR <Xt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDTRB.LDTRB_32_ldst_unpriv",
+        mnemonic: "LDTRB",
+        heading: "LDTRB",
+        title: "LDTRB -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x38400800,
+        excludes: &[],
+        fields: FIELDS_LDTRB_LDTRB_32_LDST_UNPRIV,
+        operands: OPERANDS_LDTRB_LDTRB_32_LDST_UNPRIV,
+        asm: "LDTRB <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STTRB.STTRB_32_ldst_unpriv",
+        mnemonic: "STTRB",
+        heading: "STTRB",
+        title: "STTRB -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x38000800,
+        excludes: &[],
+        fields: FIELDS_STTRB_STTRB_32_LDST_UNPRIV,
+        operands: OPERANDS_STTRB_STTRB_32_LDST_UNPRIV,
+        asm: "STTRB <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDTRH.LDTRH_32_ldst_unpriv",
+        mnemonic: "LDTRH",
+        heading: "LDTRH",
+        title: "LDTRH -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x78400800,
+        excludes: &[],
+        fields: FIELDS_LDTRH_LDTRH_32_LDST_UNPRIV,
+        operands: OPERANDS_LDTRH_LDTRH_32_LDST_UNPRIV,
+        asm: "LDTRH <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STTRH.STTRH_32_ldst_unpriv",
+        mnemonic: "STTRH",
+        heading: "STTRH",
+        title: "STTRH -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0x78000800,
+        excludes: &[],
+        fields: FIELDS_STTRH_STTRH_32_LDST_UNPRIV,
+        operands: OPERANDS_STTRH_STTRH_32_LDST_UNPRIV,
+        asm: "STTRH <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDTRSB.LDTRSB_32_ldst_unpriv",
+        mnemonic: "LDTRSB",
+        heading: "LDTRSB",
+        title: "LDTRSB -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x38c00800,
+        excludes: &[],
+        fields: FIELDS_LDTRSB_LDTRSB_32_LDST_UNPRIV,
+        operands: OPERANDS_LDTRSB_LDTRSB_32_LDST_UNPRIV,
+        asm: "LDTRSB <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDTRSB.LDTRSB_64_ldst_unpriv",
+        mnemonic: "LDTRSB",
+        heading: "LDTRSB",
+        title: "LDTRSB -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x38800800,
+        excludes: &[],
+        fields: FIELDS_LDTRSB_LDTRSB_64_LDST_UNPRIV,
+        operands: OPERANDS_LDTRSB_LDTRSB_64_LDST_UNPRIV,
+        asm: "LDTRSB <Xt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDTRSH.LDTRSH_32_ldst_unpriv",
+        mnemonic: "LDTRSH",
+        heading: "LDTRSH",
+        title: "LDTRSH -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0x78c00800,
+        excludes: &[],
+        fields: FIELDS_LDTRSH_LDTRSH_32_LDST_UNPRIV,
+        operands: OPERANDS_LDTRSH_LDTRSH_32_LDST_UNPRIV,
+        asm: "LDTRSH <Wt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDTRSH.LDTRSH_64_ldst_unpriv",
+        mnemonic: "LDTRSH",
+        heading: "LDTRSH",
+        title: "LDTRSH -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0x78800800,
+        excludes: &[],
+        fields: FIELDS_LDTRSH_LDTRSH_64_LDST_UNPRIV,
+        operands: OPERANDS_LDTRSH_LDTRSH_64_LDST_UNPRIV,
+        asm: "LDTRSH <Xt> , [ <Xn|SP> {, # <simm> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDTRSW.LDTRSW_64_ldst_unpriv",
+        mnemonic: "LDTRSW",
+        heading: "LDTRSW",
+        title: "LDTRSW -- A64",
+        encoding_label: "",
+        mask: 0xffe00c00,
+        value: 0xb8800800,
+        excludes: &[],
+        fields: FIELDS_LDTRSW_LDTRSW_64_LDST_UNPRIV,
+        operands: OPERANDS_LDTRSW_LDTRSW_64_LDST_UNPRIV,
+        asm: "LDTRSW <Xt> , [ <Xn|SP> {, # <simm> }]",
     },
     GeneratedInsnSpec {
         key: "NOP.NOP_HI_hints",
@@ -9997,6 +15541,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xffffffff,
         value: 0xd503201f,
+        excludes: &[],
         fields: FIELDS_NOP_NOP_HI_HINTS,
         operands: OPERANDS_NOP_NOP_HI_HINTS,
         asm: "NOP",
@@ -10009,6 +15554,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xfc000000,
         value: 0x94000000,
+        excludes: &[],
         fields: FIELDS_BL_BL_ONLY_BRANCH_IMM,
         operands: OPERANDS_BL_BL_ONLY_BRANCH_IMM,
         asm: "BL <label>",
@@ -10021,6 +15567,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xfffffc1f,
         value: 0xd61f0000,
+        excludes: &[],
         fields: FIELDS_BR_BR_64_BRANCH_REG,
         operands: OPERANDS_BR_BR_64_BRANCH_REG,
         asm: "BR <Xn>",
@@ -10033,6 +15580,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xfffffc1f,
         value: 0xd63f0000,
+        excludes: &[],
         fields: FIELDS_BLR_BLR_64_BRANCH_REG,
         operands: OPERANDS_BLR_BLR_64_BRANCH_REG,
         asm: "BLR <Xn>",
@@ -10045,6 +15593,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xfffffc1f,
         value: 0xd65f0000,
+        excludes: &[],
         fields: FIELDS_RET_RET_64R_BRANCH_REG,
         operands: OPERANDS_RET_RET_64R_BRANCH_REG,
         asm: "RET  { <Xn> }",
@@ -10057,6 +15606,7 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         encoding_label: "",
         mask: 0xffe0001f,
         value: 0xd4000001,
+        excludes: &[],
         fields: FIELDS_SVC_SVC_EX_EXCEPTION,
         operands: OPERANDS_SVC_SVC_EX_EXCEPTION,
         asm: "SVC  # <imm>",

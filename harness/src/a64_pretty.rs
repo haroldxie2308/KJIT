@@ -425,47 +425,224 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
             pretty_test_branch("tbnz", rt, bit_index(b5, b40), pc, imm14)
         }
         LdrImmGenLdr32LdstImmpost { rt, mem }
-        | LdrImmGenLdr64LdstImmpost { rt, mem }
         | LdrImmGenLdr32LdstImmpre { rt, mem }
-        | LdrImmGenLdr64LdstImmpre { rt, mem }
         | LdrImmGenLdr32LdstPos { rt, mem }
-        | LdrImmGenLdr64LdstPos { rt, mem } => {
-            format!("ldr {}, {}", reg_name(rt), mem_operand(mem))
-        }
-        StrImmGenStr32LdstImmpost { rt, mem }
-        | StrImmGenStr64LdstImmpost { rt, mem }
+        | LdrImmGenLdr64LdstImmpost { rt, mem }
+        | LdrImmGenLdr64LdstImmpre { rt, mem }
+        | LdrImmGenLdr64LdstPos { rt, mem }
+        | StrImmGenStr32LdstImmpost { rt, mem }
         | StrImmGenStr32LdstImmpre { rt, mem }
-        | StrImmGenStr64LdstImmpre { rt, mem }
         | StrImmGenStr32LdstPos { rt, mem }
-        | StrImmGenStr64LdstPos { rt, mem } => {
-            format!("str {}, {}", reg_name(rt), mem_operand(mem))
+        | StrImmGenStr64LdstImmpost { rt, mem }
+        | StrImmGenStr64LdstImmpre { rt, mem }
+        | StrImmGenStr64LdstPos { rt, mem }
+        | LdrbImmLdrb32LdstImmpost { rt, mem }
+        | LdrbImmLdrb32LdstImmpre { rt, mem }
+        | LdrbImmLdrb32LdstPos { rt, mem }
+        | StrbImmStrb32LdstImmpost { rt, mem }
+        | StrbImmStrb32LdstImmpre { rt, mem }
+        | StrbImmStrb32LdstPos { rt, mem }
+        | LdrhImmLdrh32LdstImmpost { rt, mem }
+        | LdrhImmLdrh32LdstImmpre { rt, mem }
+        | LdrhImmLdrh32LdstPos { rt, mem }
+        | StrhImmStrh32LdstImmpost { rt, mem }
+        | StrhImmStrh32LdstImmpre { rt, mem }
+        | StrhImmStrh32LdstPos { rt, mem }
+        | LdrsbImmLdrsb32LdstImmpost { rt, mem }
+        | LdrsbImmLdrsb32LdstImmpre { rt, mem }
+        | LdrsbImmLdrsb32LdstPos { rt, mem }
+        | LdrsbImmLdrsb64LdstImmpost { rt, mem }
+        | LdrsbImmLdrsb64LdstImmpre { rt, mem }
+        | LdrsbImmLdrsb64LdstPos { rt, mem }
+        | LdrshImmLdrsh32LdstImmpost { rt, mem }
+        | LdrshImmLdrsh32LdstImmpre { rt, mem }
+        | LdrshImmLdrsh32LdstPos { rt, mem }
+        | LdrshImmLdrsh64LdstImmpost { rt, mem }
+        | LdrshImmLdrsh64LdstImmpre { rt, mem }
+        | LdrshImmLdrsh64LdstPos { rt, mem }
+        | LdrswImmLdrsw64LdstImmpost { rt, mem }
+        | LdrswImmLdrsw64LdstImmpre { rt, mem }
+        | LdrswImmLdrsw64LdstPos { rt, mem }
+        | LdurGenLdur32LdstUnscaled { rt, mem }
+        | LdurGenLdur64LdstUnscaled { rt, mem }
+        | SturGenStur32LdstUnscaled { rt, mem }
+        | SturGenStur64LdstUnscaled { rt, mem }
+        | LdurbLdurb32LdstUnscaled { rt, mem }
+        | SturbSturb32LdstUnscaled { rt, mem }
+        | LdurhLdurh32LdstUnscaled { rt, mem }
+        | SturhSturh32LdstUnscaled { rt, mem }
+        | LdursbLdursb32LdstUnscaled { rt, mem }
+        | LdursbLdursb64LdstUnscaled { rt, mem }
+        | LdurshLdursh32LdstUnscaled { rt, mem }
+        | LdurshLdursh64LdstUnscaled { rt, mem }
+        | LdurswLdursw64LdstUnscaled { rt, mem }
+        | LdtrLdtr32LdstUnpriv { rt, mem }
+        | LdtrLdtr64LdstUnpriv { rt, mem }
+        | SttrSttr32LdstUnpriv { rt, mem }
+        | SttrSttr64LdstUnpriv { rt, mem }
+        | LdtrbLdtrb32LdstUnpriv { rt, mem }
+        | SttrbSttrb32LdstUnpriv { rt, mem }
+        | LdtrhLdtrh32LdstUnpriv { rt, mem }
+        | SttrhSttrh32LdstUnpriv { rt, mem }
+        | LdtrsbLdtrsb32LdstUnpriv { rt, mem }
+        | LdtrsbLdtrsb64LdstUnpriv { rt, mem }
+        | LdtrshLdtrsh32LdstUnpriv { rt, mem }
+        | LdtrshLdtrsh64LdstUnpriv { rt, mem }
+        | LdtrswLdtrsw64LdstUnpriv { rt, mem } => {
+            format!(
+                "{} {}, {}",
+                insn.mnemonic().to_lowercase(),
+                reg_name(rt),
+                mem_operand(mem)
+            )
         }
-        LdtrLdtr32LdstUnpriv { rt, mem } | LdtrLdtr64LdstUnpriv { rt, mem } => {
-            format!("ldtr {}, {}", reg_name(rt), mem_operand(mem))
-        }
-        SttrSttr32LdstUnpriv { rt, mem } | SttrSttr64LdstUnpriv { rt, mem } => {
-            format!("sttr {}, {}", reg_name(rt), mem_operand(mem))
-        }
-        LdpGenLdp64LdstpairPost { rt2, rt, mem }
+        LdpGenLdp32LdstpairPost { rt2, rt, mem }
+        | LdpGenLdp32LdstpairPre { rt2, rt, mem }
+        | LdpGenLdp32LdstpairOff { rt2, rt, mem }
+        | LdpGenLdp64LdstpairPost { rt2, rt, mem }
         | LdpGenLdp64LdstpairPre { rt2, rt, mem }
-        | LdpGenLdp64LdstpairOff { rt2, rt, mem } => {
-            format!(
-                "ldp {}, {}, {}",
-                reg_name(rt),
-                reg_name(rt2),
-                mem_operand(mem)
-            )
-        }
-        StpGenStp64LdstpairPost { rt2, rt, mem }
+        | LdpGenLdp64LdstpairOff { rt2, rt, mem }
+        | StpGenStp32LdstpairPost { rt2, rt, mem }
+        | StpGenStp32LdstpairPre { rt2, rt, mem }
+        | StpGenStp32LdstpairOff { rt2, rt, mem }
+        | StpGenStp64LdstpairPost { rt2, rt, mem }
         | StpGenStp64LdstpairPre { rt2, rt, mem }
-        | StpGenStp64LdstpairOff { rt2, rt, mem } => {
+        | StpGenStp64LdstpairOff { rt2, rt, mem }
+        | LdpswLdpsw64LdstpairPost { rt2, rt, mem }
+        | LdpswLdpsw64LdstpairPre { rt2, rt, mem }
+        | LdpswLdpsw64LdstpairOff { rt2, rt, mem } => {
             format!(
-                "stp {}, {}, {}",
+                "{} {}, {}, {}",
+                insn.mnemonic().to_lowercase(),
                 reg_name(rt),
                 reg_name(rt2),
                 mem_operand(mem)
             )
         }
+        LdrRegGenLdr32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrRegGenLdr64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | StrRegGenStr32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | StrRegGenStr64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrbRegLdrb32bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | StrbRegStrb32bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrhRegLdrh32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | StrhRegStrh32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrsbRegLdrsb32bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrsbRegLdrsb64bLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrshRegLdrsh32LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrshRegLdrsh64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrswRegLdrsw64LdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => pretty_reg_offset(insn, rt, rn, rm, option, s),
+        LdrbRegLdrb32blLdstRegoff { rm, s, rn, rt }
+        | StrbRegStrb32blLdstRegoff { rm, s, rn, rt }
+        | LdrsbRegLdrsb32blLdstRegoff { rm, s, rn, rt }
+        | LdrsbRegLdrsb64blLdstRegoff { rm, s, rn, rt } => {
+            pretty_reg_offset(insn, rt, rn, rm, 0b011, s)
+        }
+        LdrLitGenLdr32Loadlit { rt, .. }
+        | LdrLitGenLdr64Loadlit { rt, .. }
+        | LdrswLitLdrsw64Loadlit { rt, .. } => pretty_pc_relative(
+            &insn.mnemonic().to_lowercase(),
+            rt,
+            pc.and_then(|pc| insn.literal_address(pc)),
+            pc,
+        ),
+        PrfmImmPrfmPLdstPos { imm12, rn, rt } => {
+            format!(
+                "prfm #{rt}, [{}, {}]",
+                reg_name(rn),
+                imm(i64::from(imm12.raw()) * 8)
+            )
+        }
+        PrfmLitPrfmPLoadlit { rt, .. } => format!("prfm #{rt}, <literal>"),
+        PrfmRegPrfmPLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => format!(
+            "prfm #{rt}, [{}, {}]",
+            reg_name(rn),
+            index_operand(rm, option, if s == 1 { 3 } else { 0 })
+        ),
         NopNopHiHints {} => "nop".to_string(),
         BlBlOnlyBranchImm { imm26 } => pretty_branch("bl", pc, imm26),
         BrBr64BranchReg { rn } => format!("br {}", reg_name(rn)),
@@ -511,6 +688,51 @@ fn pretty_pc_relative(mnemonic: &str, rd: A64Reg, target: Option<u64>, pc: Optio
     match (target, pc) {
         (Some(target), Some(_)) => format!("{mnemonic} {}, {target:#x}", reg_name(rd)),
         _ => format!("{mnemonic} {}, <pc-relative>", reg_name(rd)),
+    }
+}
+
+/// `op rt, [rn, index, extend #amount]`; `amount` is `S ? log2(size) : 0`.
+fn pretty_reg_offset(
+    insn: A64Insn,
+    rt: A64Reg,
+    rn: A64Reg,
+    rm: A64Reg,
+    option: u8,
+    s: u8,
+) -> String {
+    let scale = match (insn.mnemonic(), rt.width) {
+        ("LDR" | "STR", A64RegWidth::X64) => 3,
+        ("LDR" | "STR", _) | ("LDRSW", _) => 2,
+        ("LDRH" | "STRH" | "LDRSH", _) => 1,
+        _ => 0,
+    };
+    format!(
+        "{} {}, [{}, {}]",
+        insn.mnemonic().to_lowercase(),
+        reg_name(rt),
+        reg_name(rn),
+        index_operand(rm, option, if s == 1 { scale } else { 0 })
+    )
+}
+
+/// The index register of a register-offset address: `w` for UXTW/SXTW.
+fn index_operand(rm: A64Reg, option: u8, amount: u8) -> String {
+    let width = if option & 1 == 0 {
+        A64RegWidth::W32
+    } else {
+        A64RegWidth::X64
+    };
+    let index = reg_name(A64Reg::new(rm.enc(), width, A64Reg31Mode::Xzr));
+    let extend = match option {
+        0b010 => "uxtw",
+        0b011 => "lsl",
+        0b110 => "sxtw",
+        0b111 => "sxtx",
+        _ => "extend",
+    };
+    match (option, amount) {
+        (0b011, 0) => index,
+        _ => format!("{index}, {extend} #{amount}"),
     }
 }
 
