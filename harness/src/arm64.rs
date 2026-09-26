@@ -1,4 +1,4 @@
-use crate::model::{AccessKind, HaltReason, MachineState, MemAccess, MemFault, Privilege};
+use crate::model::{AccessKind, Flags, HaltReason, MachineState, MemAccess, MemFault, Privilege};
 use crate::runtime::fragment_access_privilege;
 use crate::shared::arm64::{A64Condition, A64Imm, A64Insn, A64Mem, A64Reg};
 use crate::shared::trans::cfg::{admit_word, RuntimeExitReason, UnsupportedInsn};
@@ -247,17 +247,6 @@ pub(crate) fn execute_insn(
             write_movk(state, 64, rd, imm16, hw)?;
             Ok(pc + 4)
         }
-        A64Insn::OrrLogShiftOrr64LogShift {
-            shift,
-            rm,
-            imm6,
-            rn,
-            rd,
-        } => {
-            let shifted = shifted_reg64(state.read_reg(rm), shift, imm6.raw() as u8)?;
-            state.write_reg(rd, state.read_reg(rn) | shifted);
-            Ok(pc + 4)
-        }
 
         A64Insn::AddAddsubImmAdd32AddsubImm { sh, imm12, rn, rd } => {
             let result = read_reg_sized(state, rn, 32).wrapping_add(add_sub_imm(sh, imm12, insn)?);
@@ -284,19 +273,686 @@ pub(crate) fn execute_insn(
             Ok(pc + 4)
         }
         A64Insn::SubsAddsubImmSubs32sAddsubImm { sh, imm12, rn, rd } => {
-            let lhs = read_reg_sized(state, rn, 32);
-            let rhs = add_sub_imm(sh, imm12, insn)?;
-            let result = lhs.wrapping_sub(rhs);
-            update_sub_flags_sized(state, lhs, rhs, result, 32);
-            write_reg_sized(state, rd, result, 32);
+            let imm = add_sub_imm(sh, imm12, insn)?;
+            add_sub(
+                state,
+                rd,
+                read_reg_sized(state, rn, 32),
+                imm,
+                AddSub::Sub,
+                true,
+                32,
+            );
             Ok(pc + 4)
         }
         A64Insn::SubsAddsubImmSubs64sAddsubImm { sh, imm12, rn, rd } => {
-            let lhs = state.read_reg(rn);
-            let rhs = add_sub_imm(sh, imm12, insn)?;
-            let result = lhs.wrapping_sub(rhs);
-            state.update_sub_flags(lhs, rhs, result);
-            state.write_reg(rd, result);
+            let imm = add_sub_imm(sh, imm12, insn)?;
+            add_sub(state, rd, state.read_reg(rn), imm, AddSub::Sub, true, 64);
+            Ok(pc + 4)
+        }
+        A64Insn::AddsAddsubImmAdds32sAddsubImm { sh, imm12, rn, rd } => {
+            let imm = add_sub_imm(sh, imm12, insn)?;
+            add_sub(
+                state,
+                rd,
+                read_reg_sized(state, rn, 32),
+                imm,
+                AddSub::Add,
+                true,
+                32,
+            );
+            Ok(pc + 4)
+        }
+        A64Insn::AddsAddsubImmAdds64sAddsubImm { sh, imm12, rn, rd } => {
+            let imm = add_sub_imm(sh, imm12, insn)?;
+            add_sub(state, rd, state.read_reg(rn), imm, AddSub::Add, true, 64);
+            Ok(pc + 4)
+        }
+
+        A64Insn::AddAddsubShiftAdd32AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            add_sub_shifted(state, AddSub::Add, false, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AddAddsubShiftAdd64AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            add_sub_shifted(state, AddSub::Add, false, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AddsAddsubShiftAdds32AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            add_sub_shifted(state, AddSub::Add, true, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AddsAddsubShiftAdds64AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            add_sub_shifted(state, AddSub::Add, true, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SubAddsubShiftSub32AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            add_sub_shifted(state, AddSub::Sub, false, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SubAddsubShiftSub64AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            add_sub_shifted(state, AddSub::Sub, false, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SubsAddsubShiftSubs32AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            add_sub_shifted(state, AddSub::Sub, true, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SubsAddsubShiftSubs64AddsubShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            add_sub_shifted(state, AddSub::Sub, true, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+
+        A64Insn::AddAddsubExtAdd32AddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => {
+            add_sub_extended(state, AddSub::Add, false, 32, rm, option, imm3, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AddAddsubExtAdd64AddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => {
+            add_sub_extended(state, AddSub::Add, false, 64, rm, option, imm3, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AddsAddsubExtAdds32sAddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => {
+            add_sub_extended(state, AddSub::Add, true, 32, rm, option, imm3, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AddsAddsubExtAdds64sAddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => {
+            add_sub_extended(state, AddSub::Add, true, 64, rm, option, imm3, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SubAddsubExtSub32AddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => {
+            add_sub_extended(state, AddSub::Sub, false, 32, rm, option, imm3, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SubAddsubExtSub64AddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => {
+            add_sub_extended(state, AddSub::Sub, false, 64, rm, option, imm3, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SubsAddsubExtSubs32sAddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => {
+            add_sub_extended(state, AddSub::Sub, true, 32, rm, option, imm3, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SubsAddsubExtSubs64sAddsubExt {
+            rm,
+            option,
+            imm3,
+            rn,
+            rd,
+        } => {
+            add_sub_extended(state, AddSub::Sub, true, 64, rm, option, imm3, rn, rd)?;
+            Ok(pc + 4)
+        }
+
+        A64Insn::MovnMovn32Movewide { hw, imm16, rd } => {
+            write_movn(state, 32, rd, imm16, hw)?;
+            Ok(pc + 4)
+        }
+        A64Insn::MovnMovn64Movewide { hw, imm16, rd } => {
+            write_movn(state, 64, rd, imm16, hw)?;
+            Ok(pc + 4)
+        }
+
+        A64Insn::AndLogShiftAnd32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::And, false, false, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AndLogShiftAnd64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::And, false, false, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AndsLogShiftAnds32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::And, false, true, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AndsLogShiftAnds64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::And, false, true, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::OrrLogShiftOrr32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::Orr, false, false, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::OrrLogShiftOrr64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::Orr, false, false, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::EorLogShiftEor32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::Eor, false, false, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::EorLogShiftEor64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::Eor, false, false, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::EonEon32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::Eor, true, false, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::EonEon64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::Eor, true, false, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::BicLogShiftBic32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::And, true, false, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::BicLogShiftBic64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::And, true, false, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::BicsBics32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::And, true, true, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::BicsBics64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::And, true, true, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::OrnLogShiftOrn32LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::Orr, true, false, 32, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::OrnLogShiftOrn64LogShift {
+            shift,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } => {
+            logical_shifted(state, Logic::Orr, true, false, 64, shift, rm, imm6, rn, rd)?;
+            Ok(pc + 4)
+        }
+
+        A64Insn::AndLogImmAnd32LogImm { immr, imms, rn, rd } => {
+            logical_imm(state, Logic::And, false, 32, 0, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AndLogImmAnd64LogImm {
+            n,
+            immr,
+            imms,
+            rn,
+            rd,
+        } => {
+            logical_imm(state, Logic::And, false, 64, n, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AndsLogImmAnds32sLogImm { immr, imms, rn, rd } => {
+            logical_imm(state, Logic::And, true, 32, 0, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AndsLogImmAnds64sLogImm {
+            n,
+            immr,
+            imms,
+            rn,
+            rd,
+        } => {
+            logical_imm(state, Logic::And, true, 64, n, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::OrrLogImmOrr32LogImm { immr, imms, rn, rd } => {
+            logical_imm(state, Logic::Orr, false, 32, 0, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::OrrLogImmOrr64LogImm {
+            n,
+            immr,
+            imms,
+            rn,
+            rd,
+        } => {
+            logical_imm(state, Logic::Orr, false, 64, n, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::EorLogImmEor32LogImm { immr, imms, rn, rd } => {
+            logical_imm(state, Logic::Eor, false, 32, 0, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::EorLogImmEor64LogImm {
+            n,
+            immr,
+            imms,
+            rn,
+            rd,
+        } => {
+            logical_imm(state, Logic::Eor, false, 64, n, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+
+        A64Insn::SbfmSbfm32mBitfield { immr, imms, rn, rd } => {
+            bitfield_move(state, Bitfield::Signed, 32, 0, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::SbfmSbfm64mBitfield { immr, imms, rn, rd } => {
+            bitfield_move(state, Bitfield::Signed, 64, 1, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::UbfmUbfm32mBitfield { immr, imms, rn, rd } => {
+            bitfield_move(state, Bitfield::Unsigned, 32, 0, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::UbfmUbfm64mBitfield { immr, imms, rn, rd } => {
+            bitfield_move(state, Bitfield::Unsigned, 64, 1, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::BfmBfm32mBitfield { immr, imms, rn, rd } => {
+            bitfield_move(state, Bitfield::Insert, 32, 0, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::BfmBfm64mBitfield { immr, imms, rn, rd } => {
+            bitfield_move(state, Bitfield::Insert, 64, 1, immr, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+
+        A64Insn::ExtrExtr32Extract { rm, imms, rn, rd } => {
+            extract(state, 32, rm, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::ExtrExtr64Extract { rm, imms, rn, rd } => {
+            extract(state, 64, rm, imms, rn, rd)?;
+            Ok(pc + 4)
+        }
+
+        A64Insn::CselCsel32Condsel { rm, cond, rn, rd } => {
+            cond_select(state, CondSelect::Sel, 32, rm, cond, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CselCsel64Condsel { rm, cond, rn, rd } => {
+            cond_select(state, CondSelect::Sel, 64, rm, cond, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CsincCsinc32Condsel { rm, cond, rn, rd } => {
+            cond_select(state, CondSelect::Inc, 32, rm, cond, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CsincCsinc64Condsel { rm, cond, rn, rd } => {
+            cond_select(state, CondSelect::Inc, 64, rm, cond, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CsinvCsinv32Condsel { rm, cond, rn, rd } => {
+            cond_select(state, CondSelect::Inv, 32, rm, cond, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CsinvCsinv64Condsel { rm, cond, rn, rd } => {
+            cond_select(state, CondSelect::Inv, 64, rm, cond, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CsnegCsneg32Condsel { rm, cond, rn, rd } => {
+            cond_select(state, CondSelect::Neg, 32, rm, cond, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CsnegCsneg64Condsel { rm, cond, rn, rd } => {
+            cond_select(state, CondSelect::Neg, 64, rm, cond, rn, rd)?;
+            Ok(pc + 4)
+        }
+
+        A64Insn::CcmpImmCcmp32CondcmpImm {
+            imm5,
+            cond,
+            rn,
+            nzcv,
+        } => {
+            cond_compare(state, AddSub::Sub, 32, imm5.raw() as u64, cond, rn, nzcv)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CcmpImmCcmp64CondcmpImm {
+            imm5,
+            cond,
+            rn,
+            nzcv,
+        } => {
+            cond_compare(state, AddSub::Sub, 64, imm5.raw() as u64, cond, rn, nzcv)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CcmpRegCcmp32CondcmpReg { rm, cond, rn, nzcv } => {
+            let operand2 = read_reg_sized(state, rm, 32);
+            cond_compare(state, AddSub::Sub, 32, operand2, cond, rn, nzcv)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CcmpRegCcmp64CondcmpReg { rm, cond, rn, nzcv } => {
+            let operand2 = state.read_reg(rm);
+            cond_compare(state, AddSub::Sub, 64, operand2, cond, rn, nzcv)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CcmnImmCcmn32CondcmpImm {
+            imm5,
+            cond,
+            rn,
+            nzcv,
+        } => {
+            cond_compare(state, AddSub::Add, 32, imm5.raw() as u64, cond, rn, nzcv)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CcmnImmCcmn64CondcmpImm {
+            imm5,
+            cond,
+            rn,
+            nzcv,
+        } => {
+            cond_compare(state, AddSub::Add, 64, imm5.raw() as u64, cond, rn, nzcv)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CcmnRegCcmn32CondcmpReg { rm, cond, rn, nzcv } => {
+            let operand2 = read_reg_sized(state, rm, 32);
+            cond_compare(state, AddSub::Add, 32, operand2, cond, rn, nzcv)?;
+            Ok(pc + 4)
+        }
+        A64Insn::CcmnRegCcmn64CondcmpReg { rm, cond, rn, nzcv } => {
+            let operand2 = state.read_reg(rm);
+            cond_compare(state, AddSub::Add, 64, operand2, cond, rn, nzcv)?;
+            Ok(pc + 4)
+        }
+
+        A64Insn::LslvLslv32Dp2src { rm, rn, rd } => {
+            shift_variable(state, 0b00, 32, rm, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::LslvLslv64Dp2src { rm, rn, rd } => {
+            shift_variable(state, 0b00, 64, rm, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::LsrvLsrv32Dp2src { rm, rn, rd } => {
+            shift_variable(state, 0b01, 32, rm, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::LsrvLsrv64Dp2src { rm, rn, rd } => {
+            shift_variable(state, 0b01, 64, rm, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AsrvAsrv32Dp2src { rm, rn, rd } => {
+            shift_variable(state, 0b10, 32, rm, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::AsrvAsrv64Dp2src { rm, rn, rd } => {
+            shift_variable(state, 0b10, 64, rm, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::RorvRorv32Dp2src { rm, rn, rd } => {
+            shift_variable(state, 0b11, 32, rm, rn, rd)?;
+            Ok(pc + 4)
+        }
+        A64Insn::RorvRorv64Dp2src { rm, rn, rd } => {
+            shift_variable(state, 0b11, 64, rm, rn, rd)?;
+            Ok(pc + 4)
+        }
+
+        A64Insn::UdivUdiv32Dp2src { rm, rn, rd } => {
+            divide(state, false, 32, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::UdivUdiv64Dp2src { rm, rn, rd } => {
+            divide(state, false, 64, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::SdivSdiv32Dp2src { rm, rn, rd } => {
+            divide(state, true, 32, rm, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::SdivSdiv64Dp2src { rm, rn, rd } => {
+            divide(state, true, 64, rm, rn, rd);
+            Ok(pc + 4)
+        }
+
+        A64Insn::MaddMadd32aDp3src { rm, ra, rn, rd } => {
+            multiply_add(state, AddSub::Add, 32, rm, ra, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::MaddMadd64aDp3src { rm, ra, rn, rd } => {
+            multiply_add(state, AddSub::Add, 64, rm, ra, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::MsubMsub32aDp3src { rm, ra, rn, rd } => {
+            multiply_add(state, AddSub::Sub, 32, rm, ra, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::MsubMsub64aDp3src { rm, ra, rn, rd } => {
+            multiply_add(state, AddSub::Sub, 64, rm, ra, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::SmaddlSmaddl64waDp3src { rm, ra, rn, rd } => {
+            let product = sign_extend_width(state.read_reg(rn), 32)
+                .wrapping_mul(sign_extend_width(state.read_reg(rm), 32));
+            state.write_reg(rd, state.read_reg(ra).wrapping_add(product as u64));
+            Ok(pc + 4)
+        }
+        A64Insn::UmaddlUmaddl64waDp3src { rm, ra, rn, rd } => {
+            let product = read_reg_sized(state, rn, 32) * read_reg_sized(state, rm, 32);
+            state.write_reg(rd, state.read_reg(ra).wrapping_add(product));
+            Ok(pc + 4)
+        }
+        A64Insn::SmulhSmulh64Dp3src { rm, rn, rd } => {
+            let product =
+                i128::from(state.read_reg(rn) as i64) * i128::from(state.read_reg(rm) as i64);
+            state.write_reg(rd, (product >> 64) as u64);
+            Ok(pc + 4)
+        }
+        A64Insn::UmulhUmulh64Dp3src { rm, rn, rd } => {
+            let product = u128::from(state.read_reg(rn)) * u128::from(state.read_reg(rm));
+            state.write_reg(rd, (product >> 64) as u64);
+            Ok(pc + 4)
+        }
+
+        A64Insn::ClzIntClz32Dp1src { rn, rd } => {
+            let value = read_reg_sized(state, rn, 32) as u32;
+            write_reg_sized(state, rd, u64::from(value.leading_zeros()), 32);
+            Ok(pc + 4)
+        }
+        A64Insn::ClzIntClz64Dp1src { rn, rd } => {
+            state.write_reg(rd, u64::from(state.read_reg(rn).leading_zeros()));
+            Ok(pc + 4)
+        }
+        A64Insn::RbitIntRbit32Dp1src { rn, rd } => {
+            let value = read_reg_sized(state, rn, 32) as u32;
+            write_reg_sized(state, rd, u64::from(value.reverse_bits()), 32);
+            Ok(pc + 4)
+        }
+        A64Insn::RbitIntRbit64Dp1src { rn, rd } => {
+            state.write_reg(rd, state.read_reg(rn).reverse_bits());
+            Ok(pc + 4)
+        }
+        A64Insn::RevRev32Dp1src { rn, rd } => {
+            reverse_bytes(state, 32, 32, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::RevRev64Dp1src { rn, rd } => {
+            reverse_bytes(state, 64, 64, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::Rev16IntRev1632Dp1src { rn, rd } => {
+            reverse_bytes(state, 32, 16, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::Rev16IntRev1664Dp1src { rn, rd } => {
+            reverse_bytes(state, 64, 16, rn, rd);
+            Ok(pc + 4)
+        }
+        A64Insn::Rev32IntRev3264Dp1src { rn, rd } => {
+            reverse_bytes(state, 64, 32, rn, rd);
+            Ok(pc + 4)
+        }
+
+        // The decoder admits MRS only for TPIDR_EL0 (subset.toml field constraint).
+        A64Insn::MrsMrsRsSystemmove { rt } => {
+            state.write_reg(rt, state.tpidr_el0);
             Ok(pc + 4)
         }
 
@@ -430,14 +1086,474 @@ fn write_movk(
     Ok(())
 }
 
-fn shifted_reg64(value: u64, shift: u8, amount: u8) -> Result<u64, String> {
-    match shift {
-        0 => Ok(value << amount),
-        1 => Ok(value >> amount),
-        2 => Ok(((value as i64) >> amount) as u64),
-        3 => Ok(value.rotate_right(amount as u32)),
-        _ => Err(format!("unsupported shifted-register shift field: {shift}")),
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum AddSub {
+    Add,
+    Sub,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Logic {
+    And,
+    Orr,
+    Eor,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Bitfield {
+    Signed,
+    Unsigned,
+    Insert,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum CondSelect {
+    Sel,
+    Inc,
+    Inv,
+    Neg,
+}
+
+fn width_mask(bits: u8) -> u64 {
+    match bits {
+        64 => u64::MAX,
+        1..=63 => (1_u64 << bits) - 1,
+        _ => unreachable!("unsupported operand width {bits}"),
     }
+}
+
+/// `SInt(value[bits-1:0])`.
+fn sign_extend_width(value: u64, bits: u8) -> i64 {
+    let shift = 64 - u32::from(bits);
+    ((value << shift) as i64) >> shift
+}
+
+/// `AddWithCarry` from the Arm pseudocode, on the low `bits` of both operands.
+fn add_with_carry(x: u64, y: u64, carry_in: bool, bits: u8) -> (u64, Flags) {
+    let mask = width_mask(bits);
+    let (x, y) = (x & mask, y & mask);
+    let unsigned_sum = u128::from(x) + u128::from(y) + u128::from(carry_in);
+    let signed_sum = i128::from(sign_extend_width(x, bits))
+        + i128::from(sign_extend_width(y, bits))
+        + i128::from(carry_in);
+    let result = (unsigned_sum as u64) & mask;
+    let flags = Flags {
+        n: (result >> (bits - 1)) & 1 != 0,
+        z: result == 0,
+        c: u128::from(result) != unsigned_sum,
+        v: i128::from(sign_extend_width(result, bits)) != signed_sum,
+    };
+    (result, flags)
+}
+
+/// ADD/SUB core: `operand1 + operand2` or `operand1 + NOT(operand2) + 1`; writes the
+/// result through `rd`'s own register-31 mode and, if `set_flags`, NZCV.
+fn add_sub(
+    state: &mut MachineState,
+    rd: A64Reg,
+    operand1: u64,
+    operand2: u64,
+    op: AddSub,
+    set_flags: bool,
+    bits: u8,
+) {
+    let (result, flags) = match op {
+        AddSub::Add => add_with_carry(operand1, operand2, false, bits),
+        AddSub::Sub => add_with_carry(operand1, !operand2, true, bits),
+    };
+    if set_flags {
+        state.flags = flags;
+    }
+    write_reg_sized(state, rd, result, bits);
+}
+
+/// `ShiftReg`: shift type 0..=3 is LSL, LSR, ASR, ROR over `bits`.
+fn shift_value(value: u64, shift: u8, amount: u32, bits: u8) -> Result<u64, String> {
+    if amount >= u32::from(bits) {
+        return Err(format!(
+            "shift amount {amount} out of range for {bits}-bit operand"
+        ));
+    }
+    let mask = width_mask(bits);
+    let value = value & mask;
+    let shifted = match shift {
+        0b00 => value << amount,
+        0b01 => value >> amount,
+        0b10 => (sign_extend_width(value, bits) >> amount) as u64,
+        0b11 if amount == 0 => value,
+        0b11 => (value >> amount) | (value << (u32::from(bits) - amount)),
+        _ => return Err(format!("unsupported shift type field: {shift}")),
+    };
+    Ok(shifted & mask)
+}
+
+/// `ExtendReg`: `option` selects UXTB..UXTX, SXTB..SXTX; the result is shifted left
+/// by `shift` (0..=4).
+fn extend_value(value: u64, option: u8, shift: u32, bits: u8) -> Result<u64, String> {
+    if shift > 4 {
+        return Err(format!("extended-register shift {shift} is reserved"));
+    }
+    let (len, signed) = match option {
+        0b000 => (8, false),
+        0b001 => (16, false),
+        0b010 => (32, false),
+        0b011 => (64, false),
+        0b100 => (8, true),
+        0b101 => (16, true),
+        0b110 => (32, true),
+        0b111 => (64, true),
+        _ => return Err(format!("unsupported extend option field: {option}")),
+    };
+    let len = len.min(bits);
+    let extended = if signed {
+        sign_extend_width(value, len) as u64
+    } else {
+        value & width_mask(len)
+    };
+    Ok((extended << shift) & width_mask(bits))
+}
+
+fn add_sub_shifted(
+    state: &mut MachineState,
+    op: AddSub,
+    set_flags: bool,
+    bits: u8,
+    shift: u8,
+    rm: A64Reg,
+    imm6: A64Imm,
+    rn: A64Reg,
+    rd: A64Reg,
+) -> Result<(), String> {
+    if shift == 0b11 {
+        return Err("add/sub shifted register with ROR shift is reserved".to_string());
+    }
+    let operand2 = shift_value(state.read_reg(rm), shift, imm6.raw(), bits)?;
+    add_sub(state, rd, state.read_reg(rn), operand2, op, set_flags, bits);
+    Ok(())
+}
+
+fn add_sub_extended(
+    state: &mut MachineState,
+    op: AddSub,
+    set_flags: bool,
+    bits: u8,
+    rm: A64Reg,
+    option: u8,
+    imm3: A64Imm,
+    rn: A64Reg,
+    rd: A64Reg,
+) -> Result<(), String> {
+    let operand2 = extend_value(state.read_reg(rm), option, imm3.raw(), bits)?;
+    add_sub(state, rd, state.read_reg(rn), operand2, op, set_flags, bits);
+    Ok(())
+}
+
+/// Logical result; `set_flags` gives N and Z from the result with C = V = 0.
+fn logical(
+    state: &mut MachineState,
+    op: Logic,
+    set_flags: bool,
+    bits: u8,
+    operand1: u64,
+    operand2: u64,
+    rd: A64Reg,
+) {
+    let result = match op {
+        Logic::And => operand1 & operand2,
+        Logic::Orr => operand1 | operand2,
+        Logic::Eor => operand1 ^ operand2,
+    } & width_mask(bits);
+    if set_flags {
+        state.flags = Flags {
+            n: (result >> (bits - 1)) & 1 != 0,
+            z: result == 0,
+            c: false,
+            v: false,
+        };
+    }
+    write_reg_sized(state, rd, result, bits);
+}
+
+fn logical_shifted(
+    state: &mut MachineState,
+    op: Logic,
+    invert: bool,
+    set_flags: bool,
+    bits: u8,
+    shift: u8,
+    rm: A64Reg,
+    imm6: A64Imm,
+    rn: A64Reg,
+    rd: A64Reg,
+) -> Result<(), String> {
+    let shifted = shift_value(state.read_reg(rm), shift, imm6.raw(), bits)?;
+    let operand2 = if invert { !shifted } else { shifted };
+    logical(state, op, set_flags, bits, state.read_reg(rn), operand2, rd);
+    Ok(())
+}
+
+fn logical_imm(
+    state: &mut MachineState,
+    op: Logic,
+    set_flags: bool,
+    bits: u8,
+    n: u8,
+    immr: A64Imm,
+    imms: A64Imm,
+    rn: A64Reg,
+    rd: A64Reg,
+) -> Result<(), String> {
+    let (imm, _) = decode_bit_masks(n, imms.raw(), immr.raw(), true, bits)?;
+    logical(state, op, set_flags, bits, state.read_reg(rn), imm, rd);
+    Ok(())
+}
+
+/// `DecodeBitMasks` from the Arm pseudocode: `(wmask, tmask)` over `bits`.
+pub(crate) fn decode_bit_masks(
+    n: u8,
+    imms: u32,
+    immr: u32,
+    immediate: bool,
+    bits: u8,
+) -> Result<(u64, u64), String> {
+    let n_not_imms = (u32::from(n & 1) << 6) | (!imms & 0x3f);
+    if n_not_imms >> 1 == 0 {
+        return Err(format!("reserved bitmask immediate N={n} imms={imms:#x}"));
+    }
+    let len = 31 - n_not_imms.leading_zeros();
+    let esize = 1_u32 << len;
+    if esize > u32::from(bits) {
+        return Err(format!(
+            "bitmask element size {esize} exceeds {bits}-bit operand"
+        ));
+    }
+    let levels = esize - 1;
+    if immediate && imms & levels == levels {
+        return Err(format!(
+            "reserved all-ones logical immediate imms={imms:#x}"
+        ));
+    }
+    let s = imms & levels;
+    let r = immr & levels;
+    let d = s.wrapping_sub(r) & levels;
+    let esize_bits = esize as u8;
+    let welem = width_mask(s as u8 + 1);
+    let telem = width_mask(d as u8 + 1);
+    let wmask = replicate(rotate_right(welem, r, esize_bits), esize_bits, bits);
+    let tmask = replicate(telem, esize_bits, bits);
+    Ok((wmask, tmask))
+}
+
+fn rotate_right(value: u64, amount: u32, bits: u8) -> u64 {
+    let mask = width_mask(bits);
+    let value = value & mask;
+    if amount == 0 {
+        value
+    } else {
+        ((value >> amount) | (value << (u32::from(bits) - amount))) & mask
+    }
+}
+
+fn replicate(element: u64, esize: u8, bits: u8) -> u64 {
+    let mut result = 0;
+    let mut pos = 0;
+    while pos < bits {
+        result |= element << pos;
+        pos += esize;
+    }
+    result & width_mask(bits)
+}
+
+fn bitfield_move(
+    state: &mut MachineState,
+    kind: Bitfield,
+    bits: u8,
+    n: u8,
+    immr: A64Imm,
+    imms: A64Imm,
+    rn: A64Reg,
+    rd: A64Reg,
+) -> Result<(), String> {
+    let (r, s) = (immr.raw(), imms.raw());
+    if r >= u32::from(bits) || s >= u32::from(bits) {
+        return Err(format!(
+            "bitfield immr={r} imms={s} out of range for {bits}-bit operand"
+        ));
+    }
+    let (wmask, tmask) = decode_bit_masks(n, s, r, false, bits)?;
+    let src = read_reg_sized(state, rn, bits);
+    let rotated = rotate_right(src, r, bits);
+    let result = match kind {
+        Bitfield::Signed => {
+            let top = if (src >> s) & 1 != 0 {
+                width_mask(bits)
+            } else {
+                0
+            };
+            (top & !tmask) | (rotated & wmask & tmask)
+        }
+        Bitfield::Unsigned => rotated & wmask & tmask,
+        Bitfield::Insert => {
+            let dst = read_reg_sized(state, rd, bits);
+            let bot = (dst & !wmask) | (rotated & wmask);
+            (dst & !tmask) | (bot & tmask)
+        }
+    };
+    write_reg_sized(state, rd, result, bits);
+    Ok(())
+}
+
+fn extract(
+    state: &mut MachineState,
+    bits: u8,
+    rm: A64Reg,
+    imms: A64Imm,
+    rn: A64Reg,
+    rd: A64Reg,
+) -> Result<(), String> {
+    let lsb = imms.raw();
+    if lsb >= u32::from(bits) {
+        return Err(format!(
+            "EXTR lsb {lsb} out of range for {bits}-bit operand"
+        ));
+    }
+    let concat = (u128::from(read_reg_sized(state, rn, bits)) << bits)
+        | u128::from(read_reg_sized(state, rm, bits));
+    write_reg_sized(state, rd, (concat >> lsb) as u64 & width_mask(bits), bits);
+    Ok(())
+}
+
+fn condition_holds(cond: u8, state: &MachineState) -> Result<bool, String> {
+    let condition = A64Condition::from_bits(cond)
+        .ok_or_else(|| format!("invalid condition field: {cond:#x}"))?;
+    Ok(eval_condition(condition, state))
+}
+
+fn cond_select(
+    state: &mut MachineState,
+    kind: CondSelect,
+    bits: u8,
+    rm: A64Reg,
+    cond: u8,
+    rn: A64Reg,
+    rd: A64Reg,
+) -> Result<(), String> {
+    let result = if condition_holds(cond, state)? {
+        state.read_reg(rn)
+    } else {
+        let operand2 = state.read_reg(rm);
+        match kind {
+            CondSelect::Sel => operand2,
+            CondSelect::Inc => operand2.wrapping_add(1),
+            CondSelect::Inv => !operand2,
+            CondSelect::Neg => operand2.wrapping_neg(),
+        }
+    };
+    write_reg_sized(state, rd, result & width_mask(bits), bits);
+    Ok(())
+}
+
+/// CCMP/CCMN: flags of `Rn - operand2` / `Rn + operand2` if `cond` holds, else `nzcv`.
+fn cond_compare(
+    state: &mut MachineState,
+    op: AddSub,
+    bits: u8,
+    operand2: u64,
+    cond: u8,
+    rn: A64Reg,
+    nzcv: u8,
+) -> Result<(), String> {
+    state.flags = if condition_holds(cond, state)? {
+        let operand1 = state.read_reg(rn);
+        match op {
+            AddSub::Add => add_with_carry(operand1, operand2, false, bits).1,
+            AddSub::Sub => add_with_carry(operand1, !operand2, true, bits).1,
+        }
+    } else {
+        Flags {
+            n: nzcv & 0b1000 != 0,
+            z: nzcv & 0b0100 != 0,
+            c: nzcv & 0b0010 != 0,
+            v: nzcv & 0b0001 != 0,
+        }
+    };
+    Ok(())
+}
+
+fn shift_variable(
+    state: &mut MachineState,
+    shift: u8,
+    bits: u8,
+    rm: A64Reg,
+    rn: A64Reg,
+    rd: A64Reg,
+) -> Result<(), String> {
+    let amount = (state.read_reg(rm) % u64::from(bits)) as u32;
+    let result = shift_value(state.read_reg(rn), shift, amount, bits)?;
+    write_reg_sized(state, rd, result, bits);
+    Ok(())
+}
+
+/// UDIV/SDIV: division by zero gives 0; SDIV rounds toward zero, and INT_MIN / -1
+/// wraps to INT_MIN (`result[datasize-1:0]`).
+fn divide(state: &mut MachineState, signed: bool, bits: u8, rm: A64Reg, rn: A64Reg, rd: A64Reg) {
+    let (dividend, divisor) = (state.read_reg(rn), state.read_reg(rm));
+    let result = if divisor & width_mask(bits) == 0 {
+        0
+    } else if signed {
+        let quotient = i128::from(sign_extend_width(dividend, bits))
+            / i128::from(sign_extend_width(divisor, bits));
+        quotient as u64
+    } else {
+        (dividend & width_mask(bits)) / (divisor & width_mask(bits))
+    };
+    write_reg_sized(state, rd, result & width_mask(bits), bits);
+}
+
+/// MADD/MSUB: `Ra +/- Rn * Rm` over `bits`.
+fn multiply_add(
+    state: &mut MachineState,
+    op: AddSub,
+    bits: u8,
+    rm: A64Reg,
+    ra: A64Reg,
+    rn: A64Reg,
+    rd: A64Reg,
+) {
+    let product = state.read_reg(rn).wrapping_mul(state.read_reg(rm));
+    let accumulator = state.read_reg(ra);
+    let result = match op {
+        AddSub::Add => accumulator.wrapping_add(product),
+        AddSub::Sub => accumulator.wrapping_sub(product),
+    };
+    write_reg_sized(state, rd, result & width_mask(bits), bits);
+}
+
+/// REV/REV16/REV32: reverse the bytes inside each `container`-bit lane.
+fn reverse_bytes(state: &mut MachineState, bits: u8, container: u8, rn: A64Reg, rd: A64Reg) {
+    let operand = read_reg_sized(state, rn, bits);
+    let mut result = 0_u64;
+    let mut lane = 0;
+    while lane < bits {
+        let value = (operand >> lane) & width_mask(container);
+        let reversed = value.swap_bytes() >> (64 - u32::from(container));
+        result |= reversed << lane;
+        lane += container;
+    }
+    write_reg_sized(state, rd, result, bits);
+}
+
+fn write_movn(
+    state: &mut MachineState,
+    bits: u8,
+    rd: A64Reg,
+    imm16: A64Imm,
+    hw: u8,
+) -> Result<(), String> {
+    let shift = A64Insn::move_wide_shift(hw)
+        .ok_or_else(|| format!("unsupported MOVN shift field: {hw}"))?;
+    write_reg_sized(state, rd, !((imm16.raw() as u64) << shift), bits);
+    Ok(())
 }
 
 fn execute_ldr(
@@ -667,16 +1783,25 @@ fn bit_index(b5: u8, b40: u8) -> u8 {
     (b5 << 5) | b40
 }
 
+/// `ConditionHolds` from the Arm pseudocode.
 fn eval_condition(condition: A64Condition, state: &MachineState) -> bool {
-    let flags = state.flags;
+    let Flags { n, z, c, v } = state.flags;
     match condition {
-        A64Condition::Eq => flags.z,
-        A64Condition::Ne => !flags.z,
-        A64Condition::Ge => flags.n == flags.v,
-        A64Condition::Lt => flags.n != flags.v,
-        A64Condition::Gt => !flags.z && flags.n == flags.v,
-        A64Condition::Le => flags.z || flags.n != flags.v,
-        A64Condition::Al => true,
+        A64Condition::Eq => z,
+        A64Condition::Ne => !z,
+        A64Condition::Hs => c,
+        A64Condition::Lo => !c,
+        A64Condition::Mi => n,
+        A64Condition::Pl => !n,
+        A64Condition::Vs => v,
+        A64Condition::Vc => !v,
+        A64Condition::Hi => c && !z,
+        A64Condition::Ls => !(c && !z),
+        A64Condition::Ge => n == v,
+        A64Condition::Lt => n != v,
+        A64Condition::Gt => n == v && !z,
+        A64Condition::Le => !(n == v && !z),
+        A64Condition::Al | A64Condition::Nv => true,
     }
 }
 
@@ -694,23 +1819,6 @@ fn write_reg_sized(state: &mut MachineState, reg: A64Reg, value: u64, bits: u8) 
         64 => state.write_reg(reg, value),
         _ => unreachable!("unsupported register width"),
     }
-}
-
-fn update_sub_flags_sized(state: &mut MachineState, lhs: u64, rhs: u64, result: u64, bits: u8) {
-    let mask = match bits {
-        32 => 0xFFFF_FFFF,
-        64 => u64::MAX,
-        _ => unreachable!("unsupported flag width"),
-    };
-    let sign = 1_u64 << (bits - 1);
-    let lhs = lhs & mask;
-    let rhs = rhs & mask;
-    let result = result & mask;
-
-    state.flags.n = (result & sign) != 0;
-    state.flags.z = result == 0;
-    state.flags.c = lhs >= rhs;
-    state.flags.v = ((lhs ^ rhs) & (lhs ^ result) & sign) != 0;
 }
 
 fn add_signed(value: u64, offset: i64) -> u64 {
@@ -1215,5 +2323,668 @@ mod tests {
         let max = (1_i64 << (bits - 1)) - 1;
         assert!((min..=max).contains(&value));
         (value as i128 & ((1_i128 << bits) - 1)) as u8
+    }
+}
+
+#[cfg(test)]
+mod alu_tests {
+    use super::*;
+    use crate::shared::arm64::ergo::{uimm, w, x};
+
+    fn xsp(enc: u8) -> A64Reg {
+        A64Reg::x_sp(enc)
+    }
+
+    fn run(state: &mut MachineState, insn: A64Insn) {
+        assert!(!insn.is_decode_undefined(), "{} is UNDEFINED", insn.key());
+        let mut ctx = AccessContext::Original { counter: None };
+        assert_eq!(execute_insn(insn, 0x4000, state, &mut ctx).unwrap(), 0x4004);
+    }
+
+    fn flags(n: bool, z: bool, c: bool, v: bool) -> Flags {
+        Flags { n, z, c, v }
+    }
+
+    fn adds64(rn: u64, imm: u32) -> (u64, Flags) {
+        let mut state = MachineState::new();
+        state.write_x(1, rn);
+        run(
+            &mut state,
+            A64Insn::AddsAddsubImmAdds64sAddsubImm {
+                sh: 0,
+                imm12: uimm(imm, 12),
+                rn: xsp(1),
+                rd: x(0),
+            },
+        );
+        (state.read_x(0), state.flags)
+    }
+
+    fn subs_reg(bits: u8, rn: u64, rm: u64) -> (u64, Flags) {
+        let mut state = MachineState::new();
+        state.write_x(0, 0xdead_beef_dead_beef);
+        state.write_x(1, rn);
+        state.write_x(2, rm);
+        let insn = match bits {
+            32 => A64Insn::SubsAddsubShiftSubs32AddsubShift {
+                shift: 0,
+                rm: w(2),
+                imm6: uimm(0, 6),
+                rn: w(1),
+                rd: w(0),
+            },
+            _ => A64Insn::SubsAddsubShiftSubs64AddsubShift {
+                shift: 0,
+                rm: x(2),
+                imm6: uimm(0, 6),
+                rn: x(1),
+                rd: x(0),
+            },
+        };
+        run(&mut state, insn);
+        (state.read_x(0), state.flags)
+    }
+
+    #[test]
+    fn adds_subs_carry_and_overflow_at_boundaries() {
+        assert_eq!(adds64(u64::MAX, 1), (0, flags(false, true, true, false)));
+        assert_eq!(
+            adds64(i64::MAX as u64, 1),
+            (1 << 63, flags(true, false, false, true))
+        );
+        assert_eq!(adds64(0, 0), (0, flags(false, true, false, false)));
+
+        assert_eq!(
+            subs_reg(64, 0, 1),
+            (u64::MAX, flags(true, false, false, false))
+        );
+        assert_eq!(
+            subs_reg(64, 1 << 63, 1),
+            (i64::MAX as u64, flags(false, false, true, true))
+        );
+        assert_eq!(subs_reg(64, 5, 5), (0, flags(false, true, true, false)));
+        assert_eq!(
+            subs_reg(64, u64::MAX, u64::MAX),
+            (0, flags(false, true, true, false))
+        );
+
+        // 32-bit: upper source bits are ignored, the result zero-extends.
+        assert_eq!(
+            subs_reg(32, 0xffff_ffff_0000_0000, 1),
+            (0xffff_ffff, flags(true, false, false, false))
+        );
+        assert_eq!(
+            subs_reg(32, 0x8000_0000, 1),
+            (0x7fff_ffff, flags(false, false, true, true))
+        );
+        assert_eq!(
+            subs_reg(32, 0x1_0000_0007, 7),
+            (0, flags(false, true, true, false))
+        );
+    }
+
+    #[test]
+    fn cmn_detects_glibc_syscall_error_range() {
+        // glibc: `cmn x0, #1, lsl #12; b.hi error` <=> x0 in [-4095, -1].
+        for (x0, hi) in [
+            (0_u64, false),
+            ((-4096_i64) as u64, false),
+            ((-4095_i64) as u64, true),
+            (u64::MAX, true),
+        ] {
+            let mut state = MachineState::new();
+            state.write_x(0, x0);
+            run(
+                &mut state,
+                A64Insn::AddsAddsubImmAdds64sAddsubImm {
+                    sh: 1,
+                    imm12: uimm(1, 12),
+                    rn: xsp(0),
+                    rd: x(31),
+                },
+            );
+            assert_eq!(eval_condition(A64Condition::Hi, &state), hi, "x0 = {x0:#x}");
+            assert_eq!(state.read_x(0), x0, "cmn must not write x0");
+        }
+    }
+
+    #[test]
+    fn thirty_two_bit_results_zero_extend() {
+        let mut state = MachineState::new();
+        state.write_x(1, 0xffff_ffff_0000_0005);
+        state.write_x(2, 0x1234_5678_0000_0003);
+
+        run(
+            &mut state,
+            A64Insn::AddAddsubShiftAdd32AddsubShift {
+                shift: 0,
+                rm: w(2),
+                imm6: uimm(0, 6),
+                rn: w(1),
+                rd: w(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 8);
+
+        run(
+            &mut state,
+            A64Insn::SubAddsubShiftSub32AddsubShift {
+                shift: 0,
+                rm: w(1),
+                imm6: uimm(0, 6),
+                rn: w(31),
+                rd: w(3),
+            },
+        );
+        assert_eq!(state.read_x(3), 0xffff_fffb, "neg w3, w1");
+
+        run(
+            &mut state,
+            A64Insn::OrrLogShiftOrr32LogShift {
+                shift: 0,
+                rm: w(1),
+                imm6: uimm(0, 6),
+                rn: w(31),
+                rd: w(4),
+            },
+        );
+        assert_eq!(state.read_x(4), 5, "mov w4, w1");
+
+        run(
+            &mut state,
+            A64Insn::MovnMovn32Movewide {
+                hw: 0,
+                imm16: uimm(0, 16),
+                rd: w(5),
+            },
+        );
+        assert_eq!(state.read_x(5), 0xffff_ffff);
+
+        state.flags = flags(false, true, false, false);
+        run(
+            &mut state,
+            A64Insn::CsnegCsneg32Condsel {
+                rm: w(2),
+                cond: A64Condition::Ne.bits(),
+                rn: w(1),
+                rd: w(6),
+            },
+        );
+        assert_eq!(
+            state.read_x(6),
+            0xffff_fffd,
+            "csneg picks -w2 when ne fails"
+        );
+    }
+
+    #[test]
+    fn extended_register_add_uses_sp_and_sign_extends_index() {
+        let mut state = MachineState::new();
+        state.set_sp(0x8000);
+        state.write_x(1, 0x0000_0000_ffff_fffe); // w1 = -2
+        run(
+            &mut state,
+            A64Insn::AddAddsubExtAdd64AddsubExt {
+                rm: x(1),
+                option: 6,
+                imm3: uimm(2, 3),
+                rn: xsp(31),
+                rd: xsp(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 0x8000 - 8, "add x0, sp, w1, sxtw #2");
+
+        run(
+            &mut state,
+            A64Insn::AddAddsubExtAdd64AddsubExt {
+                rm: x(1),
+                option: 2,
+                imm3: uimm(0, 3),
+                rn: xsp(31),
+                rd: xsp(31),
+            },
+        );
+        assert_eq!(state.sp(), 0x8000 + 0xffff_fffe, "add sp, sp, w1, uxtw");
+        assert_eq!(state.read_x(31), 0);
+    }
+
+    #[test]
+    fn logical_forms_set_nz_and_clear_cv() {
+        let mut state = MachineState::new();
+        state.flags = flags(false, false, true, true);
+        state.write_x(1, 0x8000_0000_0000_00f0);
+        run(
+            &mut state,
+            A64Insn::AndsLogImmAnds64sLogImm {
+                n: 1,
+                immr: uimm(1, 6),
+                imms: uimm(0, 6),
+                rn: x(1),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 1 << 63);
+        assert_eq!(state.flags, flags(true, false, false, false));
+
+        run(
+            &mut state,
+            A64Insn::BicsBics32LogShift {
+                shift: 0,
+                rm: w(1),
+                imm6: uimm(0, 6),
+                rn: w(1),
+                rd: w(2),
+            },
+        );
+        assert_eq!(state.read_x(2), 0);
+        assert_eq!(state.flags, flags(false, true, false, false));
+
+        // orr wsp, w1, #0x3: logical-immediate Rd is SP-capable.
+        run(
+            &mut state,
+            A64Insn::OrrLogImmOrr32LogImm {
+                immr: uimm(0, 6),
+                imms: uimm(1, 6),
+                rn: w(1),
+                rd: A64Reg::w_sp(31),
+            },
+        );
+        assert_eq!(state.sp(), 0xf3);
+    }
+
+    #[test]
+    fn decode_bit_masks_matches_known_immediates() {
+        let imm = |n, immr, imms, bits| decode_bit_masks(n, imms, immr, true, bits).unwrap().0;
+        assert_eq!(imm(0, 0, 7, 32), 0xff);
+        assert_eq!(imm(1, 60, 59, 64), 0xffff_ffff_ffff_fff0);
+        assert_eq!(imm(0, 0, 0b111100, 64), 0x5555_5555_5555_5555);
+        assert_eq!(imm(0, 0, 0b100111, 64), 0x00ff_00ff_00ff_00ff);
+        assert_eq!(imm(0, 31, 30, 32), 0xffff_fffe);
+        assert!(decode_bit_masks(1, 0x3f, 0, true, 64).is_err());
+        assert!(decode_bit_masks(0, 0x3d, 0, true, 64).is_err());
+    }
+
+    fn bitfield(insn: A64Insn, rd: u64, rn: u64) -> u64 {
+        let mut state = MachineState::new();
+        state.write_x(0, rd);
+        state.write_x(1, rn);
+        run(&mut state, insn);
+        state.read_x(0)
+    }
+
+    #[test]
+    fn bitfield_aliases() {
+        let sbfm64 = |immr, imms| A64Insn::SbfmSbfm64mBitfield {
+            immr: uimm(immr, 6),
+            imms: uimm(imms, 6),
+            rn: x(1),
+            rd: x(0),
+        };
+        let ubfm64 = |immr, imms| A64Insn::UbfmUbfm64mBitfield {
+            immr: uimm(immr, 6),
+            imms: uimm(imms, 6),
+            rn: x(1),
+            rd: x(0),
+        };
+        let sbfm32 = |immr, imms| A64Insn::SbfmSbfm32mBitfield {
+            immr: uimm(immr, 6),
+            imms: uimm(imms, 6),
+            rn: w(1),
+            rd: w(0),
+        };
+        let ubfm32 = |immr, imms| A64Insn::UbfmUbfm32mBitfield {
+            immr: uimm(immr, 6),
+            imms: uimm(imms, 6),
+            rn: w(1),
+            rd: w(0),
+        };
+
+        assert_eq!(
+            bitfield(sbfm64(0, 31), 0, 0x1234_5678_8000_0000),
+            0xffff_ffff_8000_0000,
+            "sxtw"
+        );
+        assert_eq!(bitfield(sbfm64(63, 63), 0, 1 << 63), u64::MAX, "asr #63");
+        assert_eq!(
+            bitfield(sbfm64(4, 11), 0, 0xf80),
+            (-8_i64) as u64,
+            "sbfx #4, #8"
+        );
+        assert_eq!(bitfield(ubfm64(1, 0), 0, 3), 1 << 63, "lsl #63");
+        assert_eq!(bitfield(ubfm64(63, 63), 0, 1 << 63), 1, "lsr #63");
+        assert_eq!(bitfield(ubfm64(4, 11), 0, 0xabc), 0xab, "ubfx #4, #8");
+        assert_eq!(bitfield(ubfm64(60, 3), 0, 0xff), 0xf0, "ubfiz #4, #4");
+        assert_eq!(
+            bitfield(sbfm32(31, 31), 0, 0x8000_0000),
+            0xffff_ffff,
+            "asr w #31"
+        );
+        assert_eq!(bitfield(sbfm32(0, 7), 0, 0x80), 0xffff_ff80, "sxtb w");
+        assert_eq!(
+            bitfield(ubfm32(31, 30), 0, 0xffff_ffff),
+            0xffff_fffe,
+            "lsl w #1"
+        );
+        assert_eq!(bitfield(ubfm32(0, 7), 0, 0x1ff), 0xff, "uxtb w");
+
+        let bfi = A64Insn::BfmBfm32mBitfield {
+            immr: uimm(29, 6),
+            imms: uimm(3, 6),
+            rn: w(1),
+            rd: w(0),
+        };
+        assert_eq!(
+            bitfield(bfi, 0xffff_ffff_ffff_ffff, 0x5),
+            0xffff_ffaf,
+            "bfi w0, w1, #3, #4"
+        );
+        let bfxil = A64Insn::BfmBfm64mBitfield {
+            immr: uimm(8, 6),
+            imms: uimm(63, 6),
+            rn: x(1),
+            rd: x(0),
+        };
+        assert_eq!(
+            bitfield(bfxil, 0xaaaa_aaaa_aaaa_aaaa, 0x1122_3344_5566_7788),
+            0xaa11_2233_4455_6677
+        );
+        let bfm_edge = A64Insn::BfmBfm64mBitfield {
+            immr: uimm(63, 6),
+            imms: uimm(0, 6),
+            rn: x(1),
+            rd: x(0),
+        };
+        assert_eq!(bitfield(bfm_edge, 0, 1), 2, "bfi x0, x1, #1, #1");
+    }
+
+    #[test]
+    fn extr_and_variable_shifts() {
+        let mut state = MachineState::new();
+        state.write_x(1, 0x0123_4567_89ab_cdef);
+        state.write_x(2, 65);
+        run(
+            &mut state,
+            A64Insn::ExtrExtr64Extract {
+                rm: x(1),
+                imms: uimm(8, 6),
+                rn: x(1),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 0xef01_2345_6789_abcd, "ror #8");
+
+        run(
+            &mut state,
+            A64Insn::LslvLslv64Dp2src {
+                rm: x(2),
+                rn: x(1),
+                rd: x(3),
+            },
+        );
+        assert_eq!(
+            state.read_x(3),
+            0x0246_8acf_1357_9bde,
+            "shift amount is mod 64"
+        );
+
+        state.write_x(2, 33);
+        run(
+            &mut state,
+            A64Insn::AsrvAsrv32Dp2src {
+                rm: w(2),
+                rn: w(1),
+                rd: w(4),
+            },
+        );
+        assert_eq!(state.read_x(4), 0xc4d5_e6f7, "asr w by 33 mod 32");
+
+        run(
+            &mut state,
+            A64Insn::RorvRorv32Dp2src {
+                rm: w(2),
+                rn: w(1),
+                rd: w(5),
+            },
+        );
+        assert_eq!(state.read_x(5), 0xc4d5_e6f7, "ror w by 1");
+    }
+
+    fn ccmp(z_before: bool, rn: u64) -> Flags {
+        let mut state = MachineState::new();
+        state.flags = flags(false, z_before, false, false);
+        state.write_x(1, rn);
+        run(
+            &mut state,
+            A64Insn::CcmpImmCcmp64CondcmpImm {
+                imm5: uimm(5, 5),
+                cond: A64Condition::Eq.bits(),
+                rn: x(1),
+                nzcv: 0b0010,
+            },
+        );
+        state.flags
+    }
+
+    #[test]
+    fn ccmp_takes_compare_or_immediate_flags() {
+        assert_eq!(
+            ccmp(true, 5),
+            flags(false, true, true, false),
+            "eq holds: 5 - 5"
+        );
+        assert_eq!(
+            ccmp(true, 4),
+            flags(true, false, false, false),
+            "eq holds: 4 - 5"
+        );
+        assert_eq!(
+            ccmp(false, 5),
+            flags(false, false, true, false),
+            "eq fails: nzcv"
+        );
+
+        let mut state = MachineState::new();
+        state.write_x(1, u64::MAX);
+        state.write_x(2, 1);
+        run(
+            &mut state,
+            A64Insn::CcmnRegCcmn64CondcmpReg {
+                rm: x(2),
+                cond: A64Condition::Al.bits(),
+                rn: x(1),
+                nzcv: 0,
+            },
+        );
+        assert_eq!(state.flags, flags(false, true, true, false), "ccmn -1 + 1");
+    }
+
+    fn div(insn: fn(A64Reg, A64Reg, A64Reg) -> A64Insn, rn: u64, rm: u64) -> u64 {
+        let mut state = MachineState::new();
+        state.write_x(1, rn);
+        state.write_x(2, rm);
+        run(&mut state, insn(x(2), x(1), x(0)));
+        state.read_x(0)
+    }
+
+    #[test]
+    fn division_edge_cases() {
+        let udiv64 = |rm, rn, rd| A64Insn::UdivUdiv64Dp2src { rm, rn, rd };
+        let sdiv64 = |rm, rn, rd| A64Insn::SdivSdiv64Dp2src { rm, rn, rd };
+        let udiv32 = |rm: A64Reg, rn: A64Reg, rd: A64Reg| A64Insn::UdivUdiv32Dp2src { rm, rn, rd };
+        let sdiv32 = |rm: A64Reg, rn: A64Reg, rd: A64Reg| A64Insn::SdivSdiv32Dp2src { rm, rn, rd };
+
+        assert_eq!(div(udiv64, 7, 0), 0);
+        assert_eq!(div(sdiv64, 7, 0), 0);
+        assert_eq!(div(udiv32, 7, 0x1_0000_0000), 0, "w divisor is 0");
+        assert_eq!(div(sdiv64, 1 << 63, u64::MAX), 1 << 63, "INT64_MIN / -1");
+        assert_eq!(
+            div(sdiv32, 0x8000_0000, 0xffff_ffff),
+            0x8000_0000,
+            "INT32_MIN / -1"
+        );
+        assert_eq!(
+            div(sdiv64, (-7_i64) as u64, 2),
+            (-3_i64) as u64,
+            "rounds toward zero"
+        );
+        assert_eq!(div(sdiv32, 7, (-2_i32) as u32 as u64), 0xffff_fffd);
+        assert_eq!(div(udiv64, u64::MAX, 2), u64::MAX / 2);
+    }
+
+    #[test]
+    fn multiply_high_and_long() {
+        let mut state = MachineState::new();
+        state.write_x(1, u64::MAX);
+        state.write_x(2, u64::MAX);
+        run(
+            &mut state,
+            A64Insn::UmulhUmulh64Dp3src {
+                rm: x(2),
+                rn: x(1),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), u64::MAX - 1);
+        run(
+            &mut state,
+            A64Insn::SmulhSmulh64Dp3src {
+                rm: x(2),
+                rn: x(1),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 0, "-1 * -1");
+        state.write_x(1, 1 << 63);
+        state.write_x(2, 2);
+        run(
+            &mut state,
+            A64Insn::SmulhSmulh64Dp3src {
+                rm: x(2),
+                rn: x(1),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), u64::MAX, "INT64_MIN * 2 high half");
+
+        state.write_x(1, 0xdead_0000_ffff_fffe); // w1 = -2
+        state.write_x(2, 0xbeef_0000_0000_0003); // w2 = 3
+        state.write_x(3, 10);
+        run(
+            &mut state,
+            A64Insn::SmaddlSmaddl64waDp3src {
+                rm: w(2),
+                ra: x(3),
+                rn: w(1),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 4, "10 + (-2 * 3)");
+        run(
+            &mut state,
+            A64Insn::UmaddlUmaddl64waDp3src {
+                rm: w(2),
+                ra: x(31),
+                rn: w(1),
+                rd: x(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 0xffff_fffe * 3);
+        run(
+            &mut state,
+            A64Insn::MsubMsub32aDp3src {
+                rm: w(2),
+                ra: w(3),
+                rn: w(1),
+                rd: w(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 16, "10 - (-2 * 3)");
+    }
+
+    #[test]
+    fn byte_and_bit_reversal() {
+        let mut state = MachineState::new();
+        state.write_x(1, 0x0102_0304_0506_0708);
+        run(&mut state, A64Insn::RevRev64Dp1src { rn: x(1), rd: x(0) });
+        assert_eq!(state.read_x(0), 0x0807_0605_0403_0201);
+        run(&mut state, A64Insn::RevRev32Dp1src { rn: w(1), rd: w(0) });
+        assert_eq!(state.read_x(0), 0x0807_0605);
+        run(
+            &mut state,
+            A64Insn::Rev32IntRev3264Dp1src { rn: x(1), rd: x(0) },
+        );
+        assert_eq!(state.read_x(0), 0x0403_0201_0807_0605);
+        run(
+            &mut state,
+            A64Insn::Rev16IntRev1664Dp1src { rn: x(1), rd: x(0) },
+        );
+        assert_eq!(state.read_x(0), 0x0201_0403_0605_0807);
+        run(
+            &mut state,
+            A64Insn::Rev16IntRev1632Dp1src { rn: w(1), rd: w(0) },
+        );
+        assert_eq!(state.read_x(0), 0x0605_0807);
+        run(
+            &mut state,
+            A64Insn::RbitIntRbit32Dp1src { rn: w(1), rd: w(0) },
+        );
+        assert_eq!(state.read_x(0), 0x10e0_60a0);
+        run(
+            &mut state,
+            A64Insn::ClzIntClz32Dp1src {
+                rn: w(31),
+                rd: w(0),
+            },
+        );
+        assert_eq!(state.read_x(0), 32);
+        run(
+            &mut state,
+            A64Insn::ClzIntClz64Dp1src { rn: x(1), rd: x(0) },
+        );
+        assert_eq!(state.read_x(0), 7);
+    }
+
+    #[test]
+    fn mrs_reads_tpidr_el0() {
+        let mut state = MachineState::new();
+        state.tpidr_el0 = 0x9800;
+        run(&mut state, A64Insn::MrsMrsRsSystemmove { rt: x(1) });
+        assert_eq!(state.read_x(1), 0x9800);
+    }
+
+    /// Every condition against every NZCV value, checked against the bit-level
+    /// `ConditionHolds` definition (base test on cond[3:1], inverted by cond[0]
+    /// except for 0b1111).
+    #[test]
+    fn condition_codes_follow_condition_holds() {
+        for nzcv in 0..16_u8 {
+            let mut state = MachineState::new();
+            state.flags = flags(nzcv & 8 != 0, nzcv & 4 != 0, nzcv & 2 != 0, nzcv & 1 != 0);
+            let Flags { n, z, c, v } = state.flags;
+            for cond in 0..16_u8 {
+                let base = match cond >> 1 {
+                    0b000 => z,
+                    0b001 => c,
+                    0b010 => n,
+                    0b011 => v,
+                    0b100 => c && !z,
+                    0b101 => n == v,
+                    0b110 => n == v && !z,
+                    _ => true,
+                };
+                let expected = if cond & 1 == 1 && cond != 0b1111 {
+                    !base
+                } else {
+                    base
+                };
+                let condition = A64Condition::from_bits(cond).unwrap();
+                assert_eq!(condition.bits(), cond);
+                assert_eq!(
+                    eval_condition(condition, &state),
+                    expected,
+                    "cond {cond:#x} nzcv {nzcv:#06b}"
+                );
+            }
+        }
     }
 }

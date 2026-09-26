@@ -140,6 +140,11 @@ A reachable instruction outside the decoded subset, or one that decodes but
 that register virtualization rejects for an instruction-intrinsic reason, does
 not fail translation: its block ends with an `Unsupported` runtime exit (`x10` =
 raw word, `x11` = its PC), and userspace executes that instruction natively.
+A word that matches a subset form's encoding diagram but that the form's decode
+pseudocode makes UNDEFINED (for example a reserved shift or logical-immediate
+pattern) counts as undecodable, so a fragment never executes an UNDEFINED
+encoding at EL1. The only system-register access in the subset is
+`MRS Xt, TPIDR_EL0`; every other system register stays undecodable.
 
 Register virtualization now rewrites ordinary user-semantic uses of
 stack-backed `x12..x17`, stable-mapped user `x29`, and stable-mapped user `SP`,
@@ -187,6 +192,9 @@ fixture case it requires interpreter original == native original == native
 fragment (registers, SP, NZCV, the data window, and the halt). Fixture text is
 based at `0x10000` and the data window (x12) at `0x20000`, both at or above
 Linux's `vm.mmap_min_addr`, so the native runs use the interpreter's addresses.
+Fixture TPIDR_EL0 is `0x23000` (a TLS block inside the data window); the native
+runner switches the thread's TPIDR_EL0 to it only while fixture code or a
+fragment runs, and its signal entry switches back before any Rust runs.
 The target fails unless the native test actually ran and passed.
 
 #### Coverage scan

@@ -91,14 +91,17 @@ impl CodeProvider for MockCodeProvider {
 /// (64 KiB) so the native runner maps them at the addresses the interpreter uses.
 pub const FIXTURE_DATA_BASE: u64 = 0x20000;
 pub const FIXTURE_DATA_LEN: u64 = 0x4000;
+/// TPIDR_EL0 of fixture cases: a TLS block in the last page of the data window.
+pub const FIXTURE_TLS_BASE: u64 = FIXTURE_DATA_BASE + 0x3000;
 
 /// Initial machine state for `.s` fixture cases. Shared by `trace-tui --check`
 /// and the fixture suite so both check the same starting point: x12 points at
-/// the fixture data window, which is the only user memory and is read-write.
-/// Everything else is unmapped.
+/// the fixture data window, which is the only user memory and is read-write,
+/// and TPIDR_EL0 at `FIXTURE_TLS_BASE` inside it. Everything else is unmapped.
 pub fn default_fixture_state() -> MachineState {
     let mut state = MachineState::new();
     state.write_x(12, FIXTURE_DATA_BASE);
+    state.tpidr_el0 = FIXTURE_TLS_BASE;
     state
         .map_user_range(
             FIXTURE_DATA_BASE,

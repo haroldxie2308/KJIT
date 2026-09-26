@@ -38,10 +38,12 @@ fn main() -> Result<()> {
     let specs = if let Some(instructions) = &args.instructions {
         parse_instructions(&args.xml_dir, instructions)?
     } else {
-        let decode_forms = subset::load_decode_forms(&args.subset_config)?;
-        let instructions = subset::unique_instruction_files(&decode_forms)?;
+        let decode = subset::load_decode_config(&args.subset_config)?;
+        let instructions = subset::unique_instruction_files(&decode.forms)?;
         let specs = parse_instructions(&args.xml_dir, &instructions)?;
-        subset::filter_specs_by_forms(specs, &decode_forms)?
+        let mut specs = subset::filter_specs_by_forms(specs, &decode.forms)?;
+        subset::apply_field_constraints(&mut specs, &decode)?;
+        specs
     };
 
     write_output(&args.json_out, serde_json::to_string_pretty(&specs)? + "\n")?;

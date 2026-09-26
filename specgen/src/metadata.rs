@@ -147,9 +147,10 @@ fn infer_roles_from_pseudocode(
     if execute_text.contains("ConditionHolds") {
         roles.insert(role_tuple("FlagsRead", "", "Unknown"));
     }
-    if execute_text.contains("PSTATE.NZCV")
-        || (execute_text.contains("AddWithCarry") && execute_text.contains("nzcv"))
-    {
+    // Every flag-setting form assigns all four flags, e.g. `PSTATE.[N,Z,C,V] = nzcv;`
+    // (ADDS/SUBS), `= result[..]::IsZeroBit(..)::'00';` (ANDS/BICS), `= flags;` (CCMP).
+    let flags_write = Regex::new(r"PSTATE\.(?:NZCV|\[N,\s*Z,\s*C,\s*V\])\s*=").unwrap();
+    if flags_write.is_match(execute_text) {
         roles.insert(role_tuple("FlagsWrite", "", "Unknown"));
     }
     if execute_text.contains("BranchTo") || execute_text.contains("BranchNotTaken") {
@@ -339,6 +340,32 @@ fn simplify_roles(roles: BTreeSet<RoleTuple>) -> BTreeSet<RoleTuple> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn flags_write_is_inferred_from_nzcv_assignment_only() {
+        let fields = BTreeSet::new();
+        let vars = BTreeMap::new();
+        let docvars = IndexMap::new();
+        let writes = |text: &str| {
+            infer_roles_from_pseudocode(&fields, &vars, &docvars, text).contains(&role_tuple(
+                "FlagsWrite",
+                "",
+                "Unknown",
+            ))
+        };
+
+        assert!(writes(
+            "(result, nzcv) = AddWithCarry(a, b, '1'); PSTATE.[N,Z,C,V] = nzcv;"
+        ));
+        assert!(writes(
+            "PSTATE.[N,Z,C,V] = result[31]::IsZeroBit(result)::'00';"
+        ));
+        assert!(writes("if ConditionHolds(c) then (-, flags) = AddWithCarry(a, b, '0'); end; PSTATE.[N,Z,C,V] = flags;"));
+        assert!(!writes(
+            "(result, -) = AddWithCarry(a, b, '0'); X(d) = result;"
+        ));
+        assert!(!writes("if ConditionHolds(c) then result = X(n); end;"));
+    }
 
     #[test]
     fn normalizes_implicit_lr_write() {
