@@ -131,7 +131,10 @@ The `harness/` crate is userspace-only and exercises the executable-fragment
 path through `compile_request`: CFG construction, rephrase, ordinary
 user-semantic register virtualization, wrapped layout, and `URuntime`. The
 wrapper includes the shared prologue and epilogue, and runtime exits return
-through `x9/x10/x11` with `x11` carrying the original resume PC.
+through `x9/x10/x11` with `x11` carrying the original resume PC. A fragment is
+always called at its base with `x0 = pt_regs`, `x1 = extra params` and
+`x2 = base + entry offset`; the prologue ends with `br` to that saved entry, so
+continuing at a resume offset is a real call, not a harness redirect.
 
 A reachable instruction outside the decoded subset, or one that decodes but
 that register virtualization rejects for an instruction-intrinsic reason, does
@@ -173,6 +176,18 @@ make harness-test-asm ASM=tests/arm64/reserved_regs.s
 failing (fixture, case) in one run. `llvm-mc`, `llvm-nm` and `llvm-objcopy`
 must be on `PATH` (for example Homebrew `llvm`); `make harness-test` fails if
 they are missing.
+
+`make harness-test-native` adds the host CPU as a third oracle, because the
+interpreter runs both sides of that check and one of its semantics bugs would
+cancel out. On Linux arm64 it runs the harness suite directly; elsewhere (macOS
+reserves x18) it runs `scripts/native-test.sh` in a `linux/arm64` container
+(`kjit-dev:latest` if present, else `rust:1.85-bookworm` with LLVM installed at
+start), with its own `CARGO_HOME`/`CARGO_TARGET_DIR` under `.kjit/`. For every
+fixture case it requires interpreter original == native original == native
+fragment (registers, SP, NZCV, the data window, and the halt). Fixture text is
+based at `0x10000` and the data window (x12) at `0x20000`, both at or above
+Linux's `vm.mmap_min_addr`, so the native runs use the interpreter's addresses.
+The target fails unless the native test actually ran and passed.
 
 #### Coverage scan
 

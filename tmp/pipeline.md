@@ -65,6 +65,46 @@ translation/runtime harness untouched.
   a non-SP base; LDP rt == rt2) are rejected with `UnpredictableMemoryOp`, never
   translated; admission turns that into the Unsupported exit.
 
+## ABI: fragment entry
+
+- The runtime always calls a fragment at its base (the prologue) with
+  `x0 = pt_regs`, `x1 = extra params`, `x2 = ABI_ENTRY_ARG_REG` = fragment base
+  + an entry offset taken from `ExecutionFragment` (`entry_offset` for the first
+  entry, `offset_for_pc(resume_pc)` when continuing after a runtime exit).
+- The prologue stores `x2` in frame slot `RUNTIME_FRAME_ENTRY_ADDR_OFFSET` (80)
+  before its `pt_regs` loads overwrite it, and ends with
+  `ldr x12, [sp, #80]; br x12`. x12 is reg-virt scratch, dead at body entry;
+  user x12 is already in its frame slot.
+- Invariant: that `br x12` is the only indirect branch in a fragment, and its
+  target is never user-controlled — the runtime (harness now, kernel later)
+  only passes known entry offsets. V3 checks exactly this.
+- Replaces the old resolved `b entry_offset` plus the harness-only redirect of
+  that branch on re-entry, which had no native equivalent.
+
+## Native hardware oracle (V1)
+
+- Linux arm64 only (`harness/src/native.rs`, `make harness-test-native`). Three
+  states per fixture case must agree: interpreter original, native original,
+  native fragment.
+- Fixture addresses: text base `0x10000` (compile script default), data window
+  `FIXTURE_DATA_BASE = 0x20000`, `FIXTURE_DATA_LEN = 0x4000` (x12), which is the
+  whole default user page map (read-write). Fixtures derive every data address
+  from x12.
+- User memory: the native runs map every page of the interpreter's user page
+  map at the same address with the same permission (read-only -> `PROT_READ`),
+  and compare every byte of those pages. Initial memory outside them fails.
+- Native original: stop points come from the interpreter's own halting rule
+  (`admit_word`) applied to every text word (SVC -> mock trap; rejected word or
+  non-SVC runtime exit -> stop trap; first word past the text -> fell off). A
+  data abort stops too and must match the interpreter's `Fault` halt (same pc,
+  fault address inside the access). A branch exit is then executed by the
+  hardware alone, in a text copy where every other word traps, so BL/BLR link
+  writes and branch targets come from the CPU, not the model.
+- Native fragment: called at its base per "ABI: fragment entry", driven by the
+  same `decide_runtime_return` as `URuntime`; the call also checks x18..x29 and
+  sp survive (C ABI).
+- No watchdog: a native run that never reaches a stop point hangs the test.
+
 # P1 contracts: memory sandbox, fault exits, execution budget (2026-09-27)
 
 Written before implementation (tasks A4, A5, A6). Code must match this; a change

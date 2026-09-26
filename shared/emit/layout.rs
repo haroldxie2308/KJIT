@@ -1,6 +1,5 @@
 use crate::shared::abi::{
-    append_epilogue, append_prologue, EPILOGUE_LEN_BYTES, EPILOGUE_OFFSET,
-    PROLOGUE_ENTRY_BRANCH_OFFSET, PROLOGUE_LEN_BYTES,
+    append_epilogue, append_prologue, EPILOGUE_LEN_BYTES, EPILOGUE_OFFSET, PROLOGUE_LEN_BYTES,
 };
 use crate::shared::arm64::{A64Insn, A64OperandRole, A64RewriteError};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
@@ -146,7 +145,6 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
             target_original_pc: entry_pc,
         })?;
 
-    resolve_prologue_entry_branch(&mut fragment)?;
     resolve_runtime_exit_branches(&mut fragment, &runtime_exit_branches)?;
     resolve_branch_relocs(&mut fragment, &relocs)?;
     Ok(fragment)
@@ -219,17 +217,6 @@ fn resolve_branch_relocs(
         )?;
     }
     Ok(())
-}
-
-fn resolve_prologue_entry_branch(
-    fragment: &mut ExecutionFragment,
-) -> SharedResult<(), LayoutError> {
-    rewrite_branch_to_offset(
-        fragment,
-        PROLOGUE_ENTRY_BRANCH_OFFSET / 4,
-        fragment.entry_offset,
-        u64::MAX,
-    )
 }
 
 fn resolve_runtime_exit_branches(
@@ -524,26 +511,6 @@ mod tests {
         assert_eq!(layout.insns.len(), (body_start_offset() / 4) + 1);
         assert_eq!(layout.entry_offset, body_start_offset());
         assert_eq!(layout.vlabels[0], (0x1000, body_start_offset()));
-    }
-
-    #[test]
-    fn resolves_prologue_entry_branch_to_entry_offset() {
-        let mut insns = SharedVec::new();
-        insns
-            .push(
-                RephrasedInsn::original(0x1000, A64Insn::NopNopHiHints {}),
-                GFP_KERNEL,
-            )
-            .unwrap();
-
-        let layout = layout_program(one_block(insns)).unwrap();
-        let prologue_branch_index = PROLOGUE_ENTRY_BRANCH_OFFSET / 4;
-
-        assert_eq!(
-            layout.insns[prologue_branch_index]
-                .direct_branch_target(PROLOGUE_ENTRY_BRANCH_OFFSET as u64),
-            Some(layout.entry_offset as u64)
-        );
     }
 
     #[test]

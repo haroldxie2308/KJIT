@@ -18,7 +18,9 @@ fi
 ASM_PATH="$1"
 OUT_DIR="$2"
 HOT_SVC_SYMBOL="${HOT_SVC_SYMBOL:-hot_svc_mark}"
-TEXT_BASE="${TEXT_BASE:-0x4000}"
+# Fixture text base. At or above Linux's vm.mmap_min_addr (64 KiB) so the native
+# runner can map the text at the same address the interpreter uses.
+TEXT_BASE="${TEXT_BASE:-0x10000}"
 OBJ_PATH="$OUT_DIR/fixture.o"
 BIN_PATH="$OUT_DIR/fixture.text.bin"
 

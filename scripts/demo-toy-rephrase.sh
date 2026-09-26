@@ -3,12 +3,11 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ASM_PATH="${1:-$ROOT_DIR/tests/arm64/toy_cfg.s}"
-TEXT_BASE="${TEXT_BASE:-0x4000}"
 OUT_DIR="$ROOT_DIR/tmp/toy-rephrase-demo"
 
 mkdir -p "$OUT_DIR"
 
-eval "$(TEXT_BASE="$TEXT_BASE" bash "$ROOT_DIR/scripts/compile-asm-fixture.sh" "$ASM_PATH" "$OUT_DIR")"
+eval "$(bash "$ROOT_DIR/scripts/compile-asm-fixture.sh" "$ASM_PATH" "$OUT_DIR")"
 
 printf 'fixture: %s\n' "$COMPILED_ASM_PATH"
 printf 'text_base: %s\n' "$COMPILED_TEXT_BASE"

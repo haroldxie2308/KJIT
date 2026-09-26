@@ -2,11 +2,11 @@
 //!
 //! A case is a defined symbol ending in `_mark`: its address is the hot SVC PC
 //! and translation starts at the next instruction. Assembling and symbol
-//! resolution stay in `scripts/compile-asm-fixture.sh`; the check itself is the
-//! same `run_entry_fixture` call `trace-tui --check` makes, from the same
-//! initial state.
+//! resolution stay in `scripts/compile-asm-fixture.sh`; the interpreter check is
+//! the same `run_entry_fixture` call `trace-tui --check` makes, from the same
+//! initial state. On Linux arm64 the same cases also run on the host CPU.
 //!
-//! Each case also runs the interpreter fault self-check (`check_fault_injection`).
+//! Each interpreter case also runs the fault self-check (`check_fault_injection`).
 
 use std::collections::BTreeMap;
 use std::panic::{self, AssertUnwindSafe};
@@ -24,8 +24,52 @@ struct CaseFailure {
     message: String,
 }
 
+/// One assembled fixture case, as `compile-asm-fixture.sh` resolved it.
+struct CompiledCase {
+    text_base: u64,
+    text_bytes: Vec<u8>,
+    entry_pc: u64,
+}
+
 #[test]
 fn every_asm_fixture_case_matches_original() {
+    run_every_case("interp", &mut |case| {
+        let initial_state = default_fixture_state();
+        run_entry_fixture(
+            "asm-fixture",
+            case.text_base,
+            case.text_bytes.clone(),
+            case.entry_pc,
+            &initial_state,
+        )?;
+        let user_accesses =
+            check_fault_injection(case.text_base, &case.text_bytes, case.entry_pc, &initial_state)
+                .map_err(|message| format!("fault self-check: {message}"))?;
+        Ok(format!("injected_user_accesses={user_accesses}"))
+    });
+}
+
+/// Three-way check on the host CPU: interpreter original == native original ==
+/// native fragment. Linux arm64 only (see `crate::native`); run it through
+/// `make harness-test-native`.
+#[cfg(all(target_os = "linux", target_arch = "aarch64"))]
+#[test]
+fn every_asm_fixture_case_matches_native() {
+    let session = crate::native::NativeSession::new().expect("set up native runner");
+    run_every_case("native", &mut |case| {
+        crate::native::check_case(
+            &session,
+            case.text_base,
+            &case.text_bytes,
+            case.entry_pc,
+            &default_fixture_state(),
+        )
+    });
+}
+
+/// Runs `check` on every `_mark` case of every `tests/arm64/*.s` fixture and
+/// fails listing every failed case. `check` returns a detail line on success.
+fn run_every_case(suite: &str, check: &mut dyn FnMut(&CompiledCase) -> Result<String, String>) {
     require_llvm_tools();
 
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -33,10 +77,10 @@ fn every_asm_fixture_case_matches_original() {
         .expect("harness manifest dir has a parent")
         .to_path_buf();
     let fixtures = fixture_paths(&root.join("tests/arm64"));
-    // Per-process directory so concurrent test runs never share outputs.
+    // Per-suite, per-process directory so concurrent test runs never share outputs.
     let work_dir = root
         .join("tmp")
-        .join(format!("asm-fixture-suite.{}", std::process::id()));
+        .join(format!("asm-fixture-suite.{suite}.{}", std::process::id()));
     if work_dir.exists() {
         std::fs::remove_dir_all(&work_dir).expect("remove stale fixture work dir");
     }
@@ -65,13 +109,12 @@ fn every_asm_fixture_case_matches_original() {
 
         for symbol in symbols {
             cases += 1;
-            match run_case(&root, fixture, &symbol, &fixture_dir.join(&symbol)) {
-                Ok((entry_pc, user_accesses)) => println!(
-                    "asm fixture pass: {name} {symbol} entry={entry_pc:#x} \
-                     injected_user_accesses={user_accesses}"
+            match run_case(&root, fixture, &symbol, &fixture_dir.join(&symbol), check) {
+                Ok((entry_pc, detail)) => println!(
+                    "{suite} asm fixture pass: {name} {symbol} entry={entry_pc:#x} {detail}"
                 ),
                 Err(message) => {
-                    println!("asm fixture FAIL: {name} {symbol}");
+                    println!("{suite} asm fixture FAIL: {name} {symbol}\n{message}");
                     failures.push(CaseFailure {
                         fixture: name.clone(),
                         symbol,
@@ -83,7 +126,7 @@ fn every_asm_fixture_case_matches_original() {
     }
 
     println!(
-        "asm fixture suite: {cases} cases across {} fixtures, {} failed",
+        "{suite} asm fixture suite: {cases} cases across {} fixtures, {} failed",
         fixtures.len(),
         failures.len()
     );
@@ -97,7 +140,7 @@ fn every_asm_fixture_case_matches_original() {
         .collect::<Vec<_>>()
         .join("\n");
     panic!(
-        "{} asm fixture case(s) failed (outputs kept in {}):\n{list}",
+        "{} {suite} asm fixture case(s) failed (outputs kept in {}):\n{list}",
         failures.len(),
         work_dir.display()
     );
@@ -134,34 +177,25 @@ fn list_cases(root: &Path, fixture: &Path, out_dir: &Path) -> Result<Vec<String>
     Ok(symbols.split(':').map(str::to_string).collect())
 }
 
-/// Returns the entry PC and the number of user accesses fault-injected.
+/// Returns the entry PC and `check`'s detail line on success.
 fn run_case(
     root: &Path,
     fixture: &Path,
     symbol: &str,
     out_dir: &Path,
-) -> Result<(u64, u64), String> {
+    check: &mut dyn FnMut(&CompiledCase) -> Result<String, String>,
+) -> Result<(u64, String), String> {
     let vars = compile_fixture(root, fixture, out_dir, Some(symbol))?;
     let bin_path = required(&vars, "COMPILED_BIN_PATH")?;
-    let text_base = parse_u64("COMPILED_TEXT_BASE", required(&vars, "COMPILED_TEXT_BASE")?)?;
-    let entry_pc = parse_u64("COMPILED_ENTRY_PC", required(&vars, "COMPILED_ENTRY_PC")?)?;
-    let text_bytes =
-        std::fs::read(bin_path).map_err(|err| format!("failed to read {bin_path}: {err}"))?;
+    let case = CompiledCase {
+        text_base: parse_u64("COMPILED_TEXT_BASE", required(&vars, "COMPILED_TEXT_BASE")?)?,
+        entry_pc: parse_u64("COMPILED_ENTRY_PC", required(&vars, "COMPILED_ENTRY_PC")?)?,
+        text_bytes: std::fs::read(bin_path)
+            .map_err(|err| format!("failed to read {bin_path}: {err}"))?,
+    };
 
-    let initial_state = default_fixture_state();
-    let outcome = panic::catch_unwind(AssertUnwindSafe(|| {
-        run_entry_fixture(
-            "asm-fixture",
-            text_base,
-            text_bytes.clone(),
-            entry_pc,
-            &initial_state,
-        )?;
-        check_fault_injection(text_base, &text_bytes, entry_pc, &initial_state)
-            .map_err(|message| format!("fault self-check: {message}"))
-    }));
-    match outcome {
-        Ok(Ok(user_accesses)) => Ok((entry_pc, user_accesses)),
+    match panic::catch_unwind(AssertUnwindSafe(|| check(&case))) {
+        Ok(Ok(detail)) => Ok((case.entry_pc, detail)),
         Ok(Err(message)) => Err(message),
         // A translator panic is a case failure; record it so the remaining cases still run.
         Err(payload) => Err(format!("panicked: {}", panic_message(payload.as_ref()))),

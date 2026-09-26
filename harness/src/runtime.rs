@@ -1,9 +1,8 @@
 use crate::arm64::{access_in_ranges, execute_insn, AccessContext, InsnError};
 use crate::model::{MachineState, MemAccess, Privilege, PAGE_SIZE};
 use crate::shared::abi::{
-    RetStatus, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
-    PROLOGUE_ENTRY_BRANCH_OFFSET, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
-    RUNTIME_FRAME_SIZE_BYTES,
+    RetStatus, ABI_ENTRY_ARG_REG, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
+    PROLOGUE_LEN_BYTES, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG, RUNTIME_FRAME_SIZE_BYTES,
 };
 use crate::shared::emit::layout::ExecutionFragment;
 
@@ -13,8 +12,8 @@ pub const DEFAULT_EXTRA_PARAMS_ADDR: u64 = 0x7ff000;
 pub const DEFAULT_RETURN_PC: u64 = 0x123456;
 pub const DEFAULT_STACK_TOP: u64 = 0x800000;
 
-const PT_REGS_BYTES: u64 = 256;
-const PT_REGS_SP_OFFSET: u64 = 31 * 8;
+pub(crate) const PT_REGS_BYTES: u64 = 256;
+pub(crate) const PT_REGS_SP_OFFSET: u64 = 31 * 8;
 const EXTRA_PARAMS_BYTES: u64 = 16;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -129,86 +128,27 @@ impl URuntime {
         }
     }
 
-    fn handle_runtime_return(&mut self) -> RuntimeAction {
-        let raw_status = self.state.read_x(RET_STATUS_REG);
-        let status = RetStatus::from_reg(raw_status);
-        let param0 = self.state.read_x(RET_PARAM0_REG);
-        let param1 = self.state.read_x(RET_PARAM1_REG);
-        let resume_pc = param1;
-        let resume_offset = self.fragment.offset_for_pc(resume_pc);
-
-        match status {
-            RetStatus::Svc => {
-                if let Some(offset) = resume_offset {
-                    RuntimeAction::ContinueAt(offset)
-                } else {
-                    RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
-                        status,
-                        target_pc: resume_pc,
-                    })
-                }
-            }
-            RetStatus::Bl | RetStatus::Blr => {
-                self.continue_or_request_translation(status, param0, resume_offset)
-            }
-            RetStatus::Br => self.continue_or_request_translation(status, param0, resume_offset),
-            RetStatus::Ret => {
-                if let Some(offset) = self.fragment.offset_for_pc(param0) {
-                    RuntimeAction::ContinueAt(offset)
-                } else {
-                    RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
-                        status,
-                        target_pc: param0,
-                    })
-                }
-            }
-            // Never continue inside the fragment: resuming at this PC would re-enter
-            // the same exit. Userspace executes the instruction natively.
-            RetStatus::Unsupported => RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
-                status,
-                target_pc: param1,
-            }),
-            RetStatus::Invalid(_) => {
-                RuntimeAction::Stop(URuntimeHalt::InvalidReturnStatus { raw: raw_status })
-            }
-            RetStatus::Mem | RetStatus::Debug => {
-                RuntimeAction::Stop(URuntimeHalt::UnsupportedRuntimeExit { status })
-            }
-        }
+    fn handle_runtime_return(&self) -> RuntimeAction {
+        decide_runtime_return(
+            &self.fragment,
+            self.state.read_x(RET_STATUS_REG),
+            self.state.read_x(RET_PARAM0_REG),
+            self.state.read_x(RET_PARAM1_REG),
+        )
     }
 
+    /// Sets up the ABI call: the fragment is always called at its base (the
+    /// prologue) and the prologue branches to `ABI_ENTRY_ARG_REG`.
     fn prepare_entry_at(&mut self, offset: usize) -> Result<(), String> {
-        self.validate_offset(offset)?;
+        validate_entry_offset(&self.fragment, offset)?;
         self.state
             .write_x(ABI_PT_REGS_ARG_REG, self.config.pt_regs_addr);
         self.state
             .write_x(ABI_EXTRA_PARAMS_ARG_REG, self.config.extra_params_addr);
+        self.state
+            .write_x(ABI_ENTRY_ARG_REG, self.config.base_pc + offset as u64);
         self.state.write_x(ABI_LINK_REG, self.config.return_pc);
         self.state.set_sp(self.config.stack_top);
-        Ok(())
-    }
-
-    fn continue_or_request_translation(
-        &self,
-        status: RetStatus,
-        target_pc: u64,
-        resume_offset: Option<usize>,
-    ) -> RuntimeAction {
-        if let Some(offset) = self.fragment.offset_for_pc(target_pc) {
-            RuntimeAction::ContinueAt(offset)
-        } else {
-            RuntimeAction::Stop(URuntimeHalt::NeedsTranslation {
-                status,
-                target_pc,
-                resume_offset,
-            })
-        }
-    }
-
-    fn validate_offset(&self, offset: usize) -> Result<(), String> {
-        if offset % 4 != 0 || offset >= self.fragment.len_bytes() {
-            return Err(format!("invalid runtime entry offset: {offset:#x}"));
-        }
         Ok(())
     }
 
@@ -299,25 +239,20 @@ struct URuntimeCursor {
     pc: u64,
     steps: usize,
     stopped: bool,
-    pending_entry_offset: Option<usize>,
 }
 
 impl URuntimeCursor {
     fn new(runtime: &mut URuntime) -> Result<Self, String> {
         runtime.check_runtime_memory_not_user_mapped()?;
-        let entry_offset = runtime.fragment.entry_offset;
-        let base_pc = runtime.config.base_pc;
-        runtime.prepare_entry_at(entry_offset)?;
-        let prologue_branch_index = PROLOGUE_ENTRY_BRANCH_OFFSET / 4;
-        if runtime.fragment.insns.len() <= prologue_branch_index {
+        if runtime.fragment.len_bytes() <= PROLOGUE_LEN_BYTES {
             return Err("fragment is missing the ABI prologue".to_string());
         }
+        runtime.prepare_entry_at(runtime.fragment.entry_offset)?;
 
         Ok(Self {
-            pc: base_pc,
+            pc: runtime.config.base_pc,
             steps: 0,
             stopped: false,
-            pending_entry_offset: Some(entry_offset),
         })
     }
 
@@ -367,7 +302,7 @@ impl URuntimeCursor {
         let mut ctx = AccessContext::Fragment {
             runtime_ranges: &runtime_ranges,
         };
-        let mut next_pc = match execute_insn(insn, insn_pc, &mut runtime.state, &mut ctx) {
+        let next_pc = match execute_insn(insn, insn_pc, &mut runtime.state, &mut ctx) {
             Ok(next_pc) => next_pc,
             Err(err) => {
                 let message = match err {
@@ -394,14 +329,6 @@ impl URuntimeCursor {
                 }));
             }
         };
-
-        if offset == PROLOGUE_ENTRY_BRANCH_OFFSET {
-            let entry_offset = self
-                .pending_entry_offset
-                .take()
-                .unwrap_or(runtime.fragment.entry_offset);
-            next_pc = runtime.config.base_pc + entry_offset as u64;
-        }
 
         self.pc = next_pc;
         if self.pc == runtime.config.return_pc {
@@ -437,7 +364,6 @@ impl URuntimeCursor {
             RuntimeAction::ContinueAt(offset_to_enter) => {
                 runtime.prepare_entry_at(offset_to_enter)?;
                 self.pc = runtime.config.base_pc;
-                self.pending_entry_offset = Some(offset_to_enter);
                 Ok(URuntimeStep {
                     offset,
                     insn_index,
@@ -577,7 +503,9 @@ fn run_cursor_to_halt(runtime: &mut URuntime, cursor: &mut URuntimeCursor) -> UR
     }
 }
 
-enum RuntimeAction {
+/// What the runtime does when a fragment returns through the epilogue.
+pub(crate) enum RuntimeAction {
+    /// Call the fragment again, entering the body at this offset.
     ContinueAt(usize),
     Stop(URuntimeHalt),
 }
@@ -599,6 +527,82 @@ pub(crate) fn fragment_access_privilege(
     }
 }
 
+/// The runtime's continue/stop decision for one fragment return. Shared by
+/// `URuntime` and the native runner so both drive a fragment identically; the
+/// caller reads `raw_status`/`param0`/`param1` from wherever its ABI boundary
+/// delivers them.
+pub(crate) fn decide_runtime_return(
+    fragment: &ExecutionFragment,
+    raw_status: u64,
+    param0: u64,
+    param1: u64,
+) -> RuntimeAction {
+    let status = RetStatus::from_reg(raw_status);
+    let resume_pc = param1;
+    let resume_offset = fragment.offset_for_pc(resume_pc);
+    let continue_or_request_translation = |target_pc: u64| {
+        if let Some(offset) = fragment.offset_for_pc(target_pc) {
+            RuntimeAction::ContinueAt(offset)
+        } else {
+            RuntimeAction::Stop(URuntimeHalt::NeedsTranslation {
+                status,
+                target_pc,
+                resume_offset,
+            })
+        }
+    };
+
+    match status {
+        RetStatus::Svc => {
+            if let Some(offset) = resume_offset {
+                RuntimeAction::ContinueAt(offset)
+            } else {
+                RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
+                    status,
+                    target_pc: resume_pc,
+                })
+            }
+        }
+        RetStatus::Bl | RetStatus::Blr | RetStatus::Br => continue_or_request_translation(param0),
+        RetStatus::Ret => {
+            if let Some(offset) = fragment.offset_for_pc(param0) {
+                RuntimeAction::ContinueAt(offset)
+            } else {
+                RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
+                    status,
+                    target_pc: param0,
+                })
+            }
+        }
+        // Never continue inside the fragment: resuming at this PC would re-enter
+        // the same exit. Userspace executes the instruction natively.
+        RetStatus::Unsupported => RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
+            status,
+            target_pc: param1,
+        }),
+        RetStatus::Invalid(_) => {
+            RuntimeAction::Stop(URuntimeHalt::InvalidReturnStatus { raw: raw_status })
+        }
+        RetStatus::Mem | RetStatus::Debug => {
+            RuntimeAction::Stop(URuntimeHalt::UnsupportedRuntimeExit { status })
+        }
+    }
+}
+
+/// The ABI entry invariant: the prologue's `br` only ever targets a body label
+/// of this fragment (`entry_offset` is one; `offset_for_pc` returns them).
+pub(crate) fn validate_entry_offset(
+    fragment: &ExecutionFragment,
+    offset: usize,
+) -> Result<(), String> {
+    if !fragment.vlabels.iter().any(|(_, label)| *label == offset) {
+        return Err(format!(
+            "runtime entry offset {offset:#x} is not a fragment label"
+        ));
+    }
+    Ok(())
+}
+
 fn seed_pt_regs(state: &mut MachineState, config: &URuntimeConfig) {
     for reg in 0..31 {
         state.write_u64(config.pt_regs_addr + (reg as u64) * 8, state.read_x(reg));
@@ -613,7 +617,7 @@ mod tests {
     use super::*;
     use crate::arm64::OriginalStepper;
     use crate::model::{AccessKind, HaltReason, PagePerm};
-    use crate::shared::abi::PROLOGUE_ENTRY_BRANCH_OFFSET;
+    use crate::shared::abi::PROLOGUE_LEN_BYTES;
     use crate::shared::arm64::ergo::{uimm, x};
     use crate::shared::arm64::{A64Imm, A64Insn, A64Mem, A64Reg};
     use crate::shared::trans::input::{TranslationRequest, TranslationTrigger};
@@ -656,11 +660,12 @@ mod tests {
         assert_eq!(first.offset, Some(0));
 
         let mut branch = first;
-        for _ in 1..=PROLOGUE_ENTRY_BRANCH_OFFSET / 4 {
+        for _ in 1..PROLOGUE_LEN_BYTES / 4 {
             branch = stepper.step().unwrap().unwrap();
         }
 
-        assert_eq!(branch.offset, Some(PROLOGUE_ENTRY_BRANCH_OFFSET));
+        // The prologue's last instruction is the real `br` to ABI_ENTRY_ARG_REG.
+        assert_eq!(branch.offset, Some(PROLOGUE_LEN_BYTES - 4));
         assert_eq!(stepper.current_offset(), Some(entry_offset));
 
         let body = stepper.step().unwrap().unwrap();

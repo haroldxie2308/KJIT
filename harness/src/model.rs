@@ -200,6 +200,11 @@ impl MachineState {
         Ok(())
     }
 
+    /// Mapped user pages as (page base, permission), in address order.
+    pub fn user_pages(&self) -> impl Iterator<Item = (u64, PagePerm)> + '_ {
+        self.user_pages.iter().map(|(page, perm)| (*page, *perm))
+    }
+
     pub fn user_page_perm(&self, addr: u64) -> Option<PagePerm> {
         self.user_pages.get(&page_base(addr)).copied()
     }

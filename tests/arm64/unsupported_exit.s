@@ -2,7 +2,7 @@
 // instruction outside the decoded A64 subset. The translator must end the block
 // with an unsupported runtime exit that returns to userspace at that PC, with
 // user state (including runtime-reserved x9/x10/x11) intact.
-// Base PC used by the fixture scripts: 0x4000
+// Base PC used by the fixture scripts: 0x10000
 
 .text
 .global unsupported_exit_entry
