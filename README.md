@@ -428,8 +428,7 @@ prelude so it runs from the fixture state, and written as a verified `.s`
 fixture under `tmp/fuzz-regress/`. Promote one per bug to
 `tests/arm64/fuzz-pending/` while it fails (the suite skips that directory),
 and to `tests/arm64/` once fixed. `make harness-test` runs a fixed-seed slice
-(2000 programs); its failure count is pinned to the open bugs in
-`fuzz-pending/`. `FUZZ_ARGS` passes
+(2000 programs) that must have no failure. `FUZZ_ARGS` passes
 `--max-len`, `--start`, `--regress-dir`, and, on Linux arm64 only, `--native`,
 which also runs every agreeing program on the CPU (interpreter original ==
 native original == native fragment); on macOS run it in the container

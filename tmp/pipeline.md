@@ -949,15 +949,13 @@ size and extension, so the loaded value needs no fix-up.
   translated exit target, as `decide_runtime_return` does) instead of skipping.
 - Minimizer signature: failure kind + how the original halted, so deleting an
   exit cannot turn one bug into another (a fall-off-the-end program).
-- Open bugs found (fixtures in `tests/arm64/fuzz-pending/`, excluded from the
-  suite until fixed):
-  1. Layout emits blocks in CFG discovery order and relies on physical
-     fallthrough; a conditional branch's not-taken successor is not always the
-     next block (`fuzz_regress_3d74ff35501da143.s`).
-  2. A block that ends because the next word is past the readable text has no
-     exit; the fragment runs past it (`fuzz_regress_4d8286952cad317f.s`).
-  3. Native only: EL0 SP alignment checking (SCTLR_EL1.SA0) faults SP-based
-     accesses with a misaligned SP; neither the interpreter nor the translated
-     code (SP in x17) reproduces it (`fuzz_regress_bf938844fc6f2fe6.s`).
-- The fixed-seed slice in `make harness-test` pins its failure count to these
-  bugs (`OPEN_BUG_FAILURES`); it goes to 0 when 1 and 2 are fixed.
+- Bugs found, now regression fixtures in `tests/arm64/` (a fixture that still
+  fails waits in `tests/arm64/fuzz-pending/`, which the suite skips):
+  1. Fall-through adjacency (`fuzz_regress_3d74ff35501da143.s`): see "Execution
+     budget (A6)", layout order.
+  2. Running off the readable text (`fuzz_regress_4d8286952cad317f.s`): see
+     "Unsupported-instruction exit", `Unreadable`.
+  3. EL0 SP alignment (`fuzz_regress_bf938844fc6f2fe6.s`): see "Memory rewrite
+     (A5)", SP alignment check.
+- The fixed-seed slice in `make harness-test` (2000 programs) must have no
+  failure.
