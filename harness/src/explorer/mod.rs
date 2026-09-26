@@ -1263,7 +1263,7 @@ fn append_original_step_lines(lines: &mut Vec<ExplorerLine>, state: &ExplorerSta
         )));
     }
     if let Some(halt) = step.halt_reason {
-        lines.push(ExplorerLine::from(format!("halt={halt:?}")));
+        lines.push(ExplorerLine::from(format!("halt={halt}")));
     }
 }
 
@@ -1343,12 +1343,12 @@ fn memory_row_line(row: &MemoryComparisonRow) -> ExplorerLine {
 fn active_halt_label(halt: &ActiveStepHalt) -> String {
     match halt {
         ActiveStepHalt::Running => "running".to_string(),
-        ActiveStepHalt::Original(reason) => format!("original:{reason:?}"),
+        ActiveStepHalt::Original(reason) => format!("original:{reason}"),
         ActiveStepHalt::Translated(reason) => format!("translated:{reason:?}"),
         ActiveStepHalt::Both {
             original,
             translated,
-        } => format!("original:{original:?} translated:{translated:?}"),
+        } => format!("original:{original} translated:{translated:?}"),
         ActiveStepHalt::Error(message) => format!("error:{}", first_line(message)),
     }
 }

@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use crate::arm64::execute_insn;
+use crate::arm64::{execute_insn, AccessContext, InsnError};
 use crate::model::{Flags, HaltReason, MachineState};
 use crate::runtime::{
     OwnedURuntimeStepper, URuntime, URuntimeHalt, URuntimeStep, URuntimeTransition,
@@ -556,7 +556,22 @@ impl ActiveOriginalStepper {
         }
 
         let pc = self.pc;
-        let next_pc = execute_insn(decoded.inner, pc, &mut self.state)?;
+        let mut ctx = AccessContext::Original { counter: None };
+        let next_pc = match execute_insn(decoded.inner, pc, &mut self.state, &mut ctx) {
+            Ok(next_pc) => next_pc,
+            Err(InsnError::Fault(fault)) => {
+                self.stopped = true;
+                return Ok(Some(ActiveOriginalStep {
+                    pc,
+                    next_pc: None,
+                    executed: false,
+                    runtime_exit: None,
+                    halt_reason: Some(HaltReason::Fault(fault)),
+                    state: self.state.clone(),
+                }));
+            }
+            Err(InsnError::Error(message)) => return Err(message),
+        };
         self.pc = next_pc;
         Ok(Some(ActiveOriginalStep {
             pc,
@@ -889,6 +904,9 @@ mod tests {
     #[test]
     fn group_step_catches_user_memory_writes() {
         let mut state = MachineState::new();
+        state
+            .map_user_range(0x9000, 0xa000, crate::model::PagePerm::ReadWrite)
+            .unwrap();
         state.write_x(12, 0x9000);
         state.write_x(30, 0xfeed_0000);
         let mut session = session_for(

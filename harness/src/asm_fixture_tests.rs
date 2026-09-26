@@ -5,13 +5,16 @@
 //! resolution stay in `scripts/compile-asm-fixture.sh`; the check itself is the
 //! same `run_entry_fixture` call `trace-tui --check` makes, from the same
 //! initial state.
+//!
+//! Each case also runs the interpreter fault self-check (`check_fault_injection`).
 
 use std::collections::BTreeMap;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::{default_fixture_state, run_entry_fixture};
+use crate::model::{HaltReason, MachineState};
+use crate::{default_fixture_state, run_entry_fixture, run_original_with_mocked_svc};
 
 const LLVM_TOOLS: [&str; 3] = ["llvm-mc", "llvm-nm", "llvm-objcopy"];
 
@@ -63,7 +66,10 @@ fn every_asm_fixture_case_matches_original() {
         for symbol in symbols {
             cases += 1;
             match run_case(&root, fixture, &symbol, &fixture_dir.join(&symbol)) {
-                Ok(entry_pc) => println!("asm fixture pass: {name} {symbol} entry={entry_pc:#x}"),
+                Ok((entry_pc, user_accesses)) => println!(
+                    "asm fixture pass: {name} {symbol} entry={entry_pc:#x} \
+                     injected_user_accesses={user_accesses}"
+                ),
                 Err(message) => {
                     println!("asm fixture FAIL: {name} {symbol}");
                     failures.push(CaseFailure {
@@ -128,8 +134,13 @@ fn list_cases(root: &Path, fixture: &Path, out_dir: &Path) -> Result<Vec<String>
     Ok(symbols.split(':').map(str::to_string).collect())
 }
 
-/// Returns the entry PC on success.
-fn run_case(root: &Path, fixture: &Path, symbol: &str, out_dir: &Path) -> Result<u64, String> {
+/// Returns the entry PC and the number of user accesses fault-injected.
+fn run_case(
+    root: &Path,
+    fixture: &Path,
+    symbol: &str,
+    out_dir: &Path,
+) -> Result<(u64, u64), String> {
     let vars = compile_fixture(root, fixture, out_dir, Some(symbol))?;
     let bin_path = required(&vars, "COMPILED_BIN_PATH")?;
     let text_base = parse_u64("COMPILED_TEXT_BASE", required(&vars, "COMPILED_TEXT_BASE")?)?;
@@ -139,14 +150,115 @@ fn run_case(root: &Path, fixture: &Path, symbol: &str, out_dir: &Path) -> Result
 
     let initial_state = default_fixture_state();
     let outcome = panic::catch_unwind(AssertUnwindSafe(|| {
-        run_entry_fixture("asm-fixture", text_base, text_bytes, entry_pc, &initial_state)
+        run_entry_fixture(
+            "asm-fixture",
+            text_base,
+            text_bytes.clone(),
+            entry_pc,
+            &initial_state,
+        )?;
+        check_fault_injection(text_base, &text_bytes, entry_pc, &initial_state)
+            .map_err(|message| format!("fault self-check: {message}"))
     }));
     match outcome {
-        Ok(Ok(_report)) => Ok(entry_pc),
+        Ok(Ok(user_accesses)) => Ok((entry_pc, user_accesses)),
         Ok(Err(message)) => Err(message),
         // A translator panic is a case failure; record it so the remaining cases still run.
         Err(payload) => Err(format!("panicked: {}", panic_message(payload.as_ref()))),
     }
+}
+
+/// Interpreter self-check for precise faults. Runs the original code once
+/// uninjected, recording the state before every step and how many user
+/// accesses preceded it; then, for every dynamic user access k, reruns with k
+/// injected and requires a fault at the instruction owning access k with the
+/// state from just before that instruction. Returns the number of user accesses.
+fn check_fault_injection(
+    text_base: u64,
+    text_bytes: &[u8],
+    entry_pc: u64,
+    initial_state: &MachineState,
+) -> Result<u64, String> {
+    struct PreStep {
+        pc: u64,
+        state: MachineState,
+        accesses_before: u64,
+    }
+
+    let mut pre_steps = Vec::new();
+    let clean = run_original_with_mocked_svc(
+        text_bytes,
+        text_base,
+        entry_pc,
+        initial_state,
+        None,
+        &mut |stepper| {
+            pre_steps.push(PreStep {
+                pc: stepper.pc(),
+                state: stepper.state().clone(),
+                accesses_before: stepper.user_accesses(),
+            })
+        },
+    )?;
+    if let HaltReason::Fault(fault) = clean.halt_reason {
+        return Err(format!("uninjected run faulted: {fault}"));
+    }
+    // The halting step is a runtime exit, the end of the text or an
+    // undecodable word; none of them accesses memory. Injecting one past the
+    // total below confirms it.
+    let total = pre_steps
+        .last()
+        .ok_or("uninjected run took no steps")?
+        .accesses_before;
+
+    let past_end = run_original_with_mocked_svc(
+        text_bytes,
+        text_base,
+        entry_pc,
+        initial_state,
+        Some(total + 1),
+        &mut |_| {},
+    )?;
+    if past_end != clean {
+        return Err(format!(
+            "injecting access {} (past the {total} counted) changed the run",
+            total + 1
+        ));
+    }
+
+    for k in 1..=total {
+        // The owner is the last step that started with fewer than k accesses.
+        let owner = pre_steps
+            .iter()
+            .rev()
+            .find(|step| step.accesses_before < k)
+            .expect("the first step starts with zero accesses");
+        let injected = run_original_with_mocked_svc(
+            text_bytes,
+            text_base,
+            entry_pc,
+            initial_state,
+            Some(k),
+            &mut |_| {},
+        )?;
+        match injected.halt_reason {
+            HaltReason::Fault(fault) if fault.pc == owner.pc => {}
+            other => {
+                return Err(format!(
+                    "access {k}: expected a fault at pc={:#x}, got {other}",
+                    owner.pc
+                ))
+            }
+        }
+        if injected.state != owner.state {
+            return Err(format!(
+                "access {k}: faulting instruction at pc={:#x} changed state\n\
+                 before: {:#?}\nafter: {:#?}",
+                owner.pc, owner.state, injected.state
+            ));
+        }
+    }
+    Ok(total)
 }
 
 fn compile_fixture(

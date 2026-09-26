@@ -1,39 +1,61 @@
-use crate::model::{ExecutionResult, HaltReason, MachineState};
+use crate::model::{AccessKind, HaltReason, MachineState, MemAccess, MemFault, Privilege};
+use crate::runtime::fragment_access_privilege;
 use crate::shared::arm64::{A64Condition, A64Imm, A64Insn, A64Mem, A64Reg};
 use crate::shared::trans::cfg::{admit_word, RuntimeExitReason, UnsupportedInsn};
 
-pub fn execute_program(
-    program: &[u8],
-    base_pc: u64,
-    initial_state: &MachineState,
-) -> Result<ExecutionResult, String> {
-    execute_program_from(program, base_pc, base_pc, initial_state)
+/// Why an instruction did not retire.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum InsnError {
+    /// A user access faulted. Nothing was mutated.
+    Fault(MemFault),
+    /// Harness error: unsupported form, PAN violation, missing metadata.
+    Error(String),
 }
 
-pub fn execute_program_from(
-    program: &[u8],
-    base_pc: u64,
-    entry_pc: u64,
-    initial_state: &MachineState,
-) -> Result<ExecutionResult, String> {
-    let mut stepper = OriginalStepper::new(program, base_pc, entry_pc, initial_state)?;
-    let mut steps = 0usize;
+impl From<String> for InsnError {
+    fn from(message: String) -> Self {
+        InsnError::Error(message)
+    }
+}
 
-    loop {
-        let Some(step) = stepper.step()? else {
-            return Err("original stepper stopped without a halt reason".to_string());
-        };
-        if step.executed {
-            steps += 1;
-        }
-        if let Some(halt_reason) = step.halt_reason {
-            return Ok(ExecutionResult {
-                state: step.state,
-                halt_reason,
-                steps,
-            });
+/// Numbers the dynamic user accesses of an original-code run and optionally
+/// fails one of them regardless of permissions.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct UserAccessCounter {
+    seen: u64,
+    fail_at: Option<u64>,
+}
+
+impl UserAccessCounter {
+    /// Fails the `k`-th user access (1-based).
+    pub fn failing_at(k: u64) -> Self {
+        assert!(k >= 1, "injected user access index is 1-based");
+        Self {
+            seen: 0,
+            fail_at: Some(k),
         }
     }
+
+    pub fn seen(&self) -> u64 {
+        self.seen
+    }
+
+    /// Counts one user access; true when it is the injected one.
+    fn record(&mut self) -> bool {
+        self.seen += 1;
+        self.fail_at == Some(self.seen)
+    }
+}
+
+/// Who executes the instruction, which decides each access's privilege.
+pub(crate) enum AccessContext<'a> {
+    /// Original code runs at EL0: every access is a user access. `counter`
+    /// numbers them for fault injection.
+    Original {
+        counter: Option<&'a mut UserAccessCounter>,
+    },
+    /// Translated fragment: see `fragment_access_privilege`.
+    Fragment { runtime_ranges: &'a [(u64, u64)] },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -53,6 +75,7 @@ pub struct OriginalStepper<'a> {
     pc: u64,
     state: MachineState,
     stopped: bool,
+    user_accesses: UserAccessCounter,
 }
 
 impl<'a> OriginalStepper<'a> {
@@ -71,7 +94,15 @@ impl<'a> OriginalStepper<'a> {
             pc: entry_pc,
             state: initial_state.clone(),
             stopped: false,
+            user_accesses: UserAccessCounter::default(),
         })
+    }
+
+    /// Fails the `k`-th dynamic user access of this stepper's run (1-based,
+    /// counted across `resume_at` continuations) regardless of permissions.
+    pub fn fail_user_access(mut self, k: u64) -> Self {
+        self.user_accesses = UserAccessCounter::failing_at(k);
+        self
     }
 
     pub fn pc(&self) -> u64 {
@@ -80,6 +111,11 @@ impl<'a> OriginalStepper<'a> {
 
     pub fn state(&self) -> &MachineState {
         &self.state
+    }
+
+    /// User accesses performed (or attempted, for a faulting one) so far.
+    pub fn user_accesses(&self) -> u64 {
+        self.user_accesses.seen()
     }
 
     pub fn resume_at(&mut self, pc: u64) {
@@ -146,7 +182,24 @@ impl<'a> OriginalStepper<'a> {
         }
 
         let pc = self.pc;
-        let next_pc = execute_insn(decoded.inner, pc, &mut self.state)?;
+        let mut ctx = AccessContext::Original {
+            counter: Some(&mut self.user_accesses),
+        };
+        let next_pc = match execute_insn(decoded.inner, pc, &mut self.state, &mut ctx) {
+            Ok(next_pc) => next_pc,
+            Err(InsnError::Fault(fault)) => {
+                self.stopped = true;
+                return Ok(Some(OriginalStep {
+                    pc,
+                    next_pc: None,
+                    executed: false,
+                    runtime_exit: None,
+                    halt_reason: Some(HaltReason::Fault(fault)),
+                    state: self.state.clone(),
+                }));
+            }
+            Err(InsnError::Error(message)) => return Err(message),
+        };
         self.pc = next_pc;
         Ok(Some(OriginalStep {
             pc,
@@ -159,11 +212,14 @@ impl<'a> OriginalStepper<'a> {
     }
 }
 
+/// Executes one non-exit instruction. Every memory access is validated before
+/// any register or byte is written, so an `Err` leaves `state` untouched.
 pub(crate) fn execute_insn(
     insn: A64Insn,
     pc: u64,
     state: &mut MachineState,
-) -> Result<u64, String> {
+    ctx: &mut AccessContext<'_>,
+) -> Result<u64, InsnError> {
     match insn {
         A64Insn::NopNopHiHints {} => Ok(pc + 4),
 
@@ -246,7 +302,7 @@ pub(crate) fn execute_insn(
 
         A64Insn::BUncondBOnlyBranchImm { .. } => insn
             .direct_branch_target(pc)
-            .ok_or_else(|| format!("missing branch target for {}", insn.key())),
+            .ok_or_else(|| format!("missing branch target for {}", insn.key()).into()),
         A64Insn::BCondBOnlyCondbranch { .. } => {
             let (taken, fallthrough) = insn
                 .conditional_targets(pc)
@@ -271,91 +327,41 @@ pub(crate) fn execute_insn(
             branch_on_bit(insn, pc, state, rt, bit_index(b5, b40), true)
         }
 
-        A64Insn::LdrImmGenLdr32LdstPos { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_reg(rt, state.read_u32(addr) as u64);
+        A64Insn::LdrImmGenLdr32LdstPos { rt, mem }
+        | A64Insn::LdrImmGenLdr32LdstImmpre { rt, mem }
+        | A64Insn::LdrImmGenLdr32LdstImmpost { rt, mem } => {
+            execute_ldr(ctx, state, pc, mem, rt, 4)?;
             Ok(pc + 4)
         }
-        A64Insn::LdrImmGenLdr64LdstPos { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_reg(rt, state.read_u64(addr));
+        A64Insn::LdrImmGenLdr64LdstPos { rt, mem }
+        | A64Insn::LdrImmGenLdr64LdstImmpre { rt, mem }
+        | A64Insn::LdrImmGenLdr64LdstImmpost { rt, mem } => {
+            execute_ldr(ctx, state, pc, mem, rt, 8)?;
             Ok(pc + 4)
         }
-        A64Insn::StrImmGenStr32LdstPos { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_u32(addr, read_reg_sized(state, rt, 32) as u32);
+        A64Insn::StrImmGenStr32LdstPos { rt, mem }
+        | A64Insn::StrImmGenStr32LdstImmpre { rt, mem }
+        | A64Insn::StrImmGenStr32LdstImmpost { rt, mem } => {
+            execute_str(ctx, state, pc, mem, rt, 4)?;
             Ok(pc + 4)
         }
-        A64Insn::StrImmGenStr64LdstPos { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_u64(addr, state.read_reg(rt));
-            Ok(pc + 4)
-        }
-
-        A64Insn::LdrImmGenLdr32LdstImmpre { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_reg(rt, state.read_u32(addr) as u64);
-            Ok(pc + 4)
-        }
-        A64Insn::LdrImmGenLdr64LdstImmpre { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_reg(rt, state.read_u64(addr));
-            Ok(pc + 4)
-        }
-        A64Insn::StrImmGenStr32LdstImmpre { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_u32(addr, read_reg_sized(state, rt, 32) as u32);
-            Ok(pc + 4)
-        }
-        A64Insn::StrImmGenStr64LdstImmpre { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_u64(addr, state.read_reg(rt));
+        A64Insn::StrImmGenStr64LdstPos { rt, mem }
+        | A64Insn::StrImmGenStr64LdstImmpre { rt, mem }
+        | A64Insn::StrImmGenStr64LdstImmpost { rt, mem } => {
+            execute_str(ctx, state, pc, mem, rt, 8)?;
             Ok(pc + 4)
         }
 
-        A64Insn::LdrImmGenLdr32LdstImmpost { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_reg(rt, state.read_u32(addr) as u64);
+        A64Insn::LdpGenLdp64LdstpairPost { rt2, rt, mem }
+        | A64Insn::LdpGenLdp64LdstpairPre { rt2, rt, mem }
+        | A64Insn::LdpGenLdp64LdstpairOff { rt2, rt, mem } => {
+            execute_ldp64(ctx, state, pc, mem, rt, rt2)?;
             Ok(pc + 4)
         }
-        A64Insn::LdrImmGenLdr64LdstImmpost { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_reg(rt, state.read_u64(addr));
-            Ok(pc + 4)
-        }
-        A64Insn::StrImmGenStr32LdstImmpost { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_u32(addr, read_reg_sized(state, rt, 32) as u32);
-            Ok(pc + 4)
-        }
-        A64Insn::StrImmGenStr64LdstImmpost { rt, mem } => {
-            let addr = resolve_mem_addr(state, mem);
-            state.write_u64(addr, state.read_reg(rt));
-            Ok(pc + 4)
-        }
-
-        A64Insn::LdpGenLdp64LdstpairPost { rt2, rt, mem } => {
-            execute_ldp64(state, mem, rt, rt2)?;
-            Ok(pc + 4)
-        }
-        A64Insn::LdpGenLdp64LdstpairPre { rt2, rt, mem } => {
-            execute_ldp64(state, mem, rt, rt2)?;
-            Ok(pc + 4)
-        }
-        A64Insn::LdpGenLdp64LdstpairOff { rt2, rt, mem } => {
-            execute_ldp64(state, mem, rt, rt2)?;
-            Ok(pc + 4)
-        }
-        A64Insn::StpGenStp64LdstpairPost { rt2, rt, mem } => {
-            execute_stp64(state, mem, rt, rt2);
-            Ok(pc + 4)
-        }
-        A64Insn::StpGenStp64LdstpairPre { rt2, rt, mem } => {
-            execute_stp64(state, mem, rt, rt2);
-            Ok(pc + 4)
-        }
-        A64Insn::StpGenStp64LdstpairOff { rt2, rt, mem } => {
-            execute_stp64(state, mem, rt, rt2);
+        A64Insn::StpGenStp64LdstpairPost { rt2, rt, mem }
+        | A64Insn::StpGenStp64LdstpairPre { rt2, rt, mem }
+        | A64Insn::StpGenStp64LdstpairOff { rt2, rt, mem } => {
+            execute_stp64(ctx, state, pc, mem, rt, rt2)?;
             Ok(pc + 4)
         }
 
@@ -371,9 +377,9 @@ pub(crate) fn execute_insn(
         }
         A64Insn::BrBr64BranchReg { rn } => Ok(state.read_reg(rn)),
         A64Insn::RetRet64rBranchReg { rn } => Ok(state.read_reg(rn)),
-        A64Insn::SvcSvcExException { .. } => {
-            Err("raw SVC is not executable inside the userspace runtime fragment".to_string())
-        }
+        A64Insn::SvcSvcExException { .. } => Err(InsnError::Error(
+            "raw SVC is not executable inside the userspace runtime fragment".to_string(),
+        )),
     }
 }
 
@@ -434,56 +440,188 @@ fn shifted_reg64(value: u64, shift: u8, amount: u8) -> Result<u64, String> {
     }
 }
 
-fn execute_ldp64(
+fn execute_ldr(
+    ctx: &mut AccessContext<'_>,
     state: &mut MachineState,
+    pc: u64,
+    mem: A64Mem,
+    rt: A64Reg,
+    size: u8,
+) -> Result<(), InsnError> {
+    let (addr, writeback) = mem_addressing(state, mem);
+    check_accesses(ctx, state, pc, &[read_access(addr, size)])?;
+    let value = state.read_le(addr, size);
+    if let Some(new_base) = writeback {
+        state.write_reg(mem.base(), new_base);
+    }
+    state.write_reg(rt, value);
+    Ok(())
+}
+
+// A writeback STR whose `rt` is its base stores the base's value from before
+// the writeback (architecturally CONSTRAINED UNPREDICTABLE; this is one of the
+// permitted behaviours, and matches STP).
+fn execute_str(
+    ctx: &mut AccessContext<'_>,
+    state: &mut MachineState,
+    pc: u64,
+    mem: A64Mem,
+    rt: A64Reg,
+    size: u8,
+) -> Result<(), InsnError> {
+    let value = read_reg_sized(state, rt, size * 8);
+    let (addr, writeback) = mem_addressing(state, mem);
+    check_accesses(ctx, state, pc, &[write_access(addr, size)])?;
+    state.write_le(addr, size, value);
+    if let Some(new_base) = writeback {
+        state.write_reg(mem.base(), new_base);
+    }
+    Ok(())
+}
+
+fn execute_ldp64(
+    ctx: &mut AccessContext<'_>,
+    state: &mut MachineState,
+    pc: u64,
     mem: A64Mem,
     rt: A64Reg,
     rt2: A64Reg,
-) -> Result<(), String> {
+) -> Result<(), InsnError> {
     let base = mem.base();
     if mem_has_writeback(mem)
         && base.enc() != 31
         && (base.enc() == rt.enc() || base.enc() == rt2.enc())
     {
-        return Err("writeback LDP with base/target overlap is unsupported".to_string());
+        return Err(InsnError::Error(
+            "writeback LDP with base/target overlap is unsupported".to_string(),
+        ));
     }
 
-    let addr = resolve_mem_addr(state, mem);
-    let first = state.read_u64(addr);
-    let second = state.read_u64(addr.wrapping_add(8));
+    let (addr, writeback) = mem_addressing(state, mem);
+    let second_addr = addr.wrapping_add(8);
+    check_accesses(
+        ctx,
+        state,
+        pc,
+        &[read_access(addr, 8), read_access(second_addr, 8)],
+    )?;
+    let first = state.read_le(addr, 8);
+    let second = state.read_le(second_addr, 8);
+    if let Some(new_base) = writeback {
+        state.write_reg(base, new_base);
+    }
     state.write_reg(rt, first);
     state.write_reg(rt2, second);
     Ok(())
 }
 
-fn execute_stp64(state: &mut MachineState, mem: A64Mem, rt: A64Reg, rt2: A64Reg) {
+fn execute_stp64(
+    ctx: &mut AccessContext<'_>,
+    state: &mut MachineState,
+    pc: u64,
+    mem: A64Mem,
+    rt: A64Reg,
+    rt2: A64Reg,
+) -> Result<(), InsnError> {
     let first = state.read_reg(rt);
     let second = state.read_reg(rt2);
-    let addr = resolve_mem_addr(state, mem);
-    state.write_u64(addr, first);
-    state.write_u64(addr.wrapping_add(8), second);
+    let (addr, writeback) = mem_addressing(state, mem);
+    let second_addr = addr.wrapping_add(8);
+    check_accesses(
+        ctx,
+        state,
+        pc,
+        &[write_access(addr, 8), write_access(second_addr, 8)],
+    )?;
+    state.write_le(addr, 8, first);
+    state.write_le(second_addr, 8, second);
+    if let Some(new_base) = writeback {
+        state.write_reg(mem.base(), new_base);
+    }
+    Ok(())
+}
+
+fn read_access(addr: u64, size: u8) -> MemAccess {
+    MemAccess {
+        addr,
+        size,
+        kind: AccessKind::Read,
+    }
+}
+
+fn write_access(addr: u64, size: u8) -> MemAccess {
+    MemAccess {
+        addr,
+        size,
+        kind: AccessKind::Write,
+    }
+}
+
+/// Validates every access of one instruction, in order, before it mutates
+/// anything. A user access that is not permitted (or is the injected one)
+/// faults; a runtime access outside runtime-owned memory is a PAN violation,
+/// which is a hard error because in the kernel it is an oops.
+fn check_accesses(
+    ctx: &mut AccessContext<'_>,
+    state: &MachineState,
+    pc: u64,
+    accesses: &[MemAccess],
+) -> Result<(), InsnError> {
+    for &access in accesses {
+        let injected = match ctx {
+            AccessContext::Original { counter } => {
+                counter.as_mut().is_some_and(|counter| counter.record())
+            }
+            AccessContext::Fragment { runtime_ranges } => {
+                match fragment_access_privilege(runtime_ranges, access) {
+                    Privilege::User => false,
+                    Privilege::Runtime => {
+                        if !access_in_ranges(runtime_ranges, access) {
+                            return Err(InsnError::Error(format!(
+                                "PAN violation: runtime access at pc={pc:#x} to {:#x} (size {}) \
+                                 is outside runtime-owned memory",
+                                access.addr, access.size
+                            )));
+                        }
+                        continue;
+                    }
+                }
+            }
+        };
+        if injected || !state.user_access_allowed(access) {
+            return Err(InsnError::Fault(MemFault { pc, access }));
+        }
+    }
+    Ok(())
+}
+
+/// Whether `access` lies entirely inside one of `ranges` (`[start, end)`).
+pub(crate) fn access_in_ranges(ranges: &[(u64, u64)], access: MemAccess) -> bool {
+    let Some(end) = access.addr.checked_add(access.size as u64) else {
+        return false;
+    };
+    ranges
+        .iter()
+        .any(|&(start, range_end)| start <= access.addr && end <= range_end)
 }
 
 fn mem_has_writeback(mem: A64Mem) -> bool {
     matches!(mem, A64Mem::PreIndex { .. } | A64Mem::PostIndex { .. })
 }
 
-fn resolve_mem_addr(state: &mut MachineState, mem: A64Mem) -> u64 {
-    let base_reg = mem.base();
-    let base = state.read_reg(base_reg);
+/// The access address and, for pre/post-index forms, the base register's new
+/// value. Pure: writeback is applied by the caller after the access checks.
+fn mem_addressing(state: &MachineState, mem: A64Mem) -> (u64, Option<u64>) {
+    let base = state.read_reg(mem.base());
     let offset = mem.offset_imm().value();
 
     match mem {
-        A64Mem::Offset { .. } => add_signed(base, offset),
+        A64Mem::Offset { .. } => (add_signed(base, offset), None),
         A64Mem::PreIndex { .. } => {
             let addr = add_signed(base, offset);
-            state.write_reg(base_reg, addr);
-            addr
+            (addr, Some(addr))
         }
-        A64Mem::PostIndex { .. } => {
-            state.write_reg(base_reg, add_signed(base, offset));
-            base
-        }
+        A64Mem::PostIndex { .. } => (base, Some(add_signed(base, offset))),
     }
 }
 
@@ -494,7 +632,7 @@ fn branch_on_zero(
     rt: A64Reg,
     bits: u8,
     branch_if_zero: bool,
-) -> Result<u64, String> {
+) -> Result<u64, InsnError> {
     let (taken, fallthrough) = insn
         .conditional_targets(pc)
         .ok_or_else(|| format!("missing conditional target for {}", insn.key()))?;
@@ -513,7 +651,7 @@ fn branch_on_bit(
     rt: A64Reg,
     bit: u8,
     branch_if_set: bool,
-) -> Result<u64, String> {
+) -> Result<u64, InsnError> {
     let (taken, fallthrough) = insn
         .conditional_targets(pc)
         .ok_or_else(|| format!("missing conditional target for {}", insn.key()))?;
@@ -591,7 +729,223 @@ fn sign_extend(value: u32, bits: u8) -> i64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::PagePerm;
     use crate::shared::arm64::ergo::{scaled_simm, uimm, x};
+
+    fn exec_user(insn: A64Insn, pc: u64, state: &mut MachineState) -> Result<u64, InsnError> {
+        execute_insn(
+            insn,
+            pc,
+            state,
+            &mut AccessContext::Original { counter: None },
+        )
+    }
+
+    /// Runs `insn` alone at 0x4000 from `state` and returns its fault.
+    /// Asserts the faulting instruction left the state bit-identical.
+    fn expect_fault(insn: A64Insn, state: &MachineState, stepper_fail_at: Option<u64>) -> MemFault {
+        let program = encode_insns(&[insn]);
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, state).unwrap();
+        if let Some(k) = stepper_fail_at {
+            stepper = stepper.fail_user_access(k);
+        }
+        let step = stepper.step().unwrap().unwrap();
+        assert!(!step.executed);
+        assert_eq!(step.next_pc, None);
+        assert_eq!(&step.state, state, "faulting instruction mutated state");
+        match step.halt_reason {
+            Some(HaltReason::Fault(fault)) => {
+                assert_eq!(fault.pc, 0x4000);
+                fault
+            }
+            other => panic!("expected a fault halt, got {other:?}"),
+        }
+    }
+
+    fn rw_page_at_0x9000() -> MachineState {
+        let mut state = MachineState::new();
+        state
+            .map_user_range(0x9000, 0xa000, PagePerm::ReadWrite)
+            .unwrap();
+        state
+    }
+
+    fn pair_imm(value: i64) -> A64Imm {
+        A64Imm::scaled_signed(signed_field(value, 7) as u32, 7, 3)
+    }
+
+    #[test]
+    fn map_user_range_rejects_misaligned_or_empty_ranges() {
+        let mut state = MachineState::new();
+        assert!(state
+            .map_user_range(0x9001, 0xa000, PagePerm::ReadWrite)
+            .is_err());
+        assert!(state
+            .map_user_range(0x9000, 0x9fff, PagePerm::ReadWrite)
+            .is_err());
+        assert!(state
+            .map_user_range(0x9000, 0x9000, PagePerm::ReadWrite)
+            .is_err());
+        assert_eq!(state, MachineState::new());
+    }
+
+    #[test]
+    fn load_from_unmapped_page_faults() {
+        let mut state = rw_page_at_0x9000();
+        state.write_x(1, 0xa000);
+        state.write_x(0, 0x55);
+
+        let fault = expect_fault(
+            A64Insn::LdrImmGenLdr64LdstPos {
+                rt: x(0),
+                mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_unsigned(0, 12, 3)),
+            },
+            &state,
+            None,
+        );
+        assert_eq!(
+            fault.access,
+            MemAccess {
+                addr: 0xa000,
+                size: 8,
+                kind: AccessKind::Read
+            }
+        );
+    }
+
+    #[test]
+    fn store_to_read_only_page_faults_and_leaves_memory() {
+        let mut state = MachineState::new();
+        state
+            .map_user_range(0x9000, 0xa000, PagePerm::ReadOnly)
+            .unwrap();
+        state.seed_memory_u64(0x9000, 0x1122);
+        state.write_x(0, 0x3344);
+        state.write_x(1, 0x9000);
+
+        // Post-index: neither the byte store nor the base writeback may land.
+        let fault = expect_fault(
+            A64Insn::StrImmGenStr64LdstImmpost {
+                rt: x(0),
+                mem: A64Mem::post_index(A64Reg::x_sp(1), A64Imm::signed(8, 9)),
+            },
+            &state,
+            None,
+        );
+        assert_eq!(fault.access.kind, AccessKind::Write);
+        assert_eq!(fault.access.addr, 0x9000);
+
+        // Reads of a read-only page are fine.
+        let mut loaded = state.clone();
+        exec_user(
+            A64Insn::LdrImmGenLdr64LdstPos {
+                rt: x(2),
+                mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_unsigned(0, 12, 3)),
+            },
+            0x4000,
+            &mut loaded,
+        )
+        .unwrap();
+        assert_eq!(loaded.read_x(2), 0x1122);
+    }
+
+    #[test]
+    fn page_straddling_store_faults_on_unmapped_second_page_and_writes_nothing() {
+        let mut state = rw_page_at_0x9000();
+        state.write_x(0, u64::MAX);
+        state.write_x(1, 0x9ffc);
+
+        let fault = expect_fault(
+            A64Insn::StrImmGenStr64LdstPos {
+                rt: x(0),
+                mem: A64Mem::offset(A64Reg::x_sp(1), A64Imm::scaled_unsigned(0, 12, 3)),
+            },
+            &state,
+            None,
+        );
+        assert_eq!(fault.access.addr, 0x9ffc);
+        assert_eq!(fault.access.size, 8);
+    }
+
+    #[test]
+    fn faulting_ldp_stp_and_writeback_leave_base_and_destinations_unchanged() {
+        let mut state = rw_page_at_0x9000();
+        state.write_x(0, 0xaaaa);
+        state.write_x(1, 0xbbbb);
+        state.write_x(3, 0xcccc);
+        state.seed_memory_u64(0x9ff8, 0x1234);
+
+        // LDP post-index: first access is mapped, second (0xa000) is not.
+        state.write_x(2, 0x9ff8);
+        let fault = expect_fault(
+            A64Insn::LdpGenLdp64LdstpairPost {
+                rt2: x(1),
+                rt: x(0),
+                mem: A64Mem::post_index(A64Reg::x_sp(2), pair_imm(2)),
+            },
+            &state,
+            None,
+        );
+        assert_eq!(fault.access.addr, 0xa000);
+
+        // STP pre-index: 0x9ff8 would be writable, 0xa000 is not; nothing lands.
+        state.write_x(2, 0xa008);
+        let fault = expect_fault(
+            A64Insn::StpGenStp64LdstpairPre {
+                rt2: x(1),
+                rt: x(0),
+                mem: A64Mem::pre_index(A64Reg::x_sp(2), pair_imm(-2)),
+            },
+            &state,
+            None,
+        );
+        assert_eq!(fault.access.addr, 0xa000);
+        assert_eq!(fault.access.kind, AccessKind::Write);
+
+        // LDR pre-index into an unmapped page.
+        state.write_x(2, 0x9ff8);
+        expect_fault(
+            A64Insn::LdrImmGenLdr64LdstImmpre {
+                rt: x(3),
+                mem: A64Mem::pre_index(A64Reg::x_sp(2), A64Imm::signed(8, 9)),
+            },
+            &state,
+            None,
+        );
+    }
+
+    #[test]
+    fn injected_fault_on_second_ldp_access_faults_whole_instruction() {
+        let mut state = rw_page_at_0x9000();
+        state.write_x(2, 0x9000);
+        state.seed_memory_u64(0x9000, 0x11);
+        state.seed_memory_u64(0x9008, 0x22);
+        let ldp = A64Insn::LdpGenLdp64LdstpairPre {
+            rt2: x(1),
+            rt: x(0),
+            mem: A64Mem::pre_index(A64Reg::x_sp(2), pair_imm(0)),
+        };
+
+        let fault = expect_fault(ldp, &state, Some(2));
+        assert_eq!(
+            fault.access,
+            MemAccess {
+                addr: 0x9008,
+                size: 8,
+                kind: AccessKind::Read
+            }
+        );
+        assert_eq!(expect_fault(ldp, &state, Some(1)).access.addr, 0x9000);
+
+        // Uninjected, the same instruction retires and counts two accesses.
+        let program = encode_insns(&[ldp]);
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state).unwrap();
+        let step = stepper.step().unwrap().unwrap();
+        assert_eq!(step.halt_reason, None);
+        assert_eq!(step.state.read_x(0), 0x11);
+        assert_eq!(step.state.read_x(1), 0x22);
+        assert_eq!(stepper.user_accesses(), 2);
+    }
 
     fn encode_insns(insns: &[A64Insn]) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(insns.len() * 4);
@@ -736,7 +1090,7 @@ mod tests {
         state.write_x(30, 0x9000);
 
         let next_pc =
-            execute_insn(A64Insn::BlrBlr64BranchReg { rn: x(30) }, 0x4000, &mut state).unwrap();
+            exec_user(A64Insn::BlrBlr64BranchReg { rn: x(30) }, 0x4000, &mut state).unwrap();
 
         assert_eq!(next_pc, 0x9000);
         assert_eq!(state.read_x(30), 0x4004);
@@ -747,7 +1101,7 @@ mod tests {
         let mut state = MachineState::new();
         state.set_sp(0x1000);
 
-        execute_insn(
+        exec_user(
             A64Insn::AddAddsubImmAdd64AddsubImm {
                 sh: 0,
                 imm12: A64Imm::unsigned(0x20, 12),
@@ -762,7 +1116,7 @@ mod tests {
         assert_eq!(state.read_x(31), 0);
         assert_eq!(state.read_reg(A64Reg::x_sp(31)), 0x1000);
 
-        execute_insn(
+        exec_user(
             A64Insn::SubAddsubImmSub64AddsubImm {
                 sh: 0,
                 imm12: A64Imm::unsigned(0x10, 12),
@@ -780,10 +1134,13 @@ mod tests {
     #[test]
     fn ldr_str_use_sp_as_memory_base() {
         let mut state = MachineState::new();
+        state
+            .map_user_range(0x8000, 0x9000, PagePerm::ReadWrite)
+            .unwrap();
         state.set_sp(0x8000);
         state.write_x(0, 0x1122_3344_5566_7788);
 
-        execute_insn(
+        exec_user(
             A64Insn::StrImmGenStr64LdstPos {
                 rt: A64Reg::x(0),
                 mem: A64Mem::offset(A64Reg::x_sp(31), A64Imm::scaled_unsigned(1, 12, 3)),
@@ -794,7 +1151,7 @@ mod tests {
         .unwrap();
         assert_eq!(state.read_u64(0x8008), 0x1122_3344_5566_7788);
 
-        execute_insn(
+        exec_user(
             A64Insn::LdrImmGenLdr64LdstPos {
                 rt: A64Reg::x(1),
                 mem: A64Mem::offset(A64Reg::x_sp(31), A64Imm::scaled_unsigned(1, 12, 3)),
@@ -809,11 +1166,14 @@ mod tests {
     #[test]
     fn ldp_stp_pair_support_sp_pre_and_post_index() {
         let mut state = MachineState::new();
+        state
+            .map_user_range(0x8000, 0x9000, PagePerm::ReadWrite)
+            .unwrap();
         state.set_sp(0x9000);
         state.write_x(29, 0x1111_2222_3333_4444);
         state.write_x(30, 0xAAAA_BBBB_CCCC_DDDD);
 
-        execute_insn(
+        exec_user(
             A64Insn::StpGenStp64LdstpairPre {
                 rt2: A64Reg::x(30),
                 rt: A64Reg::x(29),
@@ -832,7 +1192,7 @@ mod tests {
 
         state.write_x(29, 0);
         state.write_x(30, 0);
-        execute_insn(
+        exec_user(
             A64Insn::LdpGenLdp64LdstpairPost {
                 rt2: A64Reg::x(30),
                 rt: A64Reg::x(29),

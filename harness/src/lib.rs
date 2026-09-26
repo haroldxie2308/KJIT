@@ -20,7 +20,8 @@ use crate::shared::trans::input::{
     CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
 };
 use crate::shared::trans::translate::{compile_request, translate_request, TranslatedProgram};
-use model::{ExecutionResult, HaltReason, MachineState};
+use arm64::OriginalStepper;
+use model::{ExecutionResult, HaltReason, MachineState, PagePerm};
 use runtime::{URuntime, URuntimeHalt};
 
 #[derive(Debug)]
@@ -81,9 +82,16 @@ impl CodeProvider for MockCodeProvider {
 /// Initial machine state for `.s` fixture cases. Shared by `trace-tui --check`
 /// and the fixture suite so both check the same starting point: x12 points at
 /// the fixture scratch memory.
+///
+/// User memory is exactly what the fixtures touch, read-write: the x12 buffer
+/// at 0x9000 and the stack the fixtures place at `x12 + 0x800` (page 0x9000),
+/// and the 0xa000 buffer (page 0xa000). Everything else is unmapped.
 pub fn default_fixture_state() -> MachineState {
     let mut state = MachineState::new();
     state.write_x(12, 0x9000);
+    state
+        .map_user_range(0x9000, 0xb000, PagePerm::ReadWrite)
+        .expect("fixture user window is page-aligned");
     state
 }
 
@@ -154,34 +162,67 @@ fn execute_original_with_mocked_svc(
     entry_pc: u64,
     initial_state: &MachineState,
 ) -> Result<ExecutionResult, String> {
+    run_original_with_mocked_svc(
+        program,
+        text_base,
+        entry_pc,
+        initial_state,
+        None,
+        &mut |_| {},
+    )
+}
+
+/// Runs original code to a halt, resuming after every SVC as if the syscall
+/// returned without side effects. `fail_user_access = Some(k)` faults the k-th
+/// dynamic user access of the whole run (1-based, SVC continuations included)
+/// regardless of permissions. `before_step` sees the stepper before each step.
+pub(crate) fn run_original_with_mocked_svc(
+    program: &[u8],
+    text_base: u64,
+    entry_pc: u64,
+    initial_state: &MachineState,
+    fail_user_access: Option<u64>,
+    before_step: &mut dyn FnMut(&OriginalStepper),
+) -> Result<ExecutionResult, String> {
     const MAX_RUNTIME_EXITS: usize = 10_000;
 
-    let mut state = initial_state.clone();
-    let mut pc = entry_pc;
+    let mut stepper = OriginalStepper::new(program, text_base, entry_pc, initial_state)?;
+    if let Some(k) = fail_user_access {
+        stepper = stepper.fail_user_access(k);
+    }
     let mut steps = 0usize;
+    let mut runtime_exits = 0usize;
 
-    for _ in 0..MAX_RUNTIME_EXITS {
-        let result = arm64::execute_program_from(program, text_base, pc, &state)?;
-        steps += result.steps;
-
-        match result.halt_reason {
-            HaltReason::RuntimeExit {
+    loop {
+        before_step(&stepper);
+        let Some(step) = stepper.step()? else {
+            return Err("original stepper stopped without a halt reason".to_string());
+        };
+        if step.executed {
+            steps += 1;
+        }
+        match step.halt_reason {
+            None => {}
+            Some(HaltReason::RuntimeExit {
                 reason: RuntimeExitReason::Svc { resume_pc, .. },
-            } => {
-                state = result.state;
-                pc = resume_pc;
+            }) => {
+                runtime_exits += 1;
+                if runtime_exits >= MAX_RUNTIME_EXITS {
+                    return Err(
+                        "original fixture exceeded runtime-exit continuation limit".to_string()
+                    );
+                }
+                stepper.resume_at(resume_pc);
             }
-            halt_reason => {
+            Some(halt_reason) => {
                 return Ok(ExecutionResult {
-                    state: result.state,
+                    state: step.state,
                     halt_reason,
                     steps,
                 });
             }
         }
     }
-
-    Err("original fixture exceeded runtime-exit continuation limit".to_string())
 }
 
 fn runtime_halt_matches_original(original: &ExecutionResult, halt: &URuntimeHalt) -> bool {
