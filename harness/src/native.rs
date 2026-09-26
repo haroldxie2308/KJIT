@@ -37,8 +37,9 @@ use core::ptr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
+use crate::arm64::LoggedAccess;
 use crate::model::{
-    ExecutionResult, FaultCause, Flags, HaltReason, MachineState, PagePerm, PAGE_SIZE,
+    AccessKind, ExecutionResult, FaultCause, Flags, HaltReason, MachineState, PagePerm, PAGE_SIZE,
 };
 use crate::runtime::{
     decide_runtime_return, validate_entry_offset, RuntimeAction, URuntimeHalt, PT_REGS_BYTES,
@@ -795,7 +796,13 @@ struct UserMemory {
 }
 
 impl UserMemory {
-    fn map(initial: &MachineState, host_page: usize) -> Result<Self, String> {
+    /// Every page of the interpreter's user page map except those inside `skip`
+    /// (the native original's own text mapping, which holds the text already).
+    fn map(
+        initial: &MachineState,
+        host_page: usize,
+        skip: Option<&Mapping>,
+    ) -> Result<Self, String> {
         // One mapping per interpreter page, so permissions must be per 4 KiB.
         if host_page as u64 != PAGE_SIZE {
             return Err(format!(
@@ -803,12 +810,19 @@ impl UserMemory {
             ));
         }
         let mut pages = Vec::new();
+        let skipped = |addr: u64| skip.is_some_and(|mapping| mapping.contains(addr));
         for (base, perm) in initial.user_pages() {
+            if skipped(base) {
+                continue;
+            }
             let page = Mapping::fixed(base, PAGE_SIZE as usize, PROT_READ | PROT_WRITE)?;
             pages.push((page, perm));
         }
         let memory = Self { pages };
         for (&addr, &byte) in initial.memory() {
+            if skipped(addr) {
+                continue;
+            }
             let Some((page, _)) = memory.pages.iter().find(|(page, _)| page.contains(addr)) else {
                 return Err(format!(
                     "initial memory byte at {addr:#x} is not in a mapped user page"
@@ -938,6 +952,63 @@ fn stop_point_words(words: &[u32], text_base: u64) -> Vec<u32> {
         .collect()
 }
 
+/// The native original's text words: the interpreter's stop points and the
+/// instance cap patched in (`stop_point_words`). `install_code` fills the rest of
+/// the mapping, at least one word, with `BRK_FILL`, which catches running off
+/// the end.
+fn original_text_words(
+    words: &[u32],
+    text_base: u64,
+    cap: Option<InstanceCap>,
+) -> Result<Vec<u32>, String> {
+    let mut stop_words = stop_point_words(words, text_base);
+    if let Some(cap) = cap {
+        let index = text_index(cap.pc, text_base, words.len())
+            .ok_or_else(|| format!("instance cap pc {:#x} is outside the text", cap.pc))?;
+        // A back-edge branch: never an SVC, a runtime exit or a rejected word.
+        if stop_words[index] != words[index] {
+            return Err(format!("instance cap pc {:#x} is a stop point", cap.pc));
+        }
+        stop_words[index] = BRK_CAP;
+    }
+    Ok(stop_words)
+}
+
+/// Whether the interpreter's original run read any byte of a text word the
+/// native original replaces (a stop point, the instance cap, or the `BRK_FILL`
+/// past the text in its mapping). Such a run is unobservable natively: the
+/// hardware would read the patch, not the text.
+pub fn original_reads_patched_text(
+    text_base: u64,
+    text: &[u8],
+    cap: Option<InstanceCap>,
+    accesses: &[LoggedAccess],
+) -> Result<bool, String> {
+    let words = text
+        .chunks_exact(4)
+        .map(|chunk| u32::from_le_bytes(chunk.try_into().expect("chunks_exact(4)")))
+        .collect::<Vec<_>>();
+    let native_words = original_text_words(&words, text_base, cap)?;
+    // `run_original`'s mapping length; `UserMemory::map` requires the host page to
+    // be the interpreter's `PAGE_SIZE`.
+    let mapped_words = round_up(text.len() + 4, PAGE_SIZE as usize) / 4;
+    let patched = |index: usize| index >= words.len() || native_words[index] != words[index];
+    Ok(accesses.iter().any(|logged| {
+        if logged.access.kind != AccessKind::Read {
+            return false;
+        }
+        let start = logged.access.addr;
+        let end = start.saturating_add(u64::from(logged.access.size));
+        let text_end = text_base + mapped_words as u64 * 4;
+        if end <= text_base || start >= text_end {
+            return false;
+        }
+        let first = (start.max(text_base) - text_base) / 4;
+        let last = (end.min(text_end) - 1 - text_base) / 4;
+        (first..=last).any(|index| patched(index as usize))
+    }))
+}
+
 fn is_unsupported(word: u32, pc: u64) -> bool {
     matches!(admit_word(word, pc), Ok(Err(_)))
 }
@@ -958,24 +1029,15 @@ pub fn run_original(
         .map(|chunk| u32::from_le_bytes(chunk.try_into().expect("chunks_exact(4)")))
         .collect::<Vec<_>>();
     let text_end = text_base + text.len() as u64;
-    // At least one BRK_FILL word past the text catches falling off the end.
     let text_map = Mapping::fixed(
         text_base,
         round_up(text.len() + 4, session.page),
         PROT_READ | PROT_WRITE,
     )?;
-    let mut stop_words = stop_point_words(&words, text_base);
-    if let Some(cap) = cap {
-        let index = text_index(cap.pc, text_base, words.len())
-            .ok_or_else(|| format!("instance cap pc {:#x} is outside the text", cap.pc))?;
-        // A back-edge branch: never an SVC, a runtime exit or a rejected word.
-        if stop_words[index] != words[index] {
-            return Err(format!("instance cap pc {:#x} is a stop point", cap.pc));
-        }
-        stop_words[index] = BRK_CAP;
-    }
+    let stop_words = original_text_words(&words, text_base, cap)?;
     text_map.install_code(&stop_words)?;
-    let memory = UserMemory::map(initial, session.page)?;
+    // The text's own user pages (`crate::with_text_mapped`) are this mapping.
+    let memory = UserMemory::map(initial, session.page, Some(&text_map))?;
 
     let mut regs = user_regs(initial, entry_pc);
     let mut runtime_exits = 0usize;
@@ -1300,7 +1362,7 @@ pub fn run_fragment(
     code.install_code(&words)?;
     let fragment_base = code.base();
     let fragment_end = fragment_base + encoded.len() as u64;
-    let memory = UserMemory::map(initial, session.page)?;
+    let memory = UserMemory::map(initial, session.page, None)?;
 
     let mut pt_regs = vec![0u64; PT_REGS_BYTES as usize / 8];
     for reg in 0..31u8 {
@@ -1479,8 +1541,10 @@ pub fn diff_states(
 // ---------------------------------------------------------------------------
 
 /// interpreter original == native original == native fragment, for state and
-/// halt. `run_entry_fixture` additionally holds the interpreter's own fragment
-/// run to the interpreter original. Returns a one-line summary on success.
+/// halt; the interpreter's own fragment run must match its original too
+/// (`compare_differential`, as in `run_entry_fixture`). Returns a one-line
+/// summary on success. A case whose native original is unobservable
+/// (`NativeVerdict::OriginalUnobservable`) says so in the summary.
 pub fn check_case(
     session: &NativeSession,
     text_base: u64,
@@ -1488,84 +1552,163 @@ pub fn check_case(
     entry_pc: u64,
     initial: &MachineState,
 ) -> Result<String, String> {
-    let report = crate::run_entry_fixture(
-        "native-fixture",
+    let run = crate::run_differential(
         text_base,
         text.to_vec(),
         entry_pc,
         initial,
-    )?;
-    check_against_interpreter(
-        session,
-        text_base,
-        text,
-        entry_pc,
-        initial,
-        &report.original,
-        report.original_cap,
-        &report.original_footprint,
-        &report.fragment,
-        &report.encoded_fragment,
+        None,
+        &mut |_| {},
+    )
+    .map_err(|err| err.to_string())?;
+    crate::compare_differential("native-fixture", &run).map_err(|mismatch| mismatch.message)?;
+    Ok(
+        match check_against_interpreter(session, text_base, text, entry_pc, initial, &run)? {
+            NativeVerdict::Agreed(summary) => summary,
+            NativeVerdict::OriginalUnobservable(summary) => {
+                format!("native-original UNOBSERVABLE (reads patched text); {summary}")
+            }
+        },
     )
 }
 
-/// The native half of `check_case`, for a case whose interpreter runs already
-/// agree: native original (capped at `original_cap`, like the interpreter's) and
-/// native fragment must both match `original`, up to the store footprint of a
-/// faulting instruction (`crate::undo_store_footprint`), which the CPU may have
-/// partly written in either run.
-#[allow(clippy::too_many_arguments)]
+/// What the native half of a check established.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum NativeVerdict {
+    /// Native original and native fragment both match the interpreter.
+    Agreed(String),
+    /// The native fragment matches the interpreter; the native original was not
+    /// compared because the interpreter's original read text the native run
+    /// replaces with traps (`original_reads_patched_text`).
+    OriginalUnobservable(String),
+}
+
+/// The native half of `check_case`, for a run whose interpreter sides already
+/// agree: the native fragment, and the native original (capped like the
+/// interpreter's) unless it is unobservable, must match the interpreter's
+/// original, up to the store footprint of a faulting instruction
+/// (`crate::undo_store_footprint`), which the CPU may have partly written in
+/// either run.
 pub fn check_against_interpreter(
     session: &NativeSession,
     text_base: u64,
     text: &[u8],
     entry_pc: u64,
     initial: &MachineState,
-    original: &ExecutionResult,
-    original_cap: Option<InstanceCap>,
-    original_footprint: &[crate::StoreUnit],
-    fragment: &ExecutionFragment,
-    encoded_fragment: &[u8],
-) -> Result<String, String> {
-    let native_original = run_original(session, text_base, text, entry_pc, initial, original_cap)?;
-    let native_fragment = run_fragment(session, fragment, encoded_fragment, initial)?;
+    run: &crate::DifferentialRun,
+) -> Result<NativeVerdict, String> {
+    let original = &run.original;
+    let unobservable =
+        original_reads_patched_text(text_base, text, run.original_cap, &run.original_accesses)?;
+    let native_fragment = run_fragment(session, &run.fragment, &run.encoded_fragment, initial)?;
+    let native_original = if unobservable {
+        None
+    } else {
+        Some(run_original(
+            session,
+            text_base,
+            text,
+            entry_pc,
+            initial,
+            run.original_cap,
+        )?)
+    };
     let undo = |state: &MachineState| {
-        crate::undo_store_footprint(&original.state, original_footprint, state)
+        crate::undo_store_footprint(&original.state, &run.original_footprint, state)
     };
 
     let mut problems = diff_states(
         "interp-original",
         &original.state,
-        "native-original",
-        &undo(&native_original.state),
-    );
-    problems.extend(diff_states(
-        "interp-original",
-        &original.state,
         "native-fragment",
         &undo(&native_fragment.state),
-    ));
-    if let Err(message) = original_halt_matches(original, text_base, text, &native_original.stop) {
-        problems.push(format!("native-original {message}"));
-    }
+    );
     if !crate::runtime_halt_matches_original(original, &native_fragment.halt) {
         problems.push(format!(
             "native-fragment halt mismatch: interpreter {:?}, native {:?}",
             original.halt_reason, native_fragment.halt
         ));
     }
+    if let Some(native_original) = &native_original {
+        problems.extend(diff_states(
+            "interp-original",
+            &original.state,
+            "native-original",
+            &undo(&native_original.state),
+        ));
+        if let Err(message) =
+            original_halt_matches(original, text_base, text, &native_original.stop)
+        {
+            problems.push(format!("native-original {message}"));
+        }
+    }
+    if !problems.is_empty() {
+        return Err(problems.join("\n"));
+    }
 
-    if problems.is_empty() {
-        Ok(format!(
-            "halt={:?} native-original={:?} native-fragment={:?} fragment-calls={} \
-             fault-redirects={}",
-            original.halt_reason,
-            native_original.stop,
-            native_fragment.halt,
-            native_fragment.calls,
-            native_fragment.fault_redirects
-        ))
-    } else {
-        Err(problems.join("\n"))
+    let summary = format!(
+        "halt={:?} native-original={:?} native-fragment={:?} fragment-calls={} \
+         fault-redirects={}",
+        original.halt_reason,
+        native_original.as_ref().map(|native| native.stop),
+        native_fragment.halt,
+        native_fragment.calls,
+        native_fragment.fault_redirects
+    );
+    Ok(match native_original {
+        Some(_) => NativeVerdict::Agreed(summary),
+        None => NativeVerdict::OriginalUnobservable(summary),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::{MemAccess, Privilege};
+    use crate::shared::arm64::{A64Imm, A64Insn};
+
+    fn read(addr: u64, size: u8) -> LoggedAccess {
+        LoggedAccess {
+            pc: 0x10004,
+            access: MemAccess {
+                addr,
+                size,
+                kind: AccessKind::Read,
+            },
+            privilege: Privilege::User,
+        }
+    }
+
+    /// `svc #0; nop; ret`: the SVC and the RET are patched, the NOP is not, and
+    /// everything past the text up to the end of its mapping is `BRK_FILL`.
+    #[test]
+    fn reads_of_patched_text_words_are_unobservable() {
+        let words = [
+            A64Insn::SvcSvcExException {
+                imm16: A64Imm::unsigned(0, 16),
+            },
+            A64Insn::NopNopHiHints {},
+            A64Insn::RetRet64rBranchReg {
+                rn: crate::shared::arm64::ergo::x(30),
+            },
+        ]
+        .map(|insn| insn.encode().unwrap());
+        let text = words
+            .iter()
+            .flat_map(|word| word.to_le_bytes())
+            .collect::<Vec<u8>>();
+        let base = 0x10000;
+        let reads = |accesses: &[LoggedAccess]| {
+            original_reads_patched_text(base, &text, None, accesses).unwrap()
+        };
+
+        assert!(!reads(&[read(base + 4, 4)]), "the NOP is the real word");
+        assert!(reads(&[read(base, 4)]), "the SVC is BRK_SVC natively");
+        assert!(reads(&[read(base + 7, 2)]), "overlaps the RET");
+        assert!(reads(&[read(base + 0x800, 8)]), "past the text: BRK_FILL");
+        assert!(
+            !reads(&[read(base - 8, 8), read(base + 0x1000, 8)]),
+            "outside the mapping"
+        );
     }
 }

@@ -21,7 +21,7 @@ use crate::shared::arm64::ergo::{
 };
 use crate::shared::arm64::{A64Insn, A64Mem, A64OperandRole, A64Reg, A64Reg31Mode};
 use crate::shared::verify::{verify_fragment, VerifyRule, BODY_OFFSET};
-use crate::{compile_fixture_fragment, default_fixture_state, encode_fragment, FragmentTables};
+use crate::{compile_fixture_fragment, encode_fragment, fixture_state, FragmentTables};
 
 /// The budget check's scratch register (the prologue's budget init uses it too).
 const BUDGET_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
@@ -1130,7 +1130,7 @@ fn verifier_rejects_every_mutation_of_every_fixture_fragment() {
             case.text_base,
             case.text_bytes.clone(),
             case.entry_pc,
-            &default_fixture_state(),
+            &fixture_state(case.text_base, &case.text_bytes)?,
         )?;
         let code = encode_fragment(&fragment)?;
         fixtures.push(Fixture {

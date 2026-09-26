@@ -432,7 +432,10 @@ and to `tests/arm64/` once fixed. `make harness-test` runs a fixed-seed slice
 `--max-len`, `--start`, `--regress-dir`, and, on Linux arm64 only, `--native`,
 which also runs every agreeing program on the CPU (interpreter original ==
 native original == native fragment); on macOS run it in the container
-`scripts/native-test.sh` uses.
+`scripts/native-test.sh` uses. A program whose original reads text words the
+native original replaces with traps is counted as `native-unobservable`: only its
+native fragment is compared, and it is not a pass. The text is a read-only user
+page in every run (`fixture_state`), so literal pools in the text work.
 
 #### Coverage scan
 

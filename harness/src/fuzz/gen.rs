@@ -438,10 +438,15 @@ impl Gen<'_> {
         }
     }
 
-    /// A literal-load offset (word units from the slot's PC) to a data-window
-    /// address. The text itself is not user-readable in the harness page map.
+    /// A literal-load offset (word units from the slot's PC): mostly to the
+    /// data window, sometimes to a word of the text itself (a literal pool; the
+    /// text is a read-only user page), possibly just past its end.
     fn literal_raw(&mut self, width: u8, index: usize) -> u32 {
-        let target = self.window_pointer() & !3;
+        let target = if self.rng.chance(300) {
+            TEXT_BASE + 4 * self.rng.below(index as u64 + 3)
+        } else {
+            self.window_pointer() & !3
+        };
         let units = (target as i64 - slot_pc(index) as i64) >> 2;
         (units as u32) & field_mask(width)
     }

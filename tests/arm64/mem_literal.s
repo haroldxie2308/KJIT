@@ -7,9 +7,9 @@
 //
 // Literal targets are written as `.Ltext + (FIXTURE_DATA_BASE - TEXT_BASE) + n`,
 // so this fixture assumes the default text base 0x10000 (TEXT_BASE in
-// scripts/compile-asm-fixture.sh) and data window 0x20000. Literal pools inside
-// the text itself are not exercised: the harness user page map covers the data
-// window only, not the text.
+// scripts/compile-asm-fixture.sh) and data window 0x20000. The last two cases
+// use a literal pool inside the text itself: the text is a read-only user page
+// (`fixture_state`), so it loads as data and a store to it faults.
 //
 // Initial fixture state: x12 = FIXTURE_DATA_BASE, a 16 KiB RW window (all
 // zero), a read-only page at x12 + 0x4000 and nothing mapped after it.
@@ -69,3 +69,29 @@ literal_fault_mark:
     movz x0, #0x55
     ldr x0, .Ltext + DATA + 0x5000
     ret
+
+// Literal pool in the text. The pool words are also admitted non-exit
+// instructions, so the native original's stop-point patching leaves them in
+// place and the native leg observes the loads too (an undecodable pool word
+// would be patched, making the native original unobservable).
+.global text_literal_mark
+text_literal_mark:
+    svc #0
+    ldr x0, .Lpool                      // both words
+    ldr w1, .Lpool + 4                  // second word, zero-extended
+    ldrsw x2, .Lpool + 4                // second word, sign-extended (bit 31 set)
+    ret
+
+// A store into the text faults: the fragment exits Mem at the STR.
+.global text_store_fault_mark
+text_store_fault_mark:
+    svc #0
+    adr x1, .Lpool
+    movz x0, #0x55
+    str x0, [x1]
+    ret
+
+    .p2align 3
+.Lpool:
+    .word 0x91000421                    // add x1, x1, #1
+    .word 0x8b020020                    // add x0, x1, x2

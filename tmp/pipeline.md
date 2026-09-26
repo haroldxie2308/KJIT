@@ -105,6 +105,19 @@ translation/runtime harness untouched.
 - User memory: the native runs map every page of the interpreter's user page
   map at the same address with the same permission (read-only -> `PROT_READ`),
   and compare every byte of those pages. Initial memory outside them fails.
+  The text's pages (see "Harness memory model", text) are mapped that way for
+  the native fragment; the native original's own text mapping
+  (`PROT_READ | PROT_EXEC`, stop points patched) takes their place.
+- Native-unobservable: the interpreter's original read of a text word the
+  native original patches (a stop point, the instance cap, or the `BRK_FILL`
+  past the text in its mapping) cannot be reproduced on hardware, which reads
+  the trap word. Decided from the interpreter's access log
+  (`original_reads_patched_text`: any user read overlapping such a word's 4
+  bytes). Then only the native fragment is compared; the fuzzer counts the
+  program as `native-unobservable`, never as a pass, and a fixture case says so
+  in its summary line. Undecodable literal-pool words are patched too, so a
+  fixture that wants its text pool observed natively uses pool words that
+  decode as admitted non-exit instructions (`mem_literal.s`).
 - Native original: stop points come from the interpreter's own halting rule
   (`admit_word`) applied to every text word (SVC -> mock trap; rejected word or
   non-SVC runtime exit -> stop trap; a word past the text -> the `Unreadable`
@@ -161,6 +174,12 @@ to it is a design change and gets recorded here first.
   accesses (page permissions, fault injection counts only them); every other
   load/store is a runtime access and must lie in the runtime-owned ranges. The
   A4 address-based rule is gone.
+- Text (V2 native fuzz finding): the text is a user page, read-only (and
+  executable; execute permission is not modelled), holding the text bytes, as
+  a process maps it: literal pools in the text load as data, a store faults.
+  `with_text_mapped` adds it; `fixture_state(text_base, text)` is
+  `default_fixture_state()` plus the text, and every fixture path and the
+  fuzzer run from it, so the original and the fragment see the same map.
 - Top-byte-ignore (V2 native fuzz finding): Linux sets `TCR_EL1.TBI0`, so bits
   63:56 of a data address with bit 55 clear take no part in translation (bit 55
   set is the kernel half and faults at EL0). A tagged pointer into a mapped page
