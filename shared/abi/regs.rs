@@ -1,5 +1,9 @@
 pub const ABI_PT_REGS_ARG_REG: u8 = 0;
 pub const ABI_EXTRA_PARAMS_ARG_REG: u8 = 1;
+/// Absolute address of the body instruction the prologue branches to: fragment
+/// base + an entry offset the runtime took from `ExecutionFragment` (`entry_offset`
+/// or `offset_for_pc`). Never user-controlled.
+pub const ABI_ENTRY_ARG_REG: u8 = 2;
 pub const ABI_LINK_REG: u8 = 30;
 
 pub const RET_STATUS_REG: u8 = 9;

@@ -4,7 +4,8 @@
 //
 //   make harness-test-asm ASM=tests/arm64/pair_writeback.s
 //
-// Initial fixture state: x12 = 0x9000, everything else (including SP) = 0.
+// Initial fixture state: x12 = FIXTURE_DATA_BASE (0x20000), everything else
+// (including SP) = 0. All addresses are derived from x12.
 
 .text
 .global toy_translate_entry
@@ -44,7 +45,7 @@ hot_svc_mark:
     ldr w2, [x13, #8]!
     ldr x3, [x13, #-8]!
 
-    movz x14, #0xa000
+    add x14, x12, #0x1000
     str x0, [x14], #8
     str x1, [x14, #8]!
     str w2, [x14], #4

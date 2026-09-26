@@ -17,7 +17,7 @@ endif
 
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
-	harness-test harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan kernel-golden help
+	harness-test harness-test-native harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan kernel-golden help
 
 default:
 	$(KMAKE) M=$$PWD
@@ -89,6 +89,9 @@ module-build: default
 harness-test:
 	cargo test --manifest-path harness/Cargo.toml -- --nocapture
 
+harness-test-native:
+	bash ./scripts/native-test.sh
+
 kernel-golden: harness-sync
 	eval "$$(bash ./scripts/compile-asm-fixture.sh $(KERNEL_GOLDEN_ASM) tmp/kernel-golden)" && \
 	cargo run --quiet --manifest-path harness/Cargo.toml --bin dump-golden -- \
@@ -133,6 +136,7 @@ help:
 		'module-build' 'Build the KJIT module' \
 		'spec-gen' 'Generate the checked-in ARM64 subset tables from the Arm XML bundle' \
 		'harness-test' 'Run the standalone harness tests' \
+		'harness-test-native' 'Run the harness tests plus the native hardware oracle on Linux arm64 (container on macOS)' \
 		'harness-dump-cfg' 'Assemble the toy AArch64 fixture and print its basic blocks' \
 		'harness-tui' 'Open the full-pipeline trace TUI; use ASM=path/to/file.s to select a fixture' \
 		'tui' 'Alias for harness-tui' \

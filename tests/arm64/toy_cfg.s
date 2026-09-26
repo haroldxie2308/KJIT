@@ -1,5 +1,5 @@
 // Toy AArch64 control-flow fixture for the shared CFG builder.
-// Base PC used by the demo script: 0x4000
+// Base PC used by the demo script: 0x10000
 
 .text
 .global toy_cfg_demo

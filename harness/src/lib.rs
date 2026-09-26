@@ -6,6 +6,11 @@ pub mod explorer;
 pub mod golden;
 pub mod arm64;
 pub mod model;
+// Platform gate, not a skip: the native oracle executes AArch64 code on the host
+// CPU and needs Linux signal/ucontext semantics (macOS reserves x18). Run it with
+// `make harness-test-native`, which fails unless it reaches Linux arm64.
+#[cfg(all(target_os = "linux", target_arch = "aarch64"))]
+pub mod native;
 pub mod runtime;
 pub mod shared;
 pub mod trace;
@@ -80,19 +85,27 @@ impl CodeProvider for MockCodeProvider {
     }
 }
 
+/// Fixture data window. x12 points at its base, and fixtures derive every data
+/// address from x12. The window and the text base (`TEXT_BASE` in
+/// `scripts/compile-asm-fixture.sh`) stay at or above Linux's `vm.mmap_min_addr`
+/// (64 KiB) so the native runner maps them at the addresses the interpreter uses.
+pub const FIXTURE_DATA_BASE: u64 = 0x20000;
+pub const FIXTURE_DATA_LEN: u64 = 0x4000;
+
 /// Initial machine state for `.s` fixture cases. Shared by `trace-tui --check`
 /// and the fixture suite so both check the same starting point: x12 points at
-/// the fixture scratch memory.
-///
-/// User memory is exactly what the fixtures touch, read-write: the x12 buffer
-/// at 0x9000 and the stack the fixtures place at `x12 + 0x800` (page 0x9000),
-/// and the 0xa000 buffer (page 0xa000). Everything else is unmapped.
+/// the fixture data window, which is the only user memory and is read-write.
+/// Everything else is unmapped.
 pub fn default_fixture_state() -> MachineState {
     let mut state = MachineState::new();
-    state.write_x(12, 0x9000);
+    state.write_x(12, FIXTURE_DATA_BASE);
     state
-        .map_user_range(0x9000, 0xb000, PagePerm::ReadWrite)
-        .expect("fixture user window is page-aligned");
+        .map_user_range(
+            FIXTURE_DATA_BASE,
+            FIXTURE_DATA_BASE + FIXTURE_DATA_LEN,
+            PagePerm::ReadWrite,
+        )
+        .expect("fixture data window is page-aligned");
     state
 }
 
@@ -226,7 +239,7 @@ pub(crate) fn run_original_with_mocked_svc(
     }
 }
 
-fn runtime_halt_matches_original(original: &ExecutionResult, halt: &URuntimeHalt) -> bool {
+pub(crate) fn runtime_halt_matches_original(original: &ExecutionResult, halt: &URuntimeHalt) -> bool {
     match (original.halt_reason, halt) {
         (
             HaltReason::RuntimeExit {

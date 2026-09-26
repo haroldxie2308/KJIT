@@ -1,19 +1,27 @@
 use super::{
-    ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG, RET_PARAM0_REG, RET_PARAM1_REG,
-    RET_STATUS_REG, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
+    ABI_ENTRY_ARG_REG, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
+    REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
+    RUNTIME_FRAME_ENTRY_ADDR_OFFSET, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
 };
 use crate::shared::arm64::ergo::{
-    ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, scaled_simm, sp, uimm, x, xzr,
+    ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, sp, uimm, x, xzr,
 };
 use crate::shared::arm64::A64Insn;
 use crate::shared::platform::{AllocFlags, SharedAllocError, SharedResult, SharedVec};
 
 pub const ABI_INSN_SIZE: usize = 4;
 pub const PROLOGUE_LEN_BYTES: usize = KJIT_PROLOGUE.len() * ABI_INSN_SIZE;
-pub const PROLOGUE_ENTRY_BRANCH_OFFSET: usize = PROLOGUE_LEN_BYTES - ABI_INSN_SIZE;
 pub const EPILOGUE_OFFSET: usize = PROLOGUE_LEN_BYTES;
 pub const EPILOGUE_LEN_BYTES: usize = KJIT_EPILOGUE.len() * ABI_INSN_SIZE;
 
+/// Scratch register the prologue's entry `br` goes through. Reg-virt scratch is
+/// dead at every instruction boundary, and user x12 already lives in its frame
+/// slot when the branch runs.
+const PROLOGUE_ENTRY_SCRATCH_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
+
+/// Entered at offset 0 with x0 = pt_regs, x1 = extra params and
+/// x2 = `ABI_ENTRY_ARG_REG` (absolute body address to start at). It ends with the
+/// fragment's only indirect branch, `br` to that saved entry address.
 pub const KJIT_PROLOGUE: &[A64Insn] = &[
     A64Insn::StpGenStp64LdstpairPre {
         rt2: x(30),
@@ -29,6 +37,11 @@ pub const KJIT_PROLOGUE: &[A64Insn] = &[
     A64Insn::StrImmGenStr64LdstPos {
         rt: x(18),
         mem: mem_off(sp(), ldst64_offset(88)),
+    },
+    // Save the entry address before the pt_regs loads below overwrite x2.
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(ABI_ENTRY_ARG_REG),
+        mem: mem_off(sp(), ldst64_offset(RUNTIME_FRAME_ENTRY_ADDR_OFFSET)),
     },
     A64Insn::StpGenStp64LdstpairOff {
         rt2: x(20),
@@ -191,8 +204,12 @@ pub const KJIT_PROLOGUE: &[A64Insn] = &[
         rt: x(16),
         mem: mem_off(sp(), ldstpair64_offset(64)),
     },
-    A64Insn::BUncondBOnlyBranchImm {
-        imm26: scaled_simm(0, 26, 2),
+    A64Insn::LdrImmGenLdr64LdstPos {
+        rt: x(PROLOGUE_ENTRY_SCRATCH_REG),
+        mem: mem_off(sp(), ldst64_offset(RUNTIME_FRAME_ENTRY_ADDR_OFFSET)),
+    },
+    A64Insn::BrBr64BranchReg {
+        rn: x(PROLOGUE_ENTRY_SCRATCH_REG),
     },
 ];
 
@@ -412,10 +429,9 @@ mod tests {
     use crate::shared::platform::GFP_KERNEL;
 
     #[test]
-    fn wrapper_lengths_match_old_contract() {
-        assert_eq!(PROLOGUE_LEN_BYTES, 0x90);
-        assert_eq!(PROLOGUE_ENTRY_BRANCH_OFFSET, 0x8c);
-        assert_eq!(EPILOGUE_OFFSET, 0x90);
+    fn wrapper_lengths_match_contract() {
+        assert_eq!(PROLOGUE_LEN_BYTES, 0x98);
+        assert_eq!(EPILOGUE_OFFSET, 0x98);
         assert_eq!(EPILOGUE_LEN_BYTES, 0x88);
     }
 

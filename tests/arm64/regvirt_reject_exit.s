@@ -7,8 +7,8 @@
 //
 //   make harness-test-asm ASM=tests/arm64/regvirt_reject_exit.s
 //
-// Initial fixture state: x12 = 0x9000, everything else = 0.
-// Base PC used by the fixture scripts: 0x4000
+// Initial fixture state: x12 = FIXTURE_DATA_BASE (0x20000), everything else = 0.
+// Base PC used by the fixture scripts: 0x10000
 
 .text
 .global regvirt_reject_exit_entry
