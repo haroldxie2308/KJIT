@@ -18,7 +18,7 @@ use kjit_harness::model::{Flags, MachineState};
 use kjit_harness::shared::trans::input::TranslationTrigger;
 use kjit_harness::shared::trans::rephrase::RephrasedInsnKind;
 use kjit_harness::trace::{request_for_trace, PipelineTrace};
-use kjit_harness::{run_entry_fixture, CaseReport};
+use kjit_harness::{default_fixture_state, run_entry_fixture, CaseReport};
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
@@ -2950,12 +2950,6 @@ fn print_trace_view(trace: &PipelineTrace, selection: Selection, check: &Pipelin
         Selection::Pc(pc) => println!("selected ori_pc: {pc:#x}"),
         Selection::Offset(offset) => println!("selected fragment offset: {offset:#x}"),
     }
-}
-
-fn default_fixture_state() -> MachineState {
-    let mut state = MachineState::new();
-    state.write_x(12, 0x9000);
-    state
 }
 
 fn parse_u64(value: &str) -> Result<u64, String> {

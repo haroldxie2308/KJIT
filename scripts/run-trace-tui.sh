@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ASM_PATH="${1:-${ASM_PATH:-}}"
-OUT_DIR="$ROOT_DIR/tmp/trace-tui"
 if [ -z "${KJIT_OPENTUI_LIB_PATH:-}" ]; then
     for candidate in \
         "$ROOT_DIR/../opentui/packages/core/node_modules/@opentui/core-darwin-arm64/libopentui.dylib" \
@@ -56,6 +55,11 @@ select_asm_fixture() {
 if [ -z "$ASM_PATH" ]; then
     ASM_PATH="$(select_asm_fixture)"
 fi
+
+# One directory per run so concurrent runs never overwrite each other's outputs.
+mkdir -p "$ROOT_DIR/tmp"
+OUT_DIR="$(mktemp -d "$ROOT_DIR/tmp/trace-tui.XXXXXX")"
+trap 'rm -rf "$OUT_DIR"' EXIT
 
 eval "$(bash "$ROOT_DIR/scripts/compile-asm-fixture.sh" "$ASM_PATH" "$OUT_DIR")"
 

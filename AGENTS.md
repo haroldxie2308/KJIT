@@ -177,6 +177,14 @@ make spec-test-encoding
 make spec-gen
 ```
 
+`make harness-test` also runs the full-pipeline differential check on every
+case of every `tests/arm64/*.s` fixture. A case is a defined symbol ending in
+`_mark` (hot SVC PC = symbol address, entry = symbol + 4); every fixture needs at
+least one. Add a fixture or a `_mark` case and it is covered automatically.
+`llvm-mc`, `llvm-nm` and `llvm-objcopy` must be on `PATH`; the test fails
+otherwise. Use `make harness-test-asm ASM=...` (with `HOT_SVC_SYMBOL=...`) to
+inspect a single case.
+
 `make spec-test-encoding` compares generated encoding against LLVM assembler output
 and is marked ignored inside the Rust test suite. Use it when touching encoding
 or generated instruction forms.
