@@ -215,6 +215,7 @@ impl<'a> Checker<'a> {
             state,
             &run.original,
             run.original_cap,
+            &run.original_footprint,
             &run.fragment,
             &run.encoded_fragment,
         )

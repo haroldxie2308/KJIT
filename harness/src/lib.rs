@@ -48,6 +48,8 @@ pub struct CaseReport {
     pub original: ExecutionResult,
     /// Where the original run was stopped to match a `Budget` exit of the fragment.
     pub original_cap: Option<InstanceCap>,
+    /// See `DifferentialRun::original_footprint`.
+    pub original_footprint: Vec<StoreUnit>,
     pub fragment_state: MachineState,
     pub fragment_halt: URuntimeHalt,
     pub fragment_steps: usize,
@@ -176,6 +178,7 @@ pub fn run_entry_fixture(
         encoded_fragment: run.encoded_fragment,
         original: run.original,
         original_cap: run.original_cap,
+        original_footprint: run.original_footprint,
         fragment_state: run.report.state,
         fragment_halt: run.report.halt,
         fragment_steps: run.report.steps,
@@ -205,6 +208,24 @@ pub struct DifferentialRun {
     /// written (`faulting_store_footprint`). Empty otherwise.
     pub original_footprint: Vec<StoreUnit>,
     pub report: URuntimeReport,
+}
+
+/// `state` with every footprint unit that holds its new value reset to its value
+/// in `original` (the state before the faulting instruction).
+pub(crate) fn undo_store_footprint(
+    original: &MachineState,
+    footprint: &[StoreUnit],
+    state: &MachineState,
+) -> MachineState {
+    let mut state = state.clone();
+    for unit in footprint {
+        let got = state.read_le(unit.addr, unit.size);
+        let old = original.read_le(unit.addr, unit.size);
+        if got != old && got == unit.value {
+            state.write_le(unit.addr, unit.size, old);
+        }
+    }
+    state
 }
 
 /// One store unit (one access) of an instruction, with the value it writes.
@@ -506,17 +527,7 @@ pub struct Mismatch {
 /// suite, `trace-tui --check` and the fuzzer all use it.
 pub fn compare_differential(name: &str, run: &DifferentialRun) -> Result<(), Mismatch> {
     let (original, report) = (&run.original, &run.report);
-    let mut fragment_state = report.state.clone();
-    for unit in &run.original_footprint {
-        let got = fragment_state.read_le(unit.addr, unit.size);
-        if got != original.state.read_le(unit.addr, unit.size) && got == unit.value {
-            fragment_state.write_le(
-                unit.addr,
-                unit.size,
-                original.state.read_le(unit.addr, unit.size),
-            );
-        }
-    }
+    let fragment_state = undo_store_footprint(&original.state, &run.original_footprint, &report.state);
     if original.state != fragment_state {
         return Err(Mismatch {
             kind: MismatchKind::State,
