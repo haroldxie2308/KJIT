@@ -86,6 +86,45 @@ The repo now includes a local kernel/QEMU workflow so the Rust module, kernel so
 - You can still override `KDIR` or `KBUILD_OUTPUT` in `.kjit.env` if you want a different kernel tree or separate output tree, but the default workflow now builds the upstream Linux submodule in place
 - `kernel-build` now builds `Image` and modules only; `dtbs` are skipped by default because the QEMU `virt` machine does not need them
 
+### Kernel bring-up (K0 golden check)
+
+The module currently runs the translator once at init: it compiles a built-in
+fixture with `compile_request`, encodes it, and compares the bytes with the
+harness reference in `tests/arm64/golden/toy_cfg_hot_svc_mark.rs`. It never
+executes the emitted bytes. On mismatch it logs the first differing offset and
+`insmod` fails with `EINVAL`.
+
+Build steps (Docker Desktop on an Apple Silicon Mac; the image is native arm64):
+
+```sh
+./scripts/docker-dev.sh --build-image -- true            # dev image
+./scripts/docker-dev.sh -- make kernel-clean             # optional, for a clean rebuild
+./scripts/docker-dev.sh -- make kernel-prepare
+./scripts/docker-dev.sh -- make kernel-build             # runs make at -j1; slow
+./scripts/docker-dev.sh -- make module-build             # kjit.ko
+./scripts/docker-dev.sh -- bash scripts/mk-initramfs.sh  # .kjit/initramfs/kjit-initramfs.cpio
+```
+
+Boot on the macOS host with HVF:
+
+```sh
+QEMU_INITRAMFS=$PWD/.kjit/initramfs/kjit-initramfs.cpio make qemu-run
+```
+
+The initramfs has a single static `/init` (`scripts/qemu-initramfs/init.c`). It
+loads `/kjit.ko` with `finit_module` (which is what `insmod` does), unloads it,
+and powers the guest off, so `make qemu-run` exits when it finishes. Expected
+serial output:
+
+```text
+rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 432 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+```
+
+If translator output changes on purpose, regenerate the golden on the host with
+`make kernel-golden`. The harness test `kernel_golden_matches_harness_output`
+fails while the checked-in golden is stale.
+
 ### Harness
 
 The `harness/` crate is userspace-only and exercises the executable-fragment

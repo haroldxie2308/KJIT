@@ -59,21 +59,21 @@ fi
 mkdir -p "$QEMU_STATE_DIR"
 rm -f "$QEMU_QMP_SOCKET"
 
-machine_args=(-machine virt)
+# Hardware accelerators (KVM, HVF) only accept `-cpu host`; named models are TCG-only.
+machine_args=(-machine virt -cpu cortex-a72)
 case "$(uname -s)" in
     Linux)
         if [[ -e /dev/kvm ]]; then
-            machine_args=(-machine virt,accel=kvm)
+            machine_args=(-machine virt,accel=kvm -cpu host)
         fi
         ;;
     Darwin)
-        machine_args=(-machine virt,accel=hvf)
+        machine_args=(-machine virt,accel=hvf -cpu host)
         ;;
 esac
 
 qemu_args=(
     "${machine_args[@]}"
-    -cpu cortex-a72
     -smp "$QEMU_CPUS"
     -m "$QEMU_MEMORY"
     -nographic

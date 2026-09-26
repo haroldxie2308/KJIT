@@ -7,6 +7,8 @@ LLVM ?= 1
 ARM64_ISA_XML_DIR ?= $(CURDIR)/tmp/isa_a64_2026_03/ISA_A64_xml_A_profile-2026-03
 HARNESS_SHARED_DIR := harness/src/shared
 HARNESS_SHARED_BACKUP := harness/.shared.bak
+KERNEL_GOLDEN_ASM := tests/arm64/toy_cfg.s
+KERNEL_GOLDEN := tests/arm64/golden/toy_cfg_hot_svc_mark.rs
 
 KMAKE = $(MAKE) -C $(KDIR) ARCH=$(ARCH) LLVM=$(LLVM)
 ifneq ($(abspath $(KBUILD_OUTPUT)),$(abspath $(KDIR)))
@@ -15,7 +17,7 @@ endif
 
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
-	harness-test harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan help
+	harness-test harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan kernel-golden help
 
 default:
 	$(KMAKE) M=$$PWD
@@ -87,6 +89,13 @@ module-build: default
 harness-test:
 	cargo test --manifest-path harness/Cargo.toml -- --nocapture
 
+kernel-golden: harness-sync
+	eval "$$(bash ./scripts/compile-asm-fixture.sh $(KERNEL_GOLDEN_ASM) tmp/kernel-golden)" && \
+	cargo run --quiet --manifest-path harness/Cargo.toml --bin dump-golden -- \
+		"$$COMPILED_ASM_PATH" "$$COMPILED_HOT_SVC_SYMBOL" "$$COMPILED_BIN_PATH" \
+		"$$COMPILED_TEXT_BASE" "$$COMPILED_ENTRY_PC" > $(KERNEL_GOLDEN).tmp
+	mv $(KERNEL_GOLDEN).tmp $(KERNEL_GOLDEN)
+
 harness-dump-cfg:
 	bash ./scripts/demo-toy-cfg.sh
 
@@ -130,6 +139,7 @@ help:
 		'harness-test-asm' 'Run assembly fixture validation; use ASM=path/to/file.s or select interactively' \
 		'spec-test-encoding' 'Compare generated A64Insn encoding against LLVM assembler output' \
 		'coverage-scan' 'Translate from every SVC site in ELF=path and report exits/unsupported forms' \
+		'kernel-golden' 'Regenerate the kernel module golden fragment from the harness' \
 		'qemu-run' 'Boot the local kernel image in QEMU (foreground)' \
 		'qemu-run-bg' 'Boot the local kernel image in QEMU (background)' \
 		'qemu-reset' 'Reset the running QEMU guest through QMP' \
