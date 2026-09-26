@@ -678,7 +678,10 @@ mod tests {
             trigger: TranslationTrigger::Manual,
             regs: None,
         };
-        compile_request(&request, &code).unwrap()
+        let fragment = compile_request(&request, &code).unwrap();
+        let encoded = crate::encode_fragment(&fragment).unwrap();
+        crate::verify_encoded_fragment(&fragment, &encoded).unwrap();
+        fragment
     }
 
     #[test]

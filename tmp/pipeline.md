@@ -334,7 +334,128 @@ Implementation decisions (A6):
 
 - V3 (the independent verifier) checks rules that only exist after A5 and A6
   land (user memory only via LDTR/STTR, fault table coverage, the budget
-  sequence). It is written against this section and merged after A6.
+  sequence). It is written against this section and enforces all of them
+  (see "Verifier (V3)").
+
+# Verifier (V3) (2026-09-27)
+
+`shared/verify/` is the security boundary: the kernel installs only fragments it
+accepts. It is written against this file and `shared::abi`, not the translator.
+
+## Independence
+
+- Imports only `shared::{abi, arm64, platform}`; the unit test
+  `verifier_does_not_import_the_translator` scans the module sources and fails on
+  any other `crate::shared::` path or on `trans::`/`emit::`.
+- It does not reuse translator-side helpers that live in `shared::arm64`
+  (`is_unprivileged_access`, `accesses_memory`, `runtime_exit_reason`): its own
+  exhaustive match over the generated forms (`rules::classify`) decides what each
+  word is, so a new form fails to compile until the verifier classifies it. A
+  random-word test cross-checks that classification against the generated
+  operand roles.
+- Transitive coupling left in place: `shared::arm64` itself imports
+  `trans::cfg::RuntimeExitReason` for `runtime_exit_reason`. The verifier never
+  calls it.
+
+## Input
+
+`VerifyInput { code: &[u8], fault_sites: &[FaultSiteEntry { access_offset,
+stub_offset }], entry_offsets: &[usize] }`, all offsets relative to the fragment
+base. `ori_pc` is not part of the input: the stub loads its own resume PC, so the
+table's PC column is not safety-relevant. The harness builds the input from
+`ExecutionFragment` (`FragmentTables::of`): the entry table is `entry_offset`
+plus every `vlabels` offset, because any of them can be the runtime's entry
+address.
+
+## Rules (reject with `VerifyError { offset, rule }`)
+
+1. Every body word decodes through the generated decoder and
+   `is_decode_undefined` is false.
+2. Words `0..PROLOGUE_LEN` and `EPILOGUE_OFFSET..BODY_OFFSET` equal the encoded
+   `KJIT_PROLOGUE`/`KJIT_EPILOGUE`. The body never writes SP (a destination in its
+   SP meaning, or base writeback) and never writes x29.
+   - Decision: x18..x28 and x30 hold user values in the body and the body may
+     write them freely. The kernel's callee-saved state is safe because the
+     epilogue is byte-exact and reloads it from frame slots the body cannot
+     write (rule 3), and SP (which locates the frame) is never written.
+   - x29 is protected because the prologue points it at the runtime frame and
+     reg-virt keeps user x29 in x16, so an unwinder interrupting a fragment still
+     follows a valid frame record.
+3. Memory. Every load/store is one of:
+   - a user access: `LDTR`/`STTR` (the single list in `rules::classify`; A7b's
+     byte/half/signed unprivileged forms join that arm). It has a fault-site
+     entry at its offset and its base is not SP. The table is strictly
+     increasing and every entry is on a user access.
+   - a runtime access, offset addressing only (no writeback), either
+     - SP-based inside the user-state frame slots `[16, 80)` (stack-backed
+       x12..x17, user x29, user sp), or the single kernel-slot read
+       `ldr xN, [sp, #176]` (pt_regs pointer). Every other frame slot (caller
+       x29/x30, entry address, caller x18..x28, the pt_regs / extra-params
+       pointers, the 200..208 padding) and anything outside the 208-byte frame
+       is rejected: a body write there is a kernel write primitive through the
+       epilogue. The budget counter (192) is rule 6's.
+     - based on a register proven to hold the pt_regs pointer, inside
+       `regs[0..31]` + `sp` (`[0, 256)`); `pc`, `pstate` and beyond are never
+       accessible. Proof is forward dataflow in straight-line code: the register
+       was loaded by `ldr xN, [sp, #176]` and not written since, with no join
+       point in between.
+   - Everything else is rejected: exclusives, atomics, SIMD, prefetch, DC/IC/AT
+     are outside the decoded subset (rule 1); pair or pre/post forms not
+     matching the above fail the base/range/writeback checks.
+4. Control flow.
+   - Direct branches (B, B.cond, CBZ/CBNZ, TBZ/TBNZ) target the epilogue's
+     first word or a body word; never the prologue, the rest of the epilogue,
+     or outside the fragment. A target in the cold region must be an exit-group
+     start.
+   - BL, BR, BLR, RET are rejected in the body; the prologue's `br x12` and the
+     epilogue's `ret` are covered by the byte-exact check.
+   - The last word is an unconditional `B` (nothing falls off the end).
+   - Entry offsets: non-empty, aligned, in the body and before the cold region.
+5. System: only `MRS Xt, TPIDR_EL0` (the only MRS the generated subset decodes)
+   and NOP. SVC and ADR/ADRP (a kernel address into a user register) are
+   rejected; MSR, HVC, SMC, BRK, HLT, ERET, barriers and cache maintenance do
+   not decode.
+6. Budget (A6): every back-edge (a direct branch to a body word at or before
+   itself; offset order is layout order) is preceded by
+   `ldr x12, [sp, #192]; sub x12, x12, #1; str x12, [sp, #192]; cbz x12, <stub>`
+   (`RUNTIME_FRAME_BUDGET_OFFSET`, scratch `REG_VIRT_SCRATCH_GPR_START`), then
+   any number of reg-virt fill loads `ldr x12..x15, [sp, #16..#56]` and nothing
+   else, then the branch. No join point may sit on the `sub`, `str`, `cbz`, a
+   fill or the branch, so every path to the back-edge decrements the counter;
+   the check's `ldr` may be one (it carries the original PC's label). The `cbz`
+   target is a forward exit-group start (the Budget stub).
+   - The counter is written only by the prologue's init (byte-exact) and by a
+     check's own `str`; the counter is read only by a check's own `ldr`. A
+     check that guards no back-edge is rejected like any other counter access
+     (`BudgetSlotAccess`).
+7. Exit groups: every fault stub (and budget stub) starts an exit group: the word
+   before it is an unconditional `B`, and the straight-line run from it contains
+   no user access and ends in `b <epilogue>`. The cold region starts at the
+   lowest stub offset.
+
+Join points (where the dataflow restarts): entry offsets, stubs, and direct
+branch targets; also after every unconditional `B`.
+
+## Cost
+
+One decode pass, one check pass, one pass per table, each exit group walked once:
+O(words + fault sites + entries) time, O(words) memory. No recursion, no panics
+(the two `panic!`s are in `const` initializers, i.e. compile time).
+
+## Not checked (semantic, not safety)
+
+- That exit payloads set a known `RetStatus` or the right resume PC; the K2
+  runtime WARNs and disables KJIT on an unknown status.
+- That a fault stub belongs to the access's own original instruction.
+- Fall-through between body blocks: any body word is verified code.
+
+## Hook points
+
+- Harness: `run_entry_fixture` verifies before running, so every fixture case
+  (interpreter and native suites, `trace-tui --check`) runs only verified
+  fragments; the runtime unit-test fragments and the kernel golden are verified
+  too. `verify_mutation_tests.rs` is the G1 mutation suite.
+- Kernel: not wired yet (K2 preconditions).
 
 # K2 contract: kernel runtime (2026-09-27)
 
