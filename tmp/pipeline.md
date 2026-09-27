@@ -974,7 +974,8 @@ mode"), `runtime/exec.rs`, `runtime/translate.rs`, `runtime/stats.rs`,
   `enable`), continue at T's verified entry in the fragment that just exited,
   else at the fragment for (mm, T); each chained entry counts `chains`.
   Otherwise userspace resumes at T; if the lookups ran and failed, T is
-  profiled. Reaching the budget counts `chain_cap`.
+  profiled. Reaching the budget counts `chain_cap`; a failed run condition
+  (at the hook or at a branch exit within the budget) counts `run_declined`.
 - Every entry is back-edge-budget-bounded and the run conditions are
   re-checked before each entry and before each in-kernel syscall, so a hook
   call spends at most `chain_budget` bounded runs in fragments between two
@@ -2408,7 +2409,8 @@ for `fp_switch`, `fpsimd_exit_mem >= 1` per fault mode and `>= 100` for
   CPU-bound but calls functions (no syscall) returns to userspace after
   `chain_budget` entries and finishes natively until its next syscall
   (`tests/guest/call_loop.c`: 5000 calls per syscall, one `chain_cap` per
-  syscall, `chain_max` == `chain_budget`). Worst case per hook call is
+  syscall unless a run condition ended the hook call first, counted in
+  `run_declined`; `chain_max` == `chain_budget`). Worst case per hook call is
   `chain_budget` x the longest budget-bounded run (the largest seen, glibc's
   64-byte memcpy loop, ~100 us per run): 1024 x 100 us = ~0.1 s, 64x the old
   16-entry bound.

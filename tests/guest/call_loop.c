@@ -6,8 +6,9 @@
  * has made chain_budget entries, userspace resumes at the next branch target
  * and finishes the loop natively until the next svc. The loop cannot keep a
  * task in the kernel beyond the budget. KJIT_EXPECT=chain: every outer
- * iteration hits the budget (chain_cap) and no hook call made more entries
- * than chain_budget (chain_max).
+ * iteration hits the budget (chain_cap) unless a run condition ended its hook
+ * call first (run_declined: a timer tick's need_resched, say), and no hook
+ * call made more entries than chain_budget (chain_max).
  *
  *   call_loop [outer] [calls]     outer 0 = forever (kill test)
  */
@@ -59,7 +60,7 @@ int main(int argc, char **argv)
 	long outer = argc > 1 ? atol(argv[1]) : 2000;
 	long calls = argc > 2 ? atol(argv[2]) : 5000;
 	uint64_t acc = 0;
-	long long cap0, cap1, budget, max;
+	long long cap0, cap1, dec0, dec1, budget, max;
 	struct kjit_snap s0, s1;
 	int err;
 
@@ -75,21 +76,28 @@ int main(int argc, char **argv)
 	}
 	s0 = kjit_snap();
 	cap0 = kjit_stat("chain_cap");
+	dec0 = kjit_stat("run_declined");
 	call_loop_run(outer, calls, &acc);
 	cap1 = kjit_stat("chain_cap");
+	dec1 = kjit_stat("run_declined");
 	s1 = kjit_snap();
 	kjit_report("call_loop", s0, s1);
 	printf("call_loop outer=%ld calls=%ld acc=%llu\n", outer, calls, (unsigned long long)acc);
 	if (kjit_expect("chain")) {
 		budget = read_debugfs_ll("chain_budget");
 		max = kjit_stat("chain_max");
-		fprintf(stderr, "call_loop: chain_cap=%lld chain_max=%lld chain_budget=%lld\n",
-			cap1 - cap0, max, budget);
+		fprintf(stderr, "call_loop: chain_cap=%lld run_declined=%lld chain_max=%lld chain_budget=%lld\n",
+			cap1 - cap0, dec1 - dec0, max, budget);
 		if (2 * calls <= budget)
 			die("call_loop: %ld calls per svc do not exceed chain_budget %lld", calls, budget);
 		/* Auto mode learns the callee, then the return site: two warmups. */
-		if (cap1 - cap0 < outer - 2 * kjit_auto_warmup())
-			die("call_loop: %lld chain_cap for %ld outer iterations", cap1 - cap0, outer);
+		/*
+		 * run_declined is global: another task's declined hook calls only
+		 * loosen this bound, they cannot fail it.
+		 */
+		if (cap1 - cap0 + dec1 - dec0 < outer - 2 * kjit_auto_warmup())
+			die("call_loop: %lld chain_cap + %lld run_declined for %ld outer iterations",
+			    cap1 - cap0, dec1 - dec0, outer);
 		if (max > budget)
 			die("call_loop: a hook call made %lld entries, chain_budget is %lld", max, budget);
 	}
