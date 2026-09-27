@@ -3,7 +3,7 @@ use crate::shared::abi::{
     RET_STATUS_REG, RUNTIME_FRAME_BUDGET_OFFSET, UNSUPPORTED_WORD_UNREADABLE,
 };
 use crate::shared::arm64::ergo::{ldst64_offset, mem_off, scaled_simm, sp, uimm, x, xzr};
-use crate::shared::arm64::{A64Insn, A64Reg, IrInsn};
+use crate::shared::arm64::{A64Atomic, A64Insn, A64Reg, A64Reg31Mode, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::{layout_block_order, Cfg, RuntimeExitReason};
 
@@ -30,6 +30,21 @@ pub enum RephrasedInsnKind {
     ///   #(size - 1); and xS, xS, #16; cbnz xS` (the access crosses a 16-byte
     ///   boundary, which alignment-faults natively).
     AlignCheck,
+    /// PAN window range check (A8; tmp/pipeline.md, "A8 contract"), emitted by
+    /// reg-virt right before a window: `ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>`.
+    /// Its `CBNZ` targets the PAN stub of the same `ori_pc`.
+    RangeCheck,
+    /// `msr pan, #0` / `msr pan, #1` around a window's atomic (reg-virt output).
+    PanToggle,
+    /// The LSE atomic inside a PAN window: a privileged access to user memory
+    /// (reg-virt output). It is a fault site whose stub is the PAN stub of the same
+    /// `ori_pc`.
+    WindowAccess,
+    /// `msr pan, #1`, the first instruction of a PAN stub in `cold` (rephrase
+    /// output): the fault fixup resumes with the faulting context's PAN = 0, so the
+    /// stub restores PAN before its exit group. Runtime-owned: reg-virt passes it
+    /// through, and it is always immediately followed by that exit group.
+    PanRestore,
     RuntimeExitPayload,
     RuntimeExitBranch,
 }
@@ -42,6 +57,10 @@ impl RephrasedInsnKind {
             | Self::UserAccess
             | Self::BudgetCheck
             | Self::AlignCheck
+            | Self::RangeCheck
+            | Self::PanToggle
+            | Self::WindowAccess
+            | Self::PanRestore
             | Self::RuntimeExitPayload
             | Self::RuntimeExitBranch => false,
         }
@@ -55,7 +74,11 @@ impl RephrasedInsnKind {
             | Self::RegVirtHelper
             | Self::UserAccess
             | Self::BudgetCheck
-            | Self::AlignCheck => false,
+            | Self::AlignCheck
+            | Self::RangeCheck
+            | Self::PanToggle
+            | Self::WindowAccess
+            | Self::PanRestore => false,
         }
     }
 
@@ -128,6 +151,38 @@ impl RephrasedInsn {
         }
     }
 
+    pub const fn range_check(ori_pc: u64, insn: A64Insn) -> Self {
+        Self {
+            kind: RephrasedInsnKind::RangeCheck,
+            ori_pc,
+            insn,
+        }
+    }
+
+    pub const fn pan_toggle(ori_pc: u64, insn: A64Insn) -> Self {
+        Self {
+            kind: RephrasedInsnKind::PanToggle,
+            ori_pc,
+            insn,
+        }
+    }
+
+    pub const fn window_access(ori_pc: u64, insn: A64Insn) -> Self {
+        Self {
+            kind: RephrasedInsnKind::WindowAccess,
+            ori_pc,
+            insn,
+        }
+    }
+
+    pub const fn pan_restore(ori_pc: u64) -> Self {
+        Self {
+            kind: RephrasedInsnKind::PanRestore,
+            ori_pc,
+            insn: A64Insn::MsrImmMsrSiPstate { crm: 1 },
+        }
+    }
+
     pub const fn runtime_exit_payload(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
             kind: RephrasedInsnKind::RuntimeExitPayload,
@@ -150,8 +205,11 @@ impl RephrasedInsn {
 /// `cold` holds out-of-line runtime-exit groups, in instruction order: one
 /// `RetStatus::Mem` fault stub per original memory instruction and one
 /// `RetStatus::Budget` stub per back-edge of this block. A branch never accesses
-/// memory, so each original instruction has at most one stub. Layout places every
-/// block's `cold` after all block bodies, so nothing falls through into it.
+/// memory, so each original instruction has at most one plain stub. An LSE atomic
+/// (A8) also has a PAN stub: `msr pan, #1` (`PanRestore`) followed by its `Mem`
+/// exit group; its plain stub exists only when reg-virt emits an SP or alignment
+/// check for it (`atomic_needs_check_stub`). Layout places every block's `cold`
+/// after all block bodies, so nothing falls through into it.
 #[derive(Debug, PartialEq, Eq)]
 pub struct RephrasedBlock {
     pub start_addr: u64,
@@ -552,6 +610,15 @@ fn push_native_resume_exit(
     push_branch_to_stub(out, pc)
 }
 
+/// Whether reg-virt guards an LSE atomic (A8) with a check that leaves through a
+/// plain `Mem` stub (the PAN stub is only for the window's range check and the
+/// atomic's fault site): the SP alignment check for an SP base, or the 16-byte
+/// block alignment check for an access wider than a byte (an atomic crossing a
+/// 16-byte boundary alignment-faults natively under FEAT_LSE2).
+pub(crate) fn atomic_needs_check_stub(atomic: A64Atomic) -> bool {
+    atomic.size > 1 || (atomic.rn.enc() == 31 && atomic.rn.reg31 == A64Reg31Mode::Sp)
+}
+
 /// Scratch register of the budget check. Reg-virt scratch is dead at every original
 /// instruction boundary, which is where the check runs (before the back-edge's fills).
 const BUDGET_CHECK_SCRATCH_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
@@ -662,7 +729,17 @@ pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
             insns.append(lowered, GFP_KERNEL)?;
             if insn.inner.accesses_memory() {
                 // Fault stub: userspace re-executes the instruction and takes the fault.
-                push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, u64::from(insn.word))?;
+                let word = u64::from(insn.word);
+                match insn.inner.lse_atomic() {
+                    Some(atomic) => {
+                        if atomic_needs_check_stub(atomic) {
+                            push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, word)?;
+                        }
+                        cold.push(RephrasedInsn::pan_restore(insn.pc), GFP_KERNEL)?;
+                        push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, word)?;
+                    }
+                    None => push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, word)?,
+                }
             }
         }
         if let Some(exit) = block.unsupported_exit {

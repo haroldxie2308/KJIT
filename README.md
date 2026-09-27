@@ -254,7 +254,10 @@ and exception tables, reading user text, the call trampoline, the K3 profiler
 and its `task_work` requests, debugfs). Init
 still runs the K0 golden check first, and refuses to load (`-ENODEV`, naming
 the feature) on a CPU without FEAT_LSE2 (or with `SCTLR_EL1.nAA` set) or
-FEAT_LRCPC, which the translated acquire/release accesses rely on. A fragment is installed only if
+FEAT_LRCPC, which the translated acquire/release accesses rely on, and (A8,
+LSE atomics in PAN windows) without FEAT_LSE, with `vabits_actual != 48`
+(`CONFIG_ARM64_VA_BITS_48` is a K1 invariant), with MTE in use, or with
+`SCTLR_EL1.SPAN` set. A fragment is installed only if
 `verify_fragment` accepts exactly the bytes, fault-site table and entry table
 that get installed; it is refused unless every text page it came from is in an
 executable, non-writable mapping.
@@ -358,7 +361,8 @@ Current reach: where the code is in the subset the path follows the callers
 (`dd bs=1`: every syscall issued in the kernel), but it stops at SIMD
 `memcpy`/`strlen` loads. Before A7d every path of a BTI-built program (all of
 redis's) stopped at its first `bti c` (0% of its syscalls in the kernel); BTI
-and ADC/SBC now translate; redis's paths now stop at LSE atomics (see "K4").
+and ADC/SBC now translate, and since A8 so do LSE atomics; redis's paths now
+stop at SIMD (`dup v0.16b, w1`, see "K4").
 Fragment entries cost more than the mode switches they save on short chains;
 speed is not a goal yet. Details: `tmp/pipeline.md`, "K3", Findings, and
 "A7d".
@@ -435,8 +439,15 @@ entries per syscall; datasets identical KJIT off and on; every adversarial
 test identical. The in-kernel path now stops at `ldadd x0, x0, [x1]`
 (0xf8200020, libgcc's outline atomic `__aarch64_ldadd8_relax`, which redis's
 `atomicIncr` calls after every read): 4.7M of the default run's 4.7M
-Unsupported exits. Next: LSE atomics (`ldadd`, `casa`, `swpl`), `mrs
-CNTVCT_EL0` (vDSO clock reads) and SIMD loads. kjit-guest-debug (KASAN,
+Unsupported exits. After A8 (LSE atomics in PAN windows; kjit-guest,
+2026-09-27, `RESULT PASS`): suite 2860 / 2853 passed without / with KJIT, 0
+failed, same outcome for all 2518 distinct tests; 5.8% of the suite's
+syscalls in the kernel (3.12M of 53.9M; 827M fragment entries, 14162
+translations, no verifier rejection, invalid exit or `Mem` exit). Benchmark
+unchanged at 0.0% (default), 1.6% (`-P 16`) and 0.7% (256 clients): the paths
+now run past `ldadd` and stop at `dup v0.16b, w1` (0x4e010c20, SIMD, ~2.0M of
+the default run's 2.0M Unsupported exits); under the suite next come `mrs
+CNTVCT_EL0` (0xd53be04b, vDSO clock reads) and SIMD `dup`/`ldr q`/`str q`. kjit-guest-debug (KASAN,
 lockdep), `K4_ITERATIONS=10`: suite identical (0 failed either way), 100
 adversarial runs and 10 consistency checks PASS, no kernel report
 (`tmp/pipeline.md`, "K4").
@@ -487,14 +498,23 @@ is translated as a `NOP`. The acquire/release forms (`LDAR*`, `STLR*`,
 `LDAPR*`; no unprivileged ordered access exists without FEAT_LSUI) become
 `dmb ish; LDTR*/STTR* [xN, #0]; dmb ish`, which orders at least as strongly;
 since `LDTR*`/`STTR*` never alignment-fault, an access that crosses a 16-byte
-boundary (a SIGBUS natively) leaves through its `Mem` stub first. Exclusive,
-atomic and FP/SIMD loads/stores stay outside the subset and take the
-`Unsupported` exit. Each access is a fault
+boundary (a SIGBUS natively) leaves through its `Mem` stub first. LSE atomics
+(`LD<op>`, `ST<op>`, `SWP`, `CAS`, every size and ordering; A8) have no
+unprivileged form either: each runs as the one privileged access of a PAN
+window, `ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>; msr pan, #0; <atomic on
+sA>; msr pan, #1`, after the SP or 16-byte-block alignment check (like the
+kernel's own futex ops, which clear PAN after `access_ok`). The range check
+admits only TTBR0 addresses below 2^48 (any top byte); a fault resumes at the
+PAN stub, which restores PAN before its `Mem` exit group. Exclusives, CASP,
+FEAT_LSE128 and FP/SIMD loads/stores stay outside the subset and take the
+`Unsupported` exit; so does user `msr pan`. Each access is a fault
 site: `ExecutionFragment.fault_sites` maps it to an out-of-line `Mem` exit stub for its original instruction, placed after the
 body, and a faulting access resumes there, so userspace re-executes the
 instruction and takes the fault itself. The harness classifies fragment
-accesses by instruction: `LDTR*`/`STTR*` check user page permissions, any other
-load/store must stay in runtime-owned memory. User code that contains
+accesses by instruction: `LDTR*`/`STTR*` check user page permissions, a window
+atomic is legal only while the modelled PSTATE.PAN is clear (and every return
+to the runtime must find PAN set), any other load/store must stay in
+runtime-owned memory. User code that contains
 `LDTR*`/`STTR*` itself takes the `Unsupported` exit.
 
 Every back-edge (a user branch whose target is at or before it in layout order,
@@ -557,7 +577,11 @@ The target fails unless the native test actually ran and passed.
 entry table before anything may execute them, using only the generated decoder
 and `shared::abi` (never the translator). It accepts a fragment only if the
 prologue/epilogue are byte-exact, the body never writes SP or x29, user memory
-is touched only by the `LDTR*`/`STTR*` family with a fault-site entry, no
+is touched only by the `LDTR*`/`STTR*` family with a fault-site entry or by an
+LSE atomic inside an exact PAN window (range check on its base register right
+before `msr pan, #0`, `msr pan, #1` right after, no join point inside, fault
+site at a PAN stub that starts with `msr pan, #1` and that nothing else
+targets; `msr pan` nowhere else, no other MSR), no
 user-code memory form (byte/half, unscaled, register-offset, literal, PRFM,
 acquire/release, ...) and no BTI appears at all, the only system instructions
 are `MRS TPIDR_EL0`, NOP and DMB/DSB/ISB, every other load/store
@@ -577,7 +601,10 @@ BTI and non-subset hints (PACIASP, AUTIASP, ...),
 branches out of the body, inserted BL/BR/RET/SVC/MSR/HVC,
 SP/x29 writes, out-of-range frame and pt_regs accesses, corrupted wrapper words,
 broken fault tables, dropped/retargeted/altered budget checks, stray counter
-writes, random words) and requires every deterministic mutation to
+writes, PAN windows with a dropped/moved/extra MSR, a widened window, an
+altered/inverted/retargeted range check, a window around a non-atomic, window
+fault sites at other stubs, branches into PAN stubs, atomics and `msr pan`
+inserted elsewhere, random words) and requires every deterministic mutation to
 be rejected; it prints a per-class table.
 
 #### Differential fuzzer

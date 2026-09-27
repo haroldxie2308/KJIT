@@ -1410,6 +1410,44 @@ static int kjit_check_cpu(void)
 		pr_err("kjit: CPU lacks FEAT_CRC32 (ID_AA64ISAR0_EL1.CRC32 == 0): user CRC32 is UNDEFINED natively but would run in a fragment; refusing to load\n");
 		return -ENODEV;
 	}
+	/*
+	 * A8 PAN windows (tmp/pipeline.md, "A8 contract"): user LSE atomics run as
+	 * privileged accesses between `msr pan, #0` and `msr pan, #1`.
+	 * FEAT_LSE: else user LD<op>/SWP/CAS are UNDEFINED natively but would
+	 * run in a fragment.
+	 */
+	if (cpuid_feature_extract_unsigned_field(isar0, ID_AA64ISAR0_EL1_ATOMIC_SHIFT) <
+	    ID_AA64ISAR0_EL1_ATOMIC_IMP) {
+		pr_err("kjit: CPU lacks FEAT_LSE (ID_AA64ISAR0_EL1.Atomic < 2): user LSE atomics are UNDEFINED natively but would run in a fragment; refusing to load\n");
+		return -ENODEV;
+	}
+	/*
+	 * The window's range check admits VA bits [55:48] == 0 only: a TTBR0
+	 * address below 2^48. That is all of user space only with 48-bit VAs
+	 * (K1 pins ARM64_VA_BITS_48).
+	 */
+	if (vabits_actual != 48) {
+		pr_err("kjit: vabits_actual is %llu, not 48: the PAN window's range check assumes 48-bit user VAs; refusing to load\n",
+		       (unsigned long long)vabits_actual);
+		return -ENODEV;
+	}
+	/*
+	 * A privileged access does not honour the user's tag-check mode the way
+	 * LDTR/STTR do (TCF0), so a window atomic would skip MTE tag checks.
+	 */
+	if (system_supports_mte()) {
+		pr_err("kjit: MTE is in use: a PAN-window atomic is a privileged access that skips the user's tag checks; refusing to load\n");
+		return -ENODEV;
+	}
+	/*
+	 * The window relies on an exception taken inside it setting PAN
+	 * (SCTLR_EL1.SPAN == 0, which cpu_enable_pan() establishes); with SPAN
+	 * set, an interrupt handler would run with PAN clear.
+	 */
+	if (read_sysreg(sctlr_el1) & SCTLR_EL1_SPAN) {
+		pr_err("kjit: SCTLR_EL1.SPAN is set: an exception inside a PAN window would keep PAN clear; refusing to load\n");
+		return -ENODEV;
+	}
 	return 0;
 }
 

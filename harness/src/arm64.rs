@@ -1,7 +1,10 @@
 use crate::model::{
     AccessKind, FaultCause, Flags, HaltReason, MachineState, MemAccess, MemFault, Privilege,
 };
-use crate::shared::arm64::{A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode};
+use crate::shared::abi::USER_VA_BITS;
+use crate::shared::arm64::{
+    A64Atomic, A64AtomicOp, A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode,
+};
 use crate::shared::trans::cfg::{admit_at, RuntimeExitReason};
 use crate::MockCodeProvider;
 
@@ -68,12 +71,15 @@ pub(crate) enum AccessContext<'a> {
     },
     /// Translated fragment at EL1. Privilege is decided by the instruction, never
     /// the address: `LDTR`/`STTR` are user accesses (EL0 permissions, numbered by
-    /// `counter`); every other load/store is a runtime access and must stay inside
-    /// `runtime_ranges` (else a PAN violation).
+    /// `counter`); an LSE atomic is a privileged access to user memory, legal only
+    /// while `pan` (PSTATE.PAN, written by `msr pan`) is clear (A8); every other
+    /// load/store is a runtime access and must stay inside `runtime_ranges` (else a
+    /// PAN violation).
     Fragment {
         runtime_ranges: &'a [(u64, u64)],
         counter: &'a mut UserAccessCounter,
         log: Option<&'a mut Vec<LoggedAccess>>,
+        pan: &'a mut bool,
     },
 }
 
@@ -1557,6 +1563,185 @@ pub(crate) fn execute_insn(
             execute_mem(ctx, state, pc, insn, st(2), rt, None, Addr::Ordered(rn))
         }
 
+        // LSE single-register atomics (A8): EL0 user accesses in original code; in a
+        // fragment a privileged access that requires PSTATE.PAN == 0.
+        A64Insn::LdaddLdadd32Memop { .. }
+        | A64Insn::LdaddLdadda32Memop { .. }
+        | A64Insn::LdaddLdaddal32Memop { .. }
+        | A64Insn::LdaddLdaddl32Memop { .. }
+        | A64Insn::LdaddLdadd64Memop { .. }
+        | A64Insn::LdaddLdadda64Memop { .. }
+        | A64Insn::LdaddLdaddal64Memop { .. }
+        | A64Insn::LdaddLdaddl64Memop { .. }
+        | A64Insn::LdaddbLdaddb32Memop { .. }
+        | A64Insn::LdaddbLdaddab32Memop { .. }
+        | A64Insn::LdaddbLdaddalb32Memop { .. }
+        | A64Insn::LdaddbLdaddlb32Memop { .. }
+        | A64Insn::LdaddhLdaddh32Memop { .. }
+        | A64Insn::LdaddhLdaddah32Memop { .. }
+        | A64Insn::LdaddhLdaddalh32Memop { .. }
+        | A64Insn::LdaddhLdaddlh32Memop { .. }
+        | A64Insn::LdclrLdclr32Memop { .. }
+        | A64Insn::LdclrLdclra32Memop { .. }
+        | A64Insn::LdclrLdclral32Memop { .. }
+        | A64Insn::LdclrLdclrl32Memop { .. }
+        | A64Insn::LdclrLdclr64Memop { .. }
+        | A64Insn::LdclrLdclra64Memop { .. }
+        | A64Insn::LdclrLdclral64Memop { .. }
+        | A64Insn::LdclrLdclrl64Memop { .. }
+        | A64Insn::LdclrbLdclrb32Memop { .. }
+        | A64Insn::LdclrbLdclrab32Memop { .. }
+        | A64Insn::LdclrbLdclralb32Memop { .. }
+        | A64Insn::LdclrbLdclrlb32Memop { .. }
+        | A64Insn::LdclrhLdclrh32Memop { .. }
+        | A64Insn::LdclrhLdclrah32Memop { .. }
+        | A64Insn::LdclrhLdclralh32Memop { .. }
+        | A64Insn::LdclrhLdclrlh32Memop { .. }
+        | A64Insn::LdeorLdeor32Memop { .. }
+        | A64Insn::LdeorLdeora32Memop { .. }
+        | A64Insn::LdeorLdeoral32Memop { .. }
+        | A64Insn::LdeorLdeorl32Memop { .. }
+        | A64Insn::LdeorLdeor64Memop { .. }
+        | A64Insn::LdeorLdeora64Memop { .. }
+        | A64Insn::LdeorLdeoral64Memop { .. }
+        | A64Insn::LdeorLdeorl64Memop { .. }
+        | A64Insn::LdeorbLdeorb32Memop { .. }
+        | A64Insn::LdeorbLdeorab32Memop { .. }
+        | A64Insn::LdeorbLdeoralb32Memop { .. }
+        | A64Insn::LdeorbLdeorlb32Memop { .. }
+        | A64Insn::LdeorhLdeorh32Memop { .. }
+        | A64Insn::LdeorhLdeorah32Memop { .. }
+        | A64Insn::LdeorhLdeoralh32Memop { .. }
+        | A64Insn::LdeorhLdeorlh32Memop { .. }
+        | A64Insn::LdsetLdset32Memop { .. }
+        | A64Insn::LdsetLdseta32Memop { .. }
+        | A64Insn::LdsetLdsetal32Memop { .. }
+        | A64Insn::LdsetLdsetl32Memop { .. }
+        | A64Insn::LdsetLdset64Memop { .. }
+        | A64Insn::LdsetLdseta64Memop { .. }
+        | A64Insn::LdsetLdsetal64Memop { .. }
+        | A64Insn::LdsetLdsetl64Memop { .. }
+        | A64Insn::LdsetbLdsetb32Memop { .. }
+        | A64Insn::LdsetbLdsetab32Memop { .. }
+        | A64Insn::LdsetbLdsetalb32Memop { .. }
+        | A64Insn::LdsetbLdsetlb32Memop { .. }
+        | A64Insn::LdsethLdseth32Memop { .. }
+        | A64Insn::LdsethLdsetah32Memop { .. }
+        | A64Insn::LdsethLdsetalh32Memop { .. }
+        | A64Insn::LdsethLdsetlh32Memop { .. }
+        | A64Insn::LdsmaxLdsmax32Memop { .. }
+        | A64Insn::LdsmaxLdsmaxa32Memop { .. }
+        | A64Insn::LdsmaxLdsmaxal32Memop { .. }
+        | A64Insn::LdsmaxLdsmaxl32Memop { .. }
+        | A64Insn::LdsmaxLdsmax64Memop { .. }
+        | A64Insn::LdsmaxLdsmaxa64Memop { .. }
+        | A64Insn::LdsmaxLdsmaxal64Memop { .. }
+        | A64Insn::LdsmaxLdsmaxl64Memop { .. }
+        | A64Insn::LdsmaxbLdsmaxb32Memop { .. }
+        | A64Insn::LdsmaxbLdsmaxab32Memop { .. }
+        | A64Insn::LdsmaxbLdsmaxalb32Memop { .. }
+        | A64Insn::LdsmaxbLdsmaxlb32Memop { .. }
+        | A64Insn::LdsmaxhLdsmaxh32Memop { .. }
+        | A64Insn::LdsmaxhLdsmaxah32Memop { .. }
+        | A64Insn::LdsmaxhLdsmaxalh32Memop { .. }
+        | A64Insn::LdsmaxhLdsmaxlh32Memop { .. }
+        | A64Insn::LdsminLdsmin32Memop { .. }
+        | A64Insn::LdsminLdsmina32Memop { .. }
+        | A64Insn::LdsminLdsminal32Memop { .. }
+        | A64Insn::LdsminLdsminl32Memop { .. }
+        | A64Insn::LdsminLdsmin64Memop { .. }
+        | A64Insn::LdsminLdsmina64Memop { .. }
+        | A64Insn::LdsminLdsminal64Memop { .. }
+        | A64Insn::LdsminLdsminl64Memop { .. }
+        | A64Insn::LdsminbLdsminb32Memop { .. }
+        | A64Insn::LdsminbLdsminab32Memop { .. }
+        | A64Insn::LdsminbLdsminalb32Memop { .. }
+        | A64Insn::LdsminbLdsminlb32Memop { .. }
+        | A64Insn::LdsminhLdsminh32Memop { .. }
+        | A64Insn::LdsminhLdsminah32Memop { .. }
+        | A64Insn::LdsminhLdsminalh32Memop { .. }
+        | A64Insn::LdsminhLdsminlh32Memop { .. }
+        | A64Insn::LdumaxLdumax32Memop { .. }
+        | A64Insn::LdumaxLdumaxa32Memop { .. }
+        | A64Insn::LdumaxLdumaxal32Memop { .. }
+        | A64Insn::LdumaxLdumaxl32Memop { .. }
+        | A64Insn::LdumaxLdumax64Memop { .. }
+        | A64Insn::LdumaxLdumaxa64Memop { .. }
+        | A64Insn::LdumaxLdumaxal64Memop { .. }
+        | A64Insn::LdumaxLdumaxl64Memop { .. }
+        | A64Insn::LdumaxbLdumaxb32Memop { .. }
+        | A64Insn::LdumaxbLdumaxab32Memop { .. }
+        | A64Insn::LdumaxbLdumaxalb32Memop { .. }
+        | A64Insn::LdumaxbLdumaxlb32Memop { .. }
+        | A64Insn::LdumaxhLdumaxh32Memop { .. }
+        | A64Insn::LdumaxhLdumaxah32Memop { .. }
+        | A64Insn::LdumaxhLdumaxalh32Memop { .. }
+        | A64Insn::LdumaxhLdumaxlh32Memop { .. }
+        | A64Insn::LduminLdumin32Memop { .. }
+        | A64Insn::LduminLdumina32Memop { .. }
+        | A64Insn::LduminLduminal32Memop { .. }
+        | A64Insn::LduminLduminl32Memop { .. }
+        | A64Insn::LduminLdumin64Memop { .. }
+        | A64Insn::LduminLdumina64Memop { .. }
+        | A64Insn::LduminLduminal64Memop { .. }
+        | A64Insn::LduminLduminl64Memop { .. }
+        | A64Insn::LduminbLduminb32Memop { .. }
+        | A64Insn::LduminbLduminab32Memop { .. }
+        | A64Insn::LduminbLduminalb32Memop { .. }
+        | A64Insn::LduminbLduminlb32Memop { .. }
+        | A64Insn::LduminhLduminh32Memop { .. }
+        | A64Insn::LduminhLduminah32Memop { .. }
+        | A64Insn::LduminhLduminalh32Memop { .. }
+        | A64Insn::LduminhLduminlh32Memop { .. }
+        | A64Insn::SwpSwp32Memop { .. }
+        | A64Insn::SwpSwpa32Memop { .. }
+        | A64Insn::SwpSwpal32Memop { .. }
+        | A64Insn::SwpSwpl32Memop { .. }
+        | A64Insn::SwpSwp64Memop { .. }
+        | A64Insn::SwpSwpa64Memop { .. }
+        | A64Insn::SwpSwpal64Memop { .. }
+        | A64Insn::SwpSwpl64Memop { .. }
+        | A64Insn::SwpbSwpb32Memop { .. }
+        | A64Insn::SwpbSwpab32Memop { .. }
+        | A64Insn::SwpbSwpalb32Memop { .. }
+        | A64Insn::SwpbSwplb32Memop { .. }
+        | A64Insn::SwphSwph32Memop { .. }
+        | A64Insn::SwphSwpah32Memop { .. }
+        | A64Insn::SwphSwpalh32Memop { .. }
+        | A64Insn::SwphSwplh32Memop { .. }
+        | A64Insn::CasCasC32Comswap { .. }
+        | A64Insn::CasCasaC32Comswap { .. }
+        | A64Insn::CasCasalC32Comswap { .. }
+        | A64Insn::CasCaslC32Comswap { .. }
+        | A64Insn::CasCasC64Comswap { .. }
+        | A64Insn::CasCasaC64Comswap { .. }
+        | A64Insn::CasCasalC64Comswap { .. }
+        | A64Insn::CasCaslC64Comswap { .. }
+        | A64Insn::CasbCasbC32Comswap { .. }
+        | A64Insn::CasbCasabC32Comswap { .. }
+        | A64Insn::CasbCasalbC32Comswap { .. }
+        | A64Insn::CasbCaslbC32Comswap { .. }
+        | A64Insn::CashCashC32Comswap { .. }
+        | A64Insn::CashCasahC32Comswap { .. }
+        | A64Insn::CashCasalhC32Comswap { .. }
+        | A64Insn::CashCaslhC32Comswap { .. } => {
+            let atomic = insn
+                .lse_atomic()
+                .ok_or_else(|| format!("{} is not an LSE atomic", insn.key()))?;
+            execute_atomic(ctx, state, pc, atomic)
+        }
+        // `msr pan, #imm` (A8): only a fragment's PAN window and PAN stubs contain it
+        // (admission rejects it in user code, so an original run never gets here).
+        A64Insn::MsrImmMsrSiPstate { crm } => match ctx {
+            AccessContext::Fragment { pan, .. } => {
+                **pan = crm & 1 == 1;
+                Ok(pc + 4)
+            }
+            AccessContext::Original { .. } => Err(InsnError::Error(format!(
+                "msr pan at pc={pc:#x} in original code (UNDEFINED at EL0)"
+            ))),
+        },
+
         A64Insn::BlBlOnlyBranchImm { imm26 } => {
             let target = pc_relative_target(pc, imm26.raw(), 26);
             state.write_x(30, pc.wrapping_add(4));
@@ -2340,6 +2525,138 @@ fn execute_mem(
     Ok(pc + 4)
 }
 
+/// An LSE single-register atomic (A8): one read-modify-write access of `size`
+/// bytes at `[Rn]`, which needs write permission (the access descriptor has both
+/// read and write, whether or not a CAS compares equal). Checks run before
+/// anything is written: the EL0 SP alignment check (original code), then the
+/// atomic alignment rule (FEAT_LSE2: an access crossing a 16-byte boundary is an
+/// Alignment fault; `MemSingleGranule()` is at least 16), then permissions.
+/// `LD<op>`/`SWP` return the old value in `Rt`, `CAS` in `Rs`; a failed CAS writes
+/// no memory. Ordering (A/L) is invisible to the single-threaded model.
+fn execute_atomic(
+    ctx: &mut AccessContext<'_>,
+    state: &mut MachineState,
+    pc: u64,
+    atomic: A64Atomic,
+) -> Result<u64, InsnError> {
+    let size = atomic.size;
+    let address = untagged(state.read_reg(atomic.rn));
+    let access = write_access(address, size);
+    let sp_based = atomic.rn.enc() == 31 && atomic.rn.reg31 == A64Reg31Mode::Sp;
+    if matches!(ctx, AccessContext::Original { .. }) && sp_based && state.sp() % 16 != 0 {
+        return Err(InsnError::Fault(MemFault {
+            pc,
+            access,
+            cause: FaultCause::SpAlignment,
+        }));
+    }
+    if (address % 16) + u64::from(size) > 16 {
+        return Err(InsnError::Fault(MemFault {
+            pc,
+            access,
+            cause: FaultCause::Alignment,
+        }));
+    }
+    check_atomic_access(ctx, state, pc, access)?;
+
+    let bits = size * 8;
+    let mask = width_mask(bits);
+    let old = state.read_le(address, size);
+    let operand = state.read_reg(atomic.rs) & mask;
+    let signed = |value: u64| sign_extend_width(value, bits);
+    let new = match atomic.op {
+        A64AtomicOp::Add => Some(old.wrapping_add(operand) & mask),
+        A64AtomicOp::Clr => Some(old & !operand),
+        A64AtomicOp::Eor => Some(old ^ operand),
+        A64AtomicOp::Set => Some(old | operand),
+        A64AtomicOp::Smax => Some(if signed(old) >= signed(operand) {
+            old
+        } else {
+            operand
+        }),
+        A64AtomicOp::Smin => Some(if signed(old) <= signed(operand) {
+            old
+        } else {
+            operand
+        }),
+        A64AtomicOp::Umax => Some(old.max(operand)),
+        A64AtomicOp::Umin => Some(old.min(operand)),
+        A64AtomicOp::Swp => Some(operand),
+        A64AtomicOp::Cas => (old == operand).then(|| state.read_reg(atomic.rt) & mask),
+    };
+    if let Some(new) = new {
+        state.write_le(address, size, new);
+    }
+    // The destination is the zero-extended old value, 32-bit for every form but
+    // the 64-bit ones (`regsize`).
+    let regsize = if size == 8 { 64 } else { 32 };
+    let dest = match atomic.op {
+        A64AtomicOp::Cas => atomic.rs,
+        _ => atomic.rt,
+    };
+    write_reg_sized(state, dest, old, regsize);
+    Ok(pc + 4)
+}
+
+/// The permission check of an atomic's access. Original code: an EL0 user access.
+/// Fragment: a privileged access, legal only while PSTATE.PAN is clear (a PAN
+/// violation otherwise, a hard error: an oops in the kernel) and only to user
+/// memory (the window's range check keeps kernel addresses out; runtime memory
+/// here is the kernel's); it is numbered with the user accesses for fault
+/// injection and faults on the same EL0 page permissions (Linux user pages give
+/// EL1 the same read/write permission; execute-only pages are not modelled).
+fn check_atomic_access(
+    ctx: &mut AccessContext<'_>,
+    state: &MachineState,
+    pc: u64,
+    access: MemAccess,
+) -> Result<(), InsnError> {
+    let (privilege, counter, log) = match ctx {
+        AccessContext::Original { counter, log } => {
+            (Privilege::User, counter.as_deref_mut(), log.as_deref_mut())
+        }
+        AccessContext::Fragment {
+            runtime_ranges,
+            counter,
+            log,
+            pan,
+        } => {
+            if **pan {
+                return Err(InsnError::Error(format!(
+                    "PAN violation: privileged atomic at pc={pc:#x} to {:#x} with PSTATE.PAN set",
+                    access.addr
+                )));
+            }
+            let overlaps_runtime = runtime_ranges.iter().any(|&(start, end)| {
+                access.addr < end && access.addr.saturating_add(u64::from(access.size)) > start
+            });
+            if overlaps_runtime || access.addr >> USER_VA_BITS != 0 {
+                return Err(InsnError::Error(format!(
+                    "privileged atomic at pc={pc:#x} to {:#x}: not a user address",
+                    access.addr
+                )));
+            }
+            (Privilege::Window, Some(&mut **counter), log.as_deref_mut())
+        }
+    };
+    if let Some(log) = log {
+        log.push(LoggedAccess {
+            pc,
+            access,
+            privilege,
+        });
+    }
+    let injected = counter.is_some_and(|counter| counter.record());
+    if injected || !state.user_access_allowed(access) {
+        return Err(InsnError::Fault(MemFault {
+            pc,
+            access,
+            cause: FaultCause::Permission,
+        }));
+    }
+    Ok(())
+}
+
 fn read_access(addr: u64, size: u8) -> MemAccess {
     MemAccess {
         addr,
@@ -2377,6 +2694,7 @@ fn check_accesses(
                 runtime_ranges,
                 counter,
                 log,
+                ..
             } => {
                 if !unprivileged && !access_in_ranges(runtime_ranges, access) {
                     return Err(InsnError::Error(format!(
@@ -2782,6 +3100,7 @@ mod tests {
                 runtime_ranges: &[(0x7000, 0x8000)],
                 counter,
                 log: None,
+                pan: &mut true,
             },
         )
     }
@@ -3146,6 +3465,310 @@ mod tests {
     /// A7c: an acquire/release access faults (Alignment) iff it crosses a 16-byte
     /// boundary; misaligned inside one block it runs (as on the FEAT_LSE2 host,
     /// probed natively: `ldar x` at +8 runs, at +9 faults). SP alignment first.
+    /// A8: every LSE operation on its size, the destination (Rt, or Rs for CAS)
+    /// receiving the zero-extended old value.
+    #[test]
+    fn lse_atomics_compute_every_operation() {
+        use A64Insn as I;
+        let (xs, w) = (A64Reg::x_sp, A64Reg::w);
+        // (insn, memory before, Rs, Rt, memory after, destination after)
+        let cases: [(A64Insn, u64, u64, u64, u64, u64); 14] = [
+            (
+                I::LdaddLdadd64Memop {
+                    rs: x(1),
+                    rn: xs(3),
+                    rt: x(2),
+                },
+                5,
+                7,
+                0,
+                12,
+                5,
+            ),
+            (
+                I::LdclrLdclral64Memop {
+                    rs: x(1),
+                    rn: xs(3),
+                    rt: x(2),
+                },
+                0xff,
+                0x0f,
+                0,
+                0xf0,
+                0xff,
+            ),
+            (
+                I::LdeorLdeor32Memop {
+                    rs: w(1),
+                    rn: xs(3),
+                    rt: w(2),
+                },
+                0xff,
+                0x0f,
+                0,
+                0xf0,
+                0xff,
+            ),
+            (
+                I::LdsetLdsetl64Memop {
+                    rs: x(1),
+                    rn: xs(3),
+                    rt: x(2),
+                },
+                0xf0,
+                0x0f,
+                0,
+                0xff,
+                0xf0,
+            ),
+            // Signed byte: 0x80 = -128 < 1.
+            (
+                I::LdsmaxbLdsmaxb32Memop {
+                    rs: w(1),
+                    rn: xs(3),
+                    rt: w(2),
+                },
+                0x80,
+                1,
+                0,
+                1,
+                0x80,
+            ),
+            (
+                I::LdsminhLdsminh32Memop {
+                    rs: w(1),
+                    rn: xs(3),
+                    rt: w(2),
+                },
+                1,
+                0x8000,
+                0,
+                0x8000,
+                1,
+            ),
+            (
+                I::LdumaxLdumax32Memop {
+                    rs: w(1),
+                    rn: xs(3),
+                    rt: w(2),
+                },
+                0x8000_0000,
+                1,
+                0,
+                0x8000_0000,
+                0x8000_0000,
+            ),
+            (
+                I::LduminLdumina64Memop {
+                    rs: x(1),
+                    rn: xs(3),
+                    rt: x(2),
+                },
+                u64::MAX,
+                3,
+                0,
+                3,
+                u64::MAX,
+            ),
+            // 32-bit add wraps inside the word; the upper memory word is untouched.
+            (
+                I::LdaddLdadd32Memop {
+                    rs: w(1),
+                    rn: xs(3),
+                    rt: w(2),
+                },
+                0x1_ffff_ffff,
+                1,
+                0,
+                0x1_0000_0000,
+                0xffff_ffff,
+            ),
+            (
+                I::SwpSwpal64Memop {
+                    rs: x(1),
+                    rn: xs(3),
+                    rt: x(2),
+                },
+                9,
+                4,
+                0,
+                4,
+                9,
+            ),
+            // CAS success: memory == Rs, store Rt; Rs = old.
+            (
+                I::CasCasalC64Comswap {
+                    rs: x(1),
+                    rn: xs(3),
+                    rt: x(2),
+                },
+                6,
+                6,
+                8,
+                8,
+                6,
+            ),
+            // CAS failure: no store; Rs = old.
+            (
+                I::CasCasalC64Comswap {
+                    rs: x(1),
+                    rn: xs(3),
+                    rt: x(2),
+                },
+                6,
+                5,
+                8,
+                6,
+                6,
+            ),
+            (
+                I::CasbCasabC32Comswap {
+                    rs: w(1),
+                    rn: xs(3),
+                    rt: w(2),
+                },
+                0x1ab,
+                0xab,
+                0xcd,
+                0x1cd,
+                0xab,
+            ),
+            // ST<op>: Rt = XZR discards the old value.
+            (
+                I::LdaddLdadd64Memop {
+                    rs: x(1),
+                    rn: xs(3),
+                    rt: x(31),
+                },
+                5,
+                7,
+                0,
+                12,
+                0,
+            ),
+        ];
+        for (insn, before, rs, rt, after, dest) in cases {
+            let mut state = rw_page_at_0x9000();
+            state.write_x(3, 0x9008);
+            state.write_u64(0x9008, before);
+            state.write_x(1, rs);
+            state.write_x(2, rt);
+            assert_eq!(exec_user(insn, 0x4000, &mut state), Ok(0x4004), "{insn:?}");
+            assert_eq!(state.read_u64(0x9008), after, "{insn:?} memory");
+            let dest_reg = if insn.lse_atomic().unwrap().op == A64AtomicOp::Cas {
+                1
+            } else {
+                2
+            };
+            assert_eq!(state.read_x(dest_reg), dest, "{insn:?} destination");
+        }
+    }
+
+    /// A8: an atomic needs write permission (a failing CAS too), crosses no
+    /// 16-byte boundary, and with an SP base needs SP 16-byte aligned; every fault
+    /// leaves the state untouched.
+    #[test]
+    fn lse_atomic_faults_are_precise() {
+        let mut state = rw_page_at_0x9000();
+        state
+            .map_user_range(0xa000, 0xb000, PagePerm::ReadOnly)
+            .unwrap();
+        state.write_x(1, 0x5);
+        state.write_x(2, 0x7);
+        let cas = |rn| A64Insn::CasCasalC64Comswap {
+            rs: x(1),
+            rn: A64Reg::x_sp(rn),
+            rt: x(2),
+        };
+        state.write_x(3, 0xa000);
+        assert_eq!(
+            expect_fault(cas(3), &state, None).cause,
+            FaultCause::Permission
+        );
+        state.write_x(3, 0xb000);
+        assert_eq!(
+            expect_fault(cas(3), &state, None).cause,
+            FaultCause::Permission
+        );
+        state.write_x(3, 0x900c);
+        assert_eq!(
+            expect_fault(cas(3), &state, None).cause,
+            FaultCause::Alignment
+        );
+        state.write_x(3, 0x9004);
+        assert!(exec_user(cas(3), 0x4000, &mut state.clone()).is_ok());
+        state.set_sp(0x9008);
+        assert_eq!(
+            expect_fault(cas(31), &state, None).cause,
+            FaultCause::SpAlignment
+        );
+        state.set_sp(0x9010);
+        assert_eq!(
+            expect_fault(cas(31), &state, Some(1)).cause,
+            FaultCause::Permission
+        );
+    }
+
+    /// A8: in a fragment an atomic is a privileged access: a PAN violation (hard
+    /// error) while PSTATE.PAN is set, and never on runtime memory or beyond the
+    /// user VA range; with PAN clear it is logged as a window access and faults on
+    /// the user page permissions. `msr pan` sets the modelled PSTATE.PAN.
+    #[test]
+    fn window_atomic_requires_pan_clear_and_user_memory() {
+        let run = |insn: A64Insn, state: &mut MachineState, pan: &mut bool| {
+            let mut counter = UserAccessCounter::default();
+            let mut log = Vec::new();
+            let result = execute_insn(
+                insn,
+                0x4000,
+                state,
+                &mut AccessContext::Fragment {
+                    runtime_ranges: &[(0x7000, 0x8000)],
+                    counter: &mut counter,
+                    log: Some(&mut log),
+                    pan,
+                },
+            );
+            (result, log)
+        };
+        let ldadd = A64Insn::LdaddLdadd64Memop {
+            rs: x(1),
+            rn: A64Reg::x_sp(3),
+            rt: x(2),
+        };
+        let mut state = rw_page_at_0x9000();
+        state.write_x(1, 1);
+        state.write_x(3, 0x9000);
+
+        let mut pan = true;
+        let (result, _) = run(ldadd, &mut state, &mut pan);
+        assert!(
+            matches!(&result, Err(InsnError::Error(message)) if message.contains("PAN violation")),
+            "{result:?}"
+        );
+        let (result, _) = run(A64Insn::MsrImmMsrSiPstate { crm: 0 }, &mut state, &mut pan);
+        assert_eq!((result, pan), (Ok(0x4004), false));
+        let (result, log) = run(ldadd, &mut state, &mut pan);
+        assert_eq!(result, Ok(0x4004));
+        assert_eq!(log[0].privilege, Privilege::Window);
+        assert_eq!(state.read_u64(0x9000), 1);
+        for address in [0x7008, 0x1_0000_0000_9000, 0xffff_8000_0000_9000] {
+            state.write_x(3, address);
+            let (result, _) = run(ldadd, &mut state, &mut pan);
+            assert!(
+                matches!(result, Err(InsnError::Error(_))),
+                "{address:#x}: {result:?}"
+            );
+        }
+        state.write_x(3, 0xa000);
+        let (result, _) = run(ldadd, &mut state, &mut pan);
+        assert!(matches!(result, Err(InsnError::Fault(_))), "{result:?}");
+        let (result, _) = run(A64Insn::MsrImmMsrSiPstate { crm: 1 }, &mut state, &mut pan);
+        assert_eq!((result, pan), (Ok(0x4004), true));
+        // Original code never executes `msr pan` (admission rejects it).
+        assert!(exec_user(A64Insn::MsrImmMsrSiPstate { crm: 1 }, 0x4000, &mut state).is_err());
+    }
+
     #[test]
     fn acquire_release_alignment_faults_only_across_16_byte_blocks() {
         let mut state = rw_page_at_0x9000();

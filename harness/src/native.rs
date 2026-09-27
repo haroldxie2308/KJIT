@@ -16,6 +16,8 @@
 //! - **Fragment:** the encoded fragment is mapped RX and called like the kernel
 //!   will call it (x0 = pt_regs, x1 = extra params, x2 = entry address, lr =
 //!   return), driven by the same `decide_runtime_return` loop as `URuntime`.
+//!   It runs at EL0, so the one deviation from the kernel's bytes is that every
+//!   `msr pan` (A8 PAN windows and stubs) is a NOP in the mapped copy.
 //!
 //! Register state enters and leaves user code through the signal frame: a BRK
 //! in `kjit_native_enter_user` lets the SIGTRAP handler load every register from
@@ -46,7 +48,7 @@ use crate::runtime::{
     PT_REGS_SP_OFFSET,
 };
 use crate::shared::abi::pt_regs_x_slot_offset;
-use crate::shared::arm64::{decode_word, A64OperandRole};
+use crate::shared::arm64::{decode_word, A64Insn, A64OperandRole};
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::trans::cfg::admit_word;
 use crate::shared::trans::cfg::RuntimeExitReason;
@@ -1351,9 +1353,23 @@ pub fn run_fragment(
             fragment.len_bytes()
         ));
     }
+    // The one native-leg deviation (A8): the fragment runs at EL0 here, where
+    // `msr pan` is UNDEFINED, so the copy has NOPs for the PAN window's and PAN
+    // stubs' `msr pan, #0/#1`. The window atomic at EL0 already has the user
+    // permissions the window grants at EL1; the modelled PSTATE.PAN is checked by
+    // the interpreter (`URuntime`).
+    let nop = A64Insn::NopNopHiHints {}
+        .encode()
+        .map_err(|err| format!("encode nop: {err:?}"))?;
     let words = encoded
         .chunks_exact(4)
         .map(|chunk| u32::from_le_bytes(chunk.try_into().expect("chunks_exact(4)")))
+        .map(
+            |word| match A64Insn::decode(word).and_then(A64Insn::msr_pan) {
+                Some(_) => nop,
+                None => word,
+            },
+        )
         .collect::<Vec<_>>();
     let code = Mapping::anywhere(
         round_up(encoded.len() + 4, session.page),

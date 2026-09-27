@@ -315,11 +315,13 @@ impl Gen<'_> {
                 Choice::Undecodable => return Pending::Word(self.undecodable_word()),
                 Choice::Class(class) => class,
             };
-            let forms = self.catalog.of_class(class);
-            if forms.is_empty() {
+            // Section first, then one of its encodings (`sections_of_class`).
+            let sections = self.catalog.sections_of_class(class);
+            if sections.is_empty() {
                 continue;
             }
-            let form = self.rng.pick(&forms);
+            let section = &sections[self.rng.below(sections.len() as u64) as usize];
+            let form = self.rng.pick(section);
             // A form translation never admits is re-picked.
             if let Some(slot) = self.instance_slot(form, index, forbid, admitted_only) {
                 return slot;

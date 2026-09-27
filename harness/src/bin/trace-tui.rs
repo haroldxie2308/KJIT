@@ -2652,6 +2652,10 @@ fn rephrased_kind_label(kind: RephrasedInsnKind) -> &'static str {
         RephrasedInsnKind::UserAccess => "UAC",
         RephrasedInsnKind::BudgetCheck => "BGT",
         RephrasedInsnKind::AlignCheck => "ALN",
+        RephrasedInsnKind::RangeCheck => "RNG",
+        RephrasedInsnKind::PanToggle => "PAN",
+        RephrasedInsnKind::WindowAccess => "WAC",
+        RephrasedInsnKind::PanRestore => "PNR",
         RephrasedInsnKind::RuntimeExitPayload => "RTP",
         RephrasedInsnKind::RuntimeExitBranch => "REB",
     }

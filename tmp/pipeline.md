@@ -1529,6 +1529,171 @@ shape the independent verifier can check word by word.
   atomic at EL0 already has user permissions). Documented as the one
   native-leg deviation.
 
+# A8 implementation (2026-09-27)
+
+Implements "A8 contract". Decisions the contract left open:
+
+## Forms (`spec/arm64/subset.toml`)
+
+- The 160 LSE single-register atomics, exact XML names:
+  `LD{ADD,CLR,EOR,SET,SMAX,SMIN,UMAX,UMIN}{,B,H}.*_memop`, `SWP{,B,H}.*_memop`
+  (each: `_32`/`_64` or `_32` for B/H, times none/A/AL/L) and
+  `CAS{,B,H}.*_comswap` (`C32`/`C64`, times none/A/AL/L). `ST<op>` is `LD<op>`
+  with Rt = XZR (decodes as that form). CASP, FEAT_LSE128 (`LDCLRP`, `SWPP`,
+  ...), FEAT_LSUI and exclusives stay undecodable.
+- `MSR_imm.MSR_SI_pstate` pinned to PSTATE.PAN by `[decode.field_constraints]`
+  (`op1 = 0, op2 = 4`); CRm (the immediate) stays an operand. Every other
+  PSTATE field (UAO, SPSel, DAIFSet/Clr, DIT, TCO, SSBS, ALLINT, SM/ZA) and
+  CFINV/XAFLAG/AXFLAG stay undecodable (unit test over all op1/op2/CRm).
+- `is_decode_undefined`: none of them has an encoding rule (missing FEAT_LSE /
+  FEAT_PAN are CPU properties the module checks).
+- specgen: an execute pseudocode building `CreateAccDescAtomicOp(...)` (the
+  access goes through `MemAtomic{..}`, which the `Mem{..}` rule did not match)
+  gives `MemBase Rn` and `Memory`; register roles come from the generic `X(..)`
+  scan (CAS: Rs read + write, Rt read; LD<op>/SWP: Rs read, Rt write). No
+  existing form's metadata changed (JSON compared before/after).
+- `A64Insn::lse_atomic()` (op, size, rs, rt, rn) and `msr_pan()`: translator
+  and harness helpers, pinned against the generated mnemonics. The verifier
+  does not use them (own list in `rules::classify`).
+
+## Lowering (reg-virt, `RewritePlan::build` -> `plan_atomic` -> `emit_atomic_window`)
+
+`RewritePlan.mem` is `MemPlan::Unpriv(MemLowering) | MemPlan::Atomic(..)`: the
+same build/plan/emit point as every other memory form.
+
+| step | emitted | kind |
+| --- | --- | --- |
+| fills | `ldr xS, [sp, #slot]` of stack-backed Rs/Rt(read)/Rn | RegVirtHelper |
+| SP base only | `and sB, x17, #15; cbnz sB, <Mem stub>` | AlignCheck |
+| base not stack-backed | `mov sA, <mapped Rn>` (x17 for SP, x16 for x29) | RegVirtHelper |
+| size > 1, base not SP | `and sB, sA, #15; add sB, sB, #(size-1); and sB, sB, #16; cbnz sB, <Mem stub>` | AlignCheck |
+| range check | `ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>` | RangeCheck |
+| window | `msr pan, #0; <atomic, Rs/Rt mapped, Rn = sA>; msr pan, #1` | PanToggle, WindowAccess, PanToggle |
+| spills | `str xS, [sp, #slot]` of the written stack-backed register | RegVirtHelper |
+
+- `sA` is the stack-backed base's own fill scratch, else a fresh scratch;
+  `sB` is always a fresh scratch. Worst case 4 (three stack-backed operands +
+  `sB`, or two + `sA` + `sB`), so admission never runs out (unit test over all
+  160 forms x 10 register classes per operand).
+- Commit-after-last-access: before the atomic only scratch is written; the
+  atomic writes its destination (Rt, or CAS's Rs) only when it retires; spills
+  follow `msr pan, #1`.
+- Alignment: LSE atomics use `AArch64_UnalignedAccessFaults`'s
+  `exclusive || atomicop` rule: with FEAT_LSE2 they fault iff not inside one
+  `MemSingleGranule()` block, IMPLEMENTATION DEFINED >= 16 bytes, independent
+  of `nAA`. The check uses 16 (the minimum): an access it lets through never
+  faults natively; one it stops leaves for userspace, which re-executes it
+  natively, so on hardware with a larger granule it is conservative, never
+  wrong. Probed natively (M1, native fixture): `ldaddal x` at +12 SIGBUSes.
+- Two stubs per atomic that has an SP or alignment check. The contract's
+  verifier rule allows a PAN stub only as the target of the window `cbnz` and
+  of the atomic's fault site, so the alignment/SP checks (and they only) leave
+  through a plain `Mem` stub of the same PC; the PAN stub is `msr pan, #1`
+  (`RephrasedInsnKind::PanRestore`) + the same `Mem` exit group. Rephrase
+  emits the plain one only when reg-virt will branch to it
+  (`atomic_needs_check_stub`: size > 1 or an SP base); a byte atomic on a
+  register base has only its PAN stub.
+- User `msr pan` is rejected by `RewritePlan::build` (`PanUserForm`,
+  intrinsic): Unsupported exit, userspace takes its SIGILL.
+- Layout: PAN stubs have their own label map (one per PC, next to the plain
+  stub map); a `RangeCheck` `cbnz` and a `WindowAccess` fault site resolve to
+  the PAN stub, `AlignCheck` to the plain stub. `UntaggedPanWindow` if a kind
+  and the instruction (LSE atomic / `msr pan`) disagree; `MissingPanStub`.
+
+## Verifier (V3) rule 8 (`find_pan_windows`, `shared/verify/mod.rs`)
+
+- `rules::classify`: the 160 atomics -> `WindowAtomic { rn }`; `msr pan, #0`
+  -> `PanClear`, `#1` -> `PanSet`, any other CRm -> `MsrOther` (rejected:
+  `Msr`).
+- Pre-pass over the words: every `PanClear` at i must have `ubfx sB, sA, #48,
+  #8` (64-bit UBFM, immr = `USER_VA_BITS`, imms = `PAN_WINDOW_RANGE_TOP_BIT`,
+  sA/sB < 31) at i-2, `cbnz xsB, S` (64-bit) at i-1 with S > i+2 and S's word
+  `PanSet`, a `WindowAtomic` with `rn == sA` at i+1 and `PanSet` at i+2
+  (`PanWindow` otherwise). It records S as a PAN stub.
+- Fault table: a `WindowAtomic` site must name its window's S
+  (`PanStubTarget`; outside a window `AtomicOutsideWindow`); an LDTR/STTR site
+  must not name a PAN stub. Every stub is still an exit group (rule 7), whose
+  walk now accepts `PanSet` as its first word only.
+- Branches: a target that is a PAN stub is legal only from a window `cbnz`
+  aimed at it (`PanStubTarget`).
+- Join points: none on the window's `cbnz`, either MSR or the atomic (the
+  `ubfx` may be one: it recomputes the checked value).
+- Main pass: `WindowAtomic` outside a window -> `AtomicOutsideWindow` (and it
+  consumes its fault-site entry like a user access); `PanSet` neither a window
+  end nor a PAN stub -> `PanSetOutsideWindow`.
+- Constants come from `shared::abi` (`USER_VA_BITS = 48`,
+  `PAN_WINDOW_RANGE_TOP_BIT = 55`).
+
+## Harness
+
+- Interpreter: `execute_atomic`: one read-modify-write access that needs write
+  permission (a failing CAS too: its access descriptor is read + write), the
+  EL0 SP check (original code), the 16-byte block alignment rule, then
+  permissions; LD<op>/SWP return the old value in Rt, CAS in Rs (32-bit forms
+  zero-extend); a failed CAS writes no memory.
+- Fragment runs model PSTATE.PAN (`URuntime.pan`, set at every entry;
+  `AccessContext::Fragment.pan`): `msr pan` writes it; a window atomic with
+  PAN set is a hard error (PAN violation); with PAN clear it is
+  `Privilege::Window`, counted with the user accesses (fault injection) and
+  checked against the user page permissions, and it is a hard error on
+  runtime memory or beyond 2^48. Every return to the runtime requires PAN set
+  (hard error otherwise); a unit test removes a PAN stub's `msr` and gets it.
+- Native runner: the fragment copy has NOPs for every `msr pan` (EL0 cannot
+  execute it); the documented native-leg deviation.
+- Fuzzer: plain slots pick an instruction section first, then an encoding
+  (`Catalog::sections_of_class`), so the 160 atomic encodings (30 sections)
+  do not crowd out the other memory forms. Forms are still generated from
+  metadata only.
+
+## Kernel
+
+- `kjit_check_cpu`: FEAT_LSE (sanitised `ID_AA64ISAR0_EL1.Atomic >= IMP`),
+  `vabits_actual == 48`, `!system_supports_mte()`, and additionally
+  `SCTLR_EL1.SPAN == 0` (the contract's assumption that an exception inside a
+  window sets PAN; `cpu_enable_pan()` establishes it). Each refusal is
+  `-ENODEV` with a `pr_err` naming the cause.
+- `kjit-invariants.conf` pins `CONFIG_ARM64_VA_BITS_48=y`.
+- Nothing else changes: the fault site is an ordinary extable entry
+  (`EX_TYPE_UACCESS_ERR_ZERO`), so `insn_may_access_user` accepts the atomic's
+  EL1 permission faults, demand paging and CoW go through `handle_mm_fault`
+  like `copy_from_user`, and an unresolvable fault resumes at the PAN stub.
+
+## Findings (2026-09-27)
+
+- Harness: every fixture case (87, incl. `tests/arm64/lse_atomics.s`: every
+  operation and size, CAS success/failure, `st<op>`, SP / x12..x17 / x29 /
+  x9..x11 operands, a refcount loop with an SVC, a tagged pointer, faults on
+  the read-only and unmapped page, a kernel-half and a >2^48 pointer,
+  misaligned inside and across a 16-byte block, SP misaligned, user `msr pan`)
+  agrees interpreter, native original and native fragment, and passes the
+  fragment fault-injection differential through the windows. Natively a CAS
+  whose compare fails on a read-only page faults, and `ldaddal x` at +12 of a
+  block SIGBUSes. Mutation suite: every A8 class 100% rejected.
+- kjit-guest, `make redis-campaign`: `RESULT PASS`; suite same outcome for
+  all 2518 distinct tests; 5.8% of the suite's syscalls in the kernel (3.12M
+  of 53.9M; before: 5.0%), no `Mem` exit, no verifier rejection. Benchmark
+  unchanged (0.0% default, 1.6% `-P 16`, 0.7% 256 clients): the paths now
+  run past `ldadd` and stop at `dup v0.16b, w1` (0x4e010c20, SIMD; ~2.0M
+  Unsupported exits per default run), so SIMD, not atomics, is the next
+  redis blocker; under the suite also `mrs CNTVCT_EL0` (0xd53be04b).
+- kjit-guest-debug, `K4_ITERATIONS=3`: `RESULT PASS`, dmesg clean (KASAN,
+  lockdep); suite 4.5% in the kernel. K2 and K3 guest suites PASS on
+  kjit-guest.
+
+## Not verified
+
+- A PAN window interrupted or preempted on real hardware is only argued
+  (SPAN = 0 is checked at init); no test forces an exception inside the
+  three-instruction window.
+- An atomic inside a window that faults in the kernel (demand paging, CoW)
+  and is retried: the guest runs had no such fault on a window atomic that
+  was visible in counters (`exit_mem` 0; retried faults are not counted).
+- Execute-only user pages (readable by a window atomic): recorded exposure,
+  not tested.
+- Multi-threaded atomicity/ordering of the window atomic vs other threads is
+  the hardware's own (the same instruction runs), not tested by the
+  single-threaded harness.
+
 # K4: redis under KJIT (2026-09-27)
 
 Goal: redis in the guest under the auto mode with exactly native behaviour,

@@ -134,6 +134,25 @@ impl Catalog {
             .filter(|form| form.class == class)
             .collect()
     }
+
+    /// The forms of `class` grouped by XML instruction section (the key before
+    /// its `.`), in first-seen order. Picking a section first keeps a section
+    /// with many encodings (A8's LSE atomics: 160 forms in 30 sections) from
+    /// crowding out the rest of its class.
+    pub fn sections_of_class(&self, class: FormClass) -> Vec<Vec<&Form>> {
+        let mut sections: Vec<Vec<&Form>> = Vec::new();
+        for form in self.of_class(class) {
+            let section = |form: &Form| form.key().split('.').next().unwrap_or_default();
+            match sections
+                .iter_mut()
+                .find(|forms| section(forms[0]) == section(form))
+            {
+                Some(forms) => forms.push(form),
+                None => sections.push(vec![form]),
+            }
+        }
+        sections
+    }
 }
 
 fn derive_form(spec: &'static GeneratedInsnSpec) -> Form {

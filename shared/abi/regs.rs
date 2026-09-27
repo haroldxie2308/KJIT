@@ -27,6 +27,17 @@ pub const fn reg_virt_scratch_gpr(index: usize) -> Option<u8> {
     Some(REG_VIRT_SCRATCH_GPR_START + index as u8)
 }
 
+/// User VA size the A8 PAN window's range check assumes (tmp/pipeline.md, "A8
+/// contract"). Before a privileged LSE atomic the fragment requires VA bits
+/// `[PAN_WINDOW_RANGE_TOP_BIT:USER_VA_BITS]` of the address to be zero
+/// (`ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>`): bit 55 selects TTBR0 vs TTBR1
+/// and the top byte is ignored (TBI0), so the access is a TTBR0 user address below
+/// 2^48. The module refuses to load unless `vabits_actual == USER_VA_BITS` (K1 pins
+/// `ARM64_VA_BITS_48`).
+pub const USER_VA_BITS: u8 = 48;
+/// Highest VA bit the range check covers: bit 55, the TTBR select bit under TBI.
+pub const PAN_WINDOW_RANGE_TOP_BIT: u8 = 55;
+
 /// RET_PARAM0 of an `Unsupported` exit at a PC whose word could not be read (the
 /// translated code ran into the end of the readable text). A real word is always
 /// <= `u32::MAX`, so this never collides with one.

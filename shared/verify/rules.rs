@@ -2,9 +2,10 @@
 //! the ABI constants only. Nothing here knows how the translator produced a word.
 
 use crate::shared::abi::{
-    pt_regs_x_slot_offset, reg_virt_stack_backed_slot_offset, REG_VIRT_SCRATCH_GPR_END,
-    REG_VIRT_SCRATCH_GPR_START, REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START,
-    RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_ENTRY_ADDR_OFFSET, RUNTIME_FRAME_PT_REGS_PTR_OFFSET,
+    pt_regs_x_slot_offset, reg_virt_stack_backed_slot_offset, PAN_WINDOW_RANGE_TOP_BIT,
+    REG_VIRT_SCRATCH_GPR_END, REG_VIRT_SCRATCH_GPR_START, REG_VIRT_STACK_BACKED_REG_END,
+    REG_VIRT_STACK_BACKED_REG_START, RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_ENTRY_ADDR_OFFSET,
+    RUNTIME_FRAME_PT_REGS_PTR_OFFSET, USER_VA_BITS,
 };
 use crate::shared::arm64::{A64Insn, A64Mem, A64OperandRole, A64Reg, A64Reg31Mode};
 
@@ -50,6 +51,19 @@ pub(super) enum Form {
     Call,
     IndirectBranch,
     Exception,
+    /// An LSE single-register atomic (LD<op>, SWP, CAS; A8): a privileged access to
+    /// user memory. Allowed only as the atomic of an exact PAN window, based on the
+    /// window's range-checked register `rn`.
+    WindowAtomic {
+        rn: A64Reg,
+    },
+    /// `msr pan, #0`: allowed only as the start of an exact PAN window.
+    PanClear,
+    /// `msr pan, #1`: allowed only as a window's end or a PAN stub's first word.
+    PanSet,
+    /// Any other `MSR (immediate)` encoding the generated form decodes (PSTATE.PAN
+    /// with CRm other than 0/1): never allowed.
+    MsrOther,
 }
 
 pub(super) fn classify(insn: A64Insn) -> Form {
@@ -158,6 +172,172 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         | A64Insn::LdaprhLdaprh32lMemop { .. }
         // BTI (A7d): rephrased to `NOP`, so the allowlisted hint space stays NOP.
         | A64Insn::BtiBtiHbHints { .. } => Form::UserOnly,
+
+        // LSE single-register atomics (A8): LD<op>/SWP/CAS, every size and A/L/AL
+        // variant (ST<op> is LD<op> with Rt = XZR). The one list of window atomics.
+        A64Insn::LdaddLdadd32Memop { rn, .. }
+        | A64Insn::LdaddLdadda32Memop { rn, .. }
+        | A64Insn::LdaddLdaddal32Memop { rn, .. }
+        | A64Insn::LdaddLdaddl32Memop { rn, .. }
+        | A64Insn::LdaddLdadd64Memop { rn, .. }
+        | A64Insn::LdaddLdadda64Memop { rn, .. }
+        | A64Insn::LdaddLdaddal64Memop { rn, .. }
+        | A64Insn::LdaddLdaddl64Memop { rn, .. }
+        | A64Insn::LdaddbLdaddb32Memop { rn, .. }
+        | A64Insn::LdaddbLdaddab32Memop { rn, .. }
+        | A64Insn::LdaddbLdaddalb32Memop { rn, .. }
+        | A64Insn::LdaddbLdaddlb32Memop { rn, .. }
+        | A64Insn::LdaddhLdaddh32Memop { rn, .. }
+        | A64Insn::LdaddhLdaddah32Memop { rn, .. }
+        | A64Insn::LdaddhLdaddalh32Memop { rn, .. }
+        | A64Insn::LdaddhLdaddlh32Memop { rn, .. }
+        | A64Insn::LdclrLdclr32Memop { rn, .. }
+        | A64Insn::LdclrLdclra32Memop { rn, .. }
+        | A64Insn::LdclrLdclral32Memop { rn, .. }
+        | A64Insn::LdclrLdclrl32Memop { rn, .. }
+        | A64Insn::LdclrLdclr64Memop { rn, .. }
+        | A64Insn::LdclrLdclra64Memop { rn, .. }
+        | A64Insn::LdclrLdclral64Memop { rn, .. }
+        | A64Insn::LdclrLdclrl64Memop { rn, .. }
+        | A64Insn::LdclrbLdclrb32Memop { rn, .. }
+        | A64Insn::LdclrbLdclrab32Memop { rn, .. }
+        | A64Insn::LdclrbLdclralb32Memop { rn, .. }
+        | A64Insn::LdclrbLdclrlb32Memop { rn, .. }
+        | A64Insn::LdclrhLdclrh32Memop { rn, .. }
+        | A64Insn::LdclrhLdclrah32Memop { rn, .. }
+        | A64Insn::LdclrhLdclralh32Memop { rn, .. }
+        | A64Insn::LdclrhLdclrlh32Memop { rn, .. }
+        | A64Insn::LdeorLdeor32Memop { rn, .. }
+        | A64Insn::LdeorLdeora32Memop { rn, .. }
+        | A64Insn::LdeorLdeoral32Memop { rn, .. }
+        | A64Insn::LdeorLdeorl32Memop { rn, .. }
+        | A64Insn::LdeorLdeor64Memop { rn, .. }
+        | A64Insn::LdeorLdeora64Memop { rn, .. }
+        | A64Insn::LdeorLdeoral64Memop { rn, .. }
+        | A64Insn::LdeorLdeorl64Memop { rn, .. }
+        | A64Insn::LdeorbLdeorb32Memop { rn, .. }
+        | A64Insn::LdeorbLdeorab32Memop { rn, .. }
+        | A64Insn::LdeorbLdeoralb32Memop { rn, .. }
+        | A64Insn::LdeorbLdeorlb32Memop { rn, .. }
+        | A64Insn::LdeorhLdeorh32Memop { rn, .. }
+        | A64Insn::LdeorhLdeorah32Memop { rn, .. }
+        | A64Insn::LdeorhLdeoralh32Memop { rn, .. }
+        | A64Insn::LdeorhLdeorlh32Memop { rn, .. }
+        | A64Insn::LdsetLdset32Memop { rn, .. }
+        | A64Insn::LdsetLdseta32Memop { rn, .. }
+        | A64Insn::LdsetLdsetal32Memop { rn, .. }
+        | A64Insn::LdsetLdsetl32Memop { rn, .. }
+        | A64Insn::LdsetLdset64Memop { rn, .. }
+        | A64Insn::LdsetLdseta64Memop { rn, .. }
+        | A64Insn::LdsetLdsetal64Memop { rn, .. }
+        | A64Insn::LdsetLdsetl64Memop { rn, .. }
+        | A64Insn::LdsetbLdsetb32Memop { rn, .. }
+        | A64Insn::LdsetbLdsetab32Memop { rn, .. }
+        | A64Insn::LdsetbLdsetalb32Memop { rn, .. }
+        | A64Insn::LdsetbLdsetlb32Memop { rn, .. }
+        | A64Insn::LdsethLdseth32Memop { rn, .. }
+        | A64Insn::LdsethLdsetah32Memop { rn, .. }
+        | A64Insn::LdsethLdsetalh32Memop { rn, .. }
+        | A64Insn::LdsethLdsetlh32Memop { rn, .. }
+        | A64Insn::LdsmaxLdsmax32Memop { rn, .. }
+        | A64Insn::LdsmaxLdsmaxa32Memop { rn, .. }
+        | A64Insn::LdsmaxLdsmaxal32Memop { rn, .. }
+        | A64Insn::LdsmaxLdsmaxl32Memop { rn, .. }
+        | A64Insn::LdsmaxLdsmax64Memop { rn, .. }
+        | A64Insn::LdsmaxLdsmaxa64Memop { rn, .. }
+        | A64Insn::LdsmaxLdsmaxal64Memop { rn, .. }
+        | A64Insn::LdsmaxLdsmaxl64Memop { rn, .. }
+        | A64Insn::LdsmaxbLdsmaxb32Memop { rn, .. }
+        | A64Insn::LdsmaxbLdsmaxab32Memop { rn, .. }
+        | A64Insn::LdsmaxbLdsmaxalb32Memop { rn, .. }
+        | A64Insn::LdsmaxbLdsmaxlb32Memop { rn, .. }
+        | A64Insn::LdsmaxhLdsmaxh32Memop { rn, .. }
+        | A64Insn::LdsmaxhLdsmaxah32Memop { rn, .. }
+        | A64Insn::LdsmaxhLdsmaxalh32Memop { rn, .. }
+        | A64Insn::LdsmaxhLdsmaxlh32Memop { rn, .. }
+        | A64Insn::LdsminLdsmin32Memop { rn, .. }
+        | A64Insn::LdsminLdsmina32Memop { rn, .. }
+        | A64Insn::LdsminLdsminal32Memop { rn, .. }
+        | A64Insn::LdsminLdsminl32Memop { rn, .. }
+        | A64Insn::LdsminLdsmin64Memop { rn, .. }
+        | A64Insn::LdsminLdsmina64Memop { rn, .. }
+        | A64Insn::LdsminLdsminal64Memop { rn, .. }
+        | A64Insn::LdsminLdsminl64Memop { rn, .. }
+        | A64Insn::LdsminbLdsminb32Memop { rn, .. }
+        | A64Insn::LdsminbLdsminab32Memop { rn, .. }
+        | A64Insn::LdsminbLdsminalb32Memop { rn, .. }
+        | A64Insn::LdsminbLdsminlb32Memop { rn, .. }
+        | A64Insn::LdsminhLdsminh32Memop { rn, .. }
+        | A64Insn::LdsminhLdsminah32Memop { rn, .. }
+        | A64Insn::LdsminhLdsminalh32Memop { rn, .. }
+        | A64Insn::LdsminhLdsminlh32Memop { rn, .. }
+        | A64Insn::LdumaxLdumax32Memop { rn, .. }
+        | A64Insn::LdumaxLdumaxa32Memop { rn, .. }
+        | A64Insn::LdumaxLdumaxal32Memop { rn, .. }
+        | A64Insn::LdumaxLdumaxl32Memop { rn, .. }
+        | A64Insn::LdumaxLdumax64Memop { rn, .. }
+        | A64Insn::LdumaxLdumaxa64Memop { rn, .. }
+        | A64Insn::LdumaxLdumaxal64Memop { rn, .. }
+        | A64Insn::LdumaxLdumaxl64Memop { rn, .. }
+        | A64Insn::LdumaxbLdumaxb32Memop { rn, .. }
+        | A64Insn::LdumaxbLdumaxab32Memop { rn, .. }
+        | A64Insn::LdumaxbLdumaxalb32Memop { rn, .. }
+        | A64Insn::LdumaxbLdumaxlb32Memop { rn, .. }
+        | A64Insn::LdumaxhLdumaxh32Memop { rn, .. }
+        | A64Insn::LdumaxhLdumaxah32Memop { rn, .. }
+        | A64Insn::LdumaxhLdumaxalh32Memop { rn, .. }
+        | A64Insn::LdumaxhLdumaxlh32Memop { rn, .. }
+        | A64Insn::LduminLdumin32Memop { rn, .. }
+        | A64Insn::LduminLdumina32Memop { rn, .. }
+        | A64Insn::LduminLduminal32Memop { rn, .. }
+        | A64Insn::LduminLduminl32Memop { rn, .. }
+        | A64Insn::LduminLdumin64Memop { rn, .. }
+        | A64Insn::LduminLdumina64Memop { rn, .. }
+        | A64Insn::LduminLduminal64Memop { rn, .. }
+        | A64Insn::LduminLduminl64Memop { rn, .. }
+        | A64Insn::LduminbLduminb32Memop { rn, .. }
+        | A64Insn::LduminbLduminab32Memop { rn, .. }
+        | A64Insn::LduminbLduminalb32Memop { rn, .. }
+        | A64Insn::LduminbLduminlb32Memop { rn, .. }
+        | A64Insn::LduminhLduminh32Memop { rn, .. }
+        | A64Insn::LduminhLduminah32Memop { rn, .. }
+        | A64Insn::LduminhLduminalh32Memop { rn, .. }
+        | A64Insn::LduminhLduminlh32Memop { rn, .. }
+        | A64Insn::SwpSwp32Memop { rn, .. }
+        | A64Insn::SwpSwpa32Memop { rn, .. }
+        | A64Insn::SwpSwpal32Memop { rn, .. }
+        | A64Insn::SwpSwpl32Memop { rn, .. }
+        | A64Insn::SwpSwp64Memop { rn, .. }
+        | A64Insn::SwpSwpa64Memop { rn, .. }
+        | A64Insn::SwpSwpal64Memop { rn, .. }
+        | A64Insn::SwpSwpl64Memop { rn, .. }
+        | A64Insn::SwpbSwpb32Memop { rn, .. }
+        | A64Insn::SwpbSwpab32Memop { rn, .. }
+        | A64Insn::SwpbSwpalb32Memop { rn, .. }
+        | A64Insn::SwpbSwplb32Memop { rn, .. }
+        | A64Insn::SwphSwph32Memop { rn, .. }
+        | A64Insn::SwphSwpah32Memop { rn, .. }
+        | A64Insn::SwphSwpalh32Memop { rn, .. }
+        | A64Insn::SwphSwplh32Memop { rn, .. }
+        | A64Insn::CasCasC32Comswap { rn, .. }
+        | A64Insn::CasCasaC32Comswap { rn, .. }
+        | A64Insn::CasCasalC32Comswap { rn, .. }
+        | A64Insn::CasCaslC32Comswap { rn, .. }
+        | A64Insn::CasCasC64Comswap { rn, .. }
+        | A64Insn::CasCasaC64Comswap { rn, .. }
+        | A64Insn::CasCasalC64Comswap { rn, .. }
+        | A64Insn::CasCaslC64Comswap { rn, .. }
+        | A64Insn::CasbCasbC32Comswap { rn, .. }
+        | A64Insn::CasbCasabC32Comswap { rn, .. }
+        | A64Insn::CasbCasalbC32Comswap { rn, .. }
+        | A64Insn::CasbCaslbC32Comswap { rn, .. }
+        | A64Insn::CashCashC32Comswap { rn, .. }
+        | A64Insn::CashCasahC32Comswap { rn, .. }
+        | A64Insn::CashCasalhC32Comswap { rn, .. }
+        | A64Insn::CashCaslhC32Comswap { rn, .. } => Form::WindowAtomic { rn },
+        A64Insn::MsrImmMsrSiPstate { crm: 0 } => Form::PanClear,
+        A64Insn::MsrImmMsrSiPstate { crm: 1 } => Form::PanSet,
+        A64Insn::MsrImmMsrSiPstate { .. } => Form::MsrOther,
 
         A64Insn::LdrImmGenLdr32LdstImmpost { mem, .. }
         | A64Insn::LdrImmGenLdr32LdstImmpre { mem, .. }
@@ -456,6 +636,31 @@ pub(super) fn budget_sequence(seq: &[A64Insn]) -> Option<i64> {
         {
             Some(imm19.value())
         }
+        _ => None,
+    }
+}
+
+/// The PAN window's range check (A8): `ubfx sB, sA, #USER_VA_BITS, #width` with
+/// `width` reaching bit `PAN_WINDOW_RANGE_TOP_BIT` (64-bit `UBFM`, `immr = 48`,
+/// `imms = 55`), both registers general-purpose. Returns `(sA, sB)`.
+pub(super) fn range_check(insn: &A64Insn) -> Option<(u8, u8)> {
+    match insn {
+        A64Insn::UbfmUbfm64mBitfield { immr, imms, rn, rd }
+            if immr.value() == USER_VA_BITS as i64
+                && imms.value() == PAN_WINDOW_RANGE_TOP_BIT as i64
+                && rn.enc() < 31
+                && rd.enc() < 31 =>
+        {
+            Some((rn.enc(), rd.enc()))
+        }
+        _ => None,
+    }
+}
+
+/// `cbnz x<reg>, <label>` (64-bit): returns `(reg, byte delta)`.
+pub(super) fn cbnz64(insn: &A64Insn) -> Option<(u8, i64)> {
+    match insn {
+        A64Insn::CbnzCbnz64Compbranch { imm19, rt } => Some((rt.enc(), imm19.value())),
         _ => None,
     }
 }

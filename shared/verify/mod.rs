@@ -119,6 +119,21 @@ pub enum VerifyRule {
     /// 7: a fault/budget stub that does not start an exit group, or an exit group
     /// that does not end in `b <epilogue>`.
     ExitGroup,
+    /// 8 (A8): a `msr pan, #0` that is not the start of an exact PAN window:
+    /// `ubfx sB, sA, #48, #8; cbnz sB, <S>; msr pan, #0; <LSE atomic, base sA,
+    /// fault site -> S>; msr pan, #1`, with S a PAN stub, or a join point on the
+    /// `cbnz`, either MSR or the atomic.
+    PanWindow,
+    /// 8: an LSE atomic outside a PAN window.
+    AtomicOutsideWindow,
+    /// 8: a `msr pan, #1` that is neither a window's end nor a PAN stub's first word.
+    PanSetOutsideWindow,
+    /// 8: a PAN stub targeted by anything but a window `cbnz` or the fault site of
+    /// that window's atomic, or a window atomic whose fault site is not its
+    /// window's PAN stub.
+    PanStubTarget,
+    /// 8: any other `MSR` (PSTATE.PAN with an immediate other than 0/1).
+    Msr,
 }
 
 const fn err(offset: usize, rule: VerifyRule) -> VerifyError {
@@ -140,6 +155,10 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
         len: code.len(),
     };
 
+    // PAN windows (rule 8): every `msr pan, #0` must start an exact window. Records
+    // each window's words and its PAN stub before any table is read.
+    let windows = find_pan_windows(&frag)?;
+
     // Join points: every place control can arrive other than by falling through.
     // The pt_regs dataflow restarts at each of them.
     let mut join = alloc_bools(body.len())?;
@@ -156,12 +175,23 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
         let access = frag
             .body_index(site.access_offset)
             .ok_or(err(site.access_offset, VerifyRule::FaultSiteNotUserAccess))?;
-        if !matches!(classify(body[access]), Form::UserAccess { .. }) {
-            return Err(err(site.access_offset, VerifyRule::FaultSiteNotUserAccess));
-        }
         let stub = frag
             .body_index(site.stub_offset)
             .ok_or(err(site.stub_offset, VerifyRule::ExitGroup))?;
+        match classify(body[access]) {
+            // A PAN stub restores PAN for a window atomic only.
+            Form::UserAccess { .. } if windows.pan_stub[stub] => {
+                return Err(err(site.access_offset, VerifyRule::PanStubTarget));
+            }
+            Form::UserAccess { .. } => {}
+            // The window atomic's fault site is its window's PAN stub.
+            Form::WindowAtomic { .. } => match windows.atomic_stub[access] {
+                Some(pan_stub) if pan_stub == stub => {}
+                Some(_) => return Err(err(site.access_offset, VerifyRule::PanStubTarget)),
+                None => return Err(err(site.access_offset, VerifyRule::AtomicOutsideWindow)),
+            },
+            _ => return Err(err(site.access_offset, VerifyRule::FaultSiteNotUserAccess)),
+        }
         check_exit_group(&frag, stub, &mut exit_group_checked)?;
         join[stub] = true;
         cold_start = cold_start.min(stub);
@@ -202,6 +232,11 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
                 return Err(target_error);
             }
             if let Some(target_index) = frag.body_index(target as usize) {
+                // A PAN stub is the target of its windows' range-check `cbnz` only.
+                if windows.pan_stub[target_index] && windows.cbnz_stub[index] != Some(target_index)
+                {
+                    return Err(err(offset, VerifyRule::PanStubTarget));
+                }
                 if target_index >= cold_start
                     && check_exit_group(&frag, target_index, &mut exit_group_checked).is_err()
                 {
@@ -209,6 +244,14 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
                 }
                 join[target_index] = true;
             }
+        }
+    }
+
+    // Rule 8: nothing jumps into a window past its range check (the `ubfx` may be a
+    // join point: it recomputes the checked value).
+    for (index, is_start) in windows.clear.iter().enumerate() {
+        if *is_start && (index - 1..=index + 2).any(|inner| join[inner]) {
+            return Err(err(frag.offset(index), VerifyRule::PanWindow));
         }
     }
 
@@ -246,6 +289,23 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
                     _ => return Err(err(offset, VerifyRule::MissingFaultSite)),
                 }
             }
+            Form::WindowAtomic { .. } => {
+                if windows.atomic_stub[index].is_none() {
+                    return Err(err(offset, VerifyRule::AtomicOutsideWindow));
+                }
+                match sites.next() {
+                    Some(site) if site.access_offset == offset => {}
+                    _ => return Err(err(offset, VerifyRule::MissingFaultSite)),
+                }
+            }
+            // Every `msr pan, #0` was matched to its window by `find_pan_windows`.
+            Form::PanClear => {}
+            Form::PanSet => {
+                if !windows.end[index] && !windows.pan_stub[index] {
+                    return Err(err(offset, VerifyRule::PanSetOutsideWindow));
+                }
+            }
+            Form::MsrOther => return Err(err(offset, VerifyRule::Msr)),
             Form::RuntimeAccess { mem, bytes, store } => {
                 defines_pt_regs =
                     check_runtime_access(&frag, index, *insn, mem, bytes, store, pt_regs)?;
@@ -436,12 +496,18 @@ fn check_exit_group(
                 checked[stub] = true;
                 return Ok(());
             }
+            // A PAN stub (A8) restores PAN as its first word.
+            Form::PanSet if index == stub => {}
             Form::Branch { .. }
             | Form::Call
             | Form::IndirectBranch
             | Form::Exception
             | Form::UserAccess { .. }
-            | Form::UserOnly => return Err(reject(index)),
+            | Form::UserOnly
+            | Form::WindowAtomic { .. }
+            | Form::PanClear
+            | Form::PanSet
+            | Form::MsrOther => return Err(reject(index)),
             Form::Alu
             | Form::Nop
             | Form::Barrier
@@ -451,6 +517,81 @@ fn check_exit_group(
         }
     }
     Err(reject(frag.body.len() - 1))
+}
+
+/// Rule 8 (A8) facts, per body word.
+struct PanWindows {
+    /// `msr pan, #0` of a window.
+    clear: SharedVec<bool>,
+    /// `msr pan, #1` ending a window.
+    end: SharedVec<bool>,
+    /// First word (`msr pan, #1`) of a PAN stub some window's `cbnz` targets.
+    pan_stub: SharedVec<bool>,
+    /// Window atomic -> its window's PAN stub.
+    atomic_stub: SharedVec<Option<usize>>,
+    /// Window range-check `cbnz` -> its PAN stub.
+    cbnz_stub: SharedVec<Option<usize>>,
+}
+
+/// Rule 8: every `msr pan, #0` at index i starts the exact window
+///
+/// ```text
+/// i-2  ubfx sB, sA, #48, #8        (64-bit UBFM immr=48 imms=55, sA/sB < 31)
+/// i-1  cbnz sB, <S>                (forward; S's first word is msr pan, #1)
+/// i    msr  pan, #0
+/// i+1  <LSE atomic, base sA>
+/// i+2  msr  pan, #1
+/// ```
+///
+/// The atomic's fault site, the PAN stub's exit-group shape and the absence of
+/// join points are checked by the callers once the tables and joins are known.
+fn find_pan_windows(frag: &Fragment<'_>) -> Result<PanWindows, VerifyError> {
+    let len = frag.body.len();
+    let mut windows = PanWindows {
+        clear: alloc_bools(len)?,
+        end: alloc_bools(len)?,
+        pan_stub: alloc_bools(len)?,
+        atomic_stub: alloc_none(len)?,
+        cbnz_stub: alloc_none(len)?,
+    };
+    for index in 0..len {
+        if classify(frag.body[index]) != Form::PanClear {
+            continue;
+        }
+        let reject = err(frag.offset(index), VerifyRule::PanWindow);
+        if index < 2 || index + 2 >= len {
+            return Err(reject);
+        }
+        let (sa, sb) = rules::range_check(&frag.body[index - 2]).ok_or(reject)?;
+        let (tested, delta) = rules::cbnz64(&frag.body[index - 1]).ok_or(reject)?;
+        let target = frag.offset(index - 1) as i64 + delta;
+        let stub = usize::try_from(target)
+            .ok()
+            .and_then(|target| frag.body_index(target))
+            .filter(|&stub| stub > index + 2 && classify(frag.body[stub]) == Form::PanSet)
+            .ok_or(reject)?;
+        let based_on_sa =
+            matches!(classify(frag.body[index + 1]), Form::WindowAtomic { rn } if rn.enc() == sa);
+        if tested != sb || !based_on_sa || classify(frag.body[index + 2]) != Form::PanSet {
+            return Err(reject);
+        }
+        windows.clear[index] = true;
+        windows.end[index + 2] = true;
+        windows.pan_stub[stub] = true;
+        windows.atomic_stub[index + 1] = Some(stub);
+        windows.cbnz_stub[index - 1] = Some(stub);
+    }
+    Ok(windows)
+}
+
+fn alloc_none(len: usize) -> Result<SharedVec<Option<usize>>, VerifyError> {
+    let mut out =
+        SharedVec::with_capacity(len, GFP_KERNEL).map_err(|_| err(0, VerifyRule::Alloc))?;
+    for _ in 0..len {
+        out.push(None, GFP_KERNEL)
+            .map_err(|_| err(0, VerifyRule::Alloc))?;
+    }
+    Ok(out)
 }
 
 /// Rule 6: the back-edge at `index` is guarded by the budget check, and nothing
