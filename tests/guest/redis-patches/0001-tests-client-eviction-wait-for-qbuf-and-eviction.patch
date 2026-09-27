@@ -1,0 +1,47 @@
+Subject: [PATCH] tests: client-eviction: wait for the query buffer and the eviction
+
+Backport to redis 7.0.15 of the two upstream hunks that fix the race in
+tests/unit/client-eviction.tcl "client evicted due to percentage of
+maxmemory" (the test writes a query on one connection and immediately checks
+CLIENT LIST on another; the server may not have read the bytes yet, so the
+qbuf / eviction check can run too early; the failed test also leaves
+maxmemory 6mb set, which evicts the next test's client):
+
+- redis/redis 447ce11a64bbcb79b0336a0940c2fb62993e7586
+  "solve race conditions in tests (#13433)", Oran Agra, 2024-07-22:
+  wait_for_condition before the tot-mem check.
+- redis/redis 64a40b20d906f019a32fcb227c938768079dd9ed
+  "Async IO Threads (#13695)", Yuan Wang, 2024-12-23 (test hunk only):
+  `assert {![client_exists $cname]}` -> wait_for_condition.
+
+The hunks are taken verbatim; only the context is 7.0.15's. The other
+client-eviction.tcl hunks of 64a40b20 are about io-threads (not in 7.0) and
+are not backported. Applied by scripts/mk-guest-rootfs.sh (KJIT K4).
+
+--- a/tests/unit/client-eviction.tcl
++++ b/tests/unit/client-eviction.tcl
+@@ -93,6 +93,11 @@
+         set n [expr $maxmemory_clients_actual / 2]
+         $rr write [join [list "*1\r\n\$$n\r\n" [string repeat v $n]] ""]
+         $rr flush
++        wait_for_condition 100 10 {
++            [client_field $cname tot-mem] >= $n
++        } else {
++            fail "Failed to fill qbuf for test"
++        }
+         set tot_mem [client_field $cname tot-mem]
+         assert {$tot_mem >= $n && $tot_mem < $maxmemory_clients_actual}
+         
+@@ -103,7 +108,11 @@
+             $rr write [join [list "*1\r\n\$$maxmemory_clients_actual\r\n" [string repeat v $maxmemory_clients_actual]] ""]
+             $rr flush
+         } e
+-        assert {![client_exists $cname]}
++        wait_for_condition 100 10 {
++            ![client_exists $cname]
++        } else {
++            fail "Failed to evict client"
++        }
+         $rr close
+         
+         # Restore settings

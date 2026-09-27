@@ -1577,7 +1577,8 @@ latest numbers in README, "K4: Redis under KJIT".
 
 ## Exclusions
 
-- None from the default `./runtest` list: all 84 units run. runtest itself
+- None from the default `./runtest` list: all 84 units run (with one
+  backported upstream test fix, see below). runtest itself
   ignores the 15 `large-memory` tests (need `--large-memory` and > 4 GiB).
   Not run: `--accurate`, `runtest-moduleapi`, `runtest-cluster`,
   `runtest-sentinel`, TLS (built without TLS).
@@ -1620,24 +1621,29 @@ latest numbers in README, "K4: Redis under KJIT".
 - Speed: under the suite the KJIT run took 302 s vs 251 s (psync2's
   time-bounded loops ran fewer cycles); pipelined SET 1.92M vs 2.33M req/s.
 
-## Open: one unreproduced suite failure with KJIT
+## Test race in redis 7.0.15's suite (backported fix)
 
-- 1 of 8 KJIT-on full-suite runs (7 kjit-guest, 1 debug; 0 of 5 KJIT-off runs) failed
-  `unit/client-eviction` "client evicted due to percentage of maxmemory"
-  (`assert {![client_exists $cname]}` right after writing a query of 7% of
-  maxmemory from another connection), which left `maxmemory 6mb` set, so the
-  next test's client was evicted and runtest aborted with an `[exception]`.
-- Not reproduced: 110 + 110 runs of the unit alone KJIT on/off (60 of them
-  with 6 CPU hogs), and 8000 iterations of the same scenario in a tclsh loop
-  KJIT on/off (the client was always evicted before the immediate check and
-  never missed eviction). The 5 KJIT-on full-suite runs after it passed.
-- Most likely a race in the 7.0 test: redis evicts in `beforeSleep`/
-  `processCommand`, so a CLIENT LIST on the other connection can run before
-  the server has read the last bytes the test flushed into the socket;
-  upstream later wrapped both asserts of this test in `wait_for_condition`
-  (7.4: the tot-mem check; unstable: the eviction check). KJIT's slower read
-  path widens that window under the 16-client suite. Not excluded (one
-  occurrence, not proven); `make redis-campaign` can fail on it.
+- 1 of 8 KJIT-on full-suite runs (7 kjit-guest, 1 debug; 0 of 5 KJIT-off runs)
+  failed `unit/client-eviction` "client evicted due to percentage of
+  maxmemory" (`assert {![client_exists $cname]}` right after writing a query
+  of 7% of maxmemory from another connection), which left `maxmemory 6mb`
+  set, so the next test's client was evicted and runtest aborted with an
+  `[exception]`. Not reproduced in 110 + 110 runs of the unit alone KJIT
+  on/off (60 with 6 CPU hogs) nor in 8000 iterations of the scenario in a
+  tclsh loop.
+- Cause: a race in the 7.0 test. The eviction happens when the server has
+  read the query; the test checks CLIENT LIST on another connection right
+  after flushing it, so the check can run first. KJIT's slower syscall path
+  widens that window. Upstream fixed exactly these two asserts with
+  `wait_for_condition`: redis/redis 447ce11a64bb ("solve race conditions in
+  tests", #13433: the tot-mem check) and 64a40b20d906 ("Async IO Threads",
+  #13695, test hunk only: the eviction check).
+- Fix: `tests/guest/redis-patches/0001-*.patch` backports those two hunks
+  verbatim onto 7.0.15 (header cites both commits). `mk-guest-rootfs.sh`
+  applies every `tests/guest/redis-patches/*.patch` to the unpacked, still
+  hash-checked tarball (`patch --forward --batch`, fail-fast) and records
+  `<patch sha256> <name> on redis-7.0.15.tar.gz <tarball sha256>` in
+  `/opt/redis/KJIT-PATCHES`. The test is neither skipped nor retried.
 
 ## Known limitations
 

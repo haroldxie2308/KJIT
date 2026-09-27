@@ -92,7 +92,8 @@ MTREE
 
 # K4 redis layer: /opt/redis is the redis source tree reduced to what
 # ./runtest needs (src/redis-* binaries, tests/ with the test modules built,
-# runtest*, the sample configs), and tcl8.6 (tclsh8.6, libtcl8.6 and its
+# runtest*, the sample configs), with tests/guest/redis-patches/*.patch
+# (backported upstream test fixes) applied, and tcl8.6 (tclsh8.6, libtcl8.6 and its
 # script library; its only other dependencies, libc and zlib, are in base).
 # Built in debian:bookworm, so it links against the same glibc as base.cpio.
 # Upstream's default flags: like Debian's redis-server (bookworm's
@@ -102,7 +103,8 @@ build_redis() {
     local root="$out_dir/redis-root"
     rm -rf "$root"
     mkdir -p "$root"
-    docker run --rm --platform linux/arm64 -v "$root:/out" "$base_image" sh -euc '
+    docker run --rm --platform linux/arm64 -v "$root:/out" \
+        -v "$ROOT_DIR/tests/guest/redis-patches:/redis-patches:ro" "$base_image" sh -euc '
         apt-get update
         DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             build-essential pkg-config curl ca-certificates tcl8.6
@@ -111,6 +113,15 @@ build_redis() {
         mkdir -p /build
         tar -xzf /tmp/redis.tar.gz -C /build
         cd "/build/redis-$1"
+        # Backports of upstream test fixes onto the pinned tarball (each patch
+        # header names its upstream commits); a patch that does not apply
+        # stops the build. Provenance: /opt/redis/KJIT-PATCHES.
+        : > /tmp/KJIT-PATCHES
+        for p in /redis-patches/*.patch; do
+            patch -p1 --forward --batch < "$p"
+            echo "$(sha256sum < "$p" | cut -d" " -f1) $(basename "$p") on redis-$1.tar.gz $2" \
+                | tee -a /tmp/KJIT-PATCHES
+        done
         make -j"$(nproc)" BUILD_TLS=no
         make -j"$(nproc)" -C tests/modules
         dst=/out/opt/redis
@@ -123,6 +134,7 @@ build_redis() {
         done
         cp -a tests runtest runtest-moduleapi runtest-sentinel runtest-cluster \
             redis.conf sentinel.conf "$dst/"
+        cp /tmp/KJIT-PATCHES "$dst/KJIT-PATCHES"
         find "$dst/tests" \( -name "*.o" -o -name "*.xo" \) -delete
         for p in tcl8.6 libtcl8.6; do
             dpkg -L "$p"
