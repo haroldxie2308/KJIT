@@ -15,3 +15,9 @@ ratatui = "=0.27.0"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(CONFIG_RUST)"] }
+
+# The verifier-mutation, fixture and fuzz suites execute millions of
+# interpreted instructions; unoptimized they dominate `make harness-test`
+# (~12 min). Overflow checks and debug assertions stay on.
+[profile.test]
+opt-level = 2
