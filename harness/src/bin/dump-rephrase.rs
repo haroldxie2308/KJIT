@@ -90,6 +90,10 @@ fn main() {
                 RephrasedInsnKind::UserAccess => "user-access",
                 RephrasedInsnKind::BudgetCheck => "budget-check",
                 RephrasedInsnKind::AlignCheck => "align-check",
+                RephrasedInsnKind::RangeCheck => "range-check",
+                RephrasedInsnKind::PanToggle => "pan-toggle",
+                RephrasedInsnKind::WindowAccess => "window-access",
+                RephrasedInsnKind::PanRestore => "pan-restore",
                 RephrasedInsnKind::RuntimeExitPayload => "rt-payload",
                 RephrasedInsnKind::RuntimeExitBranch => "rt-branch",
             };

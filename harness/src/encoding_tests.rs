@@ -25,6 +25,7 @@ fn encoding_matches_llvm_for_handwritten_cases() {
     cases.extend(mem_encoding_cases());
     cases.extend(barrier_acqrel_encoding_cases());
     cases.extend(bti_carry_crc_encoding_cases());
+    cases.extend(lse_msr_encoding_cases());
     let decode_forms = decode_forms_from_subset_toml(SUBSET_TOML);
     let decode_form_set = decode_forms.iter().cloned().collect::<BTreeSet<_>>();
     let covered_forms = cases.iter().map(|case| case.form).collect::<BTreeSet<_>>();
@@ -3058,6 +3059,64 @@ fn bti_carry_crc_encoding_cases() -> Vec<EncodingCase> {
             form,
             format!("    .arch_extension crc\n    {mnemonic} w16, wzr, {rm_name}"),
             insn(rm, w(31), w(16)),
+        ));
+    }
+    cases
+}
+
+/// A8: every LSE atomic form (LD<op>, SWP, CAS; all sizes and A/L/AL), generated
+/// from the subset metadata: the mnemonic, W or X registers by access size, the
+/// base cycling through x0..x30 and SP, Rt = XZR on some (the ST<op> alias
+/// shape). The expected instruction is built from the form's own base word and
+/// register fields, never from `encode`. Plus `msr pan, #imm` for every CRm.
+fn lse_msr_encoding_cases() -> Vec<EncodingCase> {
+    let mut cases = Vec::new();
+    for (index, spec) in crate::shared::arm64::GENERATED_A64_SUBSET
+        .iter()
+        .enumerate()
+    {
+        let Some(atomic) = A64Insn::decode(spec.value).and_then(A64Insn::lse_atomic) else {
+            continue;
+        };
+        let rs = (index % 29) as u32;
+        let rt = if index % 5 == 0 {
+            31
+        } else {
+            ((index + 7) % 31) as u32
+        };
+        let rn = (index % 32) as u32;
+        let field = |name: &str, value: u32| {
+            let field = spec
+                .field(name)
+                .unwrap_or_else(|| panic!("{}: no {name}", spec.key));
+            value << field.shift()
+        };
+        let word = spec.value | field("Rs", rs) | field("Rt", rt) | field("Rn", rn);
+        let expected = A64Insn::decode(word).unwrap();
+        assert_eq!(expected.key(), spec.key);
+        let prefix = if atomic.size == 8 { "x" } else { "w" };
+        let reg = |enc: u32| match enc {
+            31 => format!("{prefix}zr"),
+            _ => format!("{prefix}{enc}"),
+        };
+        let base = match rn {
+            31 => "sp".to_string(),
+            _ => format!("x{rn}"),
+        };
+        let asm = format!(
+            "    .arch_extension lse\n    {} {}, {}, [{base}]",
+            spec.mnemonic.to_lowercase(),
+            reg(rs),
+            reg(rt)
+        );
+        cases.push(case(spec.key, asm, expected));
+    }
+    assert_eq!(cases.len(), 160);
+    for crm in 0..16_u8 {
+        cases.push(case(
+            "MSR_imm.MSR_SI_pstate",
+            format!("    .arch_extension pan\n    msr pan, #{crm}"),
+            A64Insn::MsrImmMsrSiPstate { crm },
         ));
     }
     cases

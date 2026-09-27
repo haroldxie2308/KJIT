@@ -47,10 +47,28 @@ pub fn infer_operand_roles(
             }),
     );
 
+    roles.extend(infer_atomic_memory_roles(&field_names, execute_text));
+
     simplify_roles(roles)
         .into_iter()
         .map(|(kind, field, width)| OperandRoleSpec { kind, field, width })
         .collect()
+}
+
+/// LSE single-register atomics (LD<op>, SWP, CAS, A8): the execute pseudocode
+/// builds `CreateAccDescAtomicOp(MemAtomicOp_..., ...)` and accesses memory
+/// through `MemAtomic{..}(address, ...)`, which the plain `Mem{..}` rule does not
+/// match. `Rn` is the base (`<Xn|SP>`, no offset, no writeback). Their register
+/// roles (`Rs`, `Rt`) come from the generic `X(..)` scan, which is exact here:
+/// each section's execute pseudocode is one operation.
+fn infer_atomic_memory_roles(fields: &BTreeSet<String>, execute_text: &str) -> BTreeSet<RoleTuple> {
+    let mut roles = BTreeSet::new();
+    let atomic = Regex::new(r"CreateAccDescAtomicOp\s*\(").unwrap();
+    if atomic.is_match(execute_text) && fields.contains("Rn") {
+        roles.insert(role_tuple("MemBase", "Rn", "X64"));
+        roles.insert(role_tuple("Memory", "", "Unknown"));
+    }
+    roles
 }
 
 fn decode_var_map(decode_text: &str) -> BTreeMap<String, String> {
@@ -493,6 +511,22 @@ mod tests {
         assert_eq!(gpr_mem_op(acquire_pc).as_deref(), Some("LOAD"));
         assert_eq!(gpr_mem_op(exclusive), None);
         assert_eq!(gpr_mem_op("X(d) = result;"), None);
+    }
+
+    #[test]
+    fn atomic_descriptor_gives_base_and_memory_roles() {
+        let fields = ["Rs", "Rn", "Rt"]
+            .into_iter()
+            .map(String::from)
+            .collect::<BTreeSet<_>>();
+        let ldadd = "let accdesc : AccessDescriptor = CreateAccDescAtomicOp(MemAtomicOp_ADD, \
+                     acquire, release, tagchecked, privileged, t, s); \
+                     let data = MemAtomic{}(address, comparevalue, value, accdesc);";
+        let roles = infer_atomic_memory_roles(&fields, ldadd);
+        assert!(roles.contains(&role_tuple("MemBase", "Rn", "X64")));
+        assert!(roles.contains(&role_tuple("Memory", "", "Unknown")));
+        let exclusive = "let accdesc = CreateAccDescExLDST(MemOp_LOAD, acquire, tagchecked, t);";
+        assert!(infer_atomic_memory_roles(&fields, exclusive).is_empty());
     }
 
     #[test]

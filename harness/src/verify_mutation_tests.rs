@@ -41,8 +41,11 @@ const FOREIGN_WORDS: &[(&str, u32)] = &[
     ("stxr w2, x0, [x1]", 0xc802_7c20),
     ("ldaxr w0, [x1]", 0x885f_fc20),
     ("stlxr w2, w0, [x1]", 0x8802_fc20),
-    ("cas x0, x1, [x2]", 0xc8a0_7c41),
-    ("ldadd x0, x1, [x2]", 0xf820_0041),
+    ("casp x0, x1, x2, x3, [x4]", 0x4820_7c82),
+    ("swpp x0, x1, [x2] (LSE128)", 0x1921_8040),
+    ("msr uao, #1", 0xd500_417f),
+    ("msr spsel, #0", 0xd500_40bf),
+    ("msr daifclr, #2", 0xd503_42ff),
     ("ldapr x0, [x1], #8 (LRCPC3)", 0xd9c0_0820),
     ("stlr x0, [x1, #-8]! (LRCPC3)", 0xd980_0820),
     ("ldapur x0, [x1, #8] (LRCPC2)", 0xd940_8020),
@@ -127,6 +130,28 @@ const USER_ONLY_WORDS: &[(&str, u32)] = &[
     ("ldpsw x0, x1, [x2]", 0x6940_0440),
 ];
 
+/// LSE atomics of the subset (A8): allowed only as the atomic of an exact PAN
+/// window, so each is rejected anywhere else (its window's own atomic position is
+/// skipped: another atomic on the same base there is not a violation).
+const ATOMIC_WORDS: &[(&str, u32)] = &[
+    ("ldadd x0, x1, [x2]", 0xf820_0041),
+    ("ldaddal x1, x2, [x3]", 0xf8e1_0062),
+    ("stclr w1, [x3]", 0xb821_107f),
+    ("swpab w1, w2, [sp]", 0x38a1_83e2),
+    ("casalh w1, w2, [x3]", 0x48e1_fc62),
+    ("casa x1, x2, [x3]", 0xc8e1_7c62),
+    ("ldsmaxa x1, x2, [x12]", 0xf8a1_4182),
+];
+
+/// `MSR (immediate)` of PSTATE.PAN (A8): `#0` only as a window start, `#1` only as
+/// a window end or a PAN stub's first word, any other immediate never.
+const MSR_PAN_WORDS: &[(&str, u32)] = &[
+    ("msr pan, #0", 0xd500_409f),
+    ("msr pan, #1", 0xd500_419f),
+    ("msr pan, #2", 0xd500_429f),
+    ("msr pan, #15", 0xd500_4f9f),
+];
+
 /// Unprivileged forms beyond `LDTR`/`STTR` (A7b), for insertion without a
 /// fault-site entry.
 const UNPRIVILEGED_WORDS: &[(&str, u32)] = &[
@@ -151,6 +176,9 @@ struct RandomResult {
     rejected: usize,
     benign_alu: usize,
     in_fragment_branch: usize,
+    /// An offset-form runtime load/store the verifier admitted: rule 3 proved it
+    /// stays in the frame's user-state slots or `pt_regs` `regs[]`/`sp`.
+    in_bounds_runtime_access: usize,
     escapes: Vec<String>,
 }
 
@@ -279,6 +307,7 @@ impl Suite {
         self.runtime_accesses(fixture);
         self.end_and_entries(fixture);
         self.budget_checks(fixture);
+        self.pan_windows_checks(fixture);
         self.random_words(fixture);
     }
 
@@ -906,6 +935,368 @@ impl Suite {
         }
     }
 
+    /// PAN windows found on the bytes (A8): the index of each `msr pan, #0`, which
+    /// the translator only emits as `ubfx; cbnz <S>; msr pan, #0; <atomic>; msr pan,
+    /// #1`, and its PAN stub S.
+    fn pan_windows(fixture: &Fixture) -> Vec<(usize, usize)> {
+        fixture
+            .body()
+            .filter(|&index| fixture.words[index] == enc(msr_pan(0)))
+            .map(|clear| {
+                let Some(A64Insn::CbnzCbnz64Compbranch { imm19, .. }) = fixture.decoded(clear - 1)
+                else {
+                    panic!("{}: window at {:#x} has no cbnz", fixture.name, clear * 4);
+                };
+                let stub = ((clear - 1) as i64 * 4 + imm19.value()) as usize / 4;
+                (clear, stub)
+            })
+            .collect()
+    }
+
+    /// Every A8 mutation class, at every window of the fragment, plus the
+    /// everywhere-else insertions of atomics and `msr pan`.
+    fn pan_windows_checks(&mut self, fixture: &Fixture) {
+        let windows = Self::pan_windows(fixture);
+        let nop = enc(A64Insn::NopNopHiHints {});
+        let window_atomics: Vec<usize> = windows.iter().map(|&(clear, _)| clear + 1).collect();
+        let pan_stubs: Vec<usize> = windows.iter().map(|&(_, stub)| stub).collect();
+        let plain_stubs: Vec<usize> = fixture
+            .tables
+            .fault_sites
+            .iter()
+            .map(|site| site.stub_offset / 4)
+            .filter(|stub| !pan_stubs.contains(stub))
+            .collect();
+
+        for &(clear, stub) in &windows {
+            let (ubfx, cbnz, atomic, set) = (clear - 2, clear - 1, clear + 1, clear + 2);
+            let Some(A64Insn::UbfmUbfm64mBitfield { rn: sa, rd: sb, .. }) = fixture.decoded(ubfx)
+            else {
+                panic!("{}: window at {:#x} has no ubfx", fixture.name, clear * 4);
+            };
+            let at = |index: usize| format!("window at {:#x}, word {:#x}", clear * 4, index * 4);
+
+            // Dropped: either MSR, or the PAN stub's leading MSR.
+            for (index, class) in [
+                (clear, "PAN window msr pan, #0 dropped"),
+                (set, "PAN window msr pan, #1 dropped"),
+                (stub, "PAN stub msr pan, #1 dropped"),
+            ] {
+                self.replace(class, fixture, index, nop, &at(index));
+            }
+
+            // Moved: each MSR swapped with a neighbour.
+            for (a, b) in [
+                (clear, clear - 1),
+                (clear, clear + 1),
+                (clear, clear - 3),
+                (set, set - 1),
+                (set, set + 1),
+            ] {
+                let mut words = fixture.words.clone();
+                words.swap(a, b);
+                self.expect_reject(
+                    "PAN window msr moved",
+                    fixture,
+                    at(a),
+                    &words,
+                    &fixture.tables,
+                );
+            }
+
+            // Widened: one word inserted into each gap of the window. The words
+            // before the gap move one word earlier (over the word before the
+            // `ubfx`), with the `cbnz` still aimed at S and the atomic's fault site
+            // following the atomic, so only the window shape changes.
+            let inserts = [
+                ("nop", A64Insn::NopNopHiHints {}),
+                ("mov sA, x0", mov_reg(sa.enc(), 0)),
+                ("add sA, sA, #1", add_imm(sa.enc(), sa.enc(), 1)),
+                (
+                    "movz sB, #0",
+                    A64Insn::MovzMovz64Movewide {
+                        hw: 0,
+                        imm16: uimm(0, 16),
+                        rd: x(sb.enc()),
+                    },
+                ),
+            ];
+            for gap in ubfx + 1..=set {
+                for (what, insn) in inserts {
+                    let mut words = fixture.words.clone();
+                    let mut tables = clone_tables(&fixture.tables);
+                    for index in ubfx - 1..gap - 1 {
+                        words[index] = fixture.words[index + 1];
+                    }
+                    words[gap - 1] = enc(insn);
+                    // The cbnz moved: re-aim it at S.
+                    let new_cbnz = if gap > cbnz { cbnz - 1 } else { cbnz };
+                    words[new_cbnz] = enc(cbnz_to(new_cbnz, stub, sb.enc()));
+                    if gap > atomic {
+                        for site in &mut tables.fault_sites {
+                            if site.access_offset == atomic * 4 {
+                                site.access_offset -= 4;
+                            }
+                        }
+                    }
+                    self.expect_reject(
+                        "PAN window widened (word inserted)",
+                        fixture,
+                        format!("{what} before word {:#x}, {}", gap * 4, at(clear)),
+                        &words,
+                        &tables,
+                    );
+                }
+            }
+
+            // Range check altered: other source / destination register, shift,
+            // width, or not a UBFM.
+            let other = |reg: u8| if reg == 0 { 1 } else { reg - 1 };
+            let checks = [
+                (
+                    "ubfx from another register",
+                    ubfx_insn(other(sa.enc()), sb.enc(), 48, 55),
+                ),
+                (
+                    "ubfx into another register",
+                    ubfx_insn(sa.enc(), other(sb.enc()), 48, 55),
+                ),
+                ("ubfx #47, #8", ubfx_insn(sa.enc(), sb.enc(), 47, 54)),
+                ("ubfx #49, #7", ubfx_insn(sa.enc(), sb.enc(), 49, 55)),
+                ("ubfx #48, #7", ubfx_insn(sa.enc(), sb.enc(), 48, 54)),
+                (
+                    "ubfx #48, #16 (lsr #48)",
+                    ubfx_insn(sa.enc(), sb.enc(), 48, 63),
+                ),
+                ("ubfx #56, #8", ubfx_insn(sa.enc(), sb.enc(), 56, 63)),
+                ("mov sB, xzr", mov_reg(sb.enc(), 31)),
+                (
+                    "and sB, sA, #0xff000000000000",
+                    A64Insn::AndLogImmAnd64LogImm {
+                        n: 1,
+                        immr: uimm(16, 6),
+                        imms: uimm(7, 6),
+                        rn: x(sa.enc()),
+                        rd: A64Reg::x_sp(sb.enc()),
+                    },
+                ),
+            ];
+            for (what, insn) in checks {
+                self.replace("PAN range check altered", fixture, ubfx, enc(insn), what);
+            }
+
+            // cbnz retargeted, inverted, on another register.
+            let len = fixture.words.len();
+            let mut targets = vec![clear, set + 1, stub + 1, BODY_OFFSET / 4, len - 1];
+            targets.extend(plain_stubs.iter().copied());
+            targets.extend(pan_stubs.iter().copied().filter(|&other| other != stub));
+            for target in targets {
+                self.replace(
+                    "PAN range check cbnz retargeted",
+                    fixture,
+                    cbnz,
+                    enc(cbnz_to(cbnz, target, sb.enc())),
+                    &format!("-> {:#x}", target * 4),
+                );
+            }
+            let delta = ((stub as i64 - cbnz as i64) as u32) & 0x7ffff;
+            let branches = [
+                (
+                    "cbz sB (inverted)",
+                    A64Insn::CbzCbz64Compbranch {
+                        imm19: scaled_simm(delta, 19, 2),
+                        rt: x(sb.enc()),
+                    },
+                ),
+                (
+                    "cbnz on another register",
+                    cbnz_to(cbnz, stub, other(sb.enc())),
+                ),
+                (
+                    "cbnz w (32-bit)",
+                    A64Insn::CbnzCbnz32Compbranch {
+                        imm19: scaled_simm(delta, 19, 2),
+                        rt: w(sb.enc()),
+                    },
+                ),
+                (
+                    "tbnz sB, #0",
+                    A64Insn::TbnzTbnzOnlyTestbranch {
+                        b5: 0,
+                        b40: 0,
+                        imm14: scaled_simm(delta & 0x3fff, 14, 2),
+                        rt: x(sb.enc()),
+                    },
+                ),
+            ];
+            for (what, insn) in branches {
+                self.replace(
+                    "PAN range check cbnz altered",
+                    fixture,
+                    cbnz,
+                    enc(insn),
+                    what,
+                );
+            }
+
+            // Window around something other than an LSE atomic on sA.
+            let base = A64Reg::x_sp(sa.enc());
+            let others = [
+                ("ldr x0, [sA]", ldr64(0, base, 0)),
+                ("str x0, [sA]", str64(0, base, 0)),
+                (
+                    "ldtr x0, [sA]",
+                    A64Insn::LdtrLdtr64LdstUnpriv {
+                        rt: x(0),
+                        mem: mem_off(base, simm(0, 9)),
+                    },
+                ),
+                (
+                    "sttr w0, [sA]",
+                    A64Insn::SttrSttr32LdstUnpriv {
+                        rt: w(0),
+                        mem: mem_off(base, simm(0, 9)),
+                    },
+                ),
+                (
+                    "ldar x0, [sA]",
+                    A64Insn::LdarLdarLr64Ldstord { rn: base, rt: x(0) },
+                ),
+                ("mov x0, sA", mov_reg(0, sa.enc())),
+                ("nop", A64Insn::NopNopHiHints {}),
+                (
+                    "ldadd x0, x1, [another register]",
+                    A64Insn::LdaddLdadd64Memop {
+                        rs: x(0),
+                        rn: A64Reg::x_sp(other(sa.enc())),
+                        rt: x(1),
+                    },
+                ),
+                (
+                    "ldadd x0, x1, [sp]",
+                    A64Insn::LdaddLdadd64Memop {
+                        rs: x(0),
+                        rn: sp(),
+                        rt: x(1),
+                    },
+                ),
+            ];
+            for (what, insn) in others {
+                self.replace(
+                    "PAN window around a non-atomic / plain access",
+                    fixture,
+                    atomic,
+                    enc(insn),
+                    what,
+                );
+            }
+
+            // The atomic's fault site at a non-PAN stub, at another window's PAN
+            // stub, or dropped.
+            let position = fixture
+                .tables
+                .fault_sites
+                .iter()
+                .position(|site| site.access_offset == atomic * 4)
+                .unwrap_or_else(|| panic!("{}: window atomic without a site", fixture.name));
+            let mut stubs = plain_stubs.clone();
+            stubs.extend(pan_stubs.iter().copied().filter(|&other| other != stub));
+            for other in stubs {
+                let mut tables = clone_tables(&fixture.tables);
+                tables.fault_sites[position].stub_offset = other * 4;
+                self.expect_reject(
+                    "window fault site -> other stub",
+                    fixture,
+                    format!("{} -> {:#x}", at(atomic), other * 4),
+                    &fixture.words,
+                    &tables,
+                );
+            }
+
+            // Bypass: an entry on the cbnz, either MSR or the atomic.
+            for inner in cbnz..=set {
+                let mut tables = clone_tables(&fixture.tables);
+                tables.entry_offsets.push(inner * 4);
+                self.expect_reject(
+                    "PAN window entered past its range check",
+                    fixture,
+                    format!("entry {:#x}", inner * 4),
+                    &fixture.words,
+                    &tables,
+                );
+            }
+        }
+
+        // Any other LDTR/STTR's fault site pointed at a PAN stub.
+        for (position, site) in fixture.tables.fault_sites.iter().enumerate() {
+            if window_atomics.contains(&(site.access_offset / 4)) {
+                continue;
+            }
+            for &stub in &pan_stubs {
+                let mut tables = clone_tables(&fixture.tables);
+                tables.fault_sites[position].stub_offset = stub * 4;
+                self.expect_reject(
+                    "LDTR/STTR fault site -> PAN stub",
+                    fixture,
+                    format!("site {:#x} -> {:#x}", site.access_offset, stub * 4),
+                    &fixture.words,
+                    &tables,
+                );
+            }
+        }
+
+        // Any other direct branch retargeted to a PAN stub.
+        for index in fixture.body() {
+            if windows.iter().any(|&(clear, _)| index == clear - 1) {
+                continue;
+            }
+            let Some(insn) = fixture.decoded(index) else {
+                continue;
+            };
+            let Some((field, scale, bits)) = branch_role(insn) else {
+                continue;
+            };
+            for &stub in &pan_stubs {
+                let delta = (stub as i64 - index as i64) * 4;
+                let encoded = ((delta >> scale) as u32) & ((1 << bits) - 1);
+                let Ok(moved) = insn.set_branch_target_imm(field, encoded) else {
+                    continue;
+                };
+                self.replace(
+                    "branch -> PAN stub",
+                    fixture,
+                    index,
+                    enc(moved),
+                    &format!("{} -> {:#x}", insn.key(), stub * 4),
+                );
+            }
+        }
+
+        // `msr pan` and LSE atomics anywhere else.
+        for (what, word) in MSR_PAN_WORDS {
+            for index in fixture.body() {
+                if fixture.words[index] == *word {
+                    continue;
+                }
+                self.replace("insert msr pan elsewhere", fixture, index, *word, what);
+            }
+        }
+        for (what, word) in ATOMIC_WORDS {
+            for index in fixture.body() {
+                if window_atomics.contains(&index) {
+                    continue;
+                }
+                self.replace(
+                    "insert LSE atomic outside a window",
+                    fixture,
+                    index,
+                    *word,
+                    what,
+                );
+            }
+        }
+    }
+
     fn end_and_entries(&mut self, fixture: &Fixture) {
         let last = fixture.words.len() - 1;
         let nop = enc(A64Insn::NopNopHiHints {});
@@ -967,6 +1358,8 @@ impl Suite {
                 self.random.benign_alu += 1;
             } else if insn.is_some_and(|insn| is_admitted_branch(insn, index, words.len())) {
                 self.random.in_fragment_branch += 1;
+            } else if insn.is_some_and(is_offset_runtime_access) {
+                self.random.in_bounds_runtime_access += 1;
             } else if self.random.escapes.len() < 10 {
                 self.random.escapes.push(format!(
                     "{}: {word:#010x} at {:#x} ({:?})",
@@ -1002,6 +1395,16 @@ fn is_benign_alu(insn: A64Insn) -> bool {
             true
         }
     })
+}
+
+/// A plain load/store with offset addressing (no writeback) that is neither a
+/// user access nor a window atomic: if the verifier admits one, its rule 3
+/// placed it in the frame's user-state slots or `pt_regs` user state.
+fn is_offset_runtime_access(insn: A64Insn) -> bool {
+    insn.accesses_memory()
+        && !insn.is_unprivileged_access()
+        && insn.lse_atomic().is_none()
+        && matches!(insn.mem_operand(), Some(A64Mem::Offset { .. }))
 }
 
 /// A non-linking direct branch whose target is the epilogue's first word or a body
@@ -1153,6 +1556,47 @@ fn scaled_offset(mem: A64Mem, log2: u8) -> A64Mem {
     A64Mem::offset(mem.base(), scaled_uimm(raw, 12, log2))
 }
 
+fn msr_pan(crm: u8) -> A64Insn {
+    A64Insn::MsrImmMsrSiPstate { crm }
+}
+
+fn ubfx_insn(rn: u8, rd: u8, immr: u32, imms: u32) -> A64Insn {
+    A64Insn::UbfmUbfm64mBitfield {
+        immr: uimm(immr, 6),
+        imms: uimm(imms, 6),
+        rn: x(rn),
+        rd: x(rd),
+    }
+}
+
+/// `cbnz x<rt>` at body word `from` aimed at word `to`.
+fn cbnz_to(from: usize, to: usize, rt: u8) -> A64Insn {
+    let delta = ((to as i64 - from as i64) as u32) & 0x7ffff;
+    A64Insn::CbnzCbnz64Compbranch {
+        imm19: scaled_simm(delta, 19, 2),
+        rt: x(rt),
+    }
+}
+
+fn mov_reg(rd: u8, rm: u8) -> A64Insn {
+    A64Insn::OrrLogShiftOrr64LogShift {
+        shift: 0,
+        rm: x(rm),
+        imm6: uimm(0, 6),
+        rn: x(31),
+        rd: x(rd),
+    }
+}
+
+fn add_imm(rd: u8, rn: u8, imm: u32) -> A64Insn {
+    A64Insn::AddAddsubImmAdd64AddsubImm {
+        sh: 0,
+        imm12: uimm(imm, 12),
+        rn: A64Reg::x_sp(rn),
+        rd: A64Reg::x_sp(rd),
+    }
+}
+
 fn ldr64(rt: u8, base: A64Reg, offset: u32) -> A64Insn {
     A64Insn::LdrImmGenLdr64LdstPos {
         rt: x(rt),
@@ -1240,10 +1684,11 @@ fn verifier_rejects_every_mutation_of_every_fixture_fragment() {
     }
     let random = &suite.random;
     println!(
-        "| random body word | rejected {} / benign ALU {} / in-fragment branch {} / other accepted {} of {} | |",
+        "| random body word | rejected {} / benign ALU {} / in-fragment branch {} / in-bounds runtime access {} / other accepted {} of {} | |",
         random.rejected,
         random.benign_alu,
         random.in_fragment_branch,
+        random.in_bounds_runtime_access,
         random.escapes.len(),
         random.total
     );
@@ -1272,6 +1717,14 @@ fn mutation_word_lists_are_classified_as_named() {
     for (what, word) in USER_ONLY_WORDS.iter().chain(ACQ_REL_WORDS).chain(BTI_WORDS) {
         let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
         assert!(!insn.is_unprivileged_access(), "{what}");
+    }
+    for (what, word) in ATOMIC_WORDS {
+        let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
+        assert!(insn.lse_atomic().is_some(), "{what}");
+    }
+    for (what, word) in MSR_PAN_WORDS {
+        let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
+        assert!(insn.msr_pan().is_some(), "{what}");
     }
     for (what, word) in UNPRIVILEGED_WORDS {
         let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));

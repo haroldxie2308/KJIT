@@ -743,6 +743,170 @@ fn budget_rule_rejects_altered_checks() {
     }
 }
 
+/// A8 PAN window: `ubfx x13, x12, #48, #8; cbnz x13, <S>; msr pan, #0;
+/// ldaddal x0, x1, [x12]; msr pan, #1; b <epilogue>`, then the PAN stub S (`msr
+/// pan, #1`, exit payload, `b <epilogue>`). The atomic's fault site is S.
+/// Indices: 0 ubfx, 1 cbnz, 2 msr#0, 3 atomic, 4 msr#1, 5 b, 6 S, 7 movz, 8 b.
+fn pan_window_body() -> Vec<A64Insn> {
+    alloc::vec![
+        ubfx48(12, 13),
+        cbnz(1, 13, 6),
+        msr_pan(0),
+        ldaddal(0, 1, 12),
+        msr_pan(1),
+        b_epi(5),
+        msr_pan(1),
+        movz(9, 5),
+        b_epi(8),
+    ]
+}
+
+fn pan_window_fragment(body: &[A64Insn]) -> Frag {
+    Frag::new(body).site(3, 6)
+}
+
+fn ubfx48(rn: u8, rd: u8) -> A64Insn {
+    A64Insn::UbfmUbfm64mBitfield {
+        immr: uimm(48, 6),
+        imms: uimm(55, 6),
+        rn: x(rn),
+        rd: x(rd),
+    }
+}
+
+fn cbnz(from: usize, rt: u8, to: usize) -> A64Insn {
+    A64Insn::CbnzCbnz64Compbranch {
+        imm19: branch_imm(at(to) as i64 - at(from) as i64, 19),
+        rt: x(rt),
+    }
+}
+
+fn msr_pan(crm: u8) -> A64Insn {
+    A64Insn::MsrImmMsrSiPstate { crm }
+}
+
+fn ldaddal(rs: u8, rt: u8, rn: u8) -> A64Insn {
+    A64Insn::LdaddLdaddal64Memop {
+        rs: x(rs),
+        rn: xs(rn),
+        rt: x(rt),
+    }
+}
+
+#[test]
+fn accepts_the_exact_pan_window() {
+    assert_eq!(pan_window_fragment(&pan_window_body()).rule(), None);
+    // The `ubfx` may be a join point (it recomputes the checked value).
+    assert_eq!(
+        pan_window_fragment(&pan_window_body()).entry(0).rule(),
+        None
+    );
+}
+
+#[test]
+fn pan_window_rule_rejects_every_deviation() {
+    let rule = |body: &[A64Insn]| pan_window_fragment(body).rule();
+    let with = |index: usize, insn: A64Insn| {
+        let mut body = pan_window_body();
+        body[index] = insn;
+        rule(&body)
+    };
+    // Range check: other register, shift, width, 32-bit form; cbnz on another
+    // register, to a non-PAN-stub word, 32-bit form.
+    assert_eq!(with(0, ubfx48(11, 13)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(0, ubfx48(12, 14)), Some(VerifyRule::PanWindow));
+    for (immr, imms) in [(47, 55), (48, 54), (48, 63), (56, 63)] {
+        let ubfx = A64Insn::UbfmUbfm64mBitfield {
+            immr: uimm(immr, 6),
+            imms: uimm(imms, 6),
+            rn: x(12),
+            rd: x(13),
+        };
+        assert_eq!(with(0, ubfx), Some(VerifyRule::PanWindow), "{immr} {imms}");
+    }
+    assert_eq!(with(1, cbnz(1, 14, 6)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(1, cbnz(1, 13, 7)), Some(VerifyRule::PanWindow));
+    let cbnz32 = A64Insn::CbnzCbnz32Compbranch {
+        imm19: branch_imm(at(6) as i64 - at(1) as i64, 19),
+        rt: crate::shared::arm64::A64Reg::w(13),
+    };
+    assert_eq!(with(1, cbnz32), Some(VerifyRule::PanWindow));
+    // The atomic on another base, or not an atomic.
+    assert_eq!(with(3, ldaddal(0, 1, 11)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(3, ldtr(0, 12)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(3, movz(0, 1)), Some(VerifyRule::PanWindow));
+    // Missing window end; `msr pan, #1` / `#0` anywhere else; other CRm.
+    assert_eq!(with(4, movz(2, 0)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(2, movz(2, 0)), Some(VerifyRule::AtomicOutsideWindow));
+    assert_eq!(with(0, msr_pan(1)), Some(VerifyRule::PanWindow));
+    assert_eq!(
+        Frag::new(&[msr_pan(2), b_epi(1)]).rule(),
+        Some(VerifyRule::Msr)
+    );
+    assert_eq!(
+        Frag::new(&[msr_pan(15), b_epi(1)]).rule(),
+        Some(VerifyRule::Msr)
+    );
+    let body = [msr_pan(1), movz(0, 1), b_epi(2)];
+    assert_eq!(
+        Frag::new(&body).rule(),
+        Some(VerifyRule::PanSetOutsideWindow)
+    );
+    let body = [movz(0, 1), msr_pan(0), b_epi(2)];
+    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::PanWindow));
+    // The PAN stub without its leading msr.
+    assert_eq!(with(6, movz(8, 0)), Some(VerifyRule::PanWindow));
+    // No join point on the cbnz, either MSR or the atomic.
+    for index in 1..=4 {
+        assert_eq!(
+            pan_window_fragment(&pan_window_body()).entry(index).rule(),
+            Some(VerifyRule::PanWindow),
+            "entry at {index}"
+        );
+    }
+}
+
+#[test]
+fn pan_stub_is_only_a_window_target() {
+    // The atomic's fault site at a plain stub, or missing.
+    let mut body = pan_window_body();
+    body.extend([movz(9, 5), b_epi(10)]);
+    assert_eq!(
+        Frag::new(&body).site(3, 9).rule(),
+        Some(VerifyRule::PanStubTarget)
+    );
+    assert_eq!(
+        Frag::new(&pan_window_body()).rule(),
+        Some(VerifyRule::MissingFaultSite)
+    );
+    // An LDTR whose fault site is the PAN stub.
+    let body = [
+        ubfx48(12, 13),
+        cbnz(1, 13, 7),
+        msr_pan(0),
+        ldaddal(0, 1, 12),
+        msr_pan(1),
+        ldtr(2, 3),
+        b_epi(6),
+        msr_pan(1),
+        movz(9, 5),
+        b_epi(9),
+    ];
+    assert_eq!(
+        Frag::new(&body).site(3, 7).rule(),
+        Some(VerifyRule::MissingFaultSite)
+    );
+    let frag = Frag::new(&body).site(3, 7).site(5, 7);
+    assert_eq!(frag.rule(), Some(VerifyRule::PanStubTarget));
+    // Any other branch into the PAN stub.
+    let mut body = pan_window_body();
+    body[5] = b(5, at(6) as i64);
+    assert_eq!(
+        pan_window_fragment(&body).rule(),
+        Some(VerifyRule::PanStubTarget)
+    );
+}
+
 /// Cross-check of the hand classification against the generated metadata on
 /// random words: an `Alu` word has no memory, branch or control-flow role and is
 /// not SVC; every memory form is a user or runtime access; every control-flow
@@ -784,6 +948,11 @@ fn classification_agrees_with_generated_roles() {
             }
             rules::Form::Exception | rules::Form::PcRelative => {
                 assert!(!memory && !control, "{}", insn.key())
+            }
+            // A8: the LSE atomics access memory; MSR (PSTATE.PAN) has no role.
+            rules::Form::WindowAtomic { .. } => assert!(memory && !control, "{}", insn.key()),
+            rules::Form::PanClear | rules::Form::PanSet | rules::Form::MsrOther => {
+                assert!(!memory && !control && roles.is_empty(), "{}", insn.key())
             }
             // Every user-only form is a load/store, except PRFM and BTI (hints, no
             // access).

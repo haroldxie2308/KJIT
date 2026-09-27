@@ -1568,6 +1568,809 @@ pub enum A64Insn {
     SvcSvcExException {
         imm16: A64Imm,
     },
+    LdaddLdadd32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddLdadda32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddLdaddal32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddLdaddl32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddLdadd64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddLdadda64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddLdaddal64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddLdaddl64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddbLdaddb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddbLdaddab32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddbLdaddalb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddbLdaddlb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddhLdaddh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddhLdaddah32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddhLdaddalh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdaddhLdaddlh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrLdclr32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrLdclra32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrLdclral32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrLdclrl32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrLdclr64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrLdclra64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrLdclral64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrLdclrl64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrbLdclrb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrbLdclrab32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrbLdclralb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrbLdclrlb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrhLdclrh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrhLdclrah32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrhLdclralh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdclrhLdclrlh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorLdeor32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorLdeora32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorLdeoral32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorLdeorl32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorLdeor64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorLdeora64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorLdeoral64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorLdeorl64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorbLdeorb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorbLdeorab32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorbLdeoralb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorbLdeorlb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorhLdeorh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorhLdeorah32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorhLdeoralh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdeorhLdeorlh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetLdset32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetLdseta32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetLdsetal32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetLdsetl32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetLdset64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetLdseta64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetLdsetal64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetLdsetl64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetbLdsetb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetbLdsetab32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetbLdsetalb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsetbLdsetlb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsethLdseth32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsethLdsetah32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsethLdsetalh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsethLdsetlh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxLdsmax32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxLdsmaxa32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxLdsmaxal32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxLdsmaxl32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxLdsmax64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxLdsmaxa64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxLdsmaxal64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxLdsmaxl64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxbLdsmaxb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxbLdsmaxab32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxbLdsmaxalb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxbLdsmaxlb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxhLdsmaxh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxhLdsmaxah32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxhLdsmaxalh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsmaxhLdsmaxlh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminLdsmin32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminLdsmina32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminLdsminal32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminLdsminl32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminLdsmin64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminLdsmina64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminLdsminal64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminLdsminl64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminbLdsminb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminbLdsminab32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminbLdsminalb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminbLdsminlb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminhLdsminh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminhLdsminah32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminhLdsminalh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdsminhLdsminlh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxLdumax32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxLdumaxa32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxLdumaxal32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxLdumaxl32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxLdumax64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxLdumaxa64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxLdumaxal64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxLdumaxl64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxbLdumaxb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxbLdumaxab32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxbLdumaxalb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxbLdumaxlb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxhLdumaxh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxhLdumaxah32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxhLdumaxalh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LdumaxhLdumaxlh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminLdumin32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminLdumina32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminLduminal32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminLduminl32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminLdumin64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminLdumina64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminLduminal64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminLduminl64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminbLduminb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminbLduminab32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminbLduminalb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminbLduminlb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminhLduminh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminhLduminah32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminhLduminalh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    LduminhLduminlh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpSwp32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpSwpa32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpSwpal32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpSwpl32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpSwp64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpSwpa64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpSwpal64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpSwpl64Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpbSwpb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpbSwpab32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpbSwpalb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwpbSwplb32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwphSwph32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwphSwpah32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwphSwpalh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    SwphSwplh32Memop {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasCasC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasCasaC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasCasalC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasCaslC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasCasC64Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasCasaC64Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasCasalC64Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasCaslC64Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasbCasbC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasbCasabC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasbCasalbC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CasbCaslbC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CashCashC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CashCasahC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CashCasalhC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    CashCaslhC32Comswap {
+        rs: A64Reg,
+        rn: A64Reg,
+        rt: A64Reg,
+    },
+    MsrImmMsrSiPstate {
+        crm: u8,
+    },
 }
 
 #[allow(dead_code)]
@@ -1896,6 +2699,167 @@ impl A64Insn {
             Self::BlrBlr64BranchReg { .. } => "BLR.BLR_64_branch_reg",
             Self::RetRet64rBranchReg { .. } => "RET.RET_64R_branch_reg",
             Self::SvcSvcExException { .. } => "SVC.SVC_EX_exception",
+            Self::LdaddLdadd32Memop { .. } => "LDADD.LDADD_32_memop",
+            Self::LdaddLdadda32Memop { .. } => "LDADD.LDADDA_32_memop",
+            Self::LdaddLdaddal32Memop { .. } => "LDADD.LDADDAL_32_memop",
+            Self::LdaddLdaddl32Memop { .. } => "LDADD.LDADDL_32_memop",
+            Self::LdaddLdadd64Memop { .. } => "LDADD.LDADD_64_memop",
+            Self::LdaddLdadda64Memop { .. } => "LDADD.LDADDA_64_memop",
+            Self::LdaddLdaddal64Memop { .. } => "LDADD.LDADDAL_64_memop",
+            Self::LdaddLdaddl64Memop { .. } => "LDADD.LDADDL_64_memop",
+            Self::LdaddbLdaddb32Memop { .. } => "LDADDB.LDADDB_32_memop",
+            Self::LdaddbLdaddab32Memop { .. } => "LDADDB.LDADDAB_32_memop",
+            Self::LdaddbLdaddalb32Memop { .. } => "LDADDB.LDADDALB_32_memop",
+            Self::LdaddbLdaddlb32Memop { .. } => "LDADDB.LDADDLB_32_memop",
+            Self::LdaddhLdaddh32Memop { .. } => "LDADDH.LDADDH_32_memop",
+            Self::LdaddhLdaddah32Memop { .. } => "LDADDH.LDADDAH_32_memop",
+            Self::LdaddhLdaddalh32Memop { .. } => "LDADDH.LDADDALH_32_memop",
+            Self::LdaddhLdaddlh32Memop { .. } => "LDADDH.LDADDLH_32_memop",
+            Self::LdclrLdclr32Memop { .. } => "LDCLR.LDCLR_32_memop",
+            Self::LdclrLdclra32Memop { .. } => "LDCLR.LDCLRA_32_memop",
+            Self::LdclrLdclral32Memop { .. } => "LDCLR.LDCLRAL_32_memop",
+            Self::LdclrLdclrl32Memop { .. } => "LDCLR.LDCLRL_32_memop",
+            Self::LdclrLdclr64Memop { .. } => "LDCLR.LDCLR_64_memop",
+            Self::LdclrLdclra64Memop { .. } => "LDCLR.LDCLRA_64_memop",
+            Self::LdclrLdclral64Memop { .. } => "LDCLR.LDCLRAL_64_memop",
+            Self::LdclrLdclrl64Memop { .. } => "LDCLR.LDCLRL_64_memop",
+            Self::LdclrbLdclrb32Memop { .. } => "LDCLRB.LDCLRB_32_memop",
+            Self::LdclrbLdclrab32Memop { .. } => "LDCLRB.LDCLRAB_32_memop",
+            Self::LdclrbLdclralb32Memop { .. } => "LDCLRB.LDCLRALB_32_memop",
+            Self::LdclrbLdclrlb32Memop { .. } => "LDCLRB.LDCLRLB_32_memop",
+            Self::LdclrhLdclrh32Memop { .. } => "LDCLRH.LDCLRH_32_memop",
+            Self::LdclrhLdclrah32Memop { .. } => "LDCLRH.LDCLRAH_32_memop",
+            Self::LdclrhLdclralh32Memop { .. } => "LDCLRH.LDCLRALH_32_memop",
+            Self::LdclrhLdclrlh32Memop { .. } => "LDCLRH.LDCLRLH_32_memop",
+            Self::LdeorLdeor32Memop { .. } => "LDEOR.LDEOR_32_memop",
+            Self::LdeorLdeora32Memop { .. } => "LDEOR.LDEORA_32_memop",
+            Self::LdeorLdeoral32Memop { .. } => "LDEOR.LDEORAL_32_memop",
+            Self::LdeorLdeorl32Memop { .. } => "LDEOR.LDEORL_32_memop",
+            Self::LdeorLdeor64Memop { .. } => "LDEOR.LDEOR_64_memop",
+            Self::LdeorLdeora64Memop { .. } => "LDEOR.LDEORA_64_memop",
+            Self::LdeorLdeoral64Memop { .. } => "LDEOR.LDEORAL_64_memop",
+            Self::LdeorLdeorl64Memop { .. } => "LDEOR.LDEORL_64_memop",
+            Self::LdeorbLdeorb32Memop { .. } => "LDEORB.LDEORB_32_memop",
+            Self::LdeorbLdeorab32Memop { .. } => "LDEORB.LDEORAB_32_memop",
+            Self::LdeorbLdeoralb32Memop { .. } => "LDEORB.LDEORALB_32_memop",
+            Self::LdeorbLdeorlb32Memop { .. } => "LDEORB.LDEORLB_32_memop",
+            Self::LdeorhLdeorh32Memop { .. } => "LDEORH.LDEORH_32_memop",
+            Self::LdeorhLdeorah32Memop { .. } => "LDEORH.LDEORAH_32_memop",
+            Self::LdeorhLdeoralh32Memop { .. } => "LDEORH.LDEORALH_32_memop",
+            Self::LdeorhLdeorlh32Memop { .. } => "LDEORH.LDEORLH_32_memop",
+            Self::LdsetLdset32Memop { .. } => "LDSET.LDSET_32_memop",
+            Self::LdsetLdseta32Memop { .. } => "LDSET.LDSETA_32_memop",
+            Self::LdsetLdsetal32Memop { .. } => "LDSET.LDSETAL_32_memop",
+            Self::LdsetLdsetl32Memop { .. } => "LDSET.LDSETL_32_memop",
+            Self::LdsetLdset64Memop { .. } => "LDSET.LDSET_64_memop",
+            Self::LdsetLdseta64Memop { .. } => "LDSET.LDSETA_64_memop",
+            Self::LdsetLdsetal64Memop { .. } => "LDSET.LDSETAL_64_memop",
+            Self::LdsetLdsetl64Memop { .. } => "LDSET.LDSETL_64_memop",
+            Self::LdsetbLdsetb32Memop { .. } => "LDSETB.LDSETB_32_memop",
+            Self::LdsetbLdsetab32Memop { .. } => "LDSETB.LDSETAB_32_memop",
+            Self::LdsetbLdsetalb32Memop { .. } => "LDSETB.LDSETALB_32_memop",
+            Self::LdsetbLdsetlb32Memop { .. } => "LDSETB.LDSETLB_32_memop",
+            Self::LdsethLdseth32Memop { .. } => "LDSETH.LDSETH_32_memop",
+            Self::LdsethLdsetah32Memop { .. } => "LDSETH.LDSETAH_32_memop",
+            Self::LdsethLdsetalh32Memop { .. } => "LDSETH.LDSETALH_32_memop",
+            Self::LdsethLdsetlh32Memop { .. } => "LDSETH.LDSETLH_32_memop",
+            Self::LdsmaxLdsmax32Memop { .. } => "LDSMAX.LDSMAX_32_memop",
+            Self::LdsmaxLdsmaxa32Memop { .. } => "LDSMAX.LDSMAXA_32_memop",
+            Self::LdsmaxLdsmaxal32Memop { .. } => "LDSMAX.LDSMAXAL_32_memop",
+            Self::LdsmaxLdsmaxl32Memop { .. } => "LDSMAX.LDSMAXL_32_memop",
+            Self::LdsmaxLdsmax64Memop { .. } => "LDSMAX.LDSMAX_64_memop",
+            Self::LdsmaxLdsmaxa64Memop { .. } => "LDSMAX.LDSMAXA_64_memop",
+            Self::LdsmaxLdsmaxal64Memop { .. } => "LDSMAX.LDSMAXAL_64_memop",
+            Self::LdsmaxLdsmaxl64Memop { .. } => "LDSMAX.LDSMAXL_64_memop",
+            Self::LdsmaxbLdsmaxb32Memop { .. } => "LDSMAXB.LDSMAXB_32_memop",
+            Self::LdsmaxbLdsmaxab32Memop { .. } => "LDSMAXB.LDSMAXAB_32_memop",
+            Self::LdsmaxbLdsmaxalb32Memop { .. } => "LDSMAXB.LDSMAXALB_32_memop",
+            Self::LdsmaxbLdsmaxlb32Memop { .. } => "LDSMAXB.LDSMAXLB_32_memop",
+            Self::LdsmaxhLdsmaxh32Memop { .. } => "LDSMAXH.LDSMAXH_32_memop",
+            Self::LdsmaxhLdsmaxah32Memop { .. } => "LDSMAXH.LDSMAXAH_32_memop",
+            Self::LdsmaxhLdsmaxalh32Memop { .. } => "LDSMAXH.LDSMAXALH_32_memop",
+            Self::LdsmaxhLdsmaxlh32Memop { .. } => "LDSMAXH.LDSMAXLH_32_memop",
+            Self::LdsminLdsmin32Memop { .. } => "LDSMIN.LDSMIN_32_memop",
+            Self::LdsminLdsmina32Memop { .. } => "LDSMIN.LDSMINA_32_memop",
+            Self::LdsminLdsminal32Memop { .. } => "LDSMIN.LDSMINAL_32_memop",
+            Self::LdsminLdsminl32Memop { .. } => "LDSMIN.LDSMINL_32_memop",
+            Self::LdsminLdsmin64Memop { .. } => "LDSMIN.LDSMIN_64_memop",
+            Self::LdsminLdsmina64Memop { .. } => "LDSMIN.LDSMINA_64_memop",
+            Self::LdsminLdsminal64Memop { .. } => "LDSMIN.LDSMINAL_64_memop",
+            Self::LdsminLdsminl64Memop { .. } => "LDSMIN.LDSMINL_64_memop",
+            Self::LdsminbLdsminb32Memop { .. } => "LDSMINB.LDSMINB_32_memop",
+            Self::LdsminbLdsminab32Memop { .. } => "LDSMINB.LDSMINAB_32_memop",
+            Self::LdsminbLdsminalb32Memop { .. } => "LDSMINB.LDSMINALB_32_memop",
+            Self::LdsminbLdsminlb32Memop { .. } => "LDSMINB.LDSMINLB_32_memop",
+            Self::LdsminhLdsminh32Memop { .. } => "LDSMINH.LDSMINH_32_memop",
+            Self::LdsminhLdsminah32Memop { .. } => "LDSMINH.LDSMINAH_32_memop",
+            Self::LdsminhLdsminalh32Memop { .. } => "LDSMINH.LDSMINALH_32_memop",
+            Self::LdsminhLdsminlh32Memop { .. } => "LDSMINH.LDSMINLH_32_memop",
+            Self::LdumaxLdumax32Memop { .. } => "LDUMAX.LDUMAX_32_memop",
+            Self::LdumaxLdumaxa32Memop { .. } => "LDUMAX.LDUMAXA_32_memop",
+            Self::LdumaxLdumaxal32Memop { .. } => "LDUMAX.LDUMAXAL_32_memop",
+            Self::LdumaxLdumaxl32Memop { .. } => "LDUMAX.LDUMAXL_32_memop",
+            Self::LdumaxLdumax64Memop { .. } => "LDUMAX.LDUMAX_64_memop",
+            Self::LdumaxLdumaxa64Memop { .. } => "LDUMAX.LDUMAXA_64_memop",
+            Self::LdumaxLdumaxal64Memop { .. } => "LDUMAX.LDUMAXAL_64_memop",
+            Self::LdumaxLdumaxl64Memop { .. } => "LDUMAX.LDUMAXL_64_memop",
+            Self::LdumaxbLdumaxb32Memop { .. } => "LDUMAXB.LDUMAXB_32_memop",
+            Self::LdumaxbLdumaxab32Memop { .. } => "LDUMAXB.LDUMAXAB_32_memop",
+            Self::LdumaxbLdumaxalb32Memop { .. } => "LDUMAXB.LDUMAXALB_32_memop",
+            Self::LdumaxbLdumaxlb32Memop { .. } => "LDUMAXB.LDUMAXLB_32_memop",
+            Self::LdumaxhLdumaxh32Memop { .. } => "LDUMAXH.LDUMAXH_32_memop",
+            Self::LdumaxhLdumaxah32Memop { .. } => "LDUMAXH.LDUMAXAH_32_memop",
+            Self::LdumaxhLdumaxalh32Memop { .. } => "LDUMAXH.LDUMAXALH_32_memop",
+            Self::LdumaxhLdumaxlh32Memop { .. } => "LDUMAXH.LDUMAXLH_32_memop",
+            Self::LduminLdumin32Memop { .. } => "LDUMIN.LDUMIN_32_memop",
+            Self::LduminLdumina32Memop { .. } => "LDUMIN.LDUMINA_32_memop",
+            Self::LduminLduminal32Memop { .. } => "LDUMIN.LDUMINAL_32_memop",
+            Self::LduminLduminl32Memop { .. } => "LDUMIN.LDUMINL_32_memop",
+            Self::LduminLdumin64Memop { .. } => "LDUMIN.LDUMIN_64_memop",
+            Self::LduminLdumina64Memop { .. } => "LDUMIN.LDUMINA_64_memop",
+            Self::LduminLduminal64Memop { .. } => "LDUMIN.LDUMINAL_64_memop",
+            Self::LduminLduminl64Memop { .. } => "LDUMIN.LDUMINL_64_memop",
+            Self::LduminbLduminb32Memop { .. } => "LDUMINB.LDUMINB_32_memop",
+            Self::LduminbLduminab32Memop { .. } => "LDUMINB.LDUMINAB_32_memop",
+            Self::LduminbLduminalb32Memop { .. } => "LDUMINB.LDUMINALB_32_memop",
+            Self::LduminbLduminlb32Memop { .. } => "LDUMINB.LDUMINLB_32_memop",
+            Self::LduminhLduminh32Memop { .. } => "LDUMINH.LDUMINH_32_memop",
+            Self::LduminhLduminah32Memop { .. } => "LDUMINH.LDUMINAH_32_memop",
+            Self::LduminhLduminalh32Memop { .. } => "LDUMINH.LDUMINALH_32_memop",
+            Self::LduminhLduminlh32Memop { .. } => "LDUMINH.LDUMINLH_32_memop",
+            Self::SwpSwp32Memop { .. } => "SWP.SWP_32_memop",
+            Self::SwpSwpa32Memop { .. } => "SWP.SWPA_32_memop",
+            Self::SwpSwpal32Memop { .. } => "SWP.SWPAL_32_memop",
+            Self::SwpSwpl32Memop { .. } => "SWP.SWPL_32_memop",
+            Self::SwpSwp64Memop { .. } => "SWP.SWP_64_memop",
+            Self::SwpSwpa64Memop { .. } => "SWP.SWPA_64_memop",
+            Self::SwpSwpal64Memop { .. } => "SWP.SWPAL_64_memop",
+            Self::SwpSwpl64Memop { .. } => "SWP.SWPL_64_memop",
+            Self::SwpbSwpb32Memop { .. } => "SWPB.SWPB_32_memop",
+            Self::SwpbSwpab32Memop { .. } => "SWPB.SWPAB_32_memop",
+            Self::SwpbSwpalb32Memop { .. } => "SWPB.SWPALB_32_memop",
+            Self::SwpbSwplb32Memop { .. } => "SWPB.SWPLB_32_memop",
+            Self::SwphSwph32Memop { .. } => "SWPH.SWPH_32_memop",
+            Self::SwphSwpah32Memop { .. } => "SWPH.SWPAH_32_memop",
+            Self::SwphSwpalh32Memop { .. } => "SWPH.SWPALH_32_memop",
+            Self::SwphSwplh32Memop { .. } => "SWPH.SWPLH_32_memop",
+            Self::CasCasC32Comswap { .. } => "CAS.CAS_C32_comswap",
+            Self::CasCasaC32Comswap { .. } => "CAS.CASA_C32_comswap",
+            Self::CasCasalC32Comswap { .. } => "CAS.CASAL_C32_comswap",
+            Self::CasCaslC32Comswap { .. } => "CAS.CASL_C32_comswap",
+            Self::CasCasC64Comswap { .. } => "CAS.CAS_C64_comswap",
+            Self::CasCasaC64Comswap { .. } => "CAS.CASA_C64_comswap",
+            Self::CasCasalC64Comswap { .. } => "CAS.CASAL_C64_comswap",
+            Self::CasCaslC64Comswap { .. } => "CAS.CASL_C64_comswap",
+            Self::CasbCasbC32Comswap { .. } => "CASB.CASB_C32_comswap",
+            Self::CasbCasabC32Comswap { .. } => "CASB.CASAB_C32_comswap",
+            Self::CasbCasalbC32Comswap { .. } => "CASB.CASALB_C32_comswap",
+            Self::CasbCaslbC32Comswap { .. } => "CASB.CASLB_C32_comswap",
+            Self::CashCashC32Comswap { .. } => "CASH.CASH_C32_comswap",
+            Self::CashCasahC32Comswap { .. } => "CASH.CASAH_C32_comswap",
+            Self::CashCasalhC32Comswap { .. } => "CASH.CASALH_C32_comswap",
+            Self::CashCaslhC32Comswap { .. } => "CASH.CASLH_C32_comswap",
+            Self::MsrImmMsrSiPstate { .. } => "MSR_imm.MSR_SI_pstate",
         }
     }
 
@@ -2162,6 +3126,167 @@ impl A64Insn {
             Self::BlrBlr64BranchReg { .. } => "BLR",
             Self::RetRet64rBranchReg { .. } => "RET",
             Self::SvcSvcExException { .. } => "SVC",
+            Self::LdaddLdadd32Memop { .. } => "LDADD",
+            Self::LdaddLdadda32Memop { .. } => "LDADDA",
+            Self::LdaddLdaddal32Memop { .. } => "LDADDAL",
+            Self::LdaddLdaddl32Memop { .. } => "LDADDL",
+            Self::LdaddLdadd64Memop { .. } => "LDADD",
+            Self::LdaddLdadda64Memop { .. } => "LDADDA",
+            Self::LdaddLdaddal64Memop { .. } => "LDADDAL",
+            Self::LdaddLdaddl64Memop { .. } => "LDADDL",
+            Self::LdaddbLdaddb32Memop { .. } => "LDADDB",
+            Self::LdaddbLdaddab32Memop { .. } => "LDADDAB",
+            Self::LdaddbLdaddalb32Memop { .. } => "LDADDALB",
+            Self::LdaddbLdaddlb32Memop { .. } => "LDADDLB",
+            Self::LdaddhLdaddh32Memop { .. } => "LDADDH",
+            Self::LdaddhLdaddah32Memop { .. } => "LDADDAH",
+            Self::LdaddhLdaddalh32Memop { .. } => "LDADDALH",
+            Self::LdaddhLdaddlh32Memop { .. } => "LDADDLH",
+            Self::LdclrLdclr32Memop { .. } => "LDCLR",
+            Self::LdclrLdclra32Memop { .. } => "LDCLRA",
+            Self::LdclrLdclral32Memop { .. } => "LDCLRAL",
+            Self::LdclrLdclrl32Memop { .. } => "LDCLRL",
+            Self::LdclrLdclr64Memop { .. } => "LDCLR",
+            Self::LdclrLdclra64Memop { .. } => "LDCLRA",
+            Self::LdclrLdclral64Memop { .. } => "LDCLRAL",
+            Self::LdclrLdclrl64Memop { .. } => "LDCLRL",
+            Self::LdclrbLdclrb32Memop { .. } => "LDCLRB",
+            Self::LdclrbLdclrab32Memop { .. } => "LDCLRAB",
+            Self::LdclrbLdclralb32Memop { .. } => "LDCLRALB",
+            Self::LdclrbLdclrlb32Memop { .. } => "LDCLRLB",
+            Self::LdclrhLdclrh32Memop { .. } => "LDCLRH",
+            Self::LdclrhLdclrah32Memop { .. } => "LDCLRAH",
+            Self::LdclrhLdclralh32Memop { .. } => "LDCLRALH",
+            Self::LdclrhLdclrlh32Memop { .. } => "LDCLRLH",
+            Self::LdeorLdeor32Memop { .. } => "LDEOR",
+            Self::LdeorLdeora32Memop { .. } => "LDEORA",
+            Self::LdeorLdeoral32Memop { .. } => "LDEORAL",
+            Self::LdeorLdeorl32Memop { .. } => "LDEORL",
+            Self::LdeorLdeor64Memop { .. } => "LDEOR",
+            Self::LdeorLdeora64Memop { .. } => "LDEORA",
+            Self::LdeorLdeoral64Memop { .. } => "LDEORAL",
+            Self::LdeorLdeorl64Memop { .. } => "LDEORL",
+            Self::LdeorbLdeorb32Memop { .. } => "LDEORB",
+            Self::LdeorbLdeorab32Memop { .. } => "LDEORAB",
+            Self::LdeorbLdeoralb32Memop { .. } => "LDEORALB",
+            Self::LdeorbLdeorlb32Memop { .. } => "LDEORLB",
+            Self::LdeorhLdeorh32Memop { .. } => "LDEORH",
+            Self::LdeorhLdeorah32Memop { .. } => "LDEORAH",
+            Self::LdeorhLdeoralh32Memop { .. } => "LDEORALH",
+            Self::LdeorhLdeorlh32Memop { .. } => "LDEORLH",
+            Self::LdsetLdset32Memop { .. } => "LDSET",
+            Self::LdsetLdseta32Memop { .. } => "LDSETA",
+            Self::LdsetLdsetal32Memop { .. } => "LDSETAL",
+            Self::LdsetLdsetl32Memop { .. } => "LDSETL",
+            Self::LdsetLdset64Memop { .. } => "LDSET",
+            Self::LdsetLdseta64Memop { .. } => "LDSETA",
+            Self::LdsetLdsetal64Memop { .. } => "LDSETAL",
+            Self::LdsetLdsetl64Memop { .. } => "LDSETL",
+            Self::LdsetbLdsetb32Memop { .. } => "LDSETB",
+            Self::LdsetbLdsetab32Memop { .. } => "LDSETAB",
+            Self::LdsetbLdsetalb32Memop { .. } => "LDSETALB",
+            Self::LdsetbLdsetlb32Memop { .. } => "LDSETLB",
+            Self::LdsethLdseth32Memop { .. } => "LDSETH",
+            Self::LdsethLdsetah32Memop { .. } => "LDSETAH",
+            Self::LdsethLdsetalh32Memop { .. } => "LDSETALH",
+            Self::LdsethLdsetlh32Memop { .. } => "LDSETLH",
+            Self::LdsmaxLdsmax32Memop { .. } => "LDSMAX",
+            Self::LdsmaxLdsmaxa32Memop { .. } => "LDSMAXA",
+            Self::LdsmaxLdsmaxal32Memop { .. } => "LDSMAXAL",
+            Self::LdsmaxLdsmaxl32Memop { .. } => "LDSMAXL",
+            Self::LdsmaxLdsmax64Memop { .. } => "LDSMAX",
+            Self::LdsmaxLdsmaxa64Memop { .. } => "LDSMAXA",
+            Self::LdsmaxLdsmaxal64Memop { .. } => "LDSMAXAL",
+            Self::LdsmaxLdsmaxl64Memop { .. } => "LDSMAXL",
+            Self::LdsmaxbLdsmaxb32Memop { .. } => "LDSMAXB",
+            Self::LdsmaxbLdsmaxab32Memop { .. } => "LDSMAXAB",
+            Self::LdsmaxbLdsmaxalb32Memop { .. } => "LDSMAXALB",
+            Self::LdsmaxbLdsmaxlb32Memop { .. } => "LDSMAXLB",
+            Self::LdsmaxhLdsmaxh32Memop { .. } => "LDSMAXH",
+            Self::LdsmaxhLdsmaxah32Memop { .. } => "LDSMAXAH",
+            Self::LdsmaxhLdsmaxalh32Memop { .. } => "LDSMAXALH",
+            Self::LdsmaxhLdsmaxlh32Memop { .. } => "LDSMAXLH",
+            Self::LdsminLdsmin32Memop { .. } => "LDSMIN",
+            Self::LdsminLdsmina32Memop { .. } => "LDSMINA",
+            Self::LdsminLdsminal32Memop { .. } => "LDSMINAL",
+            Self::LdsminLdsminl32Memop { .. } => "LDSMINL",
+            Self::LdsminLdsmin64Memop { .. } => "LDSMIN",
+            Self::LdsminLdsmina64Memop { .. } => "LDSMINA",
+            Self::LdsminLdsminal64Memop { .. } => "LDSMINAL",
+            Self::LdsminLdsminl64Memop { .. } => "LDSMINL",
+            Self::LdsminbLdsminb32Memop { .. } => "LDSMINB",
+            Self::LdsminbLdsminab32Memop { .. } => "LDSMINAB",
+            Self::LdsminbLdsminalb32Memop { .. } => "LDSMINALB",
+            Self::LdsminbLdsminlb32Memop { .. } => "LDSMINLB",
+            Self::LdsminhLdsminh32Memop { .. } => "LDSMINH",
+            Self::LdsminhLdsminah32Memop { .. } => "LDSMINAH",
+            Self::LdsminhLdsminalh32Memop { .. } => "LDSMINALH",
+            Self::LdsminhLdsminlh32Memop { .. } => "LDSMINLH",
+            Self::LdumaxLdumax32Memop { .. } => "LDUMAX",
+            Self::LdumaxLdumaxa32Memop { .. } => "LDUMAXA",
+            Self::LdumaxLdumaxal32Memop { .. } => "LDUMAXAL",
+            Self::LdumaxLdumaxl32Memop { .. } => "LDUMAXL",
+            Self::LdumaxLdumax64Memop { .. } => "LDUMAX",
+            Self::LdumaxLdumaxa64Memop { .. } => "LDUMAXA",
+            Self::LdumaxLdumaxal64Memop { .. } => "LDUMAXAL",
+            Self::LdumaxLdumaxl64Memop { .. } => "LDUMAXL",
+            Self::LdumaxbLdumaxb32Memop { .. } => "LDUMAXB",
+            Self::LdumaxbLdumaxab32Memop { .. } => "LDUMAXAB",
+            Self::LdumaxbLdumaxalb32Memop { .. } => "LDUMAXALB",
+            Self::LdumaxbLdumaxlb32Memop { .. } => "LDUMAXLB",
+            Self::LdumaxhLdumaxh32Memop { .. } => "LDUMAXH",
+            Self::LdumaxhLdumaxah32Memop { .. } => "LDUMAXAH",
+            Self::LdumaxhLdumaxalh32Memop { .. } => "LDUMAXALH",
+            Self::LdumaxhLdumaxlh32Memop { .. } => "LDUMAXLH",
+            Self::LduminLdumin32Memop { .. } => "LDUMIN",
+            Self::LduminLdumina32Memop { .. } => "LDUMINA",
+            Self::LduminLduminal32Memop { .. } => "LDUMINAL",
+            Self::LduminLduminl32Memop { .. } => "LDUMINL",
+            Self::LduminLdumin64Memop { .. } => "LDUMIN",
+            Self::LduminLdumina64Memop { .. } => "LDUMINA",
+            Self::LduminLduminal64Memop { .. } => "LDUMINAL",
+            Self::LduminLduminl64Memop { .. } => "LDUMINL",
+            Self::LduminbLduminb32Memop { .. } => "LDUMINB",
+            Self::LduminbLduminab32Memop { .. } => "LDUMINAB",
+            Self::LduminbLduminalb32Memop { .. } => "LDUMINALB",
+            Self::LduminbLduminlb32Memop { .. } => "LDUMINLB",
+            Self::LduminhLduminh32Memop { .. } => "LDUMINH",
+            Self::LduminhLduminah32Memop { .. } => "LDUMINAH",
+            Self::LduminhLduminalh32Memop { .. } => "LDUMINALH",
+            Self::LduminhLduminlh32Memop { .. } => "LDUMINLH",
+            Self::SwpSwp32Memop { .. } => "SWP",
+            Self::SwpSwpa32Memop { .. } => "SWPA",
+            Self::SwpSwpal32Memop { .. } => "SWPAL",
+            Self::SwpSwpl32Memop { .. } => "SWPL",
+            Self::SwpSwp64Memop { .. } => "SWP",
+            Self::SwpSwpa64Memop { .. } => "SWPA",
+            Self::SwpSwpal64Memop { .. } => "SWPAL",
+            Self::SwpSwpl64Memop { .. } => "SWPL",
+            Self::SwpbSwpb32Memop { .. } => "SWPB",
+            Self::SwpbSwpab32Memop { .. } => "SWPAB",
+            Self::SwpbSwpalb32Memop { .. } => "SWPALB",
+            Self::SwpbSwplb32Memop { .. } => "SWPLB",
+            Self::SwphSwph32Memop { .. } => "SWPH",
+            Self::SwphSwpah32Memop { .. } => "SWPAH",
+            Self::SwphSwpalh32Memop { .. } => "SWPALH",
+            Self::SwphSwplh32Memop { .. } => "SWPLH",
+            Self::CasCasC32Comswap { .. } => "CAS",
+            Self::CasCasaC32Comswap { .. } => "CASA",
+            Self::CasCasalC32Comswap { .. } => "CASAL",
+            Self::CasCaslC32Comswap { .. } => "CASL",
+            Self::CasCasC64Comswap { .. } => "CAS",
+            Self::CasCasaC64Comswap { .. } => "CASA",
+            Self::CasCasalC64Comswap { .. } => "CASAL",
+            Self::CasCaslC64Comswap { .. } => "CASL",
+            Self::CasbCasbC32Comswap { .. } => "CASB",
+            Self::CasbCasabC32Comswap { .. } => "CASAB",
+            Self::CasbCasalbC32Comswap { .. } => "CASALB",
+            Self::CasbCaslbC32Comswap { .. } => "CASLB",
+            Self::CashCashC32Comswap { .. } => "CASH",
+            Self::CashCasahC32Comswap { .. } => "CASAH",
+            Self::CashCasalhC32Comswap { .. } => "CASALH",
+            Self::CashCaslhC32Comswap { .. } => "CASLH",
+            Self::MsrImmMsrSiPstate { .. } => "MSR",
         }
     }
 
@@ -2428,6 +3553,167 @@ impl A64Insn {
             Self::BlrBlr64BranchReg { .. } => "BLR <Xn>",
             Self::RetRet64rBranchReg { .. } => "RET  { <Xn> }",
             Self::SvcSvcExException { .. } => "SVC  # <imm>",
+            Self::LdaddLdadd32Memop { .. } => "LDADD <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddLdadda32Memop { .. } => "LDADDA <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddLdaddal32Memop { .. } => "LDADDAL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddLdaddl32Memop { .. } => "LDADDL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddLdadd64Memop { .. } => "LDADD <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdaddLdadda64Memop { .. } => "LDADDA <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdaddLdaddal64Memop { .. } => "LDADDAL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdaddLdaddl64Memop { .. } => "LDADDL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdaddbLdaddb32Memop { .. } => "LDADDB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddbLdaddab32Memop { .. } => "LDADDAB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddbLdaddalb32Memop { .. } => "LDADDALB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddbLdaddlb32Memop { .. } => "LDADDLB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddhLdaddh32Memop { .. } => "LDADDH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddhLdaddah32Memop { .. } => "LDADDAH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddhLdaddalh32Memop { .. } => "LDADDALH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdaddhLdaddlh32Memop { .. } => "LDADDLH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrLdclr32Memop { .. } => "LDCLR <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrLdclra32Memop { .. } => "LDCLRA <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrLdclral32Memop { .. } => "LDCLRAL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrLdclrl32Memop { .. } => "LDCLRL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrLdclr64Memop { .. } => "LDCLR <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdclrLdclra64Memop { .. } => "LDCLRA <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdclrLdclral64Memop { .. } => "LDCLRAL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdclrLdclrl64Memop { .. } => "LDCLRL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdclrbLdclrb32Memop { .. } => "LDCLRB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrbLdclrab32Memop { .. } => "LDCLRAB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrbLdclralb32Memop { .. } => "LDCLRALB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrbLdclrlb32Memop { .. } => "LDCLRLB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrhLdclrh32Memop { .. } => "LDCLRH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrhLdclrah32Memop { .. } => "LDCLRAH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrhLdclralh32Memop { .. } => "LDCLRALH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdclrhLdclrlh32Memop { .. } => "LDCLRLH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorLdeor32Memop { .. } => "LDEOR <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorLdeora32Memop { .. } => "LDEORA <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorLdeoral32Memop { .. } => "LDEORAL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorLdeorl32Memop { .. } => "LDEORL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorLdeor64Memop { .. } => "LDEOR <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdeorLdeora64Memop { .. } => "LDEORA <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdeorLdeoral64Memop { .. } => "LDEORAL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdeorLdeorl64Memop { .. } => "LDEORL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdeorbLdeorb32Memop { .. } => "LDEORB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorbLdeorab32Memop { .. } => "LDEORAB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorbLdeoralb32Memop { .. } => "LDEORALB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorbLdeorlb32Memop { .. } => "LDEORLB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorhLdeorh32Memop { .. } => "LDEORH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorhLdeorah32Memop { .. } => "LDEORAH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorhLdeoralh32Memop { .. } => "LDEORALH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdeorhLdeorlh32Memop { .. } => "LDEORLH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsetLdset32Memop { .. } => "LDSET <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsetLdseta32Memop { .. } => "LDSETA <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsetLdsetal32Memop { .. } => "LDSETAL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsetLdsetl32Memop { .. } => "LDSETL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsetLdset64Memop { .. } => "LDSET <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsetLdseta64Memop { .. } => "LDSETA <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsetLdsetal64Memop { .. } => "LDSETAL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsetLdsetl64Memop { .. } => "LDSETL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsetbLdsetb32Memop { .. } => "LDSETB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsetbLdsetab32Memop { .. } => "LDSETAB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsetbLdsetalb32Memop { .. } => "LDSETALB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsetbLdsetlb32Memop { .. } => "LDSETLB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsethLdseth32Memop { .. } => "LDSETH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsethLdsetah32Memop { .. } => "LDSETAH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsethLdsetalh32Memop { .. } => "LDSETALH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsethLdsetlh32Memop { .. } => "LDSETLH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxLdsmax32Memop { .. } => "LDSMAX <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxLdsmaxa32Memop { .. } => "LDSMAXA <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxLdsmaxal32Memop { .. } => "LDSMAXAL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxLdsmaxl32Memop { .. } => "LDSMAXL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxLdsmax64Memop { .. } => "LDSMAX <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsmaxLdsmaxa64Memop { .. } => "LDSMAXA <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsmaxLdsmaxal64Memop { .. } => "LDSMAXAL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsmaxLdsmaxl64Memop { .. } => "LDSMAXL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsmaxbLdsmaxb32Memop { .. } => "LDSMAXB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxbLdsmaxab32Memop { .. } => "LDSMAXAB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxbLdsmaxalb32Memop { .. } => "LDSMAXALB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxbLdsmaxlb32Memop { .. } => "LDSMAXLB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxhLdsmaxh32Memop { .. } => "LDSMAXH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxhLdsmaxah32Memop { .. } => "LDSMAXAH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxhLdsmaxalh32Memop { .. } => "LDSMAXALH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsmaxhLdsmaxlh32Memop { .. } => "LDSMAXLH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminLdsmin32Memop { .. } => "LDSMIN <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminLdsmina32Memop { .. } => "LDSMINA <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminLdsminal32Memop { .. } => "LDSMINAL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminLdsminl32Memop { .. } => "LDSMINL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminLdsmin64Memop { .. } => "LDSMIN <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsminLdsmina64Memop { .. } => "LDSMINA <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsminLdsminal64Memop { .. } => "LDSMINAL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsminLdsminl64Memop { .. } => "LDSMINL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdsminbLdsminb32Memop { .. } => "LDSMINB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminbLdsminab32Memop { .. } => "LDSMINAB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminbLdsminalb32Memop { .. } => "LDSMINALB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminbLdsminlb32Memop { .. } => "LDSMINLB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminhLdsminh32Memop { .. } => "LDSMINH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminhLdsminah32Memop { .. } => "LDSMINAH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminhLdsminalh32Memop { .. } => "LDSMINALH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdsminhLdsminlh32Memop { .. } => "LDSMINLH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxLdumax32Memop { .. } => "LDUMAX <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxLdumaxa32Memop { .. } => "LDUMAXA <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxLdumaxal32Memop { .. } => "LDUMAXAL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxLdumaxl32Memop { .. } => "LDUMAXL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxLdumax64Memop { .. } => "LDUMAX <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdumaxLdumaxa64Memop { .. } => "LDUMAXA <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdumaxLdumaxal64Memop { .. } => "LDUMAXAL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdumaxLdumaxl64Memop { .. } => "LDUMAXL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LdumaxbLdumaxb32Memop { .. } => "LDUMAXB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxbLdumaxab32Memop { .. } => "LDUMAXAB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxbLdumaxalb32Memop { .. } => "LDUMAXALB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxbLdumaxlb32Memop { .. } => "LDUMAXLB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxhLdumaxh32Memop { .. } => "LDUMAXH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxhLdumaxah32Memop { .. } => "LDUMAXAH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxhLdumaxalh32Memop { .. } => "LDUMAXALH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LdumaxhLdumaxlh32Memop { .. } => "LDUMAXLH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminLdumin32Memop { .. } => "LDUMIN <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminLdumina32Memop { .. } => "LDUMINA <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminLduminal32Memop { .. } => "LDUMINAL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminLduminl32Memop { .. } => "LDUMINL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminLdumin64Memop { .. } => "LDUMIN <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LduminLdumina64Memop { .. } => "LDUMINA <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LduminLduminal64Memop { .. } => "LDUMINAL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LduminLduminl64Memop { .. } => "LDUMINL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::LduminbLduminb32Memop { .. } => "LDUMINB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminbLduminab32Memop { .. } => "LDUMINAB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminbLduminalb32Memop { .. } => "LDUMINALB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminbLduminlb32Memop { .. } => "LDUMINLB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminhLduminh32Memop { .. } => "LDUMINH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminhLduminah32Memop { .. } => "LDUMINAH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminhLduminalh32Memop { .. } => "LDUMINALH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::LduminhLduminlh32Memop { .. } => "LDUMINLH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwpSwp32Memop { .. } => "SWP <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwpSwpa32Memop { .. } => "SWPA <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwpSwpal32Memop { .. } => "SWPAL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwpSwpl32Memop { .. } => "SWPL <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwpSwp64Memop { .. } => "SWP <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::SwpSwpa64Memop { .. } => "SWPA <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::SwpSwpal64Memop { .. } => "SWPAL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::SwpSwpl64Memop { .. } => "SWPL <Xs> , <Xt> , [ <Xn|SP> ]",
+            Self::SwpbSwpb32Memop { .. } => "SWPB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwpbSwpab32Memop { .. } => "SWPAB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwpbSwpalb32Memop { .. } => "SWPALB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwpbSwplb32Memop { .. } => "SWPLB <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwphSwph32Memop { .. } => "SWPH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwphSwpah32Memop { .. } => "SWPAH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwphSwpalh32Memop { .. } => "SWPALH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::SwphSwplh32Memop { .. } => "SWPLH <Ws> , <Wt> , [ <Xn|SP> ]",
+            Self::CasCasC32Comswap { .. } => "CAS <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CasCasaC32Comswap { .. } => "CASA <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CasCasalC32Comswap { .. } => "CASAL <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CasCaslC32Comswap { .. } => "CASL <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CasCasC64Comswap { .. } => "CAS <Xs> , <Xt> , [ <Xn|SP> {, #0}]",
+            Self::CasCasaC64Comswap { .. } => "CASA <Xs> , <Xt> , [ <Xn|SP> {, #0}]",
+            Self::CasCasalC64Comswap { .. } => "CASAL <Xs> , <Xt> , [ <Xn|SP> {, #0}]",
+            Self::CasCaslC64Comswap { .. } => "CASL <Xs> , <Xt> , [ <Xn|SP> {, #0}]",
+            Self::CasbCasbC32Comswap { .. } => "CASB <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CasbCasabC32Comswap { .. } => "CASAB <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CasbCasalbC32Comswap { .. } => "CASALB <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CasbCaslbC32Comswap { .. } => "CASLB <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CashCashC32Comswap { .. } => "CASH <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CashCasahC32Comswap { .. } => "CASAH <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CashCasalhC32Comswap { .. } => "CASALH <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::CashCaslhC32Comswap { .. } => "CASLH <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+            Self::MsrImmMsrSiPstate { .. } => "MSR <pstatefield> , # <imm>",
         }
     }
 
@@ -4374,6 +5660,1131 @@ impl A64Insn {
                 word |= encode_a64_field("SVC.SVC_EX_exception", "imm16", imm16.raw(), 16, 5)?;
                 Ok(word)
             }
+            Self::LdaddLdadd32Memop { rs, rn, rt } => {
+                let mut word = 0xb8200000;
+                word |= encode_a64_field("LDADD.LDADD_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADD.LDADD_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADD.LDADD_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddLdadda32Memop { rs, rn, rt } => {
+                let mut word = 0xb8a00000;
+                word |= encode_a64_field("LDADD.LDADDA_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADD.LDADDA_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADD.LDADDA_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddLdaddal32Memop { rs, rn, rt } => {
+                let mut word = 0xb8e00000;
+                word |= encode_a64_field("LDADD.LDADDAL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADD.LDADDAL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADD.LDADDAL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddLdaddl32Memop { rs, rn, rt } => {
+                let mut word = 0xb8600000;
+                word |= encode_a64_field("LDADD.LDADDL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADD.LDADDL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADD.LDADDL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddLdadd64Memop { rs, rn, rt } => {
+                let mut word = 0xf8200000;
+                word |= encode_a64_field("LDADD.LDADD_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADD.LDADD_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADD.LDADD_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddLdadda64Memop { rs, rn, rt } => {
+                let mut word = 0xf8a00000;
+                word |= encode_a64_field("LDADD.LDADDA_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADD.LDADDA_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADD.LDADDA_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddLdaddal64Memop { rs, rn, rt } => {
+                let mut word = 0xf8e00000;
+                word |= encode_a64_field("LDADD.LDADDAL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADD.LDADDAL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADD.LDADDAL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddLdaddl64Memop { rs, rn, rt } => {
+                let mut word = 0xf8600000;
+                word |= encode_a64_field("LDADD.LDADDL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADD.LDADDL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADD.LDADDL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddbLdaddb32Memop { rs, rn, rt } => {
+                let mut word = 0x38200000;
+                word |= encode_a64_field("LDADDB.LDADDB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADDB.LDADDB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADDB.LDADDB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddbLdaddab32Memop { rs, rn, rt } => {
+                let mut word = 0x38a00000;
+                word |= encode_a64_field("LDADDB.LDADDAB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADDB.LDADDAB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADDB.LDADDAB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddbLdaddalb32Memop { rs, rn, rt } => {
+                let mut word = 0x38e00000;
+                word |= encode_a64_field("LDADDB.LDADDALB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADDB.LDADDALB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADDB.LDADDALB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddbLdaddlb32Memop { rs, rn, rt } => {
+                let mut word = 0x38600000;
+                word |= encode_a64_field("LDADDB.LDADDLB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADDB.LDADDLB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADDB.LDADDLB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddhLdaddh32Memop { rs, rn, rt } => {
+                let mut word = 0x78200000;
+                word |= encode_a64_field("LDADDH.LDADDH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADDH.LDADDH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADDH.LDADDH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddhLdaddah32Memop { rs, rn, rt } => {
+                let mut word = 0x78a00000;
+                word |= encode_a64_field("LDADDH.LDADDAH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADDH.LDADDAH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADDH.LDADDAH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddhLdaddalh32Memop { rs, rn, rt } => {
+                let mut word = 0x78e00000;
+                word |= encode_a64_field("LDADDH.LDADDALH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADDH.LDADDALH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADDH.LDADDALH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdaddhLdaddlh32Memop { rs, rn, rt } => {
+                let mut word = 0x78600000;
+                word |= encode_a64_field("LDADDH.LDADDLH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDADDH.LDADDLH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDADDH.LDADDLH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrLdclr32Memop { rs, rn, rt } => {
+                let mut word = 0xb8201000;
+                word |= encode_a64_field("LDCLR.LDCLR_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLR.LDCLR_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLR.LDCLR_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrLdclra32Memop { rs, rn, rt } => {
+                let mut word = 0xb8a01000;
+                word |= encode_a64_field("LDCLR.LDCLRA_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLR.LDCLRA_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLR.LDCLRA_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrLdclral32Memop { rs, rn, rt } => {
+                let mut word = 0xb8e01000;
+                word |= encode_a64_field("LDCLR.LDCLRAL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLR.LDCLRAL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLR.LDCLRAL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrLdclrl32Memop { rs, rn, rt } => {
+                let mut word = 0xb8601000;
+                word |= encode_a64_field("LDCLR.LDCLRL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLR.LDCLRL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLR.LDCLRL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrLdclr64Memop { rs, rn, rt } => {
+                let mut word = 0xf8201000;
+                word |= encode_a64_field("LDCLR.LDCLR_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLR.LDCLR_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLR.LDCLR_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrLdclra64Memop { rs, rn, rt } => {
+                let mut word = 0xf8a01000;
+                word |= encode_a64_field("LDCLR.LDCLRA_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLR.LDCLRA_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLR.LDCLRA_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrLdclral64Memop { rs, rn, rt } => {
+                let mut word = 0xf8e01000;
+                word |= encode_a64_field("LDCLR.LDCLRAL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLR.LDCLRAL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLR.LDCLRAL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrLdclrl64Memop { rs, rn, rt } => {
+                let mut word = 0xf8601000;
+                word |= encode_a64_field("LDCLR.LDCLRL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLR.LDCLRL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLR.LDCLRL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrbLdclrb32Memop { rs, rn, rt } => {
+                let mut word = 0x38201000;
+                word |= encode_a64_field("LDCLRB.LDCLRB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLRB.LDCLRB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLRB.LDCLRB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrbLdclrab32Memop { rs, rn, rt } => {
+                let mut word = 0x38a01000;
+                word |= encode_a64_field("LDCLRB.LDCLRAB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLRB.LDCLRAB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLRB.LDCLRAB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrbLdclralb32Memop { rs, rn, rt } => {
+                let mut word = 0x38e01000;
+                word |= encode_a64_field("LDCLRB.LDCLRALB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLRB.LDCLRALB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLRB.LDCLRALB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrbLdclrlb32Memop { rs, rn, rt } => {
+                let mut word = 0x38601000;
+                word |= encode_a64_field("LDCLRB.LDCLRLB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLRB.LDCLRLB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLRB.LDCLRLB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrhLdclrh32Memop { rs, rn, rt } => {
+                let mut word = 0x78201000;
+                word |= encode_a64_field("LDCLRH.LDCLRH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLRH.LDCLRH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLRH.LDCLRH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrhLdclrah32Memop { rs, rn, rt } => {
+                let mut word = 0x78a01000;
+                word |= encode_a64_field("LDCLRH.LDCLRAH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLRH.LDCLRAH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLRH.LDCLRAH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrhLdclralh32Memop { rs, rn, rt } => {
+                let mut word = 0x78e01000;
+                word |= encode_a64_field("LDCLRH.LDCLRALH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLRH.LDCLRALH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLRH.LDCLRALH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdclrhLdclrlh32Memop { rs, rn, rt } => {
+                let mut word = 0x78601000;
+                word |= encode_a64_field("LDCLRH.LDCLRLH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDCLRH.LDCLRLH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDCLRH.LDCLRLH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorLdeor32Memop { rs, rn, rt } => {
+                let mut word = 0xb8202000;
+                word |= encode_a64_field("LDEOR.LDEOR_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEOR.LDEOR_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEOR.LDEOR_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorLdeora32Memop { rs, rn, rt } => {
+                let mut word = 0xb8a02000;
+                word |= encode_a64_field("LDEOR.LDEORA_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEOR.LDEORA_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEOR.LDEORA_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorLdeoral32Memop { rs, rn, rt } => {
+                let mut word = 0xb8e02000;
+                word |= encode_a64_field("LDEOR.LDEORAL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEOR.LDEORAL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEOR.LDEORAL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorLdeorl32Memop { rs, rn, rt } => {
+                let mut word = 0xb8602000;
+                word |= encode_a64_field("LDEOR.LDEORL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEOR.LDEORL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEOR.LDEORL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorLdeor64Memop { rs, rn, rt } => {
+                let mut word = 0xf8202000;
+                word |= encode_a64_field("LDEOR.LDEOR_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEOR.LDEOR_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEOR.LDEOR_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorLdeora64Memop { rs, rn, rt } => {
+                let mut word = 0xf8a02000;
+                word |= encode_a64_field("LDEOR.LDEORA_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEOR.LDEORA_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEOR.LDEORA_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorLdeoral64Memop { rs, rn, rt } => {
+                let mut word = 0xf8e02000;
+                word |= encode_a64_field("LDEOR.LDEORAL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEOR.LDEORAL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEOR.LDEORAL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorLdeorl64Memop { rs, rn, rt } => {
+                let mut word = 0xf8602000;
+                word |= encode_a64_field("LDEOR.LDEORL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEOR.LDEORL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEOR.LDEORL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorbLdeorb32Memop { rs, rn, rt } => {
+                let mut word = 0x38202000;
+                word |= encode_a64_field("LDEORB.LDEORB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEORB.LDEORB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEORB.LDEORB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorbLdeorab32Memop { rs, rn, rt } => {
+                let mut word = 0x38a02000;
+                word |= encode_a64_field("LDEORB.LDEORAB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEORB.LDEORAB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEORB.LDEORAB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorbLdeoralb32Memop { rs, rn, rt } => {
+                let mut word = 0x38e02000;
+                word |= encode_a64_field("LDEORB.LDEORALB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEORB.LDEORALB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEORB.LDEORALB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorbLdeorlb32Memop { rs, rn, rt } => {
+                let mut word = 0x38602000;
+                word |= encode_a64_field("LDEORB.LDEORLB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEORB.LDEORLB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEORB.LDEORLB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorhLdeorh32Memop { rs, rn, rt } => {
+                let mut word = 0x78202000;
+                word |= encode_a64_field("LDEORH.LDEORH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEORH.LDEORH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEORH.LDEORH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorhLdeorah32Memop { rs, rn, rt } => {
+                let mut word = 0x78a02000;
+                word |= encode_a64_field("LDEORH.LDEORAH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEORH.LDEORAH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEORH.LDEORAH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorhLdeoralh32Memop { rs, rn, rt } => {
+                let mut word = 0x78e02000;
+                word |= encode_a64_field("LDEORH.LDEORALH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEORH.LDEORALH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEORH.LDEORALH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdeorhLdeorlh32Memop { rs, rn, rt } => {
+                let mut word = 0x78602000;
+                word |= encode_a64_field("LDEORH.LDEORLH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDEORH.LDEORLH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDEORH.LDEORLH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetLdset32Memop { rs, rn, rt } => {
+                let mut word = 0xb8203000;
+                word |= encode_a64_field("LDSET.LDSET_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSET.LDSET_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSET.LDSET_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetLdseta32Memop { rs, rn, rt } => {
+                let mut word = 0xb8a03000;
+                word |= encode_a64_field("LDSET.LDSETA_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSET.LDSETA_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSET.LDSETA_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetLdsetal32Memop { rs, rn, rt } => {
+                let mut word = 0xb8e03000;
+                word |= encode_a64_field("LDSET.LDSETAL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSET.LDSETAL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSET.LDSETAL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetLdsetl32Memop { rs, rn, rt } => {
+                let mut word = 0xb8603000;
+                word |= encode_a64_field("LDSET.LDSETL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSET.LDSETL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSET.LDSETL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetLdset64Memop { rs, rn, rt } => {
+                let mut word = 0xf8203000;
+                word |= encode_a64_field("LDSET.LDSET_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSET.LDSET_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSET.LDSET_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetLdseta64Memop { rs, rn, rt } => {
+                let mut word = 0xf8a03000;
+                word |= encode_a64_field("LDSET.LDSETA_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSET.LDSETA_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSET.LDSETA_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetLdsetal64Memop { rs, rn, rt } => {
+                let mut word = 0xf8e03000;
+                word |= encode_a64_field("LDSET.LDSETAL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSET.LDSETAL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSET.LDSETAL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetLdsetl64Memop { rs, rn, rt } => {
+                let mut word = 0xf8603000;
+                word |= encode_a64_field("LDSET.LDSETL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSET.LDSETL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSET.LDSETL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetbLdsetb32Memop { rs, rn, rt } => {
+                let mut word = 0x38203000;
+                word |= encode_a64_field("LDSETB.LDSETB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSETB.LDSETB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSETB.LDSETB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetbLdsetab32Memop { rs, rn, rt } => {
+                let mut word = 0x38a03000;
+                word |= encode_a64_field("LDSETB.LDSETAB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSETB.LDSETAB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSETB.LDSETAB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetbLdsetalb32Memop { rs, rn, rt } => {
+                let mut word = 0x38e03000;
+                word |= encode_a64_field("LDSETB.LDSETALB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSETB.LDSETALB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSETB.LDSETALB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsetbLdsetlb32Memop { rs, rn, rt } => {
+                let mut word = 0x38603000;
+                word |= encode_a64_field("LDSETB.LDSETLB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSETB.LDSETLB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSETB.LDSETLB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsethLdseth32Memop { rs, rn, rt } => {
+                let mut word = 0x78203000;
+                word |= encode_a64_field("LDSETH.LDSETH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSETH.LDSETH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSETH.LDSETH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsethLdsetah32Memop { rs, rn, rt } => {
+                let mut word = 0x78a03000;
+                word |= encode_a64_field("LDSETH.LDSETAH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSETH.LDSETAH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSETH.LDSETAH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsethLdsetalh32Memop { rs, rn, rt } => {
+                let mut word = 0x78e03000;
+                word |= encode_a64_field("LDSETH.LDSETALH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSETH.LDSETALH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSETH.LDSETALH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsethLdsetlh32Memop { rs, rn, rt } => {
+                let mut word = 0x78603000;
+                word |= encode_a64_field("LDSETH.LDSETLH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSETH.LDSETLH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSETH.LDSETLH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxLdsmax32Memop { rs, rn, rt } => {
+                let mut word = 0xb8204000;
+                word |= encode_a64_field("LDSMAX.LDSMAX_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAX.LDSMAX_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAX.LDSMAX_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxLdsmaxa32Memop { rs, rn, rt } => {
+                let mut word = 0xb8a04000;
+                word |= encode_a64_field("LDSMAX.LDSMAXA_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXA_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXA_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxLdsmaxal32Memop { rs, rn, rt } => {
+                let mut word = 0xb8e04000;
+                word |= encode_a64_field("LDSMAX.LDSMAXAL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXAL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXAL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxLdsmaxl32Memop { rs, rn, rt } => {
+                let mut word = 0xb8604000;
+                word |= encode_a64_field("LDSMAX.LDSMAXL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxLdsmax64Memop { rs, rn, rt } => {
+                let mut word = 0xf8204000;
+                word |= encode_a64_field("LDSMAX.LDSMAX_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAX.LDSMAX_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAX.LDSMAX_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxLdsmaxa64Memop { rs, rn, rt } => {
+                let mut word = 0xf8a04000;
+                word |= encode_a64_field("LDSMAX.LDSMAXA_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXA_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXA_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxLdsmaxal64Memop { rs, rn, rt } => {
+                let mut word = 0xf8e04000;
+                word |= encode_a64_field("LDSMAX.LDSMAXAL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXAL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXAL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxLdsmaxl64Memop { rs, rn, rt } => {
+                let mut word = 0xf8604000;
+                word |= encode_a64_field("LDSMAX.LDSMAXL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAX.LDSMAXL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxbLdsmaxb32Memop { rs, rn, rt } => {
+                let mut word = 0x38204000;
+                word |= encode_a64_field("LDSMAXB.LDSMAXB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAXB.LDSMAXB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAXB.LDSMAXB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxbLdsmaxab32Memop { rs, rn, rt } => {
+                let mut word = 0x38a04000;
+                word |= encode_a64_field("LDSMAXB.LDSMAXAB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAXB.LDSMAXAB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAXB.LDSMAXAB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxbLdsmaxalb32Memop { rs, rn, rt } => {
+                let mut word = 0x38e04000;
+                word |= encode_a64_field("LDSMAXB.LDSMAXALB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAXB.LDSMAXALB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAXB.LDSMAXALB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxbLdsmaxlb32Memop { rs, rn, rt } => {
+                let mut word = 0x38604000;
+                word |= encode_a64_field("LDSMAXB.LDSMAXLB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAXB.LDSMAXLB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAXB.LDSMAXLB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxhLdsmaxh32Memop { rs, rn, rt } => {
+                let mut word = 0x78204000;
+                word |= encode_a64_field("LDSMAXH.LDSMAXH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAXH.LDSMAXH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAXH.LDSMAXH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxhLdsmaxah32Memop { rs, rn, rt } => {
+                let mut word = 0x78a04000;
+                word |= encode_a64_field("LDSMAXH.LDSMAXAH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAXH.LDSMAXAH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAXH.LDSMAXAH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxhLdsmaxalh32Memop { rs, rn, rt } => {
+                let mut word = 0x78e04000;
+                word |= encode_a64_field("LDSMAXH.LDSMAXALH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAXH.LDSMAXALH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAXH.LDSMAXALH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsmaxhLdsmaxlh32Memop { rs, rn, rt } => {
+                let mut word = 0x78604000;
+                word |= encode_a64_field("LDSMAXH.LDSMAXLH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMAXH.LDSMAXLH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMAXH.LDSMAXLH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminLdsmin32Memop { rs, rn, rt } => {
+                let mut word = 0xb8205000;
+                word |= encode_a64_field("LDSMIN.LDSMIN_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMIN.LDSMIN_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMIN.LDSMIN_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminLdsmina32Memop { rs, rn, rt } => {
+                let mut word = 0xb8a05000;
+                word |= encode_a64_field("LDSMIN.LDSMINA_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMIN.LDSMINA_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMIN.LDSMINA_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminLdsminal32Memop { rs, rn, rt } => {
+                let mut word = 0xb8e05000;
+                word |= encode_a64_field("LDSMIN.LDSMINAL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMIN.LDSMINAL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMIN.LDSMINAL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminLdsminl32Memop { rs, rn, rt } => {
+                let mut word = 0xb8605000;
+                word |= encode_a64_field("LDSMIN.LDSMINL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMIN.LDSMINL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMIN.LDSMINL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminLdsmin64Memop { rs, rn, rt } => {
+                let mut word = 0xf8205000;
+                word |= encode_a64_field("LDSMIN.LDSMIN_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMIN.LDSMIN_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMIN.LDSMIN_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminLdsmina64Memop { rs, rn, rt } => {
+                let mut word = 0xf8a05000;
+                word |= encode_a64_field("LDSMIN.LDSMINA_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMIN.LDSMINA_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMIN.LDSMINA_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminLdsminal64Memop { rs, rn, rt } => {
+                let mut word = 0xf8e05000;
+                word |= encode_a64_field("LDSMIN.LDSMINAL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMIN.LDSMINAL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMIN.LDSMINAL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminLdsminl64Memop { rs, rn, rt } => {
+                let mut word = 0xf8605000;
+                word |= encode_a64_field("LDSMIN.LDSMINL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMIN.LDSMINL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMIN.LDSMINL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminbLdsminb32Memop { rs, rn, rt } => {
+                let mut word = 0x38205000;
+                word |= encode_a64_field("LDSMINB.LDSMINB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMINB.LDSMINB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMINB.LDSMINB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminbLdsminab32Memop { rs, rn, rt } => {
+                let mut word = 0x38a05000;
+                word |= encode_a64_field("LDSMINB.LDSMINAB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMINB.LDSMINAB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMINB.LDSMINAB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminbLdsminalb32Memop { rs, rn, rt } => {
+                let mut word = 0x38e05000;
+                word |= encode_a64_field("LDSMINB.LDSMINALB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMINB.LDSMINALB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMINB.LDSMINALB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminbLdsminlb32Memop { rs, rn, rt } => {
+                let mut word = 0x38605000;
+                word |= encode_a64_field("LDSMINB.LDSMINLB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMINB.LDSMINLB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMINB.LDSMINLB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminhLdsminh32Memop { rs, rn, rt } => {
+                let mut word = 0x78205000;
+                word |= encode_a64_field("LDSMINH.LDSMINH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMINH.LDSMINH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMINH.LDSMINH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminhLdsminah32Memop { rs, rn, rt } => {
+                let mut word = 0x78a05000;
+                word |= encode_a64_field("LDSMINH.LDSMINAH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMINH.LDSMINAH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMINH.LDSMINAH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminhLdsminalh32Memop { rs, rn, rt } => {
+                let mut word = 0x78e05000;
+                word |= encode_a64_field("LDSMINH.LDSMINALH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMINH.LDSMINALH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMINH.LDSMINALH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdsminhLdsminlh32Memop { rs, rn, rt } => {
+                let mut word = 0x78605000;
+                word |= encode_a64_field("LDSMINH.LDSMINLH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDSMINH.LDSMINLH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDSMINH.LDSMINLH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxLdumax32Memop { rs, rn, rt } => {
+                let mut word = 0xb8206000;
+                word |= encode_a64_field("LDUMAX.LDUMAX_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAX.LDUMAX_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAX.LDUMAX_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxLdumaxa32Memop { rs, rn, rt } => {
+                let mut word = 0xb8a06000;
+                word |= encode_a64_field("LDUMAX.LDUMAXA_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXA_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXA_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxLdumaxal32Memop { rs, rn, rt } => {
+                let mut word = 0xb8e06000;
+                word |= encode_a64_field("LDUMAX.LDUMAXAL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXAL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXAL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxLdumaxl32Memop { rs, rn, rt } => {
+                let mut word = 0xb8606000;
+                word |= encode_a64_field("LDUMAX.LDUMAXL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxLdumax64Memop { rs, rn, rt } => {
+                let mut word = 0xf8206000;
+                word |= encode_a64_field("LDUMAX.LDUMAX_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAX.LDUMAX_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAX.LDUMAX_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxLdumaxa64Memop { rs, rn, rt } => {
+                let mut word = 0xf8a06000;
+                word |= encode_a64_field("LDUMAX.LDUMAXA_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXA_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXA_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxLdumaxal64Memop { rs, rn, rt } => {
+                let mut word = 0xf8e06000;
+                word |= encode_a64_field("LDUMAX.LDUMAXAL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXAL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXAL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxLdumaxl64Memop { rs, rn, rt } => {
+                let mut word = 0xf8606000;
+                word |= encode_a64_field("LDUMAX.LDUMAXL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAX.LDUMAXL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxbLdumaxb32Memop { rs, rn, rt } => {
+                let mut word = 0x38206000;
+                word |= encode_a64_field("LDUMAXB.LDUMAXB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAXB.LDUMAXB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAXB.LDUMAXB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxbLdumaxab32Memop { rs, rn, rt } => {
+                let mut word = 0x38a06000;
+                word |= encode_a64_field("LDUMAXB.LDUMAXAB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAXB.LDUMAXAB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAXB.LDUMAXAB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxbLdumaxalb32Memop { rs, rn, rt } => {
+                let mut word = 0x38e06000;
+                word |= encode_a64_field("LDUMAXB.LDUMAXALB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAXB.LDUMAXALB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAXB.LDUMAXALB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxbLdumaxlb32Memop { rs, rn, rt } => {
+                let mut word = 0x38606000;
+                word |= encode_a64_field("LDUMAXB.LDUMAXLB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAXB.LDUMAXLB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAXB.LDUMAXLB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxhLdumaxh32Memop { rs, rn, rt } => {
+                let mut word = 0x78206000;
+                word |= encode_a64_field("LDUMAXH.LDUMAXH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAXH.LDUMAXH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAXH.LDUMAXH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxhLdumaxah32Memop { rs, rn, rt } => {
+                let mut word = 0x78a06000;
+                word |= encode_a64_field("LDUMAXH.LDUMAXAH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAXH.LDUMAXAH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAXH.LDUMAXAH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxhLdumaxalh32Memop { rs, rn, rt } => {
+                let mut word = 0x78e06000;
+                word |= encode_a64_field("LDUMAXH.LDUMAXALH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAXH.LDUMAXALH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAXH.LDUMAXALH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdumaxhLdumaxlh32Memop { rs, rn, rt } => {
+                let mut word = 0x78606000;
+                word |= encode_a64_field("LDUMAXH.LDUMAXLH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMAXH.LDUMAXLH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMAXH.LDUMAXLH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminLdumin32Memop { rs, rn, rt } => {
+                let mut word = 0xb8207000;
+                word |= encode_a64_field("LDUMIN.LDUMIN_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMIN.LDUMIN_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMIN.LDUMIN_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminLdumina32Memop { rs, rn, rt } => {
+                let mut word = 0xb8a07000;
+                word |= encode_a64_field("LDUMIN.LDUMINA_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMIN.LDUMINA_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMIN.LDUMINA_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminLduminal32Memop { rs, rn, rt } => {
+                let mut word = 0xb8e07000;
+                word |= encode_a64_field("LDUMIN.LDUMINAL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMIN.LDUMINAL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMIN.LDUMINAL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminLduminl32Memop { rs, rn, rt } => {
+                let mut word = 0xb8607000;
+                word |= encode_a64_field("LDUMIN.LDUMINL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMIN.LDUMINL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMIN.LDUMINL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminLdumin64Memop { rs, rn, rt } => {
+                let mut word = 0xf8207000;
+                word |= encode_a64_field("LDUMIN.LDUMIN_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMIN.LDUMIN_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMIN.LDUMIN_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminLdumina64Memop { rs, rn, rt } => {
+                let mut word = 0xf8a07000;
+                word |= encode_a64_field("LDUMIN.LDUMINA_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMIN.LDUMINA_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMIN.LDUMINA_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminLduminal64Memop { rs, rn, rt } => {
+                let mut word = 0xf8e07000;
+                word |= encode_a64_field("LDUMIN.LDUMINAL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMIN.LDUMINAL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMIN.LDUMINAL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminLduminl64Memop { rs, rn, rt } => {
+                let mut word = 0xf8607000;
+                word |= encode_a64_field("LDUMIN.LDUMINL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMIN.LDUMINL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMIN.LDUMINL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminbLduminb32Memop { rs, rn, rt } => {
+                let mut word = 0x38207000;
+                word |= encode_a64_field("LDUMINB.LDUMINB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMINB.LDUMINB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMINB.LDUMINB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminbLduminab32Memop { rs, rn, rt } => {
+                let mut word = 0x38a07000;
+                word |= encode_a64_field("LDUMINB.LDUMINAB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMINB.LDUMINAB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMINB.LDUMINAB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminbLduminalb32Memop { rs, rn, rt } => {
+                let mut word = 0x38e07000;
+                word |= encode_a64_field("LDUMINB.LDUMINALB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMINB.LDUMINALB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMINB.LDUMINALB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminbLduminlb32Memop { rs, rn, rt } => {
+                let mut word = 0x38607000;
+                word |= encode_a64_field("LDUMINB.LDUMINLB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMINB.LDUMINLB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMINB.LDUMINLB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminhLduminh32Memop { rs, rn, rt } => {
+                let mut word = 0x78207000;
+                word |= encode_a64_field("LDUMINH.LDUMINH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMINH.LDUMINH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMINH.LDUMINH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminhLduminah32Memop { rs, rn, rt } => {
+                let mut word = 0x78a07000;
+                word |= encode_a64_field("LDUMINH.LDUMINAH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMINH.LDUMINAH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMINH.LDUMINAH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminhLduminalh32Memop { rs, rn, rt } => {
+                let mut word = 0x78e07000;
+                word |= encode_a64_field("LDUMINH.LDUMINALH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMINH.LDUMINALH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMINH.LDUMINALH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LduminhLduminlh32Memop { rs, rn, rt } => {
+                let mut word = 0x78607000;
+                word |= encode_a64_field("LDUMINH.LDUMINLH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDUMINH.LDUMINLH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDUMINH.LDUMINLH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpSwp32Memop { rs, rn, rt } => {
+                let mut word = 0xb8208000;
+                word |= encode_a64_field("SWP.SWP_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWP.SWP_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWP.SWP_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpSwpa32Memop { rs, rn, rt } => {
+                let mut word = 0xb8a08000;
+                word |= encode_a64_field("SWP.SWPA_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWP.SWPA_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWP.SWPA_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpSwpal32Memop { rs, rn, rt } => {
+                let mut word = 0xb8e08000;
+                word |= encode_a64_field("SWP.SWPAL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWP.SWPAL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWP.SWPAL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpSwpl32Memop { rs, rn, rt } => {
+                let mut word = 0xb8608000;
+                word |= encode_a64_field("SWP.SWPL_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWP.SWPL_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWP.SWPL_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpSwp64Memop { rs, rn, rt } => {
+                let mut word = 0xf8208000;
+                word |= encode_a64_field("SWP.SWP_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWP.SWP_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWP.SWP_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpSwpa64Memop { rs, rn, rt } => {
+                let mut word = 0xf8a08000;
+                word |= encode_a64_field("SWP.SWPA_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWP.SWPA_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWP.SWPA_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpSwpal64Memop { rs, rn, rt } => {
+                let mut word = 0xf8e08000;
+                word |= encode_a64_field("SWP.SWPAL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWP.SWPAL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWP.SWPAL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpSwpl64Memop { rs, rn, rt } => {
+                let mut word = 0xf8608000;
+                word |= encode_a64_field("SWP.SWPL_64_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWP.SWPL_64_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWP.SWPL_64_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpbSwpb32Memop { rs, rn, rt } => {
+                let mut word = 0x38208000;
+                word |= encode_a64_field("SWPB.SWPB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWPB.SWPB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWPB.SWPB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpbSwpab32Memop { rs, rn, rt } => {
+                let mut word = 0x38a08000;
+                word |= encode_a64_field("SWPB.SWPAB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWPB.SWPAB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWPB.SWPAB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpbSwpalb32Memop { rs, rn, rt } => {
+                let mut word = 0x38e08000;
+                word |= encode_a64_field("SWPB.SWPALB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWPB.SWPALB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWPB.SWPALB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwpbSwplb32Memop { rs, rn, rt } => {
+                let mut word = 0x38608000;
+                word |= encode_a64_field("SWPB.SWPLB_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWPB.SWPLB_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWPB.SWPLB_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwphSwph32Memop { rs, rn, rt } => {
+                let mut word = 0x78208000;
+                word |= encode_a64_field("SWPH.SWPH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWPH.SWPH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWPH.SWPH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwphSwpah32Memop { rs, rn, rt } => {
+                let mut word = 0x78a08000;
+                word |= encode_a64_field("SWPH.SWPAH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWPH.SWPAH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWPH.SWPAH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwphSwpalh32Memop { rs, rn, rt } => {
+                let mut word = 0x78e08000;
+                word |= encode_a64_field("SWPH.SWPALH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWPH.SWPALH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWPH.SWPALH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::SwphSwplh32Memop { rs, rn, rt } => {
+                let mut word = 0x78608000;
+                word |= encode_a64_field("SWPH.SWPLH_32_memop", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("SWPH.SWPLH_32_memop", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SWPH.SWPLH_32_memop", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasCasC32Comswap { rs, rn, rt } => {
+                let mut word = 0x88a07c00;
+                word |= encode_a64_field("CAS.CAS_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CAS.CAS_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CAS.CAS_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasCasaC32Comswap { rs, rn, rt } => {
+                let mut word = 0x88e07c00;
+                word |= encode_a64_field("CAS.CASA_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CAS.CASA_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CAS.CASA_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasCasalC32Comswap { rs, rn, rt } => {
+                let mut word = 0x88e0fc00;
+                word |= encode_a64_field("CAS.CASAL_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CAS.CASAL_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CAS.CASAL_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasCaslC32Comswap { rs, rn, rt } => {
+                let mut word = 0x88a0fc00;
+                word |= encode_a64_field("CAS.CASL_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CAS.CASL_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CAS.CASL_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasCasC64Comswap { rs, rn, rt } => {
+                let mut word = 0xc8a07c00;
+                word |= encode_a64_field("CAS.CAS_C64_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CAS.CAS_C64_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CAS.CAS_C64_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasCasaC64Comswap { rs, rn, rt } => {
+                let mut word = 0xc8e07c00;
+                word |= encode_a64_field("CAS.CASA_C64_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CAS.CASA_C64_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CAS.CASA_C64_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasCasalC64Comswap { rs, rn, rt } => {
+                let mut word = 0xc8e0fc00;
+                word |= encode_a64_field("CAS.CASAL_C64_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CAS.CASAL_C64_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CAS.CASAL_C64_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasCaslC64Comswap { rs, rn, rt } => {
+                let mut word = 0xc8a0fc00;
+                word |= encode_a64_field("CAS.CASL_C64_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CAS.CASL_C64_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CAS.CASL_C64_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasbCasbC32Comswap { rs, rn, rt } => {
+                let mut word = 0x08a07c00;
+                word |= encode_a64_field("CASB.CASB_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CASB.CASB_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CASB.CASB_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasbCasabC32Comswap { rs, rn, rt } => {
+                let mut word = 0x08e07c00;
+                word |= encode_a64_field("CASB.CASAB_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CASB.CASAB_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CASB.CASAB_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasbCasalbC32Comswap { rs, rn, rt } => {
+                let mut word = 0x08e0fc00;
+                word |= encode_a64_field("CASB.CASALB_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CASB.CASALB_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CASB.CASALB_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CasbCaslbC32Comswap { rs, rn, rt } => {
+                let mut word = 0x08a0fc00;
+                word |= encode_a64_field("CASB.CASLB_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CASB.CASLB_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CASB.CASLB_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CashCashC32Comswap { rs, rn, rt } => {
+                let mut word = 0x48a07c00;
+                word |= encode_a64_field("CASH.CASH_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CASH.CASH_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CASH.CASH_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CashCasahC32Comswap { rs, rn, rt } => {
+                let mut word = 0x48e07c00;
+                word |= encode_a64_field("CASH.CASAH_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CASH.CASAH_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CASH.CASAH_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CashCasalhC32Comswap { rs, rn, rt } => {
+                let mut word = 0x48e0fc00;
+                word |= encode_a64_field("CASH.CASALH_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CASH.CASALH_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CASH.CASALH_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::CashCaslhC32Comswap { rs, rn, rt } => {
+                let mut word = 0x48a0fc00;
+                word |= encode_a64_field("CASH.CASLH_C32_comswap", "Rs", rs.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("CASH.CASLH_C32_comswap", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("CASH.CASLH_C32_comswap", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MsrImmMsrSiPstate { crm } => {
+                let mut word = 0xd500409f;
+                word |= encode_a64_field("MSR_imm.MSR_SI_pstate", "CRm", crm as u32, 4, 8)?;
+                Ok(word)
+            }
         }
     }
 
@@ -4975,6 +7386,486 @@ impl A64Insn {
             Self::BrBr64BranchReg { rn, .. } if field == "Rn" => Some(*rn),
             Self::BlrBlr64BranchReg { rn, .. } if field == "Rn" => Some(*rn),
             Self::RetRet64rBranchReg { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddLdadd32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddLdadd32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddLdadd32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddLdadda32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddLdadda32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddLdadda32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddLdaddal32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddLdaddal32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddLdaddal32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddLdaddl32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddLdaddl32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddLdaddl32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddLdadd64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddLdadd64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddLdadd64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddLdadda64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddLdadda64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddLdadda64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddLdaddal64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddLdaddal64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddLdaddal64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddLdaddl64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddLdaddl64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddLdaddl64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddbLdaddb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddbLdaddb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddbLdaddb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddbLdaddab32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddbLdaddab32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddbLdaddab32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddbLdaddalb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddbLdaddalb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddbLdaddalb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddbLdaddlb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddbLdaddlb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddbLdaddlb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddhLdaddh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddhLdaddh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddhLdaddh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddhLdaddah32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddhLdaddah32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddhLdaddah32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddhLdaddalh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddhLdaddalh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddhLdaddalh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdaddhLdaddlh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdaddhLdaddlh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdaddhLdaddlh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrLdclr32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrLdclr32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrLdclr32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrLdclra32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrLdclra32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrLdclra32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrLdclral32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrLdclral32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrLdclral32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrLdclrl32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrLdclrl32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrLdclrl32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrLdclr64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrLdclr64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrLdclr64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrLdclra64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrLdclra64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrLdclra64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrLdclral64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrLdclral64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrLdclral64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrLdclrl64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrLdclrl64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrLdclrl64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrbLdclrb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrbLdclrb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrbLdclrb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrbLdclrab32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrbLdclrab32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrbLdclrab32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrbLdclralb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrbLdclralb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrbLdclralb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrbLdclrlb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrbLdclrlb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrbLdclrlb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrhLdclrh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrhLdclrh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrhLdclrh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrhLdclrah32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrhLdclrah32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrhLdclrah32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrhLdclralh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrhLdclralh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrhLdclralh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdclrhLdclrlh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdclrhLdclrlh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdclrhLdclrlh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorLdeor32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorLdeor32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorLdeor32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorLdeora32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorLdeora32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorLdeora32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorLdeoral32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorLdeoral32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorLdeoral32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorLdeorl32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorLdeorl32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorLdeorl32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorLdeor64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorLdeor64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorLdeor64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorLdeora64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorLdeora64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorLdeora64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorLdeoral64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorLdeoral64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorLdeoral64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorLdeorl64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorLdeorl64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorLdeorl64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorbLdeorb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorbLdeorb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorbLdeorb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorbLdeorab32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorbLdeorab32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorbLdeorab32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorbLdeoralb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorbLdeoralb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorbLdeoralb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorbLdeorlb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorbLdeorlb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorbLdeorlb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorhLdeorh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorhLdeorh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorhLdeorh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorhLdeorah32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorhLdeorah32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorhLdeorah32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorhLdeoralh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorhLdeoralh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorhLdeoralh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdeorhLdeorlh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdeorhLdeorlh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdeorhLdeorlh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetLdset32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetLdset32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetLdset32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetLdseta32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetLdseta32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetLdseta32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetLdsetal32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetLdsetal32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetLdsetal32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetLdsetl32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetLdsetl32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetLdsetl32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetLdset64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetLdset64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetLdset64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetLdseta64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetLdseta64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetLdseta64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetLdsetal64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetLdsetal64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetLdsetal64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetLdsetl64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetLdsetl64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetLdsetl64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetbLdsetb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetbLdsetb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetbLdsetb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetbLdsetab32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetbLdsetab32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetbLdsetab32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetbLdsetalb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetbLdsetalb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetbLdsetalb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsetbLdsetlb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsetbLdsetlb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsetbLdsetlb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsethLdseth32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsethLdseth32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsethLdseth32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsethLdsetah32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsethLdsetah32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsethLdsetah32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsethLdsetalh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsethLdsetalh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsethLdsetalh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsethLdsetlh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsethLdsetlh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsethLdsetlh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxLdsmax32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxLdsmax32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxLdsmax32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxLdsmaxa32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxLdsmaxa32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxLdsmaxa32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxLdsmaxal32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxLdsmaxal32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxLdsmaxal32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxLdsmaxl32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxLdsmaxl32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxLdsmaxl32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxLdsmax64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxLdsmax64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxLdsmax64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxLdsmaxa64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxLdsmaxa64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxLdsmaxa64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxLdsmaxal64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxLdsmaxal64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxLdsmaxal64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxLdsmaxl64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxLdsmaxl64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxLdsmaxl64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxbLdsmaxb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxbLdsmaxb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxbLdsmaxb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxbLdsmaxab32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxbLdsmaxab32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxbLdsmaxab32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxbLdsmaxalb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxbLdsmaxalb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxbLdsmaxalb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxbLdsmaxlb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxbLdsmaxlb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxbLdsmaxlb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxhLdsmaxh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxhLdsmaxh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxhLdsmaxh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxhLdsmaxah32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxhLdsmaxah32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxhLdsmaxah32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxhLdsmaxalh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxhLdsmaxalh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxhLdsmaxalh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsmaxhLdsmaxlh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsmaxhLdsmaxlh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsmaxhLdsmaxlh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminLdsmin32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminLdsmin32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminLdsmin32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminLdsmina32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminLdsmina32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminLdsmina32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminLdsminal32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminLdsminal32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminLdsminal32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminLdsminl32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminLdsminl32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminLdsminl32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminLdsmin64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminLdsmin64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminLdsmin64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminLdsmina64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminLdsmina64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminLdsmina64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminLdsminal64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminLdsminal64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminLdsminal64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminLdsminl64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminLdsminl64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminLdsminl64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminbLdsminb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminbLdsminb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminbLdsminb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminbLdsminab32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminbLdsminab32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminbLdsminab32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminbLdsminalb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminbLdsminalb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminbLdsminalb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminbLdsminlb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminbLdsminlb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminbLdsminlb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminhLdsminh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminhLdsminh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminhLdsminh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminhLdsminah32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminhLdsminah32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminhLdsminah32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminhLdsminalh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminhLdsminalh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminhLdsminalh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdsminhLdsminlh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdsminhLdsminlh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdsminhLdsminlh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxLdumax32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxLdumax32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxLdumax32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxLdumaxa32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxLdumaxa32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxLdumaxa32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxLdumaxal32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxLdumaxal32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxLdumaxal32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxLdumaxl32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxLdumaxl32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxLdumaxl32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxLdumax64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxLdumax64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxLdumax64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxLdumaxa64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxLdumaxa64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxLdumaxa64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxLdumaxal64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxLdumaxal64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxLdumaxal64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxLdumaxl64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxLdumaxl64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxLdumaxl64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxbLdumaxb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxbLdumaxb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxbLdumaxb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxbLdumaxab32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxbLdumaxab32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxbLdumaxab32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxbLdumaxalb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxbLdumaxalb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxbLdumaxalb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxbLdumaxlb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxbLdumaxlb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxbLdumaxlb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxhLdumaxh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxhLdumaxh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxhLdumaxh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxhLdumaxah32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxhLdumaxah32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxhLdumaxah32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxhLdumaxalh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxhLdumaxalh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxhLdumaxalh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LdumaxhLdumaxlh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LdumaxhLdumaxlh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdumaxhLdumaxlh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminLdumin32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminLdumin32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminLdumin32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminLdumina32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminLdumina32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminLdumina32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminLduminal32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminLduminal32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminLduminal32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminLduminl32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminLduminl32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminLduminl32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminLdumin64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminLdumin64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminLdumin64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminLdumina64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminLdumina64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminLdumina64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminLduminal64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminLduminal64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminLduminal64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminLduminl64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminLduminl64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminLduminl64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminbLduminb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminbLduminb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminbLduminb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminbLduminab32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminbLduminab32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminbLduminab32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminbLduminalb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminbLduminalb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminbLduminalb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminbLduminlb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminbLduminlb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminbLduminlb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminhLduminh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminhLduminh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminhLduminh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminhLduminah32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminhLduminah32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminhLduminah32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminhLduminalh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminhLduminalh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminhLduminalh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::LduminhLduminlh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::LduminhLduminlh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LduminhLduminlh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpSwp32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpSwp32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpSwp32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpSwpa32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpSwpa32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpSwpa32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpSwpal32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpSwpal32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpSwpal32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpSwpl32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpSwpl32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpSwpl32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpSwp64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpSwp64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpSwp64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpSwpa64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpSwpa64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpSwpa64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpSwpal64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpSwpal64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpSwpal64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpSwpl64Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpSwpl64Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpSwpl64Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpbSwpb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpbSwpb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpbSwpb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpbSwpab32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpbSwpab32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpbSwpab32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpbSwpalb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpbSwpalb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpbSwpalb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwpbSwplb32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwpbSwplb32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwpbSwplb32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwphSwph32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwphSwph32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwphSwph32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwphSwpah32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwphSwpah32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwphSwpah32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwphSwpalh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwphSwpalh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwphSwpalh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::SwphSwplh32Memop { rs, .. } if field == "Rs" => Some(*rs),
+            Self::SwphSwplh32Memop { rn, .. } if field == "Rn" => Some(*rn),
+            Self::SwphSwplh32Memop { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasCasC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasCasC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasCasC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasCasaC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasCasaC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasCasaC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasCasalC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasCasalC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasCasalC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasCaslC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasCaslC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasCaslC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasCasC64Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasCasC64Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasCasC64Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasCasaC64Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasCasaC64Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasCasaC64Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasCasalC64Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasCasalC64Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasCasalC64Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasCaslC64Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasCaslC64Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasCaslC64Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasbCasbC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasbCasbC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasbCasbC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasbCasabC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasbCasabC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasbCasabC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasbCasalbC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasbCasalbC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasbCasalbC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CasbCaslbC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CasbCaslbC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CasbCaslbC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CashCashC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CashCashC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CashCashC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CashCasahC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CashCasahC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CashCasahC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CashCasalhC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CashCasalhC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CashCasalhC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
+            Self::CashCaslhC32Comswap { rs, .. } if field == "Rs" => Some(*rs),
+            Self::CashCaslhC32Comswap { rn, .. } if field == "Rn" => Some(*rn),
+            Self::CashCaslhC32Comswap { rt, .. } if field == "Rt" => Some(*rt),
             _ => None,
         }
     }
@@ -7457,6 +10348,1926 @@ impl A64Insn {
                 validate_a64_rewrite_field("RET.RET_64R_branch_reg", "Rn", encoded, 5)?;
                 Ok(Self::RetRet64rBranchReg { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
             }
+            Self::LdaddLdadd32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADD.LDADD_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddLdadd32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddLdadd32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADD.LDADD_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddLdadd32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddLdadd32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADD.LDADD_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddLdadd32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddLdadda32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADD.LDADDA_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddLdadda32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddLdadda32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADD.LDADDA_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddLdadda32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddLdadda32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADD.LDADDA_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddLdadda32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddLdaddal32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADD.LDADDAL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddLdaddal32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddLdaddal32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADD.LDADDAL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddLdaddal32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddLdaddal32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADD.LDADDAL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddLdaddal32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddLdaddl32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADD.LDADDL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddLdaddl32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddLdaddl32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADD.LDADDL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddLdaddl32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddLdaddl32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADD.LDADDL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddLdaddl32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddLdadd64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADD.LDADD_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddLdadd64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddLdadd64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADD.LDADD_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddLdadd64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddLdadd64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADD.LDADD_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddLdadd64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddLdadda64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADD.LDADDA_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddLdadda64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddLdadda64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADD.LDADDA_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddLdadda64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddLdadda64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADD.LDADDA_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddLdadda64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddLdaddal64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADD.LDADDAL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddLdaddal64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddLdaddal64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADD.LDADDAL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddLdaddal64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddLdaddal64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADD.LDADDAL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddLdaddal64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddLdaddl64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADD.LDADDL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddLdaddl64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddLdaddl64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADD.LDADDL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddLdaddl64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddLdaddl64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADD.LDADDL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddLdaddl64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddbLdaddb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADDB.LDADDB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddbLdaddb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddbLdaddb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADDB.LDADDB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddbLdaddb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddbLdaddb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADDB.LDADDB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddbLdaddb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddbLdaddab32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADDB.LDADDAB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddbLdaddab32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddbLdaddab32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADDB.LDADDAB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddbLdaddab32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddbLdaddab32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADDB.LDADDAB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddbLdaddab32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddbLdaddalb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADDB.LDADDALB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddbLdaddalb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddbLdaddalb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADDB.LDADDALB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddbLdaddalb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddbLdaddalb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADDB.LDADDALB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddbLdaddalb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddbLdaddlb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADDB.LDADDLB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddbLdaddlb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddbLdaddlb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADDB.LDADDLB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddbLdaddlb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddbLdaddlb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADDB.LDADDLB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddbLdaddlb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddhLdaddh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADDH.LDADDH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddhLdaddh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddhLdaddh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADDH.LDADDH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddhLdaddh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddhLdaddh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADDH.LDADDH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddhLdaddh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddhLdaddah32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADDH.LDADDAH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddhLdaddah32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddhLdaddah32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADDH.LDADDAH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddhLdaddah32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddhLdaddah32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADDH.LDADDAH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddhLdaddah32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddhLdaddalh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADDH.LDADDALH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddhLdaddalh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddhLdaddalh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADDH.LDADDALH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddhLdaddalh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddhLdaddalh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADDH.LDADDALH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddhLdaddalh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdaddhLdaddlh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDADDH.LDADDLH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdaddhLdaddlh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdaddhLdaddlh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDADDH.LDADDLH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdaddhLdaddlh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdaddhLdaddlh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDADDH.LDADDLH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdaddhLdaddlh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrLdclr32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLR.LDCLR_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrLdclr32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrLdclr32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLR.LDCLR_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrLdclr32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrLdclr32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLR.LDCLR_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrLdclr32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrLdclra32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRA_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrLdclra32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrLdclra32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRA_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrLdclra32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrLdclra32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRA_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrLdclra32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrLdclral32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRAL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrLdclral32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrLdclral32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRAL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrLdclral32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrLdclral32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRAL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrLdclral32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrLdclrl32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrLdclrl32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrLdclrl32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrLdclrl32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrLdclrl32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrLdclrl32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrLdclr64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLR.LDCLR_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrLdclr64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrLdclr64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLR.LDCLR_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrLdclr64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrLdclr64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLR.LDCLR_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrLdclr64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrLdclra64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRA_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrLdclra64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrLdclra64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRA_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrLdclra64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrLdclra64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRA_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrLdclra64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrLdclral64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRAL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrLdclral64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrLdclral64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRAL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrLdclral64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrLdclral64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRAL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrLdclral64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrLdclrl64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrLdclrl64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrLdclrl64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrLdclrl64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrLdclrl64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLR.LDCLRL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrLdclrl64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrbLdclrb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrbLdclrb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrbLdclrb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrbLdclrb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrbLdclrb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrbLdclrb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrbLdclrab32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRAB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrbLdclrab32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrbLdclrab32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRAB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrbLdclrab32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrbLdclrab32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRAB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrbLdclrab32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrbLdclralb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRALB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrbLdclralb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrbLdclralb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRALB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrbLdclralb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrbLdclralb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRALB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrbLdclralb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrbLdclrlb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRLB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrbLdclrlb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrbLdclrlb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRLB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrbLdclrlb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrbLdclrlb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLRB.LDCLRLB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrbLdclrlb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrhLdclrh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrhLdclrh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrhLdclrh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrhLdclrh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrhLdclrh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrhLdclrh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrhLdclrah32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRAH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrhLdclrah32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrhLdclrah32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRAH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrhLdclrah32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrhLdclrah32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRAH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrhLdclrah32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrhLdclralh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRALH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrhLdclralh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrhLdclralh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRALH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrhLdclralh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrhLdclralh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRALH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrhLdclralh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdclrhLdclrlh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRLH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdclrhLdclrlh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdclrhLdclrlh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRLH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdclrhLdclrlh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdclrhLdclrlh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDCLRH.LDCLRLH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdclrhLdclrlh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorLdeor32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEOR.LDEOR_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorLdeor32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorLdeor32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEOR.LDEOR_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorLdeor32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorLdeor32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEOR.LDEOR_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorLdeor32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorLdeora32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEOR.LDEORA_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorLdeora32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorLdeora32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEOR.LDEORA_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorLdeora32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorLdeora32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEOR.LDEORA_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorLdeora32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorLdeoral32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEOR.LDEORAL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorLdeoral32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorLdeoral32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEOR.LDEORAL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorLdeoral32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorLdeoral32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEOR.LDEORAL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorLdeoral32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorLdeorl32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEOR.LDEORL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorLdeorl32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorLdeorl32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEOR.LDEORL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorLdeorl32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorLdeorl32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEOR.LDEORL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorLdeorl32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorLdeor64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEOR.LDEOR_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorLdeor64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorLdeor64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEOR.LDEOR_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorLdeor64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorLdeor64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEOR.LDEOR_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorLdeor64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorLdeora64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEOR.LDEORA_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorLdeora64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorLdeora64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEOR.LDEORA_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorLdeora64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorLdeora64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEOR.LDEORA_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorLdeora64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorLdeoral64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEOR.LDEORAL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorLdeoral64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorLdeoral64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEOR.LDEORAL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorLdeoral64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorLdeoral64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEOR.LDEORAL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorLdeoral64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorLdeorl64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEOR.LDEORL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorLdeorl64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorLdeorl64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEOR.LDEORL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorLdeorl64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorLdeorl64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEOR.LDEORL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorLdeorl64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorbLdeorb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEORB.LDEORB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorbLdeorb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorbLdeorb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEORB.LDEORB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorbLdeorb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorbLdeorb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEORB.LDEORB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorbLdeorb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorbLdeorab32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEORB.LDEORAB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorbLdeorab32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorbLdeorab32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEORB.LDEORAB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorbLdeorab32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorbLdeorab32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEORB.LDEORAB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorbLdeorab32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorbLdeoralb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEORB.LDEORALB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorbLdeoralb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorbLdeoralb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEORB.LDEORALB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorbLdeoralb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorbLdeoralb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEORB.LDEORALB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorbLdeoralb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorbLdeorlb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEORB.LDEORLB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorbLdeorlb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorbLdeorlb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEORB.LDEORLB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorbLdeorlb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorbLdeorlb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEORB.LDEORLB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorbLdeorlb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorhLdeorh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEORH.LDEORH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorhLdeorh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorhLdeorh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEORH.LDEORH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorhLdeorh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorhLdeorh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEORH.LDEORH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorhLdeorh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorhLdeorah32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEORH.LDEORAH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorhLdeorah32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorhLdeorah32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEORH.LDEORAH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorhLdeorah32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorhLdeorah32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEORH.LDEORAH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorhLdeorah32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorhLdeoralh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEORH.LDEORALH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorhLdeoralh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorhLdeoralh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEORH.LDEORALH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorhLdeoralh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorhLdeoralh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEORH.LDEORALH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorhLdeoralh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdeorhLdeorlh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDEORH.LDEORLH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdeorhLdeorlh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdeorhLdeorlh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDEORH.LDEORLH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdeorhLdeorlh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdeorhLdeorlh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDEORH.LDEORLH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdeorhLdeorlh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetLdset32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSET.LDSET_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetLdset32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetLdset32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSET.LDSET_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetLdset32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetLdset32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSET.LDSET_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetLdset32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetLdseta32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSET.LDSETA_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetLdseta32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetLdseta32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSET.LDSETA_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetLdseta32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetLdseta32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSET.LDSETA_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetLdseta32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetLdsetal32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSET.LDSETAL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetLdsetal32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetLdsetal32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSET.LDSETAL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetLdsetal32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetLdsetal32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSET.LDSETAL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetLdsetal32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetLdsetl32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSET.LDSETL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetLdsetl32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetLdsetl32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSET.LDSETL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetLdsetl32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetLdsetl32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSET.LDSETL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetLdsetl32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetLdset64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSET.LDSET_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetLdset64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetLdset64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSET.LDSET_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetLdset64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetLdset64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSET.LDSET_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetLdset64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetLdseta64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSET.LDSETA_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetLdseta64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetLdseta64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSET.LDSETA_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetLdseta64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetLdseta64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSET.LDSETA_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetLdseta64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetLdsetal64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSET.LDSETAL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetLdsetal64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetLdsetal64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSET.LDSETAL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetLdsetal64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetLdsetal64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSET.LDSETAL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetLdsetal64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetLdsetl64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSET.LDSETL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetLdsetl64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetLdsetl64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSET.LDSETL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetLdsetl64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetLdsetl64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSET.LDSETL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetLdsetl64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetbLdsetb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSETB.LDSETB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetbLdsetb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetbLdsetb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSETB.LDSETB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetbLdsetb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetbLdsetb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSETB.LDSETB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetbLdsetb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetbLdsetab32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSETB.LDSETAB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetbLdsetab32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetbLdsetab32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSETB.LDSETAB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetbLdsetab32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetbLdsetab32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSETB.LDSETAB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetbLdsetab32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetbLdsetalb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSETB.LDSETALB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetbLdsetalb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetbLdsetalb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSETB.LDSETALB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetbLdsetalb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetbLdsetalb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSETB.LDSETALB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetbLdsetalb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsetbLdsetlb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSETB.LDSETLB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsetbLdsetlb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsetbLdsetlb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSETB.LDSETLB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsetbLdsetlb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsetbLdsetlb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSETB.LDSETLB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsetbLdsetlb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsethLdseth32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSETH.LDSETH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsethLdseth32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsethLdseth32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSETH.LDSETH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsethLdseth32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsethLdseth32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSETH.LDSETH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsethLdseth32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsethLdsetah32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSETH.LDSETAH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsethLdsetah32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsethLdsetah32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSETH.LDSETAH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsethLdsetah32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsethLdsetah32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSETH.LDSETAH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsethLdsetah32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsethLdsetalh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSETH.LDSETALH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsethLdsetalh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsethLdsetalh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSETH.LDSETALH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsethLdsetalh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsethLdsetalh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSETH.LDSETALH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsethLdsetalh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsethLdsetlh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSETH.LDSETLH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsethLdsetlh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsethLdsetlh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSETH.LDSETLH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsethLdsetlh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsethLdsetlh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSETH.LDSETLH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsethLdsetlh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxLdsmax32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAX_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmax32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxLdsmax32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAX_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmax32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxLdsmax32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAX_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmax32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxLdsmaxa32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXA_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxa32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxLdsmaxa32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXA_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxa32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxLdsmaxa32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXA_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxa32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxLdsmaxal32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXAL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxal32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxLdsmaxal32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXAL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxal32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxLdsmaxal32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXAL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxal32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxLdsmaxl32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxl32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxLdsmaxl32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxl32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxLdsmaxl32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxl32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxLdsmax64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAX_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmax64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxLdsmax64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAX_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmax64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxLdsmax64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAX_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmax64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxLdsmaxa64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXA_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxa64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxLdsmaxa64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXA_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxa64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxLdsmaxa64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXA_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxa64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxLdsmaxal64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXAL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxal64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxLdsmaxal64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXAL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxal64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxLdsmaxal64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXAL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxal64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxLdsmaxl64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxl64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxLdsmaxl64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxl64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxLdsmaxl64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAX.LDSMAXL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxLdsmaxl64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxbLdsmaxb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxbLdsmaxb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxbLdsmaxb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxbLdsmaxab32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXAB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxab32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxbLdsmaxab32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXAB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxab32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxbLdsmaxab32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXAB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxab32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxbLdsmaxalb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXALB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxalb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxbLdsmaxalb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXALB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxalb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxbLdsmaxalb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXALB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxalb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxbLdsmaxlb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXLB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxlb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxbLdsmaxlb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXLB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxlb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxbLdsmaxlb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAXB.LDSMAXLB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxbLdsmaxlb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxhLdsmaxh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxhLdsmaxh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxhLdsmaxh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxhLdsmaxah32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXAH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxah32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxhLdsmaxah32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXAH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxah32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxhLdsmaxah32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXAH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxah32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxhLdsmaxalh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXALH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxalh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxhLdsmaxalh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXALH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxalh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxhLdsmaxalh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXALH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxalh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsmaxhLdsmaxlh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXLH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxlh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsmaxhLdsmaxlh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXLH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxlh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsmaxhLdsmaxlh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMAXH.LDSMAXLH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsmaxhLdsmaxlh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminLdsmin32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMIN_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminLdsmin32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminLdsmin32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMIN_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminLdsmin32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminLdsmin32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMIN_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminLdsmin32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminLdsmina32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINA_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminLdsmina32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminLdsmina32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINA_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminLdsmina32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminLdsmina32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINA_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminLdsmina32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminLdsminal32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINAL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminLdsminal32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminLdsminal32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINAL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminLdsminal32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminLdsminal32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINAL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminLdsminal32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminLdsminl32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminLdsminl32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminLdsminl32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminLdsminl32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminLdsminl32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminLdsminl32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminLdsmin64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMIN_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminLdsmin64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminLdsmin64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMIN_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminLdsmin64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminLdsmin64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMIN_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminLdsmin64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminLdsmina64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINA_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminLdsmina64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminLdsmina64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINA_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminLdsmina64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminLdsmina64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINA_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminLdsmina64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminLdsminal64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINAL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminLdsminal64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminLdsminal64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINAL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminLdsminal64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminLdsminal64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINAL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminLdsminal64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminLdsminl64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminLdsminl64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminLdsminl64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminLdsminl64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminLdsminl64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMIN.LDSMINL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminLdsminl64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminbLdsminb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminbLdsminb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminbLdsminb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminbLdsminb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminbLdsminb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminbLdsminb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminbLdsminab32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINAB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminbLdsminab32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminbLdsminab32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINAB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminbLdsminab32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminbLdsminab32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINAB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminbLdsminab32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminbLdsminalb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINALB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminbLdsminalb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminbLdsminalb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINALB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminbLdsminalb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminbLdsminalb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINALB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminbLdsminalb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminbLdsminlb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINLB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminbLdsminlb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminbLdsminlb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINLB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminbLdsminlb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminbLdsminlb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMINB.LDSMINLB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminbLdsminlb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminhLdsminh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminhLdsminh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminhLdsminh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminhLdsminh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminhLdsminh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminhLdsminh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminhLdsminah32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINAH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminhLdsminah32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminhLdsminah32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINAH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminhLdsminah32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminhLdsminah32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINAH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminhLdsminah32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminhLdsminalh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINALH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminhLdsminalh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminhLdsminalh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINALH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminhLdsminalh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminhLdsminalh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINALH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminhLdsminalh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdsminhLdsminlh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINLH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdsminhLdsminlh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdsminhLdsminlh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINLH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdsminhLdsminlh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdsminhLdsminlh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDSMINH.LDSMINLH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdsminhLdsminlh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxLdumax32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAX_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxLdumax32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxLdumax32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAX_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxLdumax32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxLdumax32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAX_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxLdumax32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxLdumaxa32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXA_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxa32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxLdumaxa32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXA_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxa32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxLdumaxa32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXA_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxa32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxLdumaxal32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXAL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxal32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxLdumaxal32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXAL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxal32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxLdumaxal32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXAL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxal32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxLdumaxl32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxl32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxLdumaxl32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxl32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxLdumaxl32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxl32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxLdumax64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAX_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxLdumax64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxLdumax64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAX_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxLdumax64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxLdumax64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAX_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxLdumax64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxLdumaxa64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXA_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxa64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxLdumaxa64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXA_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxa64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxLdumaxa64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXA_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxa64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxLdumaxal64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXAL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxal64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxLdumaxal64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXAL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxal64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxLdumaxal64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXAL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxal64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxLdumaxl64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxl64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxLdumaxl64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxl64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxLdumaxl64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAX.LDUMAXL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxLdumaxl64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxbLdumaxb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxbLdumaxb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxbLdumaxb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxbLdumaxab32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXAB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxab32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxbLdumaxab32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXAB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxab32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxbLdumaxab32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXAB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxab32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxbLdumaxalb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXALB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxalb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxbLdumaxalb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXALB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxalb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxbLdumaxalb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXALB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxalb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxbLdumaxlb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXLB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxlb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxbLdumaxlb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXLB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxlb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxbLdumaxlb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAXB.LDUMAXLB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxbLdumaxlb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxhLdumaxh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxhLdumaxh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxhLdumaxh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxhLdumaxah32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXAH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxah32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxhLdumaxah32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXAH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxah32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxhLdumaxah32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXAH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxah32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxhLdumaxalh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXALH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxalh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxhLdumaxalh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXALH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxalh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxhLdumaxalh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXALH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxalh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LdumaxhLdumaxlh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXLH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxlh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LdumaxhLdumaxlh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXLH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxlh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdumaxhLdumaxlh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMAXH.LDUMAXLH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LdumaxhLdumaxlh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminLdumin32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMIN_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminLdumin32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminLdumin32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMIN_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminLdumin32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminLdumin32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMIN_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminLdumin32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminLdumina32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINA_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminLdumina32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminLdumina32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINA_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminLdumina32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminLdumina32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINA_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminLdumina32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminLduminal32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINAL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminLduminal32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminLduminal32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINAL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminLduminal32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminLduminal32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINAL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminLduminal32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminLduminl32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminLduminl32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminLduminl32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminLduminl32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminLduminl32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminLduminl32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminLdumin64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMIN_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminLdumin64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminLdumin64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMIN_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminLdumin64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminLdumin64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMIN_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminLdumin64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminLdumina64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINA_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminLdumina64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminLdumina64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINA_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminLdumina64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminLdumina64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINA_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminLdumina64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminLduminal64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINAL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminLduminal64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminLduminal64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINAL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminLduminal64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminLduminal64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINAL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminLduminal64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminLduminl64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminLduminl64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminLduminl64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminLduminl64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminLduminl64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMIN.LDUMINL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminLduminl64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminbLduminb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminbLduminb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminbLduminb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminbLduminb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminbLduminb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminbLduminb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminbLduminab32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINAB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminbLduminab32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminbLduminab32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINAB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminbLduminab32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminbLduminab32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINAB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminbLduminab32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminbLduminalb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINALB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminbLduminalb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminbLduminalb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINALB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminbLduminalb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminbLduminalb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINALB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminbLduminalb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminbLduminlb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINLB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminbLduminlb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminbLduminlb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINLB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminbLduminlb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminbLduminlb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMINB.LDUMINLB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminbLduminlb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminhLduminh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminhLduminh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminhLduminh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminhLduminh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminhLduminh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminhLduminh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminhLduminah32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINAH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminhLduminah32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminhLduminah32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINAH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminhLduminah32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminhLduminah32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINAH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminhLduminah32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminhLduminalh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINALH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminhLduminalh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminhLduminalh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINALH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminhLduminalh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminhLduminalh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINALH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminhLduminalh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::LduminhLduminlh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINLH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::LduminhLduminlh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::LduminhLduminlh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINLH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::LduminhLduminlh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LduminhLduminlh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("LDUMINH.LDUMINLH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::LduminhLduminlh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpSwp32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWP.SWP_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpSwp32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpSwp32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWP.SWP_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpSwp32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpSwp32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWP.SWP_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpSwp32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpSwpa32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWP.SWPA_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpSwpa32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpSwpa32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWP.SWPA_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpSwpa32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpSwpa32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWP.SWPA_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpSwpa32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpSwpal32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWP.SWPAL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpSwpal32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpSwpal32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWP.SWPAL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpSwpal32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpSwpal32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWP.SWPAL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpSwpal32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpSwpl32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWP.SWPL_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpSwpl32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpSwpl32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWP.SWPL_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpSwpl32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpSwpl32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWP.SWPL_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpSwpl32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpSwp64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWP.SWP_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpSwp64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpSwp64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWP.SWP_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpSwp64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpSwp64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWP.SWP_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpSwp64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpSwpa64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWP.SWPA_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpSwpa64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpSwpa64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWP.SWPA_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpSwpa64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpSwpa64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWP.SWPA_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpSwpa64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpSwpal64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWP.SWPAL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpSwpal64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpSwpal64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWP.SWPAL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpSwpal64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpSwpal64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWP.SWPAL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpSwpal64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpSwpl64Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWP.SWPL_64_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpSwpl64Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpSwpl64Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWP.SWPL_64_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpSwpl64Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpSwpl64Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWP.SWPL_64_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpSwpl64Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpbSwpb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWPB.SWPB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpbSwpb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpbSwpb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWPB.SWPB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpbSwpb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpbSwpb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWPB.SWPB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpbSwpb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpbSwpab32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWPB.SWPAB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpbSwpab32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpbSwpab32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWPB.SWPAB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpbSwpab32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpbSwpab32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWPB.SWPAB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpbSwpab32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpbSwpalb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWPB.SWPALB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpbSwpalb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpbSwpalb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWPB.SWPALB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpbSwpalb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpbSwpalb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWPB.SWPALB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpbSwpalb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwpbSwplb32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWPB.SWPLB_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwpbSwplb32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwpbSwplb32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWPB.SWPLB_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwpbSwplb32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwpbSwplb32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWPB.SWPLB_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwpbSwplb32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwphSwph32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWPH.SWPH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwphSwph32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwphSwph32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWPH.SWPH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwphSwph32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwphSwph32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWPH.SWPH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwphSwph32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwphSwpah32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWPH.SWPAH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwphSwpah32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwphSwpah32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWPH.SWPAH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwphSwpah32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwphSwpah32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWPH.SWPAH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwphSwpah32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwphSwpalh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWPH.SWPALH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwphSwpalh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwphSwpalh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWPH.SWPALH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwphSwpalh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwphSwpalh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWPH.SWPALH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwphSwpalh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::SwphSwplh32Memop { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("SWPH.SWPLH_32_memop", "Rs", encoded, 5)?;
+                Ok(Self::SwphSwplh32Memop { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::SwphSwplh32Memop { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SWPH.SWPLH_32_memop", "Rn", encoded, 5)?;
+                Ok(Self::SwphSwplh32Memop { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::SwphSwplh32Memop { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("SWPH.SWPLH_32_memop", "Rt", encoded, 5)?;
+                Ok(Self::SwphSwplh32Memop { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CasCasC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CAS.CAS_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasCasC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasCasC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CAS.CAS_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasCasC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasCasC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CAS.CAS_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasCasC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CasCasaC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CAS.CASA_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasCasaC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasCasaC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CAS.CASA_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasCasaC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasCasaC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CAS.CASA_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasCasaC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CasCasalC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CAS.CASAL_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasCasalC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasCasalC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CAS.CASAL_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasCasalC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasCasalC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CAS.CASAL_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasCasalC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CasCaslC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CAS.CASL_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasCaslC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasCaslC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CAS.CASL_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasCaslC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasCaslC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CAS.CASL_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasCaslC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CasCasC64Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CAS.CAS_C64_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasCasC64Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasCasC64Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CAS.CAS_C64_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasCasC64Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasCasC64Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CAS.CAS_C64_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasCasC64Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CasCasaC64Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CAS.CASA_C64_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasCasaC64Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasCasaC64Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CAS.CASA_C64_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasCasaC64Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasCasaC64Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CAS.CASA_C64_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasCasaC64Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CasCasalC64Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CAS.CASAL_C64_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasCasalC64Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasCasalC64Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CAS.CASAL_C64_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasCasalC64Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasCasalC64Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CAS.CASAL_C64_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasCasalC64Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CasCaslC64Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CAS.CASL_C64_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasCaslC64Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasCaslC64Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CAS.CASL_C64_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasCaslC64Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasCaslC64Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CAS.CASL_C64_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasCaslC64Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::CasbCasbC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CASB.CASB_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasbCasbC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasbCasbC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CASB.CASB_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasbCasbC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasbCasbC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CASB.CASB_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasbCasbC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CasbCasabC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CASB.CASAB_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasbCasabC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasbCasabC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CASB.CASAB_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasbCasabC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasbCasabC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CASB.CASAB_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasbCasabC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CasbCasalbC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CASB.CASALB_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasbCasalbC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasbCasalbC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CASB.CASALB_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasbCasalbC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasbCasalbC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CASB.CASALB_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasbCasalbC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CasbCaslbC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CASB.CASLB_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CasbCaslbC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CasbCaslbC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CASB.CASLB_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CasbCaslbC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CasbCaslbC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CASB.CASLB_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CasbCaslbC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CashCashC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CASH.CASH_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CashCashC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CashCashC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CASH.CASH_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CashCashC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CashCashC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CASH.CASH_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CashCashC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CashCasahC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CASH.CASAH_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CashCasahC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CashCasahC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CASH.CASAH_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CashCasahC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CashCasahC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CASH.CASAH_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CashCasahC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CashCasalhC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CASH.CASALH_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CashCasalhC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CashCasalhC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CASH.CASALH_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CashCasalhC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CashCasalhC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CASH.CASALH_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CashCasalhC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::CashCaslhC32Comswap { rn, rt, .. } if field == "Rs" => {
+                validate_a64_rewrite_field("CASH.CASLH_C32_comswap", "Rs", encoded, 5)?;
+                Ok(Self::CashCaslhC32Comswap { rs: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rn, rt })
+            }
+            Self::CashCaslhC32Comswap { rs, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("CASH.CASLH_C32_comswap", "Rn", encoded, 5)?;
+                Ok(Self::CashCaslhC32Comswap { rs, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::CashCaslhC32Comswap { rs, rn, .. } if field == "Rt" => {
+                validate_a64_rewrite_field("CASH.CASLH_C32_comswap", "Rt", encoded, 5)?;
+                Ok(Self::CashCaslhC32Comswap { rs, rn, rt: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
             _ => Err(A64RewriteError::UnsupportedField {
                 insn: insn_key,
                 field,
@@ -7792,6 +12603,167 @@ impl A64Insn {
             Self::BlrBlr64BranchReg { .. } => OPERANDS_BLR_BLR_64_BRANCH_REG,
             Self::RetRet64rBranchReg { .. } => OPERANDS_RET_RET_64R_BRANCH_REG,
             Self::SvcSvcExException { .. } => OPERANDS_SVC_SVC_EX_EXCEPTION,
+            Self::LdaddLdadd32Memop { .. } => OPERANDS_LDADD_LDADD_32_MEMOP,
+            Self::LdaddLdadda32Memop { .. } => OPERANDS_LDADD_LDADDA_32_MEMOP,
+            Self::LdaddLdaddal32Memop { .. } => OPERANDS_LDADD_LDADDAL_32_MEMOP,
+            Self::LdaddLdaddl32Memop { .. } => OPERANDS_LDADD_LDADDL_32_MEMOP,
+            Self::LdaddLdadd64Memop { .. } => OPERANDS_LDADD_LDADD_64_MEMOP,
+            Self::LdaddLdadda64Memop { .. } => OPERANDS_LDADD_LDADDA_64_MEMOP,
+            Self::LdaddLdaddal64Memop { .. } => OPERANDS_LDADD_LDADDAL_64_MEMOP,
+            Self::LdaddLdaddl64Memop { .. } => OPERANDS_LDADD_LDADDL_64_MEMOP,
+            Self::LdaddbLdaddb32Memop { .. } => OPERANDS_LDADDB_LDADDB_32_MEMOP,
+            Self::LdaddbLdaddab32Memop { .. } => OPERANDS_LDADDB_LDADDAB_32_MEMOP,
+            Self::LdaddbLdaddalb32Memop { .. } => OPERANDS_LDADDB_LDADDALB_32_MEMOP,
+            Self::LdaddbLdaddlb32Memop { .. } => OPERANDS_LDADDB_LDADDLB_32_MEMOP,
+            Self::LdaddhLdaddh32Memop { .. } => OPERANDS_LDADDH_LDADDH_32_MEMOP,
+            Self::LdaddhLdaddah32Memop { .. } => OPERANDS_LDADDH_LDADDAH_32_MEMOP,
+            Self::LdaddhLdaddalh32Memop { .. } => OPERANDS_LDADDH_LDADDALH_32_MEMOP,
+            Self::LdaddhLdaddlh32Memop { .. } => OPERANDS_LDADDH_LDADDLH_32_MEMOP,
+            Self::LdclrLdclr32Memop { .. } => OPERANDS_LDCLR_LDCLR_32_MEMOP,
+            Self::LdclrLdclra32Memop { .. } => OPERANDS_LDCLR_LDCLRA_32_MEMOP,
+            Self::LdclrLdclral32Memop { .. } => OPERANDS_LDCLR_LDCLRAL_32_MEMOP,
+            Self::LdclrLdclrl32Memop { .. } => OPERANDS_LDCLR_LDCLRL_32_MEMOP,
+            Self::LdclrLdclr64Memop { .. } => OPERANDS_LDCLR_LDCLR_64_MEMOP,
+            Self::LdclrLdclra64Memop { .. } => OPERANDS_LDCLR_LDCLRA_64_MEMOP,
+            Self::LdclrLdclral64Memop { .. } => OPERANDS_LDCLR_LDCLRAL_64_MEMOP,
+            Self::LdclrLdclrl64Memop { .. } => OPERANDS_LDCLR_LDCLRL_64_MEMOP,
+            Self::LdclrbLdclrb32Memop { .. } => OPERANDS_LDCLRB_LDCLRB_32_MEMOP,
+            Self::LdclrbLdclrab32Memop { .. } => OPERANDS_LDCLRB_LDCLRAB_32_MEMOP,
+            Self::LdclrbLdclralb32Memop { .. } => OPERANDS_LDCLRB_LDCLRALB_32_MEMOP,
+            Self::LdclrbLdclrlb32Memop { .. } => OPERANDS_LDCLRB_LDCLRLB_32_MEMOP,
+            Self::LdclrhLdclrh32Memop { .. } => OPERANDS_LDCLRH_LDCLRH_32_MEMOP,
+            Self::LdclrhLdclrah32Memop { .. } => OPERANDS_LDCLRH_LDCLRAH_32_MEMOP,
+            Self::LdclrhLdclralh32Memop { .. } => OPERANDS_LDCLRH_LDCLRALH_32_MEMOP,
+            Self::LdclrhLdclrlh32Memop { .. } => OPERANDS_LDCLRH_LDCLRLH_32_MEMOP,
+            Self::LdeorLdeor32Memop { .. } => OPERANDS_LDEOR_LDEOR_32_MEMOP,
+            Self::LdeorLdeora32Memop { .. } => OPERANDS_LDEOR_LDEORA_32_MEMOP,
+            Self::LdeorLdeoral32Memop { .. } => OPERANDS_LDEOR_LDEORAL_32_MEMOP,
+            Self::LdeorLdeorl32Memop { .. } => OPERANDS_LDEOR_LDEORL_32_MEMOP,
+            Self::LdeorLdeor64Memop { .. } => OPERANDS_LDEOR_LDEOR_64_MEMOP,
+            Self::LdeorLdeora64Memop { .. } => OPERANDS_LDEOR_LDEORA_64_MEMOP,
+            Self::LdeorLdeoral64Memop { .. } => OPERANDS_LDEOR_LDEORAL_64_MEMOP,
+            Self::LdeorLdeorl64Memop { .. } => OPERANDS_LDEOR_LDEORL_64_MEMOP,
+            Self::LdeorbLdeorb32Memop { .. } => OPERANDS_LDEORB_LDEORB_32_MEMOP,
+            Self::LdeorbLdeorab32Memop { .. } => OPERANDS_LDEORB_LDEORAB_32_MEMOP,
+            Self::LdeorbLdeoralb32Memop { .. } => OPERANDS_LDEORB_LDEORALB_32_MEMOP,
+            Self::LdeorbLdeorlb32Memop { .. } => OPERANDS_LDEORB_LDEORLB_32_MEMOP,
+            Self::LdeorhLdeorh32Memop { .. } => OPERANDS_LDEORH_LDEORH_32_MEMOP,
+            Self::LdeorhLdeorah32Memop { .. } => OPERANDS_LDEORH_LDEORAH_32_MEMOP,
+            Self::LdeorhLdeoralh32Memop { .. } => OPERANDS_LDEORH_LDEORALH_32_MEMOP,
+            Self::LdeorhLdeorlh32Memop { .. } => OPERANDS_LDEORH_LDEORLH_32_MEMOP,
+            Self::LdsetLdset32Memop { .. } => OPERANDS_LDSET_LDSET_32_MEMOP,
+            Self::LdsetLdseta32Memop { .. } => OPERANDS_LDSET_LDSETA_32_MEMOP,
+            Self::LdsetLdsetal32Memop { .. } => OPERANDS_LDSET_LDSETAL_32_MEMOP,
+            Self::LdsetLdsetl32Memop { .. } => OPERANDS_LDSET_LDSETL_32_MEMOP,
+            Self::LdsetLdset64Memop { .. } => OPERANDS_LDSET_LDSET_64_MEMOP,
+            Self::LdsetLdseta64Memop { .. } => OPERANDS_LDSET_LDSETA_64_MEMOP,
+            Self::LdsetLdsetal64Memop { .. } => OPERANDS_LDSET_LDSETAL_64_MEMOP,
+            Self::LdsetLdsetl64Memop { .. } => OPERANDS_LDSET_LDSETL_64_MEMOP,
+            Self::LdsetbLdsetb32Memop { .. } => OPERANDS_LDSETB_LDSETB_32_MEMOP,
+            Self::LdsetbLdsetab32Memop { .. } => OPERANDS_LDSETB_LDSETAB_32_MEMOP,
+            Self::LdsetbLdsetalb32Memop { .. } => OPERANDS_LDSETB_LDSETALB_32_MEMOP,
+            Self::LdsetbLdsetlb32Memop { .. } => OPERANDS_LDSETB_LDSETLB_32_MEMOP,
+            Self::LdsethLdseth32Memop { .. } => OPERANDS_LDSETH_LDSETH_32_MEMOP,
+            Self::LdsethLdsetah32Memop { .. } => OPERANDS_LDSETH_LDSETAH_32_MEMOP,
+            Self::LdsethLdsetalh32Memop { .. } => OPERANDS_LDSETH_LDSETALH_32_MEMOP,
+            Self::LdsethLdsetlh32Memop { .. } => OPERANDS_LDSETH_LDSETLH_32_MEMOP,
+            Self::LdsmaxLdsmax32Memop { .. } => OPERANDS_LDSMAX_LDSMAX_32_MEMOP,
+            Self::LdsmaxLdsmaxa32Memop { .. } => OPERANDS_LDSMAX_LDSMAXA_32_MEMOP,
+            Self::LdsmaxLdsmaxal32Memop { .. } => OPERANDS_LDSMAX_LDSMAXAL_32_MEMOP,
+            Self::LdsmaxLdsmaxl32Memop { .. } => OPERANDS_LDSMAX_LDSMAXL_32_MEMOP,
+            Self::LdsmaxLdsmax64Memop { .. } => OPERANDS_LDSMAX_LDSMAX_64_MEMOP,
+            Self::LdsmaxLdsmaxa64Memop { .. } => OPERANDS_LDSMAX_LDSMAXA_64_MEMOP,
+            Self::LdsmaxLdsmaxal64Memop { .. } => OPERANDS_LDSMAX_LDSMAXAL_64_MEMOP,
+            Self::LdsmaxLdsmaxl64Memop { .. } => OPERANDS_LDSMAX_LDSMAXL_64_MEMOP,
+            Self::LdsmaxbLdsmaxb32Memop { .. } => OPERANDS_LDSMAXB_LDSMAXB_32_MEMOP,
+            Self::LdsmaxbLdsmaxab32Memop { .. } => OPERANDS_LDSMAXB_LDSMAXAB_32_MEMOP,
+            Self::LdsmaxbLdsmaxalb32Memop { .. } => OPERANDS_LDSMAXB_LDSMAXALB_32_MEMOP,
+            Self::LdsmaxbLdsmaxlb32Memop { .. } => OPERANDS_LDSMAXB_LDSMAXLB_32_MEMOP,
+            Self::LdsmaxhLdsmaxh32Memop { .. } => OPERANDS_LDSMAXH_LDSMAXH_32_MEMOP,
+            Self::LdsmaxhLdsmaxah32Memop { .. } => OPERANDS_LDSMAXH_LDSMAXAH_32_MEMOP,
+            Self::LdsmaxhLdsmaxalh32Memop { .. } => OPERANDS_LDSMAXH_LDSMAXALH_32_MEMOP,
+            Self::LdsmaxhLdsmaxlh32Memop { .. } => OPERANDS_LDSMAXH_LDSMAXLH_32_MEMOP,
+            Self::LdsminLdsmin32Memop { .. } => OPERANDS_LDSMIN_LDSMIN_32_MEMOP,
+            Self::LdsminLdsmina32Memop { .. } => OPERANDS_LDSMIN_LDSMINA_32_MEMOP,
+            Self::LdsminLdsminal32Memop { .. } => OPERANDS_LDSMIN_LDSMINAL_32_MEMOP,
+            Self::LdsminLdsminl32Memop { .. } => OPERANDS_LDSMIN_LDSMINL_32_MEMOP,
+            Self::LdsminLdsmin64Memop { .. } => OPERANDS_LDSMIN_LDSMIN_64_MEMOP,
+            Self::LdsminLdsmina64Memop { .. } => OPERANDS_LDSMIN_LDSMINA_64_MEMOP,
+            Self::LdsminLdsminal64Memop { .. } => OPERANDS_LDSMIN_LDSMINAL_64_MEMOP,
+            Self::LdsminLdsminl64Memop { .. } => OPERANDS_LDSMIN_LDSMINL_64_MEMOP,
+            Self::LdsminbLdsminb32Memop { .. } => OPERANDS_LDSMINB_LDSMINB_32_MEMOP,
+            Self::LdsminbLdsminab32Memop { .. } => OPERANDS_LDSMINB_LDSMINAB_32_MEMOP,
+            Self::LdsminbLdsminalb32Memop { .. } => OPERANDS_LDSMINB_LDSMINALB_32_MEMOP,
+            Self::LdsminbLdsminlb32Memop { .. } => OPERANDS_LDSMINB_LDSMINLB_32_MEMOP,
+            Self::LdsminhLdsminh32Memop { .. } => OPERANDS_LDSMINH_LDSMINH_32_MEMOP,
+            Self::LdsminhLdsminah32Memop { .. } => OPERANDS_LDSMINH_LDSMINAH_32_MEMOP,
+            Self::LdsminhLdsminalh32Memop { .. } => OPERANDS_LDSMINH_LDSMINALH_32_MEMOP,
+            Self::LdsminhLdsminlh32Memop { .. } => OPERANDS_LDSMINH_LDSMINLH_32_MEMOP,
+            Self::LdumaxLdumax32Memop { .. } => OPERANDS_LDUMAX_LDUMAX_32_MEMOP,
+            Self::LdumaxLdumaxa32Memop { .. } => OPERANDS_LDUMAX_LDUMAXA_32_MEMOP,
+            Self::LdumaxLdumaxal32Memop { .. } => OPERANDS_LDUMAX_LDUMAXAL_32_MEMOP,
+            Self::LdumaxLdumaxl32Memop { .. } => OPERANDS_LDUMAX_LDUMAXL_32_MEMOP,
+            Self::LdumaxLdumax64Memop { .. } => OPERANDS_LDUMAX_LDUMAX_64_MEMOP,
+            Self::LdumaxLdumaxa64Memop { .. } => OPERANDS_LDUMAX_LDUMAXA_64_MEMOP,
+            Self::LdumaxLdumaxal64Memop { .. } => OPERANDS_LDUMAX_LDUMAXAL_64_MEMOP,
+            Self::LdumaxLdumaxl64Memop { .. } => OPERANDS_LDUMAX_LDUMAXL_64_MEMOP,
+            Self::LdumaxbLdumaxb32Memop { .. } => OPERANDS_LDUMAXB_LDUMAXB_32_MEMOP,
+            Self::LdumaxbLdumaxab32Memop { .. } => OPERANDS_LDUMAXB_LDUMAXAB_32_MEMOP,
+            Self::LdumaxbLdumaxalb32Memop { .. } => OPERANDS_LDUMAXB_LDUMAXALB_32_MEMOP,
+            Self::LdumaxbLdumaxlb32Memop { .. } => OPERANDS_LDUMAXB_LDUMAXLB_32_MEMOP,
+            Self::LdumaxhLdumaxh32Memop { .. } => OPERANDS_LDUMAXH_LDUMAXH_32_MEMOP,
+            Self::LdumaxhLdumaxah32Memop { .. } => OPERANDS_LDUMAXH_LDUMAXAH_32_MEMOP,
+            Self::LdumaxhLdumaxalh32Memop { .. } => OPERANDS_LDUMAXH_LDUMAXALH_32_MEMOP,
+            Self::LdumaxhLdumaxlh32Memop { .. } => OPERANDS_LDUMAXH_LDUMAXLH_32_MEMOP,
+            Self::LduminLdumin32Memop { .. } => OPERANDS_LDUMIN_LDUMIN_32_MEMOP,
+            Self::LduminLdumina32Memop { .. } => OPERANDS_LDUMIN_LDUMINA_32_MEMOP,
+            Self::LduminLduminal32Memop { .. } => OPERANDS_LDUMIN_LDUMINAL_32_MEMOP,
+            Self::LduminLduminl32Memop { .. } => OPERANDS_LDUMIN_LDUMINL_32_MEMOP,
+            Self::LduminLdumin64Memop { .. } => OPERANDS_LDUMIN_LDUMIN_64_MEMOP,
+            Self::LduminLdumina64Memop { .. } => OPERANDS_LDUMIN_LDUMINA_64_MEMOP,
+            Self::LduminLduminal64Memop { .. } => OPERANDS_LDUMIN_LDUMINAL_64_MEMOP,
+            Self::LduminLduminl64Memop { .. } => OPERANDS_LDUMIN_LDUMINL_64_MEMOP,
+            Self::LduminbLduminb32Memop { .. } => OPERANDS_LDUMINB_LDUMINB_32_MEMOP,
+            Self::LduminbLduminab32Memop { .. } => OPERANDS_LDUMINB_LDUMINAB_32_MEMOP,
+            Self::LduminbLduminalb32Memop { .. } => OPERANDS_LDUMINB_LDUMINALB_32_MEMOP,
+            Self::LduminbLduminlb32Memop { .. } => OPERANDS_LDUMINB_LDUMINLB_32_MEMOP,
+            Self::LduminhLduminh32Memop { .. } => OPERANDS_LDUMINH_LDUMINH_32_MEMOP,
+            Self::LduminhLduminah32Memop { .. } => OPERANDS_LDUMINH_LDUMINAH_32_MEMOP,
+            Self::LduminhLduminalh32Memop { .. } => OPERANDS_LDUMINH_LDUMINALH_32_MEMOP,
+            Self::LduminhLduminlh32Memop { .. } => OPERANDS_LDUMINH_LDUMINLH_32_MEMOP,
+            Self::SwpSwp32Memop { .. } => OPERANDS_SWP_SWP_32_MEMOP,
+            Self::SwpSwpa32Memop { .. } => OPERANDS_SWP_SWPA_32_MEMOP,
+            Self::SwpSwpal32Memop { .. } => OPERANDS_SWP_SWPAL_32_MEMOP,
+            Self::SwpSwpl32Memop { .. } => OPERANDS_SWP_SWPL_32_MEMOP,
+            Self::SwpSwp64Memop { .. } => OPERANDS_SWP_SWP_64_MEMOP,
+            Self::SwpSwpa64Memop { .. } => OPERANDS_SWP_SWPA_64_MEMOP,
+            Self::SwpSwpal64Memop { .. } => OPERANDS_SWP_SWPAL_64_MEMOP,
+            Self::SwpSwpl64Memop { .. } => OPERANDS_SWP_SWPL_64_MEMOP,
+            Self::SwpbSwpb32Memop { .. } => OPERANDS_SWPB_SWPB_32_MEMOP,
+            Self::SwpbSwpab32Memop { .. } => OPERANDS_SWPB_SWPAB_32_MEMOP,
+            Self::SwpbSwpalb32Memop { .. } => OPERANDS_SWPB_SWPALB_32_MEMOP,
+            Self::SwpbSwplb32Memop { .. } => OPERANDS_SWPB_SWPLB_32_MEMOP,
+            Self::SwphSwph32Memop { .. } => OPERANDS_SWPH_SWPH_32_MEMOP,
+            Self::SwphSwpah32Memop { .. } => OPERANDS_SWPH_SWPAH_32_MEMOP,
+            Self::SwphSwpalh32Memop { .. } => OPERANDS_SWPH_SWPALH_32_MEMOP,
+            Self::SwphSwplh32Memop { .. } => OPERANDS_SWPH_SWPLH_32_MEMOP,
+            Self::CasCasC32Comswap { .. } => OPERANDS_CAS_CAS_C32_COMSWAP,
+            Self::CasCasaC32Comswap { .. } => OPERANDS_CAS_CASA_C32_COMSWAP,
+            Self::CasCasalC32Comswap { .. } => OPERANDS_CAS_CASAL_C32_COMSWAP,
+            Self::CasCaslC32Comswap { .. } => OPERANDS_CAS_CASL_C32_COMSWAP,
+            Self::CasCasC64Comswap { .. } => OPERANDS_CAS_CAS_C64_COMSWAP,
+            Self::CasCasaC64Comswap { .. } => OPERANDS_CAS_CASA_C64_COMSWAP,
+            Self::CasCasalC64Comswap { .. } => OPERANDS_CAS_CASAL_C64_COMSWAP,
+            Self::CasCaslC64Comswap { .. } => OPERANDS_CAS_CASL_C64_COMSWAP,
+            Self::CasbCasbC32Comswap { .. } => OPERANDS_CASB_CASB_C32_COMSWAP,
+            Self::CasbCasabC32Comswap { .. } => OPERANDS_CASB_CASAB_C32_COMSWAP,
+            Self::CasbCasalbC32Comswap { .. } => OPERANDS_CASB_CASALB_C32_COMSWAP,
+            Self::CasbCaslbC32Comswap { .. } => OPERANDS_CASB_CASLB_C32_COMSWAP,
+            Self::CashCashC32Comswap { .. } => OPERANDS_CASH_CASH_C32_COMSWAP,
+            Self::CashCasahC32Comswap { .. } => OPERANDS_CASH_CASAH_C32_COMSWAP,
+            Self::CashCasalhC32Comswap { .. } => OPERANDS_CASH_CASALH_C32_COMSWAP,
+            Self::CashCaslhC32Comswap { .. } => OPERANDS_CASH_CASLH_C32_COMSWAP,
+            Self::MsrImmMsrSiPstate { .. } => OPERANDS_MSR_IMM_MSR_SI_PSTATE,
         }
     }
 }
@@ -9652,6 +14624,1131 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
     if (word & 0xffe0001f) == 0xd4000001 {
         return Some(A64Insn::SvcSvcExException {
             imm16: A64Imm::unsigned(((word & 0x001fffe0) >> 5) as u32, 16),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8200000 {
+        return Some(A64Insn::LdaddLdadd32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8a00000 {
+        return Some(A64Insn::LdaddLdadda32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8e00000 {
+        return Some(A64Insn::LdaddLdaddal32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8600000 {
+        return Some(A64Insn::LdaddLdaddl32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8200000 {
+        return Some(A64Insn::LdaddLdadd64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8a00000 {
+        return Some(A64Insn::LdaddLdadda64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8e00000 {
+        return Some(A64Insn::LdaddLdaddal64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8600000 {
+        return Some(A64Insn::LdaddLdaddl64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38200000 {
+        return Some(A64Insn::LdaddbLdaddb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38a00000 {
+        return Some(A64Insn::LdaddbLdaddab32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38e00000 {
+        return Some(A64Insn::LdaddbLdaddalb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38600000 {
+        return Some(A64Insn::LdaddbLdaddlb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78200000 {
+        return Some(A64Insn::LdaddhLdaddh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78a00000 {
+        return Some(A64Insn::LdaddhLdaddah32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78e00000 {
+        return Some(A64Insn::LdaddhLdaddalh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78600000 {
+        return Some(A64Insn::LdaddhLdaddlh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8201000 {
+        return Some(A64Insn::LdclrLdclr32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8a01000 {
+        return Some(A64Insn::LdclrLdclra32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8e01000 {
+        return Some(A64Insn::LdclrLdclral32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8601000 {
+        return Some(A64Insn::LdclrLdclrl32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8201000 {
+        return Some(A64Insn::LdclrLdclr64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8a01000 {
+        return Some(A64Insn::LdclrLdclra64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8e01000 {
+        return Some(A64Insn::LdclrLdclral64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8601000 {
+        return Some(A64Insn::LdclrLdclrl64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38201000 {
+        return Some(A64Insn::LdclrbLdclrb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38a01000 {
+        return Some(A64Insn::LdclrbLdclrab32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38e01000 {
+        return Some(A64Insn::LdclrbLdclralb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38601000 {
+        return Some(A64Insn::LdclrbLdclrlb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78201000 {
+        return Some(A64Insn::LdclrhLdclrh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78a01000 {
+        return Some(A64Insn::LdclrhLdclrah32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78e01000 {
+        return Some(A64Insn::LdclrhLdclralh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78601000 {
+        return Some(A64Insn::LdclrhLdclrlh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8202000 {
+        return Some(A64Insn::LdeorLdeor32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8a02000 {
+        return Some(A64Insn::LdeorLdeora32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8e02000 {
+        return Some(A64Insn::LdeorLdeoral32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8602000 {
+        return Some(A64Insn::LdeorLdeorl32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8202000 {
+        return Some(A64Insn::LdeorLdeor64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8a02000 {
+        return Some(A64Insn::LdeorLdeora64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8e02000 {
+        return Some(A64Insn::LdeorLdeoral64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8602000 {
+        return Some(A64Insn::LdeorLdeorl64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38202000 {
+        return Some(A64Insn::LdeorbLdeorb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38a02000 {
+        return Some(A64Insn::LdeorbLdeorab32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38e02000 {
+        return Some(A64Insn::LdeorbLdeoralb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38602000 {
+        return Some(A64Insn::LdeorbLdeorlb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78202000 {
+        return Some(A64Insn::LdeorhLdeorh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78a02000 {
+        return Some(A64Insn::LdeorhLdeorah32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78e02000 {
+        return Some(A64Insn::LdeorhLdeoralh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78602000 {
+        return Some(A64Insn::LdeorhLdeorlh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8203000 {
+        return Some(A64Insn::LdsetLdset32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8a03000 {
+        return Some(A64Insn::LdsetLdseta32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8e03000 {
+        return Some(A64Insn::LdsetLdsetal32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8603000 {
+        return Some(A64Insn::LdsetLdsetl32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8203000 {
+        return Some(A64Insn::LdsetLdset64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8a03000 {
+        return Some(A64Insn::LdsetLdseta64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8e03000 {
+        return Some(A64Insn::LdsetLdsetal64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8603000 {
+        return Some(A64Insn::LdsetLdsetl64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38203000 {
+        return Some(A64Insn::LdsetbLdsetb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38a03000 {
+        return Some(A64Insn::LdsetbLdsetab32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38e03000 {
+        return Some(A64Insn::LdsetbLdsetalb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38603000 {
+        return Some(A64Insn::LdsetbLdsetlb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78203000 {
+        return Some(A64Insn::LdsethLdseth32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78a03000 {
+        return Some(A64Insn::LdsethLdsetah32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78e03000 {
+        return Some(A64Insn::LdsethLdsetalh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78603000 {
+        return Some(A64Insn::LdsethLdsetlh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8204000 {
+        return Some(A64Insn::LdsmaxLdsmax32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8a04000 {
+        return Some(A64Insn::LdsmaxLdsmaxa32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8e04000 {
+        return Some(A64Insn::LdsmaxLdsmaxal32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8604000 {
+        return Some(A64Insn::LdsmaxLdsmaxl32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8204000 {
+        return Some(A64Insn::LdsmaxLdsmax64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8a04000 {
+        return Some(A64Insn::LdsmaxLdsmaxa64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8e04000 {
+        return Some(A64Insn::LdsmaxLdsmaxal64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8604000 {
+        return Some(A64Insn::LdsmaxLdsmaxl64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38204000 {
+        return Some(A64Insn::LdsmaxbLdsmaxb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38a04000 {
+        return Some(A64Insn::LdsmaxbLdsmaxab32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38e04000 {
+        return Some(A64Insn::LdsmaxbLdsmaxalb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38604000 {
+        return Some(A64Insn::LdsmaxbLdsmaxlb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78204000 {
+        return Some(A64Insn::LdsmaxhLdsmaxh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78a04000 {
+        return Some(A64Insn::LdsmaxhLdsmaxah32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78e04000 {
+        return Some(A64Insn::LdsmaxhLdsmaxalh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78604000 {
+        return Some(A64Insn::LdsmaxhLdsmaxlh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8205000 {
+        return Some(A64Insn::LdsminLdsmin32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8a05000 {
+        return Some(A64Insn::LdsminLdsmina32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8e05000 {
+        return Some(A64Insn::LdsminLdsminal32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8605000 {
+        return Some(A64Insn::LdsminLdsminl32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8205000 {
+        return Some(A64Insn::LdsminLdsmin64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8a05000 {
+        return Some(A64Insn::LdsminLdsmina64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8e05000 {
+        return Some(A64Insn::LdsminLdsminal64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8605000 {
+        return Some(A64Insn::LdsminLdsminl64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38205000 {
+        return Some(A64Insn::LdsminbLdsminb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38a05000 {
+        return Some(A64Insn::LdsminbLdsminab32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38e05000 {
+        return Some(A64Insn::LdsminbLdsminalb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38605000 {
+        return Some(A64Insn::LdsminbLdsminlb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78205000 {
+        return Some(A64Insn::LdsminhLdsminh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78a05000 {
+        return Some(A64Insn::LdsminhLdsminah32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78e05000 {
+        return Some(A64Insn::LdsminhLdsminalh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78605000 {
+        return Some(A64Insn::LdsminhLdsminlh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8206000 {
+        return Some(A64Insn::LdumaxLdumax32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8a06000 {
+        return Some(A64Insn::LdumaxLdumaxa32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8e06000 {
+        return Some(A64Insn::LdumaxLdumaxal32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8606000 {
+        return Some(A64Insn::LdumaxLdumaxl32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8206000 {
+        return Some(A64Insn::LdumaxLdumax64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8a06000 {
+        return Some(A64Insn::LdumaxLdumaxa64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8e06000 {
+        return Some(A64Insn::LdumaxLdumaxal64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8606000 {
+        return Some(A64Insn::LdumaxLdumaxl64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38206000 {
+        return Some(A64Insn::LdumaxbLdumaxb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38a06000 {
+        return Some(A64Insn::LdumaxbLdumaxab32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38e06000 {
+        return Some(A64Insn::LdumaxbLdumaxalb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38606000 {
+        return Some(A64Insn::LdumaxbLdumaxlb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78206000 {
+        return Some(A64Insn::LdumaxhLdumaxh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78a06000 {
+        return Some(A64Insn::LdumaxhLdumaxah32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78e06000 {
+        return Some(A64Insn::LdumaxhLdumaxalh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78606000 {
+        return Some(A64Insn::LdumaxhLdumaxlh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8207000 {
+        return Some(A64Insn::LduminLdumin32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8a07000 {
+        return Some(A64Insn::LduminLdumina32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8e07000 {
+        return Some(A64Insn::LduminLduminal32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8607000 {
+        return Some(A64Insn::LduminLduminl32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8207000 {
+        return Some(A64Insn::LduminLdumin64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8a07000 {
+        return Some(A64Insn::LduminLdumina64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8e07000 {
+        return Some(A64Insn::LduminLduminal64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8607000 {
+        return Some(A64Insn::LduminLduminl64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38207000 {
+        return Some(A64Insn::LduminbLduminb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38a07000 {
+        return Some(A64Insn::LduminbLduminab32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38e07000 {
+        return Some(A64Insn::LduminbLduminalb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38607000 {
+        return Some(A64Insn::LduminbLduminlb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78207000 {
+        return Some(A64Insn::LduminhLduminh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78a07000 {
+        return Some(A64Insn::LduminhLduminah32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78e07000 {
+        return Some(A64Insn::LduminhLduminalh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78607000 {
+        return Some(A64Insn::LduminhLduminlh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8208000 {
+        return Some(A64Insn::SwpSwp32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8a08000 {
+        return Some(A64Insn::SwpSwpa32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8e08000 {
+        return Some(A64Insn::SwpSwpal32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xb8608000 {
+        return Some(A64Insn::SwpSwpl32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8208000 {
+        return Some(A64Insn::SwpSwp64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8a08000 {
+        return Some(A64Insn::SwpSwpa64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8e08000 {
+        return Some(A64Insn::SwpSwpal64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xf8608000 {
+        return Some(A64Insn::SwpSwpl64Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38208000 {
+        return Some(A64Insn::SwpbSwpb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38a08000 {
+        return Some(A64Insn::SwpbSwpab32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38e08000 {
+        return Some(A64Insn::SwpbSwpalb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x38608000 {
+        return Some(A64Insn::SwpbSwplb32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78208000 {
+        return Some(A64Insn::SwphSwph32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78a08000 {
+        return Some(A64Insn::SwphSwpah32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78e08000 {
+        return Some(A64Insn::SwphSwpalh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x78608000 {
+        return Some(A64Insn::SwphSwplh32Memop {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x88a07c00 {
+        return Some(A64Insn::CasCasC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x88e07c00 {
+        return Some(A64Insn::CasCasaC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x88e0fc00 {
+        return Some(A64Insn::CasCasalC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x88a0fc00 {
+        return Some(A64Insn::CasCaslC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xc8a07c00 {
+        return Some(A64Insn::CasCasC64Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xc8e07c00 {
+        return Some(A64Insn::CasCasaC64Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xc8e0fc00 {
+        return Some(A64Insn::CasCasalC64Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0xc8a0fc00 {
+        return Some(A64Insn::CasCaslC64Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x08a07c00 {
+        return Some(A64Insn::CasbCasbC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x08e07c00 {
+        return Some(A64Insn::CasbCasabC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x08e0fc00 {
+        return Some(A64Insn::CasbCasalbC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x08a0fc00 {
+        return Some(A64Insn::CasbCaslbC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x48a07c00 {
+        return Some(A64Insn::CashCashC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x48e07c00 {
+        return Some(A64Insn::CashCasahC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x48e0fc00 {
+        return Some(A64Insn::CashCasalhC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe0fc00) == 0x48a0fc00 {
+        return Some(A64Insn::CashCaslhC32Comswap {
+            rs: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffff0ff) == 0xd500409f {
+        return Some(A64Insn::MsrImmMsrSiPstate {
+            crm: ((word & 0x00000f00) >> 8) as u8,
         });
     }
     None
@@ -14480,6 +20577,3522 @@ pub const OPERANDS_SVC_SVC_EX_EXCEPTION: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
+pub const FIELDS_LDADD_LDADD_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADD_LDADD_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADD_LDADDA_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADD_LDADDA_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADD_LDADDAL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADD_LDADDAL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADD_LDADDL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADD_LDADDL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADD_LDADD_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADD_LDADD_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADD_LDADDA_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADD_LDADDA_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADD_LDADDAL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADD_LDADDAL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADD_LDADDL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADD_LDADDL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADDB_LDADDB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADDB_LDADDB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADDB_LDADDAB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADDB_LDADDAB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADDB_LDADDALB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADDB_LDADDALB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADDB_LDADDLB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADDB_LDADDLB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADDH_LDADDH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADDH_LDADDH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADDH_LDADDAH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADDH_LDADDAH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADDH_LDADDALH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADDH_LDADDALH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDADDH_LDADDLH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDADDH_LDADDLH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLR_LDCLR_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLR_LDCLR_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLR_LDCLRA_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLR_LDCLRA_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLR_LDCLRAL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLR_LDCLRAL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLR_LDCLRL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLR_LDCLRL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLR_LDCLR_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLR_LDCLR_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLR_LDCLRA_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLR_LDCLRA_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLR_LDCLRAL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLR_LDCLRAL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLR_LDCLRL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLR_LDCLRL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLRB_LDCLRB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLRB_LDCLRB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLRB_LDCLRAB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLRB_LDCLRAB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLRB_LDCLRALB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLRB_LDCLRALB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLRB_LDCLRLB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLRB_LDCLRLB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLRH_LDCLRH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLRH_LDCLRH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLRH_LDCLRAH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLRH_LDCLRAH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLRH_LDCLRALH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLRH_LDCLRALH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDCLRH_LDCLRLH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDCLRH_LDCLRLH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEOR_LDEOR_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEOR_LDEOR_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEOR_LDEORA_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEOR_LDEORA_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEOR_LDEORAL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEOR_LDEORAL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEOR_LDEORL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEOR_LDEORL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEOR_LDEOR_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEOR_LDEOR_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEOR_LDEORA_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEOR_LDEORA_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEOR_LDEORAL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEOR_LDEORAL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEOR_LDEORL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEOR_LDEORL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEORB_LDEORB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEORB_LDEORB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEORB_LDEORAB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEORB_LDEORAB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEORB_LDEORALB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEORB_LDEORALB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEORB_LDEORLB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEORB_LDEORLB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEORH_LDEORH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEORH_LDEORH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEORH_LDEORAH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEORH_LDEORAH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEORH_LDEORALH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEORH_LDEORALH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDEORH_LDEORLH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDEORH_LDEORLH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSET_LDSET_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSET_LDSET_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSET_LDSETA_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSET_LDSETA_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSET_LDSETAL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSET_LDSETAL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSET_LDSETL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSET_LDSETL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSET_LDSET_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSET_LDSET_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSET_LDSETA_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSET_LDSETA_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSET_LDSETAL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSET_LDSETAL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSET_LDSETL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSET_LDSETL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSETB_LDSETB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSETB_LDSETB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSETB_LDSETAB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSETB_LDSETAB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSETB_LDSETALB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSETB_LDSETALB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSETB_LDSETLB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSETB_LDSETLB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSETH_LDSETH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSETH_LDSETH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSETH_LDSETAH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSETH_LDSETAH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSETH_LDSETALH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSETH_LDSETALH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSETH_LDSETLH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSETH_LDSETLH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAX_LDSMAX_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAX_LDSMAX_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAX_LDSMAXA_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAX_LDSMAXA_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAX_LDSMAXAL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAX_LDSMAXAL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAX_LDSMAXL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAX_LDSMAXL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAX_LDSMAX_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAX_LDSMAX_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAX_LDSMAXA_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAX_LDSMAXA_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAX_LDSMAXAL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAX_LDSMAXAL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAX_LDSMAXL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAX_LDSMAXL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAXB_LDSMAXB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAXB_LDSMAXB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAXB_LDSMAXAB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAXB_LDSMAXAB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAXB_LDSMAXALB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAXB_LDSMAXALB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAXB_LDSMAXLB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAXB_LDSMAXLB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAXH_LDSMAXH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAXH_LDSMAXH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAXH_LDSMAXAH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAXH_LDSMAXAH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAXH_LDSMAXALH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAXH_LDSMAXALH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMAXH_LDSMAXLH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMAXH_LDSMAXLH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMIN_LDSMIN_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMIN_LDSMIN_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMIN_LDSMINA_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMIN_LDSMINA_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMIN_LDSMINAL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMIN_LDSMINAL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMIN_LDSMINL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMIN_LDSMINL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMIN_LDSMIN_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMIN_LDSMIN_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMIN_LDSMINA_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMIN_LDSMINA_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMIN_LDSMINAL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMIN_LDSMINAL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMIN_LDSMINL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMIN_LDSMINL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMINB_LDSMINB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMINB_LDSMINB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMINB_LDSMINAB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMINB_LDSMINAB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMINB_LDSMINALB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMINB_LDSMINALB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMINB_LDSMINLB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMINB_LDSMINLB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMINH_LDSMINH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMINH_LDSMINH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMINH_LDSMINAH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMINH_LDSMINAH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMINH_LDSMINALH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMINH_LDSMINALH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDSMINH_LDSMINLH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDSMINH_LDSMINLH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAX_LDUMAX_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAX_LDUMAX_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAX_LDUMAXA_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAX_LDUMAXA_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAX_LDUMAXAL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAX_LDUMAXAL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAX_LDUMAXL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAX_LDUMAXL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAX_LDUMAX_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAX_LDUMAX_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAX_LDUMAXA_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAX_LDUMAXA_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAX_LDUMAXAL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAX_LDUMAXAL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAX_LDUMAXL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAX_LDUMAXL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAXB_LDUMAXB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAXB_LDUMAXB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAXB_LDUMAXAB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAXB_LDUMAXAB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAXB_LDUMAXALB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAXB_LDUMAXALB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAXB_LDUMAXLB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAXB_LDUMAXLB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAXH_LDUMAXH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAXH_LDUMAXH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAXH_LDUMAXAH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAXH_LDUMAXAH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAXH_LDUMAXALH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAXH_LDUMAXALH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMAXH_LDUMAXLH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMAXH_LDUMAXLH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMIN_LDUMIN_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMIN_LDUMIN_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMIN_LDUMINA_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMIN_LDUMINA_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMIN_LDUMINAL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMIN_LDUMINAL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMIN_LDUMINL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMIN_LDUMINL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMIN_LDUMIN_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMIN_LDUMIN_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMIN_LDUMINA_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMIN_LDUMINA_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMIN_LDUMINAL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMIN_LDUMINAL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMIN_LDUMINL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMIN_LDUMINL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMINB_LDUMINB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMINB_LDUMINB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMINB_LDUMINAB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMINB_LDUMINAB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMINB_LDUMINALB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMINB_LDUMINALB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMINB_LDUMINLB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMINB_LDUMINLB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMINH_LDUMINH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMINH_LDUMINH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMINH_LDUMINAH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMINH_LDUMINAH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMINH_LDUMINALH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMINH_LDUMINALH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDUMINH_LDUMINLH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDUMINH_LDUMINLH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWP_SWP_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWP_SWP_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWP_SWPA_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWP_SWPA_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWP_SWPAL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWP_SWPAL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWP_SWPL_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWP_SWPL_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWP_SWP_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWP_SWP_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWP_SWPA_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWP_SWPA_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWP_SWPAL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWP_SWPAL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWP_SWPL_64_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWP_SWPL_64_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWPB_SWPB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWPB_SWPB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWPB_SWPAB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWPB_SWPAB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWPB_SWPALB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWPB_SWPALB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWPB_SWPLB_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWPB_SWPLB_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWPH_SWPH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWPH_SWPH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWPH_SWPAH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWPH_SWPAH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWPH_SWPALH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWPH_SWPALH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SWPH_SWPLH_32_MEMOP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "A", hi: 23, lo: 23, width: 1, mask: 0x00800000 },
+    GeneratedFieldSpec { name: "R", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o3", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "opc", hi: 14, lo: 12, width: 3, mask: 0x00007000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SWPH_SWPLH_32_MEMOP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CAS_CAS_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CAS_CAS_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CAS_CASA_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CAS_CASA_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CAS_CASAL_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CAS_CASAL_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CAS_CASL_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CAS_CASL_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CAS_CAS_C64_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CAS_CAS_C64_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CAS_CASA_C64_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CAS_CASA_C64_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CAS_CASAL_C64_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CAS_CASAL_C64_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CAS_CASL_C64_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CAS_CASL_C64_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::X64 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CASB_CASB_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CASB_CASB_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CASB_CASAB_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CASB_CASAB_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CASB_CASALB_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CASB_CASALB_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CASB_CASLB_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CASB_CASLB_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CASH_CASH_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CASH_CASH_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CASH_CASAH_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CASH_CASAH_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CASH_CASALH_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CASH_CASALH_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_CASH_CASLH_C32_COMSWAP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "L", hi: 22, lo: 22, width: 1, mask: 0x00400000 },
+    GeneratedFieldSpec { name: "Rs", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rt2", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_CASH_CASLH_C32_COMSWAP: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rs", width: A64RegWidth::W32 },
+    A64OperandRole::RegRead { field: "Rt", width: A64RegWidth::W32 },
+    A64OperandRole::RegWrite { field: "Rs", width: A64RegWidth::W32 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MSR_IMM_MSR_SI_PSTATE: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "op1", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "CRm", hi: 11, lo: 8, width: 4, mask: 0x00000f00 },
+    GeneratedFieldSpec { name: "op2", hi: 7, lo: 5, width: 3, mask: 0x000000e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MSR_IMM_MSR_SI_PSTATE: &[A64OperandRole] = &[
+];
+
+#[allow(dead_code)]
 pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
     GeneratedInsnSpec {
         key: "ADR.ADR_only_pcreladdr",
@@ -17873,6 +27486,2099 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         fields: FIELDS_SVC_SVC_EX_EXCEPTION,
         operands: OPERANDS_SVC_SVC_EX_EXCEPTION,
         asm: "SVC  # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "LDADD.LDADD_32_memop",
+        mnemonic: "LDADD",
+        heading: "LDADD, LDADDA, LDADDAL, LDADDL",
+        title: "LDADD, LDADDA, LDADDAL, LDADDL -- A64",
+        encoding_label: "32-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xb8200000,
+        excludes: &[],
+        fields: FIELDS_LDADD_LDADD_32_MEMOP,
+        operands: OPERANDS_LDADD_LDADD_32_MEMOP,
+        asm: "LDADD <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADD.LDADDA_32_memop",
+        mnemonic: "LDADDA",
+        heading: "LDADD, LDADDA, LDADDAL, LDADDL",
+        title: "LDADD, LDADDA, LDADDAL, LDADDL -- A64",
+        encoding_label: "32-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xb8a00000,
+        excludes: &[],
+        fields: FIELDS_LDADD_LDADDA_32_MEMOP,
+        operands: OPERANDS_LDADD_LDADDA_32_MEMOP,
+        asm: "LDADDA <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADD.LDADDAL_32_memop",
+        mnemonic: "LDADDAL",
+        heading: "LDADD, LDADDA, LDADDAL, LDADDL",
+        title: "LDADD, LDADDA, LDADDAL, LDADDL -- A64",
+        encoding_label: "32-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xb8e00000,
+        excludes: &[],
+        fields: FIELDS_LDADD_LDADDAL_32_MEMOP,
+        operands: OPERANDS_LDADD_LDADDAL_32_MEMOP,
+        asm: "LDADDAL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADD.LDADDL_32_memop",
+        mnemonic: "LDADDL",
+        heading: "LDADD, LDADDA, LDADDAL, LDADDL",
+        title: "LDADD, LDADDA, LDADDAL, LDADDL -- A64",
+        encoding_label: "32-bit release",
+        mask: 0xffe0fc00,
+        value: 0xb8600000,
+        excludes: &[],
+        fields: FIELDS_LDADD_LDADDL_32_MEMOP,
+        operands: OPERANDS_LDADD_LDADDL_32_MEMOP,
+        asm: "LDADDL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADD.LDADD_64_memop",
+        mnemonic: "LDADD",
+        heading: "LDADD, LDADDA, LDADDAL, LDADDL",
+        title: "LDADD, LDADDA, LDADDAL, LDADDL -- A64",
+        encoding_label: "64-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xf8200000,
+        excludes: &[],
+        fields: FIELDS_LDADD_LDADD_64_MEMOP,
+        operands: OPERANDS_LDADD_LDADD_64_MEMOP,
+        asm: "LDADD <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADD.LDADDA_64_memop",
+        mnemonic: "LDADDA",
+        heading: "LDADD, LDADDA, LDADDAL, LDADDL",
+        title: "LDADD, LDADDA, LDADDAL, LDADDL -- A64",
+        encoding_label: "64-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xf8a00000,
+        excludes: &[],
+        fields: FIELDS_LDADD_LDADDA_64_MEMOP,
+        operands: OPERANDS_LDADD_LDADDA_64_MEMOP,
+        asm: "LDADDA <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADD.LDADDAL_64_memop",
+        mnemonic: "LDADDAL",
+        heading: "LDADD, LDADDA, LDADDAL, LDADDL",
+        title: "LDADD, LDADDA, LDADDAL, LDADDL -- A64",
+        encoding_label: "64-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xf8e00000,
+        excludes: &[],
+        fields: FIELDS_LDADD_LDADDAL_64_MEMOP,
+        operands: OPERANDS_LDADD_LDADDAL_64_MEMOP,
+        asm: "LDADDAL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADD.LDADDL_64_memop",
+        mnemonic: "LDADDL",
+        heading: "LDADD, LDADDA, LDADDAL, LDADDL",
+        title: "LDADD, LDADDA, LDADDAL, LDADDL -- A64",
+        encoding_label: "64-bit release",
+        mask: 0xffe0fc00,
+        value: 0xf8600000,
+        excludes: &[],
+        fields: FIELDS_LDADD_LDADDL_64_MEMOP,
+        operands: OPERANDS_LDADD_LDADDL_64_MEMOP,
+        asm: "LDADDL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADDB.LDADDB_32_memop",
+        mnemonic: "LDADDB",
+        heading: "LDADDB, LDADDAB, LDADDALB, LDADDLB",
+        title: "LDADDB, LDADDAB, LDADDALB, LDADDLB -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x38200000,
+        excludes: &[],
+        fields: FIELDS_LDADDB_LDADDB_32_MEMOP,
+        operands: OPERANDS_LDADDB_LDADDB_32_MEMOP,
+        asm: "LDADDB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADDB.LDADDAB_32_memop",
+        mnemonic: "LDADDAB",
+        heading: "LDADDB, LDADDAB, LDADDALB, LDADDLB",
+        title: "LDADDB, LDADDAB, LDADDALB, LDADDLB -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x38a00000,
+        excludes: &[],
+        fields: FIELDS_LDADDB_LDADDAB_32_MEMOP,
+        operands: OPERANDS_LDADDB_LDADDAB_32_MEMOP,
+        asm: "LDADDAB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADDB.LDADDALB_32_memop",
+        mnemonic: "LDADDALB",
+        heading: "LDADDB, LDADDAB, LDADDALB, LDADDLB",
+        title: "LDADDB, LDADDAB, LDADDALB, LDADDLB -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x38e00000,
+        excludes: &[],
+        fields: FIELDS_LDADDB_LDADDALB_32_MEMOP,
+        operands: OPERANDS_LDADDB_LDADDALB_32_MEMOP,
+        asm: "LDADDALB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADDB.LDADDLB_32_memop",
+        mnemonic: "LDADDLB",
+        heading: "LDADDB, LDADDAB, LDADDALB, LDADDLB",
+        title: "LDADDB, LDADDAB, LDADDALB, LDADDLB -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x38600000,
+        excludes: &[],
+        fields: FIELDS_LDADDB_LDADDLB_32_MEMOP,
+        operands: OPERANDS_LDADDB_LDADDLB_32_MEMOP,
+        asm: "LDADDLB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADDH.LDADDH_32_memop",
+        mnemonic: "LDADDH",
+        heading: "LDADDH, LDADDAH, LDADDALH, LDADDLH",
+        title: "LDADDH, LDADDAH, LDADDALH, LDADDLH -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x78200000,
+        excludes: &[],
+        fields: FIELDS_LDADDH_LDADDH_32_MEMOP,
+        operands: OPERANDS_LDADDH_LDADDH_32_MEMOP,
+        asm: "LDADDH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADDH.LDADDAH_32_memop",
+        mnemonic: "LDADDAH",
+        heading: "LDADDH, LDADDAH, LDADDALH, LDADDLH",
+        title: "LDADDH, LDADDAH, LDADDALH, LDADDLH -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x78a00000,
+        excludes: &[],
+        fields: FIELDS_LDADDH_LDADDAH_32_MEMOP,
+        operands: OPERANDS_LDADDH_LDADDAH_32_MEMOP,
+        asm: "LDADDAH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADDH.LDADDALH_32_memop",
+        mnemonic: "LDADDALH",
+        heading: "LDADDH, LDADDAH, LDADDALH, LDADDLH",
+        title: "LDADDH, LDADDAH, LDADDALH, LDADDLH -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x78e00000,
+        excludes: &[],
+        fields: FIELDS_LDADDH_LDADDALH_32_MEMOP,
+        operands: OPERANDS_LDADDH_LDADDALH_32_MEMOP,
+        asm: "LDADDALH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDADDH.LDADDLH_32_memop",
+        mnemonic: "LDADDLH",
+        heading: "LDADDH, LDADDAH, LDADDALH, LDADDLH",
+        title: "LDADDH, LDADDAH, LDADDALH, LDADDLH -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x78600000,
+        excludes: &[],
+        fields: FIELDS_LDADDH_LDADDLH_32_MEMOP,
+        operands: OPERANDS_LDADDH_LDADDLH_32_MEMOP,
+        asm: "LDADDLH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLR.LDCLR_32_memop",
+        mnemonic: "LDCLR",
+        heading: "LDCLR, LDCLRA, LDCLRAL, LDCLRL",
+        title: "LDCLR, LDCLRA, LDCLRAL, LDCLRL -- A64",
+        encoding_label: "32-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xb8201000,
+        excludes: &[],
+        fields: FIELDS_LDCLR_LDCLR_32_MEMOP,
+        operands: OPERANDS_LDCLR_LDCLR_32_MEMOP,
+        asm: "LDCLR <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLR.LDCLRA_32_memop",
+        mnemonic: "LDCLRA",
+        heading: "LDCLR, LDCLRA, LDCLRAL, LDCLRL",
+        title: "LDCLR, LDCLRA, LDCLRAL, LDCLRL -- A64",
+        encoding_label: "32-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xb8a01000,
+        excludes: &[],
+        fields: FIELDS_LDCLR_LDCLRA_32_MEMOP,
+        operands: OPERANDS_LDCLR_LDCLRA_32_MEMOP,
+        asm: "LDCLRA <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLR.LDCLRAL_32_memop",
+        mnemonic: "LDCLRAL",
+        heading: "LDCLR, LDCLRA, LDCLRAL, LDCLRL",
+        title: "LDCLR, LDCLRA, LDCLRAL, LDCLRL -- A64",
+        encoding_label: "32-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xb8e01000,
+        excludes: &[],
+        fields: FIELDS_LDCLR_LDCLRAL_32_MEMOP,
+        operands: OPERANDS_LDCLR_LDCLRAL_32_MEMOP,
+        asm: "LDCLRAL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLR.LDCLRL_32_memop",
+        mnemonic: "LDCLRL",
+        heading: "LDCLR, LDCLRA, LDCLRAL, LDCLRL",
+        title: "LDCLR, LDCLRA, LDCLRAL, LDCLRL -- A64",
+        encoding_label: "32-bit release",
+        mask: 0xffe0fc00,
+        value: 0xb8601000,
+        excludes: &[],
+        fields: FIELDS_LDCLR_LDCLRL_32_MEMOP,
+        operands: OPERANDS_LDCLR_LDCLRL_32_MEMOP,
+        asm: "LDCLRL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLR.LDCLR_64_memop",
+        mnemonic: "LDCLR",
+        heading: "LDCLR, LDCLRA, LDCLRAL, LDCLRL",
+        title: "LDCLR, LDCLRA, LDCLRAL, LDCLRL -- A64",
+        encoding_label: "64-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xf8201000,
+        excludes: &[],
+        fields: FIELDS_LDCLR_LDCLR_64_MEMOP,
+        operands: OPERANDS_LDCLR_LDCLR_64_MEMOP,
+        asm: "LDCLR <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLR.LDCLRA_64_memop",
+        mnemonic: "LDCLRA",
+        heading: "LDCLR, LDCLRA, LDCLRAL, LDCLRL",
+        title: "LDCLR, LDCLRA, LDCLRAL, LDCLRL -- A64",
+        encoding_label: "64-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xf8a01000,
+        excludes: &[],
+        fields: FIELDS_LDCLR_LDCLRA_64_MEMOP,
+        operands: OPERANDS_LDCLR_LDCLRA_64_MEMOP,
+        asm: "LDCLRA <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLR.LDCLRAL_64_memop",
+        mnemonic: "LDCLRAL",
+        heading: "LDCLR, LDCLRA, LDCLRAL, LDCLRL",
+        title: "LDCLR, LDCLRA, LDCLRAL, LDCLRL -- A64",
+        encoding_label: "64-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xf8e01000,
+        excludes: &[],
+        fields: FIELDS_LDCLR_LDCLRAL_64_MEMOP,
+        operands: OPERANDS_LDCLR_LDCLRAL_64_MEMOP,
+        asm: "LDCLRAL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLR.LDCLRL_64_memop",
+        mnemonic: "LDCLRL",
+        heading: "LDCLR, LDCLRA, LDCLRAL, LDCLRL",
+        title: "LDCLR, LDCLRA, LDCLRAL, LDCLRL -- A64",
+        encoding_label: "64-bit release",
+        mask: 0xffe0fc00,
+        value: 0xf8601000,
+        excludes: &[],
+        fields: FIELDS_LDCLR_LDCLRL_64_MEMOP,
+        operands: OPERANDS_LDCLR_LDCLRL_64_MEMOP,
+        asm: "LDCLRL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLRB.LDCLRB_32_memop",
+        mnemonic: "LDCLRB",
+        heading: "LDCLRB, LDCLRAB, LDCLRALB, LDCLRLB",
+        title: "LDCLRB, LDCLRAB, LDCLRALB, LDCLRLB -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x38201000,
+        excludes: &[],
+        fields: FIELDS_LDCLRB_LDCLRB_32_MEMOP,
+        operands: OPERANDS_LDCLRB_LDCLRB_32_MEMOP,
+        asm: "LDCLRB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLRB.LDCLRAB_32_memop",
+        mnemonic: "LDCLRAB",
+        heading: "LDCLRB, LDCLRAB, LDCLRALB, LDCLRLB",
+        title: "LDCLRB, LDCLRAB, LDCLRALB, LDCLRLB -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x38a01000,
+        excludes: &[],
+        fields: FIELDS_LDCLRB_LDCLRAB_32_MEMOP,
+        operands: OPERANDS_LDCLRB_LDCLRAB_32_MEMOP,
+        asm: "LDCLRAB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLRB.LDCLRALB_32_memop",
+        mnemonic: "LDCLRALB",
+        heading: "LDCLRB, LDCLRAB, LDCLRALB, LDCLRLB",
+        title: "LDCLRB, LDCLRAB, LDCLRALB, LDCLRLB -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x38e01000,
+        excludes: &[],
+        fields: FIELDS_LDCLRB_LDCLRALB_32_MEMOP,
+        operands: OPERANDS_LDCLRB_LDCLRALB_32_MEMOP,
+        asm: "LDCLRALB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLRB.LDCLRLB_32_memop",
+        mnemonic: "LDCLRLB",
+        heading: "LDCLRB, LDCLRAB, LDCLRALB, LDCLRLB",
+        title: "LDCLRB, LDCLRAB, LDCLRALB, LDCLRLB -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x38601000,
+        excludes: &[],
+        fields: FIELDS_LDCLRB_LDCLRLB_32_MEMOP,
+        operands: OPERANDS_LDCLRB_LDCLRLB_32_MEMOP,
+        asm: "LDCLRLB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLRH.LDCLRH_32_memop",
+        mnemonic: "LDCLRH",
+        heading: "LDCLRH, LDCLRAH, LDCLRALH, LDCLRLH",
+        title: "LDCLRH, LDCLRAH, LDCLRALH, LDCLRLH -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x78201000,
+        excludes: &[],
+        fields: FIELDS_LDCLRH_LDCLRH_32_MEMOP,
+        operands: OPERANDS_LDCLRH_LDCLRH_32_MEMOP,
+        asm: "LDCLRH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLRH.LDCLRAH_32_memop",
+        mnemonic: "LDCLRAH",
+        heading: "LDCLRH, LDCLRAH, LDCLRALH, LDCLRLH",
+        title: "LDCLRH, LDCLRAH, LDCLRALH, LDCLRLH -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x78a01000,
+        excludes: &[],
+        fields: FIELDS_LDCLRH_LDCLRAH_32_MEMOP,
+        operands: OPERANDS_LDCLRH_LDCLRAH_32_MEMOP,
+        asm: "LDCLRAH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLRH.LDCLRALH_32_memop",
+        mnemonic: "LDCLRALH",
+        heading: "LDCLRH, LDCLRAH, LDCLRALH, LDCLRLH",
+        title: "LDCLRH, LDCLRAH, LDCLRALH, LDCLRLH -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x78e01000,
+        excludes: &[],
+        fields: FIELDS_LDCLRH_LDCLRALH_32_MEMOP,
+        operands: OPERANDS_LDCLRH_LDCLRALH_32_MEMOP,
+        asm: "LDCLRALH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDCLRH.LDCLRLH_32_memop",
+        mnemonic: "LDCLRLH",
+        heading: "LDCLRH, LDCLRAH, LDCLRALH, LDCLRLH",
+        title: "LDCLRH, LDCLRAH, LDCLRALH, LDCLRLH -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x78601000,
+        excludes: &[],
+        fields: FIELDS_LDCLRH_LDCLRLH_32_MEMOP,
+        operands: OPERANDS_LDCLRH_LDCLRLH_32_MEMOP,
+        asm: "LDCLRLH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEOR.LDEOR_32_memop",
+        mnemonic: "LDEOR",
+        heading: "LDEOR, LDEORA, LDEORAL, LDEORL",
+        title: "LDEOR, LDEORA, LDEORAL, LDEORL -- A64",
+        encoding_label: "32-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xb8202000,
+        excludes: &[],
+        fields: FIELDS_LDEOR_LDEOR_32_MEMOP,
+        operands: OPERANDS_LDEOR_LDEOR_32_MEMOP,
+        asm: "LDEOR <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEOR.LDEORA_32_memop",
+        mnemonic: "LDEORA",
+        heading: "LDEOR, LDEORA, LDEORAL, LDEORL",
+        title: "LDEOR, LDEORA, LDEORAL, LDEORL -- A64",
+        encoding_label: "32-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xb8a02000,
+        excludes: &[],
+        fields: FIELDS_LDEOR_LDEORA_32_MEMOP,
+        operands: OPERANDS_LDEOR_LDEORA_32_MEMOP,
+        asm: "LDEORA <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEOR.LDEORAL_32_memop",
+        mnemonic: "LDEORAL",
+        heading: "LDEOR, LDEORA, LDEORAL, LDEORL",
+        title: "LDEOR, LDEORA, LDEORAL, LDEORL -- A64",
+        encoding_label: "32-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xb8e02000,
+        excludes: &[],
+        fields: FIELDS_LDEOR_LDEORAL_32_MEMOP,
+        operands: OPERANDS_LDEOR_LDEORAL_32_MEMOP,
+        asm: "LDEORAL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEOR.LDEORL_32_memop",
+        mnemonic: "LDEORL",
+        heading: "LDEOR, LDEORA, LDEORAL, LDEORL",
+        title: "LDEOR, LDEORA, LDEORAL, LDEORL -- A64",
+        encoding_label: "32-bit release",
+        mask: 0xffe0fc00,
+        value: 0xb8602000,
+        excludes: &[],
+        fields: FIELDS_LDEOR_LDEORL_32_MEMOP,
+        operands: OPERANDS_LDEOR_LDEORL_32_MEMOP,
+        asm: "LDEORL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEOR.LDEOR_64_memop",
+        mnemonic: "LDEOR",
+        heading: "LDEOR, LDEORA, LDEORAL, LDEORL",
+        title: "LDEOR, LDEORA, LDEORAL, LDEORL -- A64",
+        encoding_label: "64-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xf8202000,
+        excludes: &[],
+        fields: FIELDS_LDEOR_LDEOR_64_MEMOP,
+        operands: OPERANDS_LDEOR_LDEOR_64_MEMOP,
+        asm: "LDEOR <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEOR.LDEORA_64_memop",
+        mnemonic: "LDEORA",
+        heading: "LDEOR, LDEORA, LDEORAL, LDEORL",
+        title: "LDEOR, LDEORA, LDEORAL, LDEORL -- A64",
+        encoding_label: "64-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xf8a02000,
+        excludes: &[],
+        fields: FIELDS_LDEOR_LDEORA_64_MEMOP,
+        operands: OPERANDS_LDEOR_LDEORA_64_MEMOP,
+        asm: "LDEORA <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEOR.LDEORAL_64_memop",
+        mnemonic: "LDEORAL",
+        heading: "LDEOR, LDEORA, LDEORAL, LDEORL",
+        title: "LDEOR, LDEORA, LDEORAL, LDEORL -- A64",
+        encoding_label: "64-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xf8e02000,
+        excludes: &[],
+        fields: FIELDS_LDEOR_LDEORAL_64_MEMOP,
+        operands: OPERANDS_LDEOR_LDEORAL_64_MEMOP,
+        asm: "LDEORAL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEOR.LDEORL_64_memop",
+        mnemonic: "LDEORL",
+        heading: "LDEOR, LDEORA, LDEORAL, LDEORL",
+        title: "LDEOR, LDEORA, LDEORAL, LDEORL -- A64",
+        encoding_label: "64-bit release",
+        mask: 0xffe0fc00,
+        value: 0xf8602000,
+        excludes: &[],
+        fields: FIELDS_LDEOR_LDEORL_64_MEMOP,
+        operands: OPERANDS_LDEOR_LDEORL_64_MEMOP,
+        asm: "LDEORL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEORB.LDEORB_32_memop",
+        mnemonic: "LDEORB",
+        heading: "LDEORB, LDEORAB, LDEORALB, LDEORLB",
+        title: "LDEORB, LDEORAB, LDEORALB, LDEORLB -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x38202000,
+        excludes: &[],
+        fields: FIELDS_LDEORB_LDEORB_32_MEMOP,
+        operands: OPERANDS_LDEORB_LDEORB_32_MEMOP,
+        asm: "LDEORB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEORB.LDEORAB_32_memop",
+        mnemonic: "LDEORAB",
+        heading: "LDEORB, LDEORAB, LDEORALB, LDEORLB",
+        title: "LDEORB, LDEORAB, LDEORALB, LDEORLB -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x38a02000,
+        excludes: &[],
+        fields: FIELDS_LDEORB_LDEORAB_32_MEMOP,
+        operands: OPERANDS_LDEORB_LDEORAB_32_MEMOP,
+        asm: "LDEORAB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEORB.LDEORALB_32_memop",
+        mnemonic: "LDEORALB",
+        heading: "LDEORB, LDEORAB, LDEORALB, LDEORLB",
+        title: "LDEORB, LDEORAB, LDEORALB, LDEORLB -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x38e02000,
+        excludes: &[],
+        fields: FIELDS_LDEORB_LDEORALB_32_MEMOP,
+        operands: OPERANDS_LDEORB_LDEORALB_32_MEMOP,
+        asm: "LDEORALB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEORB.LDEORLB_32_memop",
+        mnemonic: "LDEORLB",
+        heading: "LDEORB, LDEORAB, LDEORALB, LDEORLB",
+        title: "LDEORB, LDEORAB, LDEORALB, LDEORLB -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x38602000,
+        excludes: &[],
+        fields: FIELDS_LDEORB_LDEORLB_32_MEMOP,
+        operands: OPERANDS_LDEORB_LDEORLB_32_MEMOP,
+        asm: "LDEORLB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEORH.LDEORH_32_memop",
+        mnemonic: "LDEORH",
+        heading: "LDEORH, LDEORAH, LDEORALH, LDEORLH",
+        title: "LDEORH, LDEORAH, LDEORALH, LDEORLH -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x78202000,
+        excludes: &[],
+        fields: FIELDS_LDEORH_LDEORH_32_MEMOP,
+        operands: OPERANDS_LDEORH_LDEORH_32_MEMOP,
+        asm: "LDEORH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEORH.LDEORAH_32_memop",
+        mnemonic: "LDEORAH",
+        heading: "LDEORH, LDEORAH, LDEORALH, LDEORLH",
+        title: "LDEORH, LDEORAH, LDEORALH, LDEORLH -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x78a02000,
+        excludes: &[],
+        fields: FIELDS_LDEORH_LDEORAH_32_MEMOP,
+        operands: OPERANDS_LDEORH_LDEORAH_32_MEMOP,
+        asm: "LDEORAH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEORH.LDEORALH_32_memop",
+        mnemonic: "LDEORALH",
+        heading: "LDEORH, LDEORAH, LDEORALH, LDEORLH",
+        title: "LDEORH, LDEORAH, LDEORALH, LDEORLH -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x78e02000,
+        excludes: &[],
+        fields: FIELDS_LDEORH_LDEORALH_32_MEMOP,
+        operands: OPERANDS_LDEORH_LDEORALH_32_MEMOP,
+        asm: "LDEORALH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDEORH.LDEORLH_32_memop",
+        mnemonic: "LDEORLH",
+        heading: "LDEORH, LDEORAH, LDEORALH, LDEORLH",
+        title: "LDEORH, LDEORAH, LDEORALH, LDEORLH -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x78602000,
+        excludes: &[],
+        fields: FIELDS_LDEORH_LDEORLH_32_MEMOP,
+        operands: OPERANDS_LDEORH_LDEORLH_32_MEMOP,
+        asm: "LDEORLH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSET.LDSET_32_memop",
+        mnemonic: "LDSET",
+        heading: "LDSET, LDSETA, LDSETAL, LDSETL",
+        title: "LDSET, LDSETA, LDSETAL, LDSETL -- A64",
+        encoding_label: "32-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xb8203000,
+        excludes: &[],
+        fields: FIELDS_LDSET_LDSET_32_MEMOP,
+        operands: OPERANDS_LDSET_LDSET_32_MEMOP,
+        asm: "LDSET <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSET.LDSETA_32_memop",
+        mnemonic: "LDSETA",
+        heading: "LDSET, LDSETA, LDSETAL, LDSETL",
+        title: "LDSET, LDSETA, LDSETAL, LDSETL -- A64",
+        encoding_label: "32-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xb8a03000,
+        excludes: &[],
+        fields: FIELDS_LDSET_LDSETA_32_MEMOP,
+        operands: OPERANDS_LDSET_LDSETA_32_MEMOP,
+        asm: "LDSETA <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSET.LDSETAL_32_memop",
+        mnemonic: "LDSETAL",
+        heading: "LDSET, LDSETA, LDSETAL, LDSETL",
+        title: "LDSET, LDSETA, LDSETAL, LDSETL -- A64",
+        encoding_label: "32-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xb8e03000,
+        excludes: &[],
+        fields: FIELDS_LDSET_LDSETAL_32_MEMOP,
+        operands: OPERANDS_LDSET_LDSETAL_32_MEMOP,
+        asm: "LDSETAL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSET.LDSETL_32_memop",
+        mnemonic: "LDSETL",
+        heading: "LDSET, LDSETA, LDSETAL, LDSETL",
+        title: "LDSET, LDSETA, LDSETAL, LDSETL -- A64",
+        encoding_label: "32-bit release",
+        mask: 0xffe0fc00,
+        value: 0xb8603000,
+        excludes: &[],
+        fields: FIELDS_LDSET_LDSETL_32_MEMOP,
+        operands: OPERANDS_LDSET_LDSETL_32_MEMOP,
+        asm: "LDSETL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSET.LDSET_64_memop",
+        mnemonic: "LDSET",
+        heading: "LDSET, LDSETA, LDSETAL, LDSETL",
+        title: "LDSET, LDSETA, LDSETAL, LDSETL -- A64",
+        encoding_label: "64-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xf8203000,
+        excludes: &[],
+        fields: FIELDS_LDSET_LDSET_64_MEMOP,
+        operands: OPERANDS_LDSET_LDSET_64_MEMOP,
+        asm: "LDSET <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSET.LDSETA_64_memop",
+        mnemonic: "LDSETA",
+        heading: "LDSET, LDSETA, LDSETAL, LDSETL",
+        title: "LDSET, LDSETA, LDSETAL, LDSETL -- A64",
+        encoding_label: "64-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xf8a03000,
+        excludes: &[],
+        fields: FIELDS_LDSET_LDSETA_64_MEMOP,
+        operands: OPERANDS_LDSET_LDSETA_64_MEMOP,
+        asm: "LDSETA <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSET.LDSETAL_64_memop",
+        mnemonic: "LDSETAL",
+        heading: "LDSET, LDSETA, LDSETAL, LDSETL",
+        title: "LDSET, LDSETA, LDSETAL, LDSETL -- A64",
+        encoding_label: "64-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xf8e03000,
+        excludes: &[],
+        fields: FIELDS_LDSET_LDSETAL_64_MEMOP,
+        operands: OPERANDS_LDSET_LDSETAL_64_MEMOP,
+        asm: "LDSETAL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSET.LDSETL_64_memop",
+        mnemonic: "LDSETL",
+        heading: "LDSET, LDSETA, LDSETAL, LDSETL",
+        title: "LDSET, LDSETA, LDSETAL, LDSETL -- A64",
+        encoding_label: "64-bit release",
+        mask: 0xffe0fc00,
+        value: 0xf8603000,
+        excludes: &[],
+        fields: FIELDS_LDSET_LDSETL_64_MEMOP,
+        operands: OPERANDS_LDSET_LDSETL_64_MEMOP,
+        asm: "LDSETL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSETB.LDSETB_32_memop",
+        mnemonic: "LDSETB",
+        heading: "LDSETB, LDSETAB, LDSETALB, LDSETLB",
+        title: "LDSETB, LDSETAB, LDSETALB, LDSETLB -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x38203000,
+        excludes: &[],
+        fields: FIELDS_LDSETB_LDSETB_32_MEMOP,
+        operands: OPERANDS_LDSETB_LDSETB_32_MEMOP,
+        asm: "LDSETB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSETB.LDSETAB_32_memop",
+        mnemonic: "LDSETAB",
+        heading: "LDSETB, LDSETAB, LDSETALB, LDSETLB",
+        title: "LDSETB, LDSETAB, LDSETALB, LDSETLB -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x38a03000,
+        excludes: &[],
+        fields: FIELDS_LDSETB_LDSETAB_32_MEMOP,
+        operands: OPERANDS_LDSETB_LDSETAB_32_MEMOP,
+        asm: "LDSETAB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSETB.LDSETALB_32_memop",
+        mnemonic: "LDSETALB",
+        heading: "LDSETB, LDSETAB, LDSETALB, LDSETLB",
+        title: "LDSETB, LDSETAB, LDSETALB, LDSETLB -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x38e03000,
+        excludes: &[],
+        fields: FIELDS_LDSETB_LDSETALB_32_MEMOP,
+        operands: OPERANDS_LDSETB_LDSETALB_32_MEMOP,
+        asm: "LDSETALB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSETB.LDSETLB_32_memop",
+        mnemonic: "LDSETLB",
+        heading: "LDSETB, LDSETAB, LDSETALB, LDSETLB",
+        title: "LDSETB, LDSETAB, LDSETALB, LDSETLB -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x38603000,
+        excludes: &[],
+        fields: FIELDS_LDSETB_LDSETLB_32_MEMOP,
+        operands: OPERANDS_LDSETB_LDSETLB_32_MEMOP,
+        asm: "LDSETLB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSETH.LDSETH_32_memop",
+        mnemonic: "LDSETH",
+        heading: "LDSETH, LDSETAH, LDSETALH, LDSETLH",
+        title: "LDSETH, LDSETAH, LDSETALH, LDSETLH -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x78203000,
+        excludes: &[],
+        fields: FIELDS_LDSETH_LDSETH_32_MEMOP,
+        operands: OPERANDS_LDSETH_LDSETH_32_MEMOP,
+        asm: "LDSETH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSETH.LDSETAH_32_memop",
+        mnemonic: "LDSETAH",
+        heading: "LDSETH, LDSETAH, LDSETALH, LDSETLH",
+        title: "LDSETH, LDSETAH, LDSETALH, LDSETLH -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x78a03000,
+        excludes: &[],
+        fields: FIELDS_LDSETH_LDSETAH_32_MEMOP,
+        operands: OPERANDS_LDSETH_LDSETAH_32_MEMOP,
+        asm: "LDSETAH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSETH.LDSETALH_32_memop",
+        mnemonic: "LDSETALH",
+        heading: "LDSETH, LDSETAH, LDSETALH, LDSETLH",
+        title: "LDSETH, LDSETAH, LDSETALH, LDSETLH -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x78e03000,
+        excludes: &[],
+        fields: FIELDS_LDSETH_LDSETALH_32_MEMOP,
+        operands: OPERANDS_LDSETH_LDSETALH_32_MEMOP,
+        asm: "LDSETALH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSETH.LDSETLH_32_memop",
+        mnemonic: "LDSETLH",
+        heading: "LDSETH, LDSETAH, LDSETALH, LDSETLH",
+        title: "LDSETH, LDSETAH, LDSETALH, LDSETLH -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x78603000,
+        excludes: &[],
+        fields: FIELDS_LDSETH_LDSETLH_32_MEMOP,
+        operands: OPERANDS_LDSETH_LDSETLH_32_MEMOP,
+        asm: "LDSETLH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAX.LDSMAX_32_memop",
+        mnemonic: "LDSMAX",
+        heading: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL",
+        title: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL -- A64",
+        encoding_label: "32-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xb8204000,
+        excludes: &[],
+        fields: FIELDS_LDSMAX_LDSMAX_32_MEMOP,
+        operands: OPERANDS_LDSMAX_LDSMAX_32_MEMOP,
+        asm: "LDSMAX <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAX.LDSMAXA_32_memop",
+        mnemonic: "LDSMAXA",
+        heading: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL",
+        title: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL -- A64",
+        encoding_label: "32-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xb8a04000,
+        excludes: &[],
+        fields: FIELDS_LDSMAX_LDSMAXA_32_MEMOP,
+        operands: OPERANDS_LDSMAX_LDSMAXA_32_MEMOP,
+        asm: "LDSMAXA <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAX.LDSMAXAL_32_memop",
+        mnemonic: "LDSMAXAL",
+        heading: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL",
+        title: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL -- A64",
+        encoding_label: "32-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xb8e04000,
+        excludes: &[],
+        fields: FIELDS_LDSMAX_LDSMAXAL_32_MEMOP,
+        operands: OPERANDS_LDSMAX_LDSMAXAL_32_MEMOP,
+        asm: "LDSMAXAL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAX.LDSMAXL_32_memop",
+        mnemonic: "LDSMAXL",
+        heading: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL",
+        title: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL -- A64",
+        encoding_label: "32-bit release",
+        mask: 0xffe0fc00,
+        value: 0xb8604000,
+        excludes: &[],
+        fields: FIELDS_LDSMAX_LDSMAXL_32_MEMOP,
+        operands: OPERANDS_LDSMAX_LDSMAXL_32_MEMOP,
+        asm: "LDSMAXL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAX.LDSMAX_64_memop",
+        mnemonic: "LDSMAX",
+        heading: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL",
+        title: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL -- A64",
+        encoding_label: "64-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xf8204000,
+        excludes: &[],
+        fields: FIELDS_LDSMAX_LDSMAX_64_MEMOP,
+        operands: OPERANDS_LDSMAX_LDSMAX_64_MEMOP,
+        asm: "LDSMAX <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAX.LDSMAXA_64_memop",
+        mnemonic: "LDSMAXA",
+        heading: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL",
+        title: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL -- A64",
+        encoding_label: "64-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xf8a04000,
+        excludes: &[],
+        fields: FIELDS_LDSMAX_LDSMAXA_64_MEMOP,
+        operands: OPERANDS_LDSMAX_LDSMAXA_64_MEMOP,
+        asm: "LDSMAXA <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAX.LDSMAXAL_64_memop",
+        mnemonic: "LDSMAXAL",
+        heading: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL",
+        title: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL -- A64",
+        encoding_label: "64-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xf8e04000,
+        excludes: &[],
+        fields: FIELDS_LDSMAX_LDSMAXAL_64_MEMOP,
+        operands: OPERANDS_LDSMAX_LDSMAXAL_64_MEMOP,
+        asm: "LDSMAXAL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAX.LDSMAXL_64_memop",
+        mnemonic: "LDSMAXL",
+        heading: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL",
+        title: "LDSMAX, LDSMAXA, LDSMAXAL, LDSMAXL -- A64",
+        encoding_label: "64-bit release",
+        mask: 0xffe0fc00,
+        value: 0xf8604000,
+        excludes: &[],
+        fields: FIELDS_LDSMAX_LDSMAXL_64_MEMOP,
+        operands: OPERANDS_LDSMAX_LDSMAXL_64_MEMOP,
+        asm: "LDSMAXL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAXB.LDSMAXB_32_memop",
+        mnemonic: "LDSMAXB",
+        heading: "LDSMAXB, LDSMAXAB, LDSMAXALB, LDSMAXLB",
+        title: "LDSMAXB, LDSMAXAB, LDSMAXALB, LDSMAXLB -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x38204000,
+        excludes: &[],
+        fields: FIELDS_LDSMAXB_LDSMAXB_32_MEMOP,
+        operands: OPERANDS_LDSMAXB_LDSMAXB_32_MEMOP,
+        asm: "LDSMAXB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAXB.LDSMAXAB_32_memop",
+        mnemonic: "LDSMAXAB",
+        heading: "LDSMAXB, LDSMAXAB, LDSMAXALB, LDSMAXLB",
+        title: "LDSMAXB, LDSMAXAB, LDSMAXALB, LDSMAXLB -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x38a04000,
+        excludes: &[],
+        fields: FIELDS_LDSMAXB_LDSMAXAB_32_MEMOP,
+        operands: OPERANDS_LDSMAXB_LDSMAXAB_32_MEMOP,
+        asm: "LDSMAXAB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAXB.LDSMAXALB_32_memop",
+        mnemonic: "LDSMAXALB",
+        heading: "LDSMAXB, LDSMAXAB, LDSMAXALB, LDSMAXLB",
+        title: "LDSMAXB, LDSMAXAB, LDSMAXALB, LDSMAXLB -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x38e04000,
+        excludes: &[],
+        fields: FIELDS_LDSMAXB_LDSMAXALB_32_MEMOP,
+        operands: OPERANDS_LDSMAXB_LDSMAXALB_32_MEMOP,
+        asm: "LDSMAXALB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAXB.LDSMAXLB_32_memop",
+        mnemonic: "LDSMAXLB",
+        heading: "LDSMAXB, LDSMAXAB, LDSMAXALB, LDSMAXLB",
+        title: "LDSMAXB, LDSMAXAB, LDSMAXALB, LDSMAXLB -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x38604000,
+        excludes: &[],
+        fields: FIELDS_LDSMAXB_LDSMAXLB_32_MEMOP,
+        operands: OPERANDS_LDSMAXB_LDSMAXLB_32_MEMOP,
+        asm: "LDSMAXLB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAXH.LDSMAXH_32_memop",
+        mnemonic: "LDSMAXH",
+        heading: "LDSMAXH, LDSMAXAH, LDSMAXALH, LDSMAXLH",
+        title: "LDSMAXH, LDSMAXAH, LDSMAXALH, LDSMAXLH -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x78204000,
+        excludes: &[],
+        fields: FIELDS_LDSMAXH_LDSMAXH_32_MEMOP,
+        operands: OPERANDS_LDSMAXH_LDSMAXH_32_MEMOP,
+        asm: "LDSMAXH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAXH.LDSMAXAH_32_memop",
+        mnemonic: "LDSMAXAH",
+        heading: "LDSMAXH, LDSMAXAH, LDSMAXALH, LDSMAXLH",
+        title: "LDSMAXH, LDSMAXAH, LDSMAXALH, LDSMAXLH -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x78a04000,
+        excludes: &[],
+        fields: FIELDS_LDSMAXH_LDSMAXAH_32_MEMOP,
+        operands: OPERANDS_LDSMAXH_LDSMAXAH_32_MEMOP,
+        asm: "LDSMAXAH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAXH.LDSMAXALH_32_memop",
+        mnemonic: "LDSMAXALH",
+        heading: "LDSMAXH, LDSMAXAH, LDSMAXALH, LDSMAXLH",
+        title: "LDSMAXH, LDSMAXAH, LDSMAXALH, LDSMAXLH -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x78e04000,
+        excludes: &[],
+        fields: FIELDS_LDSMAXH_LDSMAXALH_32_MEMOP,
+        operands: OPERANDS_LDSMAXH_LDSMAXALH_32_MEMOP,
+        asm: "LDSMAXALH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMAXH.LDSMAXLH_32_memop",
+        mnemonic: "LDSMAXLH",
+        heading: "LDSMAXH, LDSMAXAH, LDSMAXALH, LDSMAXLH",
+        title: "LDSMAXH, LDSMAXAH, LDSMAXALH, LDSMAXLH -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x78604000,
+        excludes: &[],
+        fields: FIELDS_LDSMAXH_LDSMAXLH_32_MEMOP,
+        operands: OPERANDS_LDSMAXH_LDSMAXLH_32_MEMOP,
+        asm: "LDSMAXLH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMIN.LDSMIN_32_memop",
+        mnemonic: "LDSMIN",
+        heading: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL",
+        title: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL -- A64",
+        encoding_label: "32-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xb8205000,
+        excludes: &[],
+        fields: FIELDS_LDSMIN_LDSMIN_32_MEMOP,
+        operands: OPERANDS_LDSMIN_LDSMIN_32_MEMOP,
+        asm: "LDSMIN <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMIN.LDSMINA_32_memop",
+        mnemonic: "LDSMINA",
+        heading: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL",
+        title: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL -- A64",
+        encoding_label: "32-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xb8a05000,
+        excludes: &[],
+        fields: FIELDS_LDSMIN_LDSMINA_32_MEMOP,
+        operands: OPERANDS_LDSMIN_LDSMINA_32_MEMOP,
+        asm: "LDSMINA <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMIN.LDSMINAL_32_memop",
+        mnemonic: "LDSMINAL",
+        heading: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL",
+        title: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL -- A64",
+        encoding_label: "32-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xb8e05000,
+        excludes: &[],
+        fields: FIELDS_LDSMIN_LDSMINAL_32_MEMOP,
+        operands: OPERANDS_LDSMIN_LDSMINAL_32_MEMOP,
+        asm: "LDSMINAL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMIN.LDSMINL_32_memop",
+        mnemonic: "LDSMINL",
+        heading: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL",
+        title: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL -- A64",
+        encoding_label: "32-bit release",
+        mask: 0xffe0fc00,
+        value: 0xb8605000,
+        excludes: &[],
+        fields: FIELDS_LDSMIN_LDSMINL_32_MEMOP,
+        operands: OPERANDS_LDSMIN_LDSMINL_32_MEMOP,
+        asm: "LDSMINL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMIN.LDSMIN_64_memop",
+        mnemonic: "LDSMIN",
+        heading: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL",
+        title: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL -- A64",
+        encoding_label: "64-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xf8205000,
+        excludes: &[],
+        fields: FIELDS_LDSMIN_LDSMIN_64_MEMOP,
+        operands: OPERANDS_LDSMIN_LDSMIN_64_MEMOP,
+        asm: "LDSMIN <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMIN.LDSMINA_64_memop",
+        mnemonic: "LDSMINA",
+        heading: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL",
+        title: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL -- A64",
+        encoding_label: "64-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xf8a05000,
+        excludes: &[],
+        fields: FIELDS_LDSMIN_LDSMINA_64_MEMOP,
+        operands: OPERANDS_LDSMIN_LDSMINA_64_MEMOP,
+        asm: "LDSMINA <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMIN.LDSMINAL_64_memop",
+        mnemonic: "LDSMINAL",
+        heading: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL",
+        title: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL -- A64",
+        encoding_label: "64-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xf8e05000,
+        excludes: &[],
+        fields: FIELDS_LDSMIN_LDSMINAL_64_MEMOP,
+        operands: OPERANDS_LDSMIN_LDSMINAL_64_MEMOP,
+        asm: "LDSMINAL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMIN.LDSMINL_64_memop",
+        mnemonic: "LDSMINL",
+        heading: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL",
+        title: "LDSMIN, LDSMINA, LDSMINAL, LDSMINL -- A64",
+        encoding_label: "64-bit release",
+        mask: 0xffe0fc00,
+        value: 0xf8605000,
+        excludes: &[],
+        fields: FIELDS_LDSMIN_LDSMINL_64_MEMOP,
+        operands: OPERANDS_LDSMIN_LDSMINL_64_MEMOP,
+        asm: "LDSMINL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMINB.LDSMINB_32_memop",
+        mnemonic: "LDSMINB",
+        heading: "LDSMINB, LDSMINAB, LDSMINALB, LDSMINLB",
+        title: "LDSMINB, LDSMINAB, LDSMINALB, LDSMINLB -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x38205000,
+        excludes: &[],
+        fields: FIELDS_LDSMINB_LDSMINB_32_MEMOP,
+        operands: OPERANDS_LDSMINB_LDSMINB_32_MEMOP,
+        asm: "LDSMINB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMINB.LDSMINAB_32_memop",
+        mnemonic: "LDSMINAB",
+        heading: "LDSMINB, LDSMINAB, LDSMINALB, LDSMINLB",
+        title: "LDSMINB, LDSMINAB, LDSMINALB, LDSMINLB -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x38a05000,
+        excludes: &[],
+        fields: FIELDS_LDSMINB_LDSMINAB_32_MEMOP,
+        operands: OPERANDS_LDSMINB_LDSMINAB_32_MEMOP,
+        asm: "LDSMINAB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMINB.LDSMINALB_32_memop",
+        mnemonic: "LDSMINALB",
+        heading: "LDSMINB, LDSMINAB, LDSMINALB, LDSMINLB",
+        title: "LDSMINB, LDSMINAB, LDSMINALB, LDSMINLB -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x38e05000,
+        excludes: &[],
+        fields: FIELDS_LDSMINB_LDSMINALB_32_MEMOP,
+        operands: OPERANDS_LDSMINB_LDSMINALB_32_MEMOP,
+        asm: "LDSMINALB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMINB.LDSMINLB_32_memop",
+        mnemonic: "LDSMINLB",
+        heading: "LDSMINB, LDSMINAB, LDSMINALB, LDSMINLB",
+        title: "LDSMINB, LDSMINAB, LDSMINALB, LDSMINLB -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x38605000,
+        excludes: &[],
+        fields: FIELDS_LDSMINB_LDSMINLB_32_MEMOP,
+        operands: OPERANDS_LDSMINB_LDSMINLB_32_MEMOP,
+        asm: "LDSMINLB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMINH.LDSMINH_32_memop",
+        mnemonic: "LDSMINH",
+        heading: "LDSMINH, LDSMINAH, LDSMINALH, LDSMINLH",
+        title: "LDSMINH, LDSMINAH, LDSMINALH, LDSMINLH -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x78205000,
+        excludes: &[],
+        fields: FIELDS_LDSMINH_LDSMINH_32_MEMOP,
+        operands: OPERANDS_LDSMINH_LDSMINH_32_MEMOP,
+        asm: "LDSMINH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMINH.LDSMINAH_32_memop",
+        mnemonic: "LDSMINAH",
+        heading: "LDSMINH, LDSMINAH, LDSMINALH, LDSMINLH",
+        title: "LDSMINH, LDSMINAH, LDSMINALH, LDSMINLH -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x78a05000,
+        excludes: &[],
+        fields: FIELDS_LDSMINH_LDSMINAH_32_MEMOP,
+        operands: OPERANDS_LDSMINH_LDSMINAH_32_MEMOP,
+        asm: "LDSMINAH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMINH.LDSMINALH_32_memop",
+        mnemonic: "LDSMINALH",
+        heading: "LDSMINH, LDSMINAH, LDSMINALH, LDSMINLH",
+        title: "LDSMINH, LDSMINAH, LDSMINALH, LDSMINLH -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x78e05000,
+        excludes: &[],
+        fields: FIELDS_LDSMINH_LDSMINALH_32_MEMOP,
+        operands: OPERANDS_LDSMINH_LDSMINALH_32_MEMOP,
+        asm: "LDSMINALH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDSMINH.LDSMINLH_32_memop",
+        mnemonic: "LDSMINLH",
+        heading: "LDSMINH, LDSMINAH, LDSMINALH, LDSMINLH",
+        title: "LDSMINH, LDSMINAH, LDSMINALH, LDSMINLH -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x78605000,
+        excludes: &[],
+        fields: FIELDS_LDSMINH_LDSMINLH_32_MEMOP,
+        operands: OPERANDS_LDSMINH_LDSMINLH_32_MEMOP,
+        asm: "LDSMINLH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAX.LDUMAX_32_memop",
+        mnemonic: "LDUMAX",
+        heading: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL",
+        title: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL -- A64",
+        encoding_label: "32-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xb8206000,
+        excludes: &[],
+        fields: FIELDS_LDUMAX_LDUMAX_32_MEMOP,
+        operands: OPERANDS_LDUMAX_LDUMAX_32_MEMOP,
+        asm: "LDUMAX <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAX.LDUMAXA_32_memop",
+        mnemonic: "LDUMAXA",
+        heading: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL",
+        title: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL -- A64",
+        encoding_label: "32-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xb8a06000,
+        excludes: &[],
+        fields: FIELDS_LDUMAX_LDUMAXA_32_MEMOP,
+        operands: OPERANDS_LDUMAX_LDUMAXA_32_MEMOP,
+        asm: "LDUMAXA <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAX.LDUMAXAL_32_memop",
+        mnemonic: "LDUMAXAL",
+        heading: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL",
+        title: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL -- A64",
+        encoding_label: "32-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xb8e06000,
+        excludes: &[],
+        fields: FIELDS_LDUMAX_LDUMAXAL_32_MEMOP,
+        operands: OPERANDS_LDUMAX_LDUMAXAL_32_MEMOP,
+        asm: "LDUMAXAL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAX.LDUMAXL_32_memop",
+        mnemonic: "LDUMAXL",
+        heading: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL",
+        title: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL -- A64",
+        encoding_label: "32-bit release",
+        mask: 0xffe0fc00,
+        value: 0xb8606000,
+        excludes: &[],
+        fields: FIELDS_LDUMAX_LDUMAXL_32_MEMOP,
+        operands: OPERANDS_LDUMAX_LDUMAXL_32_MEMOP,
+        asm: "LDUMAXL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAX.LDUMAX_64_memop",
+        mnemonic: "LDUMAX",
+        heading: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL",
+        title: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL -- A64",
+        encoding_label: "64-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xf8206000,
+        excludes: &[],
+        fields: FIELDS_LDUMAX_LDUMAX_64_MEMOP,
+        operands: OPERANDS_LDUMAX_LDUMAX_64_MEMOP,
+        asm: "LDUMAX <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAX.LDUMAXA_64_memop",
+        mnemonic: "LDUMAXA",
+        heading: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL",
+        title: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL -- A64",
+        encoding_label: "64-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xf8a06000,
+        excludes: &[],
+        fields: FIELDS_LDUMAX_LDUMAXA_64_MEMOP,
+        operands: OPERANDS_LDUMAX_LDUMAXA_64_MEMOP,
+        asm: "LDUMAXA <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAX.LDUMAXAL_64_memop",
+        mnemonic: "LDUMAXAL",
+        heading: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL",
+        title: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL -- A64",
+        encoding_label: "64-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xf8e06000,
+        excludes: &[],
+        fields: FIELDS_LDUMAX_LDUMAXAL_64_MEMOP,
+        operands: OPERANDS_LDUMAX_LDUMAXAL_64_MEMOP,
+        asm: "LDUMAXAL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAX.LDUMAXL_64_memop",
+        mnemonic: "LDUMAXL",
+        heading: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL",
+        title: "LDUMAX, LDUMAXA, LDUMAXAL, LDUMAXL -- A64",
+        encoding_label: "64-bit release",
+        mask: 0xffe0fc00,
+        value: 0xf8606000,
+        excludes: &[],
+        fields: FIELDS_LDUMAX_LDUMAXL_64_MEMOP,
+        operands: OPERANDS_LDUMAX_LDUMAXL_64_MEMOP,
+        asm: "LDUMAXL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAXB.LDUMAXB_32_memop",
+        mnemonic: "LDUMAXB",
+        heading: "LDUMAXB, LDUMAXAB, LDUMAXALB, LDUMAXLB",
+        title: "LDUMAXB, LDUMAXAB, LDUMAXALB, LDUMAXLB -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x38206000,
+        excludes: &[],
+        fields: FIELDS_LDUMAXB_LDUMAXB_32_MEMOP,
+        operands: OPERANDS_LDUMAXB_LDUMAXB_32_MEMOP,
+        asm: "LDUMAXB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAXB.LDUMAXAB_32_memop",
+        mnemonic: "LDUMAXAB",
+        heading: "LDUMAXB, LDUMAXAB, LDUMAXALB, LDUMAXLB",
+        title: "LDUMAXB, LDUMAXAB, LDUMAXALB, LDUMAXLB -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x38a06000,
+        excludes: &[],
+        fields: FIELDS_LDUMAXB_LDUMAXAB_32_MEMOP,
+        operands: OPERANDS_LDUMAXB_LDUMAXAB_32_MEMOP,
+        asm: "LDUMAXAB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAXB.LDUMAXALB_32_memop",
+        mnemonic: "LDUMAXALB",
+        heading: "LDUMAXB, LDUMAXAB, LDUMAXALB, LDUMAXLB",
+        title: "LDUMAXB, LDUMAXAB, LDUMAXALB, LDUMAXLB -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x38e06000,
+        excludes: &[],
+        fields: FIELDS_LDUMAXB_LDUMAXALB_32_MEMOP,
+        operands: OPERANDS_LDUMAXB_LDUMAXALB_32_MEMOP,
+        asm: "LDUMAXALB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAXB.LDUMAXLB_32_memop",
+        mnemonic: "LDUMAXLB",
+        heading: "LDUMAXB, LDUMAXAB, LDUMAXALB, LDUMAXLB",
+        title: "LDUMAXB, LDUMAXAB, LDUMAXALB, LDUMAXLB -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x38606000,
+        excludes: &[],
+        fields: FIELDS_LDUMAXB_LDUMAXLB_32_MEMOP,
+        operands: OPERANDS_LDUMAXB_LDUMAXLB_32_MEMOP,
+        asm: "LDUMAXLB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAXH.LDUMAXH_32_memop",
+        mnemonic: "LDUMAXH",
+        heading: "LDUMAXH, LDUMAXAH, LDUMAXALH, LDUMAXLH",
+        title: "LDUMAXH, LDUMAXAH, LDUMAXALH, LDUMAXLH -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x78206000,
+        excludes: &[],
+        fields: FIELDS_LDUMAXH_LDUMAXH_32_MEMOP,
+        operands: OPERANDS_LDUMAXH_LDUMAXH_32_MEMOP,
+        asm: "LDUMAXH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAXH.LDUMAXAH_32_memop",
+        mnemonic: "LDUMAXAH",
+        heading: "LDUMAXH, LDUMAXAH, LDUMAXALH, LDUMAXLH",
+        title: "LDUMAXH, LDUMAXAH, LDUMAXALH, LDUMAXLH -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x78a06000,
+        excludes: &[],
+        fields: FIELDS_LDUMAXH_LDUMAXAH_32_MEMOP,
+        operands: OPERANDS_LDUMAXH_LDUMAXAH_32_MEMOP,
+        asm: "LDUMAXAH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAXH.LDUMAXALH_32_memop",
+        mnemonic: "LDUMAXALH",
+        heading: "LDUMAXH, LDUMAXAH, LDUMAXALH, LDUMAXLH",
+        title: "LDUMAXH, LDUMAXAH, LDUMAXALH, LDUMAXLH -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x78e06000,
+        excludes: &[],
+        fields: FIELDS_LDUMAXH_LDUMAXALH_32_MEMOP,
+        operands: OPERANDS_LDUMAXH_LDUMAXALH_32_MEMOP,
+        asm: "LDUMAXALH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMAXH.LDUMAXLH_32_memop",
+        mnemonic: "LDUMAXLH",
+        heading: "LDUMAXH, LDUMAXAH, LDUMAXALH, LDUMAXLH",
+        title: "LDUMAXH, LDUMAXAH, LDUMAXALH, LDUMAXLH -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x78606000,
+        excludes: &[],
+        fields: FIELDS_LDUMAXH_LDUMAXLH_32_MEMOP,
+        operands: OPERANDS_LDUMAXH_LDUMAXLH_32_MEMOP,
+        asm: "LDUMAXLH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMIN.LDUMIN_32_memop",
+        mnemonic: "LDUMIN",
+        heading: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL",
+        title: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL -- A64",
+        encoding_label: "32-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xb8207000,
+        excludes: &[],
+        fields: FIELDS_LDUMIN_LDUMIN_32_MEMOP,
+        operands: OPERANDS_LDUMIN_LDUMIN_32_MEMOP,
+        asm: "LDUMIN <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMIN.LDUMINA_32_memop",
+        mnemonic: "LDUMINA",
+        heading: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL",
+        title: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL -- A64",
+        encoding_label: "32-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xb8a07000,
+        excludes: &[],
+        fields: FIELDS_LDUMIN_LDUMINA_32_MEMOP,
+        operands: OPERANDS_LDUMIN_LDUMINA_32_MEMOP,
+        asm: "LDUMINA <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMIN.LDUMINAL_32_memop",
+        mnemonic: "LDUMINAL",
+        heading: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL",
+        title: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL -- A64",
+        encoding_label: "32-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xb8e07000,
+        excludes: &[],
+        fields: FIELDS_LDUMIN_LDUMINAL_32_MEMOP,
+        operands: OPERANDS_LDUMIN_LDUMINAL_32_MEMOP,
+        asm: "LDUMINAL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMIN.LDUMINL_32_memop",
+        mnemonic: "LDUMINL",
+        heading: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL",
+        title: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL -- A64",
+        encoding_label: "32-bit release",
+        mask: 0xffe0fc00,
+        value: 0xb8607000,
+        excludes: &[],
+        fields: FIELDS_LDUMIN_LDUMINL_32_MEMOP,
+        operands: OPERANDS_LDUMIN_LDUMINL_32_MEMOP,
+        asm: "LDUMINL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMIN.LDUMIN_64_memop",
+        mnemonic: "LDUMIN",
+        heading: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL",
+        title: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL -- A64",
+        encoding_label: "64-bit no memory ordering",
+        mask: 0xffe0fc00,
+        value: 0xf8207000,
+        excludes: &[],
+        fields: FIELDS_LDUMIN_LDUMIN_64_MEMOP,
+        operands: OPERANDS_LDUMIN_LDUMIN_64_MEMOP,
+        asm: "LDUMIN <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMIN.LDUMINA_64_memop",
+        mnemonic: "LDUMINA",
+        heading: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL",
+        title: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL -- A64",
+        encoding_label: "64-bit acquire",
+        mask: 0xffe0fc00,
+        value: 0xf8a07000,
+        excludes: &[],
+        fields: FIELDS_LDUMIN_LDUMINA_64_MEMOP,
+        operands: OPERANDS_LDUMIN_LDUMINA_64_MEMOP,
+        asm: "LDUMINA <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMIN.LDUMINAL_64_memop",
+        mnemonic: "LDUMINAL",
+        heading: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL",
+        title: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL -- A64",
+        encoding_label: "64-bit acquire-release",
+        mask: 0xffe0fc00,
+        value: 0xf8e07000,
+        excludes: &[],
+        fields: FIELDS_LDUMIN_LDUMINAL_64_MEMOP,
+        operands: OPERANDS_LDUMIN_LDUMINAL_64_MEMOP,
+        asm: "LDUMINAL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMIN.LDUMINL_64_memop",
+        mnemonic: "LDUMINL",
+        heading: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL",
+        title: "LDUMIN, LDUMINA, LDUMINAL, LDUMINL -- A64",
+        encoding_label: "64-bit release",
+        mask: 0xffe0fc00,
+        value: 0xf8607000,
+        excludes: &[],
+        fields: FIELDS_LDUMIN_LDUMINL_64_MEMOP,
+        operands: OPERANDS_LDUMIN_LDUMINL_64_MEMOP,
+        asm: "LDUMINL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMINB.LDUMINB_32_memop",
+        mnemonic: "LDUMINB",
+        heading: "LDUMINB, LDUMINAB, LDUMINALB, LDUMINLB",
+        title: "LDUMINB, LDUMINAB, LDUMINALB, LDUMINLB -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x38207000,
+        excludes: &[],
+        fields: FIELDS_LDUMINB_LDUMINB_32_MEMOP,
+        operands: OPERANDS_LDUMINB_LDUMINB_32_MEMOP,
+        asm: "LDUMINB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMINB.LDUMINAB_32_memop",
+        mnemonic: "LDUMINAB",
+        heading: "LDUMINB, LDUMINAB, LDUMINALB, LDUMINLB",
+        title: "LDUMINB, LDUMINAB, LDUMINALB, LDUMINLB -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x38a07000,
+        excludes: &[],
+        fields: FIELDS_LDUMINB_LDUMINAB_32_MEMOP,
+        operands: OPERANDS_LDUMINB_LDUMINAB_32_MEMOP,
+        asm: "LDUMINAB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMINB.LDUMINALB_32_memop",
+        mnemonic: "LDUMINALB",
+        heading: "LDUMINB, LDUMINAB, LDUMINALB, LDUMINLB",
+        title: "LDUMINB, LDUMINAB, LDUMINALB, LDUMINLB -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x38e07000,
+        excludes: &[],
+        fields: FIELDS_LDUMINB_LDUMINALB_32_MEMOP,
+        operands: OPERANDS_LDUMINB_LDUMINALB_32_MEMOP,
+        asm: "LDUMINALB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMINB.LDUMINLB_32_memop",
+        mnemonic: "LDUMINLB",
+        heading: "LDUMINB, LDUMINAB, LDUMINALB, LDUMINLB",
+        title: "LDUMINB, LDUMINAB, LDUMINALB, LDUMINLB -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x38607000,
+        excludes: &[],
+        fields: FIELDS_LDUMINB_LDUMINLB_32_MEMOP,
+        operands: OPERANDS_LDUMINB_LDUMINLB_32_MEMOP,
+        asm: "LDUMINLB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMINH.LDUMINH_32_memop",
+        mnemonic: "LDUMINH",
+        heading: "LDUMINH, LDUMINAH, LDUMINALH, LDUMINLH",
+        title: "LDUMINH, LDUMINAH, LDUMINALH, LDUMINLH -- A64",
+        encoding_label: "No memory ordering",
+        mask: 0xffe0fc00,
+        value: 0x78207000,
+        excludes: &[],
+        fields: FIELDS_LDUMINH_LDUMINH_32_MEMOP,
+        operands: OPERANDS_LDUMINH_LDUMINH_32_MEMOP,
+        asm: "LDUMINH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMINH.LDUMINAH_32_memop",
+        mnemonic: "LDUMINAH",
+        heading: "LDUMINH, LDUMINAH, LDUMINALH, LDUMINLH",
+        title: "LDUMINH, LDUMINAH, LDUMINALH, LDUMINLH -- A64",
+        encoding_label: "Acquire",
+        mask: 0xffe0fc00,
+        value: 0x78a07000,
+        excludes: &[],
+        fields: FIELDS_LDUMINH_LDUMINAH_32_MEMOP,
+        operands: OPERANDS_LDUMINH_LDUMINAH_32_MEMOP,
+        asm: "LDUMINAH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMINH.LDUMINALH_32_memop",
+        mnemonic: "LDUMINALH",
+        heading: "LDUMINH, LDUMINAH, LDUMINALH, LDUMINLH",
+        title: "LDUMINH, LDUMINAH, LDUMINALH, LDUMINLH -- A64",
+        encoding_label: "Acquire-release",
+        mask: 0xffe0fc00,
+        value: 0x78e07000,
+        excludes: &[],
+        fields: FIELDS_LDUMINH_LDUMINALH_32_MEMOP,
+        operands: OPERANDS_LDUMINH_LDUMINALH_32_MEMOP,
+        asm: "LDUMINALH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "LDUMINH.LDUMINLH_32_memop",
+        mnemonic: "LDUMINLH",
+        heading: "LDUMINH, LDUMINAH, LDUMINALH, LDUMINLH",
+        title: "LDUMINH, LDUMINAH, LDUMINALH, LDUMINLH -- A64",
+        encoding_label: "Release",
+        mask: 0xffe0fc00,
+        value: 0x78607000,
+        excludes: &[],
+        fields: FIELDS_LDUMINH_LDUMINLH_32_MEMOP,
+        operands: OPERANDS_LDUMINH_LDUMINLH_32_MEMOP,
+        asm: "LDUMINLH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWP.SWP_32_memop",
+        mnemonic: "SWP",
+        heading: "SWP, SWPA, SWPAL, SWPL",
+        title: "SWP, SWPA, SWPAL, SWPL -- A64",
+        encoding_label: "32-bit SWP",
+        mask: 0xffe0fc00,
+        value: 0xb8208000,
+        excludes: &[],
+        fields: FIELDS_SWP_SWP_32_MEMOP,
+        operands: OPERANDS_SWP_SWP_32_MEMOP,
+        asm: "SWP <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWP.SWPA_32_memop",
+        mnemonic: "SWPA",
+        heading: "SWP, SWPA, SWPAL, SWPL",
+        title: "SWP, SWPA, SWPAL, SWPL -- A64",
+        encoding_label: "32-bit SWPA",
+        mask: 0xffe0fc00,
+        value: 0xb8a08000,
+        excludes: &[],
+        fields: FIELDS_SWP_SWPA_32_MEMOP,
+        operands: OPERANDS_SWP_SWPA_32_MEMOP,
+        asm: "SWPA <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWP.SWPAL_32_memop",
+        mnemonic: "SWPAL",
+        heading: "SWP, SWPA, SWPAL, SWPL",
+        title: "SWP, SWPA, SWPAL, SWPL -- A64",
+        encoding_label: "32-bit SWPAL",
+        mask: 0xffe0fc00,
+        value: 0xb8e08000,
+        excludes: &[],
+        fields: FIELDS_SWP_SWPAL_32_MEMOP,
+        operands: OPERANDS_SWP_SWPAL_32_MEMOP,
+        asm: "SWPAL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWP.SWPL_32_memop",
+        mnemonic: "SWPL",
+        heading: "SWP, SWPA, SWPAL, SWPL",
+        title: "SWP, SWPA, SWPAL, SWPL -- A64",
+        encoding_label: "32-bit SWPL",
+        mask: 0xffe0fc00,
+        value: 0xb8608000,
+        excludes: &[],
+        fields: FIELDS_SWP_SWPL_32_MEMOP,
+        operands: OPERANDS_SWP_SWPL_32_MEMOP,
+        asm: "SWPL <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWP.SWP_64_memop",
+        mnemonic: "SWP",
+        heading: "SWP, SWPA, SWPAL, SWPL",
+        title: "SWP, SWPA, SWPAL, SWPL -- A64",
+        encoding_label: "64-bit SWP",
+        mask: 0xffe0fc00,
+        value: 0xf8208000,
+        excludes: &[],
+        fields: FIELDS_SWP_SWP_64_MEMOP,
+        operands: OPERANDS_SWP_SWP_64_MEMOP,
+        asm: "SWP <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWP.SWPA_64_memop",
+        mnemonic: "SWPA",
+        heading: "SWP, SWPA, SWPAL, SWPL",
+        title: "SWP, SWPA, SWPAL, SWPL -- A64",
+        encoding_label: "64-bit SWPA",
+        mask: 0xffe0fc00,
+        value: 0xf8a08000,
+        excludes: &[],
+        fields: FIELDS_SWP_SWPA_64_MEMOP,
+        operands: OPERANDS_SWP_SWPA_64_MEMOP,
+        asm: "SWPA <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWP.SWPAL_64_memop",
+        mnemonic: "SWPAL",
+        heading: "SWP, SWPA, SWPAL, SWPL",
+        title: "SWP, SWPA, SWPAL, SWPL -- A64",
+        encoding_label: "64-bit SWPAL",
+        mask: 0xffe0fc00,
+        value: 0xf8e08000,
+        excludes: &[],
+        fields: FIELDS_SWP_SWPAL_64_MEMOP,
+        operands: OPERANDS_SWP_SWPAL_64_MEMOP,
+        asm: "SWPAL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWP.SWPL_64_memop",
+        mnemonic: "SWPL",
+        heading: "SWP, SWPA, SWPAL, SWPL",
+        title: "SWP, SWPA, SWPAL, SWPL -- A64",
+        encoding_label: "64-bit SWPL",
+        mask: 0xffe0fc00,
+        value: 0xf8608000,
+        excludes: &[],
+        fields: FIELDS_SWP_SWPL_64_MEMOP,
+        operands: OPERANDS_SWP_SWPL_64_MEMOP,
+        asm: "SWPL <Xs> , <Xt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWPB.SWPB_32_memop",
+        mnemonic: "SWPB",
+        heading: "SWPB, SWPAB, SWPALB, SWPLB",
+        title: "SWPB, SWPAB, SWPALB, SWPLB -- A64",
+        encoding_label: "SWPB",
+        mask: 0xffe0fc00,
+        value: 0x38208000,
+        excludes: &[],
+        fields: FIELDS_SWPB_SWPB_32_MEMOP,
+        operands: OPERANDS_SWPB_SWPB_32_MEMOP,
+        asm: "SWPB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWPB.SWPAB_32_memop",
+        mnemonic: "SWPAB",
+        heading: "SWPB, SWPAB, SWPALB, SWPLB",
+        title: "SWPB, SWPAB, SWPALB, SWPLB -- A64",
+        encoding_label: "SWPAB",
+        mask: 0xffe0fc00,
+        value: 0x38a08000,
+        excludes: &[],
+        fields: FIELDS_SWPB_SWPAB_32_MEMOP,
+        operands: OPERANDS_SWPB_SWPAB_32_MEMOP,
+        asm: "SWPAB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWPB.SWPALB_32_memop",
+        mnemonic: "SWPALB",
+        heading: "SWPB, SWPAB, SWPALB, SWPLB",
+        title: "SWPB, SWPAB, SWPALB, SWPLB -- A64",
+        encoding_label: "SWPALB",
+        mask: 0xffe0fc00,
+        value: 0x38e08000,
+        excludes: &[],
+        fields: FIELDS_SWPB_SWPALB_32_MEMOP,
+        operands: OPERANDS_SWPB_SWPALB_32_MEMOP,
+        asm: "SWPALB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWPB.SWPLB_32_memop",
+        mnemonic: "SWPLB",
+        heading: "SWPB, SWPAB, SWPALB, SWPLB",
+        title: "SWPB, SWPAB, SWPALB, SWPLB -- A64",
+        encoding_label: "SWPLB",
+        mask: 0xffe0fc00,
+        value: 0x38608000,
+        excludes: &[],
+        fields: FIELDS_SWPB_SWPLB_32_MEMOP,
+        operands: OPERANDS_SWPB_SWPLB_32_MEMOP,
+        asm: "SWPLB <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWPH.SWPH_32_memop",
+        mnemonic: "SWPH",
+        heading: "SWPH, SWPAH, SWPALH, SWPLH",
+        title: "SWPH, SWPAH, SWPALH, SWPLH -- A64",
+        encoding_label: "SWPH",
+        mask: 0xffe0fc00,
+        value: 0x78208000,
+        excludes: &[],
+        fields: FIELDS_SWPH_SWPH_32_MEMOP,
+        operands: OPERANDS_SWPH_SWPH_32_MEMOP,
+        asm: "SWPH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWPH.SWPAH_32_memop",
+        mnemonic: "SWPAH",
+        heading: "SWPH, SWPAH, SWPALH, SWPLH",
+        title: "SWPH, SWPAH, SWPALH, SWPLH -- A64",
+        encoding_label: "SWPAH",
+        mask: 0xffe0fc00,
+        value: 0x78a08000,
+        excludes: &[],
+        fields: FIELDS_SWPH_SWPAH_32_MEMOP,
+        operands: OPERANDS_SWPH_SWPAH_32_MEMOP,
+        asm: "SWPAH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWPH.SWPALH_32_memop",
+        mnemonic: "SWPALH",
+        heading: "SWPH, SWPAH, SWPALH, SWPLH",
+        title: "SWPH, SWPAH, SWPALH, SWPLH -- A64",
+        encoding_label: "SWPALH",
+        mask: 0xffe0fc00,
+        value: 0x78e08000,
+        excludes: &[],
+        fields: FIELDS_SWPH_SWPALH_32_MEMOP,
+        operands: OPERANDS_SWPH_SWPALH_32_MEMOP,
+        asm: "SWPALH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "SWPH.SWPLH_32_memop",
+        mnemonic: "SWPLH",
+        heading: "SWPH, SWPAH, SWPALH, SWPLH",
+        title: "SWPH, SWPAH, SWPALH, SWPLH -- A64",
+        encoding_label: "SWPLH",
+        mask: 0xffe0fc00,
+        value: 0x78608000,
+        excludes: &[],
+        fields: FIELDS_SWPH_SWPLH_32_MEMOP,
+        operands: OPERANDS_SWPH_SWPLH_32_MEMOP,
+        asm: "SWPLH <Ws> , <Wt> , [ <Xn|SP> ]",
+    },
+    GeneratedInsnSpec {
+        key: "CAS.CAS_C32_comswap",
+        mnemonic: "CAS",
+        heading: "CAS, CASA, CASAL, CASL",
+        title: "CAS, CASA, CASAL, CASL -- A64",
+        encoding_label: "32-bit CAS",
+        mask: 0xffe0fc00,
+        value: 0x88a07c00,
+        excludes: &[],
+        fields: FIELDS_CAS_CAS_C32_COMSWAP,
+        operands: OPERANDS_CAS_CAS_C32_COMSWAP,
+        asm: "CAS <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CAS.CASA_C32_comswap",
+        mnemonic: "CASA",
+        heading: "CAS, CASA, CASAL, CASL",
+        title: "CAS, CASA, CASAL, CASL -- A64",
+        encoding_label: "32-bit CASA",
+        mask: 0xffe0fc00,
+        value: 0x88e07c00,
+        excludes: &[],
+        fields: FIELDS_CAS_CASA_C32_COMSWAP,
+        operands: OPERANDS_CAS_CASA_C32_COMSWAP,
+        asm: "CASA <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CAS.CASAL_C32_comswap",
+        mnemonic: "CASAL",
+        heading: "CAS, CASA, CASAL, CASL",
+        title: "CAS, CASA, CASAL, CASL -- A64",
+        encoding_label: "32-bit CASAL",
+        mask: 0xffe0fc00,
+        value: 0x88e0fc00,
+        excludes: &[],
+        fields: FIELDS_CAS_CASAL_C32_COMSWAP,
+        operands: OPERANDS_CAS_CASAL_C32_COMSWAP,
+        asm: "CASAL <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CAS.CASL_C32_comswap",
+        mnemonic: "CASL",
+        heading: "CAS, CASA, CASAL, CASL",
+        title: "CAS, CASA, CASAL, CASL -- A64",
+        encoding_label: "32-bit CASL",
+        mask: 0xffe0fc00,
+        value: 0x88a0fc00,
+        excludes: &[],
+        fields: FIELDS_CAS_CASL_C32_COMSWAP,
+        operands: OPERANDS_CAS_CASL_C32_COMSWAP,
+        asm: "CASL <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CAS.CAS_C64_comswap",
+        mnemonic: "CAS",
+        heading: "CAS, CASA, CASAL, CASL",
+        title: "CAS, CASA, CASAL, CASL -- A64",
+        encoding_label: "64-bit CAS",
+        mask: 0xffe0fc00,
+        value: 0xc8a07c00,
+        excludes: &[],
+        fields: FIELDS_CAS_CAS_C64_COMSWAP,
+        operands: OPERANDS_CAS_CAS_C64_COMSWAP,
+        asm: "CAS <Xs> , <Xt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CAS.CASA_C64_comswap",
+        mnemonic: "CASA",
+        heading: "CAS, CASA, CASAL, CASL",
+        title: "CAS, CASA, CASAL, CASL -- A64",
+        encoding_label: "64-bit CASA",
+        mask: 0xffe0fc00,
+        value: 0xc8e07c00,
+        excludes: &[],
+        fields: FIELDS_CAS_CASA_C64_COMSWAP,
+        operands: OPERANDS_CAS_CASA_C64_COMSWAP,
+        asm: "CASA <Xs> , <Xt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CAS.CASAL_C64_comswap",
+        mnemonic: "CASAL",
+        heading: "CAS, CASA, CASAL, CASL",
+        title: "CAS, CASA, CASAL, CASL -- A64",
+        encoding_label: "64-bit CASAL",
+        mask: 0xffe0fc00,
+        value: 0xc8e0fc00,
+        excludes: &[],
+        fields: FIELDS_CAS_CASAL_C64_COMSWAP,
+        operands: OPERANDS_CAS_CASAL_C64_COMSWAP,
+        asm: "CASAL <Xs> , <Xt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CAS.CASL_C64_comswap",
+        mnemonic: "CASL",
+        heading: "CAS, CASA, CASAL, CASL",
+        title: "CAS, CASA, CASAL, CASL -- A64",
+        encoding_label: "64-bit CASL",
+        mask: 0xffe0fc00,
+        value: 0xc8a0fc00,
+        excludes: &[],
+        fields: FIELDS_CAS_CASL_C64_COMSWAP,
+        operands: OPERANDS_CAS_CASL_C64_COMSWAP,
+        asm: "CASL <Xs> , <Xt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CASB.CASB_C32_comswap",
+        mnemonic: "CASB",
+        heading: "CASB, CASAB, CASALB, CASLB",
+        title: "CASB, CASAB, CASALB, CASLB -- A64",
+        encoding_label: "CASB",
+        mask: 0xffe0fc00,
+        value: 0x08a07c00,
+        excludes: &[],
+        fields: FIELDS_CASB_CASB_C32_COMSWAP,
+        operands: OPERANDS_CASB_CASB_C32_COMSWAP,
+        asm: "CASB <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CASB.CASAB_C32_comswap",
+        mnemonic: "CASAB",
+        heading: "CASB, CASAB, CASALB, CASLB",
+        title: "CASB, CASAB, CASALB, CASLB -- A64",
+        encoding_label: "CASAB",
+        mask: 0xffe0fc00,
+        value: 0x08e07c00,
+        excludes: &[],
+        fields: FIELDS_CASB_CASAB_C32_COMSWAP,
+        operands: OPERANDS_CASB_CASAB_C32_COMSWAP,
+        asm: "CASAB <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CASB.CASALB_C32_comswap",
+        mnemonic: "CASALB",
+        heading: "CASB, CASAB, CASALB, CASLB",
+        title: "CASB, CASAB, CASALB, CASLB -- A64",
+        encoding_label: "CASALB",
+        mask: 0xffe0fc00,
+        value: 0x08e0fc00,
+        excludes: &[],
+        fields: FIELDS_CASB_CASALB_C32_COMSWAP,
+        operands: OPERANDS_CASB_CASALB_C32_COMSWAP,
+        asm: "CASALB <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CASB.CASLB_C32_comswap",
+        mnemonic: "CASLB",
+        heading: "CASB, CASAB, CASALB, CASLB",
+        title: "CASB, CASAB, CASALB, CASLB -- A64",
+        encoding_label: "CASLB",
+        mask: 0xffe0fc00,
+        value: 0x08a0fc00,
+        excludes: &[],
+        fields: FIELDS_CASB_CASLB_C32_COMSWAP,
+        operands: OPERANDS_CASB_CASLB_C32_COMSWAP,
+        asm: "CASLB <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CASH.CASH_C32_comswap",
+        mnemonic: "CASH",
+        heading: "CASH, CASAH, CASALH, CASLH",
+        title: "CASH, CASAH, CASALH, CASLH -- A64",
+        encoding_label: "CASH",
+        mask: 0xffe0fc00,
+        value: 0x48a07c00,
+        excludes: &[],
+        fields: FIELDS_CASH_CASH_C32_COMSWAP,
+        operands: OPERANDS_CASH_CASH_C32_COMSWAP,
+        asm: "CASH <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CASH.CASAH_C32_comswap",
+        mnemonic: "CASAH",
+        heading: "CASH, CASAH, CASALH, CASLH",
+        title: "CASH, CASAH, CASALH, CASLH -- A64",
+        encoding_label: "CASAH",
+        mask: 0xffe0fc00,
+        value: 0x48e07c00,
+        excludes: &[],
+        fields: FIELDS_CASH_CASAH_C32_COMSWAP,
+        operands: OPERANDS_CASH_CASAH_C32_COMSWAP,
+        asm: "CASAH <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CASH.CASALH_C32_comswap",
+        mnemonic: "CASALH",
+        heading: "CASH, CASAH, CASALH, CASLH",
+        title: "CASH, CASAH, CASALH, CASLH -- A64",
+        encoding_label: "CASALH",
+        mask: 0xffe0fc00,
+        value: 0x48e0fc00,
+        excludes: &[],
+        fields: FIELDS_CASH_CASALH_C32_COMSWAP,
+        operands: OPERANDS_CASH_CASALH_C32_COMSWAP,
+        asm: "CASALH <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "CASH.CASLH_C32_comswap",
+        mnemonic: "CASLH",
+        heading: "CASH, CASAH, CASALH, CASLH",
+        title: "CASH, CASAH, CASALH, CASLH -- A64",
+        encoding_label: "CASLH",
+        mask: 0xffe0fc00,
+        value: 0x48a0fc00,
+        excludes: &[],
+        fields: FIELDS_CASH_CASLH_C32_COMSWAP,
+        operands: OPERANDS_CASH_CASLH_C32_COMSWAP,
+        asm: "CASLH <Ws> , <Wt> , [ <Xn|SP> {, #0}]",
+    },
+    GeneratedInsnSpec {
+        key: "MSR_imm.MSR_SI_pstate",
+        mnemonic: "MSR",
+        heading: "MSR (immediate)",
+        title: "MSR (immediate) -- A64",
+        encoding_label: "",
+        mask: 0xfffff0ff,
+        value: 0xd500409f,
+        excludes: &[],
+        fields: FIELDS_MSR_IMM_MSR_SI_PSTATE,
+        operands: OPERANDS_MSR_IMM_MSR_SI_PSTATE,
+        asm: "MSR <pstatefield> , # <imm>",
     },
 ];
 

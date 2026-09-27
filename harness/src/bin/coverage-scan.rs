@@ -437,6 +437,9 @@ fn reg_virt_err_info(err: RegVirtError) -> ErrInfo {
             Some(insn),
             String::new(),
         ),
+        RegVirtError::PanUserForm { pc, insn } => {
+            ("PanUserForm", Some(pc), Some(insn), String::new())
+        }
         RegVirtError::UnencodableMemOffset { pc, insn, offset } => (
             "UnencodableMemOffset",
             Some(pc),
@@ -501,6 +504,13 @@ fn layout_err_info(err: LayoutError) -> ErrInfo {
         LayoutError::DuplicateFaultStub { ori_pc } => {
             ("DuplicateFaultStub", format!("pc={ori_pc:#x}"))
         }
+        LayoutError::UntaggedPanWindow { insn_index } => {
+            ("UntaggedPanWindow", format!("insn_index={insn_index}"))
+        }
+        LayoutError::MissingPanStub { insn_index, ori_pc } => (
+            "MissingPanStub",
+            format!("insn_index={insn_index} pc={ori_pc:#x}"),
+        ),
         LayoutError::MissingBudgetStub { insn_index, ori_pc } => (
             "MissingBudgetStub",
             format!("insn_index={insn_index} pc={ori_pc:#x}"),

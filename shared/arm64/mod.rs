@@ -102,6 +102,37 @@ impl fmt::Display for DecodeError {
     }
 }
 
+/// The operation of an LSE single-register atomic (A8): `LD<op>` (the old value
+/// is returned, `mem = mem <op> Rs`), `SWP` (`mem = Rs`) and `CAS` (`mem = Rt` if
+/// `mem == Rs`; `Rs` receives the old value).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum A64AtomicOp {
+    Add,
+    /// Bit clear: `mem AND NOT(Rs)`.
+    Clr,
+    Eor,
+    /// Bit set: `mem OR Rs`.
+    Set,
+    Smax,
+    Smin,
+    Umax,
+    Umin,
+    Swp,
+    Cas,
+}
+
+/// An LSE single-register atomic (`LD<op>`, `SWP`, `CAS`, every size and A/L/AL
+/// variant; `ST<op>` is `LD<op>` with `Rt` = XZR). `size` is the access size in
+/// bytes (1, 2, 4, 8); `rn` is the base (`<Xn|SP>`, no offset, no writeback).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct A64Atomic {
+    pub op: A64AtomicOp,
+    pub size: u8,
+    pub rs: A64Reg,
+    pub rt: A64Reg,
+    pub rn: A64Reg,
+}
+
 impl A64Insn {
     pub fn pc_relative_address(self, pc: u64) -> Option<u64> {
         match self {
@@ -187,6 +218,192 @@ impl A64Insn {
                 | Self::SttrbSttrb32LdstUnpriv { .. }
                 | Self::SttrhSttrh32LdstUnpriv { .. }
         )
+    }
+
+    /// The LSE single-register atomics (A8): the only forms a fragment runs as a
+    /// privileged access to user memory, inside a PAN window (tmp/pipeline.md, "A8
+    /// contract"). Pinned by a test against the generated mnemonics.
+    pub const fn lse_atomic(self) -> Option<A64Atomic> {
+        let (op, size, rs, rt, rn) = match self {
+            Self::LdaddLdadd32Memop { rs, rn, rt }
+            | Self::LdaddLdadda32Memop { rs, rn, rt }
+            | Self::LdaddLdaddal32Memop { rs, rn, rt }
+            | Self::LdaddLdaddl32Memop { rs, rn, rt } => (A64AtomicOp::Add, 4, rs, rt, rn),
+            Self::LdaddLdadd64Memop { rs, rn, rt }
+            | Self::LdaddLdadda64Memop { rs, rn, rt }
+            | Self::LdaddLdaddal64Memop { rs, rn, rt }
+            | Self::LdaddLdaddl64Memop { rs, rn, rt } => (A64AtomicOp::Add, 8, rs, rt, rn),
+            Self::LdaddbLdaddb32Memop { rs, rn, rt }
+            | Self::LdaddbLdaddab32Memop { rs, rn, rt }
+            | Self::LdaddbLdaddalb32Memop { rs, rn, rt }
+            | Self::LdaddbLdaddlb32Memop { rs, rn, rt } => (A64AtomicOp::Add, 1, rs, rt, rn),
+            Self::LdaddhLdaddh32Memop { rs, rn, rt }
+            | Self::LdaddhLdaddah32Memop { rs, rn, rt }
+            | Self::LdaddhLdaddalh32Memop { rs, rn, rt }
+            | Self::LdaddhLdaddlh32Memop { rs, rn, rt } => (A64AtomicOp::Add, 2, rs, rt, rn),
+            Self::LdclrLdclr32Memop { rs, rn, rt }
+            | Self::LdclrLdclra32Memop { rs, rn, rt }
+            | Self::LdclrLdclral32Memop { rs, rn, rt }
+            | Self::LdclrLdclrl32Memop { rs, rn, rt } => (A64AtomicOp::Clr, 4, rs, rt, rn),
+            Self::LdclrLdclr64Memop { rs, rn, rt }
+            | Self::LdclrLdclra64Memop { rs, rn, rt }
+            | Self::LdclrLdclral64Memop { rs, rn, rt }
+            | Self::LdclrLdclrl64Memop { rs, rn, rt } => (A64AtomicOp::Clr, 8, rs, rt, rn),
+            Self::LdclrbLdclrb32Memop { rs, rn, rt }
+            | Self::LdclrbLdclrab32Memop { rs, rn, rt }
+            | Self::LdclrbLdclralb32Memop { rs, rn, rt }
+            | Self::LdclrbLdclrlb32Memop { rs, rn, rt } => (A64AtomicOp::Clr, 1, rs, rt, rn),
+            Self::LdclrhLdclrh32Memop { rs, rn, rt }
+            | Self::LdclrhLdclrah32Memop { rs, rn, rt }
+            | Self::LdclrhLdclralh32Memop { rs, rn, rt }
+            | Self::LdclrhLdclrlh32Memop { rs, rn, rt } => (A64AtomicOp::Clr, 2, rs, rt, rn),
+            Self::LdeorLdeor32Memop { rs, rn, rt }
+            | Self::LdeorLdeora32Memop { rs, rn, rt }
+            | Self::LdeorLdeoral32Memop { rs, rn, rt }
+            | Self::LdeorLdeorl32Memop { rs, rn, rt } => (A64AtomicOp::Eor, 4, rs, rt, rn),
+            Self::LdeorLdeor64Memop { rs, rn, rt }
+            | Self::LdeorLdeora64Memop { rs, rn, rt }
+            | Self::LdeorLdeoral64Memop { rs, rn, rt }
+            | Self::LdeorLdeorl64Memop { rs, rn, rt } => (A64AtomicOp::Eor, 8, rs, rt, rn),
+            Self::LdeorbLdeorb32Memop { rs, rn, rt }
+            | Self::LdeorbLdeorab32Memop { rs, rn, rt }
+            | Self::LdeorbLdeoralb32Memop { rs, rn, rt }
+            | Self::LdeorbLdeorlb32Memop { rs, rn, rt } => (A64AtomicOp::Eor, 1, rs, rt, rn),
+            Self::LdeorhLdeorh32Memop { rs, rn, rt }
+            | Self::LdeorhLdeorah32Memop { rs, rn, rt }
+            | Self::LdeorhLdeoralh32Memop { rs, rn, rt }
+            | Self::LdeorhLdeorlh32Memop { rs, rn, rt } => (A64AtomicOp::Eor, 2, rs, rt, rn),
+            Self::LdsetLdset32Memop { rs, rn, rt }
+            | Self::LdsetLdseta32Memop { rs, rn, rt }
+            | Self::LdsetLdsetal32Memop { rs, rn, rt }
+            | Self::LdsetLdsetl32Memop { rs, rn, rt } => (A64AtomicOp::Set, 4, rs, rt, rn),
+            Self::LdsetLdset64Memop { rs, rn, rt }
+            | Self::LdsetLdseta64Memop { rs, rn, rt }
+            | Self::LdsetLdsetal64Memop { rs, rn, rt }
+            | Self::LdsetLdsetl64Memop { rs, rn, rt } => (A64AtomicOp::Set, 8, rs, rt, rn),
+            Self::LdsetbLdsetb32Memop { rs, rn, rt }
+            | Self::LdsetbLdsetab32Memop { rs, rn, rt }
+            | Self::LdsetbLdsetalb32Memop { rs, rn, rt }
+            | Self::LdsetbLdsetlb32Memop { rs, rn, rt } => (A64AtomicOp::Set, 1, rs, rt, rn),
+            Self::LdsethLdseth32Memop { rs, rn, rt }
+            | Self::LdsethLdsetah32Memop { rs, rn, rt }
+            | Self::LdsethLdsetalh32Memop { rs, rn, rt }
+            | Self::LdsethLdsetlh32Memop { rs, rn, rt } => (A64AtomicOp::Set, 2, rs, rt, rn),
+            Self::LdsmaxLdsmax32Memop { rs, rn, rt }
+            | Self::LdsmaxLdsmaxa32Memop { rs, rn, rt }
+            | Self::LdsmaxLdsmaxal32Memop { rs, rn, rt }
+            | Self::LdsmaxLdsmaxl32Memop { rs, rn, rt } => (A64AtomicOp::Smax, 4, rs, rt, rn),
+            Self::LdsmaxLdsmax64Memop { rs, rn, rt }
+            | Self::LdsmaxLdsmaxa64Memop { rs, rn, rt }
+            | Self::LdsmaxLdsmaxal64Memop { rs, rn, rt }
+            | Self::LdsmaxLdsmaxl64Memop { rs, rn, rt } => (A64AtomicOp::Smax, 8, rs, rt, rn),
+            Self::LdsmaxbLdsmaxb32Memop { rs, rn, rt }
+            | Self::LdsmaxbLdsmaxab32Memop { rs, rn, rt }
+            | Self::LdsmaxbLdsmaxalb32Memop { rs, rn, rt }
+            | Self::LdsmaxbLdsmaxlb32Memop { rs, rn, rt } => (A64AtomicOp::Smax, 1, rs, rt, rn),
+            Self::LdsmaxhLdsmaxh32Memop { rs, rn, rt }
+            | Self::LdsmaxhLdsmaxah32Memop { rs, rn, rt }
+            | Self::LdsmaxhLdsmaxalh32Memop { rs, rn, rt }
+            | Self::LdsmaxhLdsmaxlh32Memop { rs, rn, rt } => (A64AtomicOp::Smax, 2, rs, rt, rn),
+            Self::LdsminLdsmin32Memop { rs, rn, rt }
+            | Self::LdsminLdsmina32Memop { rs, rn, rt }
+            | Self::LdsminLdsminal32Memop { rs, rn, rt }
+            | Self::LdsminLdsminl32Memop { rs, rn, rt } => (A64AtomicOp::Smin, 4, rs, rt, rn),
+            Self::LdsminLdsmin64Memop { rs, rn, rt }
+            | Self::LdsminLdsmina64Memop { rs, rn, rt }
+            | Self::LdsminLdsminal64Memop { rs, rn, rt }
+            | Self::LdsminLdsminl64Memop { rs, rn, rt } => (A64AtomicOp::Smin, 8, rs, rt, rn),
+            Self::LdsminbLdsminb32Memop { rs, rn, rt }
+            | Self::LdsminbLdsminab32Memop { rs, rn, rt }
+            | Self::LdsminbLdsminalb32Memop { rs, rn, rt }
+            | Self::LdsminbLdsminlb32Memop { rs, rn, rt } => (A64AtomicOp::Smin, 1, rs, rt, rn),
+            Self::LdsminhLdsminh32Memop { rs, rn, rt }
+            | Self::LdsminhLdsminah32Memop { rs, rn, rt }
+            | Self::LdsminhLdsminalh32Memop { rs, rn, rt }
+            | Self::LdsminhLdsminlh32Memop { rs, rn, rt } => (A64AtomicOp::Smin, 2, rs, rt, rn),
+            Self::LdumaxLdumax32Memop { rs, rn, rt }
+            | Self::LdumaxLdumaxa32Memop { rs, rn, rt }
+            | Self::LdumaxLdumaxal32Memop { rs, rn, rt }
+            | Self::LdumaxLdumaxl32Memop { rs, rn, rt } => (A64AtomicOp::Umax, 4, rs, rt, rn),
+            Self::LdumaxLdumax64Memop { rs, rn, rt }
+            | Self::LdumaxLdumaxa64Memop { rs, rn, rt }
+            | Self::LdumaxLdumaxal64Memop { rs, rn, rt }
+            | Self::LdumaxLdumaxl64Memop { rs, rn, rt } => (A64AtomicOp::Umax, 8, rs, rt, rn),
+            Self::LdumaxbLdumaxb32Memop { rs, rn, rt }
+            | Self::LdumaxbLdumaxab32Memop { rs, rn, rt }
+            | Self::LdumaxbLdumaxalb32Memop { rs, rn, rt }
+            | Self::LdumaxbLdumaxlb32Memop { rs, rn, rt } => (A64AtomicOp::Umax, 1, rs, rt, rn),
+            Self::LdumaxhLdumaxh32Memop { rs, rn, rt }
+            | Self::LdumaxhLdumaxah32Memop { rs, rn, rt }
+            | Self::LdumaxhLdumaxalh32Memop { rs, rn, rt }
+            | Self::LdumaxhLdumaxlh32Memop { rs, rn, rt } => (A64AtomicOp::Umax, 2, rs, rt, rn),
+            Self::LduminLdumin32Memop { rs, rn, rt }
+            | Self::LduminLdumina32Memop { rs, rn, rt }
+            | Self::LduminLduminal32Memop { rs, rn, rt }
+            | Self::LduminLduminl32Memop { rs, rn, rt } => (A64AtomicOp::Umin, 4, rs, rt, rn),
+            Self::LduminLdumin64Memop { rs, rn, rt }
+            | Self::LduminLdumina64Memop { rs, rn, rt }
+            | Self::LduminLduminal64Memop { rs, rn, rt }
+            | Self::LduminLduminl64Memop { rs, rn, rt } => (A64AtomicOp::Umin, 8, rs, rt, rn),
+            Self::LduminbLduminb32Memop { rs, rn, rt }
+            | Self::LduminbLduminab32Memop { rs, rn, rt }
+            | Self::LduminbLduminalb32Memop { rs, rn, rt }
+            | Self::LduminbLduminlb32Memop { rs, rn, rt } => (A64AtomicOp::Umin, 1, rs, rt, rn),
+            Self::LduminhLduminh32Memop { rs, rn, rt }
+            | Self::LduminhLduminah32Memop { rs, rn, rt }
+            | Self::LduminhLduminalh32Memop { rs, rn, rt }
+            | Self::LduminhLduminlh32Memop { rs, rn, rt } => (A64AtomicOp::Umin, 2, rs, rt, rn),
+            Self::SwpSwp32Memop { rs, rn, rt }
+            | Self::SwpSwpa32Memop { rs, rn, rt }
+            | Self::SwpSwpal32Memop { rs, rn, rt }
+            | Self::SwpSwpl32Memop { rs, rn, rt } => (A64AtomicOp::Swp, 4, rs, rt, rn),
+            Self::SwpSwp64Memop { rs, rn, rt }
+            | Self::SwpSwpa64Memop { rs, rn, rt }
+            | Self::SwpSwpal64Memop { rs, rn, rt }
+            | Self::SwpSwpl64Memop { rs, rn, rt } => (A64AtomicOp::Swp, 8, rs, rt, rn),
+            Self::SwpbSwpb32Memop { rs, rn, rt }
+            | Self::SwpbSwpab32Memop { rs, rn, rt }
+            | Self::SwpbSwpalb32Memop { rs, rn, rt }
+            | Self::SwpbSwplb32Memop { rs, rn, rt } => (A64AtomicOp::Swp, 1, rs, rt, rn),
+            Self::SwphSwph32Memop { rs, rn, rt }
+            | Self::SwphSwpah32Memop { rs, rn, rt }
+            | Self::SwphSwpalh32Memop { rs, rn, rt }
+            | Self::SwphSwplh32Memop { rs, rn, rt } => (A64AtomicOp::Swp, 2, rs, rt, rn),
+            Self::CasCasC32Comswap { rs, rn, rt }
+            | Self::CasCasaC32Comswap { rs, rn, rt }
+            | Self::CasCasalC32Comswap { rs, rn, rt }
+            | Self::CasCaslC32Comswap { rs, rn, rt } => (A64AtomicOp::Cas, 4, rs, rt, rn),
+            Self::CasCasC64Comswap { rs, rn, rt }
+            | Self::CasCasaC64Comswap { rs, rn, rt }
+            | Self::CasCasalC64Comswap { rs, rn, rt }
+            | Self::CasCaslC64Comswap { rs, rn, rt } => (A64AtomicOp::Cas, 8, rs, rt, rn),
+            Self::CasbCasbC32Comswap { rs, rn, rt }
+            | Self::CasbCasabC32Comswap { rs, rn, rt }
+            | Self::CasbCasalbC32Comswap { rs, rn, rt }
+            | Self::CasbCaslbC32Comswap { rs, rn, rt } => (A64AtomicOp::Cas, 1, rs, rt, rn),
+            Self::CashCashC32Comswap { rs, rn, rt }
+            | Self::CashCasahC32Comswap { rs, rn, rt }
+            | Self::CashCasalhC32Comswap { rs, rn, rt }
+            | Self::CashCaslhC32Comswap { rs, rn, rt } => (A64AtomicOp::Cas, 2, rs, rt, rn),
+            _ => return None,
+        };
+        Some(A64Atomic {
+            op,
+            size,
+            rs,
+            rt,
+            rn,
+        })
+    }
+
+    /// `MSR PAN, #imm` (the only decodable MSR): `Some(PSTATE.PAN after it)`, i.e.
+    /// `CRm<0>`. Translator-emitted only (the PAN window); user code containing it
+    /// is rejected by reg-virt.
+    pub const fn msr_pan(self) -> Option<bool> {
+        match self {
+            Self::MsrImmMsrSiPstate { crm } => Some(crm & 1 == 1),
+            _ => None,
+        }
     }
 
     /// The data address of a literal load (`LDR`/`LDRSW` (literal)): `pc + imm19 * 4`.
@@ -552,7 +769,172 @@ impl A64Insn {
             | Self::BrBr64BranchReg { .. }
             | Self::BlrBlr64BranchReg { .. }
             | Self::RetRet64rBranchReg { .. }
-            | Self::SvcSvcExException { .. } => false,
+            | Self::SvcSvcExException { .. }
+            // A8. LSE atomics: the only UNDEFINED case is a missing FEAT_LSE, a CPU
+            // property the module checks at init. MSR (immediate) is constrained to
+            // PSTATE.PAN in subset.toml; its remaining UNDEFINED case is a missing
+            // FEAT_PAN (K1 requires hardware PAN).
+            | Self::MsrImmMsrSiPstate { .. }
+            | Self::LdaddLdadd32Memop { .. }
+            | Self::LdaddLdadda32Memop { .. }
+            | Self::LdaddLdaddal32Memop { .. }
+            | Self::LdaddLdaddl32Memop { .. }
+            | Self::LdaddLdadd64Memop { .. }
+            | Self::LdaddLdadda64Memop { .. }
+            | Self::LdaddLdaddal64Memop { .. }
+            | Self::LdaddLdaddl64Memop { .. }
+            | Self::LdaddbLdaddb32Memop { .. }
+            | Self::LdaddbLdaddab32Memop { .. }
+            | Self::LdaddbLdaddalb32Memop { .. }
+            | Self::LdaddbLdaddlb32Memop { .. }
+            | Self::LdaddhLdaddh32Memop { .. }
+            | Self::LdaddhLdaddah32Memop { .. }
+            | Self::LdaddhLdaddalh32Memop { .. }
+            | Self::LdaddhLdaddlh32Memop { .. }
+            | Self::LdclrLdclr32Memop { .. }
+            | Self::LdclrLdclra32Memop { .. }
+            | Self::LdclrLdclral32Memop { .. }
+            | Self::LdclrLdclrl32Memop { .. }
+            | Self::LdclrLdclr64Memop { .. }
+            | Self::LdclrLdclra64Memop { .. }
+            | Self::LdclrLdclral64Memop { .. }
+            | Self::LdclrLdclrl64Memop { .. }
+            | Self::LdclrbLdclrb32Memop { .. }
+            | Self::LdclrbLdclrab32Memop { .. }
+            | Self::LdclrbLdclralb32Memop { .. }
+            | Self::LdclrbLdclrlb32Memop { .. }
+            | Self::LdclrhLdclrh32Memop { .. }
+            | Self::LdclrhLdclrah32Memop { .. }
+            | Self::LdclrhLdclralh32Memop { .. }
+            | Self::LdclrhLdclrlh32Memop { .. }
+            | Self::LdeorLdeor32Memop { .. }
+            | Self::LdeorLdeora32Memop { .. }
+            | Self::LdeorLdeoral32Memop { .. }
+            | Self::LdeorLdeorl32Memop { .. }
+            | Self::LdeorLdeor64Memop { .. }
+            | Self::LdeorLdeora64Memop { .. }
+            | Self::LdeorLdeoral64Memop { .. }
+            | Self::LdeorLdeorl64Memop { .. }
+            | Self::LdeorbLdeorb32Memop { .. }
+            | Self::LdeorbLdeorab32Memop { .. }
+            | Self::LdeorbLdeoralb32Memop { .. }
+            | Self::LdeorbLdeorlb32Memop { .. }
+            | Self::LdeorhLdeorh32Memop { .. }
+            | Self::LdeorhLdeorah32Memop { .. }
+            | Self::LdeorhLdeoralh32Memop { .. }
+            | Self::LdeorhLdeorlh32Memop { .. }
+            | Self::LdsetLdset32Memop { .. }
+            | Self::LdsetLdseta32Memop { .. }
+            | Self::LdsetLdsetal32Memop { .. }
+            | Self::LdsetLdsetl32Memop { .. }
+            | Self::LdsetLdset64Memop { .. }
+            | Self::LdsetLdseta64Memop { .. }
+            | Self::LdsetLdsetal64Memop { .. }
+            | Self::LdsetLdsetl64Memop { .. }
+            | Self::LdsetbLdsetb32Memop { .. }
+            | Self::LdsetbLdsetab32Memop { .. }
+            | Self::LdsetbLdsetalb32Memop { .. }
+            | Self::LdsetbLdsetlb32Memop { .. }
+            | Self::LdsethLdseth32Memop { .. }
+            | Self::LdsethLdsetah32Memop { .. }
+            | Self::LdsethLdsetalh32Memop { .. }
+            | Self::LdsethLdsetlh32Memop { .. }
+            | Self::LdsmaxLdsmax32Memop { .. }
+            | Self::LdsmaxLdsmaxa32Memop { .. }
+            | Self::LdsmaxLdsmaxal32Memop { .. }
+            | Self::LdsmaxLdsmaxl32Memop { .. }
+            | Self::LdsmaxLdsmax64Memop { .. }
+            | Self::LdsmaxLdsmaxa64Memop { .. }
+            | Self::LdsmaxLdsmaxal64Memop { .. }
+            | Self::LdsmaxLdsmaxl64Memop { .. }
+            | Self::LdsmaxbLdsmaxb32Memop { .. }
+            | Self::LdsmaxbLdsmaxab32Memop { .. }
+            | Self::LdsmaxbLdsmaxalb32Memop { .. }
+            | Self::LdsmaxbLdsmaxlb32Memop { .. }
+            | Self::LdsmaxhLdsmaxh32Memop { .. }
+            | Self::LdsmaxhLdsmaxah32Memop { .. }
+            | Self::LdsmaxhLdsmaxalh32Memop { .. }
+            | Self::LdsmaxhLdsmaxlh32Memop { .. }
+            | Self::LdsminLdsmin32Memop { .. }
+            | Self::LdsminLdsmina32Memop { .. }
+            | Self::LdsminLdsminal32Memop { .. }
+            | Self::LdsminLdsminl32Memop { .. }
+            | Self::LdsminLdsmin64Memop { .. }
+            | Self::LdsminLdsmina64Memop { .. }
+            | Self::LdsminLdsminal64Memop { .. }
+            | Self::LdsminLdsminl64Memop { .. }
+            | Self::LdsminbLdsminb32Memop { .. }
+            | Self::LdsminbLdsminab32Memop { .. }
+            | Self::LdsminbLdsminalb32Memop { .. }
+            | Self::LdsminbLdsminlb32Memop { .. }
+            | Self::LdsminhLdsminh32Memop { .. }
+            | Self::LdsminhLdsminah32Memop { .. }
+            | Self::LdsminhLdsminalh32Memop { .. }
+            | Self::LdsminhLdsminlh32Memop { .. }
+            | Self::LdumaxLdumax32Memop { .. }
+            | Self::LdumaxLdumaxa32Memop { .. }
+            | Self::LdumaxLdumaxal32Memop { .. }
+            | Self::LdumaxLdumaxl32Memop { .. }
+            | Self::LdumaxLdumax64Memop { .. }
+            | Self::LdumaxLdumaxa64Memop { .. }
+            | Self::LdumaxLdumaxal64Memop { .. }
+            | Self::LdumaxLdumaxl64Memop { .. }
+            | Self::LdumaxbLdumaxb32Memop { .. }
+            | Self::LdumaxbLdumaxab32Memop { .. }
+            | Self::LdumaxbLdumaxalb32Memop { .. }
+            | Self::LdumaxbLdumaxlb32Memop { .. }
+            | Self::LdumaxhLdumaxh32Memop { .. }
+            | Self::LdumaxhLdumaxah32Memop { .. }
+            | Self::LdumaxhLdumaxalh32Memop { .. }
+            | Self::LdumaxhLdumaxlh32Memop { .. }
+            | Self::LduminLdumin32Memop { .. }
+            | Self::LduminLdumina32Memop { .. }
+            | Self::LduminLduminal32Memop { .. }
+            | Self::LduminLduminl32Memop { .. }
+            | Self::LduminLdumin64Memop { .. }
+            | Self::LduminLdumina64Memop { .. }
+            | Self::LduminLduminal64Memop { .. }
+            | Self::LduminLduminl64Memop { .. }
+            | Self::LduminbLduminb32Memop { .. }
+            | Self::LduminbLduminab32Memop { .. }
+            | Self::LduminbLduminalb32Memop { .. }
+            | Self::LduminbLduminlb32Memop { .. }
+            | Self::LduminhLduminh32Memop { .. }
+            | Self::LduminhLduminah32Memop { .. }
+            | Self::LduminhLduminalh32Memop { .. }
+            | Self::LduminhLduminlh32Memop { .. }
+            | Self::SwpSwp32Memop { .. }
+            | Self::SwpSwpa32Memop { .. }
+            | Self::SwpSwpal32Memop { .. }
+            | Self::SwpSwpl32Memop { .. }
+            | Self::SwpSwp64Memop { .. }
+            | Self::SwpSwpa64Memop { .. }
+            | Self::SwpSwpal64Memop { .. }
+            | Self::SwpSwpl64Memop { .. }
+            | Self::SwpbSwpb32Memop { .. }
+            | Self::SwpbSwpab32Memop { .. }
+            | Self::SwpbSwpalb32Memop { .. }
+            | Self::SwpbSwplb32Memop { .. }
+            | Self::SwphSwph32Memop { .. }
+            | Self::SwphSwpah32Memop { .. }
+            | Self::SwphSwpalh32Memop { .. }
+            | Self::SwphSwplh32Memop { .. }
+            | Self::CasCasC32Comswap { .. }
+            | Self::CasCasaC32Comswap { .. }
+            | Self::CasCasalC32Comswap { .. }
+            | Self::CasCaslC32Comswap { .. }
+            | Self::CasCasC64Comswap { .. }
+            | Self::CasCasaC64Comswap { .. }
+            | Self::CasCasalC64Comswap { .. }
+            | Self::CasCaslC64Comswap { .. }
+            | Self::CasbCasbC32Comswap { .. }
+            | Self::CasbCasabC32Comswap { .. }
+            | Self::CasbCasalbC32Comswap { .. }
+            | Self::CasbCaslbC32Comswap { .. }
+            | Self::CashCashC32Comswap { .. }
+            | Self::CashCasahC32Comswap { .. }
+            | Self::CashCasalhC32Comswap { .. }
+            | Self::CashCaslhC32Comswap { .. } => false,
         }
     }
 }
@@ -724,10 +1106,10 @@ mod tests {
         assert_eq!(unprivileged, 13);
     }
 
-    /// Exclusive, atomic and FP/SIMD memory forms, and the acquire/release forms
-    /// beyond A7c's base-register ones (FEAT_LRCPC2 unscaled, FEAT_LRCPC3
-    /// writeback, non-canonical should-be-one fields), stay outside the subset:
-    /// they must not decode, so they take the Unsupported exit.
+    /// Exclusive, pair-atomic (CASP, FEAT_LSE128) and FP/SIMD memory forms, and
+    /// the acquire/release forms beyond A7c's base-register ones (FEAT_LRCPC2
+    /// unscaled, FEAT_LRCPC3 writeback, non-canonical should-be-one fields), stay
+    /// outside the subset: they must not decode, so they take the Unsupported exit.
     #[test]
     fn exclusive_atomic_and_fp_memory_forms_stay_undecodable() {
         let words: [(u32, &str); 26] = [
@@ -743,11 +1125,11 @@ mod tests {
             (0xd940_8020, "ldapur x0, [x1, #8] (FEAT_LRCPC2)"),
             (0x991f_c020, "stlur w0, [x1, #-4] (FEAT_LRCPC2)"),
             (0xc87f_0440, "ldxp x0, x1, [x2]"),
-            (0xc8a0_7c41, "cas x0, x1, [x2]"),
-            (0x88e0_fc41, "casal w0, w1, [x2]"),
-            (0xf820_0041, "ldadd x0, x1, [x2]"),
-            (0xb8e0_0041, "ldaddal w0, w1, [x2]"),
-            (0xf820_8041, "swp x0, x1, [x2]"),
+            (0x4820_7c82, "casp x0, x1, x2, x3, [x4]"),
+            (0x0820_7c82, "casp w0, w1, w2, w3, [x4]"),
+            (0x1921_1040, "ldclrp x0, x1, [x2] (FEAT_LSE128)"),
+            (0x1921_8040, "swpp x0, x1, [x2] (FEAT_LSE128)"),
+            (0x1921_3040, "ldsetp x0, x1, [x2] (FEAT_LSE128)"),
             (0x3dc0_0020, "ldr q0, [x1]"),
             (0xfd40_0420, "ldr d0, [x1, #8]"),
             (0xbc40_4420, "ldr s0, [x1], #4"),
@@ -836,5 +1218,99 @@ mod tests {
         for word in [0x9ac2_4020_u32, 0x9ac2_5820, 0x1ac2_4c20, 0x1ac2_5c20] {
             assert!(decode_word(word, 0).is_err(), "{word:#010x}");
         }
+    }
+
+    /// A8: `lse_atomic` is exactly the generated LD<op>/SWP/CAS forms (160), with
+    /// the operation and size their mnemonics name; every one decodes from its own
+    /// base value.
+    #[test]
+    fn lse_atomic_matches_the_generated_atomic_forms() {
+        use generated::GENERATED_A64_SUBSET;
+        let ops: [(&str, A64AtomicOp); 10] = [
+            ("LDADD", A64AtomicOp::Add),
+            ("LDCLR", A64AtomicOp::Clr),
+            ("LDEOR", A64AtomicOp::Eor),
+            ("LDSET", A64AtomicOp::Set),
+            ("LDSMAX", A64AtomicOp::Smax),
+            ("LDSMIN", A64AtomicOp::Smin),
+            ("LDUMAX", A64AtomicOp::Umax),
+            ("LDUMIN", A64AtomicOp::Umin),
+            ("SWP", A64AtomicOp::Swp),
+            ("CAS", A64AtomicOp::Cas),
+        ];
+        let mut atomics = 0;
+        for spec in GENERATED_A64_SUBSET {
+            let insn = A64Insn::decode(spec.value).expect("own value decodes");
+            let section = spec.key.split('.').next().unwrap();
+            let expected = ops.iter().find_map(|&(prefix, op)| {
+                let suffix = section.strip_prefix(prefix)?;
+                let size = match suffix {
+                    "B" => 1,
+                    "H" => 2,
+                    "" if spec.key.contains("_64_") || spec.key.contains("_C64_") => 8,
+                    "" => 4,
+                    _ => return None,
+                };
+                Some((op, size))
+            });
+            let got = insn.lse_atomic().map(|atomic| (atomic.op, atomic.size));
+            assert_eq!(got, expected, "{}", spec.key);
+            atomics += usize::from(expected.is_some());
+        }
+        assert_eq!(atomics, 160);
+    }
+
+    /// A8: LSE atomics decode with their registers (words from llvm-mc; `stadd` is
+    /// `ldadd` with Rt = XZR).
+    #[test]
+    fn lse_atomics_decode_with_their_registers() {
+        let cases: [(u32, &str, A64AtomicOp, u8, [u8; 3]); 7] = [
+            (0xf8e1_0062, "LDADD.LDADDAL_64_memop", A64AtomicOp::Add, 8, [1, 2, 3]),
+            (0xb821_107f, "LDCLR.LDCLR_32_memop", A64AtomicOp::Clr, 4, [1, 31, 3]),
+            (0x38a1_83e2, "SWPB.SWPAB_32_memop", A64AtomicOp::Swp, 1, [1, 2, 31]),
+            (0x48e1_fc62, "CASH.CASALH_C32_comswap", A64AtomicOp::Cas, 2, [1, 2, 3]),
+            (0xc8e1_7c62, "CAS.CASA_C64_comswap", A64AtomicOp::Cas, 8, [1, 2, 3]),
+            (0x7861_73e2, "LDUMINH.LDUMINLH_32_memop", A64AtomicOp::Umin, 2, [1, 2, 31]),
+            (0xf8a1_4062, "LDSMAX.LDSMAXA_64_memop", A64AtomicOp::Smax, 8, [1, 2, 3]),
+        ];
+        for (word, key, op, size, [rs, rt, rn]) in cases {
+            let insn = decode_word(word, 0).unwrap_or_else(|_| panic!("{word:#010x}"));
+            assert_eq!(insn.inner.key(), key, "{word:#010x}");
+            let atomic = insn.inner.lse_atomic().expect("an LSE atomic");
+            assert_eq!((atomic.op, atomic.size), (op, size), "{key}");
+            assert_eq!(
+                (atomic.rs.enc(), atomic.rt.enc(), atomic.rn.enc()),
+                (rs, rt, rn),
+                "{key}"
+            );
+            assert_eq!(atomic.rn.reg31, A64Reg31Mode::Sp, "{key}: Rn is <Xn|SP>");
+        }
+    }
+
+    /// A8: of the whole MSR (immediate) space only PSTATE.PAN decodes; every other
+    /// PSTATE field (UAO, SPSel, DAIFSet/Clr, DIT, TCO, SSBS, ALLINT, SM/ZA) and the
+    /// CFINV/XAFLAG/AXFLAG words stay undecodable.
+    #[test]
+    fn msr_immediate_decodes_only_pstate_pan() {
+        for op1 in 0..8_u32 {
+            for op2 in 0..8_u32 {
+                for crm in 0..16_u32 {
+                    let word = 0xd500_401f | (op1 << 16) | (crm << 8) | (op2 << 5);
+                    let insn = decode_word(word, 0).ok().map(|insn| insn.inner);
+                    let pan = op1 == 0 && op2 == 4;
+                    assert_eq!(insn.is_some(), pan, "op1={op1} op2={op2} crm={crm}");
+                    if pan {
+                        assert_eq!(
+                            insn.and_then(A64Insn::msr_pan),
+                            Some(crm & 1 == 1),
+                            "crm={crm}"
+                        );
+                    }
+                }
+            }
+        }
+        // msr pan, #0 / #1 (llvm-mc).
+        assert_eq!(A64Insn::MsrImmMsrSiPstate { crm: 0 }.encode(), Ok(0xd500_409f));
+        assert_eq!(A64Insn::MsrImmMsrSiPstate { crm: 1 }.encode(), Ok(0xd500_419f));
     }
 }

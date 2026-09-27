@@ -26,6 +26,10 @@ pub enum AccessKind {
 pub enum Privilege {
     User,
     Runtime,
+    /// A PAN window's LSE atomic in a fragment (A8): an EL1 access to user memory
+    /// with PSTATE.PAN clear. Same page permissions as a user access, and numbered
+    /// with the user accesses for fault injection.
+    Window,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

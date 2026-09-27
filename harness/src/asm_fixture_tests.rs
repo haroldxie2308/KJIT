@@ -432,10 +432,18 @@ fn check_fragment_fault_injection(
                     ));
                 }
             }
-            Privilege::User => {
+            privilege @ (Privilege::User | Privilege::Window) => {
                 user_index += 1;
-                if !runtime.fragment.insns[offset / 4].is_unprivileged_access() {
-                    return Err(format!("user access at {offset:#x} is not LDTR/STTR"));
+                let insn = runtime.fragment.insns[offset / 4];
+                let tagged = match privilege {
+                    Privilege::User => insn.is_unprivileged_access(),
+                    _ => insn.lse_atomic().is_some(),
+                };
+                if !tagged {
+                    return Err(format!(
+                        "{privilege:?} access at {offset:#x} is neither LDTR/STTR nor a \
+                         window atomic"
+                    ));
                 }
                 let site = runtime
                     .fragment
@@ -458,7 +466,7 @@ fn check_fragment_fault_injection(
     // own accesses may appear (the last of them faulted into its stub).
     let extras_ok = fragment_log
         .iter()
-        .filter(|logged| logged.privilege == Privilege::User)
+        .filter(|logged| logged.privilege != Privilege::Runtime)
         .skip(total as usize)
         .all(|logged| {
             let offset = (logged.pc - base_pc) as usize;
