@@ -164,7 +164,7 @@ Build (container) and run (host):
 export KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/kjit-build   # optional
 ./scripts/docker-dev.sh -- make guest-kernel         # kernel + kjit.ko
 ./scripts/docker-dev.sh -- make guest-kernel-debug   # KASAN/lockdep
-make guest-rootfs          # host: debian:bookworm + redis (base.cpio, built once) + K2/K3 tests (tests.cpio) -> rootfs.cpio
+make guest-rootfs          # host: debian:bookworm + redis (base.cpio) + redis 7.0.15 suite (redis.cpio) + tests (tests.cpio) -> rootfs.cpio
 make guest-run GUEST_PROFILE=kjit-guest CMD='redis-server --daemonize yes --save "" --appendonly no; sleep 1; redis-benchmark -q -n 10000'
 make e0-bench GUEST_PROFILE=kjit-guest
 ```
@@ -185,8 +185,12 @@ Never` is missing (K1: hardware PAN), or if any timestamped kernel line reports
 RCU stall.
 
 `rootfs.cpio` is `base.cpio` (the Debian export; rebuilt only when missing or
-with `scripts/mk-guest-rootfs.sh --rebuild-base`) followed by `tests.cpio` (the
-K2/K3 guest tests, rebuilt every run); the kernel unpacks both archives in order.
+with `scripts/mk-guest-rootfs.sh --rebuild-base`), then `redis.cpio` (the K4
+layer: redis 7.0.15 built from the official tarball, with its test suite, in
+`/opt/redis`, and `tclsh8.6`; rebuilt only when missing or with
+`--rebuild-redis`), then `tests.cpio` (the K2/K3/K4 guest tests, rebuilt every
+run); the kernel unpacks the archives in order. The guest kernel has the PL031
+RTC (wall clock) and core dumps enabled, both for the K4 redis tests.
 
 `make e0-bench` (`scripts/e0-bench.sh`, `tools/e0/syscall_bench.c`) builds a
 static benchmark in the dev image. It runs the benchmark in a plain
@@ -354,10 +358,85 @@ Current reach: where the code is in the subset the path follows the callers
 (`dd bs=1`: every syscall issued in the kernel), but it stops at SIMD
 `memcpy`/`strlen` loads. Before A7d every path of a BTI-built program (all of
 redis's) stopped at its first `bti c` (0% of its syscalls in the kernel); BTI
-and ADC/SBC now translate, and the guest has not been re-measured since.
+and ADC/SBC now translate; redis's paths now stop at LSE atomics (see "K4").
 Fragment entries cost more than the mode switches they save on short chains;
 speed is not a goal yet. Details: `tmp/pipeline.md`, "K3", Findings, and
 "A7d".
+
+### K4: Redis under KJIT
+
+The target workload: redis 7.0.15 (the version Debian bookworm ships, built
+from the official tarball with upstream's default flags, like Debian's: no BTI
+or PAC in redis itself; glibc is Debian's BTI-built one) in the guest with the
+auto mode on, checked with redis's own test suite, redis-benchmark and
+adversarial tests. Speed is not a goal; identical behaviour is. Contract,
+exclusions and findings: `tmp/pipeline.md`, "K4".
+
+```sh
+export KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/kjit-build
+make kernel-tree KJIT_LINUX_GIT=/path/to/KJIT/dep/linux     # host
+./scripts/docker-dev.sh -- make guest-kernel guest-kernel-debug
+make redis-campaign GUEST_PROFILE=kjit-guest                  # host; builds the rootfs first
+make redis-campaign GUEST_PROFILE=kjit-guest-debug K4_ITERATIONS=10
+make redis-campaign K4_ARGS=--no-suite                        # only benchmark + adversarial
+```
+
+`scripts/redis-campaign.sh` boots one guest per step and prints a PASS/FAIL
+line per step and `k4-campaign: RESULT PASS|FAIL` (exit status non-zero on
+failure); logs and every guest run dir are in
+`$KJIT_BUILD_ROOT/runs/k4-<profile>-<time>/`. Every guest run also fails on any
+kernel `BUG:`/`WARNING:`/KASAN/lockdep/oops/RCU-stall line (guest-run), and the
+campaign guest's `dmesg` is checked the same way.
+
+1. **Test suite** (`tests/guest/k4-suite.sh`): `./runtest --clients 16
+   --dump-logs`, the full default suite (84 units, ~2850 tests; the 15
+   `large-memory` tests are ignored by runtest's own default), once without
+   `kjit.ko` and once with it loaded, `enable=1 auto=1`, so every
+   redis-server, redis-cli and tclsh the suite spawns runs under the auto
+   mode. The runs must report the same outcome for every test: the compared
+   set is the distinct `<status> <name>` lines with digits masked, plus the
+   failed tests exactly (psync2 loops for a fixed time, so its test count and
+   some test names vary from run to run on the same kernel).
+2. **Benchmark** (`tests/guest/k4-bench.sh`): the full default test set
+   (`redis-benchmark -q -n 100000`, 50 clients), pipelined (`-P 16`) and with
+   256 clients, against one server, with the KJIT counter deltas of each run
+   (redis-benchmark runs under `nojit`, so they are the server's); then a
+   deterministic dataset plus a full pipelined benchmark with fixed keys, KJIT
+   off and on: `DBSIZE`, `DEBUG DIGEST` and a sha256 of the dataset read back
+   must be identical.
+3. **Adversarial** (`tests/guest/k4-adversarial.sh`), each KJIT off and on
+   with identical output: `kill -9` of a hot server (x3), SIGTERM (clean
+   shutdown), SIGUSR1 (default action, 138), SIGSTOP/SIGCONT x5 under a
+   fixed-key load (same digest), `DEBUG SEGFAULT` under load (crash report,
+   SIGSEGV, one core file), BGSAVE x5 under load then `redis-check-rdb` and a
+   restart from `dump.rdb` (same digest), `CONFIG SET appendonly yes` under
+   load (AOF rewrite fork) and a restart from the AOF, `CONFIG SET` churn and
+   `MODULE LOAD`/`UNLOAD` x5 of a test module under load, `rmmod`/`insmod
+   kjit.ko` x5 under load, and `maxmemory 32mb` with `allkeys-lru` eviction
+   then `noeviction` OOM errors. Each load phase must have run in fragments
+   before the disruptive event (`--no-require-hot` only reports it). The
+   K2 micro tests in auto mode (`munmap_race`: hot text unmapped under a
+   running fragment, `kill -9` of hot loops, faults, CoW) run in every
+   iteration too.
+
+Latest results (kjit-guest, main at A7d, 2026-09-27, `RESULT PASS`): suite
+2856 / 2860 passed tests without / with KJIT (psync2's time-bounded loop), 0
+failed either way, same outcome for all 2518 distinct tests; a KJIT suite run
+takes ~300 s vs ~250 s. Under the suite 5.6% of the syscalls ran in the kernel
+(3.53M of 62.9M; 756M fragment entries, 11723 translations, no verifier
+rejection or invalid exit). One KJIT-on suite run in eight failed a
+`client-eviction` test that could not be reproduced (`tmp/pipeline.md`, "K4",
+Open). Benchmark: 0.0% (default), 1.6% (`-P 16`) and
+0.7% (256 clients) of the server's syscalls in the kernel, ~9.5 fragment
+entries per syscall; datasets identical KJIT off and on; every adversarial
+test identical. The in-kernel path now stops at `ldadd x0, x0, [x1]`
+(0xf8200020, libgcc's outline atomic `__aarch64_ldadd8_relax`, which redis's
+`atomicIncr` calls after every read): 4.7M of the default run's 4.7M
+Unsupported exits. Next: LSE atomics (`ldadd`, `casa`, `swpl`), `mrs
+CNTVCT_EL0` (vDSO clock reads) and SIMD loads. kjit-guest-debug (KASAN,
+lockdep), `K4_ITERATIONS=10`: suite identical (0 failed either way), 100
+adversarial runs and 10 consistency checks PASS, no kernel report
+(`tmp/pipeline.md`, "K4").
 
 ### Harness
 
