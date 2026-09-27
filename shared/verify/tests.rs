@@ -524,7 +524,7 @@ fn pt_regs_dataflow() {
         Frag::new(&[load, movz(12, 0), str(9, xs(12), 72), b_epi(3)]).rule(),
         Some(VerifyRule::RuntimeAccessBase)
     );
-    // So does a join point: an entry at the store sees a user-controlled x12.
+    // So does a join point: an entry at the store sees x12 = the entry address.
     assert_eq!(
         Frag::new(&[load, str(9, xs(12), 72), b_epi(2)])
             .entry(1)
@@ -535,6 +535,133 @@ fn pt_regs_dataflow() {
     assert_eq!(
         Frag::new(&[load, b(1, at(2) as i64), str(9, xs(12), 72), b_epi(3)]).rule(),
         Some(VerifyRule::RuntimeAccessBase)
+    );
+}
+
+/// The join state is what the prologue leaves behind: x29 (the runtime frame) and
+/// the entry scratch (the entry address), nothing else.
+#[test]
+fn join_state_is_derived_from_the_prologue() {
+    let state = taint::Taint::at_entry().unwrap();
+    assert_eq!(state.kernel, (1 << 12) | (1 << 29));
+    assert_eq!(state.pt_regs, 0);
+}
+
+/// Rule 9 lets every exit carry the join state; that is sound only because the
+/// epilogue never reads a join-state register before writing it.
+#[test]
+fn join_state_is_dead_in_the_epilogue() {
+    let mut live = 0_u32;
+    for insn in KJIT_EPILOGUE.iter().rev() {
+        let read = rules::reads(insn).unwrap();
+        let base = read
+            .base
+            .filter(|base| base.enc() < 31)
+            .map_or(0, |base| 1 << base.enc());
+        live = (live & !rules::writes(insn).unwrap().gprs) | read.gprs | base;
+    }
+    // Not vacuous: everything the epilogue copies to the user or the runtime.
+    let user = (0..=11).chain(16..=28).chain([30]);
+    assert_eq!(live, user.fold(0, |mask, reg| mask | (1 << reg)));
+    assert_eq!(live & taint::Taint::at_entry().unwrap().kernel, 0);
+}
+
+#[test]
+fn kernel_values_are_never_read() {
+    let rule = |body: &[A64Insn]| Frag::new(body).rule();
+    let read = Some(VerifyRule::KernelValueRead);
+    let orr = |rd: u8, rm: u8| A64Insn::OrrLogShiftOrr64LogShift {
+        shift: 0,
+        rm: x(rm),
+        imm6: uimm(0, 6),
+        rn: x(31),
+        rd: x(rd),
+    };
+    // SP as data (a frame-access base is fine), x29, the entry scratch at entry.
+    assert_eq!(rule(&[mov(xs(0), sp()), b_epi(1)]), read);
+    assert_eq!(
+        rule(&[
+            A64Insn::SubsAddsubImmSubs64sAddsubImm {
+                sh: 0,
+                imm12: uimm(0, 12),
+                rn: sp(),
+                rd: x(31),
+            },
+            b_epi(1)
+        ]),
+        read
+    );
+    assert_eq!(rule(&[mov(xs(0), xs(29)), b_epi(1)]), read);
+    assert_eq!(rule(&[str(29, sp(), 16), b_epi(1)]), read);
+    assert_eq!(rule(&[orr(0, 12), b_epi(1)]), read);
+    assert_eq!(rule(&[movz(12, 0), orr(0, 12), b_epi(2)]), None);
+
+    // The pt_regs pointer: a base only.
+    let load = ldr(12, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET);
+    for leak in [
+        orr(10, 12),
+        str(12, xs(12), 0),
+        str(12, sp(), 16),
+        A64Insn::CbzCbz64Compbranch {
+            imm19: branch_imm(4, 19),
+            rt: x(12),
+        },
+    ] {
+        assert_eq!(rule(&[load, leak, b_epi(2)]), read, "{leak:?}");
+    }
+    // As a user access's base.
+    assert_eq!(
+        Frag::new(&[load, ldtr(0, 12), b_epi(2), movz(9, 5), b_epi(4)])
+            .site(1, 3)
+            .rule(),
+        read
+    );
+    // Loaded into anything but scratch, or partly.
+    assert_eq!(
+        rule(&[ldr(0, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET), b_epi(1)]),
+        Some(VerifyRule::FrameAccessOutOfRange)
+    );
+    assert_eq!(
+        rule(&[
+            A64Insn::LdrImmGenLdr32LdstPos {
+                rt: crate::shared::arm64::ergo::w(12),
+                mem: mem_off(sp(), crate::shared::arm64::ergo::scaled_uimm(44, 12, 2)),
+            },
+            b_epi(1)
+        ]),
+        Some(VerifyRule::FrameAccessOutOfRange)
+    );
+}
+
+#[test]
+fn kernel_values_do_not_cross_edges() {
+    let edge = Some(VerifyRule::KernelValueAtEdge);
+    let load13 = ldr(13, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET);
+    // A branch into the body, a branch to the epilogue.
+    assert_eq!(
+        Frag::new(&[load13, b(1, at(2) as i64), b_epi(2)]).rule(),
+        edge
+    );
+    assert_eq!(Frag::new(&[load13, b_epi(1)]).rule(), edge);
+    // A fall-through into a join point.
+    assert_eq!(
+        Frag::new(&[load13, movz(0, 1), b_epi(2)]).entry(1).rule(),
+        edge
+    );
+    // The fault edge of a user access.
+    assert_eq!(
+        Frag::new(&[load13, ldtr(0, 1), b_epi(2), movz(9, 5), b_epi(4)])
+            .site(1, 3)
+            .rule(),
+        edge
+    );
+    // Overwritten first: fine. And the entry scratch may hold the pointer at an
+    // edge (every join point already assumes it holds a kernel value).
+    assert_eq!(Frag::new(&[load13, movz(13, 0), b_epi(2)]).rule(), None);
+    let load12 = ldr(12, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET);
+    assert_eq!(
+        Frag::new(&[load12, str(9, xs(12), 72), b(2, at(3) as i64), b_epi(3)]).rule(),
+        None
     );
 }
 
@@ -689,12 +816,19 @@ fn budget_rule_rejects_unguarded_or_bypassable_back_edges() {
         );
     }
 
-    // A join point past the check's first word bypasses the decrement.
+    // A join point past the check's first word bypasses the decrement. On the
+    // `sub`, `str` or `cbz`, the check's scratch still holds the entry address
+    // there (rule 9 rejects the read first).
     let fills = [fill(12, 16), fill(13, 24)];
     for inner in 2..=7 {
+        let rule = if inner <= 4 {
+            VerifyRule::KernelValueRead
+        } else {
+            VerifyRule::MissingBudgetCheck
+        };
         assert_eq!(
             Frag::new(&budget_loop(&fills)).entry(inner).rule(),
-            Some(VerifyRule::MissingBudgetCheck),
+            Some(rule),
             "entry at word {inner}"
         );
     }
@@ -743,16 +877,16 @@ fn budget_rule_rejects_altered_checks() {
     }
 }
 
-/// A8 PAN window: `ubfx x13, x12, #48, #8; cbnz x13, <S>; msr pan, #0;
-/// ldaddal x0, x1, [x12]; msr pan, #1; b <epilogue>`, then the PAN stub S (`msr
+/// A8 PAN window: `ubfx x5, x4, #48, #8; cbnz x5, <S>; msr pan, #0;
+/// ldaddal x0, x1, [x4]; msr pan, #1; b <epilogue>`, then the PAN stub S (`msr
 /// pan, #1`, exit payload, `b <epilogue>`). The atomic's fault site is S.
 /// Indices: 0 ubfx, 1 cbnz, 2 msr#0, 3 atomic, 4 msr#1, 5 b, 6 S, 7 movz, 8 b.
 fn pan_window_body() -> Vec<A64Insn> {
     alloc::vec![
-        ubfx48(12, 13),
-        cbnz(1, 13, 6),
+        ubfx48(4, 5),
+        cbnz(1, 5, 6),
         msr_pan(0),
-        ldaddal(0, 1, 12),
+        ldaddal(0, 1, 4),
         msr_pan(1),
         b_epi(5),
         msr_pan(1),
@@ -813,27 +947,27 @@ fn pan_window_rule_rejects_every_deviation() {
     };
     // Range check: other register, shift, width, 32-bit form; cbnz on another
     // register, to a non-PAN-stub word, 32-bit form.
-    assert_eq!(with(0, ubfx48(11, 13)), Some(VerifyRule::PanWindow));
-    assert_eq!(with(0, ubfx48(12, 14)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(0, ubfx48(3, 5)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(0, ubfx48(4, 6)), Some(VerifyRule::PanWindow));
     for (immr, imms) in [(47, 55), (48, 54), (48, 63), (56, 63)] {
         let ubfx = A64Insn::UbfmUbfm64mBitfield {
             immr: uimm(immr, 6),
             imms: uimm(imms, 6),
-            rn: x(12),
-            rd: x(13),
+            rn: x(4),
+            rd: x(5),
         };
         assert_eq!(with(0, ubfx), Some(VerifyRule::PanWindow), "{immr} {imms}");
     }
-    assert_eq!(with(1, cbnz(1, 14, 6)), Some(VerifyRule::PanWindow));
-    assert_eq!(with(1, cbnz(1, 13, 7)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(1, cbnz(1, 6, 6)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(1, cbnz(1, 5, 7)), Some(VerifyRule::PanWindow));
     let cbnz32 = A64Insn::CbnzCbnz32Compbranch {
         imm19: branch_imm(at(6) as i64 - at(1) as i64, 19),
-        rt: crate::shared::arm64::A64Reg::w(13),
+        rt: crate::shared::arm64::A64Reg::w(5),
     };
     assert_eq!(with(1, cbnz32), Some(VerifyRule::PanWindow));
     // The atomic on another base, or not an atomic.
-    assert_eq!(with(3, ldaddal(0, 1, 11)), Some(VerifyRule::PanWindow));
-    assert_eq!(with(3, ldtr(0, 12)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(3, ldaddal(0, 1, 3)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(3, ldtr(0, 4)), Some(VerifyRule::PanWindow));
     assert_eq!(with(3, movz(0, 1)), Some(VerifyRule::PanWindow));
     // Missing window end; `msr pan, #1` / `#0` anywhere else; other CRm.
     assert_eq!(with(4, movz(2, 0)), Some(VerifyRule::PanWindow));
@@ -881,10 +1015,10 @@ fn pan_stub_is_only_a_window_target() {
     );
     // An LDTR whose fault site is the PAN stub.
     let body = [
-        ubfx48(12, 13),
-        cbnz(1, 13, 7),
+        ubfx48(4, 5),
+        cbnz(1, 5, 7),
         msr_pan(0),
-        ldaddal(0, 1, 12),
+        ldaddal(0, 1, 4),
         msr_pan(1),
         ldtr(2, 3),
         b_epi(6),
@@ -972,6 +1106,7 @@ fn verifier_does_not_import_the_translator() {
     let sources = [
         ("mod.rs", include_str!("mod.rs")),
         ("rules.rs", include_str!("rules.rs")),
+        ("taint.rs", include_str!("taint.rs")),
         ("tests.rs", include_str!("tests.rs")),
     ];
     let shared_path = concat!("crate", "::", "shared", "::");

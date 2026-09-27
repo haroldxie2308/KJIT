@@ -466,15 +466,16 @@ address.
    - a runtime access, offset addressing only (no writeback), either
      - SP-based inside the user-state frame slots `[16, 80)` (stack-backed
        x12..x17, user x29, user sp), or the single kernel-slot read
-       `ldr xN, [sp, #176]` (pt_regs pointer). Every other frame slot (caller
+       `ldr xS, [sp, #176]` (pt_regs pointer, 64-bit, S a reg-virt scratch
+       register x12..x15; rule 9). Every other frame slot (caller
        x29/x30, entry address, caller x18..x28, the pt_regs / extra-params
        pointers, the 200..208 padding) and anything outside the 208-byte frame
        is rejected: a body write there is a kernel write primitive through the
        epilogue. The budget counter (192) is rule 6's.
      - based on a register proven to hold the pt_regs pointer, inside
        `regs[0..31]` + `sp` (`[0, 256)`); `pc`, `pstate` and beyond are never
-       accessible. Proof is forward dataflow in straight-line code: the register
-       was loaded by `ldr xN, [sp, #176]` and not written since, with no join
+       accessible. Proof is the rule 9 dataflow's pt_regs fact: the register
+       was loaded by `ldr xS, [sp, #176]` and not written since, with no join
        point in between.
    - Everything else is rejected: exclusives, atomics, SIMD, PRFUM/RPRFM, DC/IC/AT
      are outside the decoded subset (rule 1); pair or pre/post forms not
@@ -514,8 +515,77 @@ address.
    no user access and ends in `b <epilogue>`. The cold region starts at the
    lowest stub offset.
 
+8. PAN windows (A8): see "A8 implementation", "Verifier (V3) rule 8".
+9. Confidentiality: no kernel value reaches user-visible state. See
+   "Confidentiality (rule 9)" below.
+
 Join points (where the dataflow restarts): entry offsets, stubs, and direct
 branch targets; also after every unconditional `B`.
+
+## Confidentiality (rule 9) (2026-09-27)
+
+Rules 2-8 protect integrity. Without rule 9 nothing stopped a kernel address
+from reaching a register the epilogue writes back to `pt_regs` (a KASLR /
+kernel-stack leak): `mov x0, sp`, `add x0, x29, #0`, `ldr x0, [sp, #176]`,
+`ldr x12, [sp, #176]; mov x0, x12`, `str x29, [sp, #16]` (user x12's slot) were
+all accepted.
+
+Rule: one forward taint dataflow (`shared/verify/taint.rs`) over the body and
+cold region, same linear shape and join conservatism as the old pt_regs
+dataflow, which it replaces (rule 3's pt_regs fact is its refinement).
+
+- State: `kernel` = GPRs holding a kernel value; `pt_regs` ⊆ `kernel` = GPRs
+  proven to hold the pt_regs pointer. SP is always a kernel value (not tracked).
+- Join state (every join point, and after every unconditional `B`): derived at
+  verify time by running the transfer function over the byte-exact
+  `KJIT_PROLOGUE` from "every GPR is a kernel value". Result: {x29 (the
+  runtime frame), x12 (the entry address the prologue's `br` uses)}; pinned by
+  `join_state_is_derived_from_the_prologue`.
+- Sources: SP read as data; x29 (in the join state, and the body never writes
+  it); the entry scratch until overwritten; `ldr xS, [sp, #176]` (-> `pt_regs`
+  fact); any other frame slot outside the user-state slots `[16, 80)` (rule 3
+  already rejects every such load, rule 9 classifies it anyway).
+- Not sources: user-state frame slots; `pt_regs` contents (loaded through the
+  proven pointer); `LDTR*` and window-atomic results; `MRS TPIDR_EL0`; the
+  budget counter (192): the user can count its own back-edges, so it is not
+  secret.
+- Transfer: a write gets the kernel mark if the instruction reads SP or a
+  kernel-valued GPR as data (ALU), or loads a kernel frame slot; loads of user
+  state clear it.
+- Checks (`VerifyRule`):
+  - `KernelValueRead`: an instruction reads SP or a kernel-valued GPR as data
+    (ALU source, store data, branch operand, `MOVK`/`BFM` destination, exit
+    payload source, `LDTR*`/`STTR*` or window-atomic data, the PAN range check),
+    or uses a kernel-valued GPR as the base of a user access / window atomic. A
+    kernel value may be a base only of a runtime access: SP for a frame access,
+    a proven pt_regs pointer for a `pt_regs` access (rule 3). So a kernel value
+    is never stored anywhere and never computed on.
+  - `KernelValueAtEdge`: at every control edge the state may hold no kernel
+    value outside the join state: every direct branch (into the body or to the
+    epilogue), every fall-through into a join point, and every user access /
+    window atomic (its fault edge to the stub). This is what makes restarting
+    each join point from the join state sound.
+  - Exit edges: the epilogue reads no join-state register before writing it
+    (x12 and x29 are not in its live-in set x0..x11, x16..x28, x30);
+    `join_state_is_dead_in_the_epilogue` computes the live-in set from
+    `KJIT_EPILOGUE` and pins both facts.
+  - The pt_regs pointer load is admitted only into scratch x12..x15
+    (`FrameAccessOutOfRange` otherwise, as for any other kernel slot): scratch
+    is never written back to the user, so the pointer can never sit in a
+    user-visible register.
+- What the translator emits that needed allowing: only the exit-preserve
+  sequence `ldr x12, [sp, #176]; str x9/x10/x11, [x12, #72/#80/#88]` in exit
+  groups, followed by the payload and `b <epilogue>` with x12 still holding the
+  pointer. Safe: x12 is used only as a runtime-access base, and x12 is in the
+  join state and dead in the epilogue. No fixture fragment reads SP (other than
+  as a frame base), x29 or the entry scratch (checked: every fixture fragment
+  verifies).
+- Not covered: NZCV at entry holds the trampoline's flags (not an address; the
+  body only observes them if it reads flags before setting them, a translator
+  semantic issue); FP/SIMD registers (A9: `reads`/`writes` must learn the
+  vector register fields; a vector write misread as a GPR write would clear a
+  GPR's kernel mark, which is unsafe, so A9 must classify them before merge);
+  the kernel's fault fixup is assumed to change no GPR before the stub.
 
 ## Cost
 

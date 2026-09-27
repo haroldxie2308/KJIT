@@ -586,7 +586,11 @@ user-code memory form (byte/half, unscaled, register-offset, literal, PRFM,
 acquire/release, ...) and no BTI appears at all, the only system instructions
 are `MRS TPIDR_EL0`, NOP and DMB/DSB/ISB, every other load/store
 stays in the user-state frame slots or `pt_regs` `regs[]`/`sp` through a pointer
-loaded from the frame, direct branches stay inside the body (or go to the
+loaded from the frame into a scratch register, no kernel value (SP, x29, the
+entry address, the pt_regs pointer, any other kernel frame slot) is ever read
+except as the base of such a runtime access or carried across a control edge
+into user-visible state (a taint dataflow, rule 9: no KASLR/kernel-stack leak
+through the registers the epilogue writes back), direct branches stay inside the body (or go to the
 epilogue), there are no calls, indirect branches, SVC or ADR/ADRP, every fault
 stub is an exit group ending in `b <epilogue>`, nothing falls off the end, and
 every back-edge is guarded by the budget check (which alone may touch the
@@ -599,7 +603,10 @@ user-only memory forms, acquire/release user forms and site-less LDTR*/STTR*,
 non-allowlisted barrier-like system ops (SB, CLREX, DSB nXS, WFE, ...),
 BTI and non-subset hints (PACIASP, AUTIASP, ...),
 branches out of the body, inserted BL/BR/RET/SVC/MSR/HVC,
-SP/x29 writes, out-of-range frame and pt_regs accesses, corrupted wrapper words,
+SP/x29 writes, SP/x29 reads, kernel frame slots loaded into any register, the
+pt_regs pointer moved/stored/used as exit payload, user-access data or base,
+PAN-window atomic operand, or live across a control edge, out-of-range frame
+and pt_regs accesses, corrupted wrapper words,
 broken fault tables, dropped/retargeted/altered budget checks, stray counter
 writes, PAN windows with a dropped/moved/extra MSR, a widened window, an
 altered/inverted/retargeted range check, a window around a non-atomic, window

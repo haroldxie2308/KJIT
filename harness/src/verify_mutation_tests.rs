@@ -308,6 +308,7 @@ impl Suite {
         self.end_and_entries(fixture);
         self.budget_checks(fixture);
         self.pan_windows_checks(fixture);
+        self.kernel_values(fixture);
         self.random_words(fixture);
     }
 
@@ -1297,6 +1298,287 @@ impl Suite {
         }
     }
 
+    /// Rule 9 (confidentiality): SP, x29, the pt_regs pointer and every other
+    /// kernel-valued frame slot never reach a register, a store or a control edge
+    /// the user can observe.
+    fn kernel_values(&mut self, fixture: &Fixture) {
+        // SP read as data. (ORR/AND/EOR can not name SP: register 31 is XZR in
+        // their source fields, so `orr xN, sp` has no encoding.)
+        let sp_reads = [
+            ("mov x0, sp", add_imm(0, 31, 0)),
+            ("add x3, sp, #16", add_imm(3, 31, 16)),
+            (
+                "sub x12, sp, #8",
+                A64Insn::SubAddsubImmSub64AddsubImm {
+                    sh: 0,
+                    imm12: uimm(8, 12),
+                    rn: sp(),
+                    rd: A64Reg::x_sp(12),
+                },
+            ),
+            (
+                "add x0, sp, x1",
+                A64Insn::AddAddsubExtAdd64AddsubExt {
+                    rm: x(1),
+                    option: 3,
+                    imm3: uimm(0, 3),
+                    rn: sp(),
+                    rd: A64Reg::x_sp(0),
+                },
+            ),
+            (
+                "cmp sp, #0 (flags)",
+                A64Insn::SubsAddsubImmSubs64sAddsubImm {
+                    sh: 0,
+                    imm12: uimm(0, 12),
+                    rn: sp(),
+                    rd: x(31),
+                },
+            ),
+        ];
+        for (what, insn) in sp_reads {
+            self.replace_everywhere("SP read as data (rule 9)", fixture, enc(insn), what);
+        }
+
+        // Physical x29 (the kernel frame pointer; user x29 lives in x16) read.
+        let fp_reads = [
+            ("add x0, x29, #0", add_imm(0, 29, 0)),
+            ("mov x10, x29", mov_reg(10, 29)),
+            ("str x29, [sp, #16] (user x12 slot)", str64(29, sp(), 16)),
+            (
+                "stp x29, x30, [sp, #64] (user x29/sp slots)",
+                A64Insn::StpGenStp64LdstpairOff {
+                    rt2: x(30),
+                    rt: x(29),
+                    mem: mem_off(sp(), ldstpair64_offset(64)),
+                },
+            ),
+        ];
+        for (what, insn) in fp_reads {
+            self.replace_everywhere("x29 read (rule 9)", fixture, enc(insn), what);
+        }
+        // `cbz x29` aimed at the next word: a valid target, a kernel-valued operand.
+        for index in fixture.body() {
+            let cbz = A64Insn::CbzCbz64Compbranch {
+                imm19: scaled_simm(1, 19, 2),
+                rt: x(29),
+            };
+            self.replace(
+                "x29 read (rule 9)",
+                fixture,
+                index,
+                enc(cbz),
+                "cbz x29, <next>",
+            );
+        }
+
+        // Every kernel-valued frame slot loaded, whole (`ldr`, `ldp`) or in part
+        // (`ldr w`), at every body word; the destination rotates with the word so
+        // every register is a destination. The only admitted kernel-slot read is
+        // the 64-bit `ldr x12..x15, [sp, #176]`. (The budget counter is not a
+        // kernel value; its accesses are the budget classes'.)
+        let user_slots = 16..80;
+        for slot in (0..RUNTIME_FRAME_SIZE_BYTES).step_by(8) {
+            if user_slots.contains(&slot) || slot == RUNTIME_FRAME_BUDGET_OFFSET {
+                continue;
+            }
+            for index in fixture.body() {
+                let rt = ((index + slot as usize / 8) % 31) as u8;
+                let rt = if slot == RUNTIME_FRAME_PT_REGS_PTR_OFFSET && (12..=15).contains(&rt) {
+                    rt - 12
+                } else {
+                    rt
+                };
+                let rt2 = (rt + 1) % 31;
+                let loads = [
+                    (format!("ldr x{rt}, [sp, #{slot}]"), ldr64(rt, sp(), slot)),
+                    (
+                        format!("ldr w{rt}, [sp, #{}]", slot + 4),
+                        A64Insn::LdrImmGenLdr32LdstPos {
+                            rt: w(rt),
+                            mem: mem_off(sp(), scaled_uimm((slot + 4) / 4, 12, 2)),
+                        },
+                    ),
+                    (
+                        format!("ldp x{rt}, x{rt2}, [sp, #{}]", slot - slot % 16),
+                        A64Insn::LdpGenLdp64LdstpairOff {
+                            rt2: x(rt2),
+                            rt: x(rt),
+                            mem: mem_off(sp(), ldstpair64_offset((slot - slot % 16) as i32)),
+                        },
+                    ),
+                ];
+                for (what, insn) in &loads {
+                    self.replace(
+                        "kernel-valued frame slot loaded (rule 9)",
+                        fixture,
+                        index,
+                        enc(*insn),
+                        what,
+                    );
+                }
+            }
+        }
+
+        // `ldr x12, [sp, #176]` then the pointer used as anything but a runtime
+        // access base: moved, an exit payload, stored (through itself, into the
+        // frame), a branch operand.
+        let load = enc(ldr64(12, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET));
+        let pt = A64Reg::x_sp(12);
+        let leaks = [
+            ("mov x0, x12", mov_reg(0, 12)),
+            ("mov x9, x12 (exit status)", mov_reg(9, 12)),
+            ("mov x10, x12 (exit param0)", mov_reg(10, 12)),
+            ("mov x11, x12 (exit param1)", mov_reg(11, 12)),
+            ("add x16, x12, #8 (user x29)", add_imm(16, 12, 8)),
+            ("mov x13, x12 (scratch copy)", mov_reg(13, 12)),
+            ("str x12, [x12] (pt_regs x0)", str64(12, pt, 0)),
+            ("str x12, [x12, #80] (pt_regs x10)", str64(12, pt, 80)),
+            ("str x12, [sp, #16] (user x12 slot)", str64(12, sp(), 16)),
+            (
+                "stp x0, x12, [x12, #16]",
+                A64Insn::StpGenStp64LdstpairOff {
+                    rt2: x(12),
+                    rt: x(0),
+                    mem: mem_off(pt, ldstpair64_offset(16)),
+                },
+            ),
+            (
+                "cbz x12, <next>",
+                A64Insn::CbzCbz64Compbranch {
+                    imm19: scaled_simm(1, 19, 2),
+                    rt: x(12),
+                },
+            ),
+        ];
+        for (what, insn) in leaks {
+            for index in fixture.body().skip(1) {
+                let mut words = fixture.words.clone();
+                words[index - 1] = load;
+                words[index] = enc(insn);
+                self.expect_reject(
+                    "pt_regs pointer leaked (rule 9)",
+                    fixture,
+                    format!("ldr x12, [sp, #176]; {what} at {:#x}", index * 4),
+                    &words,
+                    &fixture.tables,
+                );
+            }
+        }
+
+        // At each LDTR/STTR fault site: the pointer as the stored data, or as the
+        // user access's base.
+        for site in &fixture.tables.fault_sites {
+            let index = site.access_offset / 4;
+            let Some(insn) = fixture.decoded(index) else {
+                continue;
+            };
+            if !insn.is_unprivileged_access() {
+                continue;
+            }
+            let Some(mem) = insn.mem_operand() else {
+                continue;
+            };
+            for (what, access) in [
+                (
+                    "sttr x12, [base]",
+                    A64Insn::SttrSttr64LdstUnpriv { rt: x(12), mem },
+                ),
+                (
+                    "ldtr x0, [x12]",
+                    A64Insn::LdtrLdtr64LdstUnpriv {
+                        rt: x(0),
+                        mem: mem_off(pt, simm(0, 9)),
+                    },
+                ),
+            ] {
+                let mut words = fixture.words.clone();
+                words[index - 1] = load;
+                words[index] = enc(access);
+                self.expect_reject(
+                    "pt_regs pointer into a user access (rule 9)",
+                    fixture,
+                    format!("{what} at {:#x}", index * 4),
+                    &words,
+                    &fixture.tables,
+                );
+            }
+        }
+
+        // At each PAN window: the pointer loaded before the range check and used
+        // as the atomic's data operand (the window shape is kept).
+        for (clear, _) in Self::pan_windows(fixture) {
+            let (ubfx, atomic) = (clear - 2, clear + 1);
+            let Some(A64Insn::UbfmUbfm64mBitfield { rn: sa, .. }) = fixture.decoded(ubfx) else {
+                panic!("{}: window at {:#x} has no ubfx", fixture.name, clear * 4);
+            };
+            let base = A64Reg::x_sp(sa.enc());
+            for (what, insn) in [
+                (
+                    "ldaddal x12, x0, [sA]",
+                    A64Insn::LdaddLdaddal64Memop {
+                        rs: x(12),
+                        rn: base,
+                        rt: x(0),
+                    },
+                ),
+                (
+                    "casal x0, x12, [sA]",
+                    A64Insn::CasCasalC64Comswap {
+                        rs: x(0),
+                        rn: base,
+                        rt: x(12),
+                    },
+                ),
+            ] {
+                let mut words = fixture.words.clone();
+                words[ubfx - 1] = load;
+                words[atomic] = enc(insn);
+                self.expect_reject(
+                    "pt_regs pointer into a PAN window atomic (rule 9)",
+                    fixture,
+                    format!("{what}, window at {:#x}", clear * 4),
+                    &words,
+                    &fixture.tables,
+                );
+            }
+        }
+
+        // The pointer in another scratch register, live across a control edge: the
+        // word before every branch, every LDTR/STTR (its fault edge) and every
+        // entry (a fall-through into a join point).
+        let mut edges: Vec<usize> = fixture
+            .body()
+            .filter(|&index| {
+                fixture
+                    .decoded(index)
+                    .is_some_and(|insn| branch_role(insn).is_some())
+            })
+            .collect();
+        edges.extend(
+            fixture
+                .tables
+                .fault_sites
+                .iter()
+                .map(|site| site.access_offset / 4),
+        );
+        edges.extend(fixture.tables.entry_offsets.iter().map(|&entry| entry / 4));
+        edges.sort_unstable();
+        edges.dedup();
+        for reg in 13..=15 {
+            let load = enc(ldr64(reg, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET));
+            for &index in edges.iter().filter(|&&index| index > fixture.body().start) {
+                self.replace(
+                    "pt_regs pointer live across a control edge (rule 9)",
+                    fixture,
+                    index - 1,
+                    load,
+                    &format!("ldr x{reg}, [sp, #176]"),
+                );
+            }
+        }
+    }
+
     fn end_and_entries(&mut self, fixture: &Fixture) {
         let last = fixture.words.len() - 1;
         let nop = enc(A64Insn::NopNopHiHints {});
@@ -1373,7 +1655,8 @@ impl Suite {
 }
 
 /// Benign by the generated metadata alone: no memory, branch or control-flow role,
-/// not SVC / ADR / ADRP, and no write to SP or x29.
+/// not SVC / ADR / ADRP, no write to SP or x29, and no read of SP or x29 (kernel
+/// values, rule 9).
 fn is_benign_alu(insn: A64Insn) -> bool {
     let key = insn.key();
     if key.starts_with("SVC") || key.starts_with("ADR") {
@@ -1385,15 +1668,13 @@ fn is_benign_alu(insn: A64Insn) -> bool {
         | A64OperandRole::BranchTarget { .. }
         | A64OperandRole::MemBase { .. }
         | A64OperandRole::MemOffset { .. } => false,
-        A64OperandRole::RegWrite { field, .. } | A64OperandRole::RegReadWrite { field, .. } => {
-            insn.get_reg(field).is_some_and(|reg| {
-                reg.enc() != 29 && (reg.enc() != 31 || reg.reg31 == A64Reg31Mode::Xzr)
-            })
-        }
+        A64OperandRole::RegWrite { field, .. }
+        | A64OperandRole::RegReadWrite { field, .. }
+        | A64OperandRole::RegRead { field, .. } => insn.get_reg(field).is_some_and(|reg| {
+            reg.enc() != 29 && (reg.enc() != 31 || reg.reg31 == A64Reg31Mode::Xzr)
+        }),
         A64OperandRole::ImplicitRegWrite { reg, .. } => reg != 29 && reg != 31,
-        A64OperandRole::RegRead { .. } | A64OperandRole::FlagsRead | A64OperandRole::FlagsWrite => {
-            true
-        }
+        A64OperandRole::FlagsRead | A64OperandRole::FlagsWrite => true,
     })
 }
 

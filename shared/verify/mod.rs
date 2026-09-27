@@ -13,6 +13,7 @@
 //! O(words) memory.
 
 mod rules;
+mod taint;
 
 use crate::shared::abi::{
     ABI_INSN_SIZE, EPILOGUE_LEN_BYTES, EPILOGUE_OFFSET, KJIT_EPILOGUE, KJIT_PROLOGUE,
@@ -21,7 +22,8 @@ use crate::shared::abi::{
 use crate::shared::arm64::{A64Insn, A64Mem};
 use crate::shared::platform::{SharedVec, GFP_KERNEL};
 
-use rules::{classify, writes, Form};
+use rules::{classify, reads, writes, Form};
+use taint::Taint;
 
 /// First body byte: layout order is prologue, epilogue, body, cold region.
 pub const BODY_OFFSET: usize = PROLOGUE_LEN_BYTES + EPILOGUE_LEN_BYTES;
@@ -134,6 +136,14 @@ pub enum VerifyRule {
     PanStubTarget,
     /// 8: any other `MSR` (PSTATE.PAN with an immediate other than 0/1).
     Msr,
+    /// 9: a kernel value (SP, x29, the pt_regs pointer, the entry address) read
+    /// other than as the base of an allowed runtime access: as data, a branch
+    /// operand, or the base of a user access.
+    KernelValueRead,
+    /// 9: a kernel value live across a control edge (branch, fall-through into a
+    /// join point, fault edge of a user access) other than one every join point
+    /// already assumes.
+    KernelValueAtEdge,
 }
 
 const fn err(offset: usize, rule: VerifyRule) -> VerifyError {
@@ -160,7 +170,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
     let windows = find_pan_windows(&frag)?;
 
     // Join points: every place control can arrive other than by falling through.
-    // The pt_regs dataflow restarts at each of them.
+    // The taint dataflow (rules 3 and 9) restarts at each of them.
     let mut join = alloc_bools(body.len())?;
 
     // Fault table: sorted, every entry on a user access, every stub an exit group.
@@ -255,17 +265,23 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
         }
     }
 
-    // Main pass. `pt_regs` bit n: xn holds the pt_regs pointer on every path that
-    // reaches this word without crossing a join point.
-    let mut pt_regs: u32 = 0;
+    // Main pass, with the taint dataflow (rules 3 and 9, `taint.rs`): `state`
+    // holds, for every path that reaches this word without crossing a join point,
+    // the registers holding kernel values and those proven to hold the pt_regs
+    // pointer. Every join point starts from the entry state; every edge into one
+    // (and every exit) must carry no kernel value beyond it, so that start is
+    // sound.
+    let join_state = Taint::at_entry().ok_or(err(0, VerifyRule::Prologue))?;
+    let mut state = join_state;
     let mut sites = input.fault_sites.iter();
     for (index, insn) in body.iter().enumerate() {
         let offset = frag.offset(index);
         if join[index] {
-            pt_regs = 0;
+            // Falling through into a join point is an edge too.
+            check_edge(state, join_state, offset)?;
+            state = join_state;
         }
         let form = classify(*insn);
-        let mut defines_pt_regs = None;
         match form {
             Form::Alu | Form::Nop | Form::Barrier | Form::MrsTpidrEl0 => {}
             Form::PcRelative => return Err(err(offset, VerifyRule::PcRelative)),
@@ -277,11 +293,16 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
                 if frag.is_back_edge(index) {
                     check_budget_before(&frag, &join, index)?;
                 }
+                // Into the body or the epilogue: the epilogue reads no register
+                // of the join state (`join_state_is_dead_in_the_epilogue`).
+                check_edge(state, join_state, offset)?;
             }
             Form::UserAccess { mem } => {
                 if rules::is_sp(mem.base()) {
                     return Err(err(offset, VerifyRule::UserAccessSpBase));
                 }
+                // The fault edge to the stub.
+                check_edge(state, join_state, offset)?;
                 // The table is sorted and every entry is on a user access (checked
                 // above), so the next entry must be this one.
                 match sites.next() {
@@ -293,6 +314,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
                 if windows.atomic_stub[index].is_none() {
                     return Err(err(offset, VerifyRule::AtomicOutsideWindow));
                 }
+                check_edge(state, join_state, offset)?;
                 match sites.next() {
                     Some(site) if site.access_offset == offset => {}
                     _ => return Err(err(offset, VerifyRule::MissingFaultSite)),
@@ -307,8 +329,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
             }
             Form::MsrOther => return Err(err(offset, VerifyRule::Msr)),
             Form::RuntimeAccess { mem, bytes, store } => {
-                defines_pt_regs =
-                    check_runtime_access(&frag, index, *insn, mem, bytes, store, pt_regs)?;
+                check_runtime_access(&frag, index, *insn, mem, bytes, store, state)?;
             }
         }
 
@@ -319,10 +340,22 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
         if written.gprs & (1 << rules::KERNEL_FP_REG) != 0 {
             return Err(err(offset, VerifyRule::FramePointerWrite));
         }
-        pt_regs &= !written.gprs;
-        if let Some(reg) = defines_pt_regs {
-            pt_regs |= 1 << reg;
+
+        // Rule 9: a kernel value is never read as data, and is a base only of a
+        // runtime access (SP: a frame access; the pt_regs pointer: checked above).
+        let read = reads(insn).ok_or(err(offset, VerifyRule::OperandMetadata))?;
+        let user_base = match form {
+            Form::UserAccess { .. } | Form::WindowAtomic { .. } => read.base,
+            _ => None,
+        };
+        if read.sp
+            || read.gprs & state.kernel != 0
+            || user_base.is_some_and(|base| state.is_kernel(base.enc()))
+        {
+            return Err(err(offset, VerifyRule::KernelValueRead));
         }
+
+        state = taint::step(insn, form, state).ok_or(err(offset, VerifyRule::OperandMetadata))?;
         if matches!(
             form,
             Form::Branch {
@@ -331,7 +364,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
             }
         ) {
             // Only a join point can reach the next word.
-            pt_regs = 0;
+            state = join_state;
         }
     }
 
@@ -610,8 +643,16 @@ fn check_budget_before(
     Ok(())
 }
 
-/// Rule 3 for a plain load/store. Returns the register this instruction makes a
-/// pt_regs pointer, if it is `ldr xN, [sp, #PT_REGS_PTR]`.
+/// Rule 9: at a control edge, no register holds a kernel value the join state
+/// does not already assume.
+fn check_edge(state: Taint, join_state: Taint, offset: usize) -> Result<(), VerifyError> {
+    if state.kernel & !join_state.kernel != 0 {
+        return Err(err(offset, VerifyRule::KernelValueAtEdge));
+    }
+    Ok(())
+}
+
+/// Rule 3 for a plain load/store.
 #[allow(clippy::too_many_arguments)]
 fn check_runtime_access(
     frag: &Fragment<'_>,
@@ -620,8 +661,8 @@ fn check_runtime_access(
     mem: A64Mem,
     bytes: u32,
     store: bool,
-    pt_regs: u32,
-) -> Result<Option<u8>, VerifyError> {
+    state: Taint,
+) -> Result<(), VerifyError> {
     let offset = frag.offset(index);
     let A64Mem::Offset { base, offset: imm } = mem else {
         return Err(err(offset, VerifyRule::RuntimeAccessWriteback));
@@ -631,13 +672,10 @@ fn check_runtime_access(
     let within = |lo: u32, hi: u32| start >= lo as i64 && end <= hi as i64;
 
     if rules::is_sp(base) {
-        if within(rules::FRAME_USER_START, rules::FRAME_USER_END) {
-            return Ok(None);
-        }
-        if let A64Insn::LdrImmGenLdr64LdstPos { rt, .. } = insn {
-            if start == rules::FRAME_PT_REGS_PTR as i64 && rt.enc() < 31 {
-                return Ok(Some(rt.enc()));
-            }
+        if within(rules::FRAME_USER_START, rules::FRAME_USER_END)
+            || rules::pt_regs_pointer_load(&insn).is_some()
+        {
+            return Ok(());
         }
         if start == rules::BUDGET_SLOT_OFFSET as i64 && bytes == 8 {
             // Only the budget check's own load and store touch the counter.
@@ -647,16 +685,16 @@ fn check_runtime_access(
                 Some(index)
             };
             if seq_start.is_some_and(|start| frag.guards_back_edge(start)) {
-                return Ok(None);
+                return Ok(());
             }
             return Err(err(offset, VerifyRule::BudgetSlotAccess));
         }
         return Err(err(offset, VerifyRule::FrameAccessOutOfRange));
     }
 
-    if base.enc() < 31 && pt_regs & (1 << base.enc()) != 0 {
+    if state.is_pt_regs(base.enc()) {
         if within(0, rules::PT_REGS_USER_STATE_END) {
-            return Ok(None);
+            return Ok(());
         }
         return Err(err(offset, VerifyRule::PtRegsAccessOutOfRange));
     }
