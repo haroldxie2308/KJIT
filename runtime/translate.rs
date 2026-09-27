@@ -8,7 +8,9 @@
 use core::cell::RefCell;
 
 use kernel::alloc::flags::GFP_KERNEL;
-use kernel::error::code::{E2BIG, EAGAIN, EEXIST, EFAULT, EINVAL, ENOEXEC, ENOMEM, ENOSPC, EPERM};
+use kernel::error::code::{
+    E2BIG, EAGAIN, EEXIST, EFAULT, EINVAL, ENODEV, ENOEXEC, ENOMEM, ENOSPC, EPERM,
+};
 use kernel::ffi::c_int;
 use kernel::page::PAGE_SIZE;
 use kernel::prelude::*;
@@ -147,10 +149,9 @@ enum Failure {
     Compile,
     Encode,
     Verify(VerifyRule),
-    /// The verifier accepted a fragment with `uses_fpsimd` (A9a). Refused until
-    /// A9b runs such fragments inside the user FP/SIMD bracket
-    /// (tmp/pipeline.md, "A9 contract", Kernel).
-    FpSimd,
+    /// The verifier reports `uses_fpsimd`, but this system has SVE or SME (or
+    /// no FP/SIMD): not modelled, refused (tmp/pipeline.md, "A9 contract").
+    FpSimdUnsupportedCpu,
     Install(c_int),
     Alloc,
     Unaligned,
@@ -163,11 +164,11 @@ impl Failure {
             Failure::Text(TextFault::Denied(rc)) => *rc,
             Failure::Text(TextFault::Budget) => E2BIG.to_errno(),
             Failure::Text(TextFault::Alloc) | Failure::Alloc => ENOMEM.to_errno(),
-            Failure::Compile
-            | Failure::Encode
-            | Failure::Unaligned
-            | Failure::Overflow
-            | Failure::FpSimd => EINVAL.to_errno(),
+            Failure::Compile | Failure::Encode | Failure::Unaligned | Failure::Overflow => {
+                EINVAL.to_errno()
+            }
+            // Final for the auto mode's negative cache: the CPU does not change.
+            Failure::FpSimdUnsupportedCpu => ENODEV.to_errno(),
             Failure::Verify(_) => EPERM.to_errno(),
             Failure::EntryUnsupported(_) => ENOEXEC.to_errno(),
             Failure::Install(rc) => *rc,
@@ -221,10 +222,10 @@ extern "C" fn kjit_rs_translate(
                         unsafe { *entry_word = word };
                     }
                 }
-                // A9a: counted with compile failures until A9b installs them.
-                Failure::Compile | Failure::Unaligned | Failure::Overflow | Failure::FpSimd => {
+                Failure::Compile | Failure::Unaligned | Failure::Overflow => {
                     stats::inc(Stat::TranslateCompileFailed)
                 }
+                Failure::FpSimdUnsupportedCpu => stats::inc(Stat::FpsimdRefusedSveSme),
                 Failure::Encode => stats::inc(Stat::TranslateEncodeFailed),
                 Failure::Verify(VerifyRule::FallsOffEnd) => {
                     stats::inc(Stat::TranslateVerifyRejected);
@@ -365,15 +366,16 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
             return Err(Failure::Verify(err.rule));
         }
     };
-    // A9a: a fragment that touches the user's V registers or FPCR/FPSR needs the
-    // A9b bracket (user FP/SIMD state live, preemption and softirq NEON off) that
-    // this module does not have yet. The decision uses the verifier's own
-    // `uses_fpsimd`, derived from the bytes. Lift when A9b lands.
-    if verified.uses_fpsimd {
+    // A fragment that touches the user's V registers or FPCR/FPSR runs only
+    // inside the FP/SIMD bracket (kjit_call_fragment_fpsimd), selected by the
+    // flag installed with it. The flag is the verifier's own `uses_fpsimd`,
+    // derived from exactly the installed bytes, not the translator's view.
+    // SAFETY: plain CPU capability query.
+    if verified.uses_fpsimd && !unsafe { ffi::kjit_fpsimd_supported() } {
         if verbose {
-            pr_info!("kjit: pc {pc:#x}: fragment uses FP/SIMD, not installed (A9b)\n");
+            pr_info!("kjit: pc {pc:#x}: fragment uses FP/SIMD, refused on a CPU with SVE/SME\n");
         }
-        return Err(Failure::FpSimd);
+        return Err(Failure::FpSimdUnsupportedCpu);
     }
 
     let code_len = u32::try_from(code.len()).map_err(|_| Failure::Overflow)?;
@@ -396,6 +398,7 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
             n_labels,
             state.lo,
             state.hi,
+            verified.uses_fpsimd,
         )
     };
     if rc != 0 {
@@ -406,9 +409,10 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
     }
     if verbose {
         pr_info!(
-            "kjit: pc {pc:#x}: installed {code_len} bytes, {n_sites} fault sites, {n_labels} entries, text {:#x}..{:#x}\n",
+            "kjit: pc {pc:#x}: installed {code_len} bytes, {n_sites} fault sites, {n_labels} entries, text {:#x}..{:#x}, fpsimd {}\n",
             state.lo,
-            state.hi
+            state.hi,
+            verified.uses_fpsimd
         );
     }
     Ok(())

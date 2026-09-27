@@ -8,8 +8,10 @@
  * (kernel-patches/0001, 0002), the per-mm code cache and its mmu_notifier,
  * fragment memory (execmem, ROX, I-cache, the arm64 exception table), reading
  * the target's user text, the call trampoline, the auto-mode profiler and its
- * task_work requests (kernel-patches/0004), and the debugfs files.
- * Design notes: tmp/pipeline.md, "K2 implementation" and "K3".
+ * task_work requests (kernel-patches/0004), the FP/SIMD bracket around
+ * fragments that use the user's FP/SIMD registers (kernel-patches/0005), and
+ * the debugfs files.
+ * Design notes: tmp/pipeline.md, "K2 implementation", "K3" and "A9b".
  *
  * Lifetimes and locking
  *
@@ -39,6 +41,7 @@
  */
 #include <linux/atomic.h>
 #include <linux/bitfield.h>
+#include <linux/bottom_half.h>
 #include <linux/cacheflush.h>
 #include <linux/compat.h>
 #include <linux/debugfs.h>
@@ -50,6 +53,7 @@
 #include <linux/hashtable.h>
 #include <linux/highmem.h>
 #include <linux/kjit.h>
+#include <linux/math64.h>
 #include <linux/mm.h>
 #include <linux/mmu_notifier.h>
 #include <linux/module.h>
@@ -72,6 +76,7 @@
 #include <asm/arch_timer.h>
 #include <asm/asm-extable.h>
 #include <asm/cpufeature.h>
+#include <asm/fpsimd.h>
 #include <asm/ptrace.h>
 #include <asm/sysreg.h>
 
@@ -85,6 +90,16 @@ static_assert(offsetof(struct pt_regs, sp) == 248);
 static_assert(offsetof(struct pt_regs, pc) == 256);
 static_assert(offsetof(struct pt_regs, pstate) == 264);
 static_assert(sizeof(struct exception_table_entry) == 12);
+
+/*
+ * The FP/SIMD bracket (kjit_call_fragment_fpsimd) relies on local_bh_disable()
+ * also disabling preemption and on softirqs running only in task/irq-exit
+ * context, which is what the arm64 FP/SIMD code itself relies on outside
+ * PREEMPT_RT (get_cpu_fpsimd_context()). On RT it would need another design.
+ */
+#ifdef CONFIG_PREEMPT_RT
+#error "kjit: the FP/SIMD fragment bracket assumes !PREEMPT_RT"
+#endif
 
 /* ------------------------------------------------------------------------- */
 /* Rust side (runtime/)                                                        */
@@ -114,6 +129,7 @@ enum kjit_note {
 	KJIT_NOTE_NEG_ADDED = 13,	/* PC added to the negative cache */
 	KJIT_NOTE_NEG_EVICTED = 14,	/* ... evicting an older one */
 	KJIT_NOTE_TRANSLATE_NS = 15,	/* time spent in auto-mode translations */
+	KJIT_NOTE_FPSIMD_RESTORES = 16,	/* FP/SIMD runs that reloaded the user state */
 };
 void kjit_rs_note(u32 note, u64 n);
 
@@ -131,14 +147,18 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		 const u8 *code, u32 code_len, u32 entry_offset,
 		 const struct kjit_site *sites, u32 n_sites,
 		 const struct kjit_label *labels, u32 n_labels,
-		 u64 src_start, u64 src_end);
+		 u64 src_start, u64 src_end, bool uses_fpsimd);
+bool kjit_fpsimd_supported(void);
 bool kjit_can_run(const struct pt_regs *regs);
 struct kjit_frag *kjit_lookup(u64 pc, u64 *entry);
 void kjit_frag_put(struct kjit_frag *f);
 u64 kjit_frag_base(const struct kjit_frag *f);
 s64 kjit_frag_offset_for_pc(const struct kjit_frag *f, u64 pc);
+bool kjit_frag_uses_fpsimd(const struct kjit_frag *f);
 void kjit_bad_status(u64 status, u64 pc);
 u64 kjit_call_fragment(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
+u64 kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
+u64 kjit_fpsimd_run_max_ns(void);
 void kjit_profile(u64 pc, u32 kind);
 u64 kjit_hook_calls(void);
 
@@ -172,6 +192,11 @@ struct kjit_frag {
 	size_t image_size;
 	u32 code_len;
 	u32 entry_offset;
+	/*
+	 * verify_fragment's uses_fpsimd: the code reads or writes the user's
+	 * V0-V31/FPCR/FPSR, so every run goes through kjit_call_fragment_fpsimd().
+	 */
+	bool uses_fpsimd;
 	const struct exception_table_entry *extable;
 	u32 n_extable;
 	u32 n_labels;
@@ -314,6 +339,11 @@ void kjit_frag_put(struct kjit_frag *f)
 u64 kjit_frag_base(const struct kjit_frag *f)
 {
 	return (u64)f->image;
+}
+
+bool kjit_frag_uses_fpsimd(const struct kjit_frag *f)
+{
+	return f->uses_fpsimd;
 }
 
 /*
@@ -584,6 +614,9 @@ out:
  * read) and none is in progress, so a translation of text that changed while
  * it was read never becomes visible.
  *
+ * @uses_fpsimd is verify_fragment's verdict on @code: every run of the fragment
+ * then goes through the FP/SIMD bracket (kjit_call_fragment_fpsimd()).
+ *
  * Returns 0, -EEXIST (@entry_pc already has a fragment), -EAGAIN (raced with
  * an invalidation), -ESRCH (mm gone), -ENOSPC (a fragment cap is reached,
  * kjit_caps_allow()), -ENOMEM, -EINVAL (malformed tables; the Rust side never
@@ -593,7 +626,7 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		 const u8 *code, u32 code_len, u32 entry_offset,
 		 const struct kjit_site *sites, u32 n_sites,
 		 const struct kjit_label *labels, u32 n_labels,
-		 u64 src_start, u64 src_end)
+		 u64 src_start, u64 src_end, bool uses_fpsimd)
 {
 	struct exception_table_entry *ex;
 	struct kjit_frag *f, *old;
@@ -631,6 +664,7 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	f->src_start = src_start;
 	f->src_end = src_end;
 	f->n_extable = n_sites;
+	f->uses_fpsimd = uses_fpsimd;
 
 	memcpy(f->image, code, code_len);
 	ex = f->image + ex_off;
@@ -691,7 +725,9 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
  * uprobes, livepatch, MTE async faults), syscall work (ptrace syscall stops,
  * audit, seccomp, syscall tracepoints) and single-step all need the normal
  * return to userspace. TIF_FOREIGN_FPSTATE only asks for an FP register reload
- * before userspace runs; fragments never touch FP/SIMD.
+ * before userspace runs: a fragment without FP/SIMD never touches those
+ * registers, and one with FP/SIMD does that reload itself inside its bracket
+ * (kjit_call_fragment_fpsimd()).
  */
 #define KJIT_BAIL_FLAGS \
 	((EXIT_TO_USER_MODE_WORK & ~_TIF_FOREIGN_FPSTATE) | _TIF_SYSCALL_WORK | _TIF_SINGLESTEP)
@@ -798,6 +834,88 @@ asm(
 "	ret\n"
 "	.size	kjit_call_fragment, . - kjit_call_fragment\n"
 "	.popsection\n");
+
+/*
+ * Longest FP/SIMD bracket per CPU, in arch counter ticks (stats:
+ * fpsimd_run_max_ns). Written only on its own CPU inside the bracket, where
+ * preemption is off; the stats file reads it racily.
+ */
+static DEFINE_PER_CPU(u64, kjit_fpsimd_max_ticks);
+
+/*
+ * kjit_call_fragment() for a fragment that uses FP/SIMD: its code reads and
+ * writes V0-V31, FPCR and FPSR as the user's own registers, live in hardware
+ * (tmp/pipeline.md, "A9 contract", Kernel, and "A9b implementation"). Called
+ * for every entry of such a fragment, chained entries included, from task
+ * context on the syscall return path with interrupts enabled.
+ *
+ * - local_bh_disable(): no softirq runs on this CPU until local_bh_enable(),
+ *   so no softirq kernel-mode NEON can save and take the registers in the
+ *   middle of the fragment; outside PREEMPT_RT (#error above) it also
+ *   disables preemption, so no context switch either. Hardirq handlers never
+ *   use FP/SIMD (may_use_simd()).
+ * - TIF_FOREIGN_FPSTATE: the registers are not current's user state (the task
+ *   was scheduled out, or kernel-mode NEON ran during the syscall).
+ *   fpsimd_restore_current_state() (kernel-patches/0005) loads it and binds it
+ *   to this CPU, which is the reload the exit path would otherwise do. From
+ *   then on the registers are current's state: a context switch or softirq
+ *   NEON after the bracket saves what the fragment wrote, and the exit path
+ *   has nothing left to reload. Nothing inside the bracket can set the flag
+ *   again (no context switch, no softirq).
+ * - pagefault_disable(): the fragment runs in atomic context, so a user access
+ *   fault must not sleep. With page faults disabled, do_page_fault() goes
+ *   straight to no_context, the fragment's exception table (kernel-patches/
+ *   0002) sends it to the access's Mem or PAN stub, and the Mem exit makes
+ *   userspace re-execute the instruction natively, where the fault is handled
+ *   as usual (demand paging, CoW, SIGSEGV). Correct, occasionally slower.
+ *
+ * Pending softirqs run in local_bh_enable() after the fragment returned; one
+ * that uses NEON then saves the registers as current's live state, which they
+ * are.
+ */
+u64 kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 base)
+{
+	u64 t0, ticks, status;
+
+	local_bh_disable();
+	t0 = arch_timer_read_counter();
+	if (test_thread_flag(TIF_FOREIGN_FPSTATE)) {
+		fpsimd_restore_current_state();
+		kjit_rs_note(KJIT_NOTE_FPSIMD_RESTORES, 1);
+	}
+	pagefault_disable();
+	status = kjit_call_fragment(regs, extra, entry, base);
+	pagefault_enable();
+	ticks = arch_timer_read_counter() - t0;
+	if (ticks > __this_cpu_read(kjit_fpsimd_max_ticks))
+		__this_cpu_write(kjit_fpsimd_max_ticks, ticks);
+	local_bh_enable();
+	return status;
+}
+
+/* The longest non-preemptible FP/SIMD bracket on any CPU so far, in ns. */
+u64 kjit_fpsimd_run_max_ns(void)
+{
+	u64 max = 0;
+	int cpu;
+
+	for_each_possible_cpu(cpu)
+		max = max_t(u64, max, READ_ONCE(per_cpu(kjit_fpsimd_max_ticks, cpu)));
+	return mul_u64_u32_div(max, NSEC_PER_SEC, arch_timer_get_cntfrq());
+}
+
+/*
+ * Whether fragments that use FP/SIMD may be installed on this system. SVE and
+ * SME change what the user's FP/SIMD state is (Z/P registers whose low bits
+ * are the V registers, the SVE discard at syscall entry, streaming mode, ZA);
+ * none of it is modelled, so such fragments are refused (tmp/pipeline.md, "A9
+ * contract"). Without FP/SIMD at all (arm64.nofpsimd) the fragment's FP/SIMD
+ * instructions would trap at EL1.
+ */
+bool kjit_fpsimd_supported(void)
+{
+	return system_supports_fpsimd() && !system_supports_sve() && !system_supports_sme();
+}
 
 static long kjit_after_syscall(struct pt_regs *regs)
 {
@@ -978,8 +1096,9 @@ static bool kjit_prof_hit_locked(struct kjit_mm *kmm, u64 pc, u64 now, u64 *stop
 /*
  * Whether a failed translation of a PC would fail again on the same text:
  * compile, encode or verifier failure (-EINVAL, -EPERM), text outside an
- * executable non-writable mapping or unmapped (-EACCES, -EFAULT), or over the
- * text budget (-E2BIG). Races, memory, a fatal signal, a dying mm and the caps
+ * executable non-writable mapping or unmapped (-EACCES, -EFAULT), over the
+ * text budget (-E2BIG), or FP/SIMD code on a CPU with SVE/SME (-ENODEV).
+ * Races, memory, a fatal signal, a dying mm and the caps
  * are transient: the PC is profiled again.
  */
 static bool kjit_failure_is_final(int ret)
@@ -1458,6 +1577,8 @@ int kjit_glue_init(void)
 	ret = kjit_check_cpu();
 	if (ret)
 		return ret;
+	if (!kjit_fpsimd_supported())
+		pr_info("kjit: SVE/SME present or no FP/SIMD: fragments that use FP/SIMD will not be installed\n");
 
 	kjit_wq = alloc_workqueue("kjit", WQ_UNBOUND, 0);
 	if (!kjit_wq)

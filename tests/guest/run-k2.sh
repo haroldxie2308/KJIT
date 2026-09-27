@@ -120,6 +120,31 @@ while [ "$i" -le "$iterations" ]; do
     onoff signal_loop inkernel 0 "$T/signal_loop" 200000
     grep -q "handled=1" signal_loop.1.out || fail "signal_loop: no signal handled"
 
+    # A9b: fragments that use the user's FP/SIMD registers.
+    onoff fp_loop fpsimd 0 "$T/fp_loop" 20000
+    onoff fp_regs fpsimd 0 "$T/fp_regs" 100000
+    before=$(stat fpsimd_restores)
+    onoff fp_switch fpsimd 0 "$T/fp_switch" 20000
+    restores=$(( $(stat fpsimd_restores) - before ))
+    [ "$restores" -ge 1 ] || fail "fp_switch: no FP/SIMD state reload"
+    onoff fp_signal fpsimd 0 "$T/fp_signal" 200000
+    grep -q "handled=1" fp_signal.1.out || fail "fp_signal: no signal handled"
+    for mode in ro_store unmapped_load null_ld1; do
+        before=$(stat fpsimd_exit_mem)
+        onoff "fp_fault_$mode" "" 0 "$T/fp_fault" "$mode"
+        mem=$(( $(stat fpsimd_exit_mem) - before ))
+        grep -q "addr_ok 1 pc_ok 1 iters_left 0" "fp_fault_$mode.1.out" \
+            || fail "fp_fault $mode: wrong siginfo"
+        [ "$mem" -ge 1 ] || fail "fp_fault $mode: no FP/SIMD Mem exit ($mem)"
+    done
+    before=$(stat fpsimd_exit_mem)
+    onoff fp_fault_demand "" 0 "$T/fp_fault" demand
+    mem=$(( $(stat fpsimd_exit_mem) - before ))
+    [ "$mem" -ge 100 ] || fail "fp_fault demand: $mem FP/SIMD Mem exits, want one per first touch"
+    echo "k2:   fpsimd_run_max_ns=$(stat fpsimd_run_max_ns) before fp_budget"
+    onoff fp_budget budget 0 "$T/fp_budget" 400
+    echo "k2:   fpsimd_run_max_ns=$(stat fpsimd_run_max_ns) after fp_budget"
+
     before=$(stat invalidated_fragments)
     onoff munmap_race inkernel 139 "$T/munmap_race"
     inval=$(( $(stat invalidated_fragments) - before ))

@@ -141,6 +141,7 @@ static inline int kjit_expect(const char *what)
 
 struct kjit_snap {
 	long long in_kernel, entries, translate_ok, exit_mem, exit_budget, exit_unsupported;
+	long long fp_entries, fp_restores, fp_exit_mem;	/* A9b FP/SIMD bracket */
 };
 
 static inline struct kjit_snap kjit_snap(void)
@@ -152,15 +153,47 @@ static inline struct kjit_snap kjit_snap(void)
 		.exit_mem = kjit_stat("exit_mem"),
 		.exit_budget = kjit_stat("exit_budget"),
 		.exit_unsupported = kjit_stat("exit_unsupported"),
+		.fp_entries = kjit_stat("fpsimd_entries"),
+		.fp_restores = kjit_stat("fpsimd_restores"),
+		.fp_exit_mem = kjit_stat("fpsimd_exit_mem"),
 	};
 	return s;
 }
 
 static inline void kjit_report(const char *test, struct kjit_snap a, struct kjit_snap b)
 {
-	fprintf(stderr, "%s: in_kernel=%lld entries=%lld exit_mem=%lld exit_budget=%lld exit_unsupported=%lld\n",
+	fprintf(stderr, "%s: in_kernel=%lld entries=%lld exit_mem=%lld exit_budget=%lld exit_unsupported=%lld fpsimd_entries=%lld fpsimd_restores=%lld fpsimd_exit_mem=%lld\n",
 		test, b.in_kernel - a.in_kernel, b.entries - a.entries, b.exit_mem - a.exit_mem,
-		b.exit_budget - a.exit_budget, b.exit_unsupported - a.exit_unsupported);
+		b.exit_budget - a.exit_budget, b.exit_unsupported - a.exit_unsupported,
+		b.fp_entries - a.fp_entries, b.fp_restores - a.fp_restores,
+		b.fp_exit_mem - a.fp_exit_mem);
+}
+
+/*
+ * KJIT_EXPECT=fpsimd: at least @pct percent of @syscalls ran in the kernel and
+ * at least @pct percent of @fp_runs expected FP/SIMD fragment entries happened
+ * (both less the auto-mode warmup).
+ */
+static inline void kjit_check_fpsimd(const char *test, struct kjit_snap a, struct kjit_snap b,
+				     long long syscalls, long long fp_runs, int pct)
+{
+	long long warm = kjit_auto_warmup(), in = b.in_kernel - a.in_kernel,
+		  fp = b.fp_entries - a.fp_entries;
+
+	if (!kjit_expect("fpsimd"))
+		return;
+	if (in * 100 < (syscalls - 2 * warm) * pct)
+		die("%s: only %lld of %lld syscalls in kernel", test, in, syscalls);
+	if (fp * 100 < (fp_runs - warm) * pct)
+		die("%s: only %lld FP/SIMD fragment entries, want about %lld", test, fp, fp_runs);
+}
+
+/* 32 16-byte patterns for V registers: distinct, no zero bytes. */
+static inline void kjit_vpattern(uint8_t v[32][16], uint8_t seed)
+{
+	for (int r = 0; r < 32; r++)
+		for (int i = 0; i < 16; i++)
+			v[r][i] = (uint8_t)(seed + 37 * r + 11 * i) | 1;
 }
 
 /*

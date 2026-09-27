@@ -764,7 +764,9 @@ where the implementation is stricter than it:
   _TIF_SINGLESTEP` (signals incl. `NOTIFY_SIGNAL`, both need_resched bits,
   `NOTIFY_RESUME` = task_work/rseq, uprobes, livepatch, MTE async faults),
   x0 not in -ERESTARTSYS..-ERESTART_RESTARTBLOCK. `FOREIGN_FPSTATE` only asks
-  for an FP reload before EL0 runs; fragments never touch FP/SIMD.
+  for an FP reload before EL0 runs; fragments without FP/SIMD never touch
+  those registers, and fragments with FP/SIMD reload them inside their bracket
+  (A9b).
 - Seccomp-filtered tasks never reach the hook (`TIF_SECCOMP` is syscall work).
 
 ## Call ABI (trampoline `kjit_call_fragment`, `kjit_glue.c`)
@@ -2099,7 +2101,7 @@ pre-access offset, writeback and base-only access.
   every differential run against the translator's view (an instruction with a
   `Vec*` role); the kernel's `runtime/translate.rs` refuses to install such a
   fragment (`Failure::FpSimd`, -EINVAL, counted in `translate_compile_failed`)
-  until A9b.
+  until A9b (lifted there: "A9b implementation").
 - Rule 9: see "Confidentiality (rule 9)", FP/SIMD registers.
 
 ## Harness
@@ -2183,3 +2185,174 @@ pre-access offset, writeback and base-only access.
   SIMD&FP LDP `t == t2` (rejected): no fixture shows their native behaviour.
 - Multi-threaded observers of a window SIMD&FP access (single-copy atomicity of
   its parts) are the hardware's own; not tested.
+
+# A9b implementation (2026-09-27)
+
+Implements the Kernel part of "A9 contract" exactly as written; nothing in it
+turned out unworkable. No `shared/` change.
+
+## Kernel patch 0005
+
+`arm64: fpsimd: export fpsimd_restore_current_state() for the KJIT runtime`:
+one `EXPORT_SYMBOL_GPL`. The function already does the whole reload (FP/SIMD
+absent, SVE/SME, `get_cpu_fpsimd_context()` nesting inside our
+`local_bh_disable()`, binding to the CPU), so the module duplicates none of it.
+`kernel_neon_begin/end` (already exported) are the wrong tool: they save the
+user state and take the registers away from it.
+
+## Module
+
+- `kjit_install(..., uses_fpsimd)` stores `VerifyOk.uses_fpsimd` (the
+  verifier's verdict on the installed bytes, never the translator's) in
+  `struct kjit_frag`; `runtime/exec.rs`'s `Running` reads it once per lookup,
+  and `Running::call` picks `kjit_call_fragment_fpsimd()` or the unchanged
+  `kjit_call_fragment()` for every entry, chained entries included (a chain
+  into the same fragment keeps the flag, one into another fragment takes that
+  fragment's).
+- `kjit_call_fragment_fpsimd()` (C): `local_bh_disable()` → if
+  `TIF_FOREIGN_FPSTATE`: `fpsimd_restore_current_state()`, count
+  `fpsimd_restores` → `pagefault_disable()` → the ordinary trampoline →
+  `pagefault_enable()` → per-CPU max of the bracket's arch-counter ticks →
+  `local_bh_enable()`. The flag test is not racy: inside the bracket nothing
+  can set it (no context switch, no softirq; hardirqs never touch FP/SIMD
+  state).
+- `CONFIG_PREEMPT_RT` is a build error: there `local_bh_disable()` neither
+  disables preemption nor excludes softirq NEON the way the bracket needs.
+- Refusal: `kjit_fpsimd_supported()` = FP/SIMD present, no SVE, no SME
+  (`system_supports_*`, final CPU caps). Otherwise a `uses_fpsimd` fragment is
+  refused after verification: `fpsimd_refused_sve_sme`, -ENODEV (final: the
+  auto mode negative-caches the PC). Init logs once when that is the case. The
+  guest has neither SVE (`ARM64_SVE` not even configured) nor SME, so the path
+  is compiled but not exercised.
+- The A9a refusal (`Failure::FpSimd`, counted as a compile failure) is gone.
+- Stats: `fpsimd_entries`, `fpsimd_restores`, `fpsimd_exit_mem` (Mem exits of
+  FP/SIMD runs, all taken with page faults disabled), `fpsimd_refused_sve_sme`,
+  and `fpsimd_run_max_ns` (the longest bracket on any CPU since load, per-CPU
+  maximum of CNTVCT deltas converted with CNTFRQ; not reset by debugfs).
+- The non-FP/SIMD path calls the same trampoline as before; the only change on
+  it is that `fragment_entries` is counted before the call instead of after.
+  K2 micro-test counters are identical to the A8 runs (the +12 entries per
+  test are the three extra stat reads of `kjit_snap`).
+
+## Why the bracket is enough
+
+- Preemption: none inside the bracket (`local_bh_disable()` raises
+  `preempt_count` on !RT). `local_bh_enable()` between chained entries is a
+  preemption point, so the non-preemptible stretch is one fragment run, not a
+  chain.
+- Softirq kernel-mode NEON: cannot run inside the bracket (softirqs are
+  masked, also at irq exit). Pending softirqs run in `local_bh_enable()` after
+  the run; one that uses NEON calls `fpsimd_save_user_state()`, which saves the
+  registers as current's state (they are: `TIF_FOREIGN_FPSTATE` is clear and
+  the state bound) and sets the flag, so the exit path or the next bracket
+  reloads exactly what the fragment wrote.
+- Hardirqs: `may_use_simd()` is false in hardirq/NMI; no handler touches the
+  registers.
+- Context switch after the bracket (or during a later in-kernel syscall):
+  `fpsimd_thread_switch()` saves the bound live state; the next bracket or the
+  exit path reloads it (`fp_switch`: ~1 reload per run).
+- Kernel-mode NEON inside an in-kernel syscall between two runs
+  (`kernel_neon_begin` saves the user state and sets the flag): the next
+  bracket reloads it, same path.
+- A fault inside an FP/SIMD fragment: `do_page_fault()` sees
+  `faulthandler_disabled()` → `no_context` → `fixup_exception()` → the
+  fragment's extable (patch 0002) → the access's PAN or Mem stub → `Mem` exit
+  → userspace re-executes the access natively and takes the fault there
+  (demand paging, CoW, SIGSEGV with the native siginfo). Nothing on this path
+  sleeps; `handle_mm_fault` is never reached. The next run finds the page
+  present. PAN-window permission faults take the same A8 path
+  (`is_el1_permission_fault` → `search_exception_tables`).
+- Signals: delivered only by the normal exit path after the hook returned
+  (`kjit_can_run` declines with a signal pending). By then the user state is
+  either live and bound or saved with the flag set, so `setup_sigframe`'s
+  `fpsimd_context` holds exactly what the fragments produced, and sigreturn
+  restores it (`fp_signal`: the handler overwrites v0-v31, FPCR and FPSR).
+- ptrace: a traced task never runs fragments, so a tracer's FP regset access
+  never races a run. exec: `flush_thread()` sets the flag, and the new mm has
+  no fragments.
+
+## Tests (tests/guest, K2 suite; K3 runs them in auto mode)
+
+`fp_loop`, `fp_regs`, `fp_switch`, `fp_signal`, `fp_fault` (`ro_store`,
+`unmapped_load`, `null_ld1`, `demand`), `fp_budget`; see README, "K2 kernel
+runtime". Every one KJIT off vs on with byte-identical stdout and status, plus
+self-checks (data, V registers, FPCR/FPSR against the values set) and, with
+`KJIT_EXPECT`, counter checks. The runner also requires `fpsimd_restores >= 1`
+for `fp_switch`, `fpsimd_exit_mem >= 1` per fault mode and `>= 100` for
+`demand`.
+
+## Measurements (kjit-guest, M1 host, HVF, 4 vCPUs)
+
+- `make guest-tests`: ALL PASS. `fp_loop` 39991 FP/SIMD entries for 20000
+  iterations (99.98% of 40000 syscalls in kernel), `fp_regs` 199952,
+  `fp_switch` 79982 entries and 39991 reloads (every run after the other
+  process ran on CPU 0), `fp_signal` 399925 entries, 14 reloads, ~37 signals,
+  `fp_fault demand` 512 FP/SIMD `Mem` exits for 512 first touches and none
+  for the second pass; every fault mode same siginfo. Non-FP/SIMD tests: same
+  counters as before A9b.
+- `make guest-tests-k3`: ALL PASS; the FP/SIMD tests in auto mode give the
+  same picture (`fp_switch` 39866 reloads).
+- `make redis-campaign GUEST_PROFILE=kjit-guest`: RESULT PASS. Suite 5.5% of
+  syscalls in the kernel (3.12M of 56.9M; A8: 5.8%), 32.9M FP/SIMD entries,
+  4.0M reloads, 61312 `Mem` exits, all FP/SIMD (first touches under
+  `pagefault_disable()`), no verifier rejection, no invalid exit, no
+  `fpsimd_refused_sve_sme`. Benchmark 0.0% / 1.6% / 0.7% (default / `-P 16`
+  / 256 clients), unchanged: 2.0M FP/SIMD entries in the default run and no
+  Unsupported exit left; the paths now end at `MAX_CHAIN` (4.34M `chain_cap`
+  for 4.36M syscalls, ~17 entries per syscall). Suite `unsupported_top`:
+  `mrs CNTVCT_EL0` (0xd53be04b 1.59M, 0xd53be04c 0.39M), `fcmpe d0, #0.0`
+  (0x1e602018, 28k), `sxtl` (0x0f20a400, 277).
+- `make redis-campaign GUEST_PROFILE=kjit-guest-debug K4_ITERATIONS=3`
+  (generic KASAN, lockdep incl. PROVE_RCU, DEBUG_ATOMIC_SLEEP): RESULT PASS,
+  suite identical (2857 / 2858 ok, 0 failed, 2518 distinct outcomes), 4.7% in
+  kernel, 22.0M FP/SIMD entries, 2.8M reloads, 59822 FP/SIMD `Mem` exits; 30
+  adversarial runs and 3 consistency checks PASS; the K2 micro tests (FP/SIMD
+  ones included, auto mode) pass in every iteration. No `BUG:`/`WARNING:`,
+  KASAN, lockdep, "sleeping function called from invalid context",
+  "scheduling while atomic", softirq or RCU-stall line in any serial log or
+  the campaign dmesg. (`DEBUG_PREEMPT` is not in the profile.) `make
+  guest-tests GUEST_PROFILE=kjit-guest-debug` (K2, self-registration): ALL
+  PASS, 512 FP/SIMD `Mem` exits in `fp_fault demand`, `fp_budget` max 149 µs.
+- Non-preemptible time (`fpsimd_run_max_ns`, wall clock of the bracket,
+  interrupts included): K2 suite 36 µs before `fp_budget`, 160 µs after it
+  (a budget-exhausting 256 KiB SIMD copy, the designed worst case of one
+  run); K3 suite 83 µs; redis suite 946 µs. A diagnostic build (not kept)
+  logged every bracket over 50 µs during a redis suite run (max 643 µs that
+  run): of the first 399, 389 had at least one interrupt inside; the longest
+  interrupt-free fragment run was 94 µs (a `tclsh` memcpy ending in a `Mem`
+  exit), and several brackets whose fragment ran for under 1 µs still spanned
+  72-361 µs, with or without an interrupt, i.e. host-side vCPU stalls and
+  interrupt handling, not fragment code, make up the tail. Fragment code
+  itself is bounded by `KJIT_BACKEDGE_BUDGET` (4096 back-edges) per run; one
+  run of the largest loop body seen (glibc memcpy's 64-byte loop) is ~100 µs
+  here.
+
+## Findings
+
+- Lifting the A9a refusal did not change the in-kernel fractions (the paths
+  were already long enough to meet the chain cap); FP/SIMD runs are ~4% of
+  the suite's fragment entries. The bracket's own cost was not measured.
+- Every `Mem` exit under the suite is now an FP/SIMD one (61312): glibc
+  memcpy/memset into fresh pages (tclsh, redis-server) fault under
+  `pagefault_disable()` and are redone natively. Same in K3's `jit_churn`
+  (memcpy into a fresh mmap every round: every FP/SIMD entry a `Mem` exit).
+  Correct; a cost only where first touches dominate.
+- redis-benchmark's request path now runs with no Unsupported exit at all,
+  but it is longer than 16 fragment entries between two syscalls, so
+  `MAX_CHAIN` returns it to userspace every time; the in-kernel fraction
+  does not move until chaining changes (next work: `MAX_CHAIN` or fragment
+  size, not coverage).
+
+## Not verified
+
+- SVE/SME systems: the refusal is compiled but never taken (no SVE/SME in
+  the guest; `ARM64_SVE` is not configured). `PREEMPT_RT` is only a build
+  error, not tested.
+- Softirq kernel-mode NEON racing a bracket: the guest config has no
+  NEON crypto/checksum users on its paths, so the "softirq saves after
+  `local_bh_enable()`" case is argued from `fpsimd.c`, not observed. The
+  reload path itself is exercised by context switches (`fp_switch`, redis).
+- FPCR trap-enable bits, FPMR, and FEAT_AFP/NEP: never set by the tests; no
+  A9a form reads them.
+- The worst-case bracket duration on bare metal: all numbers are wall clock
+  inside an HVF guest, host stalls included.
