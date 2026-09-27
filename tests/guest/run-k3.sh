@@ -51,7 +51,7 @@ set_mode() { echo "$1" > "$K/enable"; echo "$1" > "$K/auto"; }
 # report NAME BEFORE AFTER: counter deltas of one enabled run.
 report() {
     awk -v name="$1" '
-        NR == FNR { a[$1] = $2; next }
+        FILENAME == ARGV[1] { a[$1] = $2; next }
         { d[$1] = $2 - a[$1] }
         END {
             frac = d["hook_calls"] ? 100 * d["syscalls_in_kernel"] / d["hook_calls"] : 0
@@ -71,8 +71,10 @@ report() {
 
 # unsup_delta BEFORE AFTER N: the N words that stopped fragments most often
 # between two unsupported_top snapshots, as "total word(exits/entry_stops)".
+# The first file is recognised by name, not by NR == FNR: unsupported_top is
+# empty right after insmod, and NR == FNR would then read AFTER as BEFORE.
 unsup_delta() {
-    awk 'NR == FNR { e[$1] = $2; s[$1] = $3; next }
+    awk 'FILENAME == ARGV[1] { e[$1] = $2; s[$1] = $3; next }
          { de = $2 - e[$1]; ds = $3 - s[$1]; if (de + ds > 0) printf "%d %s(%d/%d)\n", de + ds, $1, de, ds }' \
         "$1" "$2" | sort -rn | head -"$3"
 }

@@ -389,7 +389,9 @@ kernel `BUG:`/`WARNING:`/KASAN/lockdep/oops/RCU-stall line (guest-run), and the
 campaign guest's `dmesg` is checked the same way.
 
 1. **Test suite** (`tests/guest/k4-suite.sh`): `./runtest --clients 16
-   --dump-logs`, the full default suite (84 units, ~2850 tests; the 15
+   --dump-logs`, the full default suite (plus the upstream test fixes in
+   `tests/guest/redis-patches/`, applied at rootfs build time and listed in
+   `/opt/redis/KJIT-PATCHES`) (84 units, ~2850 tests; the 15
    `large-memory` tests are ignored by runtest's own default), once without
    `kjit.ko` and once with it loaded, `enable=1 auto=1`, so every
    redis-server, redis-cli and tclsh the suite spawns runs under the auto
@@ -420,13 +422,14 @@ campaign guest's `dmesg` is checked the same way.
    iteration too.
 
 Latest results (kjit-guest, main at A7d, 2026-09-27, `RESULT PASS`): suite
-2856 / 2860 passed tests without / with KJIT (psync2's time-bounded loop), 0
+2859 / 2867 passed tests without / with KJIT (psync2's time-bounded loop), 0
 failed either way, same outcome for all 2518 distinct tests; a KJIT suite run
-takes ~300 s vs ~250 s. Under the suite 5.6% of the syscalls ran in the kernel
-(3.53M of 62.9M; 756M fragment entries, 11723 translations, no verifier
-rejection or invalid exit). One KJIT-on suite run in eight failed a
-`client-eviction` test that could not be reproduced (`tmp/pipeline.md`, "K4",
-Open). Benchmark: 0.0% (default), 1.6% (`-P 16`) and
+takes ~300 s vs ~250 s. Under the suite 5.0% of the syscalls ran in the kernel
+(3.09M of 61.3M; 740M fragment entries, 11881 translations, no verifier
+rejection or invalid exit). `unit/client-eviction` alone: 20 of 20 runs pass
+with KJIT. One KJIT-on suite run in eight had failed a
+racy `client-eviction` test; `tests/guest/redis-patches/` now backports
+upstream's fix for it (`tmp/pipeline.md`, "K4"). Benchmark: 0.0% (default), 1.6% (`-P 16`) and
 0.7% (256 clients) of the server's syscalls in the kernel, ~9.5 fragment
 entries per syscall; datasets identical KJIT off and on; every adversarial
 test identical. The in-kernel path now stops at `ldadd x0, x0, [x1]`
