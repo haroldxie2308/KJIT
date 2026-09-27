@@ -37,6 +37,9 @@ const BUDGET: u64 = RetStatus::Budget.as_reg();
 struct Running {
     frag: *mut KjitFrag,
     base: u64,
+    /// Installed with the verifier's `uses_fpsimd`: every entry (chained ones
+    /// included) runs inside the FP/SIMD bracket.
+    fpsimd: bool,
 }
 
 impl Running {
@@ -47,8 +50,26 @@ impl Running {
             return None;
         }
         // SAFETY: `frag` is referenced until `Drop`.
-        let base = unsafe { ffi::kjit_frag_base(frag) };
-        Some(Self { frag, base })
+        let (base, fpsimd) =
+            unsafe { (ffi::kjit_frag_base(frag), ffi::kjit_frag_uses_fpsimd(frag)) };
+        Some(Self { frag, base, fpsimd })
+    }
+
+    /// Runs the fragment from `entry` (`base` + one of its verified entry
+    /// offsets); `extra` receives x10/x11. Returns the status in x0.
+    fn call(&self, regs: *mut PtRegs, extra: &mut [u64; 2], entry: u64) -> u64 {
+        stats::inc(Stat::FragmentEntries);
+        // SAFETY (both calls): `entry` is `base` + a verified entry offset of
+        // the referenced fragment; `extra` receives x10/x11 (epilogue `stp x10,
+        // x11, [x1]`). A fragment the verifier found to use FP/SIMD only runs
+        // inside the FP/SIMD bracket (kjit_glue.c), which makes the user's
+        // FP/SIMD state live in the registers for the run.
+        if self.fpsimd {
+            stats::inc(Stat::FpsimdEntries);
+            unsafe { ffi::kjit_call_fragment_fpsimd(regs, extra.as_mut_ptr(), entry, self.base) }
+        } else {
+            unsafe { ffi::kjit_call_fragment(regs, extra.as_mut_ptr(), entry, self.base) }
+        }
     }
 
     /// The entry address for `pc` inside this fragment (one of its verified
@@ -102,11 +123,7 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
 
     loop {
         let mut extra = [0u64; 2];
-        // SAFETY: `entry` is `base` + a verified entry offset of the referenced
-        // fragment; `extra` receives x10/x11 (epilogue `stp x10, x11, [x1]`).
-        let status =
-            unsafe { ffi::kjit_call_fragment(regs, extra.as_mut_ptr(), entry, run.base) };
-        stats::inc(Stat::FragmentEntries);
+        let status = run.call(regs, &mut extra, entry);
         let [param0, param1] = extra;
 
         match status {
@@ -170,6 +187,11 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
                     UNSUPPORTED => Stat::ExitUnsupported,
                     _ => Stat::ExitBudget,
                 });
+                if status == MEM && run.fpsimd {
+                    // Taken under pagefault_disable(): includes faults that a
+                    // fragment without FP/SIMD would have resolved in place.
+                    stats::inc(Stat::FpsimdExitMem);
+                }
                 if status == UNSUPPORTED {
                     // x10 = the word (or UNSUPPORTED_WORD_UNREADABLE).
                     stats::note_unsupported(param0);

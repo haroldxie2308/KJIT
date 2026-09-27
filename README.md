@@ -208,7 +208,7 @@ returns, so a hot syscall loop issues its next syscall without going back to
 EL0. Contract and design: `tmp/pipeline.md`, "K2 contract: kernel runtime" and
 "K2 implementation".
 
-**Patched kernel.** `kernel-patches/` is a four-patch series on the pinned
+**Patched kernel.** `kernel-patches/` is a five-patch series on the pinned
 `dep/linux` commit (7.1-rc1):
 
 1. `arm64: syscall: add a KJIT syscall-return hook`: `ARM64_KJIT`, a static key
@@ -225,6 +225,9 @@ EL0. Contract and design: `tmp/pipeline.md`, "K2 contract: kernel runtime" and
    `ops->task_work` under the hook SRCU, and only if the registration that
    queued it is still the current one; otherwise it frees the request. So a
    request still queued when the module is unloaded never runs module code.
+5. `arm64: fpsimd: export fpsimd_restore_current_state() for the KJIT runtime`
+   (A9b): the FP/SIMD bracket below reloads the user's FP/SIMD state with it
+   when `TIF_FOREIGN_FPSTATE` is set.
 
 `scripts/kjit-kernel-tree.sh` (`make kernel-tree`) creates the patched tree as a
 git worktree of `dep/linux` at `$KJIT_BUILD_ROOT/linux-kjit` (shared objects, no
@@ -260,8 +263,21 @@ LSE atomics in PAN windows) without FEAT_LSE, with `vabits_actual != 48`
 `SCTLR_EL1.SPAN` set. A fragment is installed only if
 `verify_fragment` accepts exactly the bytes, fault-site table and entry table
 that get installed; it is refused unless every text page it came from is in an
-executable, non-writable mapping, and (A9a, until A9b brackets such runs) when
-the verifier reports `uses_fpsimd`.
+executable, non-writable mapping.
+
+**FP/SIMD fragments (A9b).** A fragment whose bytes the verifier reports as
+`uses_fpsimd` (V0-V31, FPCR, FPSR are the user's registers, live in hardware)
+is installed with a flag, and every entry of it, chained entries included,
+runs inside `kjit_call_fragment_fpsimd()`: `local_bh_disable()` (no softirq
+kernel-mode NEON, no preemption; `PREEMPT_RT` is a build error) → if
+`TIF_FOREIGN_FPSTATE`, `fpsimd_restore_current_state()` (patch 5) →
+`pagefault_disable()` → run → `pagefault_enable()` → `local_bh_enable()`.
+With page faults disabled, any user-access fault of such a run leaves through
+its stub (`Mem` exit) and userspace re-executes the access natively, which
+demand-pages it or takes the signal. Such fragments are refused
+(`fpsimd_refused_sve_sme`, -ENODEV, negative-cached) on a system with SVE or
+SME (or without FP/SIMD). The non-FP/SIMD path is unchanged. Details and
+measurements: `tmp/pipeline.md`, "A9b implementation".
 
 **Trigger and stats** (`/sys/kernel/debug/kjit/`, root only):
 
@@ -269,7 +285,7 @@ the verifier reports `uses_fpsimd`.
 |---|---|
 | `translate` | write `"<pid> <pc>"`: translate that entry PC (logs the result) |
 | `translate_svc_sites` | write `"<pid>"`: translate `svc_pc + 4` for every SVC word in the process's executable, non-writable mappings |
-| `stats` | counters: `syscalls_in_kernel`, `fragment_entries`, `chains`, `chain_cap`, exits per status, `svc_declined`, translations ok/exists/unreadable/entry-unsupported/compile/encode/verify-rejected (and FallsOffEnd)/raced/capped/install-failed, `invalidated_fragments`, `released_fragments`, `svc_sites_scanned`, the K3 `auto_*` counters, `unsupported_top_dropped`, `unsupported_bad_word`, `hook_calls` (hook calls while enabled: syscalls without syscall work, in-kernel ones included) |
+| `stats` | counters: `syscalls_in_kernel`, `fragment_entries`, `chains`, `chain_cap`, exits per status, `svc_declined`, translations ok/exists/unreadable/entry-unsupported/compile/encode/verify-rejected (and FallsOffEnd)/raced/capped/install-failed, `invalidated_fragments`, `released_fragments`, `svc_sites_scanned`, the K3 `auto_*` counters, `unsupported_top_dropped`, `unsupported_bad_word`, A9b `fpsimd_entries` (entries of FP/SIMD fragments), `fpsimd_restores` (... that reloaded the user FP/SIMD state first), `fpsimd_exit_mem` (their `Mem` exits, taken with page faults disabled), `fpsimd_refused_sve_sme`, `hook_calls` (hook calls while enabled: syscalls without syscall work, in-kernel ones included), `fpsimd_run_max_ns` (longest FP/SIMD bracket, i.e. non-preemptible run, on any CPU since load) |
 | `enable` | `Y`/`N` (global; also stops fragment runs and chains at the next run-condition check) |
 | `auto`, `hot_threshold`, `hot_window_ms` | K3 auto mode (below) |
 | `unsupported_top` | `word exits entry_stops` per line, most frequent first (below) |
@@ -295,7 +311,18 @@ exit), `fork_cow` (fragment stores to CoW pages in parent and child, no Mem
 exit), `tight_loop` (countdown past the back-edge budget: Budget exits,
 progress), `signal_loop` (1 ms SIGALRM during the hot loop), `munmap_race`
 (hot text unmapped while another thread runs it: SIGSEGV, fragment
-invalidated), `seccomp_loop` and `ptrace_loop` (no fragment entry at all), plus
+invalidated), `seccomp_loop` and `ptrace_loop` (no fragment entry at all), the
+A9b FP/SIMD tests `fp_loop` (SIMD copy/compare/fill/strlen of 1-4000 bytes
+between pipe write/read, a V accumulator across the whole loop, then the same
+with glibc), `fp_regs` (v8-v23, FPCR and FPSR unchanged across a hot FP/SIMD
+loop), `fp_switch` (two processes on CPU 0 ping-pong through pipes, each
+clobbering the other's V registers and FPCR: `fpsimd_restores` about one per
+run), `fp_signal` (1 ms SIGALRM whose handler overwrites v0-v31/FPCR/FPSR and
+runs glibc memset/memcpy/strlen), `fp_fault` (SIMD `str q` to a read-only
+page, `ldp q` from an unmapped page, `ld1` from address 16: same SIGSEGV via
+an FP/SIMD `Mem` exit; `st1` to 512 fresh pages: one `Mem` exit per first
+touch, data complete) and `fp_budget` (a 1 MiB SIMD copy per syscall: Budget
+exits, the longest FP/SIMD run), plus
 `kill -9` of a hot `toy_loop` and `tight_loop`, and a hot process left running
 while `/init` unloads the module. `run-k2.sh --auto` runs the same tests with
 the K3 auto mode instead of self-registration.
@@ -362,8 +389,10 @@ Current reach: where the code is in the subset the path follows the callers
 (`dd bs=1`: every syscall issued in the kernel), but it stops at SIMD
 `memcpy`/`strlen` loads. Before A7d every path of a BTI-built program (all of
 redis's) stopped at its first `bti c` (0% of its syscalls in the kernel); BTI
-and ADC/SBC now translate, and since A8 so do LSE atomics; redis's paths now
-stop at SIMD (`dup v0.16b, w1`, see "K4").
+and ADC/SBC now translate, and since A8 so do LSE atomics; since A9b the
+glibc SIMD code (`memcpy`/`memset`/`strlen`) runs in fragments too, and
+redis's request paths no longer stop at an Unsupported word but at the
+16-entry chain cap (see "K4").
 Fragment entries cost more than the mode switches they save on short chains;
 speed is not a goal yet. Details: `tmp/pipeline.md`, "K3", Findings, and
 "A7d".
@@ -452,6 +481,22 @@ CNTVCT_EL0` (0xd53be04b, vDSO clock reads) and SIMD `dup`/`ldr q`/`str q`. kjit-
 lockdep), `K4_ITERATIONS=10`: suite identical (0 failed either way), 100
 adversarial runs and 10 consistency checks PASS, no kernel report
 (`tmp/pipeline.md`, "K4").
+
+After A9b (FP/SIMD fragments; kjit-guest, 2026-09-27, `RESULT PASS`): suite
+2863 / 2868 passed without / with KJIT, 0 failed, same outcome for all 2518
+distinct tests; 5.5% of the suite's syscalls in the kernel (3.12M of 56.9M;
+886M fragment entries, 32.9M of them FP/SIMD, 4.0M of those reloading the
+FP/SIMD state, 61312 `Mem` exits all from FP/SIMD runs, 14544 translations,
+no verifier rejection or invalid exit). Benchmark unchanged at 0.0%
+(default), 1.6% (`-P 16`) and 0.7% (256 clients): the paths now run through
+glibc's SIMD code (2.0M FP/SIMD entries in the default run) and have no
+Unsupported exit left at all; they end at the 16-entry chain cap instead
+(4.34M `chain_cap` for 4.36M syscalls in the default run, ~17 entries per
+syscall). Under the suite the top Unsupported words are now `mrs CNTVCT_EL0`
+(0xd53be04b, 0xd53be04c: vDSO clock reads, 2.0M) and FP compares (`fcmpe d0, #0.0`,
+0x1e602018, 28k). kjit-guest-debug, `K4_ITERATIONS=3`: `RESULT PASS`, suite
+identical, 30 adversarial runs and 3 consistency checks PASS, no kernel
+report (KASAN, lockdep, atomic-sleep checks).
 
 ### Harness
 

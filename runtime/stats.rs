@@ -83,9 +83,21 @@ pub(crate) enum Stat {
     /// Unsupported exits whose x10 was neither a word nor the unreadable
     /// sentinel (a translator bug; not recorded in `unsupported_top`).
     UnsupportedBadWord,
+    /// Fragment entries (chained ones included) of fragments that use FP/SIMD,
+    /// each inside the FP/SIMD bracket (kjit_glue.c).
+    FpsimdEntries,
+    /// ... of which found TIF_FOREIGN_FPSTATE set and reloaded the user's
+    /// FP/SIMD state first (bumped through `kjit_rs_note`).
+    FpsimdRestores,
+    /// `Mem` exits of those runs (page faults disabled: every user-access
+    /// fault ends the run).
+    FpsimdExitMem,
+    /// Translations refused because they use FP/SIMD on a CPU with SVE/SME
+    /// (or without FP/SIMD).
+    FpsimdRefusedSveSme,
 }
 
-const COUNT: usize = Stat::UnsupportedBadWord as usize + 1;
+const COUNT: usize = Stat::FpsimdRefusedSveSme as usize + 1;
 
 const NAMES: [&str; COUNT] = [
     "syscalls_in_kernel",
@@ -131,6 +143,10 @@ const NAMES: [&str; COUNT] = [
     "auto_translate_ns",
     "unsupported_top_dropped",
     "unsupported_bad_word",
+    "fpsimd_entries",
+    "fpsimd_restores",
+    "fpsimd_exit_mem",
+    "fpsimd_refused_sve_sme",
 ];
 
 #[allow(clippy::declare_interior_mutable_const)]
@@ -164,6 +180,7 @@ fn note_stat(note: u32) -> Option<Stat> {
         13 => Stat::NegAdded,
         14 => Stat::NegEvicted,
         15 => Stat::TranslateNs,
+        16 => Stat::FpsimdRestores,
         _ => return None,
     })
 }
@@ -304,5 +321,8 @@ extern "C" fn kjit_rs_stats_show(buf: *mut u8, len: usize) -> usize {
     // SAFETY: plain read of per-CPU counters.
     let hook_calls = unsafe { ffi::kjit_hook_calls() };
     let _ = writeln!(out, "hook_calls {hook_calls}");
+    // SAFETY: plain read of per-CPU maxima.
+    let fpsimd_max = unsafe { ffi::kjit_fpsimd_run_max_ns() };
+    let _ = writeln!(out, "fpsimd_run_max_ns {fpsimd_max}");
     out.len
 }

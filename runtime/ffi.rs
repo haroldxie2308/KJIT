@@ -61,16 +61,26 @@ extern "C" {
         n_labels: u32,
         src_start: u64,
         src_end: u64,
+        uses_fpsimd: bool,
     ) -> c_int;
+    pub(crate) fn kjit_fpsimd_supported() -> bool;
 
     pub(crate) fn kjit_can_run(regs: *const PtRegs) -> bool;
     pub(crate) fn kjit_lookup(pc: u64, entry: *mut u64) -> *mut KjitFrag;
     pub(crate) fn kjit_frag_put(frag: *mut KjitFrag);
     pub(crate) fn kjit_frag_base(frag: *const KjitFrag) -> u64;
     pub(crate) fn kjit_frag_offset_for_pc(frag: *const KjitFrag, pc: u64) -> i64;
+    pub(crate) fn kjit_frag_uses_fpsimd(frag: *const KjitFrag) -> bool;
     pub(crate) fn kjit_bad_status(status: u64, pc: u64);
     pub(crate) fn kjit_call_fragment(regs: *mut PtRegs, extra: *mut u64, entry: u64, base: u64)
         -> u64;
+    pub(crate) fn kjit_call_fragment_fpsimd(
+        regs: *mut PtRegs,
+        extra: *mut u64,
+        entry: u64,
+        base: u64,
+    ) -> u64;
+    pub(crate) fn kjit_fpsimd_run_max_ns() -> u64;
     pub(crate) fn kjit_profile(pc: u64, kind: u32);
     pub(crate) fn kjit_hook_calls() -> u64;
 }

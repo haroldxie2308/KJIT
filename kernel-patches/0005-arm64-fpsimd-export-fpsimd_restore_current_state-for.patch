@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Sun, 27 Sep 2026 14:39:50 +0800
+Subject: [PATCH 5/5] arm64: fpsimd: export fpsimd_restore_current_state() for the
+ KJIT runtime
+
+The KJIT runtime runs verified translations of a task's user code at EL1
+on the syscall return path, before the task goes back to userspace. Some
+of that code (glibc memcpy, memset, strlen) uses FP/SIMD registers, and
+the translation keeps V0-V31, FPCR and FPSR as the user's registers,
+live in hardware, exactly as userspace would see them.
+
+That is only correct when the CPU's FP/SIMD registers hold current's
+user state, i.e. TIF_FOREIGN_FPSTATE is clear. During a syscall it may
+be set: the task was scheduled out, or kernel-mode NEON (a syscall or a
+softirq) took the registers. The normal return to userspace then calls
+fpsimd_restore_current_state() from arch_exit_to_user_mode_work(). The
+runtime needs the same reload earlier, right before it runs such code:
+
+	local_bh_disable();	/* no softirq NEON, no preemption (!RT) */
+	if (test_thread_flag(TIF_FOREIGN_FPSTATE))
+		fpsimd_restore_current_state();
+	pagefault_disable();
+	/* run the translated user code */
+	pagefault_enable();
+	local_bh_enable();
+
+After fpsimd_restore_current_state() the registers are bound to the task
+(TIF_FOREIGN_FPSTATE clear), so a later context switch or softirq NEON
+saves what the translated code wrote, and the exit path has nothing to
+reload. The function already handles every FP/SIMD configuration and its
+own locking (get_cpu_fpsimd_context() nests inside the runtime's
+local_bh_disable()), so export it GPL-only instead of duplicating any of
+it in the module. Nothing else changes.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/kernel/fpsimd.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
+index 60a45d600..bed3fca1e 100644
+--- a/arch/arm64/kernel/fpsimd.c
++++ b/arch/arm64/kernel/fpsimd.c
+@@ -1804,6 +1804,7 @@ void fpsimd_restore_current_state(void)
+ 
+ 	put_cpu_fpsimd_context();
+ }
++EXPORT_SYMBOL_GPL(fpsimd_restore_current_state);
+ 
+ void fpsimd_update_current_state(struct user_fpsimd_state const *state)
+ {
