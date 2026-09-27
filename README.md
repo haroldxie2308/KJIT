@@ -547,6 +547,20 @@ by operand shape, e.g. `cmn x, #imm`. Reports go to
 `tmp/coverage-scan/`). A CFG stops at the first unsupported word on each path,
 so the ranking shows first blockers, not every unsupported instruction.
 
+#### E1 dynamic trace
+
+`make e1-trace` measures what really runs between syscalls: it runs arm64
+`redis-server` (redis 7.4, glibc 2.36) under `qemu-aarch64` with a TCG plugin
+(`tools/e1-trace/`) inside a linux/arm64 Docker container, drives it with a
+native `redis-benchmark`, and segments each thread's instruction stream at
+syscalls. The harness binary `e1-report` then writes `tmp/e1/report.{md,json}`:
+syscall histogram, gap-length distribution per (start syscall -> end syscall)
+pair, and instruction forms weighted by dynamic count with `admit_word`
+admission, cumulative coverage and "fully admitted gap" rates. `coverage-scan`
+and `e1-report` share the llvm-mc form classifier (`harness/src/a64_forms.rs`).
+Semantics, knobs and known emulation distortions are in
+`tools/e1-trace/README.md`.
+
 For now the TUI and noninteractive fixture workflows accept AArch64 `.s`
 fixtures. Pass `ASM=path/to/file.s`, or run the command interactively and choose
 from the fixture prompt. The script assembles the fixture with LLVM tools,
