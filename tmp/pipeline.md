@@ -1528,3 +1528,120 @@ shape the independent verifier can check word by word.
   UNDEFINED: its fragment copy replaces the two MSRs with NOPs (the
   atomic at EL0 already has user permissions). Documented as the one
   native-leg deviation.
+
+# K4: redis under KJIT (2026-09-27)
+
+Goal: redis in the guest under the auto mode with exactly native behaviour,
+checked by redis's own suite, redis-benchmark and adversarial tests, on
+`kjit-guest` and `kjit-guest-debug`. Entry point `make redis-campaign`
+(`scripts/redis-campaign.sh`, guest side `tests/guest/k4-*.sh`); usage and
+latest numbers in README, "K4: Redis under KJIT".
+
+## Environment
+
+- redis 7.0.15 (= Debian bookworm's `redis-server` version), official tarball
+  (sha256 pinned from redis-hashes), built in `debian:bookworm` with upstream's
+  default flags, test modules built, installed as `/opt/redis` with
+  `tclsh8.6` in `redis.cpio`, a cached rootfs layer between `base.cpio` and
+  `tests.cpio` (`mk-guest-rootfs.sh --rebuild-redis`). Not built with
+  `-mbranch-protection=standard`: Debian's redis is not (bookworm's
+  dpkg-buildflags add none; its binary has no PAC and three `bti c`), so this
+  keeps the distro's code shape. The BTI-built code on redis's paths is glibc.
+- `kjit-guest.conf` gains the PL031 RTC (`RTC_CLASS`, `RTC_HCTOSYS`,
+  `RTC_DRV_PL031`): without a wall clock the guest starts at 1970 + uptime and
+  `unit/dump` (`RESTORE ... ABSTTL now-3000`) raises a test-client exception
+  that aborts the whole suite. And `COREDUMP`/`ELF_CORE`, so the crash test
+  compares core behaviour.
+- Load generators run under `nojit` (allow-all seccomp), so the global
+  counters are the server's (plus the runner shell and redis-cli calls).
+- `DEBUG`, `MODULE` need `--enable-debug-command yes`,
+  `--enable-module-command yes` (7.0 defaults are `no`).
+
+## Pass criteria
+
+- Suite: both runs reach "The End" (a test-client `[exception]` aborts
+  runtest), and the same outcome for every test. Compared: the distinct
+  `<status> <name>` lines with digit runs masked, plus the `err` lines
+  exactly. Raw multisets are not comparable even between two runs of one
+  kernel: `integration/psync2` loops for a fixed time (a varying number of
+  `CYCLE <n>` / `Set #<a> to replicate from #<b>` / `(x = <random>)` tests).
+- Benchmark: the full default test set completes in all three runs;
+  `exit_invalid`, `translate_verify_rejected`, `unsupported_bad_word` stay 0
+  (every phase); the off/on consistency dataset (`DBSIZE`, `DEBUG DIGEST`,
+  sha256 of a full read-back) is identical.
+- Adversarial: identical deterministic stdout KJIT off and on (exit statuses
+  137/0/138/139, crash-report signal/si_code lines, digests before and after
+  restarts, OOM error text); `K4_REQUIRE_HOT=1` (default) requires fragment
+  entries during each load phase before the disruptive event.
+- No kernel report on the serial console or in the campaign's `dmesg`.
+
+## Exclusions
+
+- None from the default `./runtest` list: all 84 units run. runtest itself
+  ignores the 15 `large-memory` tests (need `--large-memory` and > 4 GiB).
+  Not run: `--accurate`, `runtest-moduleapi`, `runtest-cluster`,
+  `runtest-sentinel`, TLS (built without TLS).
+- `DEBUG SEGFAULT` mmaps a read-only page and writes it, so the faulting
+  address varies with ASLR; only its page alignment is compared.
+- `maxmemory` with random keys (eviction samples randomly): only invariants
+  (keys evicted, `used_memory` <= 33 MiB, noeviction OOM error text).
+- No system memory pressure beyond `maxmemory`: the guest kernel has no
+  compaction/migration and no swap, and initramfs text cannot be reclaimed,
+  so reclaim/migration of hot text is not exercised here (K2 invalidation is
+  covered by munmap and module unload).
+
+## Findings
+
+- kjit-guest, main at A7d: see README for numbers. No semantic difference in
+  the suite, the benchmark consistency check or any adversarial test.
+- kjit-guest-debug (generic KASAN, lockdep, DEBUG_ATOMIC_SLEEP, DEBUG_LIST),
+  `make redis-campaign GUEST_PROFILE=kjit-guest-debug K4_ITERATIONS=10`:
+  suite 2856 / 2869 passed without / with KJIT, 0 failed, same outcome for
+  all 2518 distinct tests (3.4% of 38.0M syscalls in the kernel, 467M
+  fragment entries, 11070 translations); 10 iterations of K2 micro tests +
+  benchmark + 10 adversarial tests (100 adversarial runs, 10 consistency
+  checks) all PASS; no BUG/WARNING/KASAN/lockdep/RCU report on the serial
+  console or in dmesg (lockdep stayed enabled). ~13 min per iteration.
+- Coverage: with A7d's BTI the paths leave libc and run through redis
+  (~9.5 fragment entries per syscall under redis-benchmark), but 0-1.6% of the
+  server's syscalls reach the kernel: nearly every path ends at `ldadd x0,
+  x0, [x1]` (0xf8200020) in libgcc's `__aarch64_ldadd8_relax`, the outline
+  atomic behind redis's `atomicIncr` (stat counters after every read/write).
+  The suite adds `mrs CNTVCT_EL0` (0xd53be04b, vDSO clock reads), `ldadd w`,
+  `casa`, `swpl` and SIMD `ldr q`/`dup`. LSE atomics have no unprivileged
+  form without FEAT_LSUI, so translating them is a design decision (e.g. a
+  PAN-cleared window with a fault site, as the kernel's futex ops do), not a
+  subset addition.
+- Before A7d, with redis built `-mbranch-protection=standard` (an experiment,
+  then dropped, see Environment): paths stopped at `autiasp` (0xd50323bf,
+  4.0M Unsupported exits per default benchmark run) and `bti c` (0.64M entry
+  stops). PAC hints cannot simply run at EL1 (kernel keys are installed), so
+  PAC-built distros need their own lowering.
+- Speed: under the suite the KJIT run took 302 s vs 251 s (psync2's
+  time-bounded loops ran fewer cycles); pipelined SET 1.92M vs 2.33M req/s.
+
+## Open: one unreproduced suite failure with KJIT
+
+- 1 of 8 KJIT-on full-suite runs (7 kjit-guest, 1 debug; 0 of 5 KJIT-off runs) failed
+  `unit/client-eviction` "client evicted due to percentage of maxmemory"
+  (`assert {![client_exists $cname]}` right after writing a query of 7% of
+  maxmemory from another connection), which left `maxmemory 6mb` set, so the
+  next test's client was evicted and runtest aborted with an `[exception]`.
+- Not reproduced: 110 + 110 runs of the unit alone KJIT on/off (60 of them
+  with 6 CPU hogs), and 8000 iterations of the same scenario in a tclsh loop
+  KJIT on/off (the client was always evicted before the immediate check and
+  never missed eviction). The 5 KJIT-on full-suite runs after it passed.
+- Most likely a race in the 7.0 test: redis evicts in `beforeSleep`/
+  `processCommand`, so a CLIENT LIST on the other connection can run before
+  the server has read the last bytes the test flushed into the socket;
+  upstream later wrapped both asserts of this test in `wait_for_condition`
+  (7.4: the tot-mem check; unstable: the eviction check). KJIT's slower read
+  path widens that window under the 16-client suite. Not excluded (one
+  occurrence, not proven); `make redis-campaign` can fail on it.
+
+## Known limitations
+
+- Counters are global; in-kernel fractions include the runner's own shell,
+  sleep and redis-cli processes (small against the server's load).
+- A test that fails identically with and without KJIT would pass the
+  comparison; the baseline has no failed test today.
