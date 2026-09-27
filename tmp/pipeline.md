@@ -1651,3 +1651,85 @@ latest numbers in README, "K4: Redis under KJIT".
   sleep and redis-cli processes (small against the server's load).
 - A test that fails identically with and without KJIT would pass the
   comparison; the baseline has no failed test today.
+
+# A9 contract: FP/SIMD in fragments (2026-09-27)
+
+Written before implementation. Why: after A8, redis's request paths
+(epoll_pwait→read, read→read, read→write) are blocked only by FP/SIMD
+code, almost all of it glibc memcpy/memset/strlen (`ldp/stp/stur/ldr q`,
+`ld1`, `dup`, `cmeq`, `shrn`, `umaxp`, `fmov`, `bit`, `movi`). Facts
+from `dep/linux` 7.1 `arch/arm64/kernel/fpsimd.c`: the user FP/SIMD
+state stays live in the registers during a syscall unless
+TIF_FOREIGN_FPSTATE is set (context switch, kernel-mode NEON);
+kernel-mode NEON in softirq context saves the task's live state and
+takes the registers (`kernel_neon_begin`, `get_cpu_fpsimd_context`
+uses `local_bh_disable`); hardirq context never uses NEON
+(`may_use_simd`); `fpsimd_restore_current_state()` reloads the user
+state and is not exported.
+
+## Translator
+
+- FP/SIMD register operands are NOT virtualized: V0–V31, FPCR, FPSR
+  are user registers live in hardware while a fragment runs (see
+  kernel rules). GPR operands of FP/SIMD forms (`fmov x, d`,
+  `dup v, w`, `umov`, addressing) go through reg-virt as usual.
+- In scope first (A9a): data-movement and integer SIMD used by glibc
+  string/memory routines and the E1 list: FP/SIMD loads/stores
+  (LDR/STR/LDUR/STUR q/d/s/h/b imm forms, LDP/STP q/d/s, LD1/ST1
+  multiple structures 1–4 regs, no-writeback and post-index), DUP
+  (element, general), INS/UMOV/MOV element, MOVI/MVNI, FMOV
+  (general↔FP, register), CMEQ/CMHI/CMHS/CMGT/CMGE/CMTST (reg, zero),
+  AND/ORR/EOR/BIC/ORN/BIT/BIF/BSL/NOT (vector), ADD/SUB (vector),
+  ADDP/UMAXP/UMINP/ADDV/UMAXV/UMINV, SHRN/USHR/SHL/USHLL/XTN, EXT,
+  REV16/32/64 (vector), CNT, TBL (1 reg). Floating-point arithmetic,
+  conversions and compares (FADD, UCVTF, FCMPE, ...) stay Unsupported
+  in A9a: their rounding/exception semantics need FPCR/FPSR modelling
+  that nothing requires yet.
+- FP/SIMD memory forms have no unprivileged variants, so each is
+  lowered as ONE privileged access inside an A8 PAN window: address
+  into sA; `ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>`; `msr pan, #0`;
+  the user instruction with base sA (post-index writeback done
+  separately after the window, as for GPR forms); `msr pan, #1`. It is
+  the same instruction the user would execute, so its fault behaviour
+  (including which destination registers of a multi-register load are
+  written before an abort) is the architecture's, identical to native.
+  SP-based accesses keep the SP alignment check. Commit-after-last-
+  access applies to the GPR state (writeback after the window).
+- `ExecutionFragment` needs no FP flag; the verifier computes it.
+
+## Verifier (V3)
+
+- Generalize the A8 window rule: the single instruction inside a PAN
+  window is one of the allowed privileged user-access forms (LSE
+  atomics from A8, FP/SIMD loads/stores from A9) with base sA and a
+  fault site pointing at the window's PAN stub; nothing else.
+- FP/SIMD register-only forms are allowed anywhere in the body.
+- `verify_fragment` returns `VerifyOk { uses_fpsimd: bool }`: true iff
+  any FP/SIMD form appears. The kernel uses THIS value (independent of
+  the translator) to decide how to run the fragment.
+
+## Kernel (A9b)
+
+- A fragment with `uses_fpsimd` runs only inside:
+  `local_bh_disable()` (on non-RT; this also makes the task
+  non-preemptible) → if TIF_FOREIGN_FPSTATE, reload the user state
+  (kernel patch 0005 exports `fpsimd_restore_current_state`) →
+  `pagefault_disable()` → run → `pagefault_enable()` →
+  `local_bh_enable()`. Chaining into another fragment re-enters this
+  bracket per fragment.
+- With pagefaults disabled, any user-access fault in such a fragment
+  (LDTR*/STTR* or a window access) takes the fixup path → Mem exit →
+  userspace re-executes natively and handles the fault; the next run
+  finds the page present. Correct, occasionally slower.
+- Refuse to install `uses_fpsimd` fragments when the system supports
+  SVE or SME (streaming mode and ZA state change the rules; not
+  modelled yet). The M-series HVF guest has neither.
+- The budget bounds the non-preemptible run like any other fragment.
+
+## Harness
+
+- `MachineState` gains V0–V31 (128-bit) and FPCR/FPSR, compared in the
+  differential and native checks (the native runner reads/writes them
+  through the signal frame's fpsimd context and its call trampoline).
+- The interpreter implements exactly the A9a forms, with the PAN window
+  modelled as in A8.
