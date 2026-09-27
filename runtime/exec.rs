@@ -108,6 +108,7 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
     // accesses them while this task runs this function.
     let pc = unsafe { (*regs).pc };
     if !can_run(regs) {
+        stats::inc(Stat::RunDeclined);
         return TO_USER;
     }
     let mut entry = 0u64;
@@ -189,6 +190,8 @@ fn run_chain(
                     // Exit-target learning: userspace resumes at `target`.
                     drop(run);
                     profile(target, HOT_EXIT_TARGET);
+                } else {
+                    stats::inc(Stat::RunDeclined);
                 }
                 // SAFETY: as above.
                 unsafe { (*regs).pc = target };

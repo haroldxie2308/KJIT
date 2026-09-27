@@ -24,6 +24,11 @@ pub(crate) enum Stat {
     /// Branch exits not chained because the hook call used its `chain_budget`
     /// of fragment entries.
     ChainCap,
+    /// Hook calls that ended before their next fragment entry because a run
+    /// condition failed (pending exit work such as `need_resched` or a signal,
+    /// a traced or compat task): at the hook, for any task's syscall, or at a
+    /// branch exit the chain budget allowed to chain.
+    RunDeclined,
     ExitSvc,
     ExitBl,
     ExitBlr,
@@ -106,6 +111,7 @@ const NAMES: [&str; COUNT] = [
     "fragment_entries",
     "chains",
     "chain_cap",
+    "run_declined",
     "exit_svc",
     "exit_bl",
     "exit_blr",
