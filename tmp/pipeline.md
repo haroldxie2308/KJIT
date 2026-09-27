@@ -739,9 +739,12 @@ where the implementation is stricter than it:
   !BTI_KERNEL, !SW_TTBR0_PAN), `include/linux/kjit.h`,
   `arch/arm64/kernel/kjit.c`, the loop in `el0_svc_common`.
   - The ops pointer is protected by **SRCU**, not RCU: `after_syscall` sleeps
-    (fragment page faults). Unregister = static key off, pointer NULL,
-    `synchronize_srcu`: it waits for hook calls in flight, never for a syscall
-    the loop invoked (those run outside the SRCU section).
+    (fragment page faults). Unregister (as of 0006) = static key off,
+    `synchronize_srcu`, pointer NULL, `synchronize_srcu`: the first grace
+    period drains hook calls in flight while the extable search still finds
+    their fixups, the second the extable searches and task_work callbacks
+    that loaded the old ops. It never waits for a syscall the loop invoked
+    (those run outside the SRCU section). See "Unload race".
   - Loop placement: inside the existing "no syscall work at entry, none at exit,
     no single-step, !DEBUG_RSEQ" branch. After each invoked syscall the flags are
     re-read; syscall work or single-step leaves through `trace_exit`, as upstream
@@ -831,11 +834,11 @@ where the implementation is stricter than it:
   at most 16 pages and 16384 reads (`build_cfg` has no size bound of its own
   and quadratic bookkeeping).
 - Teardown: mm release (`release` callback) empties the table and unhashes.
-  Module exit: remove debugfs (waits for writers), clear `enable` and wait for
-  the module's own SRCU (`kjit_run_srcu`) around every hook call, i.e. every
-  fragment run (A10, see "A10", unload race), unregister the hook (waits for
-  calls in flight), claim and empty every `kjit_mm`, `mmu_notifier_put`,
-  `mmu_notifier_synchronize`, `rcu_barrier`, `destroy_workqueue`.
+  Module exit: remove debugfs (waits for writers), unregister the hook (waits
+  for calls in flight, i.e. every fragment run, with their extable search
+  still live; patch 0006, see "Unload race"), claim and empty every
+  `kjit_mm`, `mmu_notifier_put`, `mmu_notifier_synchronize`, `rcu_barrier`,
+  `destroy_workqueue`.
 
 ## Known limitations (in addition to rseq)
 
@@ -2417,25 +2420,49 @@ for `fp_switch`, `fpsimd_exit_mem >= 1` per fault mode and `>= 100` for
   `need_resched` check matters for `PREEMPT_NONE`/`VOLUNTARY`/`LAZY`; an
   FP/SIMD run is not preemptible, but its bracket ends with every entry.
 
-## Unload race (found by A10, fixed in the module)
+## Unload race (found by A10, fixed in kernel patch 0006)
 
-- `kjit_unregister_hook()` (patch 0001) disables the hook's static key and
-  clears the ops pointer before it waits for the calls in flight, and
-  `search_kjit_extables()` (patch 0002) returns nothing once the key is off.
-  A fragment still running in a hook call in flight during `rmmod` that takes
-  a user-access fault then has no fixup: an oops. With 16-entry chains the
-  window was small; with 1024 it hit `jit_churn` in `make guest-tests-k3`
+- `kjit_unregister_hook()` (patch 0001) disabled the hook's static key and
+  cleared the ops pointer before it waited for the calls in flight, and
+  `search_kjit_extables()` (patch 0002) returned nothing once the key was
+  off. A fragment still running in a hook call in flight during `rmmod` that
+  took a user-access fault then had no fixup: an oops. With 16-entry chains
+  the window was small; with 1024 it hit `jit_churn` in `make guest-tests-k3`
   (an FP/SIMD fragment's `str q0` under `pagefault_disable()`, first touch of
   a fresh page, module `GOING`).
-- Fix (module): every hook call runs inside the module's own SRCU read section
-  (`kjit_run_srcu`) and checks `enable` inside it; module exit clears `enable`
-  and `synchronize_srcu()`s before it unregisters, so no fragment runs once
-  the extable search goes away. In-flight chains end at their next run
-  condition check.
-- Not fixed at the root: the patch's unregister order is still wrong for any
-  runtime that does not drain its own runs (it should keep the extable search
-  until `synchronize_srcu()` has returned). Changing it changes the shared
-  patched kernel tree; left for a decision.
+- Invariant: fragment extables stay reachable until every hook call that
+  could be running a fragment has returned.
+- Fix (patch 0006): unregister = static key off (no new hook calls),
+  `synchronize_srcu` (calls in flight, chained entries included, drain while
+  the ops pointer is still published), pointer NULL, `synchronize_srcu`
+  (extable searches and task_work callbacks that loaded the old ops finish).
+  `kjit_call_after_syscall()` re-checks the static key inside its SRCU
+  section: `kjit_syscall_loop()` checks it only before its first call, so
+  without the re-check a loop in progress could start a new hook call after
+  the first grace period, and its fragment would fault after the pointer was
+  cleared. A call that saw the key enabled entered SRCU before
+  `static_branch_disable()` returned (arm64 patching IPIs every CPU), so the
+  first grace period waits for it. `search_kjit_extables()` consults only the
+  SRCU-protected pointer (still skipped in NMI). Cost: with no runtime
+  registered, an address no other table claims takes an SRCU read section
+  instead of a static branch.
+- task_work (patch 0004) is unchanged: `kjit_task_work_fn()` calls
+  `ops->task_work` only while the queuing registration's ops is published,
+  and the second grace period waits for callbacks that loaded it.
+- The interim module-side workaround (its own SRCU around every hook call and
+  an `enable` clear + `synchronize_srcu()` in module exit) is removed; the
+  `enable` checks that remain serve the debugfs switch only. In-flight chains
+  now run to their normal end (chain budget or exit) during unload.
+- Regression test: `tests/guest/unload_fault.c` + `unload-stress.sh`
+  (`run-k3.sh` step (v), 20 cycles): threads loop over fresh anonymous
+  regions; `gpr` threads make 512-entry chains whose callee entries each
+  demand-page a new page inside the fragment (a hook call in flight across
+  hundreds of faults), `fp` threads store with `st1` from an FP/SIMD callee
+  (the Mem-stub fixup that first hit). Checks that every load ran faulting
+  FP/SIMD fragments before its `rmmod`. Negative control: the kernel without
+  0006 and the module without its workaround oopses on the first `rmmod`
+  ("Unable to handle kernel paging request" at the gpr callee's
+  `str x6, [x9]`, module `kjit(O-)`).
 
 ## Counter reads (translator, verifier, module)
 

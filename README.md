@@ -208,7 +208,7 @@ returns, so a hot syscall loop issues its next syscall without going back to
 EL0. Contract and design: `tmp/pipeline.md`, "K2 contract: kernel runtime" and
 "K2 implementation".
 
-**Patched kernel.** `kernel-patches/` is a five-patch series on the pinned
+**Patched kernel.** `kernel-patches/` is a six-patch series on the pinned
 `dep/linux` commit (7.1-rc1):
 
 1. `arm64: syscall: add a KJIT syscall-return hook`: `ARM64_KJIT`, a static key
@@ -228,6 +228,10 @@ EL0. Contract and design: `tmp/pipeline.md`, "K2 contract: kernel runtime" and
 5. `arm64: fpsimd: export fpsimd_restore_current_state() for the KJIT runtime`
    (A9b): the FP/SIMD bracket below reloads the user's FP/SIMD state with it
    when `TIF_FOREIGN_FPSTATE` is set.
+6. `arm64: kjit: keep fragment fixups until unregister has drained its calls`:
+   `kjit_unregister_hook()` stops new hook calls, waits for the ones in flight
+   while the fragment extable search still works, and only then clears the
+   ops pointer, so a fragment faulting during `rmmod` still finds its fixup.
 
 `scripts/kjit-kernel-tree.sh` (`make kernel-tree`) creates the patched tree as a
 git worktree of `dep/linux` at `$KJIT_BUILD_ROOT/linux-kjit` (shared objects, no
@@ -384,8 +388,12 @@ bs=4k and bs=1 (first 4 MiB), `cat | wc`, `sha256sum`, `gzip | gunzip`,
 `sqlite3` if the rootfs has it (it does not by default); (f)
 `redis-smoke.sh` (dataset load + read-back + `DEBUG DIGEST`, then
 `redis-benchmark -n 100000 -t set,get,incr,lpush,lpop,sadd,hset -P 1 -c 4`
-under `nojit` so the counters measure the server, and the digest again); and
-module unload/reload five times while `jit_churn` keeps translations queued.
+under `nojit` so the counters measure the server, and the digest again);
+module unload/reload five times while `jit_churn` keeps translations queued;
+and `unload-stress.sh` (20 unloads/reloads while `unload_fault` keeps
+fragments faulting on fresh pages, in long chains and in FP/SIMD brackets:
+the unload race of kernel patch 6; `make guest-run CMD='sh
+/opt/kjit-tests/unload-stress.sh 60'` runs it alone).
 
 ```sh
 make guest-tests-k3 GUEST_PROFILE=kjit-guest

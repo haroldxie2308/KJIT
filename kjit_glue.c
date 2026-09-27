@@ -70,7 +70,6 @@
 #include <linux/set_memory.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-#include <linux/srcu.h>
 #include <linux/timekeeping.h>
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
@@ -962,28 +961,12 @@ bool kjit_fpsimd_supported(void)
 	return system_supports_fpsimd() && !system_supports_sve() && !system_supports_sme();
 }
 
-/*
- * Hook calls in flight, i.e. every fragment run. Module exit clears
- * kjit_enabled and waits for them before it unregisters the hook, because
- * kjit_unregister_hook() turns off the fragment extable search
- * (search_kjit_extables(), patch 0002) before it waits for the calls in
- * flight: a fragment still running then would take a user-access fault
- * without its fixup (an oops). Readers sleep (fragment page faults), so SRCU.
- */
-DEFINE_STATIC_SRCU(kjit_run_srcu);
-
 static long kjit_after_syscall(struct pt_regs *regs)
 {
-	long ret = -1;
-	int idx;
-
-	idx = srcu_read_lock(&kjit_run_srcu);
-	if (READ_ONCE(kjit_enabled)) {
-		this_cpu_inc(kjit_hook_calls_pcpu);
-		ret = kjit_rs_after_syscall(regs);
-	}
-	srcu_read_unlock(&kjit_run_srcu, idx);
-	return ret;
+	if (!READ_ONCE(kjit_enabled))
+		return -1;
+	this_cpu_inc(kjit_hook_calls_pcpu);
+	return kjit_rs_after_syscall(regs);
 }
 
 /*
@@ -1713,15 +1696,10 @@ void kjit_glue_exit(void)
 	/* No new translations (waits for writers in flight). */
 	debugfs_remove(kjit_debugfs);
 	/*
-	 * No fragment runs after this: hook calls in flight stop chaining at the
-	 * next run-condition check and new ones return at once. Their extable
-	 * lookups still work until they have finished (see kjit_run_srcu).
-	 */
-	WRITE_ONCE(kjit_enabled, false);
-	synchronize_srcu(&kjit_run_srcu);
-	/*
 	 * No hook calls, extable lookups or task_work requests in here after
-	 * this; requests still queued are freed by the kernel (0004).
+	 * this; requests still queued are freed by the kernel (0004). Fragments
+	 * running in hook calls in flight keep their fault fixups until those
+	 * calls have returned (0006).
 	 */
 	kjit_unregister_hook(&kjit_hook_ops);
 	pr_info("kjit: %lld of %lld translation requests still queued at unload (freed by the kernel)\n",

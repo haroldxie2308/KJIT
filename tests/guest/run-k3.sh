@@ -20,6 +20,8 @@
 #       check; also reports the server's in-kernel syscall fraction, its exit
 #       histogram and the top Unsupported words during the benchmark.
 #   (u) module unload/reload while jit_churn keeps translations queued.
+#   (v) unload-stress.sh: 20 unloads/reloads while fragments fault on fresh
+#       pages (the unload race, kernel-patches/0006).
 # Exits non-zero on the first failure; prints "k3: ALL PASS" at the end.
 set -eu
 
@@ -188,6 +190,10 @@ while [ "$i" -le "$iterations" ]; do
 
     # (u)
     reload_churn
+
+    # (v)
+    sh "$T/unload-stress.sh" 20 > unload.log 2>&1 || { cat unload.log; fail "unload-stress.sh"; }
+    grep "^unload:" unload.log | sed 's/^unload:/k3: unload_stress:/'
 
     echo "k3: iteration $i PASS"
     i=$((i + 1))
