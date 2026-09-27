@@ -1,5 +1,6 @@
 extern crate alloc;
 
+pub mod a64_forms;
 pub mod a64_pretty;
 pub mod active_step;
 pub(crate) mod asm_fixture;
@@ -13,6 +14,7 @@ pub mod model;
 // `make harness-test-native`, which fails unless it reaches Linux arm64.
 #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
 pub mod native;
+pub mod report_util;
 pub mod runtime;
 pub mod shared;
 pub mod trace;
