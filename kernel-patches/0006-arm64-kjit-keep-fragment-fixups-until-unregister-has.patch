@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Sun, 27 Sep 2026 19:04:40 +0800
+Subject: [PATCH] arm64: kjit: keep fragment fixups until unregister has
+ drained its calls
+
+kjit_unregister_hook() turned off the static key and cleared the ops
+pointer before it waited for the after_syscall calls in flight, and
+search_kjit_extables() returned nothing once the key was off. A call in
+flight may be running translated code, whose user accesses fault on first
+touch of a page (demand paging, CoW) or under pagefault_disable(). Such a
+fault during unregistration found no exception table entry, and the
+kernel died with "access to user memory outside uaccess routines". Long
+chained runs in the runtime made the window easy to hit with an rmmod
+under load.
+
+The invariant is that the fixups of translated code stay reachable until
+no call that could be running it is left. Unregistering is now:
+
+  static_branch_disable()   no new after_syscall calls
+  synchronize_srcu()        calls in flight finish, ops still published
+  rcu_assign_pointer(NULL)
+  synchronize_srcu()        extable searches and task_work callbacks that
+                            loaded the old ops finish
+
+For the first grace period to cover every call, kjit_call_after_syscall()
+now checks the static key inside its SRCU section: kjit_syscall_loop()
+checks it only once, before its first call, and would otherwise keep
+calling the hook, with the ops still published, after that grace period
+had ended. A call that saw the key enabled started its SRCU section before
+static_branch_disable() returned (the arm64 patching IPIs every CPU), so
+the grace period waits for it.
+
+search_kjit_extables() no longer looks at the static key, only at the
+SRCU-protected ops pointer; the in_nmi() guard stays. With no runtime
+registered, an address no other table claims now costs an SRCU read
+section instead of a static branch; such lookups are rare (a kernel fault
+about to oops, or a user fault that other tables do not cover).
+
+Deferred task_work keeps its contract: it calls ops->task_work only while
+the ops that queued it are published, and the second grace period waits
+for any callback that loaded them, so no runtime code runs for a request
+after kjit_unregister_hook() returns.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/kernel/kjit.c | 42 ++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 38 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/kernel/kjit.c b/arch/arm64/kernel/kjit.c
+index 5d8b034f1..e6413aeff 100644
+--- a/arch/arm64/kernel/kjit.c
++++ b/arch/arm64/kernel/kjit.c
+@@ -9,6 +9,14 @@
+  * that implements them goes away. Syscalls the hook asks for are invoked
+  * outside that section, so unregistering never waits for a blocked syscall.
+  *
++ * A call to after_syscall may run translated code, and that code's user
++ * accesses fault (demand paging, CoW) and need search_kjit_extables() to find
++ * their fixups. So the ops pointer, which is all the extable search consults,
++ * stays published until every call that could be running translated code has
++ * returned: kjit_unregister_hook() first stops new calls (the static key,
++ * which kjit_call_after_syscall() checks inside its SRCU section), waits for
++ * the calls in flight, and only then clears the pointer.
++ *
+  * Work the runtime defers to a task's own context (kjit_queue_task_work())
+  * runs through kjit_task_work_fn(), which is kernel code: it calls into the
+  * runtime under the same SRCU, and only if the registration that queued the
+@@ -56,8 +64,23 @@ void kjit_unregister_hook(const struct kjit_hook_ops *ops)
+ 	guard(mutex)(&kjit_hook_mutex);
+ 	if (WARN_ON(rcu_access_pointer(kjit_hook) != ops))
+ 		return;
++	/*
++	 * No new after_syscall calls: kjit_call_after_syscall() checks the key
++	 * inside its SRCU section, so a call that still saw it enabled started
++	 * that section before this returned.
++	 */
+ 	static_branch_disable(&kjit_hook_enabled);
++	/*
++	 * The after_syscall calls in flight, and the translated code they run,
++	 * finish while @ops is still published, so their faults find their
++	 * fixups in search_kjit_extables().
++	 */
++	synchronize_srcu(&kjit_hook_srcu);
+ 	rcu_assign_pointer(kjit_hook, NULL);
++	/*
++	 * Extable searches and task_work callbacks that loaded @ops before it
++	 * was cleared finish.
++	 */
+ 	synchronize_srcu(&kjit_hook_srcu);
+ }
+ EXPORT_SYMBOL_GPL(kjit_unregister_hook);
+@@ -69,9 +92,16 @@ long kjit_call_after_syscall(struct pt_regs *regs)
+ 	int idx;
+ 
+ 	idx = srcu_read_lock(&kjit_hook_srcu);
+-	ops = srcu_dereference(kjit_hook, &kjit_hook_srcu);
+-	if (ops)
+-		scno = ops->after_syscall(regs);
++	/*
++	 * kjit_syscall_loop() checked the key once, before its first call; it
++	 * is checked again here, inside the SRCU section, so that no call
++	 * starts after kjit_unregister_hook()'s first grace period.
++	 */
++	if (static_branch_likely(&kjit_hook_enabled)) {
++		ops = srcu_dereference(kjit_hook, &kjit_hook_srcu);
++		if (ops)
++			scno = ops->after_syscall(regs);
++	}
+ 	srcu_read_unlock(&kjit_hook_srcu, idx);
+ 	return scno;
+ }
+@@ -123,6 +153,10 @@ EXPORT_SYMBOL_GPL(kjit_queue_task_work);
+  * addresses no other table claims get here. SRCU readers are not NMI-safe;
+  * translated code never runs in NMI context, so an NMI fault cannot be one of
+  * its user accesses.
++ *
++ * Only the ops pointer decides, not the static key: translated code still
++ * running after the key was turned off must find its fixups, and
++ * kjit_unregister_hook() clears the pointer only once no such code runs.
+  */
+ const struct exception_table_entry *search_kjit_extables(unsigned long addr)
+ {
+@@ -130,7 +164,7 @@ const struct exception_table_entry *search_kjit_extables(unsigned long addr)
+ 	const struct kjit_hook_ops *ops;
+ 	int idx;
+ 
+-	if (!static_branch_unlikely(&kjit_hook_enabled) || in_nmi())
++	if (in_nmi())
+ 		return NULL;
+ 
+ 	idx = srcu_read_lock(&kjit_hook_srcu);
