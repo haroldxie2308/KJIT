@@ -43,7 +43,7 @@ impl Frag {
         self
     }
 
-    fn verify(&self) -> Result<(), VerifyError> {
+    fn verify(&self) -> Result<VerifyOk, VerifyError> {
         verify_fragment(&VerifyInput {
             code: &self.code,
             fault_sites: &self.sites,
@@ -1041,6 +1041,196 @@ fn pan_stub_is_only_a_window_target() {
     );
 }
 
+fn ldr_q(rt: u8, rn: u8, raw_offset: u32) -> A64Insn {
+    A64Insn::LdrImmFpsimdLdrQLdstPos {
+        rt,
+        mem: mem_off(
+            xs(rn),
+            crate::shared::arm64::ergo::scaled_uimm(raw_offset, 12, 4),
+        ),
+    }
+}
+
+/// A9a: the A8 window around a base-only SIMD&FP load/store is accepted, and
+/// `uses_fpsimd` says whether any SIMD&FP form appears.
+#[test]
+fn simd_windows_and_uses_fpsimd() {
+    let ok = |frag: Frag| frag.verify().unwrap().uses_fpsimd;
+    // The LSE window alone: no SIMD&FP.
+    assert!(!ok(pan_window_fragment(&pan_window_body())));
+    // The same window around `ldr q0, [x4]`, `ld1 {v0.16b-v3.16b}, [x4]`,
+    // `stp q1, q2, [x4]`.
+    for access in [
+        ldr_q(0, 4, 0),
+        A64Insn::Ld1AdvsimdMultLd1AsisdlseR44v {
+            q: 1,
+            size: 0,
+            rn: xs(4),
+            rt: 0,
+        },
+        A64Insn::StpFpsimdStpQLdstpairOff {
+            rt2: 2,
+            rt: 1,
+            mem: mem_off(xs(4), scaled_simm(0, 7, 4)),
+        },
+    ] {
+        let mut body = pan_window_body();
+        body[3] = access;
+        assert!(ok(pan_window_fragment(&body)), "{access:?}");
+    }
+    // A register-only SIMD&FP form anywhere.
+    let body = [
+        A64Insn::CmeqAdvsimdZeroCmeqAsimdmiscZ {
+            q: 1,
+            size: 0,
+            rn: 1,
+            rd: 0,
+        },
+        b_epi(1),
+    ];
+    assert!(ok(Frag::new(&body)));
+    assert!(!ok(Frag::new(&[movz(0, 1), b_epi(1)])));
+}
+
+/// A9a: a SIMD&FP load/store is valid only as a window's base-only access on sA,
+/// with its fault site at the window's PAN stub.
+#[test]
+fn simd_memory_forms_are_window_only() {
+    let with = |insn: A64Insn| {
+        let mut body = pan_window_body();
+        body[3] = insn;
+        pan_window_fragment(&body).rule()
+    };
+    // Another base, SP, an offset, writeback, unscaled: not a window access, so
+    // the window is malformed (and each form is user-only elsewhere).
+    assert_eq!(with(ldr_q(0, 3, 0)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(ldr_q(0, 31, 0)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(ldr_q(0, 4, 1)), Some(VerifyRule::PanWindow));
+    assert_eq!(
+        Frag::new(&[ldr_q(0, 4, 1), b_epi(1)]).rule(),
+        Some(VerifyRule::UserOnlyForm)
+    );
+    let post = A64Insn::LdrImmFpsimdLdrQLdstImmpost {
+        rt: 0,
+        mem: crate::shared::arm64::ergo::mem_post(xs(4), simm(16, 9)),
+    };
+    assert_eq!(with(post), Some(VerifyRule::PanWindow));
+    let ld1_post = A64Insn::Ld1AdvsimdMultLd1AsisdlsepI1I1 {
+        q: 1,
+        size: 0,
+        rn: xs(4),
+        rt: 0,
+    };
+    assert_eq!(with(ld1_post), Some(VerifyRule::PanWindow));
+    let ldur = A64Insn::LdurFpsimdLdurQLdstUnscaled {
+        rt: 0,
+        mem: mem_off(xs(4), simm(0, 9)),
+    };
+    assert_eq!(with(ldur), Some(VerifyRule::PanWindow));
+    for insn in [post, ld1_post, ldur] {
+        assert_eq!(
+            Frag::new(&[insn, b_epi(1)]).rule(),
+            Some(VerifyRule::UserOnlyForm),
+            "{insn:?}"
+        );
+    }
+    // Outside a window, even with a fault site.
+    let body = [ldr_q(0, 4, 0), b_epi(1), movz(9, 5), b_epi(3)];
+    assert_eq!(
+        Frag::new(&body).rule(),
+        Some(VerifyRule::AtomicOutsideWindow)
+    );
+    assert_eq!(
+        Frag::new(&body).site(0, 2).rule(),
+        Some(VerifyRule::AtomicOutsideWindow)
+    );
+    // In a window whose access's fault site is a plain stub.
+    let mut body = pan_window_body();
+    body[3] = ldr_q(0, 4, 0);
+    body.extend([movz(9, 5), b_epi(10)]);
+    assert_eq!(
+        Frag::new(&body).site(3, 9).rule(),
+        Some(VerifyRule::PanStubTarget)
+    );
+    // A SIMD&FP register form writing x29.
+    let fmov = A64Insn::FmovFloatGenFmov64dFloat2int { rn: 0, rd: x(29) };
+    assert_eq!(
+        Frag::new(&[fmov, b_epi(1)]).rule(),
+        Some(VerifyRule::FramePointerWrite)
+    );
+}
+
+/// A9a and rule 9: a SIMD&FP register field is not a general register. Writing
+/// V12 does not clear x12's kernel mark and reading V12 is not reading x12; the
+/// general operands of SIMD&FP forms (FMOV general, DUP/INS general, UMOV) are
+/// read and written like any other, so a kernel value never reaches a V register.
+#[test]
+fn simd_registers_are_not_general_registers_for_rule_9() {
+    let rule = |body: &[A64Insn]| Frag::new(body).rule();
+    let read = Some(VerifyRule::KernelValueRead);
+    let orr = |rd: u8, rm: u8| A64Insn::OrrLogShiftOrr64LogShift {
+        shift: 0,
+        rm: x(rm),
+        imm6: uimm(0, 6),
+        rn: x(31),
+        rd: x(rd),
+    };
+    let load12 = ldr(12, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET);
+    let load13 = ldr(13, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET);
+    let fmov_d_x = |d: u8, n: u8| A64Insn::FmovFloatGenFmovD64Float2int { rn: x(n), rd: d };
+    let umov_x = |d: u8, n: u8| A64Insn::UmovAdvsimdUmovAsimdinsXX {
+        imm5: uimm(0b01000, 5),
+        rn: n,
+        rd: x(d),
+    };
+    // `fmov d12, x0` does not overwrite x12: the pt_regs pointer still leaks.
+    assert_eq!(rule(&[load12, fmov_d_x(12, 0), orr(0, 12), b_epi(3)]), read);
+    // A clean general register into a V register, and V registers read freely
+    // (x12 is kernel-valued at entry; V12 is not).
+    assert_eq!(rule(&[fmov_d_x(0, 0), b_epi(1)]), None);
+    let cmeq = A64Insn::CmeqAdvsimdZeroCmeqAsimdmiscZ {
+        q: 1,
+        size: 0,
+        rn: 12,
+        rd: 0,
+    };
+    assert_eq!(rule(&[cmeq, umov_x(0, 12), b_epi(2)]), None);
+    // General operands of SIMD&FP forms are general registers: a kernel value
+    // never goes into a V register ...
+    let dup = |n: u8| A64Insn::DupAdvsimdGenDupAsimdinsDrR {
+        q: 1,
+        imm5: uimm(0b01000, 5),
+        rn: x(n),
+        rd: 0,
+    };
+    let ins = |n: u8| A64Insn::InsAdvsimdGenInsAsimdinsIrR {
+        imm5: uimm(0b11000, 5),
+        rn: x(n),
+        rd: 0,
+    };
+    assert_eq!(rule(&[dup(12), b_epi(1)]), read);
+    assert_eq!(rule(&[load13, ins(13), b_epi(2)]), read);
+    assert_eq!(rule(&[fmov_d_x(0, 29), b_epi(1)]), read);
+    assert_eq!(rule(&[load13, fmov_d_x(3, 13), b_epi(2)]), read);
+    // ... and a V-to-general move overwrites a kernel mark.
+    assert_eq!(rule(&[load13, umov_x(13, 0), orr(0, 13), b_epi(3)]), None);
+    // A window around a SIMD&FP access based on the pt_regs pointer: its range
+    // check already reads a kernel value.
+    let body = [
+        load13,
+        ubfx48(13, 5),
+        cbnz(2, 5, 7),
+        msr_pan(0),
+        ldr_q(0, 13, 0),
+        msr_pan(1),
+        b_epi(6),
+        msr_pan(1),
+        movz(9, 5),
+        b_epi(9),
+    ];
+    assert_eq!(Frag::new(&body).site(4, 7).rule(), read);
+}
+
 /// Cross-check of the hand classification against the generated metadata on
 /// random words: an `Alu` word has no memory, branch or control-flow role and is
 /// not SVC; every memory form is a user or runtime access; every control-flow
@@ -1073,6 +1263,15 @@ fn classification_agrees_with_generated_roles() {
             | rules::Form::MrsTpidrEl0 => {
                 assert!(!memory && !control, "{}", insn.key());
                 assert!(!insn.key().starts_with("SVC"), "{}", insn.key());
+                // A9a: a form naming a V register is `Simd`, never `Alu`.
+                assert!(
+                    !roles.iter().any(|role| matches!(
+                        role,
+                        A64OperandRole::VecRead { .. } | A64OperandRole::VecWrite { .. }
+                    )),
+                    "{}",
+                    insn.key()
+                );
             }
             rules::Form::UserAccess { .. } | rules::Form::RuntimeAccess { .. } => {
                 assert!(memory && !control, "{}", insn.key())
@@ -1083,8 +1282,29 @@ fn classification_agrees_with_generated_roles() {
             rules::Form::Exception | rules::Form::PcRelative => {
                 assert!(!memory && !control, "{}", insn.key())
             }
-            // A8: the LSE atomics access memory; MSR (PSTATE.PAN) has no role.
-            rules::Form::WindowAtomic { .. } => assert!(memory && !control, "{}", insn.key()),
+            // A8/A9a: the window accesses access memory; MSR (PSTATE.PAN) has no role.
+            rules::Form::WindowAccess { .. } => assert!(memory && !control, "{}", insn.key()),
+            // A9a: SIMD&FP register-only forms name a V register, never memory,
+            // flags or control flow.
+            rules::Form::Simd => {
+                assert!(!memory && !control, "{}", insn.key());
+                assert!(
+                    roles.iter().any(|role| matches!(
+                        role,
+                        A64OperandRole::VecRead { .. } | A64OperandRole::VecWrite { .. }
+                    )),
+                    "{}",
+                    insn.key()
+                );
+                assert!(
+                    !roles.iter().any(|role| matches!(
+                        role,
+                        A64OperandRole::FlagsRead | A64OperandRole::FlagsWrite
+                    )),
+                    "{}",
+                    insn.key()
+                );
+            }
             rules::Form::PanClear | rules::Form::PanSet | rules::Form::MsrOther => {
                 assert!(!memory && !control && roles.is_empty(), "{}", insn.key())
             }

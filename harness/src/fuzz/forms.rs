@@ -7,7 +7,7 @@
 //! `spec/arm64/subset.toml` is fuzzed without touching this file.
 
 use crate::shared::arm64::{
-    A64Insn, A64OperandRole, A64Reg31Mode, GeneratedFieldSpec, GeneratedInsnSpec,
+    form_base_word, A64Insn, A64OperandRole, A64Reg31Mode, GeneratedFieldSpec, GeneratedInsnSpec,
     GENERATED_A64_SUBSET,
 };
 use crate::shared::trans::cfg::RuntimeExitReason;
@@ -156,7 +156,7 @@ impl Catalog {
 }
 
 fn derive_form(spec: &'static GeneratedInsnSpec) -> Form {
-    let probe = decode_as(spec, spec.value);
+    let probe = decode_as(spec, form_base_word(spec));
     let roles = spec.operands;
     let written = |name: &str| {
         roles.iter().any(|role| {

@@ -6,6 +6,14 @@ use crate::shared::trans::cfg::RuntimeExitReason;
 
 pub const PAGE_SIZE: u64 = 4096;
 
+/// FPCR bits user code can set and read back on the native oracle's hardware
+/// (A9a): AHP, DN, FZ, RMode, FZ16. The trap enables are RAZ/WI there and
+/// Len/Stride are RES0, so generated states stay inside this mask.
+pub const FPCR_USER_BITS: u64 = 0x07c8_0000;
+/// FPSR bits user code can set and read back (A9a): QC and the cumulative
+/// exception flags IDC, IXC, UFC, OFC, DZC, IOC.
+pub const FPSR_USER_BITS: u64 = 0x0800_009f;
+
 /// EL0 permission of a mapped user page. A page absent from the page map is
 /// unmapped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,9 +34,10 @@ pub enum AccessKind {
 pub enum Privilege {
     User,
     Runtime,
-    /// A PAN window's LSE atomic in a fragment (A8): an EL1 access to user memory
-    /// with PSTATE.PAN clear. Same page permissions as a user access, and numbered
-    /// with the user accesses for fault injection.
+    /// A PAN window's access in a fragment (an LSE atomic, A8, or a SIMD&FP
+    /// load/store, A9a): an EL1 access to user memory with PSTATE.PAN clear. Same
+    /// page permissions as a user access, and numbered with the user accesses for
+    /// fault injection.
     Window,
 }
 
@@ -98,6 +107,14 @@ pub struct MachineState {
     /// User TLS pointer. Read-only for translated code: `MRS Xt, TPIDR_EL0` is the
     /// only admitted system-register access.
     pub tpidr_el0: u64,
+    /// SIMD&FP registers V0-V31 (A9a). A fragment runs on the user's own V
+    /// registers (they are never virtualized), so the fragment machine's are the
+    /// user's.
+    pub v: [u128; 32],
+    /// FPCR and FPSR (A9a): user state no A9a form reads or writes, compared like
+    /// every other register.
+    pub fpcr: u64,
+    pub fpsr: u64,
     memory: BTreeMap<u64, u8>,
     /// User page map keyed by page base address.
     user_pages: BTreeMap<u64, PagePerm>,
@@ -138,6 +155,9 @@ pub struct NormalizedState {
     pub regs: [u64; 31],
     pub sp: u64,
     pub flags: Flags,
+    pub v: [u128; 32],
+    pub fpcr: u64,
+    pub fpsr: u64,
     pub memory: BTreeMap<u64, u8>,
     pub halt_reason: HaltReason,
 }
@@ -148,6 +168,9 @@ impl NormalizedState {
             regs: result.state.regs,
             sp: result.state.sp,
             flags: result.state.flags,
+            v: result.state.v,
+            fpcr: result.state.fpcr,
+            fpsr: result.state.fpsr,
             memory: result.state.memory.clone(),
             halt_reason: result.halt_reason,
         }

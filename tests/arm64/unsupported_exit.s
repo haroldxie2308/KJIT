@@ -32,8 +32,9 @@ unsupported_insn:
     mrs x0, tpidrro_el0
     ret
 
-// A7b: exclusive, atomic and FP/SIMD memory forms stay outside the subset, so
-// each ends its block with an Unsupported exit at its own PC.
+// A7b: exclusive forms stay outside the subset (A8 admitted the LSE atomics,
+// A9a the SIMD&FP loads/stores below), so each ends its block with an
+// Unsupported exit at its own PC.
 .global ldxr_unsupported_mark
 ldxr_unsupported_mark:
     svc #0
@@ -50,11 +51,22 @@ ldadd_unsupported_mark:
     ldadd x2, x3, [x12]
     ret
 
+// A9a: SIMD&FP loads/stores joined the subset except register offset (and
+// literal, LD2-4, single structure); FP arithmetic stays out.
 .global ldr_q_unsupported_mark
 ldr_q_unsupported_mark:
     svc #0
     ldrb w4, [x12, #1]
     ldr q0, [x12]
+    ldr q1, [x12, x4]
+    ret
+
+.global fadd_unsupported_mark
+fadd_unsupported_mark:
+    svc #0
+    movz x1, #0x4000, lsl #48
+    fmov d0, x1
+    fadd d1, d0, d0
     ret
 
 // A7c: acquire/release is admitted, but its exclusive and atomic relatives are

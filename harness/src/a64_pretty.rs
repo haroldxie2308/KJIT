@@ -1,6 +1,6 @@
 use crate::arm64::decode_bit_masks;
 use crate::shared::arm64::{
-    A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode, A64RegWidth,
+    A64Condition, A64FpSimdWriteback, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode, A64RegWidth,
 };
 use crate::shared::trans::cfg::RuntimeExitReason;
 
@@ -869,6 +869,164 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
             reg_name(rt),
             reg_name(rn)
         ),
+        // A9a SIMD&FP.
+        LdrImmFpsimdLdrBLdstImmpost { .. }
+        | LdrImmFpsimdLdrHLdstImmpost { .. }
+        | LdrImmFpsimdLdrSLdstImmpost { .. }
+        | LdrImmFpsimdLdrDLdstImmpost { .. }
+        | LdrImmFpsimdLdrQLdstImmpost { .. }
+        | LdrImmFpsimdLdrBLdstImmpre { .. }
+        | LdrImmFpsimdLdrHLdstImmpre { .. }
+        | LdrImmFpsimdLdrSLdstImmpre { .. }
+        | LdrImmFpsimdLdrDLdstImmpre { .. }
+        | LdrImmFpsimdLdrQLdstImmpre { .. }
+        | LdrImmFpsimdLdrBLdstPos { .. }
+        | LdrImmFpsimdLdrHLdstPos { .. }
+        | LdrImmFpsimdLdrSLdstPos { .. }
+        | LdrImmFpsimdLdrDLdstPos { .. }
+        | LdrImmFpsimdLdrQLdstPos { .. }
+        | StrImmFpsimdStrBLdstImmpost { .. }
+        | StrImmFpsimdStrHLdstImmpost { .. }
+        | StrImmFpsimdStrSLdstImmpost { .. }
+        | StrImmFpsimdStrDLdstImmpost { .. }
+        | StrImmFpsimdStrQLdstImmpost { .. }
+        | StrImmFpsimdStrBLdstImmpre { .. }
+        | StrImmFpsimdStrHLdstImmpre { .. }
+        | StrImmFpsimdStrSLdstImmpre { .. }
+        | StrImmFpsimdStrDLdstImmpre { .. }
+        | StrImmFpsimdStrQLdstImmpre { .. }
+        | StrImmFpsimdStrBLdstPos { .. }
+        | StrImmFpsimdStrHLdstPos { .. }
+        | StrImmFpsimdStrSLdstPos { .. }
+        | StrImmFpsimdStrDLdstPos { .. }
+        | StrImmFpsimdStrQLdstPos { .. }
+        | LdurFpsimdLdurBLdstUnscaled { .. }
+        | LdurFpsimdLdurHLdstUnscaled { .. }
+        | LdurFpsimdLdurSLdstUnscaled { .. }
+        | LdurFpsimdLdurDLdstUnscaled { .. }
+        | LdurFpsimdLdurQLdstUnscaled { .. }
+        | SturFpsimdSturBLdstUnscaled { .. }
+        | SturFpsimdSturHLdstUnscaled { .. }
+        | SturFpsimdSturSLdstUnscaled { .. }
+        | SturFpsimdSturDLdstUnscaled { .. }
+        | SturFpsimdSturQLdstUnscaled { .. }
+        | LdpFpsimdLdpSLdstpairPost { .. }
+        | LdpFpsimdLdpDLdstpairPost { .. }
+        | LdpFpsimdLdpQLdstpairPost { .. }
+        | LdpFpsimdLdpSLdstpairPre { .. }
+        | LdpFpsimdLdpDLdstpairPre { .. }
+        | LdpFpsimdLdpQLdstpairPre { .. }
+        | LdpFpsimdLdpSLdstpairOff { .. }
+        | LdpFpsimdLdpDLdstpairOff { .. }
+        | LdpFpsimdLdpQLdstpairOff { .. }
+        | StpFpsimdStpSLdstpairPost { .. }
+        | StpFpsimdStpDLdstpairPost { .. }
+        | StpFpsimdStpQLdstpairPost { .. }
+        | StpFpsimdStpSLdstpairPre { .. }
+        | StpFpsimdStpDLdstpairPre { .. }
+        | StpFpsimdStpQLdstpairPre { .. }
+        | StpFpsimdStpSLdstpairOff { .. }
+        | StpFpsimdStpDLdstpairOff { .. }
+        | StpFpsimdStpQLdstpairOff { .. }
+        | Ld1AdvsimdMultLd1AsisdlseR11v { .. }
+        | Ld1AdvsimdMultLd1AsisdlseR22v { .. }
+        | Ld1AdvsimdMultLd1AsisdlseR33v { .. }
+        | Ld1AdvsimdMultLd1AsisdlseR44v { .. }
+        | Ld1AdvsimdMultLd1AsisdlsepI1I1 { .. }
+        | Ld1AdvsimdMultLd1AsisdlsepR1R1 { .. }
+        | Ld1AdvsimdMultLd1AsisdlsepI2I2 { .. }
+        | Ld1AdvsimdMultLd1AsisdlsepR2R2 { .. }
+        | Ld1AdvsimdMultLd1AsisdlsepI3I3 { .. }
+        | Ld1AdvsimdMultLd1AsisdlsepR3R3 { .. }
+        | Ld1AdvsimdMultLd1AsisdlsepI4I4 { .. }
+        | Ld1AdvsimdMultLd1AsisdlsepR4R4 { .. }
+        | St1AdvsimdMultSt1AsisdlseR11v { .. }
+        | St1AdvsimdMultSt1AsisdlseR22v { .. }
+        | St1AdvsimdMultSt1AsisdlseR33v { .. }
+        | St1AdvsimdMultSt1AsisdlseR44v { .. }
+        | St1AdvsimdMultSt1AsisdlsepI1I1 { .. }
+        | St1AdvsimdMultSt1AsisdlsepR1R1 { .. }
+        | St1AdvsimdMultSt1AsisdlsepI2I2 { .. }
+        | St1AdvsimdMultSt1AsisdlsepR2R2 { .. }
+        | St1AdvsimdMultSt1AsisdlsepI3I3 { .. }
+        | St1AdvsimdMultSt1AsisdlsepR3R3 { .. }
+        | St1AdvsimdMultSt1AsisdlsepI4I4 { .. }
+        | St1AdvsimdMultSt1AsisdlsepR4R4 { .. }
+        | DupAdvsimdEltDupAsisdoneOnly { .. }
+        | DupAdvsimdEltDupAsimdinsDvV { .. }
+        | DupAdvsimdGenDupAsimdinsDrR { .. }
+        | InsAdvsimdEltInsAsimdinsIvV { .. }
+        | InsAdvsimdGenInsAsimdinsIrR { .. }
+        | UmovAdvsimdUmovAsimdinsWW { .. }
+        | UmovAdvsimdUmovAsimdinsXX { .. }
+        | MoviAdvsimdMoviAsimdimmNB { .. }
+        | MoviAdvsimdMoviAsimdimmLHl { .. }
+        | MoviAdvsimdMoviAsimdimmLSl { .. }
+        | MoviAdvsimdMoviAsimdimmMSm { .. }
+        | MoviAdvsimdMoviAsimdimmDDs { .. }
+        | MoviAdvsimdMoviAsimdimmD2D { .. }
+        | MvniAdvsimdMvniAsimdimmLHl { .. }
+        | MvniAdvsimdMvniAsimdimmLSl { .. }
+        | MvniAdvsimdMvniAsimdimmMSm { .. }
+        | FmovFloatGenFmovS32Float2int { .. }
+        | FmovFloatGenFmov32sFloat2int { .. }
+        | FmovFloatGenFmovD64Float2int { .. }
+        | FmovFloatGenFmovV64iFloat2int { .. }
+        | FmovFloatGenFmov64dFloat2int { .. }
+        | FmovFloatGenFmov64vxFloat2int { .. }
+        | FmovFloatFmovSFloatdp1 { .. }
+        | FmovFloatFmovDFloatdp1 { .. }
+        | CmeqAdvsimdRegCmeqAsisdsameOnly { .. }
+        | CmeqAdvsimdRegCmeqAsimdsameOnly { .. }
+        | CmeqAdvsimdZeroCmeqAsisdmiscZ { .. }
+        | CmeqAdvsimdZeroCmeqAsimdmiscZ { .. }
+        | CmhiAdvsimdCmhiAsisdsameOnly { .. }
+        | CmhiAdvsimdCmhiAsimdsameOnly { .. }
+        | CmhsAdvsimdCmhsAsisdsameOnly { .. }
+        | CmhsAdvsimdCmhsAsimdsameOnly { .. }
+        | CmgtAdvsimdRegCmgtAsisdsameOnly { .. }
+        | CmgtAdvsimdRegCmgtAsimdsameOnly { .. }
+        | CmgtAdvsimdZeroCmgtAsisdmiscZ { .. }
+        | CmgtAdvsimdZeroCmgtAsimdmiscZ { .. }
+        | CmgeAdvsimdRegCmgeAsisdsameOnly { .. }
+        | CmgeAdvsimdRegCmgeAsimdsameOnly { .. }
+        | CmgeAdvsimdZeroCmgeAsisdmiscZ { .. }
+        | CmgeAdvsimdZeroCmgeAsimdmiscZ { .. }
+        | CmtstAdvsimdCmtstAsisdsameOnly { .. }
+        | CmtstAdvsimdCmtstAsimdsameOnly { .. }
+        | AndAdvsimdAndAsimdsameOnly { .. }
+        | OrrAdvsimdRegOrrAsimdsameOnly { .. }
+        | EorAdvsimdEorAsimdsameOnly { .. }
+        | BicAdvsimdRegBicAsimdsameOnly { .. }
+        | OrnAdvsimdOrnAsimdsameOnly { .. }
+        | BitAdvsimdBitAsimdsameOnly { .. }
+        | BifAdvsimdBifAsimdsameOnly { .. }
+        | BslAdvsimdBslAsimdsameOnly { .. }
+        | NotAdvsimdNotAsimdmiscR { .. }
+        | AddAdvsimdAddAsisdsameOnly { .. }
+        | AddAdvsimdAddAsimdsameOnly { .. }
+        | SubAdvsimdSubAsisdsameOnly { .. }
+        | SubAdvsimdSubAsimdsameOnly { .. }
+        | AddpAdvsimdVecAddpAsimdsameOnly { .. }
+        | AddpAdvsimdPairAddpAsisdpairOnly { .. }
+        | UmaxpAdvsimdUmaxpAsimdsameOnly { .. }
+        | UminpAdvsimdUminpAsimdsameOnly { .. }
+        | AddvAdvsimdAddvAsimdallOnly { .. }
+        | UmaxvAdvsimdUmaxvAsimdallOnly { .. }
+        | UminvAdvsimdUminvAsimdallOnly { .. }
+        | ShrnAdvsimdShrnAsimdshfN { .. }
+        | UshrAdvsimdUshrAsisdshfR { .. }
+        | UshrAdvsimdUshrAsimdshfR { .. }
+        | ShlAdvsimdShlAsisdshfR { .. }
+        | ShlAdvsimdShlAsimdshfR { .. }
+        | UshllAdvsimdUshllAsimdshfL { .. }
+        | XtnAdvsimdXtnAsimdmiscN { .. }
+        | ExtAdvsimdExtAsimdextOnly { .. }
+        | Rev16AdvsimdRev16AsimdmiscR { .. }
+        | Rev32AdvsimdRev32AsimdmiscR { .. }
+        | Rev64AdvsimdRev64AsimdmiscR { .. }
+        | CntAdvsimdCntAsimdmiscR { .. }
+        | TblAdvsimdTblAsimdtblL11 { .. } => pretty_simd(insn),
         MsrImmMsrSiPstate { crm } => format!("msr pan, #{crm}"),
         BlBlOnlyBranchImm { imm26 } => pretty_branch("bl", pc, imm26),
         BrBr64BranchReg { rn } => format!("br {}", reg_name(rn)),
@@ -876,6 +1034,444 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
         RetRet64rBranchReg { rn } if rn.enc() == 30 => "ret".to_string(),
         RetRet64rBranchReg { rn } => format!("ret {}", reg_name(rn)),
         SvcSvcExException { imm16 } => format!("svc {}", imm(imm16.value())),
+    }
+}
+
+/// A9a SIMD&FP forms, in LLVM's syntax (for traces and reproducer comments).
+fn pretty_simd(insn: A64Insn) -> String {
+    use A64Insn::*;
+    let mnemonic = insn.mnemonic().to_lowercase();
+    let encoding = insn.key().split('.').nth(1).unwrap_or_default();
+    // `LDR_Q_ldst_pos` -> `q`: the scalar register of a load/store.
+    let scalar = encoding.split('_').nth(1).unwrap_or("?").to_lowercase();
+    let arr = |size: u8, q: u8| {
+        ["8b", "16b", "4h", "8h", "2s", "4s", "1d", "2d"][usize::from(size * 2 + q)].to_string()
+    };
+    let vr = |n: u8, arrangement: &str| format!("v{n}.{arrangement}");
+    let imm5_size = |imm5: A64Imm| (imm5.raw() & 0b1111).trailing_zeros().min(3) as u8;
+    let elem_letter = |size: u8| ["b", "h", "s", "d"][usize::from(size)];
+    let shift_esize = |immh: A64Imm| 8_u32 << (31 - (immh.raw() & 0b1111).leading_zeros());
+    match insn {
+        LdrImmFpsimdLdrBLdstImmpost { rt, mem }
+        | LdrImmFpsimdLdrHLdstImmpost { rt, mem }
+        | LdrImmFpsimdLdrSLdstImmpost { rt, mem }
+        | LdrImmFpsimdLdrDLdstImmpost { rt, mem }
+        | LdrImmFpsimdLdrQLdstImmpost { rt, mem }
+        | LdrImmFpsimdLdrBLdstImmpre { rt, mem }
+        | LdrImmFpsimdLdrHLdstImmpre { rt, mem }
+        | LdrImmFpsimdLdrSLdstImmpre { rt, mem }
+        | LdrImmFpsimdLdrDLdstImmpre { rt, mem }
+        | LdrImmFpsimdLdrQLdstImmpre { rt, mem }
+        | LdrImmFpsimdLdrBLdstPos { rt, mem }
+        | LdrImmFpsimdLdrHLdstPos { rt, mem }
+        | LdrImmFpsimdLdrSLdstPos { rt, mem }
+        | LdrImmFpsimdLdrDLdstPos { rt, mem }
+        | LdrImmFpsimdLdrQLdstPos { rt, mem }
+        | StrImmFpsimdStrBLdstImmpost { rt, mem }
+        | StrImmFpsimdStrHLdstImmpost { rt, mem }
+        | StrImmFpsimdStrSLdstImmpost { rt, mem }
+        | StrImmFpsimdStrDLdstImmpost { rt, mem }
+        | StrImmFpsimdStrQLdstImmpost { rt, mem }
+        | StrImmFpsimdStrBLdstImmpre { rt, mem }
+        | StrImmFpsimdStrHLdstImmpre { rt, mem }
+        | StrImmFpsimdStrSLdstImmpre { rt, mem }
+        | StrImmFpsimdStrDLdstImmpre { rt, mem }
+        | StrImmFpsimdStrQLdstImmpre { rt, mem }
+        | StrImmFpsimdStrBLdstPos { rt, mem }
+        | StrImmFpsimdStrHLdstPos { rt, mem }
+        | StrImmFpsimdStrSLdstPos { rt, mem }
+        | StrImmFpsimdStrDLdstPos { rt, mem }
+        | StrImmFpsimdStrQLdstPos { rt, mem }
+        | LdurFpsimdLdurBLdstUnscaled { rt, mem }
+        | LdurFpsimdLdurHLdstUnscaled { rt, mem }
+        | LdurFpsimdLdurSLdstUnscaled { rt, mem }
+        | LdurFpsimdLdurDLdstUnscaled { rt, mem }
+        | LdurFpsimdLdurQLdstUnscaled { rt, mem }
+        | SturFpsimdSturBLdstUnscaled { rt, mem }
+        | SturFpsimdSturHLdstUnscaled { rt, mem }
+        | SturFpsimdSturSLdstUnscaled { rt, mem }
+        | SturFpsimdSturDLdstUnscaled { rt, mem }
+        | SturFpsimdSturQLdstUnscaled { rt, mem } => {
+            format!("{mnemonic} {scalar}{rt}, {}", mem_operand(mem))
+        }
+        LdpFpsimdLdpSLdstpairPost { rt2, rt, mem }
+        | LdpFpsimdLdpDLdstpairPost { rt2, rt, mem }
+        | LdpFpsimdLdpQLdstpairPost { rt2, rt, mem }
+        | LdpFpsimdLdpSLdstpairPre { rt2, rt, mem }
+        | LdpFpsimdLdpDLdstpairPre { rt2, rt, mem }
+        | LdpFpsimdLdpQLdstpairPre { rt2, rt, mem }
+        | LdpFpsimdLdpSLdstpairOff { rt2, rt, mem }
+        | LdpFpsimdLdpDLdstpairOff { rt2, rt, mem }
+        | LdpFpsimdLdpQLdstpairOff { rt2, rt, mem }
+        | StpFpsimdStpSLdstpairPost { rt2, rt, mem }
+        | StpFpsimdStpDLdstpairPost { rt2, rt, mem }
+        | StpFpsimdStpQLdstpairPost { rt2, rt, mem }
+        | StpFpsimdStpSLdstpairPre { rt2, rt, mem }
+        | StpFpsimdStpDLdstpairPre { rt2, rt, mem }
+        | StpFpsimdStpQLdstpairPre { rt2, rt, mem }
+        | StpFpsimdStpSLdstpairOff { rt2, rt, mem }
+        | StpFpsimdStpDLdstpairOff { rt2, rt, mem }
+        | StpFpsimdStpQLdstpairOff { rt2, rt, mem } => {
+            format!(
+                "{mnemonic} {scalar}{rt}, {scalar}{rt2}, {}",
+                mem_operand(mem)
+            )
+        }
+        _ => {
+            if let Some(mem) = insn.fpsimd_mem() {
+                // LD1/ST1 (multiple structures).
+                let word = insn.encode().unwrap_or(0);
+                let (q, size, rt) = ((word >> 30) & 1, (word >> 10) & 0b11, word & 0b1_1111);
+                let regs = encoding
+                    .chars()
+                    .rev()
+                    .find_map(|ch| ch.to_digit(10))
+                    .unwrap_or(1);
+                let list = (0..regs)
+                    .map(|r| vr(((rt + r) % 32) as u8, &arr(size as u8, q as u8)))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let post = match mem.writeback {
+                    Some(A64FpSimdWriteback::Imm(amount)) => format!(", #{amount}"),
+                    Some(A64FpSimdWriteback::Reg(index)) => format!(", {}", reg_name(index)),
+                    None => String::new(),
+                };
+                return format!("{mnemonic} {{{list}}}, [{}]{post}", reg_name(mem.base));
+            }
+            pretty_simd_register(
+                insn,
+                &mnemonic,
+                &arr,
+                &vr,
+                &imm5_size,
+                &elem_letter,
+                &shift_esize,
+            )
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn pretty_simd_register(
+    insn: A64Insn,
+    mnemonic: &str,
+    arr: &dyn Fn(u8, u8) -> String,
+    vr: &dyn Fn(u8, &str) -> String,
+    imm5_size: &dyn Fn(A64Imm) -> u8,
+    elem_letter: &dyn Fn(u8) -> &'static str,
+    shift_esize: &dyn Fn(A64Imm) -> u32,
+) -> String {
+    use A64Insn::*;
+    let word = insn.encode().unwrap_or(0);
+    match insn {
+        DupAdvsimdEltDupAsisdoneOnly { imm5, rn, rd } => {
+            let size = imm5_size(imm5);
+            let letter = elem_letter(size);
+            format!(
+                "mov {letter}{rd}, v{rn}.{letter}[{}]",
+                imm5.raw() >> (size + 1)
+            )
+        }
+        DupAdvsimdEltDupAsimdinsDvV { q, imm5, rn, rd } => {
+            let size = imm5_size(imm5);
+            format!(
+                "dup {}, v{rn}.{}[{}]",
+                vr(rd, &arr(size, q)),
+                elem_letter(size),
+                imm5.raw() >> (size + 1)
+            )
+        }
+        DupAdvsimdGenDupAsimdinsDrR { q, imm5, rn, rd } => {
+            let size = imm5_size(imm5);
+            let src = if size == 3 {
+                A64Reg::x(rn.enc())
+            } else {
+                A64Reg::w(rn.enc())
+            };
+            format!("dup {}, {}", vr(rd, &arr(size, q)), reg_name(src))
+        }
+        InsAdvsimdEltInsAsimdinsIvV { imm5, imm4, rn, rd } => {
+            let size = imm5_size(imm5);
+            let letter = elem_letter(size);
+            format!(
+                "mov v{rd}.{letter}[{}], v{rn}.{letter}[{}]",
+                imm5.raw() >> (size + 1),
+                imm4.raw() >> size
+            )
+        }
+        InsAdvsimdGenInsAsimdinsIrR { imm5, rn, rd } => {
+            let size = imm5_size(imm5);
+            let src = if size == 3 {
+                A64Reg::x(rn.enc())
+            } else {
+                A64Reg::w(rn.enc())
+            };
+            format!(
+                "mov v{rd}.{}[{}], {}",
+                elem_letter(size),
+                imm5.raw() >> (size + 1),
+                reg_name(src)
+            )
+        }
+        UmovAdvsimdUmovAsimdinsWW { imm5, rn, rd } | UmovAdvsimdUmovAsimdinsXX { imm5, rn, rd } => {
+            let size = imm5_size(imm5);
+            format!(
+                "umov {}, v{rn}.{}[{}]",
+                reg_name(rd),
+                elem_letter(size),
+                imm5.raw() >> (size + 1)
+            )
+        }
+        MoviAdvsimdMoviAsimdimmNB { rd, .. }
+        | MoviAdvsimdMoviAsimdimmLHl { rd, .. }
+        | MoviAdvsimdMoviAsimdimmLSl { rd, .. }
+        | MoviAdvsimdMoviAsimdimmMSm { rd, .. }
+        | MoviAdvsimdMoviAsimdimmDDs { rd, .. }
+        | MoviAdvsimdMoviAsimdimmD2D { rd, .. }
+        | MvniAdvsimdMvniAsimdimmLHl { rd, .. }
+        | MvniAdvsimdMvniAsimdimmLSl { rd, .. }
+        | MvniAdvsimdMvniAsimdimmMSm { rd, .. } => {
+            let imm8 = ((word >> 16) & 0b111) << 5 | ((word >> 5) & 0b1_1111);
+            format!(
+                "{mnemonic} v{rd} (q={} op={} cmode={:#06b} imm8={imm8:#04x})",
+                (word >> 30) & 1,
+                (word >> 29) & 1,
+                (word >> 12) & 0b1111
+            )
+        }
+        FmovFloatGenFmovS32Float2int { rn, rd } => format!("fmov s{rd}, {}", reg_name(rn)),
+        FmovFloatGenFmovD64Float2int { rn, rd } => format!("fmov d{rd}, {}", reg_name(rn)),
+        FmovFloatGenFmovV64iFloat2int { rn, rd } => format!("fmov v{rd}.d[1], {}", reg_name(rn)),
+        FmovFloatGenFmov32sFloat2int { rn, rd } => format!("fmov {}, s{rn}", reg_name(rd)),
+        FmovFloatGenFmov64dFloat2int { rn, rd } => format!("fmov {}, d{rn}", reg_name(rd)),
+        FmovFloatGenFmov64vxFloat2int { rn, rd } => format!("fmov {}, v{rn}.d[1]", reg_name(rd)),
+        FmovFloatFmovSFloatdp1 { rn, rd } => format!("fmov s{rd}, s{rn}"),
+        FmovFloatFmovDFloatdp1 { rn, rd } => format!("fmov d{rd}, d{rn}"),
+        CmeqAdvsimdRegCmeqAsisdsameOnly { rm, rn, rd }
+        | CmhiAdvsimdCmhiAsisdsameOnly { rm, rn, rd }
+        | CmhsAdvsimdCmhsAsisdsameOnly { rm, rn, rd }
+        | CmgtAdvsimdRegCmgtAsisdsameOnly { rm, rn, rd }
+        | CmgeAdvsimdRegCmgeAsisdsameOnly { rm, rn, rd }
+        | CmtstAdvsimdCmtstAsisdsameOnly { rm, rn, rd }
+        | AddAdvsimdAddAsisdsameOnly { rm, rn, rd }
+        | SubAdvsimdSubAsisdsameOnly { rm, rn, rd } => format!("{mnemonic} d{rd}, d{rn}, d{rm}"),
+        CmeqAdvsimdZeroCmeqAsisdmiscZ { rn, rd }
+        | CmgtAdvsimdZeroCmgtAsisdmiscZ { rn, rd }
+        | CmgeAdvsimdZeroCmgeAsisdmiscZ { rn, rd } => format!("{mnemonic} d{rd}, d{rn}, #0"),
+        CmeqAdvsimdRegCmeqAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        }
+        | CmhiAdvsimdCmhiAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        }
+        | CmhsAdvsimdCmhsAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        }
+        | CmgtAdvsimdRegCmgtAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        }
+        | CmgeAdvsimdRegCmgeAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        }
+        | CmtstAdvsimdCmtstAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        }
+        | AddAdvsimdAddAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        }
+        | SubAdvsimdSubAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        }
+        | AddpAdvsimdVecAddpAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        }
+        | UmaxpAdvsimdUmaxpAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        }
+        | UminpAdvsimdUminpAsimdsameOnly {
+            q,
+            size,
+            rm,
+            rn,
+            rd,
+        } => {
+            let t = arr(size, q);
+            format!("{mnemonic} {}, {}, {}", vr(rd, &t), vr(rn, &t), vr(rm, &t))
+        }
+        CmeqAdvsimdZeroCmeqAsimdmiscZ { q, size, rn, rd }
+        | CmgtAdvsimdZeroCmgtAsimdmiscZ { q, size, rn, rd }
+        | CmgeAdvsimdZeroCmgeAsimdmiscZ { q, size, rn, rd } => {
+            let t = arr(size, q);
+            format!("{mnemonic} {}, {}, #0", vr(rd, &t), vr(rn, &t))
+        }
+        AndAdvsimdAndAsimdsameOnly { q, rm, rn, rd }
+        | OrrAdvsimdRegOrrAsimdsameOnly { q, rm, rn, rd }
+        | EorAdvsimdEorAsimdsameOnly { q, rm, rn, rd }
+        | BicAdvsimdRegBicAsimdsameOnly { q, rm, rn, rd }
+        | OrnAdvsimdOrnAsimdsameOnly { q, rm, rn, rd }
+        | BitAdvsimdBitAsimdsameOnly { q, rm, rn, rd }
+        | BifAdvsimdBifAsimdsameOnly { q, rm, rn, rd }
+        | BslAdvsimdBslAsimdsameOnly { q, rm, rn, rd }
+        | TblAdvsimdTblAsimdtblL11 { q, rm, rn, rd } => {
+            let t = arr(0, q);
+            if matches!(insn, TblAdvsimdTblAsimdtblL11 { .. }) {
+                return format!("tbl {}, {{v{rn}.16b}}, {}", vr(rd, &t), vr(rm, &t));
+            }
+            format!("{mnemonic} {}, {}, {}", vr(rd, &t), vr(rn, &t), vr(rm, &t))
+        }
+        NotAdvsimdNotAsimdmiscR { q, rn, rd } => {
+            format!("mvn {}, {}", vr(rd, &arr(0, q)), vr(rn, &arr(0, q)))
+        }
+        AddpAdvsimdPairAddpAsisdpairOnly { rn, rd } => format!("addp d{rd}, v{rn}.2d"),
+        AddvAdvsimdAddvAsimdallOnly { q, size, rn, rd }
+        | UmaxvAdvsimdUmaxvAsimdallOnly { q, size, rn, rd }
+        | UminvAdvsimdUminvAsimdallOnly { q, size, rn, rd } => {
+            format!(
+                "{mnemonic} {}{rd}, {}",
+                elem_letter(size.min(3)),
+                vr(rn, &arr(size, q))
+            )
+        }
+        Rev16AdvsimdRev16AsimdmiscR { q, size, rn, rd }
+        | Rev32AdvsimdRev32AsimdmiscR { q, size, rn, rd }
+        | Rev64AdvsimdRev64AsimdmiscR { q, size, rn, rd }
+        | CntAdvsimdCntAsimdmiscR { q, size, rn, rd } => {
+            let t = arr(size, q);
+            format!("{mnemonic} {}, {}", vr(rd, &t), vr(rn, &t))
+        }
+        XtnAdvsimdXtnAsimdmiscN { q, size, rn, rd } => {
+            let name = if q == 1 { "xtn2" } else { "xtn" };
+            format!(
+                "{name} {}, {}",
+                vr(rd, &arr(size.min(2), q)),
+                vr(rn, &arr((size + 1).min(3), 1))
+            )
+        }
+        ShrnAdvsimdShrnAsimdshfN {
+            q,
+            immh,
+            immb,
+            rn,
+            rd,
+        } => {
+            let esize = shift_esize(A64Imm::unsigned(immh.raw() & 0b111, 4));
+            let size = esize.trailing_zeros() as u8 - 3;
+            let shift = 2 * esize - (immh.raw() << 3 | immb.raw());
+            let name = if q == 1 { "shrn2" } else { "shrn" };
+            format!(
+                "{name} {}, {}, #{shift}",
+                vr(rd, &arr(size, q)),
+                vr(rn, &arr(size + 1, 1))
+            )
+        }
+        UshllAdvsimdUshllAsimdshfL {
+            q,
+            immh,
+            immb,
+            rn,
+            rd,
+        } => {
+            let esize = shift_esize(A64Imm::unsigned(immh.raw() & 0b111, 4));
+            let size = esize.trailing_zeros() as u8 - 3;
+            let shift = (immh.raw() << 3 | immb.raw()) - esize;
+            let name = if q == 1 { "ushll2" } else { "ushll" };
+            format!(
+                "{name} {}, {}, #{shift}",
+                vr(rd, &arr(size + 1, 1)),
+                vr(rn, &arr(size, q))
+            )
+        }
+        UshrAdvsimdUshrAsisdshfR { immh, immb, rn, rd } => {
+            format!(
+                "ushr d{rd}, d{rn}, #{}",
+                128 - (immh.raw() << 3 | immb.raw())
+            )
+        }
+        ShlAdvsimdShlAsisdshfR { immh, immb, rn, rd } => {
+            format!("shl d{rd}, d{rn}, #{}", (immh.raw() << 3 | immb.raw()) - 64)
+        }
+        UshrAdvsimdUshrAsimdshfR {
+            q,
+            immh,
+            immb,
+            rn,
+            rd,
+        }
+        | ShlAdvsimdShlAsimdshfR {
+            q,
+            immh,
+            immb,
+            rn,
+            rd,
+        } => {
+            let esize = shift_esize(immh);
+            let size = (esize.trailing_zeros() as u8).saturating_sub(3);
+            let raw = immh.raw() << 3 | immb.raw();
+            let shift = if matches!(insn, UshrAdvsimdUshrAsimdshfR { .. }) {
+                (2 * esize).wrapping_sub(raw)
+            } else {
+                raw.wrapping_sub(esize)
+            };
+            let t = arr(size.min(3), q);
+            format!("{mnemonic} {}, {}, #{shift}", vr(rd, &t), vr(rn, &t))
+        }
+        ExtAdvsimdExtAsimdextOnly {
+            q,
+            rm,
+            imm4,
+            rn,
+            rd,
+        } => {
+            let t = arr(0, q);
+            format!(
+                "ext {}, {}, {}, #{}",
+                vr(rd, &t),
+                vr(rn, &t),
+                vr(rm, &t),
+                imm4.raw()
+            )
+        }
+        other => other.mnemonic().to_lowercase(),
     }
 }
 

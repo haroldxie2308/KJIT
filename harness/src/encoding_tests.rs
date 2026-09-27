@@ -26,6 +26,7 @@ fn encoding_matches_llvm_for_handwritten_cases() {
     cases.extend(barrier_acqrel_encoding_cases());
     cases.extend(bti_carry_crc_encoding_cases());
     cases.extend(lse_msr_encoding_cases());
+    cases.extend(simd_encoding_cases());
     let decode_forms = decode_forms_from_subset_toml(SUBSET_TOML);
     let decode_form_set = decode_forms.iter().cloned().collect::<BTreeSet<_>>();
     let covered_forms = cases.iter().map(|case| case.form).collect::<BTreeSet<_>>();
@@ -39,11 +40,94 @@ fn encoding_matches_llvm_for_handwritten_cases() {
         assert_case_matches_llvm(case);
     }
 
+    let mut uncovered_simd = Vec::new();
     for form in decode_forms {
         if !covered_forms.contains(form.as_str()) {
             println!("WARN: decode form has no encoding test: {form}");
+            // A9a: every SIMD&FP form has a case.
+            let simd = crate::shared::arm64::GENERATED_A64_SUBSET
+                .iter()
+                .any(|spec| {
+                    spec.key == form
+                        && spec.operands.iter().any(|role| {
+                            matches!(
+                                role,
+                                crate::shared::arm64::A64OperandRole::VecRead { .. }
+                                    | crate::shared::arm64::A64OperandRole::VecWrite { .. }
+                            )
+                        })
+                });
+            if simd {
+                uncovered_simd.push(form);
+            }
         }
     }
+    assert!(
+        uncovered_simd.is_empty(),
+        "SIMD&FP forms without an encoding case: {uncovered_simd:?}"
+    );
+}
+
+/// A9a decode admission against LLVM's disassembler: 300 random words per
+/// SIMD&FP form (fixed bits kept, free bits random, `!=` exclusions skipped). A
+/// word the generated decoder admits (`decode` and not `is_decode_undefined`)
+/// must disassemble, and one it refuses must not. (The CONSTRAINED UNPREDICTABLE
+/// LDP `t == t2` is admitted here and by LLVM; reg-virt rejects it.)
+#[test]
+#[ignore = "requires llvm-mc in PATH"]
+fn a9a_decode_admission_agrees_with_llvm_disassembler() {
+    let mut state = 0x9e37_79b9_7f4a_7c15_u64;
+    let mut words = Vec::new();
+    for spec in crate::shared::arm64::GENERATED_A64_SUBSET
+        .iter()
+        .filter(|spec| {
+            spec.operands.iter().any(|role| {
+                matches!(
+                    role,
+                    crate::shared::arm64::A64OperandRole::VecRead { .. }
+                        | crate::shared::arm64::A64OperandRole::VecWrite { .. }
+                )
+            })
+        })
+    {
+        for _ in 0..300 {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            let word = spec.value | ((state >> 11) as u32 & !spec.mask);
+            // A word a `!=` exclusion removes belongs to another encoding (SHL's
+            // `immh == 0000` is the modified-immediate class).
+            if spec.matches(word) {
+                words.push((spec.key, word));
+            }
+        }
+    }
+    let texts =
+        crate::a64_forms::disassemble(&words.iter().map(|&(_, word)| word).collect::<Vec<_>>())
+            .expect("llvm-mc runs");
+    let mut disagreements = Vec::new();
+    let mut undefined = 0;
+    for (&(key, word), text) in words.iter().zip(texts) {
+        let ours = A64Insn::decode(word).filter(|insn| !insn.is_decode_undefined());
+        undefined += usize::from(ours.is_none());
+        match (&ours, &text) {
+            (Some(_), Some(_)) | (None, None) => {}
+            _ => disagreements.push(format!(
+                "{key}: {word:#010x} ours={:?} llvm={text:?}",
+                ours.map(|insn| insn.key())
+            )),
+        }
+    }
+    println!(
+        "a9a decode vs llvm-mc: {} words ({undefined} decode-undefined), {} disagreements",
+        words.len(),
+        disagreements.len()
+    );
+    assert!(
+        disagreements.is_empty(),
+        "{}",
+        disagreements[..disagreements.len().min(20)].join("\n")
+    );
 }
 
 #[test]
@@ -3120,6 +3204,1082 @@ fn lse_msr_encoding_cases() -> Vec<EncodingCase> {
         ));
     }
     cases
+}
+
+/// A9a SIMD&FP forms (tmp/pipeline.md, "A9 contract"): at least one case per
+/// form, built from the generated field table (`(field, raw value)`; `imm8` stands
+/// for MOVI/MVNI's `a:b:c:d:e:f:g:h`) and compared with LLVM's encoding of `asm`.
+fn simd_encoding_cases() -> Vec<EncodingCase> {
+    const CASES: &[(&str, &[(&str, u32)], &str)] = &[
+        (
+            "LDR_imm_fpsimd.LDR_B_ldst_immpost",
+            &[("imm9", 1), ("Rn", 1), ("Rt", 0)],
+            "ldr b0, [x1], #1",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_H_ldst_immpost",
+            &[("imm9", 0x1fe), ("Rn", 31), ("Rt", 2)],
+            "ldr h2, [sp], #-2",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_S_ldst_immpost",
+            &[("imm9", 4), ("Rn", 3), ("Rt", 31)],
+            "ldr s31, [x3], #4",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_D_ldst_immpost",
+            &[("imm9", 8), ("Rn", 4), ("Rt", 5)],
+            "ldr d5, [x4], #8",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_Q_ldst_immpost",
+            &[("imm9", 16), ("Rn", 6), ("Rt", 7)],
+            "ldr q7, [x6], #16",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_B_ldst_immpre",
+            &[("imm9", 0x100), ("Rn", 1), ("Rt", 0)],
+            "ldr b0, [x1, #-256]!",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_H_ldst_immpre",
+            &[("imm9", 2), ("Rn", 2), ("Rt", 1)],
+            "ldr h1, [x2, #2]!",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_S_ldst_immpre",
+            &[("imm9", 0x1fc), ("Rn", 31), ("Rt", 3)],
+            "ldr s3, [sp, #-4]!",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_D_ldst_immpre",
+            &[("imm9", 255), ("Rn", 5), ("Rt", 4)],
+            "ldr d4, [x5, #255]!",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_Q_ldst_immpre",
+            &[("imm9", 0x1f0), ("Rn", 7), ("Rt", 6)],
+            "ldr q6, [x7, #-16]!",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_B_ldst_pos",
+            &[("imm12", 4095), ("Rn", 1), ("Rt", 0)],
+            "ldr b0, [x1, #4095]",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_H_ldst_pos",
+            &[("imm12", 1), ("Rn", 2), ("Rt", 1)],
+            "ldr h1, [x2, #2]",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_S_ldst_pos",
+            &[("imm12", 2), ("Rn", 31), ("Rt", 2)],
+            "ldr s2, [sp, #8]",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_D_ldst_pos",
+            &[("imm12", 0), ("Rn", 4), ("Rt", 3)],
+            "ldr d3, [x4]",
+        ),
+        (
+            "LDR_imm_fpsimd.LDR_Q_ldst_pos",
+            &[("imm12", 4095), ("Rn", 5), ("Rt", 4)],
+            "ldr q4, [x5, #65520]",
+        ),
+        (
+            "STR_imm_fpsimd.STR_B_ldst_immpost",
+            &[("imm9", 1), ("Rn", 1), ("Rt", 0)],
+            "str b0, [x1], #1",
+        ),
+        (
+            "STR_imm_fpsimd.STR_H_ldst_immpost",
+            &[("imm9", 0x1fe), ("Rn", 2), ("Rt", 1)],
+            "str h1, [x2], #-2",
+        ),
+        (
+            "STR_imm_fpsimd.STR_S_ldst_immpost",
+            &[("imm9", 4), ("Rn", 31), ("Rt", 2)],
+            "str s2, [sp], #4",
+        ),
+        (
+            "STR_imm_fpsimd.STR_D_ldst_immpost",
+            &[("imm9", 8), ("Rn", 4), ("Rt", 3)],
+            "str d3, [x4], #8",
+        ),
+        (
+            "STR_imm_fpsimd.STR_Q_ldst_immpost",
+            &[("imm9", 0x1f0), ("Rn", 5), ("Rt", 4)],
+            "str q4, [x5], #-16",
+        ),
+        (
+            "STR_imm_fpsimd.STR_B_ldst_immpre",
+            &[("imm9", 3), ("Rn", 1), ("Rt", 0)],
+            "str b0, [x1, #3]!",
+        ),
+        (
+            "STR_imm_fpsimd.STR_H_ldst_immpre",
+            &[("imm9", 6), ("Rn", 2), ("Rt", 1)],
+            "str h1, [x2, #6]!",
+        ),
+        (
+            "STR_imm_fpsimd.STR_S_ldst_immpre",
+            &[("imm9", 0x1f8), ("Rn", 3), ("Rt", 2)],
+            "str s2, [x3, #-8]!",
+        ),
+        (
+            "STR_imm_fpsimd.STR_D_ldst_immpre",
+            &[("imm9", 0x1f0), ("Rn", 31), ("Rt", 3)],
+            "str d3, [sp, #-16]!",
+        ),
+        (
+            "STR_imm_fpsimd.STR_Q_ldst_immpre",
+            &[("imm9", 32), ("Rn", 5), ("Rt", 4)],
+            "str q4, [x5, #32]!",
+        ),
+        (
+            "STR_imm_fpsimd.STR_B_ldst_pos",
+            &[("imm12", 7), ("Rn", 1), ("Rt", 0)],
+            "str b0, [x1, #7]",
+        ),
+        (
+            "STR_imm_fpsimd.STR_H_ldst_pos",
+            &[("imm12", 4), ("Rn", 2), ("Rt", 1)],
+            "str h1, [x2, #8]",
+        ),
+        (
+            "STR_imm_fpsimd.STR_S_ldst_pos",
+            &[("imm12", 0), ("Rn", 3), ("Rt", 2)],
+            "str s2, [x3]",
+        ),
+        (
+            "STR_imm_fpsimd.STR_D_ldst_pos",
+            &[("imm12", 1), ("Rn", 4), ("Rt", 3)],
+            "str d3, [x4, #8]",
+        ),
+        (
+            "STR_imm_fpsimd.STR_Q_ldst_pos",
+            &[("imm12", 3), ("Rn", 31), ("Rt", 4)],
+            "str q4, [sp, #48]",
+        ),
+        (
+            "LDUR_fpsimd.LDUR_B_ldst_unscaled",
+            &[("imm9", 0x1ff), ("Rn", 1), ("Rt", 0)],
+            "ldur b0, [x1, #-1]",
+        ),
+        (
+            "LDUR_fpsimd.LDUR_H_ldst_unscaled",
+            &[("imm9", 1), ("Rn", 2), ("Rt", 1)],
+            "ldur h1, [x2, #1]",
+        ),
+        (
+            "LDUR_fpsimd.LDUR_S_ldst_unscaled",
+            &[("imm9", 3), ("Rn", 3), ("Rt", 2)],
+            "ldur s2, [x3, #3]",
+        ),
+        (
+            "LDUR_fpsimd.LDUR_D_ldst_unscaled",
+            &[("imm9", 0x1f9), ("Rn", 31), ("Rt", 3)],
+            "ldur d3, [sp, #-7]",
+        ),
+        (
+            "LDUR_fpsimd.LDUR_Q_ldst_unscaled",
+            &[("imm9", 0x1f0), ("Rn", 5), ("Rt", 4)],
+            "ldur q4, [x5, #-16]",
+        ),
+        (
+            "STUR_fpsimd.STUR_B_ldst_unscaled",
+            &[("imm9", 5), ("Rn", 1), ("Rt", 0)],
+            "stur b0, [x1, #5]",
+        ),
+        (
+            "STUR_fpsimd.STUR_H_ldst_unscaled",
+            &[("imm9", 0x1ff), ("Rn", 2), ("Rt", 1)],
+            "stur h1, [x2, #-1]",
+        ),
+        (
+            "STUR_fpsimd.STUR_S_ldst_unscaled",
+            &[("imm9", 255), ("Rn", 3), ("Rt", 2)],
+            "stur s2, [x3, #255]",
+        ),
+        (
+            "STUR_fpsimd.STUR_D_ldst_unscaled",
+            &[("imm9", 0x100), ("Rn", 4), ("Rt", 3)],
+            "stur d3, [x4, #-256]",
+        ),
+        (
+            "STUR_fpsimd.STUR_Q_ldst_unscaled",
+            &[("imm9", 0x1f1), ("Rn", 31), ("Rt", 4)],
+            "stur q4, [sp, #-15]",
+        ),
+        (
+            "LDP_fpsimd.LDP_S_ldstpair_post",
+            &[("imm7", 2), ("Rt2", 1), ("Rn", 2), ("Rt", 0)],
+            "ldp s0, s1, [x2], #8",
+        ),
+        (
+            "LDP_fpsimd.LDP_D_ldstpair_post",
+            &[("imm7", 0x7e), ("Rt2", 3), ("Rn", 31), ("Rt", 2)],
+            "ldp d2, d3, [sp], #-16",
+        ),
+        (
+            "LDP_fpsimd.LDP_Q_ldstpair_post",
+            &[("imm7", 2), ("Rt2", 5), ("Rn", 6), ("Rt", 4)],
+            "ldp q4, q5, [x6], #32",
+        ),
+        (
+            "LDP_fpsimd.LDP_S_ldstpair_pre",
+            &[("imm7", 0x7f), ("Rt2", 1), ("Rn", 2), ("Rt", 0)],
+            "ldp s0, s1, [x2, #-4]!",
+        ),
+        (
+            "LDP_fpsimd.LDP_D_ldstpair_pre",
+            &[("imm7", 1), ("Rt2", 3), ("Rn", 4), ("Rt", 2)],
+            "ldp d2, d3, [x4, #8]!",
+        ),
+        (
+            "LDP_fpsimd.LDP_Q_ldstpair_pre",
+            &[("imm7", 0x7e), ("Rt2", 5), ("Rn", 31), ("Rt", 4)],
+            "ldp q4, q5, [sp, #-32]!",
+        ),
+        (
+            "LDP_fpsimd.LDP_S_ldstpair_off",
+            &[("imm7", 63), ("Rt2", 1), ("Rn", 2), ("Rt", 0)],
+            "ldp s0, s1, [x2, #252]",
+        ),
+        (
+            "LDP_fpsimd.LDP_D_ldstpair_off",
+            &[("imm7", 0x40), ("Rt2", 31), ("Rn", 4), ("Rt", 30)],
+            "ldp d30, d31, [x4, #-512]",
+        ),
+        (
+            "LDP_fpsimd.LDP_Q_ldstpair_off",
+            &[("imm7", 0), ("Rt2", 0), ("Rn", 6), ("Rt", 31)],
+            "ldp q31, q0, [x6]",
+        ),
+        (
+            "STP_fpsimd.STP_S_ldstpair_post",
+            &[("imm7", 2), ("Rt2", 1), ("Rn", 2), ("Rt", 0)],
+            "stp s0, s1, [x2], #8",
+        ),
+        (
+            "STP_fpsimd.STP_D_ldstpair_post",
+            &[("imm7", 0x7e), ("Rt2", 3), ("Rn", 4), ("Rt", 2)],
+            "stp d2, d3, [x4], #-16",
+        ),
+        (
+            "STP_fpsimd.STP_Q_ldstpair_post",
+            &[("imm7", 2), ("Rt2", 4), ("Rn", 31), ("Rt", 4)],
+            "stp q4, q4, [sp], #32",
+        ),
+        (
+            "STP_fpsimd.STP_S_ldstpair_pre",
+            &[("imm7", 0x7e), ("Rt2", 1), ("Rn", 2), ("Rt", 0)],
+            "stp s0, s1, [x2, #-8]!",
+        ),
+        (
+            "STP_fpsimd.STP_D_ldstpair_pre",
+            &[("imm7", 0x7e), ("Rt2", 3), ("Rn", 31), ("Rt", 2)],
+            "stp d2, d3, [sp, #-16]!",
+        ),
+        (
+            "STP_fpsimd.STP_Q_ldstpair_pre",
+            &[("imm7", 1), ("Rt2", 5), ("Rn", 6), ("Rt", 4)],
+            "stp q4, q5, [x6, #16]!",
+        ),
+        (
+            "STP_fpsimd.STP_S_ldstpair_off",
+            &[("imm7", 0x40), ("Rt2", 1), ("Rn", 2), ("Rt", 0)],
+            "stp s0, s1, [x2, #-256]",
+        ),
+        (
+            "STP_fpsimd.STP_D_ldstpair_off",
+            &[("imm7", 0), ("Rt2", 3), ("Rn", 4), ("Rt", 2)],
+            "stp d2, d3, [x4]",
+        ),
+        (
+            "STP_fpsimd.STP_Q_ldstpair_off",
+            &[("imm7", 63), ("Rt2", 5), ("Rn", 6), ("Rt", 4)],
+            "stp q4, q5, [x6, #1008]",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlse_R1_1v",
+            &[("Q", 1), ("size", 0), ("Rn", 1), ("Rt", 0)],
+            "ld1 {v0.16b}, [x1]",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlse_R2_2v",
+            &[("Q", 0), ("size", 3), ("Rn", 31), ("Rt", 31)],
+            "ld1 {v31.1d, v0.1d}, [sp]",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlse_R3_3v",
+            &[("Q", 1), ("size", 1), ("Rn", 2), ("Rt", 30)],
+            "ld1 {v30.8h, v31.8h, v0.8h}, [x2]",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlse_R4_4v",
+            &[("Q", 0), ("size", 2), ("Rn", 3), ("Rt", 4)],
+            "ld1 {v4.2s, v5.2s, v6.2s, v7.2s}, [x3]",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlsep_I1_i1",
+            &[("Q", 0), ("size", 0), ("Rn", 1), ("Rt", 0)],
+            "ld1 {v0.8b}, [x1], #8",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlsep_R1_r1",
+            &[("Q", 1), ("Rm", 2), ("size", 3), ("Rn", 1), ("Rt", 0)],
+            "ld1 {v0.2d}, [x1], x2",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlsep_I2_i2",
+            &[("Q", 1), ("size", 0), ("Rn", 31), ("Rt", 2)],
+            "ld1 {v2.16b, v3.16b}, [sp], #32",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlsep_R2_r2",
+            &[("Q", 0), ("Rm", 30), ("size", 1), ("Rn", 4), ("Rt", 31)],
+            "ld1 {v31.4h, v0.4h}, [x4], x30",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlsep_I3_i3",
+            &[("Q", 0), ("size", 2), ("Rn", 5), ("Rt", 6)],
+            "ld1 {v6.2s, v7.2s, v8.2s}, [x5], #24",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlsep_R3_r3",
+            &[("Q", 1), ("Rm", 0), ("size", 2), ("Rn", 5), ("Rt", 6)],
+            "ld1 {v6.4s, v7.4s, v8.4s}, [x5], x0",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlsep_I4_i4",
+            &[("Q", 1), ("size", 0), ("Rn", 7), ("Rt", 0)],
+            "ld1 {v0.16b, v1.16b, v2.16b, v3.16b}, [x7], #64",
+        ),
+        (
+            "LD1_advsimd_mult.LD1_asisdlsep_R4_r4",
+            &[("Q", 0), ("Rm", 9), ("size", 3), ("Rn", 8), ("Rt", 29)],
+            "ld1 {v29.1d, v30.1d, v31.1d, v0.1d}, [x8], x9",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlse_R1_1v",
+            &[("Q", 0), ("size", 1), ("Rn", 1), ("Rt", 0)],
+            "st1 {v0.4h}, [x1]",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlse_R2_2v",
+            &[("Q", 1), ("size", 2), ("Rn", 2), ("Rt", 1)],
+            "st1 {v1.4s, v2.4s}, [x2]",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlse_R3_3v",
+            &[("Q", 0), ("size", 0), ("Rn", 31), ("Rt", 2)],
+            "st1 {v2.8b, v3.8b, v4.8b}, [sp]",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlse_R4_4v",
+            &[("Q", 1), ("size", 3), ("Rn", 4), ("Rt", 31)],
+            "st1 {v31.2d, v0.2d, v1.2d, v2.2d}, [x4]",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlsep_I1_i1",
+            &[("Q", 1), ("size", 0), ("Rn", 1), ("Rt", 0)],
+            "st1 {v0.16b}, [x1], #16",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlsep_R1_r1",
+            &[("Q", 0), ("Rm", 3), ("size", 2), ("Rn", 1), ("Rt", 0)],
+            "st1 {v0.2s}, [x1], x3",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlsep_I2_i2",
+            &[("Q", 0), ("size", 3), ("Rn", 2), ("Rt", 1)],
+            "st1 {v1.1d, v2.1d}, [x2], #16",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlsep_R2_r2",
+            &[("Q", 1), ("Rm", 4), ("size", 1), ("Rn", 31), ("Rt", 1)],
+            "st1 {v1.8h, v2.8h}, [sp], x4",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlsep_I3_i3",
+            &[("Q", 1), ("size", 2), ("Rn", 3), ("Rt", 5)],
+            "st1 {v5.4s, v6.4s, v7.4s}, [x3], #48",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlsep_R3_r3",
+            &[("Q", 0), ("Rm", 6), ("size", 0), ("Rn", 3), ("Rt", 5)],
+            "st1 {v5.8b, v6.8b, v7.8b}, [x3], x6",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlsep_I4_i4",
+            &[("Q", 0), ("size", 1), ("Rn", 4), ("Rt", 28)],
+            "st1 {v28.4h, v29.4h, v30.4h, v31.4h}, [x4], #32",
+        ),
+        (
+            "ST1_advsimd_mult.ST1_asisdlsep_R4_r4",
+            &[("Q", 1), ("Rm", 7), ("size", 2), ("Rn", 4), ("Rt", 0)],
+            "st1 {v0.4s, v1.4s, v2.4s, v3.4s}, [x4], x7",
+        ),
+        (
+            "DUP_advsimd_elt.DUP_asisdone_only",
+            &[("imm5", 0b10111), ("Rn", 1), ("Rd", 0)],
+            "dup b0, v1.b[11]",
+        ),
+        (
+            "DUP_advsimd_elt.DUP_asisdone_only",
+            &[("imm5", 0b11000), ("Rn", 3), ("Rd", 2)],
+            "dup d2, v3.d[1]",
+        ),
+        (
+            "DUP_advsimd_elt.DUP_asimdins_DV_v",
+            &[("Q", 1), ("imm5", 0b11111), ("Rn", 1), ("Rd", 0)],
+            "dup v0.16b, v1.b[15]",
+        ),
+        (
+            "DUP_advsimd_elt.DUP_asimdins_DV_v",
+            &[("Q", 0), ("imm5", 0b01100), ("Rn", 3), ("Rd", 2)],
+            "dup v2.2s, v3.s[1]",
+        ),
+        (
+            "DUP_advsimd_elt.DUP_asimdins_DV_v",
+            &[("Q", 1), ("imm5", 0b11000), ("Rn", 5), ("Rd", 4)],
+            "dup v4.2d, v5.d[1]",
+        ),
+        (
+            "DUP_advsimd_gen.DUP_asimdins_DR_r",
+            &[("Q", 1), ("imm5", 0b00001), ("Rn", 1), ("Rd", 0)],
+            "dup v0.16b, w1",
+        ),
+        (
+            "DUP_advsimd_gen.DUP_asimdins_DR_r",
+            &[("Q", 0), ("imm5", 0b00010), ("Rn", 31), ("Rd", 2)],
+            "dup v2.4h, wzr",
+        ),
+        (
+            "DUP_advsimd_gen.DUP_asimdins_DR_r",
+            &[("Q", 1), ("imm5", 0b01000), ("Rn", 3), ("Rd", 4)],
+            "dup v4.2d, x3",
+        ),
+        (
+            "INS_advsimd_elt.INS_asimdins_IV_v",
+            &[("imm5", 0b01100), ("imm4", 0b1100), ("Rn", 1), ("Rd", 0)],
+            "mov v0.s[1], v1.s[3]",
+        ),
+        (
+            "INS_advsimd_elt.INS_asimdins_IV_v",
+            &[("imm5", 0b11111), ("imm4", 0b0000), ("Rn", 3), ("Rd", 2)],
+            "mov v2.b[15], v3.b[0]",
+        ),
+        (
+            "INS_advsimd_gen.INS_asimdins_IR_r",
+            &[("imm5", 0b11000), ("Rn", 1), ("Rd", 0)],
+            "mov v0.d[1], x1",
+        ),
+        (
+            "INS_advsimd_gen.INS_asimdins_IR_r",
+            &[("imm5", 0b00110), ("Rn", 3), ("Rd", 2)],
+            "mov v2.h[1], w3",
+        ),
+        (
+            "UMOV_advsimd.UMOV_asimdins_W_w",
+            &[("imm5", 0b01111), ("Rn", 1), ("Rd", 0)],
+            "umov w0, v1.b[7]",
+        ),
+        (
+            "UMOV_advsimd.UMOV_asimdins_W_w",
+            &[("imm5", 0b11100), ("Rn", 3), ("Rd", 2)],
+            "mov w2, v3.s[3]",
+        ),
+        (
+            "UMOV_advsimd.UMOV_asimdins_X_x",
+            &[("imm5", 0b11000), ("Rn", 5), ("Rd", 4)],
+            "mov x4, v5.d[1]",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_N_b",
+            &[("Q", 1), ("imm8", 0xff), ("Rd", 0)],
+            "movi v0.16b, #0xff",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_N_b",
+            &[("Q", 0), ("imm8", 0x21), ("Rd", 1)],
+            "movi v1.8b, #0x21",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_L_hl",
+            &[("Q", 0), ("cmode", 0b1010), ("imm8", 0x12), ("Rd", 2)],
+            "movi v2.4h, #0x12, lsl #8",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_L_hl",
+            &[("Q", 1), ("cmode", 0b1000), ("imm8", 0x80), ("Rd", 3)],
+            "movi v3.8h, #0x80",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_L_sl",
+            &[("Q", 1), ("cmode", 0b0110), ("imm8", 0x34), ("Rd", 4)],
+            "movi v4.4s, #0x34, lsl #24",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_L_sl",
+            &[("Q", 0), ("cmode", 0b0010), ("imm8", 0x01), ("Rd", 5)],
+            "movi v5.2s, #0x1, lsl #8",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_M_sm",
+            &[("Q", 0), ("cmode", 0b1101), ("imm8", 0x56), ("Rd", 6)],
+            "movi v6.2s, #0x56, msl #16",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_M_sm",
+            &[("Q", 1), ("cmode", 0b1100), ("imm8", 0x7f), ("Rd", 7)],
+            "movi v7.4s, #0x7f, msl #8",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_D_ds",
+            &[("imm8", 0b10101010), ("Rd", 8)],
+            "movi d8, #0xff00ff00ff00ff00",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_D2_d",
+            &[("imm8", 0), ("Rd", 9)],
+            "movi v9.2d, #0000000000000000",
+        ),
+        (
+            "MOVI_advsimd.MOVI_asimdimm_D2_d",
+            &[("imm8", 0b11111110), ("Rd", 31)],
+            "movi v31.2d, #0xffffffffffffff00",
+        ),
+        (
+            "MVNI_advsimd.MVNI_asimdimm_L_hl",
+            &[("Q", 1), ("cmode", 0b1010), ("imm8", 0x12), ("Rd", 0)],
+            "mvni v0.8h, #0x12, lsl #8",
+        ),
+        (
+            "MVNI_advsimd.MVNI_asimdimm_L_sl",
+            &[("Q", 1), ("cmode", 0b0000), ("imm8", 0x01), ("Rd", 1)],
+            "mvni v1.4s, #0x1",
+        ),
+        (
+            "MVNI_advsimd.MVNI_asimdimm_L_sl",
+            &[("Q", 0), ("cmode", 0b0100), ("imm8", 0xab), ("Rd", 2)],
+            "mvni v2.2s, #0xab, lsl #16",
+        ),
+        (
+            "MVNI_advsimd.MVNI_asimdimm_M_sm",
+            &[("Q", 1), ("cmode", 0b1100), ("imm8", 0x12), ("Rd", 3)],
+            "mvni v3.4s, #0x12, msl #8",
+        ),
+        (
+            "FMOV_float_gen.FMOV_S32_float2int",
+            &[("Rn", 1), ("Rd", 0)],
+            "fmov s0, w1",
+        ),
+        (
+            "FMOV_float_gen.FMOV_32S_float2int",
+            &[("Rn", 1), ("Rd", 0)],
+            "fmov w0, s1",
+        ),
+        (
+            "FMOV_float_gen.FMOV_D64_float2int",
+            &[("Rn", 31), ("Rd", 2)],
+            "fmov d2, xzr",
+        ),
+        (
+            "FMOV_float_gen.FMOV_64D_float2int",
+            &[("Rn", 3), ("Rd", 30)],
+            "fmov x30, d3",
+        ),
+        (
+            "FMOV_float_gen.FMOV_V64I_float2int",
+            &[("Rn", 5), ("Rd", 4)],
+            "fmov v4.d[1], x5",
+        ),
+        (
+            "FMOV_float_gen.FMOV_64VX_float2int",
+            &[("Rn", 7), ("Rd", 6)],
+            "fmov x6, v7.d[1]",
+        ),
+        (
+            "FMOV_float.FMOV_S_floatdp1",
+            &[("Rn", 1), ("Rd", 0)],
+            "fmov s0, s1",
+        ),
+        (
+            "FMOV_float.FMOV_D_floatdp1",
+            &[("Rn", 31), ("Rd", 30)],
+            "fmov d30, d31",
+        ),
+        (
+            "CMEQ_advsimd_reg.CMEQ_asisdsame_only",
+            &[("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmeq d0, d1, d2",
+        ),
+        (
+            "CMEQ_advsimd_reg.CMEQ_asimdsame_only",
+            &[("Q", 1), ("size", 0), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmeq v0.16b, v1.16b, v2.16b",
+        ),
+        (
+            "CMEQ_advsimd_reg.CMEQ_asimdsame_only",
+            &[("Q", 1), ("size", 3), ("Rm", 5), ("Rn", 4), ("Rd", 3)],
+            "cmeq v3.2d, v4.2d, v5.2d",
+        ),
+        (
+            "CMEQ_advsimd_zero.CMEQ_asisdmisc_Z",
+            &[("Rn", 1), ("Rd", 0)],
+            "cmeq d0, d1, #0",
+        ),
+        (
+            "CMEQ_advsimd_zero.CMEQ_asimdmisc_Z",
+            &[("Q", 0), ("size", 1), ("Rn", 1), ("Rd", 0)],
+            "cmeq v0.4h, v1.4h, #0",
+        ),
+        (
+            "CMHI_advsimd.CMHI_asisdsame_only",
+            &[("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmhi d0, d1, d2",
+        ),
+        (
+            "CMHI_advsimd.CMHI_asimdsame_only",
+            &[("Q", 0), ("size", 2), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmhi v0.2s, v1.2s, v2.2s",
+        ),
+        (
+            "CMHS_advsimd.CMHS_asisdsame_only",
+            &[("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmhs d0, d1, d2",
+        ),
+        (
+            "CMHS_advsimd.CMHS_asimdsame_only",
+            &[("Q", 1), ("size", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmhs v0.8h, v1.8h, v2.8h",
+        ),
+        (
+            "CMGT_advsimd_reg.CMGT_asisdsame_only",
+            &[("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmgt d0, d1, d2",
+        ),
+        (
+            "CMGT_advsimd_reg.CMGT_asimdsame_only",
+            &[("Q", 1), ("size", 2), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmgt v0.4s, v1.4s, v2.4s",
+        ),
+        (
+            "CMGT_advsimd_zero.CMGT_asisdmisc_Z",
+            &[("Rn", 1), ("Rd", 0)],
+            "cmgt d0, d1, #0",
+        ),
+        (
+            "CMGT_advsimd_zero.CMGT_asimdmisc_Z",
+            &[("Q", 0), ("size", 0), ("Rn", 1), ("Rd", 0)],
+            "cmgt v0.8b, v1.8b, #0",
+        ),
+        (
+            "CMGE_advsimd_reg.CMGE_asisdsame_only",
+            &[("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmge d0, d1, d2",
+        ),
+        (
+            "CMGE_advsimd_reg.CMGE_asimdsame_only",
+            &[("Q", 0), ("size", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmge v0.4h, v1.4h, v2.4h",
+        ),
+        (
+            "CMGE_advsimd_zero.CMGE_asisdmisc_Z",
+            &[("Rn", 1), ("Rd", 0)],
+            "cmge d0, d1, #0",
+        ),
+        (
+            "CMGE_advsimd_zero.CMGE_asimdmisc_Z",
+            &[("Q", 1), ("size", 3), ("Rn", 1), ("Rd", 0)],
+            "cmge v0.2d, v1.2d, #0",
+        ),
+        (
+            "CMTST_advsimd.CMTST_asisdsame_only",
+            &[("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmtst d0, d1, d2",
+        ),
+        (
+            "CMTST_advsimd.CMTST_asimdsame_only",
+            &[("Q", 1), ("size", 0), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "cmtst v0.16b, v1.16b, v2.16b",
+        ),
+        (
+            "AND_advsimd.AND_asimdsame_only",
+            &[("Q", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "and v0.16b, v1.16b, v2.16b",
+        ),
+        (
+            "AND_advsimd.AND_asimdsame_only",
+            &[("Q", 0), ("Rm", 5), ("Rn", 4), ("Rd", 3)],
+            "and v3.8b, v4.8b, v5.8b",
+        ),
+        (
+            "ORR_advsimd_reg.ORR_asimdsame_only",
+            &[("Q", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "orr v0.16b, v1.16b, v2.16b",
+        ),
+        (
+            "ORR_advsimd_reg.ORR_asimdsame_only",
+            &[("Q", 1), ("Rm", 1), ("Rn", 1), ("Rd", 0)],
+            "mov v0.16b, v1.16b",
+        ),
+        (
+            "EOR_advsimd.EOR_asimdsame_only",
+            &[("Q", 0), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "eor v0.8b, v1.8b, v2.8b",
+        ),
+        (
+            "BIC_advsimd_reg.BIC_asimdsame_only",
+            &[("Q", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "bic v0.16b, v1.16b, v2.16b",
+        ),
+        (
+            "ORN_advsimd.ORN_asimdsame_only",
+            &[("Q", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "orn v0.16b, v1.16b, v2.16b",
+        ),
+        (
+            "BIT_advsimd.BIT_asimdsame_only",
+            &[("Q", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "bit v0.16b, v1.16b, v2.16b",
+        ),
+        (
+            "BIF_advsimd.BIF_asimdsame_only",
+            &[("Q", 0), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "bif v0.8b, v1.8b, v2.8b",
+        ),
+        (
+            "BSL_advsimd.BSL_asimdsame_only",
+            &[("Q", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "bsl v0.16b, v1.16b, v2.16b",
+        ),
+        (
+            "NOT_advsimd.NOT_asimdmisc_R",
+            &[("Q", 1), ("Rn", 1), ("Rd", 0)],
+            "not v0.16b, v1.16b",
+        ),
+        (
+            "NOT_advsimd.NOT_asimdmisc_R",
+            &[("Q", 0), ("Rn", 3), ("Rd", 2)],
+            "mvn v2.8b, v3.8b",
+        ),
+        (
+            "ADD_advsimd.ADD_asisdsame_only",
+            &[("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "add d0, d1, d2",
+        ),
+        (
+            "ADD_advsimd.ADD_asimdsame_only",
+            &[("Q", 1), ("size", 2), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "add v0.4s, v1.4s, v2.4s",
+        ),
+        (
+            "ADD_advsimd.ADD_asimdsame_only",
+            &[("Q", 0), ("size", 0), ("Rm", 5), ("Rn", 4), ("Rd", 3)],
+            "add v3.8b, v4.8b, v5.8b",
+        ),
+        (
+            "SUB_advsimd.SUB_asisdsame_only",
+            &[("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "sub d0, d1, d2",
+        ),
+        (
+            "SUB_advsimd.SUB_asimdsame_only",
+            &[("Q", 1), ("size", 3), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "sub v0.2d, v1.2d, v2.2d",
+        ),
+        (
+            "ADDP_advsimd_vec.ADDP_asimdsame_only",
+            &[("Q", 1), ("size", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "addp v0.8h, v1.8h, v2.8h",
+        ),
+        (
+            "ADDP_advsimd_vec.ADDP_asimdsame_only",
+            &[("Q", 0), ("size", 0), ("Rm", 5), ("Rn", 4), ("Rd", 3)],
+            "addp v3.8b, v4.8b, v5.8b",
+        ),
+        (
+            "ADDP_advsimd_pair.ADDP_asisdpair_only",
+            &[("Rn", 1), ("Rd", 0)],
+            "addp d0, v1.2d",
+        ),
+        (
+            "UMAXP_advsimd.UMAXP_asimdsame_only",
+            &[("Q", 1), ("size", 0), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "umaxp v0.16b, v1.16b, v2.16b",
+        ),
+        (
+            "UMAXP_advsimd.UMAXP_asimdsame_only",
+            &[("Q", 0), ("size", 2), ("Rm", 5), ("Rn", 4), ("Rd", 3)],
+            "umaxp v3.2s, v4.2s, v5.2s",
+        ),
+        (
+            "UMINP_advsimd.UMINP_asimdsame_only",
+            &[("Q", 1), ("size", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "uminp v0.8h, v1.8h, v2.8h",
+        ),
+        (
+            "ADDV_advsimd.ADDV_asimdall_only",
+            &[("Q", 1), ("size", 0), ("Rn", 1), ("Rd", 0)],
+            "addv b0, v1.16b",
+        ),
+        (
+            "ADDV_advsimd.ADDV_asimdall_only",
+            &[("Q", 0), ("size", 1), ("Rn", 3), ("Rd", 2)],
+            "addv h2, v3.4h",
+        ),
+        (
+            "UMAXV_advsimd.UMAXV_asimdall_only",
+            &[("Q", 1), ("size", 2), ("Rn", 1), ("Rd", 0)],
+            "umaxv s0, v1.4s",
+        ),
+        (
+            "UMAXV_advsimd.UMAXV_asimdall_only",
+            &[("Q", 0), ("size", 0), ("Rn", 3), ("Rd", 2)],
+            "umaxv b2, v3.8b",
+        ),
+        (
+            "UMINV_advsimd.UMINV_asimdall_only",
+            &[("Q", 1), ("size", 1), ("Rn", 1), ("Rd", 0)],
+            "uminv h0, v1.8h",
+        ),
+        (
+            "SHRN_advsimd.SHRN_asimdshf_N",
+            &[
+                ("Q", 0),
+                ("immh", 0b0001),
+                ("immb", 0b100),
+                ("Rn", 1),
+                ("Rd", 0),
+            ],
+            "shrn v0.8b, v1.8h, #4",
+        ),
+        (
+            "SHRN_advsimd.SHRN_asimdshf_N",
+            &[
+                ("Q", 1),
+                ("immh", 0b0001),
+                ("immb", 0b000),
+                ("Rn", 3),
+                ("Rd", 2),
+            ],
+            "shrn2 v2.16b, v3.8h, #8",
+        ),
+        (
+            "SHRN_advsimd.SHRN_asimdshf_N",
+            &[
+                ("Q", 0),
+                ("immh", 0b0100),
+                ("immb", 0b000),
+                ("Rn", 5),
+                ("Rd", 4),
+            ],
+            "shrn v4.2s, v5.2d, #32",
+        ),
+        (
+            "USHR_advsimd.USHR_asisdshf_R",
+            &[("immh", 0b1000), ("immb", 0b000), ("Rn", 1), ("Rd", 0)],
+            "ushr d0, d1, #64",
+        ),
+        (
+            "USHR_advsimd.USHR_asisdshf_R",
+            &[("immh", 0b1111), ("immb", 0b111), ("Rn", 3), ("Rd", 2)],
+            "ushr d2, d3, #1",
+        ),
+        (
+            "USHR_advsimd.USHR_asimdshf_R",
+            &[
+                ("Q", 1),
+                ("immh", 0b0001),
+                ("immb", 0b101),
+                ("Rn", 1),
+                ("Rd", 0),
+            ],
+            "ushr v0.16b, v1.16b, #3",
+        ),
+        (
+            "USHR_advsimd.USHR_asimdshf_R",
+            &[
+                ("Q", 1),
+                ("immh", 0b1000),
+                ("immb", 0b000),
+                ("Rn", 3),
+                ("Rd", 2),
+            ],
+            "ushr v2.2d, v3.2d, #64",
+        ),
+        (
+            "SHL_advsimd.SHL_asisdshf_R",
+            &[("immh", 0b1111), ("immb", 0b111), ("Rn", 1), ("Rd", 0)],
+            "shl d0, d1, #63",
+        ),
+        (
+            "SHL_advsimd.SHL_asimdshf_R",
+            &[
+                ("Q", 1),
+                ("immh", 0b0111),
+                ("immb", 0b111),
+                ("Rn", 1),
+                ("Rd", 0),
+            ],
+            "shl v0.4s, v1.4s, #31",
+        ),
+        (
+            "SHL_advsimd.SHL_asimdshf_R",
+            &[
+                ("Q", 0),
+                ("immh", 0b0001),
+                ("immb", 0b000),
+                ("Rn", 3),
+                ("Rd", 2),
+            ],
+            "shl v2.8b, v3.8b, #0",
+        ),
+        (
+            "USHLL_advsimd.USHLL_asimdshf_L",
+            &[
+                ("Q", 0),
+                ("immh", 0b0001),
+                ("immb", 0b000),
+                ("Rn", 1),
+                ("Rd", 0),
+            ],
+            "ushll v0.8h, v1.8b, #0",
+        ),
+        (
+            "USHLL_advsimd.USHLL_asimdshf_L",
+            &[
+                ("Q", 1),
+                ("immh", 0b0010),
+                ("immb", 0b011),
+                ("Rn", 3),
+                ("Rd", 2),
+            ],
+            "ushll2 v2.4s, v3.8h, #3",
+        ),
+        (
+            "USHLL_advsimd.USHLL_asimdshf_L",
+            &[
+                ("Q", 0),
+                ("immh", 0b0111),
+                ("immb", 0b111),
+                ("Rn", 5),
+                ("Rd", 4),
+            ],
+            "ushll v4.2d, v5.2s, #31",
+        ),
+        (
+            "XTN_advsimd.XTN_asimdmisc_N",
+            &[("Q", 0), ("size", 0), ("Rn", 1), ("Rd", 0)],
+            "xtn v0.8b, v1.8h",
+        ),
+        (
+            "XTN_advsimd.XTN_asimdmisc_N",
+            &[("Q", 1), ("size", 2), ("Rn", 3), ("Rd", 2)],
+            "xtn2 v2.4s, v3.2d",
+        ),
+        (
+            "EXT_advsimd.EXT_asimdext_only",
+            &[("Q", 1), ("Rm", 2), ("imm4", 15), ("Rn", 1), ("Rd", 0)],
+            "ext v0.16b, v1.16b, v2.16b, #15",
+        ),
+        (
+            "EXT_advsimd.EXT_asimdext_only",
+            &[("Q", 0), ("Rm", 5), ("imm4", 7), ("Rn", 4), ("Rd", 3)],
+            "ext v3.8b, v4.8b, v5.8b, #7",
+        ),
+        (
+            "REV16_advsimd.REV16_asimdmisc_R",
+            &[("Q", 1), ("size", 0), ("Rn", 1), ("Rd", 0)],
+            "rev16 v0.16b, v1.16b",
+        ),
+        (
+            "REV32_advsimd.REV32_asimdmisc_R",
+            &[("Q", 1), ("size", 1), ("Rn", 1), ("Rd", 0)],
+            "rev32 v0.8h, v1.8h",
+        ),
+        (
+            "REV32_advsimd.REV32_asimdmisc_R",
+            &[("Q", 0), ("size", 0), ("Rn", 3), ("Rd", 2)],
+            "rev32 v2.8b, v3.8b",
+        ),
+        (
+            "REV64_advsimd.REV64_asimdmisc_R",
+            &[("Q", 1), ("size", 2), ("Rn", 1), ("Rd", 0)],
+            "rev64 v0.4s, v1.4s",
+        ),
+        (
+            "REV64_advsimd.REV64_asimdmisc_R",
+            &[("Q", 0), ("size", 0), ("Rn", 3), ("Rd", 2)],
+            "rev64 v2.8b, v3.8b",
+        ),
+        (
+            "CNT_advsimd.CNT_asimdmisc_R",
+            &[("Q", 1), ("size", 0), ("Rn", 1), ("Rd", 0)],
+            "cnt v0.16b, v1.16b",
+        ),
+        (
+            "CNT_advsimd.CNT_asimdmisc_R",
+            &[("Q", 0), ("size", 0), ("Rn", 3), ("Rd", 2)],
+            "cnt v2.8b, v3.8b",
+        ),
+        (
+            "TBL_advsimd.TBL_asimdtbl_L1_1",
+            &[("Q", 1), ("Rm", 2), ("Rn", 1), ("Rd", 0)],
+            "tbl v0.16b, {v1.16b}, v2.16b",
+        ),
+        (
+            "TBL_advsimd.TBL_asimdtbl_L1_1",
+            &[("Q", 0), ("Rm", 5), ("Rn", 31), ("Rd", 3)],
+            "tbl v3.8b, {v31.16b}, v5.8b",
+        ),
+    ];
+    CASES
+        .iter()
+        .map(|&(form, fields, asm)| {
+            let spec = crate::shared::arm64::GENERATED_A64_SUBSET
+                .iter()
+                .find(|spec| spec.key == form)
+                .unwrap_or_else(|| panic!("{form}: not generated"));
+            let mut word = spec.value;
+            let mut set = |name: &str, value: u32| {
+                let field = spec
+                    .field(name)
+                    .unwrap_or_else(|| panic!("{form}: no field {name}"));
+                let bits = value << field.shift();
+                assert_eq!(
+                    bits & !field.mask,
+                    0,
+                    "{form}: {name} = {value:#x} does not fit"
+                );
+                // A partly fixed field (UMOV (64-bit) `imm5<3:0> = 1000`) must agree
+                // with the diagram.
+                assert_eq!(
+                    bits & spec.mask,
+                    spec.value & field.mask,
+                    "{form}: {name} = {value:#x} changes a fixed bit"
+                );
+                word = (word & !field.mask) | bits;
+            };
+            for &(name, value) in fields {
+                if name == "imm8" {
+                    for (bit, name) in ["h", "g", "f", "e", "d", "c", "b", "a"].iter().enumerate() {
+                        set(name, (value >> bit) & 1);
+                    }
+                } else {
+                    set(name, value);
+                }
+            }
+            let expected = A64Insn::decode(word)
+                .unwrap_or_else(|| panic!("{form}: {word:#010x} does not decode"));
+            assert_eq!(expected.key(), form, "{asm}: decodes as another form");
+            assert!(!expected.is_decode_undefined(), "{asm}: decode-undefined");
+            case(form, format!("    {asm}"), expected)
+        })
+        .collect()
 }
 
 fn simm9(value: i64) -> A64Imm {

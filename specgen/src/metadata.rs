@@ -21,6 +21,9 @@ pub fn infer_operand_roles(
     let var_map = decode_var_map(decode_text);
     let mut roles = BTreeSet::new();
 
+    // Fields that name a SIMD&FP register (A9a): their roles are `Vec*`, never
+    // general-purpose `Reg*`, whatever accessor names them.
+    let simd_fields = simd_fp_fields(operands, &field_names);
     roles.extend(infer_roles_from_docvars_and_asm(
         docvars,
         operands,
@@ -33,19 +36,31 @@ pub fn infer_operand_roles(
         &bound_fields(&format!("{decode_text} {postdecode_text}")),
         execute_text,
     ));
-    // A general-purpose load/store's register roles come from
-    // `infer_load_store_roles` alone. Its execute pseudocode is shared by every
-    // encoding of the section (STLR's ldstord form shares the FEAT_LRCPC3
-    // writeback form's `X{64}(n) = address`), so a register access there does not
-    // hold for each form.
-    let load_store = gpr_mem_op(execute_text).is_some();
+    // A load/store's register roles come from `infer_load_store_roles` alone. Its
+    // execute pseudocode is shared by every encoding of the section (STLR's
+    // ldstord form shares the FEAT_LRCPC3 writeback form's `X{64}(n) = address`;
+    // every SIMD&FP load/store shares the writeback forms' base update), so a
+    // register access there does not hold for each form.
+    let load_store = mem_op(execute_text).is_some();
     roles.extend(
         infer_roles_from_pseudocode(&field_names, &var_map, docvars, operands, execute_text)
             .into_iter()
             .filter(|(kind, _, _)| {
                 !(load_store && matches!(kind.as_str(), "RegRead" | "RegWrite" | "RegReadWrite"))
+            })
+            .filter(|(kind, field, _)| {
+                !(matches!(kind.as_str(), "RegRead" | "RegWrite" | "RegReadWrite")
+                    && simd_fields.contains(field))
             }),
     );
+    if !load_store {
+        let simd_var_map = decode_var_map(&format!("{decode_text} {postdecode_text}"));
+        roles.extend(infer_simd_register_roles(
+            &simd_fields,
+            &simd_var_map,
+            execute_text,
+        ));
+    }
 
     roles.extend(infer_atomic_memory_roles(&field_names, execute_text));
 
@@ -275,6 +290,10 @@ fn infer_roles_from_docvars_and_asm(
 
     let encoded_re = Regex::new(r#"encoded (?:as|in) (?:the )?"([^"]+)" field"#).unwrap();
     for operand in operands {
+        // A SIMD&FP register (A9a): its roles come from `infer_simd_register_roles`.
+        if is_simd_fp_operand(operand) {
+            continue;
+        }
         let hover = operand.hover.to_lowercase();
         let Some(captures) = encoded_re.captures(&hover) else {
             continue;
@@ -307,11 +326,36 @@ fn infer_roles_from_docvars_and_asm(
 /// load-only (LDAPR). Exclusive and atomic descriptors are not matched. `None` for
 /// anything else, or if the text names more than one direction.
 fn gpr_mem_op(execute_text: &str) -> Option<String> {
-    let re = Regex::new(
+    single_direction(
+        execute_text,
         r"CreateAccDesc(?:GPR|AcqRel)\s*\(\s*MemOp_(LOAD|STORE|PREFETCH)\b|CreateAccDesc(LDAcqPC)\s*\(",
     )
-    .unwrap();
-    let ops = re
+}
+
+/// Direction of a SIMD&FP load/store (A9a): `CreateAccDescASIMD(MemOp_LOAD |
+/// MemOp_STORE, ...)`. Its transfer registers are SIMD&FP registers.
+fn simd_mem_op(execute_text: &str) -> Option<String> {
+    single_direction(
+        execute_text,
+        r"CreateAccDescASIMD\s*\(\s*MemOp_(LOAD|STORE)\b",
+    )
+}
+
+/// `(direction, simd)` of a load/store whose registers `infer_load_store_roles`
+/// derives: general-purpose (`gpr_mem_op`) or SIMD&FP (`simd_mem_op`).
+fn mem_op(execute_text: &str) -> Option<(String, bool)> {
+    match (gpr_mem_op(execute_text), simd_mem_op(execute_text)) {
+        (Some(op), None) => Some((op, false)),
+        (None, Some(op)) => Some((op, true)),
+        _ => None,
+    }
+}
+
+/// The one direction `pattern` names in `execute_text` (capture 1, or `LOAD` for a
+/// match without it); `None` for none or more than one.
+fn single_direction(execute_text: &str, pattern: &str) -> Option<String> {
+    let ops = Regex::new(pattern)
+        .unwrap()
         .captures_iter(execute_text)
         .map(|captures| match captures.get(1) {
             Some(op) => op.as_str().to_string(),
@@ -323,6 +367,82 @@ fn gpr_mem_op(execute_text: &str) -> Option<String> {
     } else {
         None
     }
+}
+
+/// Whether an assembler operand names a SIMD&FP register (`<Vd>`, `<Qt>`, `<d>` of
+/// `D<d>`, ...): the XML's hover text says so for every such operand.
+fn is_simd_fp_operand(operand: &AsmOperand) -> bool {
+    operand.hover.contains("SIMD&FP")
+}
+
+/// Register fields some SIMD&FP operand is encoded in.
+fn simd_fp_fields(operands: &[AsmOperand], fields: &BTreeSet<String>) -> BTreeSet<String> {
+    fields
+        .iter()
+        .filter(|field| {
+            encoding_operand(operands, field).is_some_and(is_simd_fp_operand)
+                || operands.iter().any(|operand| {
+                    is_simd_fp_operand(operand) && operand.hover.contains(&format!("\"{field}\""))
+                })
+        })
+        .cloned()
+        .collect()
+}
+
+/// SIMD&FP register roles (A9a) from the execute pseudocode's `V{..}(x)`,
+/// `Vpart{..}(x, part)` accessors (also `V{128}((n+i) MOD 32)`): an accessor
+/// followed by `=` writes, any other reads. Only fields some SIMD&FP operand is
+/// encoded in count, so a shared pseudocode's accessor for the other register file
+/// (FMOV general's `X(d)` vs `Vpart(d, part)`) never lands on the wrong field.
+fn infer_simd_register_roles(
+    simd_fields: &BTreeSet<String>,
+    var_map: &BTreeMap<String, String>,
+    execute_text: &str,
+) -> BTreeSet<RoleTuple> {
+    let mut roles = BTreeSet::new();
+    let accessor = Regex::new(r"\bV(?:part)?\s*(?:\{[^}]*\})?\s*\(").unwrap();
+    let first_ident = Regex::new(r"^[\s(]*(\w+)").unwrap();
+    let assignment = Regex::new(r"^\s*=([^=]|$)").unwrap();
+    for found in accessor.find_iter(execute_text) {
+        let args_start = found.end();
+        let Some(close) = matching_paren(execute_text, args_start) else {
+            continue;
+        };
+        let Some(captures) = first_ident.captures(&execute_text[args_start..close]) else {
+            continue;
+        };
+        let var = &captures[1];
+        let field = var_map.get(var).map_or(var, String::as_str);
+        let Some(field) = simd_fields.iter().find(|f| f.eq_ignore_ascii_case(field)) else {
+            continue;
+        };
+        let kind = if assignment.is_match(&execute_text[close + 1..]) {
+            "VecWrite"
+        } else {
+            "VecRead"
+        };
+        roles.insert(role_tuple(kind, field, "V"));
+    }
+    roles
+}
+
+/// Index of the `)` closing the call whose arguments start at `start` (just past
+/// its `(`).
+fn matching_paren(text: &str, start: usize) -> Option<usize> {
+    let mut depth = 1usize;
+    for (index, ch) in text[start..].char_indices() {
+        match ch {
+            '(' => depth += 1,
+            ')' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(start + index);
+                }
+            }
+            _ => {}
+        }
+    }
+    None
 }
 
 /// Register and addressing roles of every general-purpose load/store form, derived
@@ -346,7 +466,7 @@ fn infer_load_store_roles(
     execute_text: &str,
 ) -> BTreeSet<RoleTuple> {
     let mut roles = BTreeSet::new();
-    let Some(mem_op) = gpr_mem_op(execute_text) else {
+    let Some((mem_op, simd)) = mem_op(execute_text) else {
         return roles;
     };
     let fields = diagram_fields
@@ -354,10 +474,13 @@ fn infer_load_store_roles(
         .filter(|field| !field.starts_with('R') || bound.contains(*field))
         .cloned()
         .collect::<BTreeSet<_>>();
+    // LD1/ST1 (multiple structures) name their post-index form in
+    // `as-structure-post-index` (A9a).
     let writeback = matches!(
         docvars.get("address-form").map(String::as_str),
         Some("pre-indexed" | "post-indexed")
-    );
+    ) || docvars.get("as-structure-post-index").map(String::as_str)
+        == Some("as-post-index");
 
     if fields.contains("Rn") {
         let kind = if writeback { "RegReadWrite" } else { "RegRead" };
@@ -367,15 +490,23 @@ fn infer_load_store_roles(
     if fields.contains("Rm") {
         roles.insert(role_tuple("RegRead", "Rm", "X64"));
     }
-    let transfer_kind = match mem_op.as_str() {
-        "LOAD" => Some("RegWrite"),
-        "STORE" => Some("RegRead"),
+    let transfer_kind = match (mem_op.as_str(), simd) {
+        ("LOAD", false) => Some("RegWrite"),
+        ("STORE", false) => Some("RegRead"),
+        // SIMD&FP transfer registers (A9a); LD1/ST1 (multiple) name the first of
+        // their consecutive registers.
+        ("LOAD", true) => Some("VecWrite"),
+        ("STORE", true) => Some("VecRead"),
         _ => None,
     };
     if let Some(kind) = transfer_kind {
         for field in ["Rt", "Rt2"] {
             if fields.contains(field) {
-                let width = operand_width(docvars, encoding_operand(operands, field));
+                let width = if simd {
+                    "V".to_string()
+                } else {
+                    operand_width(docvars, encoding_operand(operands, field))
+                };
                 roles.insert(role_tuple(kind, field, &width));
             }
         }
@@ -527,6 +658,54 @@ mod tests {
         assert!(roles.contains(&role_tuple("Memory", "", "Unknown")));
         let exclusive = "let accdesc = CreateAccDescExLDST(MemOp_LOAD, acquire, tagchecked, t);";
         assert!(infer_atomic_memory_roles(&fields, exclusive).is_empty());
+    }
+
+    #[test]
+    fn simd_register_roles_come_from_v_accessors() {
+        let fields = ["Rd", "Rn"]
+            .into_iter()
+            .map(String::from)
+            .collect::<BTreeSet<_>>();
+        let vars = [("d", "Rd"), ("n", "Rn")]
+            .into_iter()
+            .map(|(var, field)| (var.to_string(), field.to_string()))
+            .collect::<BTreeMap<_, _>>();
+        let roles = |text: &str| infer_simd_register_roles(&fields, &vars, text);
+        let dup = "let operand : bits(idxdsize) = V{}(n); V{datasize}(d) = result;";
+        assert_eq!(
+            roles(dup),
+            [
+                role_tuple("VecRead", "Rn", "V"),
+                role_tuple("VecWrite", "Rd", "V")
+            ]
+            .into_iter()
+            .collect()
+        );
+        // TBL's table registers, a Vpart write, an equality test is a read.
+        let tbl = "table[i*:128] = V{128}((n+i) MOD 32); Vpart{64}(d, part) = r;";
+        assert!(roles(tbl).contains(&role_tuple("VecRead", "Rn", "V")));
+        assert!(roles(tbl).contains(&role_tuple("VecWrite", "Rd", "V")));
+        assert!(!roles("if V{64}(d) == x then").contains(&role_tuple("VecWrite", "Rd", "V")));
+        // Only SIMD&FP fields count: FMOV (general) names X(d) and Vpart(d) alike.
+        let gpr_only = ["Rn"]
+            .into_iter()
+            .map(String::from)
+            .collect::<BTreeSet<_>>();
+        assert!(infer_simd_register_roles(&gpr_only, &vars, dup)
+            .iter()
+            .all(|(_, field, _)| field == "Rn"));
+    }
+
+    #[test]
+    fn simd_load_store_direction_comes_from_the_asimd_descriptor() {
+        let load =
+            "let accdesc = CreateAccDescASIMD(MemOp_LOAD, nontemporal, tagchecked, privileged);";
+        let store = "CreateAccDescASIMD ( MemOp_STORE , nontemporal, tagchecked);";
+        assert_eq!(mem_op(load), Some(("LOAD".to_string(), true)));
+        assert_eq!(mem_op(store), Some(("STORE".to_string(), true)));
+        let gpr = "let accdesc = CreateAccDescGPR(MemOp_LOAD, nontemporal, privileged, t);";
+        assert_eq!(mem_op(gpr), Some(("LOAD".to_string(), false)));
+        assert_eq!(mem_op(&format!("{gpr} {load}")), None);
     }
 
     #[test]

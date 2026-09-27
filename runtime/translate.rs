@@ -147,6 +147,10 @@ enum Failure {
     Compile,
     Encode,
     Verify(VerifyRule),
+    /// The verifier accepted a fragment with `uses_fpsimd` (A9a). Refused until
+    /// A9b runs such fragments inside the user FP/SIMD bracket
+    /// (tmp/pipeline.md, "A9 contract", Kernel).
+    FpSimd,
     Install(c_int),
     Alloc,
     Unaligned,
@@ -159,9 +163,11 @@ impl Failure {
             Failure::Text(TextFault::Denied(rc)) => *rc,
             Failure::Text(TextFault::Budget) => E2BIG.to_errno(),
             Failure::Text(TextFault::Alloc) | Failure::Alloc => ENOMEM.to_errno(),
-            Failure::Compile | Failure::Encode | Failure::Unaligned | Failure::Overflow => {
-                EINVAL.to_errno()
-            }
+            Failure::Compile
+            | Failure::Encode
+            | Failure::Unaligned
+            | Failure::Overflow
+            | Failure::FpSimd => EINVAL.to_errno(),
             Failure::Verify(_) => EPERM.to_errno(),
             Failure::EntryUnsupported(_) => ENOEXEC.to_errno(),
             Failure::Install(rc) => *rc,
@@ -215,7 +221,8 @@ extern "C" fn kjit_rs_translate(
                         unsafe { *entry_word = word };
                     }
                 }
-                Failure::Compile | Failure::Unaligned | Failure::Overflow => {
+                // A9a: counted with compile failures until A9b installs them.
+                Failure::Compile | Failure::Unaligned | Failure::Overflow | Failure::FpSimd => {
                     stats::inc(Stat::TranslateCompileFailed)
                 }
                 Failure::Encode => stats::inc(Stat::TranslateEncodeFailed),
@@ -341,19 +348,32 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
             .map_err(|_| Failure::Alloc)?;
     }
 
-    if let Err(err) = verify_fragment(&VerifyInput {
+    let verified = match verify_fragment(&VerifyInput {
         code: &code,
         fault_sites: &sites,
         entry_offsets: &entries,
     }) {
-        if verbose || err.rule != VerifyRule::FallsOffEnd {
-            pr_warn!(
-                "kjit: pc {pc:#x}: verifier rejected the fragment at offset {:#x}: {:?}\n",
-                err.offset,
-                err.rule
-            );
+        Ok(verified) => verified,
+        Err(err) => {
+            if verbose || err.rule != VerifyRule::FallsOffEnd {
+                pr_warn!(
+                    "kjit: pc {pc:#x}: verifier rejected the fragment at offset {:#x}: {:?}\n",
+                    err.offset,
+                    err.rule
+                );
+            }
+            return Err(Failure::Verify(err.rule));
         }
-        return Err(Failure::Verify(err.rule));
+    };
+    // A9a: a fragment that touches the user's V registers or FPCR/FPSR needs the
+    // A9b bracket (user FP/SIMD state live, preemption and softirq NEON off) that
+    // this module does not have yet. The decision uses the verifier's own
+    // `uses_fpsimd`, derived from the bytes. Lift when A9b lands.
+    if verified.uses_fpsimd {
+        if verbose {
+            pr_info!("kjit: pc {pc:#x}: fragment uses FP/SIMD, not installed (A9b)\n");
+        }
+        return Err(Failure::FpSimd);
     }
 
     let code_len = u32::try_from(code.len()).map_err(|_| Failure::Overflow)?;

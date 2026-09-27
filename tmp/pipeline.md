@@ -477,9 +477,12 @@ address.
        accessible. Proof is the rule 9 dataflow's pt_regs fact: the register
        was loaded by `ldr xS, [sp, #176]` and not written since, with no join
        point in between.
-   - Everything else is rejected: exclusives, atomics, SIMD, PRFUM/RPRFM, DC/IC/AT
-     are outside the decoded subset (rule 1); pair or pre/post forms not
-     matching the above fail the base/range/writeback checks.
+   - Everything else is rejected: exclusives, PRFUM/RPRFM, DC/IC/AT are
+     outside the decoded subset (rule 1); LSE atomics (A8) and SIMD&FP
+     loads/stores (A9a) are valid only as a PAN window's access (rule 8), every
+     SIMD&FP load/store encoding but the base-only ones is `UserOnlyForm`; pair
+     or pre/post forms not matching the above fail the base/range/writeback
+     checks.
 4. Control flow.
    - Direct branches (B, B.cond, CBZ/CBNZ, TBZ/TBNZ) target the epilogue's
      first word or a body word; never the prologue, the rest of the epilogue,
@@ -582,10 +585,15 @@ dataflow, which it replaces (rule 3's pt_regs fact is its refinement).
   verifies).
 - Not covered: NZCV at entry holds the trampoline's flags (not an address; the
   body only observes them if it reads flags before setting them, a translator
-  semantic issue); FP/SIMD registers (A9: `reads`/`writes` must learn the
-  vector register fields; a vector write misread as a GPR write would clear a
-  GPR's kernel mark, which is unsafe, so A9 must classify them before merge);
-  the kernel's fault fixup is assumed to change no GPR before the stub.
+  semantic issue); the kernel's fault fixup is assumed to change no GPR before
+  the stub.
+- FP/SIMD registers (A9a): SIMD&FP register fields carry `VecRead`/`VecWrite`
+  roles and are plain register numbers, so `reads`/`writes` never count them: a
+  write to V12 leaves x12's kernel mark, a read of V12 is not a read of x12.
+  The general operands of SIMD&FP forms (FMOV general, DUP/INS general, UMOV,
+  addressing) are `Reg*` roles like any other, so a kernel value is rejected
+  before it could enter a V register, and V registers never hold one. Pinned by
+  `simd_registers_are_not_general_registers_for_rule_9`.
 
 ## Cost
 
@@ -1968,3 +1976,210 @@ state and is not exported.
   through the signal frame's fpsimd context and its call trampoline).
 - The interpreter implements exactly the A9a forms, with the PAN window
   modelled as in A8.
+
+# A9a implementation (2026-09-27)
+
+Implements the Translator, Verifier and Harness parts of "A9 contract" (the
+Kernel part is A9b). Decisions the contract left open:
+
+## Forms (`spec/arm64/subset.toml`, 157)
+
+- Loads/stores (82): `LDR_imm_fpsimd.LDR_{B,H,S,D,Q}_ldst_{immpost,immpre,pos}`,
+  `STR_imm_fpsimd.STR_*` (same 15), `LDUR_fpsimd.LDUR_{B,H,S,D,Q}_ldst_unscaled`,
+  `STUR_fpsimd.STUR_*`, `LDP_fpsimd.LDP_{S,D,Q}_ldstpair_{post,pre,off}`,
+  `STP_fpsimd.STP_*`, `LD1_advsimd_mult.LD1_asisdlse_R{1..4}_{1..4}v`,
+  `LD1_asisdlsep_I{n}_i{n}`, `LD1_asisdlsep_R{n}_r{n}`, and the same 12 of
+  `ST1_advsimd_mult`.
+- Register-only (75): `DUP_advsimd_elt` (scalar, vector), `DUP_advsimd_gen`,
+  `INS_advsimd_elt`, `INS_advsimd_gen`, `UMOV_advsimd` (W, X), `MOVI_advsimd` (all
+  six), `MVNI_advsimd` (all three), `FMOV_float_gen.FMOV_{S32,32S,D64,64D,V64I,64VX}`,
+  `FMOV_float.FMOV_{S,D}_floatdp1`, `CMEQ/CMHI/CMHS/CMGT/CMGE/CMTST` (register and,
+  where it exists, zero; scalar and vector), `AND/ORR/EOR/BIC/ORN/BIT/BIF/BSL`
+  (vector), `NOT`, `ADD/SUB` (scalar, vector), `ADDP` (vector, scalar pair),
+  `UMAXP`, `UMINP`, `ADDV`, `UMAXV`, `UMINV`, `SHRN`, `USHR`/`SHL` (scalar,
+  vector), `USHLL`, `XTN`, `EXT`, `REV16/32/64`, `CNT`, `TBL_asimdtbl_L1_1`.
+- Out (Unsupported exit, `a9a_subset_boundary` test and `unsupported_exit.s`):
+  half-precision FMOV (FEAT_FP16: an EL1 UNDEF on a CPU without it would be an
+  oops), FP arithmetic/conversion/compare, register-offset and literal SIMD&FP
+  loads/stores, LD2-4, single-structure and replicate loads, LDNP/STNP, TBL/TBX
+  with 2-4 table registers, ORR/BIC (vector, immediate), FMOV (vector,
+  immediate), saturating arithmetic.
+
+## specgen
+
+- Register file of a field: a field is a SIMD&FP register iff an assembler
+  operand encoded in it says "SIMD&FP" in its hover text. Its roles are the new
+  `A64OperandRole::VecRead { field }` / `VecWrite { field }`; it renders as a
+  plain `u8`, not an `A64Reg`, so no general-register code (reg-virt, the
+  verifier's `reads`/`writes`, the fuzzer's register picker) can mistake it for
+  one. Pseudocode accessors of the other register file on that field are dropped
+  (FMOV (general) shares one pseudocode for both directions: `X(d)` and
+  `Vpart(d, part)`).
+- `Vec*` roles come from `V{..}(x)` / `Vpart{..}(x, part)` accessors (write iff
+  `=` follows the call's closing parenthesis; `V{128}((n+i) MOD 32)` names `n`),
+  with the variable map from decode + postdecode (loads bind `t` in postdecode).
+- SIMD&FP loads/stores: direction from `CreateAccDescASIMD(MemOp_LOAD|STORE)`;
+  `Rt`/`Rt2` get `VecWrite`/`VecRead` (LD1/ST1 name the first of their
+  registers), base and offset roles as for general loads/stores, LD1/ST1
+  post-index writeback from `as-structure-post-index`.
+- No role names a field the encoding fixes completely (LD1 post-index by
+  immediate fixes `Rm = 31`; before, the iclass-level field kept a `RegRead`).
+- Every pre-A9a form's metadata is byte-identical (JSON compared).
+- `form_base_word(spec)`: a spec's value with each `!=` exclusion escaped (SHRN/
+  USHR/SHL/USHLL `immh != 0000`); the tests and the fuzzer catalog probe forms
+  with it instead of `spec.value`, which those forms exclude.
+
+## `is_decode_undefined`
+
+DUP/INS/UMOV `imm5 == x0000`; DUP (vector, general) `imm5 == x1000 && Q == 0`;
+UMOV (32-bit) `imm5 == x1000`; `size:Q == 110` for every vector CM*, ADD, SUB,
+ADDP; `size == 11` for UMAXP, UMINP, XTN; ADDV/UMAXV/UMINV `size == 11 ||
+size:Q == 100`; SHRN/USHLL `immh<3>`; vector USHR/SHL `immh<3> && Q == 0`; EXT
+`Q == 0 && imm4<3>`; REV16 `size != 0`, REV32 `size >= 2`, REV64 `size == 3`;
+CNT `size != 0`. Every other rule is fixed by the diagram (scalar forms fix
+`size = 11` / `immh<3> = 1`, loads/stores fix size/opc per encoding) or is a
+missing FEAT_FP/FEAT_AdvSIMD. Cross-checked against LLVM's disassembler
+(`a9a_decode_admission_agrees_with_llvm_disassembler`, ignored test: 300 random
+words per form, 46954 words, 2346 decode-undefined, 0 disagreements).
+
+## Lowering (one path: `WindowInsn` -> `plan_window` -> `emit_window`)
+
+A8's `plan_atomic`/`emit_atomic_window` became `plan_window`/`emit_window` over
+`WindowInsn::{Atomic, FpSimd}`; `A64Insn::fpsimd_mem()` (translator and harness
+helper, pinned against the generated forms) gives a SIMD&FP load/store's base,
+pre-access offset, writeback and base-only access.
+
+| step | emitted | kind |
+| --- | --- | --- |
+| fills | stack-backed base / LD1 index | RegVirtHelper |
+| SP base | `and sB, x17, #15; cbnz sB, <Mem stub>` | AlignCheck |
+| offset 0, base stack-backed | sA = the base's fill scratch | |
+| offset 0, otherwise | `mov sA, <mapped base>` | RegVirtHelper |
+| offset != 0 | `add/sub sA, <mapped base>, #offset` (1-2 words) | RegVirtHelper |
+| range check | `ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>` | RangeCheck |
+| window | `msr pan, #0; <base-only access on sA>; msr pan, #1` | PanToggle, WindowAccess, PanToggle |
+| writeback | `add/sub <base>, <base>, #amount` or `add <base>, <base>, <Xm>` | Original |
+| spills | written stack-backed base | RegVirtHelper |
+
+- The window holds the user's access in its base-only encoding (LDR/STR
+  unsigned offset `#0`, LDP/STP signed offset `#0`, LD1/ST1 without post-index)
+  on sA = the access's start address. Why: the range check then covers the first
+  byte, and an access is at most 64 bytes, so it cannot reach bit 55 (the TTBR1
+  half) whatever offset the user encoded; checking only the base would let
+  `ldur q0, [x0, #-256]` with a small x0 wrap into the kernel half. Same size,
+  registers and element order as the user's instruction, so its fault behaviour
+  is the architecture's.
+- Only SP-based accesses have a plain Mem stub (`window_needs_check_stub`):
+  SIMD&FP accesses to Normal memory never alignment-fault at EL0
+  (SCTLR_EL1.A = 0), so there is no block check.
+- Scratch worst case stays 4: stack-backed base and LD1/ST1 index, sA, sB (unit
+  test over every form x 10 base classes x 9 index classes).
+- Rejected (intrinsic, Unsupported exit): SIMD&FP LDP `t == t2` (CONSTRAINED
+  UNPREDICTABLE; the `VecWrite` overlap rule next to the GPR one), and LD1/ST1
+  post-indexed by the base register itself (the existing writeback-overlap
+  rule; conservative, the architecture defines it).
+- Register-only forms: only their `Reg*` operands are mapped; V registers never.
+- Layout: `WindowAccess` <=> `is_pan_window_access()` (LSE atomic or base-only
+  SIMD&FP load/store); any other SIMD&FP load/store in a fragment is
+  `UntaggedPanWindow`. Fault sites of window accesses resolve to the PAN stub.
+
+## Verifier (V3)
+
+- `rules::classify`: `Form::WindowAtomic` became `Form::WindowAccess { rn,
+  fpsimd }`: the LSE atomics and the 24 base-only SIMD&FP load/store encodings
+  with offset 0 (the one list of window accesses). Every other SIMD&FP
+  load/store encoding, and a base-only one with a nonzero offset, is
+  `UserOnly`. The 75 register-only forms are `Form::Simd`: allowed anywhere,
+  exit groups included.
+- Rule 8 unchanged otherwise: the access at `i+1` is any `WindowAccess` on sA
+  with its fault site at the window's PAN stub; one outside a window is
+  `AtomicOutsideWindow` (the name predates A9a).
+- `verify_fragment` returns `VerifyOk { uses_fpsimd }`: true iff some word is
+  `Form::Simd` or a `WindowAccess` with `fpsimd`. The harness cross-checks it on
+  every differential run against the translator's view (an instruction with a
+  `Vec*` role); the kernel's `runtime/translate.rs` refuses to install such a
+  fragment (`Failure::FpSimd`, -EINVAL, counted in `translate_compile_failed`)
+  until A9b.
+- Rule 9: see "Confidentiality (rule 9)", FP/SIMD registers.
+
+## Harness
+
+- `MachineState.v: [u128; 32]`, `fpcr`, `fpsr` (derived `PartialEq`: every
+  comparison includes them). `harness/src/simd.rs`: every A9a form from its XML
+  pseudocode (V writes zero-extend, `Vpart(d, 1)` keeps the low half, LD1/ST1
+  one access per element in register-then-element order, TBL index >= 16 -> 0,
+  SHRN/XTN write their half with `Vpart(d, Q)`).
+- Window accesses in a fragment (`check_window_accesses`, shared with the
+  atomics): PAN must be clear, the first access must start below 2^48 (a hard
+  error otherwise: the range check exists to prevent it), no access may touch
+  runtime memory; a later access past 2^48 is an ordinary fault.
+- Fault footprint (`Footprint`, was the A5 store footprint): natively (M1, both
+  original and fragment) a faulting `ldp q0, q1` crossing into an unmapped page
+  has loaded q0, a faulting `ld1 {v4-v7}` has loaded v4 and v5, and a faulting
+  `stp q` crossing into a read-only page has written its first 16 bytes. The
+  architecture allows it (an aborted load's destinations are UNKNOWN; a SIMD&FP
+  access is several single-copy-atomic parts) and userspace redoes the
+  instruction anyway. So each byte of the faulting store on a writable page, and
+  each byte of a faulting SIMD&FP load's destination V registers, may hold its
+  old or its complete-execution value.
+- Fault injection keys an LD1/ST1's element accesses by their order within one
+  execution of the window access; the store-footprint normalization is
+  byte-wise (16/32-byte units).
+- Native runner: V0-V31/FPCR/FPSR go into user code through the SIGTRAP frame's
+  `fpsimd_context` (first record of `__reserved`) and come back from every
+  event's frame; the call trampoline loads them from `NativeCtx::fp` right before
+  `blr` and stores them right after; they are carried across fragment calls as
+  the kernel keeps them live. `msr pan` is still NOPed. FPCR/FPSR states stay
+  inside `FPCR_USER_BITS` (AHP, DN, FZ, RMode, FZ16) / `FPSR_USER_BITS` (QC,
+  cumulative flags), the bits the hardware keeps.
+- Fuzzer: V registers random (zero, all-ones, a repeated lane, random with zero
+  bytes, random), FPCR/FPSR random within the masks in 25% of states; forms come
+  from the metadata as before (V fields are plain immediates to it). The
+  minimizer lifts V registers with `fmov dN, x0` / `fmov vN.d[1], x0`; a state
+  that still needs FPCR/FPSR cannot be lifted (no A9a form writes them).
+- Fixtures: `simd_memcpy.s` (glibc memcpy loop, medium and long paths, SP-based),
+  `simd_strlen.s` (glibc strlen, loop and short), `simd_memset.s` (dup + stp q
+  loop, movi + st1 by register), `simd_ops.s` (every register-only form),
+  `simd_faults.s` (ldp q into unmapped, stp q into read-only, str q post-index on
+  read-only, ld1 x4 into unmapped, st1 x2 into read-only, SP misaligned ldr q /
+  pre-index str q, kernel-half and > 2^48 pointers, a tagged pointer, LDP
+  `t == t2`); `unsupported_exit.s` now ends at `ldr q1, [x12, x4]` and `fadd`.
+
+## Findings (2026-09-27)
+
+- Native (M1 Max, Linux arm64 container; original and fragment alike): a
+  faulting SIMD&FP access is not all-or-nothing. `ldp q0, q1` from the last 16
+  bytes of a read-only page into an unmapped one leaves q0 loaded; `ld1 {v4-v7}`
+  running into an unmapped page leaves v4 and v5 loaded; `stp q0, q1` from the
+  last 16 bytes of a writable page into a read-only one writes those 16 bytes.
+  Hence the `Footprint` extension (Harness above); with it every fixture case
+  agrees three ways.
+- `make harness-test`: 110 fixture cases (22 new), all with the fragment
+  fault-injection differential through SIMD&FP windows (e.g. 117 injected
+  faults in `simd_strlen.s`, 149 in `memset_zero_mark`); mutation suite 110
+  fragments, every A9a class rejected 100% (see the class table it prints).
+- `make harness-test-native`: 220 tests, 110 fixture cases three-way equal
+  (registers, V0-V31, FPCR, FPSR, memory, halt).
+- `make fuzz ITERS=100000` (seed 1): 99730 run, 0 failed (270 non-terminating
+  discarded); the 157 A9a forms: 527718 instances generated (702-9509 per form),
+  4.6M original steps executed (532-109176 per form). Native fuzz (seed 7,
+  20000, `--native` in the container): 19874 native-passed, 76
+  native-unobservable, 0 failed; A9a forms 121-1919 instances, 48-48497 steps
+  per form.
+- `make spec-test-encoding`: 193 new LLVM cases (every A9a form at least once)
+  plus the decode-admission cross-check above.
+
+## Not verified
+
+- The kernel side (A9b) and the kernel module build: `runtime/translate.rs`'s
+  refusal of `uses_fpsimd` fragments was not compiled (no kernel build tree in
+  this environment); no guest run.
+- FPCR/FPSR bits outside `FPCR_USER_BITS`/`FPSR_USER_BITS` (trap enables, AFP
+  bits) are never generated; no A9a form reads them, so fragments only carry
+  them.
+- Hardware other than the M1 for the partial-fault behaviour: the footprint
+  rule allows what the architecture allows per byte, not a specific order.
+- LD1/ST1 post-indexed by their own base register (rejected conservatively) and
+  SIMD&FP LDP `t == t2` (rejected): no fixture shows their native behaviour.
+- Multi-threaded observers of a window SIMD&FP access (single-copy atomicity of
+  its parts) are the hardware's own; not tested.

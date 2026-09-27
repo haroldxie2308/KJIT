@@ -49,9 +49,8 @@ const FOREIGN_WORDS: &[(&str, u32)] = &[
     ("ldapr x0, [x1], #8 (LRCPC3)", 0xd9c0_0820),
     ("stlr x0, [x1, #-8]! (LRCPC3)", 0xd980_0820),
     ("ldapur x0, [x1, #8] (LRCPC2)", 0xd940_8020),
-    ("ldr q0, [x1]", 0x3dc0_0020),
-    ("ldr d0, [x1, #8]", 0xfd40_0420),
     ("ldr q0, <literal>", 0x9c00_0000),
+    ("str q0, [x1, x2]", 0x3ca2_6820),
     ("ldnp x0, x1, [x2]", 0xa840_0440),
     ("prfum pldl1keep, [x0, #1]", 0xf880_1000),
     ("rprfm pldkeep, x22, [x30]", 0xf8b6_4bd8),
@@ -152,6 +151,43 @@ const MSR_PAN_WORDS: &[(&str, u32)] = &[
     ("msr pan, #15", 0xd500_4f9f),
 ];
 
+/// A9a SIMD&FP loads/stores in the base-only encoding a PAN window holds (`[Xn]`,
+/// #0, no writeback): allowed only as the access of an exact PAN window, so each is
+/// rejected anywhere else (a window's own access position is skipped).
+const SIMD_WINDOW_WORDS: &[(&str, u32)] = &[
+    ("ldr q0, [x1]", 0x3dc0_0020),
+    ("str d2, [x3]", 0xfd00_0062),
+    ("ldr b5, [x6]", 0x3d40_00c5),
+    ("ldp q0, q1, [x1]", 0xad40_0420),
+    ("stp s1, s2, [x9]", 0x2d00_0921),
+    ("ld1 {v0.16b}, [x1]", 0x4c40_7020),
+    ("st1 {v0.16b-v3.16b}, [x4]", 0x4c00_2080),
+    ("ldr q0, [sp]", 0x3dc0_03e0),
+    ("ld1 {v0.16b}, [sp]", 0x4c40_73e0),
+];
+
+/// A9a SIMD&FP load/store encodings translation never emits (an offset,
+/// pre/post-index, unscaled, or LD1/ST1 post-index): rejected anywhere, window
+/// positions included.
+const SIMD_USER_ONLY_WORDS: &[(&str, u32)] = &[
+    ("ldr d0, [x1, #8]", 0xfd40_0420),
+    ("ldr s0, [x1], #4", 0xbc40_4420),
+    ("ldur q0, [x1, #-16]", 0x3cdf_0020),
+    ("stur q0, [x1]", 0x3c80_0020),
+    ("ldp q0, q1, [x1, #32]!", 0xadc1_0420),
+    ("ld1 {v0.16b}, [x1], #16", 0x4cdf_7020),
+    ("st1 {v0.2d}, [x1], x2", 0x4c82_7c20),
+    ("str q0, [sp, #16]", 0x3d80_07e0),
+];
+
+/// A9a SIMD&FP register forms that write a general register: into x29 they are
+/// frame-pointer writes.
+const SIMD_FP_WRITES: &[(&str, u32)] = &[
+    ("umov x29, v0.d[0]", 0x4e08_3c1d),
+    ("fmov x29, d1", 0x9e66_003d),
+    ("fmov w29, s1", 0x1e26_003d),
+];
+
 /// Unprivileged forms beyond `LDTR`/`STTR` (A7b), for insertion without a
 /// fault-site entry.
 const UNPRIVILEGED_WORDS: &[(&str, u32)] = &[
@@ -213,7 +249,9 @@ fn bytes(words: &[u32]) -> Vec<u8> {
 
 fn verify(words: &[u32], tables: &FragmentTables) -> Result<(), VerifyRule> {
     let code = bytes(words);
-    verify_fragment(&tables.input(&code)).map_err(|err| err.rule)
+    verify_fragment(&tables.input(&code))
+        .map(|_| ())
+        .map_err(|err| err.rule)
 }
 
 fn rule_name(rule: VerifyRule) -> String {
@@ -470,6 +508,14 @@ impl Suite {
         for (what, word) in USER_ONLY_WORDS {
             self.replace_everywhere("insert user-only memory form (A7b)", fixture, *word, what);
         }
+        for (what, word) in SIMD_USER_ONLY_WORDS {
+            self.replace_everywhere(
+                "insert SIMD&FP load/store with offset / writeback (A9a)",
+                fixture,
+                *word,
+                what,
+            );
+        }
         for (what, word) in BTI_WORDS {
             self.replace_everywhere("insert BTI (A7d)", fixture, *word, what);
         }
@@ -651,6 +697,9 @@ impl Suite {
         ];
         for (what, insn) in fp_writes {
             self.replace_everywhere("x29 write", fixture, enc(insn), what);
+        }
+        for (what, word) in SIMD_FP_WRITES {
+            self.replace_everywhere("x29 write by a SIMD&FP form (A9a)", fixture, *word, what);
         }
     }
 
@@ -976,12 +1025,23 @@ impl Suite {
                 panic!("{}: window at {:#x} has no ubfx", fixture.name, clear * 4);
             };
             let at = |index: usize| format!("window at {:#x}, word {:#x}", clear * 4, index * 4);
+            // A9a: a window around a SIMD&FP access reports under its own classes.
+            let simd = fixture
+                .decoded(atomic)
+                .is_some_and(|insn| insn.fpsimd_mem().is_some());
+            let tag = |class: &'static str| {
+                if simd {
+                    simd_window_class(class)
+                } else {
+                    class
+                }
+            };
 
             // Dropped: either MSR, or the PAN stub's leading MSR.
             for (index, class) in [
-                (clear, "PAN window msr pan, #0 dropped"),
-                (set, "PAN window msr pan, #1 dropped"),
-                (stub, "PAN stub msr pan, #1 dropped"),
+                (clear, tag("PAN window msr pan, #0 dropped")),
+                (set, tag("PAN window msr pan, #1 dropped")),
+                (stub, tag("PAN stub msr pan, #1 dropped")),
             ] {
                 self.replace(class, fixture, index, nop, &at(index));
             }
@@ -997,7 +1057,7 @@ impl Suite {
                 let mut words = fixture.words.clone();
                 words.swap(a, b);
                 self.expect_reject(
-                    "PAN window msr moved",
+                    tag("PAN window msr moved"),
                     fixture,
                     at(a),
                     &words,
@@ -1041,7 +1101,7 @@ impl Suite {
                         }
                     }
                     self.expect_reject(
-                        "PAN window widened (word inserted)",
+                        tag("PAN window widened (word inserted)"),
                         fixture,
                         format!("{what} before word {:#x}, {}", gap * 4, at(clear)),
                         &words,
@@ -1083,7 +1143,13 @@ impl Suite {
                 ),
             ];
             for (what, insn) in checks {
-                self.replace("PAN range check altered", fixture, ubfx, enc(insn), what);
+                self.replace(
+                    tag("PAN range check altered"),
+                    fixture,
+                    ubfx,
+                    enc(insn),
+                    what,
+                );
             }
 
             // cbnz retargeted, inverted, on another register.
@@ -1093,7 +1159,7 @@ impl Suite {
             targets.extend(pan_stubs.iter().copied().filter(|&other| other != stub));
             for target in targets {
                 self.replace(
-                    "PAN range check cbnz retargeted",
+                    tag("PAN range check cbnz retargeted"),
                     fixture,
                     cbnz,
                     enc(cbnz_to(cbnz, target, sb.enc())),
@@ -1132,7 +1198,7 @@ impl Suite {
             ];
             for (what, insn) in branches {
                 self.replace(
-                    "PAN range check cbnz altered",
+                    tag("PAN range check cbnz altered"),
                     fixture,
                     cbnz,
                     enc(insn),
@@ -1184,7 +1250,70 @@ impl Suite {
             ];
             for (what, insn) in others {
                 self.replace(
-                    "PAN window around a non-atomic / plain access",
+                    tag("PAN window around a non-atomic / plain access"),
+                    fixture,
+                    atomic,
+                    enc(insn),
+                    what,
+                );
+            }
+
+            // A9a: around a SIMD&FP load/store on another base, or one with an
+            // offset or writeback (translation always emits the base-only
+            // encoding on sA).
+            let other_base = A64Reg::x_sp(other(sa.enc()));
+            let q_off = |base: A64Reg, raw: u32| A64Insn::LdrImmFpsimdLdrQLdstPos {
+                rt: 0,
+                mem: mem_off(base, scaled_uimm(raw, 12, 4)),
+            };
+            let simd_others = [
+                ("ldr q0, [another register]", q_off(other_base, 0)),
+                ("ldr q0, [sp]", q_off(sp(), 0)),
+                (
+                    "ld1 {v0.16b}, [another register]",
+                    A64Insn::Ld1AdvsimdMultLd1AsisdlseR11v {
+                        q: 1,
+                        size: 0,
+                        rn: other_base,
+                        rt: 0,
+                    },
+                ),
+                ("ldr q0, [sA, #16]", q_off(base, 1)),
+                (
+                    "ldr q0, [sA], #16",
+                    A64Insn::LdrImmFpsimdLdrQLdstImmpost {
+                        rt: 0,
+                        mem: mem_post(base, simm(16, 9)),
+                    },
+                ),
+                (
+                    "ldur q0, [sA, #-16]",
+                    A64Insn::LdurFpsimdLdurQLdstUnscaled {
+                        rt: 0,
+                        mem: mem_off(base, simm(0x1f0, 9)),
+                    },
+                ),
+                (
+                    "ld1 {v0.16b}, [sA], #16",
+                    A64Insn::Ld1AdvsimdMultLd1AsisdlsepI1I1 {
+                        q: 1,
+                        size: 0,
+                        rn: base,
+                        rt: 0,
+                    },
+                ),
+                (
+                    "stp q0, q1, [sA, #32]",
+                    A64Insn::StpFpsimdStpQLdstpairOff {
+                        rt2: 1,
+                        rt: 0,
+                        mem: mem_off(base, scaled_simm(2, 7, 4)),
+                    },
+                ),
+            ];
+            for (what, insn) in simd_others {
+                self.replace(
+                    "PAN window around a SIMD&FP access on another base / with offset (A9a)",
                     fixture,
                     atomic,
                     enc(insn),
@@ -1206,7 +1335,7 @@ impl Suite {
                 let mut tables = clone_tables(&fixture.tables);
                 tables.fault_sites[position].stub_offset = other * 4;
                 self.expect_reject(
-                    "window fault site -> other stub",
+                    tag("window fault site -> other stub"),
                     fixture,
                     format!("{} -> {:#x}", at(atomic), other * 4),
                     &fixture.words,
@@ -1219,7 +1348,7 @@ impl Suite {
                 let mut tables = clone_tables(&fixture.tables);
                 tables.entry_offsets.push(inner * 4);
                 self.expect_reject(
-                    "PAN window entered past its range check",
+                    tag("PAN window entered past its range check"),
                     fixture,
                     format!("entry {:#x}", inner * 4),
                     &fixture.words,
@@ -1289,6 +1418,21 @@ impl Suite {
                 }
                 self.replace(
                     "insert LSE atomic outside a window",
+                    fixture,
+                    index,
+                    *word,
+                    what,
+                );
+            }
+        }
+        // A9a: base-only SIMD&FP loads/stores anywhere but a window's access.
+        for (what, word) in SIMD_WINDOW_WORDS {
+            for index in fixture.body() {
+                if window_atomics.contains(&index) {
+                    continue;
+                }
+                self.replace(
+                    "insert SIMD&FP load/store outside a window (A9a)",
                     fixture,
                     index,
                     *word,
@@ -1464,6 +1608,67 @@ impl Suite {
                     &fixture.tables,
                 );
             }
+        }
+
+        // A9a: the pointer into a V register (the general operand of FMOV/DUP/INS
+        // general), and a V-register write that must not clear x12's mark.
+        let into_v = [
+            (
+                "fmov d0, x12",
+                A64Insn::FmovFloatGenFmovD64Float2int { rn: x(12), rd: 0 },
+            ),
+            (
+                "fmov v0.d[1], x12",
+                A64Insn::FmovFloatGenFmovV64iFloat2int { rn: x(12), rd: 0 },
+            ),
+            (
+                "dup v0.2d, x12",
+                A64Insn::DupAdvsimdGenDupAsimdinsDrR {
+                    q: 1,
+                    imm5: uimm(0b01000, 5),
+                    rn: x(12),
+                    rd: 0,
+                },
+            ),
+            (
+                "mov v0.d[0], x12",
+                A64Insn::InsAdvsimdGenInsAsimdinsIrR {
+                    imm5: uimm(0b01000, 5),
+                    rn: x(12),
+                    rd: 0,
+                },
+            ),
+        ];
+        for (what, insn) in into_v {
+            for index in fixture.body().skip(1) {
+                let mut words = fixture.words.clone();
+                words[index - 1] = load;
+                words[index] = enc(insn);
+                self.expect_reject(
+                    "pt_regs pointer into a V register (A9a, rule 9)",
+                    fixture,
+                    format!("ldr x12, [sp, #176]; {what} at {:#x}", index * 4),
+                    &words,
+                    &fixture.tables,
+                );
+            }
+        }
+        let v12_write = enc(A64Insn::FmovFloatGenFmovD64Float2int { rn: x(0), rd: 12 });
+        for index in fixture.body().skip(2) {
+            let mut words = fixture.words.clone();
+            words[index - 2] = load;
+            words[index - 1] = v12_write;
+            words[index] = enc(mov_reg(0, 12));
+            self.expect_reject(
+                "V12 write keeps x12's kernel mark (A9a, rule 9)",
+                fixture,
+                format!(
+                    "ldr x12, [sp, #176]; fmov d12, x0; mov x0, x12 at {:#x}",
+                    index * 4
+                ),
+                &words,
+                &fixture.tables,
+            );
         }
 
         // At each LDTR/STTR fault site: the pointer as the stored data, or as the
@@ -1656,7 +1861,7 @@ impl Suite {
 
 /// Benign by the generated metadata alone: no memory, branch or control-flow role,
 /// not SVC / ADR / ADRP, no write to SP or x29, and no read of SP or x29 (kernel
-/// values, rule 9).
+/// values, rule 9): general-register or A9a SIMD&FP register data processing.
 fn is_benign_alu(insn: A64Insn) -> bool {
     let key = insn.key();
     if key.starts_with("SVC") || key.starts_with("ADR") {
@@ -1674,7 +1879,12 @@ fn is_benign_alu(insn: A64Insn) -> bool {
             reg.enc() != 29 && (reg.enc() != 31 || reg.reg31 == A64Reg31Mode::Xzr)
         }),
         A64OperandRole::ImplicitRegWrite { reg, .. } => reg != 29 && reg != 31,
-        A64OperandRole::FlagsRead | A64OperandRole::FlagsWrite => true,
+        // A9a: V registers are user state live in hardware; reading or writing
+        // them is register data processing like any general-register ALU op.
+        A64OperandRole::FlagsRead
+        | A64OperandRole::FlagsWrite
+        | A64OperandRole::VecRead { .. }
+        | A64OperandRole::VecWrite { .. } => true,
     })
 }
 
@@ -1685,6 +1895,7 @@ fn is_offset_runtime_access(insn: A64Insn) -> bool {
     insn.accesses_memory()
         && !insn.is_unprivileged_access()
         && insn.lse_atomic().is_none()
+        && insn.fpsimd_mem().is_none()
         && matches!(insn.mem_operand(), Some(A64Mem::Offset { .. }))
 }
 
@@ -1835,6 +2046,31 @@ fn scaled_offset(mem: A64Mem, log2: u8) -> A64Mem {
         0
     };
     A64Mem::offset(mem.base(), scaled_uimm(raw, 12, log2))
+}
+
+/// The A9a class name of a per-window mutation class, for a window around a
+/// SIMD&FP load/store.
+fn simd_window_class(class: &'static str) -> &'static str {
+    match class {
+        "PAN window msr pan, #0 dropped" => "[A9a SIMD&FP window] msr pan, #0 dropped",
+        "PAN window msr pan, #1 dropped" => "[A9a SIMD&FP window] msr pan, #1 dropped",
+        "PAN stub msr pan, #1 dropped" => "[A9a SIMD&FP window] PAN stub msr pan, #1 dropped",
+        "PAN window msr moved" => "[A9a SIMD&FP window] msr moved",
+        "PAN window widened (word inserted)" => "[A9a SIMD&FP window] widened (word inserted)",
+        "PAN range check altered" => "[A9a SIMD&FP window] range check altered",
+        "PAN range check cbnz retargeted" => "[A9a SIMD&FP window] range check cbnz retargeted",
+        "PAN range check cbnz altered" => "[A9a SIMD&FP window] range check cbnz altered",
+        "PAN window around a non-atomic / plain access" => {
+            "[A9a SIMD&FP window] access replaced by a plain / unprivileged / foreign-base access"
+        }
+        "window fault site -> other stub" => {
+            "[A9a SIMD&FP window] fault site -> non-PAN / other window's stub"
+        }
+        "PAN window entered past its range check" => {
+            "[A9a SIMD&FP window] entered past its range check"
+        }
+        other => panic!("no A9a class for `{other}`"),
+    }
 }
 
 fn msr_pan(crm: u8) -> A64Insn {
@@ -2002,6 +2238,24 @@ fn mutation_word_lists_are_classified_as_named() {
     for (what, word) in ATOMIC_WORDS {
         let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
         assert!(insn.lse_atomic().is_some(), "{what}");
+    }
+    for (what, word) in SIMD_WINDOW_WORDS {
+        let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
+        assert!(
+            insn.is_pan_window_access() && insn.fpsimd_mem().is_some(),
+            "{what}"
+        );
+    }
+    for (what, word) in SIMD_USER_ONLY_WORDS {
+        let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
+        assert!(
+            insn.fpsimd_mem().is_some() && !insn.is_pan_window_access(),
+            "{what}"
+        );
+    }
+    for (what, word) in SIMD_FP_WRITES {
+        let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));
+        assert_eq!(insn.get_reg("Rd").map(|reg| reg.enc()), Some(29), "{what}");
     }
     for (what, word) in MSR_PAN_WORDS {
         let insn = decode(*word).unwrap_or_else(|| panic!("{what} does not decode"));

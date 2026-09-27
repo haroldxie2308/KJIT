@@ -71,10 +71,10 @@ pub(crate) enum AccessContext<'a> {
     },
     /// Translated fragment at EL1. Privilege is decided by the instruction, never
     /// the address: `LDTR`/`STTR` are user accesses (EL0 permissions, numbered by
-    /// `counter`); an LSE atomic is a privileged access to user memory, legal only
-    /// while `pan` (PSTATE.PAN, written by `msr pan`) is clear (A8); every other
-    /// load/store is a runtime access and must stay inside `runtime_ranges` (else a
-    /// PAN violation).
+    /// `counter`); an LSE atomic (A8) or SIMD&FP load/store (A9a) is a privileged
+    /// access to user memory, legal only while `pan` (PSTATE.PAN, written by `msr
+    /// pan`) is clear; every other load/store is a runtime access and must stay
+    /// inside `runtime_ranges` (else a PAN violation).
     Fragment {
         runtime_ranges: &'a [(u64, u64)],
         counter: &'a mut UserAccessCounter,
@@ -1730,6 +1730,164 @@ pub(crate) fn execute_insn(
                 .ok_or_else(|| format!("{} is not an LSE atomic", insn.key()))?;
             execute_atomic(ctx, state, pc, atomic)
         }
+        // A9a SIMD&FP (tmp/pipeline.md, "A9 contract").
+        A64Insn::LdrImmFpsimdLdrBLdstImmpost { .. }
+        | A64Insn::LdrImmFpsimdLdrHLdstImmpost { .. }
+        | A64Insn::LdrImmFpsimdLdrSLdstImmpost { .. }
+        | A64Insn::LdrImmFpsimdLdrDLdstImmpost { .. }
+        | A64Insn::LdrImmFpsimdLdrQLdstImmpost { .. }
+        | A64Insn::LdrImmFpsimdLdrBLdstImmpre { .. }
+        | A64Insn::LdrImmFpsimdLdrHLdstImmpre { .. }
+        | A64Insn::LdrImmFpsimdLdrSLdstImmpre { .. }
+        | A64Insn::LdrImmFpsimdLdrDLdstImmpre { .. }
+        | A64Insn::LdrImmFpsimdLdrQLdstImmpre { .. }
+        | A64Insn::LdrImmFpsimdLdrBLdstPos { .. }
+        | A64Insn::LdrImmFpsimdLdrHLdstPos { .. }
+        | A64Insn::LdrImmFpsimdLdrSLdstPos { .. }
+        | A64Insn::LdrImmFpsimdLdrDLdstPos { .. }
+        | A64Insn::LdrImmFpsimdLdrQLdstPos { .. }
+        | A64Insn::StrImmFpsimdStrBLdstImmpost { .. }
+        | A64Insn::StrImmFpsimdStrHLdstImmpost { .. }
+        | A64Insn::StrImmFpsimdStrSLdstImmpost { .. }
+        | A64Insn::StrImmFpsimdStrDLdstImmpost { .. }
+        | A64Insn::StrImmFpsimdStrQLdstImmpost { .. }
+        | A64Insn::StrImmFpsimdStrBLdstImmpre { .. }
+        | A64Insn::StrImmFpsimdStrHLdstImmpre { .. }
+        | A64Insn::StrImmFpsimdStrSLdstImmpre { .. }
+        | A64Insn::StrImmFpsimdStrDLdstImmpre { .. }
+        | A64Insn::StrImmFpsimdStrQLdstImmpre { .. }
+        | A64Insn::StrImmFpsimdStrBLdstPos { .. }
+        | A64Insn::StrImmFpsimdStrHLdstPos { .. }
+        | A64Insn::StrImmFpsimdStrSLdstPos { .. }
+        | A64Insn::StrImmFpsimdStrDLdstPos { .. }
+        | A64Insn::StrImmFpsimdStrQLdstPos { .. }
+        | A64Insn::LdurFpsimdLdurBLdstUnscaled { .. }
+        | A64Insn::LdurFpsimdLdurHLdstUnscaled { .. }
+        | A64Insn::LdurFpsimdLdurSLdstUnscaled { .. }
+        | A64Insn::LdurFpsimdLdurDLdstUnscaled { .. }
+        | A64Insn::LdurFpsimdLdurQLdstUnscaled { .. }
+        | A64Insn::SturFpsimdSturBLdstUnscaled { .. }
+        | A64Insn::SturFpsimdSturHLdstUnscaled { .. }
+        | A64Insn::SturFpsimdSturSLdstUnscaled { .. }
+        | A64Insn::SturFpsimdSturDLdstUnscaled { .. }
+        | A64Insn::SturFpsimdSturQLdstUnscaled { .. }
+        | A64Insn::LdpFpsimdLdpSLdstpairPost { .. }
+        | A64Insn::LdpFpsimdLdpDLdstpairPost { .. }
+        | A64Insn::LdpFpsimdLdpQLdstpairPost { .. }
+        | A64Insn::LdpFpsimdLdpSLdstpairPre { .. }
+        | A64Insn::LdpFpsimdLdpDLdstpairPre { .. }
+        | A64Insn::LdpFpsimdLdpQLdstpairPre { .. }
+        | A64Insn::LdpFpsimdLdpSLdstpairOff { .. }
+        | A64Insn::LdpFpsimdLdpDLdstpairOff { .. }
+        | A64Insn::LdpFpsimdLdpQLdstpairOff { .. }
+        | A64Insn::StpFpsimdStpSLdstpairPost { .. }
+        | A64Insn::StpFpsimdStpDLdstpairPost { .. }
+        | A64Insn::StpFpsimdStpQLdstpairPost { .. }
+        | A64Insn::StpFpsimdStpSLdstpairPre { .. }
+        | A64Insn::StpFpsimdStpDLdstpairPre { .. }
+        | A64Insn::StpFpsimdStpQLdstpairPre { .. }
+        | A64Insn::StpFpsimdStpSLdstpairOff { .. }
+        | A64Insn::StpFpsimdStpDLdstpairOff { .. }
+        | A64Insn::StpFpsimdStpQLdstpairOff { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlseR11v { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlseR22v { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlseR33v { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlseR44v { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepI1I1 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepR1R1 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepI2I2 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepR2R2 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepI3I3 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepR3R3 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepI4I4 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepR4R4 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlseR11v { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlseR22v { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlseR33v { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlseR44v { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepI1I1 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepR1R1 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepI2I2 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepR2R2 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepI3I3 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepR3R3 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepI4I4 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepR4R4 { .. }
+        | A64Insn::DupAdvsimdEltDupAsisdoneOnly { .. }
+        | A64Insn::DupAdvsimdEltDupAsimdinsDvV { .. }
+        | A64Insn::DupAdvsimdGenDupAsimdinsDrR { .. }
+        | A64Insn::InsAdvsimdEltInsAsimdinsIvV { .. }
+        | A64Insn::InsAdvsimdGenInsAsimdinsIrR { .. }
+        | A64Insn::UmovAdvsimdUmovAsimdinsWW { .. }
+        | A64Insn::UmovAdvsimdUmovAsimdinsXX { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmNB { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmLHl { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmLSl { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmMSm { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmDDs { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmD2D { .. }
+        | A64Insn::MvniAdvsimdMvniAsimdimmLHl { .. }
+        | A64Insn::MvniAdvsimdMvniAsimdimmLSl { .. }
+        | A64Insn::MvniAdvsimdMvniAsimdimmMSm { .. }
+        | A64Insn::FmovFloatGenFmovS32Float2int { .. }
+        | A64Insn::FmovFloatGenFmov32sFloat2int { .. }
+        | A64Insn::FmovFloatGenFmovD64Float2int { .. }
+        | A64Insn::FmovFloatGenFmovV64iFloat2int { .. }
+        | A64Insn::FmovFloatGenFmov64dFloat2int { .. }
+        | A64Insn::FmovFloatGenFmov64vxFloat2int { .. }
+        | A64Insn::FmovFloatFmovSFloatdp1 { .. }
+        | A64Insn::FmovFloatFmovDFloatdp1 { .. }
+        | A64Insn::CmeqAdvsimdRegCmeqAsisdsameOnly { .. }
+        | A64Insn::CmeqAdvsimdRegCmeqAsimdsameOnly { .. }
+        | A64Insn::CmeqAdvsimdZeroCmeqAsisdmiscZ { .. }
+        | A64Insn::CmeqAdvsimdZeroCmeqAsimdmiscZ { .. }
+        | A64Insn::CmhiAdvsimdCmhiAsisdsameOnly { .. }
+        | A64Insn::CmhiAdvsimdCmhiAsimdsameOnly { .. }
+        | A64Insn::CmhsAdvsimdCmhsAsisdsameOnly { .. }
+        | A64Insn::CmhsAdvsimdCmhsAsimdsameOnly { .. }
+        | A64Insn::CmgtAdvsimdRegCmgtAsisdsameOnly { .. }
+        | A64Insn::CmgtAdvsimdRegCmgtAsimdsameOnly { .. }
+        | A64Insn::CmgtAdvsimdZeroCmgtAsisdmiscZ { .. }
+        | A64Insn::CmgtAdvsimdZeroCmgtAsimdmiscZ { .. }
+        | A64Insn::CmgeAdvsimdRegCmgeAsisdsameOnly { .. }
+        | A64Insn::CmgeAdvsimdRegCmgeAsimdsameOnly { .. }
+        | A64Insn::CmgeAdvsimdZeroCmgeAsisdmiscZ { .. }
+        | A64Insn::CmgeAdvsimdZeroCmgeAsimdmiscZ { .. }
+        | A64Insn::CmtstAdvsimdCmtstAsisdsameOnly { .. }
+        | A64Insn::CmtstAdvsimdCmtstAsimdsameOnly { .. }
+        | A64Insn::AndAdvsimdAndAsimdsameOnly { .. }
+        | A64Insn::OrrAdvsimdRegOrrAsimdsameOnly { .. }
+        | A64Insn::EorAdvsimdEorAsimdsameOnly { .. }
+        | A64Insn::BicAdvsimdRegBicAsimdsameOnly { .. }
+        | A64Insn::OrnAdvsimdOrnAsimdsameOnly { .. }
+        | A64Insn::BitAdvsimdBitAsimdsameOnly { .. }
+        | A64Insn::BifAdvsimdBifAsimdsameOnly { .. }
+        | A64Insn::BslAdvsimdBslAsimdsameOnly { .. }
+        | A64Insn::NotAdvsimdNotAsimdmiscR { .. }
+        | A64Insn::AddAdvsimdAddAsisdsameOnly { .. }
+        | A64Insn::AddAdvsimdAddAsimdsameOnly { .. }
+        | A64Insn::SubAdvsimdSubAsisdsameOnly { .. }
+        | A64Insn::SubAdvsimdSubAsimdsameOnly { .. }
+        | A64Insn::AddpAdvsimdVecAddpAsimdsameOnly { .. }
+        | A64Insn::AddpAdvsimdPairAddpAsisdpairOnly { .. }
+        | A64Insn::UmaxpAdvsimdUmaxpAsimdsameOnly { .. }
+        | A64Insn::UminpAdvsimdUminpAsimdsameOnly { .. }
+        | A64Insn::AddvAdvsimdAddvAsimdallOnly { .. }
+        | A64Insn::UmaxvAdvsimdUmaxvAsimdallOnly { .. }
+        | A64Insn::UminvAdvsimdUminvAsimdallOnly { .. }
+        | A64Insn::ShrnAdvsimdShrnAsimdshfN { .. }
+        | A64Insn::UshrAdvsimdUshrAsisdshfR { .. }
+        | A64Insn::UshrAdvsimdUshrAsimdshfR { .. }
+        | A64Insn::ShlAdvsimdShlAsisdshfR { .. }
+        | A64Insn::ShlAdvsimdShlAsimdshfR { .. }
+        | A64Insn::UshllAdvsimdUshllAsimdshfL { .. }
+        | A64Insn::XtnAdvsimdXtnAsimdmiscN { .. }
+        | A64Insn::ExtAdvsimdExtAsimdextOnly { .. }
+        | A64Insn::Rev16AdvsimdRev16AsimdmiscR { .. }
+        | A64Insn::Rev32AdvsimdRev32AsimdmiscR { .. }
+        | A64Insn::Rev64AdvsimdRev64AsimdmiscR { .. }
+        | A64Insn::CntAdvsimdCntAsimdmiscR { .. }
+        | A64Insn::TblAdvsimdTblAsimdtblL11 { .. } => crate::simd::execute(insn, pc, state, ctx),
         // `msr pan, #imm` (A8): only a fragment's PAN window and PAN stubs contain it
         // (admission rejects it in user code, so an original run never gets here).
         A64Insn::MsrImmMsrSiPstate { crm } => match ctx {
@@ -2557,7 +2715,7 @@ fn execute_atomic(
             cause: FaultCause::Alignment,
         }));
     }
-    check_atomic_access(ctx, state, pc, access)?;
+    check_window_accesses(ctx, state, pc, &[access])?;
 
     let bits = size * 8;
     let mask = width_mask(bits);
@@ -2598,61 +2756,67 @@ fn execute_atomic(
     Ok(pc + 4)
 }
 
-/// The permission check of an atomic's access. Original code: an EL0 user access.
-/// Fragment: a privileged access, legal only while PSTATE.PAN is clear (a PAN
+/// The permission check of a PAN-window instruction's accesses (an LSE atomic,
+/// A8, or an A9a SIMD&FP load/store), in order. Original code: EL0 user accesses.
+/// Fragment: privileged accesses, legal only while PSTATE.PAN is clear (a PAN
 /// violation otherwise, a hard error: an oops in the kernel) and only to user
-/// memory (the window's range check keeps kernel addresses out; runtime memory
-/// here is the kernel's); it is numbered with the user accesses for fault
+/// memory: the window's range check proves the first access starts below 2^48
+/// (else a hard error), and none may touch runtime memory (the kernel's here).
+/// A later access of a multi-byte or multi-element instruction may run past 2^48,
+/// which in the kernel is an ordinary translation fault on a TTBR0 address: here
+/// an unmapped page. Each access is numbered with the user accesses for fault
 /// injection and faults on the same EL0 page permissions (Linux user pages give
 /// EL1 the same read/write permission; execute-only pages are not modelled).
-fn check_atomic_access(
+pub(crate) fn check_window_accesses(
     ctx: &mut AccessContext<'_>,
     state: &MachineState,
     pc: u64,
-    access: MemAccess,
+    accesses: &[MemAccess],
 ) -> Result<(), InsnError> {
-    let (privilege, counter, log) = match ctx {
-        AccessContext::Original { counter, log } => {
-            (Privilege::User, counter.as_deref_mut(), log.as_deref_mut())
-        }
-        AccessContext::Fragment {
-            runtime_ranges,
-            counter,
-            log,
-            pan,
-        } => {
-            if **pan {
-                return Err(InsnError::Error(format!(
-                    "PAN violation: privileged atomic at pc={pc:#x} to {:#x} with PSTATE.PAN set",
-                    access.addr
-                )));
+    for (index, &access) in accesses.iter().enumerate() {
+        let (privilege, counter, log) = match ctx {
+            AccessContext::Original { counter, log } => {
+                (Privilege::User, counter.as_deref_mut(), log.as_deref_mut())
             }
-            let overlaps_runtime = runtime_ranges.iter().any(|&(start, end)| {
-                access.addr < end && access.addr.saturating_add(u64::from(access.size)) > start
+            AccessContext::Fragment {
+                runtime_ranges,
+                counter,
+                log,
+                pan,
+            } => {
+                if **pan {
+                    return Err(InsnError::Error(format!(
+                        "PAN violation: privileged access at pc={pc:#x} to {:#x} with PSTATE.PAN set",
+                        access.addr
+                    )));
+                }
+                let overlaps_runtime = runtime_ranges.iter().any(|&(start, end)| {
+                    access.addr < end && access.addr.saturating_add(u64::from(access.size)) > start
+                });
+                if overlaps_runtime || (index == 0 && access.addr >> USER_VA_BITS != 0) {
+                    return Err(InsnError::Error(format!(
+                        "privileged access at pc={pc:#x} to {:#x}: not a user address",
+                        access.addr
+                    )));
+                }
+                (Privilege::Window, Some(&mut **counter), log.as_deref_mut())
+            }
+        };
+        if let Some(log) = log {
+            log.push(LoggedAccess {
+                pc,
+                access,
+                privilege,
             });
-            if overlaps_runtime || access.addr >> USER_VA_BITS != 0 {
-                return Err(InsnError::Error(format!(
-                    "privileged atomic at pc={pc:#x} to {:#x}: not a user address",
-                    access.addr
-                )));
-            }
-            (Privilege::Window, Some(&mut **counter), log.as_deref_mut())
         }
-    };
-    if let Some(log) = log {
-        log.push(LoggedAccess {
-            pc,
-            access,
-            privilege,
-        });
-    }
-    let injected = counter.is_some_and(|counter| counter.record());
-    if injected || !state.user_access_allowed(access) {
-        return Err(InsnError::Fault(MemFault {
-            pc,
-            access,
-            cause: FaultCause::Permission,
-        }));
+        let injected = counter.is_some_and(|counter| counter.record());
+        if injected || !state.user_access_allowed(access) {
+            return Err(InsnError::Fault(MemFault {
+                pc,
+                access,
+                cause: FaultCause::Permission,
+            }));
+        }
     }
     Ok(())
 }
@@ -2678,7 +2842,7 @@ fn write_access(addr: u64, size: u8) -> MemAccess {
 /// faults; a runtime access outside runtime-owned memory is a PAN violation,
 /// which is a hard error because in the kernel it is an oops. `unprivileged`:
 /// the instruction is `LDTR`/`STTR`.
-fn check_accesses(
+pub(crate) fn check_accesses(
     ctx: &mut AccessContext<'_>,
     state: &MachineState,
     pc: u64,

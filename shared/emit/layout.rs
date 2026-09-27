@@ -81,8 +81,8 @@ pub enum LayoutError {
         ori_pc: u64,
     },
     /// A8: a `WindowAccess`/`PanToggle`/`PanRestore` tag and the instruction (LSE
-    /// atomic, `msr pan`) disagree, or an LSE atomic or `msr pan` outside those
-    /// kinds.
+    /// atomic or A9a base-only SIMD&FP load/store, `msr pan`) disagree, or an LSE
+    /// atomic, SIMD&FP load/store or `msr pan` outside those kinds.
     UntaggedPanWindow {
         insn_index: usize,
     },
@@ -273,7 +273,9 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
             }
             let window_access = rephrased.kind == RephrasedInsnKind::WindowAccess;
             let pan_toggle = rephrased.kind == RephrasedInsnKind::PanToggle;
-            if window_access != rephrased.insn.lse_atomic().is_some()
+            // A9a: a SIMD&FP load/store appears only as a window's base-only access.
+            if window_access != rephrased.insn.is_pan_window_access()
+                || (!window_access && rephrased.insn.fpsimd_mem().is_some())
                 || pan_toggle != rephrased.insn.msr_pan().is_some()
             {
                 return Err(LayoutError::UntaggedPanWindow { insn_index });
@@ -327,6 +329,7 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
         if pan_restore != (group_start && rephrased.insn.msr_pan() == Some(true))
             || (!pan_restore && rephrased.insn.msr_pan().is_some())
             || rephrased.insn.lse_atomic().is_some()
+            || rephrased.insn.fpsimd_mem().is_some()
         {
             return Err(LayoutError::UntaggedPanWindow { insn_index });
         }
@@ -355,7 +358,7 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
 
     for site in fragment.fault_sites.iter_mut() {
         let insn_index = site.access_offset / 4;
-        site.stub_offset = if fragment.insns[insn_index].lse_atomic().is_some() {
+        site.stub_offset = if fragment.insns[insn_index].is_pan_window_access() {
             find_vlabel(&pan_stub_labels, site.ori_pc).ok_or(LayoutError::MissingPanStub {
                 insn_index,
                 ori_pc: site.ori_pc,

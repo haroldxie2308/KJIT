@@ -417,8 +417,17 @@ fn check_fragment_fault_injection(
     let mut fragment_keys = BTreeMap::new();
     let mut site_executions: BTreeMap<usize, usize> = BTreeMap::new();
     let mut user_index = 0u64;
+    // A9a: one window SIMD&FP instruction makes several accesses (LD1/ST1: one per
+    // element). They are consecutive log entries at one offset; an instruction
+    // executes again only after other logged work (a budget check's runtime
+    // accesses, a re-entry's prologue), so a repeated offset right after itself
+    // continues the same execution.
+    let mut previous_offset = None;
+    let mut within = 0usize;
     for logged in &fragment_log {
         let offset = (logged.pc - base_pc) as usize;
+        let continues = previous_offset == Some(offset);
+        previous_offset = Some(offset);
         match logged.privilege {
             Privilege::Runtime => {
                 let last = logged.access.addr + logged.access.size as u64 - 1;
@@ -437,12 +446,12 @@ fn check_fragment_fault_injection(
                 let insn = runtime.fragment.insns[offset / 4];
                 let tagged = match privilege {
                     Privilege::User => insn.is_unprivileged_access(),
-                    _ => insn.lse_atomic().is_some(),
+                    _ => insn.is_pan_window_access(),
                 };
                 if !tagged {
                     return Err(format!(
                         "{privilege:?} access at {offset:#x} is neither LDTR/STTR nor a \
-                         window atomic"
+                         window access"
                     ));
                 }
                 let site = runtime
@@ -457,8 +466,16 @@ fn check_fragment_fault_injection(
                     .position(|other| other.access_offset == offset)
                     .expect("the site is among its own pc's sites");
                 let executions = site_executions.entry(offset).or_default();
-                fragment_keys.insert((site.ori_pc, *executions, rank), (user_index, *logged));
-                *executions += 1;
+                if continues {
+                    within += 1;
+                } else {
+                    within = 0;
+                    *executions += 1;
+                }
+                fragment_keys.insert(
+                    (site.ori_pc, *executions - 1, rank + within),
+                    (user_index, *logged),
+                );
             }
         }
     }
@@ -522,15 +539,17 @@ fn check_fragment_fault_injection(
             .state;
         let mut state = report.state.clone();
         let first = owner.accesses_before as usize;
+        // Byte by byte: a SIMD&FP store unit may be 16 or 32 bytes (A9a).
         for unit in original_log[first..]
             .iter()
             .take_while(|logged| logged.pc == owner.pc)
             .filter(|logged| logged.access.kind == AccessKind::Write)
         {
-            let (addr, size) = (unit.access.addr, unit.access.size);
-            let (got, old) = (state.read_le(addr, size), owner.state.read_le(addr, size));
-            if got != old && got == post.read_le(addr, size) {
-                state.write_le(addr, size, old);
+            for addr in unit.access.addr..unit.access.addr + u64::from(unit.access.size) {
+                let (got, old) = (state.read_le(addr, 1), owner.state.read_le(addr, 1));
+                if got != old && got == post.read_le(addr, 1) {
+                    state.write_le(addr, 1, old);
+                }
             }
         }
         if state != owner.state {

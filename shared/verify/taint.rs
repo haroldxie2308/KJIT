@@ -78,7 +78,7 @@ pub(super) fn step(insn: &A64Insn, form: Form, state: Taint) -> Option<Taint> {
         } => frame_load_value(insn, mem, bytes),
         Form::RuntimeAccess { store: true, .. }
         | Form::UserAccess { .. }
-        | Form::WindowAtomic { .. } => Value::User,
+        | Form::WindowAccess { .. } => Value::User,
         _ if read.sp || read.gprs & state.kernel != 0 => Value::Kernel,
         _ => Value::User,
     };

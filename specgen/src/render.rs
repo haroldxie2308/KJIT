@@ -221,6 +221,11 @@ pub fn render_rust(specs: &[InstructionSpec]) -> Result<String> {
         "    FlagsWrite,".to_string(),
         "    ControlFlow,".to_string(),
         "    Memory,".to_string(),
+        "    /// A SIMD&FP register (V0-V31) the form reads (A9a). The field is a plain".to_string(),
+        "    /// register number, not an `A64Reg`: V registers are never virtualized.".to_string(),
+        "    VecRead { field: &'static str },".to_string(),
+        "    /// A SIMD&FP register the form writes (A9a); LD1 (multiple) names its first.".to_string(),
+        "    VecWrite { field: &'static str },".to_string(),
         "}".to_string(),
         "".to_string(),
         "#[allow(dead_code)]".to_string(),
@@ -995,6 +1000,8 @@ fn render_operand_role(role: &OperandRoleSpec, fields: &[FieldSpec]) -> Result<S
         "FlagsWrite" => "A64OperandRole::FlagsWrite".to_string(),
         "ControlFlow" => "A64OperandRole::ControlFlow".to_string(),
         "Memory" => "A64OperandRole::Memory".to_string(),
+        "VecRead" => format!("A64OperandRole::VecRead {{ field: \"{}\" }}", role.field),
+        "VecWrite" => format!("A64OperandRole::VecWrite {{ field: \"{}\" }}", role.field),
         _ => bail!("unsupported operand role: {:?}", role),
     };
     Ok(ret)
