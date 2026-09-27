@@ -83,4 +83,5 @@ extern "C" {
     pub(crate) fn kjit_fpsimd_run_max_ns() -> u64;
     pub(crate) fn kjit_profile(pc: u64, kind: u32);
     pub(crate) fn kjit_hook_calls() -> u64;
+    pub(crate) fn kjit_chain_budget() -> u32;
 }

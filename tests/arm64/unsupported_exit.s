@@ -28,7 +28,8 @@ hot_svc_mark:
 
 .global unsupported_insn
 unsupported_insn:
-    // Only TPIDR_EL0 is decodable among system-register reads.
+    // Only TPIDR_EL0, CNTVCT_EL0 and CNTFRQ_EL0 decode among system-register
+    // reads.
     mrs x0, tpidrro_el0
     ret
 

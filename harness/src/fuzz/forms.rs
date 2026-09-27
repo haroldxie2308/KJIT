@@ -329,6 +329,11 @@ mod tests {
         assert_eq!(class("SVC.SVC_EX_exception"), FormClass::Svc);
         assert_eq!(class("LDP_gen.LDP_64_ldstpair_pre"), FormClass::Memory);
         assert_eq!(class("MOVK.MOVK_64_movewide"), FormClass::Straight);
+        // A10: each MRS instance is its own form, generated like any other.
+        for sysreg in ["TPIDR_EL0", "CNTVCT_EL0", "CNTFRQ_EL0"] {
+            let key = format!("MRS.MRS_RS_systemmove@{sysreg}");
+            assert_eq!(class(&key), FormClass::Straight, "{key}");
+        }
 
         let offset = |key: &str| {
             catalog

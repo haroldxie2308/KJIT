@@ -1069,9 +1069,18 @@ pub(crate) fn execute_insn(
             Ok(pc + 4)
         }
 
-        // The decoder admits MRS only for TPIDR_EL0 (subset.toml field constraint).
-        A64Insn::MrsMrsRsSystemmove { rt } => {
+        // The decoder admits MRS only for these registers (subset.toml field
+        // instances); all three are read-only user state.
+        A64Insn::MrsMrsRsSystemmoveTpidrEl0 { rt } => {
             state.write_reg(rt, state.tpidr_el0);
+            Ok(pc + 4)
+        }
+        A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt } => {
+            state.write_reg(rt, state.cntvct_el0);
+            Ok(pc + 4)
+        }
+        A64Insn::MrsMrsRsSystemmoveCntfrqEl0 { rt } => {
+            state.write_reg(rt, state.cntfrq_el0);
             Ok(pc + 4)
         }
 
@@ -5021,11 +5030,20 @@ mod alu_tests {
     }
 
     #[test]
-    fn mrs_reads_tpidr_el0() {
+    fn mrs_reads_its_register() {
         let mut state = MachineState::new();
         state.tpidr_el0 = 0x9800;
-        run(&mut state, A64Insn::MrsMrsRsSystemmove { rt: x(1) });
+        state.cntvct_el0 = 0x1234_5678;
+        state.cntfrq_el0 = 24_000_000;
+        run(&mut state, A64Insn::MrsMrsRsSystemmoveTpidrEl0 { rt: x(1) });
+        run(&mut state, A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt: x(2) });
+        run(&mut state, A64Insn::MrsMrsRsSystemmoveCntfrqEl0 { rt: x(3) });
+        // The model's counter does not advance.
+        run(&mut state, A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt: x(4) });
         assert_eq!(state.read_x(1), 0x9800);
+        assert_eq!(state.read_x(2), 0x1234_5678);
+        assert_eq!(state.read_x(3), 24_000_000);
+        assert_eq!(state.read_x(4), 0x1234_5678);
     }
 
     /// Every condition against every NZCV value, checked against the bit-level

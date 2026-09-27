@@ -104,9 +104,17 @@ pub struct MachineState {
     regs: [u64; 31],
     sp: u64,
     pub flags: Flags,
-    /// User TLS pointer. Read-only for translated code: `MRS Xt, TPIDR_EL0` is the
-    /// only admitted system-register access.
+    /// User TLS pointer. Read-only for translated code (`MRS Xt, TPIDR_EL0`).
     pub tpidr_el0: u64,
+    /// CNTVCT_EL0 and CNTFRQ_EL0 (A10), read-only for translated code (`MRS`).
+    /// The model's virtual counter does not advance: every read returns
+    /// `cntvct_el0`. That is one legal behaviour of the real counter (it only
+    /// guarantees non-decreasing reads, and reads within one counter tick are
+    /// equal), and the only deterministic one the original and the fragment
+    /// observe identically: they execute different instruction counts, so no
+    /// step-derived value would agree.
+    pub cntvct_el0: u64,
+    pub cntfrq_el0: u64,
     /// SIMD&FP registers V0-V31 (A9a). A fragment runs on the user's own V
     /// registers (they are never virtualized), so the fragment machine's are the
     /// user's.

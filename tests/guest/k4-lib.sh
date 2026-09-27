@@ -42,7 +42,7 @@ snap() {
 report() {
     awk -v name="$1" '
         FILENAME == ARGV[1] { a[$1] = $2; next }
-        { d[$1] = $2 - a[$1] }
+        { d[$1] = $2 - a[$1]; v[$1] = $2 }
         END {
             frac = d["hook_calls"] ? 100 * d["syscalls_in_kernel"] / d["hook_calls"] : 0
             printf "k4:   %s: in_kernel=%d/%d syscalls (%.1f%%) entries=%d chains=%d chain_cap=%d translated=%d (entry_unsupported=%d compile=%d verify=%d capped=%d neg=%d) invalidated=%d released=%d\n",
@@ -56,6 +56,14 @@ report() {
             printf "k4:   %s: fpsimd entries=%d restores=%d exit_mem=%d refused_sve_sme=%d\n",
                 name, d["fpsimd_entries"], d["fpsimd_restores"], d["fpsimd_exit_mem"],
                 d["fpsimd_refused_sve_sme"]
+            # Fragment entries per hook call that ran one (log2 buckets), and
+            # the longest chain since the module was loaded.
+            hist = ""
+            for (lo = 1; lo <= 65536; lo *= 2) {
+                k = "chain_hist_" lo "_" (2 * lo - 1)
+                if (d[k] > 0) hist = hist " " lo "-" (2 * lo - 1) ":" d[k]
+            }
+            printf "k4:   %s: entries per hook call:%s (chain_max since load %d)\n", name, hist, v["chain_max"]
         }' "$2.stats" "$3.stats"
     printf 'k4:   %s: unsupported_top (word(exits/entry_stops)): %s\n' "$1" \
         "$(awk 'FILENAME == ARGV[1] { e[$1] = $2; s[$1] = $3; next }

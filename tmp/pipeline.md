@@ -129,6 +129,10 @@ translation/runtime harness untouched.
 - Native fragment: called at its base per "ABI: fragment entry", driven by the
   same `decide_runtime_return` as `URuntime`; the call also checks x18..x29 and
   sp survive (C ABI).
+- Counter reads (A10): both native legs replace every `mrs Xt, cntvct_el0` /
+  `mrs Xt, cntfrq_el0` (original text and fragment copy) with
+  `brk #(0x4c00 | kind << 5 | Rt)`, which the signal handler emulates in place
+  (Xt = the `MachineState` value, pc + 4). See "A10", counter modelling.
 - No watchdog: a native run that never reaches a stop point hangs the test.
 
 # P1 contracts: memory sandbox, fault exits, execution budget (2026-09-27)
@@ -492,7 +496,11 @@ address.
      epilogue's `ret` are covered by the byte-exact check.
    - The last word is an unconditional `B` (nothing falls off the end).
    - Entry offsets: non-empty, aligned, in the body and before the cold region.
-5. System: only `MRS Xt, TPIDR_EL0` (the only MRS the generated subset decodes),
+5. System: only `MRS Xt, TPIDR_EL0`, and (A10) `MRS Xt, CNTVCT_EL0` and
+   `MRS Xt, CNTFRQ_EL0` (the only MRS encodings the generated subset decodes:
+   one generated form each, `Form::MrsUserReg`; every other value of
+   o0:op1:CRn:CRm:op2 is rule 1's, pinned exhaustively by
+   `mrs_is_allowed_for_exactly_the_user_readable_registers`),
    NOP, and (A7c) `DMB`/`DSB`/`ISB` with any CRm (`DSB` without nXS;
    `Form::Barrier`): allowed anywhere, exit groups included. SVC and ADR/ADRP (a
    kernel address into a user register) are rejected; BTI decodes but is
@@ -549,7 +557,8 @@ dataflow, which it replaces (rule 3's pt_regs fact is its refinement).
   fact); any other frame slot outside the user-state slots `[16, 80)` (rule 3
   already rejects every such load, rule 9 classifies it anyway).
 - Not sources: user-state frame slots; `pt_regs` contents (loaded through the
-  proven pointer); `LDTR*` and window-atomic results; `MRS TPIDR_EL0`; the
+  proven pointer); `LDTR*` and window-atomic results; `MRS` of TPIDR_EL0,
+  CNTVCT_EL0, CNTFRQ_EL0 (A10: EL1 reads what EL0 reads, module init pins it); the
   budget counter (192): the user can count its own back-edges, so it is not
   secret.
 - Transfer: a write gets the kernel mark if the instruction reads SP or a
@@ -822,8 +831,10 @@ where the implementation is stricter than it:
   at most 16 pages and 16384 reads (`build_cfg` has no size bound of its own
   and quadratic bookkeeping).
 - Teardown: mm release (`release` callback) empties the table and unhashes.
-  Module exit: remove debugfs (waits for writers), unregister the hook (waits
-  for calls in flight), claim and empty every `kjit_mm`, `mmu_notifier_put`,
+  Module exit: remove debugfs (waits for writers), clear `enable` and wait for
+  the module's own SRCU (`kjit_run_srcu`) around every hook call, i.e. every
+  fragment run (A10, see "A10", unload race), unregister the hook (waits for
+  calls in flight), claim and empty every `kjit_mm`, `mmu_notifier_put`,
   `mmu_notifier_synchronize`, `rcu_barrier`, `destroy_workqueue`.
 
 ## Known limitations (in addition to rseq)
@@ -955,14 +966,16 @@ mode"), `runtime/exec.rs`, `runtime/translate.rs`, `runtime/stats.rs`,
 ## Chaining rules
 
 - On `Bl`/`Blr`/`Br`/`Ret` with target T: if the hook call has made fewer than
-  `MAX_CHAIN` (16) chained entries and `kjit_can_run` holds (it now also checks
+  `chain_budget` fragment entries (the first one included; A10, was a fixed
+  `MAX_CHAIN` of 16 chained entries) and `kjit_can_run` holds (it also checks
   `enable`), continue at T's verified entry in the fragment that just exited,
   else at the fragment for (mm, T); each chained entry counts `chains`.
   Otherwise userspace resumes at T; if the lookups ran and failed, T is
-  profiled. Reaching the cap counts `chain_cap`.
-- Every entry is budget-bounded and the run conditions are re-checked before
-  each entry and before each in-kernel syscall, so a hook call spends at most
-  16 budget-bounded runs in fragments between syscalls.
+  profiled. Reaching the budget counts `chain_cap`.
+- Every entry is back-edge-budget-bounded and the run conditions are
+  re-checked before each entry and before each in-kernel syscall, so a hook
+  call spends at most `chain_budget` bounded runs in fragments between two
+  syscalls. See "A10" for what the budget protects and its default.
 
 ## Lifetimes
 
@@ -1054,10 +1067,11 @@ mode"), `runtime/exec.rs`, `runtime/translate.rs`, `runtime/stats.rs`,
   values; specgen folds them into mask/value and drops them from the generated
   operands. A constraint on an unconfigured form, a missing/fixed field, a field
   with an operand role, or an out-of-range value fails generation.
-- `MRS.MRS_RS_systemmove` is constrained to TPIDR_EL0 (`o0=1 op1=3 CRn=13 CRm=0
-  op2=2`). Kernel assumption (pin in K-tasks): while a fragment runs at EL1,
-  TPIDR_EL0 still holds the current task's user TLS pointer (Linux switches it
-  only on context switch), so the MRS is exact without rewriting.
+- `MRS.MRS_RS_systemmove` was constrained to TPIDR_EL0 (`o0=1 op1=3 CRn=13 CRm=0
+  op2=2`); since A10 it has three field instances instead (see "A10"). Kernel
+  assumption: while a fragment runs at EL1, TPIDR_EL0 still holds the current
+  task's user TLS pointer (Linux switches it only on context switch), so the
+  MRS is exact without rewriting.
 - SMULH/UMULH pin their should-be-one `Ra` to 31; other values are constrained
   unpredictable and stay undecodable.
 
@@ -2356,3 +2370,183 @@ for `fp_switch`, `fpsimd_exit_mem >= 1` per fault mode and `>= 100` for
   A9a form reads them.
 - The worst-case bracket duration on bare metal: all numbers are wall clock
   inside an HVF guest, host stalls included.
+
+# A10: chain budget and counter reads (2026-09-27)
+
+## Chain budget (kernel module)
+
+- Root cause of the A9b plateau: `MAX_CHAIN = 16` was a placeholder, not
+  derived from the invariant it protects. Chaining already re-checks every run
+  condition (signals, both need_resched bits, work flags, `enable`) before
+  every entry, so the cap only has to bound the work one hook call does in
+  fragments without a syscall (a user-mode transition or voluntary sleep is
+  what RCU Tasks waits for; the syscall loop's 4096-per-kernel-entry cap
+  exists for the same reason).
+- Now `chain_budget`: fragment entries per hook call, the first one included
+  (`runtime/exec.rs` `run_chain`; 1 disables chaining). Module parameter
+  (`param_set_uint_minmax`) and debugfs `chain_budget` (writes outside
+  1..65536 fail with `-EINVAL`); read once per hook call. `chain_cap` still
+  counts branch exits that the budget stopped.
+- Stats: `chain_max` (most entries in one hook call since load) and
+  `chain_hist_<lo>_<hi>` (hook calls that ran a fragment, by entries, log2
+  buckets 1..65536, exact because the budget is at most 2^16).
+- Default 1024. Measured with `chain_budget=65536` (kjit-guest, redis-benchmark
+  `-n 100000`, auto mode; entries per hook call): default run 2.0M calls with
+  32-63 entries, 0.93M with 128-255, 1.07M with 256-511, max 505; 256
+  clients the same shape; `-P 16` 16-request batches 2048-8191 entries (70k
+  calls, max 4980). 1024 covers every non-pipelined request path with 2x
+  headroom. A pipelined batch grows with the pipeline depth, so no fixed
+  budget covers all of them; one that hits the budget costs one extra EL0
+  round trip per 1024 entries (the default run averaged ~60 ns of server
+  wall clock per entry, syscalls included, so well under 1%), not
+  correctness.
+- Bound: one hook call runs at most `chain_budget` entries, each bounded by
+  the back-edge budget (4096) and ended by a branch exit; a user loop that is
+  CPU-bound but calls functions (no syscall) returns to userspace after
+  `chain_budget` entries and finishes natively until its next syscall
+  (`tests/guest/call_loop.c`: 5000 calls per syscall, one `chain_cap` per
+  syscall, `chain_max` == `chain_budget`). Worst case per hook call is
+  `chain_budget` x the longest budget-bounded run (the largest seen, glibc's
+  64-byte memcpy loop, ~100 us per run): 1024 x 100 us = ~0.1 s, 64x the old
+  16-entry bound.
+- Preemption does not depend on the budget: the guest profiles are `PREEMPT`
+  (full; `PREEMPT_LAZY` and `PREEMPT_DYNAMIC` off), where the tick's
+  `resched_curr_lazy()` sets `TIF_NEED_RESCHED` (`get_lazy_tif_bit()`, lazy
+  only with `PREEMPT_LAZY`), and the IRQ return to EL1 preempts a running
+  non-FP/SIMD fragment directly (`preempt_count` 0). The per-entry
+  `need_resched` check matters for `PREEMPT_NONE`/`VOLUNTARY`/`LAZY`; an
+  FP/SIMD run is not preemptible, but its bracket ends with every entry.
+
+## Unload race (found by A10, fixed in the module)
+
+- `kjit_unregister_hook()` (patch 0001) disables the hook's static key and
+  clears the ops pointer before it waits for the calls in flight, and
+  `search_kjit_extables()` (patch 0002) returns nothing once the key is off.
+  A fragment still running in a hook call in flight during `rmmod` that takes
+  a user-access fault then has no fixup: an oops. With 16-entry chains the
+  window was small; with 1024 it hit `jit_churn` in `make guest-tests-k3`
+  (an FP/SIMD fragment's `str q0` under `pagefault_disable()`, first touch of
+  a fresh page, module `GOING`).
+- Fix (module): every hook call runs inside the module's own SRCU read section
+  (`kjit_run_srcu`) and checks `enable` inside it; module exit clears `enable`
+  and `synchronize_srcu()`s before it unregisters, so no fragment runs once
+  the extable search goes away. In-flight chains end at their next run
+  condition check.
+- Not fixed at the root: the patch's unregister order is still wrong for any
+  runtime that does not drain its own runs (it should keep the extable search
+  until `synchronize_srcu()` has returned). Changing it changes the shared
+  patched kernel tree; left for a decision.
+
+## Counter reads (translator, verifier, module)
+
+- Forms: `MRS.MRS_RS_systemmove` becomes three generated instances,
+  `MrsMrsRsSystemmove{TpidrEl0,CntvctEl0,CntfrqEl0}` (keys
+  `MRS.MRS_RS_systemmove@<REG>`), through the new
+  `[decode.field_instances."<form>"]` table in `subset.toml`: per instance a
+  field-constraint set (same checks as `field_constraints`, plus: a form is in
+  only one of the two tables, at least one instance, names `[A-Z0-9_]+`, no
+  two instances decode the same words). Every other system register stays
+  undecodable. CNTVCTSS_EL0 (FEAT_ECV) is not admitted: the XML has no
+  system-register database to check it against, the hosts have no ECV
+  (`/proc/cpuinfo` has no `ecv`), and without ECV it is UNDEFINED, which a
+  fragment would execute at EL1. The guest kernel's vDSO reads it only under
+  the `ARM64_HAS_ECV` alternative (`__arch_counter_get_cntvct()`).
+- Semantics at EL1: `VirtualCounterTimer()` (shared pseudocode) is
+  `PhysicalCountInt() - CNTVOFF_EL2` for EL0 and EL1 alike (outside a VHE
+  host, where both skip the offset); CNTFRQ_EL0 is one register. Equal to the
+  EL0 read only while EL0 reads the hardware: module init requires, on every
+  online CPU, `CNTKCTL_EL1.EL0VCTEN` set (also what makes CNTFRQ_EL0
+  readable at EL0) and no out-of-line erratum handler for CNTVCT
+  (`has_erratum_handler(read_cntvct_el0)`; `arch_counter_set_user_access()`
+  clears EL0VCTEN on such a CPU and the kernel emulates EL0 reads with the
+  workaround's stable read). Both are per CPU and set at
+  `CPUHP_AP_ARM_ARCH_TIMER_STARTING`, so the check is a `CPUHP_AP_ONLINE_DYN`
+  callback: it runs on every online CPU at load (failure: `-ENODEV`, the load
+  fails) and on every CPU onlined while kjit is loaded (failure: that CPU does
+  not come online). EL0VCTEN changes later only for compat tasks
+  (`ARM64_ERRATUM_1418040`), which never run fragments.
+- Verifier: rule 5 allows exactly the three instances (`Form::MrsUserReg`);
+  rule 9 treats their results as user values (they read no GPR, so the write
+  clears any kernel mark, like `movz`). Tests: every o0:op1:CRn:CRm:op2 value
+  x 4 Rt in the body and an exit group (exactly three accepted, the rest
+  `Undecodable`); mutation class "insert MRS of a non-allowlisted system
+  register (A10)" (15 words: CNTPCT, CNTPCTSS, CNTVCTSS, CNTV_CTL, TPIDRRO,
+  CNTKCTL_EL1, TPIDR_EL1, SP_EL0, CNTVOFF_EL2, MIDR_EL1, CTR_EL0, NZCV, FPCR,
+  the o0 = 0 twin of CNTVCT, `msr cntvct_el0`) at every body word, 100%
+  rejected.
+- Counter modelling, interpreter: `MachineState::{cntvct_el0, cntfrq_el0}`,
+  read-only, set in the initial state (`FIXTURE_CNTVCT` = 0xa1b2c3d4e5,
+  `FIXTURE_CNTFRQ` = 24 MHz for fixtures and the fuzzer) and never advanced.
+  A step-derived counter cannot work: the fragment executes more instructions
+  than the original (prologue, fills, budget checks), so no dynamic index is
+  common to both. A constant is a legal behaviour of the real counter (reads
+  are only non-decreasing; two reads within one tick are equal) and keeps the
+  differential check exact: a read routed to the wrong register or a lost
+  value shows in every register computed from it.
+- Counter modelling, native runner: hardware reads differ run to run and from
+  the constant, so both native legs replace every counter MRS (original text
+  and fragment copy) with `brk #(0x4c00 | kind << 5 | Rt)`, and the signal
+  handler emulates it in place (Xt = the run's `MachineState` value, XZR
+  ignored, pc + 4, the run's TPIDR_EL0 back last), like the mocked SVC.
+  Every register is still compared exactly. Not checked natively: only the
+  hardware read itself (EL0 readability, which the module pins at EL1). A
+  patched word counts as native-unobservable if the original reads it as data.
+- Fixture `tests/arm64/counter_read.s`: the vDSO clock_gettime shape (seq
+  load, `dmb ishld`, `isb`, `mrs x11, cntvct_el0`, `mrs x12, cntfrq_el0`, the
+  dependent `ldr xzr` ordering load, seq re-check, ticks to s/ns with
+  `udiv`/`msub`/`mul`, stores, `svc` loop), and reads into x29, x16, x17, x9,
+  x10 and XZR. LLVM encoding cases for all three instances; the fuzzer draws
+  them from the generated metadata like every form (`MRS` section).
+
+## Measurements (kjit-guest, M1 host, HVF, 4 vCPUs)
+
+- `make guest-tests`: ALL PASS; `call_loop` 2000 `chain_cap` for 2000
+  syscalls, `chain_max` 1024. `make guest-tests-k3`: ALL PASS (after the
+  unload-race fix; the first run hit it, see above).
+- `make redis-campaign GUEST_PROFILE=kjit-guest`: RESULT PASS. Suite 2866 /
+  2868 passed without / with KJIT, 0 failed, same outcome for all 2518
+  distinct tests; 40.0% of the suite's syscalls in the kernel (13.8M of
+  34.4M; A9b: 5.5%), 7.6G fragment entries, 46355 translations, no verifier
+  rejection or invalid exit. Benchmark in-kernel fraction (A9b -> A10):
+  default 0.0% -> 78.8%, `-P 16` 1.6% -> 39.5%, 256 clients 0.7% -> 78.7%
+  (~140 fragment entries per syscall). Default and 256-client runs never hit
+  the budget (`chain_cap` 0, longest chain 505 entries); `-P 16` hits it
+  71371 times (its 16-request batches, 2048-8191 entries measured with a
+  65536 budget). Datasets identical KJIT off and on; 10 adversarial tests
+  PASS; dmesg clean.
+- `make redis-campaign GUEST_PROFILE=kjit-guest-debug K4_ITERATIONS=3`
+  (generic KASAN, lockdep incl. PROVE_RCU, DEBUG_ATOMIC_SLEEP): RESULT PASS.
+  Suite 2853 / 2880 passed without / with KJIT, 0 failed, same outcome for
+  all 2518 distinct tests, 39.5% in kernel (13.8M of 35.0M); 30 adversarial
+  runs (15 module unload/reload cycles under load among them) and 3
+  consistency checks PASS; benchmark 79.7% / 39.5% / 79.7%; no BUG/WARNING/
+  KASAN/lockdep/RCU line in any serial log or the campaign dmesg (only the
+  boot banners). `fcmp d8, d8` (0x1e682100) shows up in the debug run's
+  benchmark top (~96k).
+- New `unsupported_top` head. Benchmark: `ldr d0, [x14, x12, lsl #3]`
+  (0xfc6c79c0, SIMD&FP register offset, 104k), `ucvtf d0, x11` (0x9e630160,
+  36k), `yield` (0xd503203f). Suite: `str q0, [x0, x3]` (0x3ca36800, 7.9M),
+  `ucvtf d0, x11` (1.2M), `ldr d0, [x14, x12, lsl #3]` (0.74M), `dc zva, x3`
+  (0xd50b7423, 0.52M), `scvtf d8, x1` (0x9e620028, 0.17M), `mrs x21, fpcr`
+  (0xd53b4415, 82k). `mrs cntvct_el0` (A9b's top, 2.0M) is gone.
+- Speed (not a goal, but it moved a lot): redis-benchmark `-t set,get
+  -n 200000`, one server, after a warm-up run (req/s SET / GET):
+  KJIT off 274k / 275k (`-P 16`: 1.85M / 2.53M); `chain_budget` 16 (A9b
+  behaviour, 0% in kernel) 293k / 305k (1.53M / 2.15M); `chain_budget` 1024
+  (98% in kernel) 62k / 71k (332k / 329k). Running redis's request path in
+  fragments is 4-6x slower than native: ~140 fragment entries per syscall,
+  each paying the call trampoline, the prologue/epilogue `pt_regs` round
+  trip, a table lookup and refcount for cross-fragment chains and, for
+  FP/SIMD fragments, the bracket; the mode switches saved (~120 ns each) do
+  not pay for that. Entry cost, not coverage, is now the limit.
+
+## Not verified
+
+- CPU hotplug: the counter check's online callback is exercised only at load
+  (the guest never onlines a CPU later); the erratum branch and the
+  EL0VCTEN-clear branch never run on this hardware.
+- The worst-case time of one hook call (1024 budget-bounded runs) was not
+  measured; the ~0.1 s bound is computed from the A9b per-run maximum.
+- Preemption inside chains under `PREEMPT_NONE`/`VOLUNTARY`/`LAZY`: argued
+  from the per-entry `need_resched` check, not run (the guest is `PREEMPT`).
+- CNTVCTSS_EL0 and hosts with FEAT_ECV.

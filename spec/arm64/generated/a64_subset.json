@@ -17290,6 +17290,260 @@
           }
         ],
         "mask": "0xffffffe0",
+        "value": "0xd53be000",
+        "fields": [
+          {
+            "name": "L",
+            "hi": 21,
+            "lo": 21,
+            "width": 1,
+            "shift": 21,
+            "mask": "0x00200000",
+            "variable": false
+          },
+          {
+            "name": "o0",
+            "hi": 19,
+            "lo": 19,
+            "width": 1,
+            "shift": 19,
+            "mask": "0x00080000",
+            "variable": false
+          },
+          {
+            "name": "op1",
+            "hi": 18,
+            "lo": 16,
+            "width": 3,
+            "shift": 16,
+            "mask": "0x00070000",
+            "variable": false
+          },
+          {
+            "name": "CRn",
+            "hi": 15,
+            "lo": 12,
+            "width": 4,
+            "shift": 12,
+            "mask": "0x0000f000",
+            "variable": false
+          },
+          {
+            "name": "CRm",
+            "hi": 11,
+            "lo": 8,
+            "width": 4,
+            "shift": 8,
+            "mask": "0x00000f00",
+            "variable": false
+          },
+          {
+            "name": "op2",
+            "hi": 7,
+            "lo": 5,
+            "width": 3,
+            "shift": 5,
+            "mask": "0x000000e0",
+            "variable": false
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
+        "asm": "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+        "instance": "CNTFRQ_EL0"
+      },
+      {
+        "section_id": "MRS",
+        "heading": "MRS",
+        "title": "MRS -- A64",
+        "iclass": "System",
+        "encoding_name": "MRS_RS_systemmove",
+        "encoding_label": "",
+        "mnemonic": "MRS",
+        "docvars": {
+          "instr-class": "system",
+          "isa": "A64",
+          "mnemonic": "MRS"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__4",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<systemreg>",
+            "link": "MRS_values",
+            "hover": "Is a System register name, encoded in \"o0:op1:CRn:CRm:op2\".  The System register names are defined in x[AArch64 System Register Descriptions](autogen.registers.AArch64)."
+          },
+          {
+            "text": "<op0>",
+            "link": "op0_option__2",
+            "hover": "Is an unsigned immediate, "
+          },
+          {
+            "text": "<op1>",
+            "link": "op1",
+            "hover": "Is a 3-bit unsigned immediate, in the range 0 to 7, encoded in the \"op1\" field."
+          },
+          {
+            "text": "<Cn>",
+            "link": "Cn",
+            "hover": "Is a name 'Cn', with 'n' in the range 0 to 15, encoded in the \"CRn\" field."
+          },
+          {
+            "text": "<Cm>",
+            "link": "Cm",
+            "hover": "Is a name 'Cm', with 'm' in the range 0 to 15, encoded in the \"CRm\" field."
+          },
+          {
+            "text": "<op2>",
+            "link": "op2",
+            "hover": "Is a 3-bit unsigned immediate, in the range 0 to 7, encoded in the \"op2\" field."
+          }
+        ],
+        "mask": "0xffffffe0",
+        "value": "0xd53be040",
+        "fields": [
+          {
+            "name": "L",
+            "hi": 21,
+            "lo": 21,
+            "width": 1,
+            "shift": 21,
+            "mask": "0x00200000",
+            "variable": false
+          },
+          {
+            "name": "o0",
+            "hi": 19,
+            "lo": 19,
+            "width": 1,
+            "shift": 19,
+            "mask": "0x00080000",
+            "variable": false
+          },
+          {
+            "name": "op1",
+            "hi": 18,
+            "lo": 16,
+            "width": 3,
+            "shift": 16,
+            "mask": "0x00070000",
+            "variable": false
+          },
+          {
+            "name": "CRn",
+            "hi": 15,
+            "lo": 12,
+            "width": 4,
+            "shift": 12,
+            "mask": "0x0000f000",
+            "variable": false
+          },
+          {
+            "name": "CRm",
+            "hi": 11,
+            "lo": 8,
+            "width": 4,
+            "shift": 8,
+            "mask": "0x00000f00",
+            "variable": false
+          },
+          {
+            "name": "op2",
+            "hi": 7,
+            "lo": 5,
+            "width": 3,
+            "shift": 5,
+            "mask": "0x000000e0",
+            "variable": false
+          },
+          {
+            "name": "Rt",
+            "hi": 4,
+            "lo": 0,
+            "width": 5,
+            "shift": 0,
+            "mask": "0x0000001f",
+            "variable": true
+          }
+        ],
+        "operand_roles": [
+          {
+            "kind": "RegWrite",
+            "field": "Rt",
+            "width": "X64"
+          }
+        ],
+        "asm": "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+        "instance": "CNTVCT_EL0"
+      },
+      {
+        "section_id": "MRS",
+        "heading": "MRS",
+        "title": "MRS -- A64",
+        "iclass": "System",
+        "encoding_name": "MRS_RS_systemmove",
+        "encoding_label": "",
+        "mnemonic": "MRS",
+        "docvars": {
+          "instr-class": "system",
+          "isa": "A64",
+          "mnemonic": "MRS"
+        },
+        "asm_operands": [
+          {
+            "text": "<Xt>",
+            "link": "XtOrXZR__4",
+            "hover": "Is the 64-bit name of the general-purpose destination register, encoded in the \"Rt\" field."
+          },
+          {
+            "text": "<systemreg>",
+            "link": "MRS_values",
+            "hover": "Is a System register name, encoded in \"o0:op1:CRn:CRm:op2\".  The System register names are defined in x[AArch64 System Register Descriptions](autogen.registers.AArch64)."
+          },
+          {
+            "text": "<op0>",
+            "link": "op0_option__2",
+            "hover": "Is an unsigned immediate, "
+          },
+          {
+            "text": "<op1>",
+            "link": "op1",
+            "hover": "Is a 3-bit unsigned immediate, in the range 0 to 7, encoded in the \"op1\" field."
+          },
+          {
+            "text": "<Cn>",
+            "link": "Cn",
+            "hover": "Is a name 'Cn', with 'n' in the range 0 to 15, encoded in the \"CRn\" field."
+          },
+          {
+            "text": "<Cm>",
+            "link": "Cm",
+            "hover": "Is a name 'Cm', with 'm' in the range 0 to 15, encoded in the \"CRm\" field."
+          },
+          {
+            "text": "<op2>",
+            "link": "op2",
+            "hover": "Is a 3-bit unsigned immediate, in the range 0 to 7, encoded in the \"op2\" field."
+          }
+        ],
+        "mask": "0xffffffe0",
         "value": "0xd53bd040",
         "fields": [
           {
@@ -17363,7 +17617,8 @@
             "width": "X64"
           }
         ],
-        "asm": "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )"
+        "asm": "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+        "instance": "TPIDR_EL0"
       }
     ]
   },

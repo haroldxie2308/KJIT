@@ -87,6 +87,27 @@ const HINT_WORDS: &[(&str, u32)] = &[
     ("chkfeat x16", 0xd503_251f),
 ];
 
+/// System-register reads next to the allowlisted MRS instances (A10: TPIDR_EL0,
+/// CNTVCT_EL0, CNTFRQ_EL0). None decodes: rule 1 rejects each anywhere, so no
+/// other system register is ever read at EL1.
+const MRS_OTHER_WORDS: &[(&str, u32)] = &[
+    ("mrs x0, cntpct_el0", 0xd53b_e020),
+    ("mrs x0, cntpctss_el0", 0xd53b_e0a0),
+    ("mrs x0, cntvctss_el0", 0xd53b_e0c0),
+    ("mrs x0, cntv_ctl_el0", 0xd53b_e320),
+    ("mrs x0, tpidrro_el0", 0xd53b_d060),
+    ("mrs x0, cntkctl_el1", 0xd538_e100),
+    ("mrs x0, tpidr_el1", 0xd538_d080),
+    ("mrs x0, sp_el0", 0xd538_4100),
+    ("mrs x0, cntvoff_el2", 0xd53c_e060),
+    ("mrs x0, midr_el1", 0xd538_0000),
+    ("mrs x0, ctr_el0", 0xd53b_0020),
+    ("mrs x0, nzcv", 0xd53b_4200),
+    ("mrs x0, fpcr", 0xd53b_4400),
+    ("mrs x0, s2_3_c14_c0_2 (CNTVCT_EL0 with o0 = 0)", 0xd533_e040),
+    ("msr cntvct_el0, x0", 0xd51b_e040),
+];
+
 /// BTI, every target (A7d). Translation rephrases it to `NOP`, so it is a
 /// user-only form: rejected anywhere in a fragment.
 const BTI_WORDS: &[(&str, u32)] = &[
@@ -504,6 +525,14 @@ impl Suite {
         }
         for (what, word) in HINT_WORDS {
             self.replace_everywhere("insert non-subset hint / PAC (A7d)", fixture, *word, what);
+        }
+        for (what, word) in MRS_OTHER_WORDS {
+            self.replace_everywhere(
+                "insert MRS of a non-allowlisted system register (A10)",
+                fixture,
+                *word,
+                what,
+            );
         }
         for (what, word) in USER_ONLY_WORDS {
             self.replace_everywhere("insert user-only memory form (A7b)", fixture, *word, what);
@@ -2228,6 +2257,7 @@ fn mutation_word_lists_are_classified_as_named() {
         .iter()
         .chain(BARRIER_LIKE_WORDS)
         .chain(HINT_WORDS)
+        .chain(MRS_OTHER_WORDS)
     {
         assert!(decode(*word).is_none(), "{what} decodes");
     }

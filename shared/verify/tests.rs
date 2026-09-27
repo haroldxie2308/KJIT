@@ -380,7 +380,7 @@ fn user_only_memory_forms_are_rejected_anywhere() {
 /// Rule 5 (A7c): DMB/DSB/ISB are allowlisted with every CRm value, in the body
 /// and in an exit group; nothing else of the barrier/hint/system space decodes.
 #[test]
-fn barriers_are_the_only_allowed_system_instructions_besides_mrs_tpidr() {
+fn barriers_are_the_only_allowed_system_instructions_besides_mrs_user_regs() {
     for crm in 0..16 {
         for barrier in [
             A64Insn::DmbDmbBoBarriers { crm },
@@ -425,6 +425,57 @@ fn barriers_are_the_only_allowed_system_instructions_besides_mrs_tpidr() {
             Some(VerifyRule::Undecodable { word }),
             "{word:#010x}"
         );
+    }
+}
+
+/// Rule 5 (A10): MRS is allowlisted for exactly TPIDR_EL0, CNTVCT_EL0 and
+/// CNTFRQ_EL0, with any Rt, in the body and in an exit group; every other value of
+/// the system-register field (o0:op1:CRn:CRm:op2, all 2^15) is undecodable. Rule 9:
+/// their results are user values.
+#[test]
+fn mrs_is_allowed_for_exactly_the_user_readable_registers() {
+    const MRS: u32 = 0xd530_0000;
+    let sysreg = |op1: u32, crn: u32, crm: u32, op2: u32| {
+        (1 << 14) | (op1 << 11) | (crn << 7) | (crm << 3) | op2
+    };
+    let allowed = [
+        sysreg(3, 13, 0, 2), // TPIDR_EL0
+        sysreg(3, 14, 0, 2), // CNTVCT_EL0
+        sysreg(3, 14, 0, 0), // CNTFRQ_EL0
+    ];
+    for reg in 0..(1_u32 << 15) {
+        for rt in [0, 12, 30, 31] {
+            let word = MRS | (reg << 5) | rt;
+            // In the body and first in the user access's exit group.
+            let body = [movz(1, 1), ldtr(0, 1), b_epi(2), movz(1, 1), movz(9, 5), b_epi(5)];
+            let mut frag = Frag::new(&body).site(1, 3);
+            for index in [0, 3] {
+                let at = BODY_OFFSET + 4 * index;
+                frag.code[at..at + 4].copy_from_slice(&word.to_le_bytes());
+            }
+            let expected = if allowed.contains(&reg) {
+                None
+            } else {
+                Some(VerifyRule::Undecodable { word })
+            };
+            assert_eq!(frag.rule(), expected, "{word:#010x}");
+        }
+    }
+
+    // A counter read overwrites a kernel value like any other write.
+    let orr = A64Insn::OrrLogShiftOrr64LogShift {
+        shift: 0,
+        rm: x(12),
+        imm6: uimm(0, 6),
+        rn: x(31),
+        rd: x(0),
+    };
+    for mrs in [
+        A64Insn::MrsMrsRsSystemmoveTpidrEl0 { rt: x(12) },
+        A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt: x(12) },
+        A64Insn::MrsMrsRsSystemmoveCntfrqEl0 { rt: x(12) },
+    ] {
+        assert_eq!(Frag::new(&[mrs, orr, b_epi(2)]).rule(), None, "{mrs:?}");
     }
 }
 
@@ -693,7 +744,13 @@ fn control_flow_rules() {
         }),
         Some(VerifyRule::PcRelative)
     );
-    assert_eq!(rule(A64Insn::MrsMrsRsSystemmove { rt: x(0) }), None);
+    for mrs in [
+        A64Insn::MrsMrsRsSystemmoveTpidrEl0 { rt: x(0) },
+        A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt: x(0) },
+        A64Insn::MrsMrsRsSystemmoveCntfrqEl0 { rt: x(0) },
+    ] {
+        assert_eq!(rule(mrs), None, "{mrs:?}");
+    }
     assert_eq!(rule(A64Insn::NopNopHiHints {}), None);
 
     for target in [0, 4, EPI + 4, BODY_OFFSET as i64 - 4, at(2) as i64, -4] {
@@ -1260,7 +1317,7 @@ fn classification_agrees_with_generated_roles() {
             rules::Form::Alu
             | rules::Form::Nop
             | rules::Form::Barrier
-            | rules::Form::MrsTpidrEl0 => {
+            | rules::Form::MrsUserReg => {
                 assert!(!memory && !control, "{}", insn.key());
                 assert!(!insn.key().starts_with("SVC"), "{}", insn.key());
                 // A9a: a form naming a V register is `Simd`, never `Alu`.

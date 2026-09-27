@@ -1003,7 +1003,13 @@ pub enum A64Insn {
         rn: A64Reg,
         rd: A64Reg,
     },
-    MrsMrsRsSystemmove {
+    MrsMrsRsSystemmoveCntfrqEl0 {
+        rt: A64Reg,
+    },
+    MrsMrsRsSystemmoveCntvctEl0 {
+        rt: A64Reg,
+    },
+    MrsMrsRsSystemmoveTpidrEl0 {
         rt: A64Reg,
     },
     TbzTbzOnlyTestbranch {
@@ -3465,7 +3471,9 @@ impl A64Insn {
             Self::Rev16IntRev1632Dp1src { .. } => "REV16_int.REV16_32_dp_1src",
             Self::Rev16IntRev1664Dp1src { .. } => "REV16_int.REV16_64_dp_1src",
             Self::Rev32IntRev3264Dp1src { .. } => "REV32_int.REV32_64_dp_1src",
-            Self::MrsMrsRsSystemmove { .. } => "MRS.MRS_RS_systemmove",
+            Self::MrsMrsRsSystemmoveCntfrqEl0 { .. } => "MRS.MRS_RS_systemmove@CNTFRQ_EL0",
+            Self::MrsMrsRsSystemmoveCntvctEl0 { .. } => "MRS.MRS_RS_systemmove@CNTVCT_EL0",
+            Self::MrsMrsRsSystemmoveTpidrEl0 { .. } => "MRS.MRS_RS_systemmove@TPIDR_EL0",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ.TBZ_only_testbranch",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ.TBNZ_only_testbranch",
             Self::LdrImmGenLdr32LdstImmpost { .. } => "LDR_imm_gen.LDR_32_ldst_immpost",
@@ -4049,7 +4057,9 @@ impl A64Insn {
             Self::Rev16IntRev1632Dp1src { .. } => "REV16",
             Self::Rev16IntRev1664Dp1src { .. } => "REV16",
             Self::Rev32IntRev3264Dp1src { .. } => "REV32",
-            Self::MrsMrsRsSystemmove { .. } => "MRS",
+            Self::MrsMrsRsSystemmoveCntfrqEl0 { .. } => "MRS",
+            Self::MrsMrsRsSystemmoveCntvctEl0 { .. } => "MRS",
+            Self::MrsMrsRsSystemmoveTpidrEl0 { .. } => "MRS",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ",
             Self::LdrImmGenLdr32LdstImmpost { .. } => "LDR",
@@ -4633,7 +4643,9 @@ impl A64Insn {
             Self::Rev16IntRev1632Dp1src { .. } => "REV16 <Wd> , <Wn>",
             Self::Rev16IntRev1664Dp1src { .. } => "REV16 <Xd> , <Xn>",
             Self::Rev32IntRev3264Dp1src { .. } => "REV32 <Xd> , <Xn>",
-            Self::MrsMrsRsSystemmove { .. } => "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+            Self::MrsMrsRsSystemmoveCntfrqEl0 { .. } => "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+            Self::MrsMrsRsSystemmoveCntvctEl0 { .. } => "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+            Self::MrsMrsRsSystemmoveTpidrEl0 { .. } => "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ <R> <t> , # <imm> , <label>",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ <R> <t> , # <imm> , <label>",
             Self::LdrImmGenLdr32LdstImmpost { .. } => "LDR <Wt> , [ <Xn|SP> ], # <simm>",
@@ -6119,9 +6131,19 @@ impl A64Insn {
                 word |= encode_a64_field("REV32_int.REV32_64_dp_1src", "Rd", rd.enc() as u32, 5, 0)?;
                 Ok(word)
             }
-            Self::MrsMrsRsSystemmove { rt } => {
+            Self::MrsMrsRsSystemmoveCntfrqEl0 { rt } => {
+                let mut word = 0xd53be000;
+                word |= encode_a64_field("MRS.MRS_RS_systemmove@CNTFRQ_EL0", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MrsMrsRsSystemmoveCntvctEl0 { rt } => {
+                let mut word = 0xd53be040;
+                word |= encode_a64_field("MRS.MRS_RS_systemmove@CNTVCT_EL0", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MrsMrsRsSystemmoveTpidrEl0 { rt } => {
                 let mut word = 0xd53bd040;
-                word |= encode_a64_field("MRS.MRS_RS_systemmove", "Rt", rt.enc() as u32, 5, 0)?;
+                word |= encode_a64_field("MRS.MRS_RS_systemmove@TPIDR_EL0", "Rt", rt.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::TbzTbzOnlyTestbranch { b5, b40, imm14, rt } => {
@@ -9750,7 +9772,9 @@ impl A64Insn {
             Self::Rev16IntRev1664Dp1src { rd, .. } if field == "Rd" => Some(*rd),
             Self::Rev32IntRev3264Dp1src { rn, .. } if field == "Rn" => Some(*rn),
             Self::Rev32IntRev3264Dp1src { rd, .. } if field == "Rd" => Some(*rd),
-            Self::MrsMrsRsSystemmove { rt, .. } if field == "Rt" => Some(*rt),
+            Self::MrsMrsRsSystemmoveCntfrqEl0 { rt, .. } if field == "Rt" => Some(*rt),
+            Self::MrsMrsRsSystemmoveCntvctEl0 { rt, .. } if field == "Rt" => Some(*rt),
+            Self::MrsMrsRsSystemmoveTpidrEl0 { rt, .. } if field == "Rt" => Some(*rt),
             Self::TbzTbzOnlyTestbranch { rt, .. } if field == "Rt" => Some(*rt),
             Self::TbnzTbnzOnlyTestbranch { rt, .. } if field == "Rt" => Some(*rt),
             Self::LdrImmGenLdr32LdstImmpost { rt, .. } if field == "Rt" => Some(*rt),
@@ -12084,9 +12108,17 @@ impl A64Insn {
                 validate_a64_rewrite_field("REV32_int.REV32_64_dp_1src", "Rd", encoded, 5)?;
                 Ok(Self::Rev32IntRev3264Dp1src { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
             }
-            Self::MrsMrsRsSystemmove { .. } if field == "Rt" => {
-                validate_a64_rewrite_field("MRS.MRS_RS_systemmove", "Rt", encoded, 5)?;
-                Ok(Self::MrsMrsRsSystemmove { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            Self::MrsMrsRsSystemmoveCntfrqEl0 { .. } if field == "Rt" => {
+                validate_a64_rewrite_field("MRS.MRS_RS_systemmove@CNTFRQ_EL0", "Rt", encoded, 5)?;
+                Ok(Self::MrsMrsRsSystemmoveCntfrqEl0 { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::MrsMrsRsSystemmoveCntvctEl0 { .. } if field == "Rt" => {
+                validate_a64_rewrite_field("MRS.MRS_RS_systemmove@CNTVCT_EL0", "Rt", encoded, 5)?;
+                Ok(Self::MrsMrsRsSystemmoveCntvctEl0 { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::MrsMrsRsSystemmoveTpidrEl0 { .. } if field == "Rt" => {
+                validate_a64_rewrite_field("MRS.MRS_RS_systemmove@TPIDR_EL0", "Rt", encoded, 5)?;
+                Ok(Self::MrsMrsRsSystemmoveTpidrEl0 { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
             }
             Self::TbzTbzOnlyTestbranch { b5, b40, imm14, .. } if field == "Rt" => {
                 validate_a64_rewrite_field("TBZ.TBZ_only_testbranch", "Rt", encoded, 5)?;
@@ -15659,7 +15691,9 @@ impl A64Insn {
             Self::Rev16IntRev1632Dp1src { .. } => OPERANDS_REV16_INT_REV16_32_DP_1SRC,
             Self::Rev16IntRev1664Dp1src { .. } => OPERANDS_REV16_INT_REV16_64_DP_1SRC,
             Self::Rev32IntRev3264Dp1src { .. } => OPERANDS_REV32_INT_REV32_64_DP_1SRC,
-            Self::MrsMrsRsSystemmove { .. } => OPERANDS_MRS_MRS_RS_SYSTEMMOVE,
+            Self::MrsMrsRsSystemmoveCntfrqEl0 { .. } => OPERANDS_MRS_MRS_RS_SYSTEMMOVE_CNTFRQ_EL0,
+            Self::MrsMrsRsSystemmoveCntvctEl0 { .. } => OPERANDS_MRS_MRS_RS_SYSTEMMOVE_CNTVCT_EL0,
+            Self::MrsMrsRsSystemmoveTpidrEl0 { .. } => OPERANDS_MRS_MRS_RS_SYSTEMMOVE_TPIDR_EL0,
             Self::TbzTbzOnlyTestbranch { .. } => OPERANDS_TBZ_TBZ_ONLY_TESTBRANCH,
             Self::TbnzTbnzOnlyTestbranch { .. } => OPERANDS_TBNZ_TBNZ_ONLY_TESTBRANCH,
             Self::LdrImmGenLdr32LdstImmpost { .. } => OPERANDS_LDR_IMM_GEN_LDR_32_LDST_IMMPOST,
@@ -17142,8 +17176,18 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
+    if (word & 0xffffffe0) == 0xd53be000 {
+        return Some(A64Insn::MrsMrsRsSystemmoveCntfrqEl0 {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffffffe0) == 0xd53be040 {
+        return Some(A64Insn::MrsMrsRsSystemmoveCntvctEl0 {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
     if (word & 0xffffffe0) == 0xd53bd040 {
-        return Some(A64Insn::MrsMrsRsSystemmove {
+        return Some(A64Insn::MrsMrsRsSystemmoveTpidrEl0 {
             rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
@@ -22707,7 +22751,7 @@ pub const OPERANDS_REV32_INT_REV32_64_DP_1SRC: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
-pub const FIELDS_MRS_MRS_RS_SYSTEMMOVE: &[GeneratedFieldSpec] = &[
+pub const FIELDS_MRS_MRS_RS_SYSTEMMOVE_CNTFRQ_EL0: &[GeneratedFieldSpec] = &[
     GeneratedFieldSpec { name: "L", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
     GeneratedFieldSpec { name: "o0", hi: 19, lo: 19, width: 1, mask: 0x00080000 },
     GeneratedFieldSpec { name: "op1", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
@@ -22718,7 +22762,39 @@ pub const FIELDS_MRS_MRS_RS_SYSTEMMOVE: &[GeneratedFieldSpec] = &[
 ];
 
 #[allow(dead_code)]
-pub const OPERANDS_MRS_MRS_RS_SYSTEMMOVE: &[A64OperandRole] = &[
+pub const OPERANDS_MRS_MRS_RS_SYSTEMMOVE_CNTFRQ_EL0: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MRS_MRS_RS_SYSTEMMOVE_CNTVCT_EL0: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "L", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "o0", hi: 19, lo: 19, width: 1, mask: 0x00080000 },
+    GeneratedFieldSpec { name: "op1", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "CRn", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "CRm", hi: 11, lo: 8, width: 4, mask: 0x00000f00 },
+    GeneratedFieldSpec { name: "op2", hi: 7, lo: 5, width: 3, mask: 0x000000e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MRS_MRS_RS_SYSTEMMOVE_CNTVCT_EL0: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MRS_MRS_RS_SYSTEMMOVE_TPIDR_EL0: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "L", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "o0", hi: 19, lo: 19, width: 1, mask: 0x00080000 },
+    GeneratedFieldSpec { name: "op1", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "CRn", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "CRm", hi: 11, lo: 8, width: 4, mask: 0x00000f00 },
+    GeneratedFieldSpec { name: "op2", hi: 7, lo: 5, width: 3, mask: 0x000000e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MRS_MRS_RS_SYSTEMMOVE_TPIDR_EL0: &[A64OperandRole] = &[
     A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
 ];
 
@@ -33278,7 +33354,33 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         asm: "REV32 <Xd> , <Xn>",
     },
     GeneratedInsnSpec {
-        key: "MRS.MRS_RS_systemmove",
+        key: "MRS.MRS_RS_systemmove@CNTFRQ_EL0",
+        mnemonic: "MRS",
+        heading: "MRS",
+        title: "MRS -- A64",
+        encoding_label: "",
+        mask: 0xffffffe0,
+        value: 0xd53be000,
+        excludes: &[],
+        fields: FIELDS_MRS_MRS_RS_SYSTEMMOVE_CNTFRQ_EL0,
+        operands: OPERANDS_MRS_MRS_RS_SYSTEMMOVE_CNTFRQ_EL0,
+        asm: "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+    },
+    GeneratedInsnSpec {
+        key: "MRS.MRS_RS_systemmove@CNTVCT_EL0",
+        mnemonic: "MRS",
+        heading: "MRS",
+        title: "MRS -- A64",
+        encoding_label: "",
+        mask: 0xffffffe0,
+        value: 0xd53be040,
+        excludes: &[],
+        fields: FIELDS_MRS_MRS_RS_SYSTEMMOVE_CNTVCT_EL0,
+        operands: OPERANDS_MRS_MRS_RS_SYSTEMMOVE_CNTVCT_EL0,
+        asm: "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+    },
+    GeneratedInsnSpec {
+        key: "MRS.MRS_RS_systemmove@TPIDR_EL0",
         mnemonic: "MRS",
         heading: "MRS",
         title: "MRS -- A64",
@@ -33286,8 +33388,8 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         mask: 0xffffffe0,
         value: 0xd53bd040,
         excludes: &[],
-        fields: FIELDS_MRS_MRS_RS_SYSTEMMOVE,
-        operands: OPERANDS_MRS_MRS_RS_SYSTEMMOVE,
+        fields: FIELDS_MRS_MRS_RS_SYSTEMMOVE_TPIDR_EL0,
+        operands: OPERANDS_MRS_MRS_RS_SYSTEMMOVE_TPIDR_EL0,
         asm: "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
     },
     GeneratedInsnSpec {
