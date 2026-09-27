@@ -1439,3 +1439,92 @@ Added (exact XML names, `spec/arm64/subset.toml`):
 - The kernel module build and the new FEAT_CRC32 check (no kernel build tree in
   this environment); guest coverage (redis, busybox) after A7d.
 - BTYPE is still not modelled (unchanged limitation).
+
+# A8 contract: user LSE atomics through a PAN window (2026-09-27)
+
+Written before implementation. Why: under K4, redis's paths end at
+`ldadd` (libgcc outline atomics pick LSE when HWCAP_ATOMICS is set);
+there is no unprivileged LSE form without FEAT_LSUI, which no current
+hardware has. Linux's own futex code (`arch/arm64/include/asm/futex.h`)
+performs privileged accesses to user memory by clearing PAN after
+`access_ok`; this contract does the same inside a fragment, with a
+shape the independent verifier can check word by word.
+
+## Scope
+
+- In: LSE single-register atomics: `LDADD/LDCLR/LDEOR/LDSET/LDSMAX/
+  LDSMIN/LDUMAX/LDUMIN` (all size and A/L/AL variants), `SWP*`, `CAS*`
+  (not `CASP`), and the `ST<op>` aliases (Rt = XZR forms of LD<op>).
+- Out, still Unsupported: exclusives (`LDXR/STXR/LDAXR/STLXR`, pairs).
+  Why: a fragment executes fills/spills (plain stores to the kernel
+  stack) between the user's LDXR and STXR, which may clear the local
+  exclusive monitor (IMPLEMENTATION DEFINED), and exception returns
+  clear it; correctness would survive (STXR failure is always legal
+  and the budget bounds the retry loop) but progress would not.
+- Out: `CASP`, FEAT_LSE128, FEAT_LSUI forms.
+
+## Lowering (per atomic, through the single memory-lowering path)
+
+```
+  <address into scratch sA: Rn (mapped), no offset for LSE>
+  ubfx sB, sA, #48, #8        ; VA bits [55:48]
+  cbnz sB, <PAN stub>         ; not a TTBR0 user address below 2^48 -> Mem exit
+  msr  pan, #0
+  <the user's LSE atomic, operands remapped, base = sA>   ; fault site -> PAN stub
+  msr  pan, #1
+  <register moves / spills>   ; commit-after-last-access as usual
+```
+
+- The range check accepts any top byte (TBI0 ignores bits [63:56] for
+  TTBR0 accesses at EL1 too) and requires bits [55:48] == 0: bit 55
+  selects TTBR0 vs TTBR1, and user VA is 48 bits (K1 pins
+  `ARM64_VA_BITS_48`; the module checks `vabits_actual == 48` at init
+  and refuses to load otherwise). Rejected addresses exit through the
+  same PAN stub (harmless: `msr pan, #1` with PAN already set).
+- The PAN stub is the instruction's ordinary `Mem` exit group preceded
+  by `msr pan, #1`. The atomic's fault-site entry points at it: the
+  extable fixup resumes with the faulting context's PSTATE (PAN = 0),
+  so the stub must restore PAN before anything else.
+- SP-based atomics keep the SP alignment check; LSE atomics require
+  natural alignment (a misaligned address faults natively) — add the
+  same flag-free alignment check to the PAN stub path as A7c's
+  acquire/release forms, unless FEAT_LSE2 makes that access legal
+  (then match native: aligned-within-16-bytes is fine).
+- Exceptions inside the window: Linux runs with SCTLR_EL1.SPAN = 0, so
+  taking an exception to EL1 sets PAN, and ERET restores the window's
+  PAN = 0. Preemption saves/restores PSTATE the same way.
+
+## Kernel requirements (module init refuses to load otherwise)
+
+- FEAT_LSE present (else user LSE is UNDEFINED natively).
+- `vabits_actual == 48`.
+- No MTE in use (`!system_supports_mte()`): a privileged access does
+  not honour the user's tag-check mode the way LDTR/STTR do.
+- Known exposure, same as the kernel's own futex ops without EPAN: a
+  privileged atomic can read an execute-only user page that an EL0
+  access could not. Recorded, not mitigated.
+
+## Verifier (V3) rule
+
+- `msr pan, #0` appears only as the exact window: immediately preceded
+  by `ubfx sB, sA, #48, #8; cbnz sB, <stub S>`, immediately followed by
+  exactly one LSE atomic whose base register is sA and whose fault-site
+  entry points at S, immediately followed by `msr pan, #1`. No join
+  point inside the window. S is an exit-group start whose first word is
+  `msr pan, #1`.
+- `msr pan, #1` appears only as the window end or as the first word of
+  a PAN stub. No other MSR is allowed.
+- A PAN stub is a legal target only for window cbnz and fault sites of
+  window atomics (other branches into a PAN stub are harmless but are
+  rejected to keep the rule simple).
+
+## Harness
+
+- The interpreter models PSTATE.PAN for fragment runs: a privileged
+  access (the LSE atomic) to user memory is legal only while PAN = 0,
+  otherwise it is a PAN violation (hard error). Original-code runs
+  execute LSE atomics as EL0 user accesses.
+- The native runner executes fragments at EL0, where `msr pan` is
+  UNDEFINED: its fragment copy replaces the two MSRs with NOPs (the
+  atomic at EL0 already has user permissions). Documented as the one
+  native-leg deviation.
