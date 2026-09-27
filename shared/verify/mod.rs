@@ -46,6 +46,15 @@ pub struct VerifyInput<'a> {
     pub entry_offsets: &'a [usize],
 }
 
+/// What an accepted fragment is, derived from its bytes alone.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct VerifyOk {
+    /// Some word is an A9a SIMD&FP form (register-only, or a window load/store):
+    /// the fragment reads or writes the user's V registers, which the kernel must
+    /// hold live while it runs (tmp/pipeline.md, "A9 contract", Kernel).
+    pub uses_fpsimd: bool,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct VerifyError {
     /// Fragment byte offset of the offending word (for an entry-table error, the
@@ -121,17 +130,19 @@ pub enum VerifyRule {
     /// 7: a fault/budget stub that does not start an exit group, or an exit group
     /// that does not end in `b <epilogue>`.
     ExitGroup,
-    /// 8 (A8): a `msr pan, #0` that is not the start of an exact PAN window:
-    /// `ubfx sB, sA, #48, #8; cbnz sB, <S>; msr pan, #0; <LSE atomic, base sA,
-    /// fault site -> S>; msr pan, #1`, with S a PAN stub, or a join point on the
-    /// `cbnz`, either MSR or the atomic.
+    /// 8 (A8, A9a): a `msr pan, #0` that is not the start of an exact PAN window:
+    /// `ubfx sB, sA, #48, #8; cbnz sB, <S>; msr pan, #0; <window access, base sA,
+    /// fault site -> S>; msr pan, #1`, with S a PAN stub and the window access an
+    /// LSE atomic or a base-only SIMD&FP load/store, or a join point on the
+    /// `cbnz`, either MSR or the access.
     PanWindow,
-    /// 8: an LSE atomic outside a PAN window.
+    /// 8: a window access (LSE atomic, base-only SIMD&FP load/store) outside a PAN
+    /// window.
     AtomicOutsideWindow,
     /// 8: a `msr pan, #1` that is neither a window's end nor a PAN stub's first word.
     PanSetOutsideWindow,
     /// 8: a PAN stub targeted by anything but a window `cbnz` or the fault site of
-    /// that window's atomic, or a window atomic whose fault site is not its
+    /// that window's access, or a window access whose fault site is not its
     /// window's PAN stub.
     PanStubTarget,
     /// 8: any other `MSR` (PSTATE.PAN with an immediate other than 0/1).
@@ -150,7 +161,7 @@ const fn err(offset: usize, rule: VerifyRule) -> VerifyError {
     VerifyError { offset, rule }
 }
 
-pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
+pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError> {
     let code = input.code;
     if code.len() % ABI_INSN_SIZE != 0 || code.len() <= BODY_OFFSET {
         return Err(err(code.len(), VerifyRule::Length));
@@ -189,13 +200,13 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
             .body_index(site.stub_offset)
             .ok_or(err(site.stub_offset, VerifyRule::ExitGroup))?;
         match classify(body[access]) {
-            // A PAN stub restores PAN for a window atomic only.
+            // A PAN stub restores PAN for a window access only.
             Form::UserAccess { .. } if windows.pan_stub[stub] => {
                 return Err(err(site.access_offset, VerifyRule::PanStubTarget));
             }
             Form::UserAccess { .. } => {}
-            // The window atomic's fault site is its window's PAN stub.
-            Form::WindowAtomic { .. } => match windows.atomic_stub[access] {
+            // The window access's fault site is its window's PAN stub.
+            Form::WindowAccess { .. } => match windows.access_stub[access] {
                 Some(pan_stub) if pan_stub == stub => {}
                 Some(_) => return Err(err(site.access_offset, VerifyRule::PanStubTarget)),
                 None => return Err(err(site.access_offset, VerifyRule::AtomicOutsideWindow)),
@@ -274,6 +285,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
     let join_state = Taint::at_entry().ok_or(err(0, VerifyRule::Prologue))?;
     let mut state = join_state;
     let mut sites = input.fault_sites.iter();
+    let mut uses_fpsimd = false;
     for (index, insn) in body.iter().enumerate() {
         let offset = frag.offset(index);
         if join[index] {
@@ -284,6 +296,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
         let form = classify(*insn);
         match form {
             Form::Alu | Form::Nop | Form::Barrier | Form::MrsTpidrEl0 => {}
+            Form::Simd => uses_fpsimd = true,
             Form::PcRelative => return Err(err(offset, VerifyRule::PcRelative)),
             Form::UserOnly => return Err(err(offset, VerifyRule::UserOnlyForm)),
             Form::Call => return Err(err(offset, VerifyRule::Call)),
@@ -310,8 +323,9 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
                     _ => return Err(err(offset, VerifyRule::MissingFaultSite)),
                 }
             }
-            Form::WindowAtomic { .. } => {
-                if windows.atomic_stub[index].is_none() {
+            Form::WindowAccess { fpsimd, .. } => {
+                uses_fpsimd |= fpsimd;
+                if windows.access_stub[index].is_none() {
                     return Err(err(offset, VerifyRule::AtomicOutsideWindow));
                 }
                 check_edge(state, join_state, offset)?;
@@ -345,7 +359,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
         // runtime access (SP: a frame access; the pt_regs pointer: checked above).
         let read = reads(insn).ok_or(err(offset, VerifyRule::OperandMetadata))?;
         let user_base = match form {
-            Form::UserAccess { .. } | Form::WindowAtomic { .. } => read.base,
+            Form::UserAccess { .. } | Form::WindowAccess { .. } => read.base,
             _ => None,
         };
         if read.sp
@@ -378,7 +392,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<(), VerifyError> {
     ) {
         return Err(err(frag.offset(last), VerifyRule::FallsOffEnd));
     }
-    Ok(())
+    Ok(VerifyOk { uses_fpsimd })
 }
 
 struct Fragment<'a> {
@@ -537,11 +551,12 @@ fn check_exit_group(
             | Form::Exception
             | Form::UserAccess { .. }
             | Form::UserOnly
-            | Form::WindowAtomic { .. }
+            | Form::WindowAccess { .. }
             | Form::PanClear
             | Form::PanSet
             | Form::MsrOther => return Err(reject(index)),
             Form::Alu
+            | Form::Simd
             | Form::Nop
             | Form::Barrier
             | Form::MrsTpidrEl0
@@ -560,8 +575,8 @@ struct PanWindows {
     end: SharedVec<bool>,
     /// First word (`msr pan, #1`) of a PAN stub some window's `cbnz` targets.
     pan_stub: SharedVec<bool>,
-    /// Window atomic -> its window's PAN stub.
-    atomic_stub: SharedVec<Option<usize>>,
+    /// Window access -> its window's PAN stub.
+    access_stub: SharedVec<Option<usize>>,
     /// Window range-check `cbnz` -> its PAN stub.
     cbnz_stub: SharedVec<Option<usize>>,
 }
@@ -572,11 +587,11 @@ struct PanWindows {
 /// i-2  ubfx sB, sA, #48, #8        (64-bit UBFM immr=48 imms=55, sA/sB < 31)
 /// i-1  cbnz sB, <S>                (forward; S's first word is msr pan, #1)
 /// i    msr  pan, #0
-/// i+1  <LSE atomic, base sA>
+/// i+1  <window access, base sA>  (LSE atomic, or base-only SIMD&FP load/store)
 /// i+2  msr  pan, #1
 /// ```
 ///
-/// The atomic's fault site, the PAN stub's exit-group shape and the absence of
+/// The access's fault site, the PAN stub's exit-group shape and the absence of
 /// join points are checked by the callers once the tables and joins are known.
 fn find_pan_windows(frag: &Fragment<'_>) -> Result<PanWindows, VerifyError> {
     let len = frag.body.len();
@@ -584,7 +599,7 @@ fn find_pan_windows(frag: &Fragment<'_>) -> Result<PanWindows, VerifyError> {
         clear: alloc_bools(len)?,
         end: alloc_bools(len)?,
         pan_stub: alloc_bools(len)?,
-        atomic_stub: alloc_none(len)?,
+        access_stub: alloc_none(len)?,
         cbnz_stub: alloc_none(len)?,
     };
     for index in 0..len {
@@ -603,15 +618,17 @@ fn find_pan_windows(frag: &Fragment<'_>) -> Result<PanWindows, VerifyError> {
             .and_then(|target| frag.body_index(target))
             .filter(|&stub| stub > index + 2 && classify(frag.body[stub]) == Form::PanSet)
             .ok_or(reject)?;
-        let based_on_sa =
-            matches!(classify(frag.body[index + 1]), Form::WindowAtomic { rn } if rn.enc() == sa);
+        let based_on_sa = matches!(
+            classify(frag.body[index + 1]),
+            Form::WindowAccess { rn, .. } if rn.enc() == sa
+        );
         if tested != sb || !based_on_sa || classify(frag.body[index + 2]) != Form::PanSet {
             return Err(reject);
         }
         windows.clear[index] = true;
         windows.end[index + 2] = true;
         windows.pan_stub[stub] = true;
-        windows.atomic_stub[index + 1] = Some(stub);
+        windows.access_stub[index + 1] = Some(stub);
         windows.cbnz_stub[index - 1] = Some(stub);
     }
     Ok(windows)

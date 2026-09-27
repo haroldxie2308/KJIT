@@ -51,12 +51,18 @@ pub(super) enum Form {
     Call,
     IndirectBranch,
     Exception,
-    /// An LSE single-register atomic (LD<op>, SWP, CAS; A8): a privileged access to
-    /// user memory. Allowed only as the atomic of an exact PAN window, based on the
-    /// window's range-checked register `rn`.
-    WindowAtomic {
+    /// A privileged access to user memory: an LSE single-register atomic (LD<op>,
+    /// SWP, CAS; A8) or, `fpsimd`, an A9a SIMD&FP load/store in its base-only
+    /// encoding (`[Xn]`, #0, no writeback). Allowed only as the single access of an
+    /// exact PAN window, based on the window's range-checked register `rn`.
+    WindowAccess {
         rn: A64Reg,
+        fpsimd: bool,
     },
+    /// A9a SIMD&FP register-only form: V registers, FPCR/FPSR (none of the A9a
+    /// forms touches them) and the general registers its roles name. Allowed
+    /// anywhere; a fragment containing one `uses_fpsimd`.
+    Simd,
     /// `msr pan, #0`: allowed only as the start of an exact PAN window.
     PanClear,
     /// `msr pan, #1`: allowed only as a window's end or a PAN stub's first word.
@@ -334,7 +340,190 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         | A64Insn::CashCashC32Comswap { rn, .. }
         | A64Insn::CashCasahC32Comswap { rn, .. }
         | A64Insn::CashCasalhC32Comswap { rn, .. }
-        | A64Insn::CashCaslhC32Comswap { rn, .. } => Form::WindowAtomic { rn },
+        | A64Insn::CashCaslhC32Comswap { rn, .. } => Form::WindowAccess { rn, fpsimd: false },
+        // A9a SIMD&FP loads/stores in their base-only encoding (`[Xn]`, offset #0,
+        // no writeback): the SIMD&FP half of the one list of PAN-window accesses.
+        A64Insn::LdrImmFpsimdLdrBLdstPos { mem, .. }
+        | A64Insn::LdrImmFpsimdLdrHLdstPos { mem, .. }
+        | A64Insn::LdrImmFpsimdLdrSLdstPos { mem, .. }
+        | A64Insn::LdrImmFpsimdLdrDLdstPos { mem, .. }
+        | A64Insn::LdrImmFpsimdLdrQLdstPos { mem, .. }
+        | A64Insn::StrImmFpsimdStrBLdstPos { mem, .. }
+        | A64Insn::StrImmFpsimdStrHLdstPos { mem, .. }
+        | A64Insn::StrImmFpsimdStrSLdstPos { mem, .. }
+        | A64Insn::StrImmFpsimdStrDLdstPos { mem, .. }
+        | A64Insn::StrImmFpsimdStrQLdstPos { mem, .. }
+        | A64Insn::LdpFpsimdLdpSLdstpairOff { mem, .. }
+        | A64Insn::LdpFpsimdLdpDLdstpairOff { mem, .. }
+        | A64Insn::LdpFpsimdLdpQLdstpairOff { mem, .. }
+        | A64Insn::StpFpsimdStpSLdstpairOff { mem, .. }
+        | A64Insn::StpFpsimdStpDLdstpairOff { mem, .. }
+        | A64Insn::StpFpsimdStpQLdstpairOff { mem, .. } if is_base_only(mem) => Form::WindowAccess {
+            rn: mem.base(),
+            fpsimd: true,
+        },
+        A64Insn::Ld1AdvsimdMultLd1AsisdlseR11v { rn, .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlseR22v { rn, .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlseR33v { rn, .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlseR44v { rn, .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlseR11v { rn, .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlseR22v { rn, .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlseR33v { rn, .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlseR44v { rn, .. } => Form::WindowAccess { rn, fpsimd: true },
+        // Every other SIMD&FP load/store encoding (offset, pre/post-index, unscaled,
+        // LD1/ST1 post-index): translation runs it as the base-only encoding, so one
+        // in a fragment is never valid.
+        A64Insn::LdrImmFpsimdLdrBLdstPos { .. }
+        | A64Insn::LdrImmFpsimdLdrHLdstPos { .. }
+        | A64Insn::LdrImmFpsimdLdrSLdstPos { .. }
+        | A64Insn::LdrImmFpsimdLdrDLdstPos { .. }
+        | A64Insn::LdrImmFpsimdLdrQLdstPos { .. }
+        | A64Insn::StrImmFpsimdStrBLdstPos { .. }
+        | A64Insn::StrImmFpsimdStrHLdstPos { .. }
+        | A64Insn::StrImmFpsimdStrSLdstPos { .. }
+        | A64Insn::StrImmFpsimdStrDLdstPos { .. }
+        | A64Insn::StrImmFpsimdStrQLdstPos { .. }
+        | A64Insn::LdpFpsimdLdpSLdstpairOff { .. }
+        | A64Insn::LdpFpsimdLdpDLdstpairOff { .. }
+        | A64Insn::LdpFpsimdLdpQLdstpairOff { .. }
+        | A64Insn::StpFpsimdStpSLdstpairOff { .. }
+        | A64Insn::StpFpsimdStpDLdstpairOff { .. }
+        | A64Insn::StpFpsimdStpQLdstpairOff { .. }
+        | A64Insn::LdrImmFpsimdLdrBLdstImmpost { .. }
+        | A64Insn::LdrImmFpsimdLdrHLdstImmpost { .. }
+        | A64Insn::LdrImmFpsimdLdrSLdstImmpost { .. }
+        | A64Insn::LdrImmFpsimdLdrDLdstImmpost { .. }
+        | A64Insn::LdrImmFpsimdLdrQLdstImmpost { .. }
+        | A64Insn::LdrImmFpsimdLdrBLdstImmpre { .. }
+        | A64Insn::LdrImmFpsimdLdrHLdstImmpre { .. }
+        | A64Insn::LdrImmFpsimdLdrSLdstImmpre { .. }
+        | A64Insn::LdrImmFpsimdLdrDLdstImmpre { .. }
+        | A64Insn::LdrImmFpsimdLdrQLdstImmpre { .. }
+        | A64Insn::StrImmFpsimdStrBLdstImmpost { .. }
+        | A64Insn::StrImmFpsimdStrHLdstImmpost { .. }
+        | A64Insn::StrImmFpsimdStrSLdstImmpost { .. }
+        | A64Insn::StrImmFpsimdStrDLdstImmpost { .. }
+        | A64Insn::StrImmFpsimdStrQLdstImmpost { .. }
+        | A64Insn::StrImmFpsimdStrBLdstImmpre { .. }
+        | A64Insn::StrImmFpsimdStrHLdstImmpre { .. }
+        | A64Insn::StrImmFpsimdStrSLdstImmpre { .. }
+        | A64Insn::StrImmFpsimdStrDLdstImmpre { .. }
+        | A64Insn::StrImmFpsimdStrQLdstImmpre { .. }
+        | A64Insn::LdurFpsimdLdurBLdstUnscaled { .. }
+        | A64Insn::LdurFpsimdLdurHLdstUnscaled { .. }
+        | A64Insn::LdurFpsimdLdurSLdstUnscaled { .. }
+        | A64Insn::LdurFpsimdLdurDLdstUnscaled { .. }
+        | A64Insn::LdurFpsimdLdurQLdstUnscaled { .. }
+        | A64Insn::SturFpsimdSturBLdstUnscaled { .. }
+        | A64Insn::SturFpsimdSturHLdstUnscaled { .. }
+        | A64Insn::SturFpsimdSturSLdstUnscaled { .. }
+        | A64Insn::SturFpsimdSturDLdstUnscaled { .. }
+        | A64Insn::SturFpsimdSturQLdstUnscaled { .. }
+        | A64Insn::LdpFpsimdLdpSLdstpairPost { .. }
+        | A64Insn::LdpFpsimdLdpDLdstpairPost { .. }
+        | A64Insn::LdpFpsimdLdpQLdstpairPost { .. }
+        | A64Insn::LdpFpsimdLdpSLdstpairPre { .. }
+        | A64Insn::LdpFpsimdLdpDLdstpairPre { .. }
+        | A64Insn::LdpFpsimdLdpQLdstpairPre { .. }
+        | A64Insn::StpFpsimdStpSLdstpairPost { .. }
+        | A64Insn::StpFpsimdStpDLdstpairPost { .. }
+        | A64Insn::StpFpsimdStpQLdstpairPost { .. }
+        | A64Insn::StpFpsimdStpSLdstpairPre { .. }
+        | A64Insn::StpFpsimdStpDLdstpairPre { .. }
+        | A64Insn::StpFpsimdStpQLdstpairPre { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepI1I1 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepR1R1 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepI2I2 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepR2R2 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepI3I3 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepR3R3 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepI4I4 { .. }
+        | A64Insn::Ld1AdvsimdMultLd1AsisdlsepR4R4 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepI1I1 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepR1R1 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepI2I2 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepR2R2 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepI3I3 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepR3R3 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepI4I4 { .. }
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepR4R4 { .. } => Form::UserOnly,
+        // A9a SIMD&FP register-only forms: read/write V registers and possibly
+        // general registers (roles), never memory, flags or control flow.
+        A64Insn::DupAdvsimdEltDupAsisdoneOnly { .. }
+        | A64Insn::DupAdvsimdEltDupAsimdinsDvV { .. }
+        | A64Insn::DupAdvsimdGenDupAsimdinsDrR { .. }
+        | A64Insn::InsAdvsimdEltInsAsimdinsIvV { .. }
+        | A64Insn::InsAdvsimdGenInsAsimdinsIrR { .. }
+        | A64Insn::UmovAdvsimdUmovAsimdinsWW { .. }
+        | A64Insn::UmovAdvsimdUmovAsimdinsXX { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmNB { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmLHl { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmLSl { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmMSm { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmDDs { .. }
+        | A64Insn::MoviAdvsimdMoviAsimdimmD2D { .. }
+        | A64Insn::MvniAdvsimdMvniAsimdimmLHl { .. }
+        | A64Insn::MvniAdvsimdMvniAsimdimmLSl { .. }
+        | A64Insn::MvniAdvsimdMvniAsimdimmMSm { .. }
+        | A64Insn::FmovFloatGenFmovS32Float2int { .. }
+        | A64Insn::FmovFloatGenFmov32sFloat2int { .. }
+        | A64Insn::FmovFloatGenFmovD64Float2int { .. }
+        | A64Insn::FmovFloatGenFmovV64iFloat2int { .. }
+        | A64Insn::FmovFloatGenFmov64dFloat2int { .. }
+        | A64Insn::FmovFloatGenFmov64vxFloat2int { .. }
+        | A64Insn::FmovFloatFmovSFloatdp1 { .. }
+        | A64Insn::FmovFloatFmovDFloatdp1 { .. }
+        | A64Insn::CmeqAdvsimdRegCmeqAsisdsameOnly { .. }
+        | A64Insn::CmeqAdvsimdRegCmeqAsimdsameOnly { .. }
+        | A64Insn::CmeqAdvsimdZeroCmeqAsisdmiscZ { .. }
+        | A64Insn::CmeqAdvsimdZeroCmeqAsimdmiscZ { .. }
+        | A64Insn::CmhiAdvsimdCmhiAsisdsameOnly { .. }
+        | A64Insn::CmhiAdvsimdCmhiAsimdsameOnly { .. }
+        | A64Insn::CmhsAdvsimdCmhsAsisdsameOnly { .. }
+        | A64Insn::CmhsAdvsimdCmhsAsimdsameOnly { .. }
+        | A64Insn::CmgtAdvsimdRegCmgtAsisdsameOnly { .. }
+        | A64Insn::CmgtAdvsimdRegCmgtAsimdsameOnly { .. }
+        | A64Insn::CmgtAdvsimdZeroCmgtAsisdmiscZ { .. }
+        | A64Insn::CmgtAdvsimdZeroCmgtAsimdmiscZ { .. }
+        | A64Insn::CmgeAdvsimdRegCmgeAsisdsameOnly { .. }
+        | A64Insn::CmgeAdvsimdRegCmgeAsimdsameOnly { .. }
+        | A64Insn::CmgeAdvsimdZeroCmgeAsisdmiscZ { .. }
+        | A64Insn::CmgeAdvsimdZeroCmgeAsimdmiscZ { .. }
+        | A64Insn::CmtstAdvsimdCmtstAsisdsameOnly { .. }
+        | A64Insn::CmtstAdvsimdCmtstAsimdsameOnly { .. }
+        | A64Insn::AndAdvsimdAndAsimdsameOnly { .. }
+        | A64Insn::OrrAdvsimdRegOrrAsimdsameOnly { .. }
+        | A64Insn::EorAdvsimdEorAsimdsameOnly { .. }
+        | A64Insn::BicAdvsimdRegBicAsimdsameOnly { .. }
+        | A64Insn::OrnAdvsimdOrnAsimdsameOnly { .. }
+        | A64Insn::BitAdvsimdBitAsimdsameOnly { .. }
+        | A64Insn::BifAdvsimdBifAsimdsameOnly { .. }
+        | A64Insn::BslAdvsimdBslAsimdsameOnly { .. }
+        | A64Insn::NotAdvsimdNotAsimdmiscR { .. }
+        | A64Insn::AddAdvsimdAddAsisdsameOnly { .. }
+        | A64Insn::AddAdvsimdAddAsimdsameOnly { .. }
+        | A64Insn::SubAdvsimdSubAsisdsameOnly { .. }
+        | A64Insn::SubAdvsimdSubAsimdsameOnly { .. }
+        | A64Insn::AddpAdvsimdVecAddpAsimdsameOnly { .. }
+        | A64Insn::AddpAdvsimdPairAddpAsisdpairOnly { .. }
+        | A64Insn::UmaxpAdvsimdUmaxpAsimdsameOnly { .. }
+        | A64Insn::UminpAdvsimdUminpAsimdsameOnly { .. }
+        | A64Insn::AddvAdvsimdAddvAsimdallOnly { .. }
+        | A64Insn::UmaxvAdvsimdUmaxvAsimdallOnly { .. }
+        | A64Insn::UminvAdvsimdUminvAsimdallOnly { .. }
+        | A64Insn::ShrnAdvsimdShrnAsimdshfN { .. }
+        | A64Insn::UshrAdvsimdUshrAsisdshfR { .. }
+        | A64Insn::UshrAdvsimdUshrAsimdshfR { .. }
+        | A64Insn::ShlAdvsimdShlAsisdshfR { .. }
+        | A64Insn::ShlAdvsimdShlAsimdshfR { .. }
+        | A64Insn::UshllAdvsimdUshllAsimdshfL { .. }
+        | A64Insn::XtnAdvsimdXtnAsimdmiscN { .. }
+        | A64Insn::ExtAdvsimdExtAsimdextOnly { .. }
+        | A64Insn::Rev16AdvsimdRev16AsimdmiscR { .. }
+        | A64Insn::Rev32AdvsimdRev32AsimdmiscR { .. }
+        | A64Insn::Rev64AdvsimdRev64AsimdmiscR { .. }
+        | A64Insn::CntAdvsimdCntAsimdmiscR { .. }
+        | A64Insn::TblAdvsimdTblAsimdtblL11 { .. } => Form::Simd,
         A64Insn::MsrImmMsrSiPstate { crm: 0 } => Form::PanClear,
         A64Insn::MsrImmMsrSiPstate { crm: 1 } => Form::PanSet,
         A64Insn::MsrImmMsrSiPstate { .. } => Form::MsrOther,
@@ -519,11 +708,18 @@ pub(super) fn classify(insn: A64Insn) -> Form {
     }
 }
 
+/// A base-only SIMD&FP access: offset addressing with offset 0.
+const fn is_base_only(mem: A64Mem) -> bool {
+    matches!(mem, A64Mem::Offset { offset, .. } if offset.value() == 0)
+}
+
 const fn runtime(mem: A64Mem, bytes: u32, store: bool) -> Form {
     Form::RuntimeAccess { mem, bytes, store }
 }
 
-/// Registers an instruction writes, from the generated operand roles.
+/// Registers an instruction writes, from the generated operand roles. SIMD&FP
+/// registers (A9a `VecRead`/`VecWrite` roles, plain register numbers) are not
+/// general registers and never counted: a write to V12 leaves x12 as it was.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct Writes {
     /// Bit n set: x_n / w_n (n < 31) is written.
@@ -556,7 +752,10 @@ pub(super) fn writes(insn: &A64Insn) -> Option<Writes> {
 
 /// Registers an instruction reads, from the generated operand roles. The memory
 /// base is kept apart from the data operands: rule 9 lets a kernel value be a base
-/// (of an allowed runtime access) and nothing else.
+/// (of an allowed runtime access) and nothing else. SIMD&FP registers (A9a) are
+/// not general registers: reading V12 is not reading x12. Since every general
+/// operand of a SIMD&FP form (FMOV general, DUP/INS general, addressing) is read
+/// here, a kernel value never reaches a V register.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct Reads {
     /// Bit n set: x_n / w_n (n < 31) is read as data (store data, ALU source,

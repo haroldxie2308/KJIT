@@ -12,7 +12,7 @@
 use super::forms::{BranchField, Catalog, FieldKind, Form, FormClass};
 use super::program::{branch_field_value, slot_pc, Program, Slot, TEXT_BASE};
 use super::rng::Rng;
-use crate::model::{Flags, MachineState, PAGE_SIZE};
+use crate::model::{Flags, MachineState, FPCR_USER_BITS, FPSR_USER_BITS, PAGE_SIZE};
 use crate::shared::arm64::{A64Imm, A64Insn, A64Reg, A64Reg31Mode};
 use crate::shared::trans::cfg::admit_word;
 use crate::{default_fixture_state, FIXTURE_DATA_BASE, FIXTURE_DATA_LEN, FIXTURE_RO_BASE};
@@ -264,6 +264,16 @@ impl Gen<'_> {
             c: self.rng.chance(500),
             v: self.rng.chance(500),
         };
+        // A9a: V0-V31 and FPCR/FPSR (only bits the hardware keeps).
+        for reg in 0..32 {
+            state.v[reg] = self.random_vector();
+        }
+        if self.rng.chance(250) {
+            state.fpcr = self.rng.next_u64() & FPCR_USER_BITS;
+        }
+        if self.rng.chance(250) {
+            state.fpsr = self.rng.next_u64() & FPSR_USER_BITS;
+        }
 
         // Data around every pointer, a few words elsewhere in the window and
         // some in the read-only page.
@@ -290,6 +300,31 @@ impl Gen<'_> {
             state.write_u64(addr, value);
         }
         state
+    }
+
+    /// A V register value: zero, all ones, one repeated lane, a random value with
+    /// some zero bytes (what string routines search for), or fully random.
+    fn random_vector(&mut self) -> u128 {
+        let wide = |rng: &mut Rng| u128::from(rng.next_u64()) | (u128::from(rng.next_u64()) << 64);
+        match self.rng.below(10) {
+            0 => 0,
+            1 => u128::MAX,
+            2 => {
+                let lane = u128::from(self.rng.next_u64());
+                let bits = 8 << self.rng.below(4);
+                let lane = lane & ((1u128 << bits) - 1);
+                (0..128 / bits).fold(0, |acc, index| acc | (lane << (index * bits)))
+            }
+            3 | 4 => {
+                let mut value = wide(&mut *self.rng);
+                for _ in 0..self.rng.range(1, 4) {
+                    let byte = self.rng.below(16) as u32;
+                    value &= !(0xff_u128 << (8 * byte));
+                }
+                value
+            }
+            _ => wide(&mut *self.rng),
+        }
     }
 
     fn choose_class(&mut self) -> Choice {

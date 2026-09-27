@@ -457,6 +457,813 @@ impl A64Insn {
     }
 }
 
+/// Base update of an A9a SIMD&FP load/store with writeback, applied after its
+/// access: `base += amount` (pre/post-index immediate; LD1/ST1 post-index by
+/// immediate is the transfer size) or `base += Xm` (LD1/ST1 post-index by register).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum A64FpSimdWriteback {
+    Imm(i64),
+    Reg(A64Reg),
+}
+
+/// An A9a SIMD&FP load/store (LDR/STR (immediate), LDUR/STUR, LDP/STP, LD1/ST1
+/// (multiple structures)), split the way a fragment performs it (tmp/pipeline.md,
+/// "A9 contract"): the address `base + offset`, then `access` -- the same access in
+/// its base-only encoding (unsigned-offset LDR/STR or signed-offset LDP/STP with
+/// `#0`, LD1/ST1 without post-index; `Rn` still names `base`) -- then `writeback`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct A64FpSimdMem {
+    pub access: A64Insn,
+    pub base: A64Reg,
+    pub offset: i64,
+    pub writeback: Option<A64FpSimdWriteback>,
+}
+
+impl A64Insn {
+    /// Every A9a SIMD&FP load/store (`A64FpSimdMem`); pinned by a test against the
+    /// generated forms (a `Memory` role with a `Vec*` role). Translator and harness
+    /// helper; the verifier has its own list (`rules::classify`).
+    pub fn fpsimd_mem(self) -> Option<A64FpSimdMem> {
+        // The base-only addressing: the base with offset #0 in the base-only
+        // form's own offset field (`imm12` of LDR/STR (unsigned offset), `imm7` of
+        // LDP/STP (signed offset)), as the decoder builds it.
+        fn zero(mem: A64Mem, bits: u8) -> A64Mem {
+            A64Mem::offset(mem.base(), A64Imm::unsigned(0, bits))
+        }
+        fn single(
+            access: A64Insn,
+            mem: A64Mem,
+            offset: i64,
+            writeback: Option<A64FpSimdWriteback>,
+        ) -> Option<A64FpSimdMem> {
+            Some(A64FpSimdMem {
+                access,
+                base: mem.base(),
+                offset,
+                writeback,
+            })
+        }
+        fn multiple(
+            access: A64Insn,
+            base: A64Reg,
+            writeback: Option<A64FpSimdWriteback>,
+        ) -> Option<A64FpSimdMem> {
+            Some(A64FpSimdMem {
+                access,
+                base,
+                offset: 0,
+                writeback,
+            })
+        }
+        match self {
+            Self::LdrImmFpsimdLdrBLdstPos { rt, mem } => single(
+                Self::LdrImmFpsimdLdrBLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdrImmFpsimdLdrBLdstImmpre { rt, mem } => single(
+                Self::LdrImmFpsimdLdrBLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdrImmFpsimdLdrBLdstImmpost { rt, mem } => single(
+                Self::LdrImmFpsimdLdrBLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdrImmFpsimdLdrHLdstPos { rt, mem } => single(
+                Self::LdrImmFpsimdLdrHLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdrImmFpsimdLdrHLdstImmpre { rt, mem } => single(
+                Self::LdrImmFpsimdLdrHLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdrImmFpsimdLdrHLdstImmpost { rt, mem } => single(
+                Self::LdrImmFpsimdLdrHLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdrImmFpsimdLdrSLdstPos { rt, mem } => single(
+                Self::LdrImmFpsimdLdrSLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdrImmFpsimdLdrSLdstImmpre { rt, mem } => single(
+                Self::LdrImmFpsimdLdrSLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdrImmFpsimdLdrSLdstImmpost { rt, mem } => single(
+                Self::LdrImmFpsimdLdrSLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdrImmFpsimdLdrDLdstPos { rt, mem } => single(
+                Self::LdrImmFpsimdLdrDLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdrImmFpsimdLdrDLdstImmpre { rt, mem } => single(
+                Self::LdrImmFpsimdLdrDLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdrImmFpsimdLdrDLdstImmpost { rt, mem } => single(
+                Self::LdrImmFpsimdLdrDLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdrImmFpsimdLdrQLdstPos { rt, mem } => single(
+                Self::LdrImmFpsimdLdrQLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdrImmFpsimdLdrQLdstImmpre { rt, mem } => single(
+                Self::LdrImmFpsimdLdrQLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdrImmFpsimdLdrQLdstImmpost { rt, mem } => single(
+                Self::LdrImmFpsimdLdrQLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StrImmFpsimdStrBLdstPos { rt, mem } => single(
+                Self::StrImmFpsimdStrBLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::StrImmFpsimdStrBLdstImmpre { rt, mem } => single(
+                Self::StrImmFpsimdStrBLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StrImmFpsimdStrBLdstImmpost { rt, mem } => single(
+                Self::StrImmFpsimdStrBLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StrImmFpsimdStrHLdstPos { rt, mem } => single(
+                Self::StrImmFpsimdStrHLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::StrImmFpsimdStrHLdstImmpre { rt, mem } => single(
+                Self::StrImmFpsimdStrHLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StrImmFpsimdStrHLdstImmpost { rt, mem } => single(
+                Self::StrImmFpsimdStrHLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StrImmFpsimdStrSLdstPos { rt, mem } => single(
+                Self::StrImmFpsimdStrSLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::StrImmFpsimdStrSLdstImmpre { rt, mem } => single(
+                Self::StrImmFpsimdStrSLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StrImmFpsimdStrSLdstImmpost { rt, mem } => single(
+                Self::StrImmFpsimdStrSLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StrImmFpsimdStrDLdstPos { rt, mem } => single(
+                Self::StrImmFpsimdStrDLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::StrImmFpsimdStrDLdstImmpre { rt, mem } => single(
+                Self::StrImmFpsimdStrDLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StrImmFpsimdStrDLdstImmpost { rt, mem } => single(
+                Self::StrImmFpsimdStrDLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StrImmFpsimdStrQLdstPos { rt, mem } => single(
+                Self::StrImmFpsimdStrQLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::StrImmFpsimdStrQLdstImmpre { rt, mem } => single(
+                Self::StrImmFpsimdStrQLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StrImmFpsimdStrQLdstImmpost { rt, mem } => single(
+                Self::StrImmFpsimdStrQLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdurFpsimdLdurBLdstUnscaled { rt, mem } => single(
+                Self::LdrImmFpsimdLdrBLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdurFpsimdLdurHLdstUnscaled { rt, mem } => single(
+                Self::LdrImmFpsimdLdrHLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdurFpsimdLdurSLdstUnscaled { rt, mem } => single(
+                Self::LdrImmFpsimdLdrSLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdurFpsimdLdurDLdstUnscaled { rt, mem } => single(
+                Self::LdrImmFpsimdLdrDLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdurFpsimdLdurQLdstUnscaled { rt, mem } => single(
+                Self::LdrImmFpsimdLdrQLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::SturFpsimdSturBLdstUnscaled { rt, mem } => single(
+                Self::StrImmFpsimdStrBLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::SturFpsimdSturHLdstUnscaled { rt, mem } => single(
+                Self::StrImmFpsimdStrHLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::SturFpsimdSturSLdstUnscaled { rt, mem } => single(
+                Self::StrImmFpsimdStrSLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::SturFpsimdSturDLdstUnscaled { rt, mem } => single(
+                Self::StrImmFpsimdStrDLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::SturFpsimdSturQLdstUnscaled { rt, mem } => single(
+                Self::StrImmFpsimdStrQLdstPos {
+                    rt,
+                    mem: zero(mem, 12),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdpFpsimdLdpSLdstpairOff { rt2, rt, mem } => single(
+                Self::LdpFpsimdLdpSLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdpFpsimdLdpSLdstpairPre { rt2, rt, mem } => single(
+                Self::LdpFpsimdLdpSLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdpFpsimdLdpSLdstpairPost { rt2, rt, mem } => single(
+                Self::LdpFpsimdLdpSLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdpFpsimdLdpDLdstpairOff { rt2, rt, mem } => single(
+                Self::LdpFpsimdLdpDLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdpFpsimdLdpDLdstpairPre { rt2, rt, mem } => single(
+                Self::LdpFpsimdLdpDLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdpFpsimdLdpDLdstpairPost { rt2, rt, mem } => single(
+                Self::LdpFpsimdLdpDLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdpFpsimdLdpQLdstpairOff { rt2, rt, mem } => single(
+                Self::LdpFpsimdLdpQLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::LdpFpsimdLdpQLdstpairPre { rt2, rt, mem } => single(
+                Self::LdpFpsimdLdpQLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::LdpFpsimdLdpQLdstpairPost { rt2, rt, mem } => single(
+                Self::LdpFpsimdLdpQLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StpFpsimdStpSLdstpairOff { rt2, rt, mem } => single(
+                Self::StpFpsimdStpSLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::StpFpsimdStpSLdstpairPre { rt2, rt, mem } => single(
+                Self::StpFpsimdStpSLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StpFpsimdStpSLdstpairPost { rt2, rt, mem } => single(
+                Self::StpFpsimdStpSLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StpFpsimdStpDLdstpairOff { rt2, rt, mem } => single(
+                Self::StpFpsimdStpDLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::StpFpsimdStpDLdstpairPre { rt2, rt, mem } => single(
+                Self::StpFpsimdStpDLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StpFpsimdStpDLdstpairPost { rt2, rt, mem } => single(
+                Self::StpFpsimdStpDLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StpFpsimdStpQLdstpairOff { rt2, rt, mem } => single(
+                Self::StpFpsimdStpQLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                None,
+            ),
+            Self::StpFpsimdStpQLdstpairPre { rt2, rt, mem } => single(
+                Self::StpFpsimdStpQLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                mem.offset_imm().value(),
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::StpFpsimdStpQLdstpairPost { rt2, rt, mem } => single(
+                Self::StpFpsimdStpQLdstpairOff {
+                    rt2,
+                    rt,
+                    mem: zero(mem, 7),
+                },
+                mem,
+                0,
+                Some(A64FpSimdWriteback::Imm(mem.offset_imm().value())),
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlseR11v { q, size, rn, rt } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR11v { q, size, rn, rt },
+                rn,
+                None,
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlsepI1I1 { q, size, rn, rt } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR11v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Imm(1 * (8_i64 << q))),
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlsepR1R1 {
+                q,
+                rm,
+                size,
+                rn,
+                rt,
+            } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR11v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Reg(rm)),
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlseR22v { q, size, rn, rt } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR22v { q, size, rn, rt },
+                rn,
+                None,
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlsepI2I2 { q, size, rn, rt } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR22v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Imm(2 * (8_i64 << q))),
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlsepR2R2 {
+                q,
+                rm,
+                size,
+                rn,
+                rt,
+            } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR22v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Reg(rm)),
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlseR33v { q, size, rn, rt } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR33v { q, size, rn, rt },
+                rn,
+                None,
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlsepI3I3 { q, size, rn, rt } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR33v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Imm(3 * (8_i64 << q))),
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlsepR3R3 {
+                q,
+                rm,
+                size,
+                rn,
+                rt,
+            } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR33v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Reg(rm)),
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlseR44v { q, size, rn, rt } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR44v { q, size, rn, rt },
+                rn,
+                None,
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlsepI4I4 { q, size, rn, rt } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR44v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Imm(4 * (8_i64 << q))),
+            ),
+            Self::Ld1AdvsimdMultLd1AsisdlsepR4R4 {
+                q,
+                rm,
+                size,
+                rn,
+                rt,
+            } => multiple(
+                Self::Ld1AdvsimdMultLd1AsisdlseR44v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Reg(rm)),
+            ),
+            Self::St1AdvsimdMultSt1AsisdlseR11v { q, size, rn, rt } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR11v { q, size, rn, rt },
+                rn,
+                None,
+            ),
+            Self::St1AdvsimdMultSt1AsisdlsepI1I1 { q, size, rn, rt } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR11v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Imm(1 * (8_i64 << q))),
+            ),
+            Self::St1AdvsimdMultSt1AsisdlsepR1R1 {
+                q,
+                rm,
+                size,
+                rn,
+                rt,
+            } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR11v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Reg(rm)),
+            ),
+            Self::St1AdvsimdMultSt1AsisdlseR22v { q, size, rn, rt } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR22v { q, size, rn, rt },
+                rn,
+                None,
+            ),
+            Self::St1AdvsimdMultSt1AsisdlsepI2I2 { q, size, rn, rt } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR22v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Imm(2 * (8_i64 << q))),
+            ),
+            Self::St1AdvsimdMultSt1AsisdlsepR2R2 {
+                q,
+                rm,
+                size,
+                rn,
+                rt,
+            } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR22v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Reg(rm)),
+            ),
+            Self::St1AdvsimdMultSt1AsisdlseR33v { q, size, rn, rt } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR33v { q, size, rn, rt },
+                rn,
+                None,
+            ),
+            Self::St1AdvsimdMultSt1AsisdlsepI3I3 { q, size, rn, rt } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR33v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Imm(3 * (8_i64 << q))),
+            ),
+            Self::St1AdvsimdMultSt1AsisdlsepR3R3 {
+                q,
+                rm,
+                size,
+                rn,
+                rt,
+            } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR33v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Reg(rm)),
+            ),
+            Self::St1AdvsimdMultSt1AsisdlseR44v { q, size, rn, rt } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR44v { q, size, rn, rt },
+                rn,
+                None,
+            ),
+            Self::St1AdvsimdMultSt1AsisdlsepI4I4 { q, size, rn, rt } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR44v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Imm(4 * (8_i64 << q))),
+            ),
+            Self::St1AdvsimdMultSt1AsisdlsepR4R4 {
+                q,
+                rm,
+                size,
+                rn,
+                rt,
+            } => multiple(
+                Self::St1AdvsimdMultSt1AsisdlseR44v { q, size, rn, rt },
+                rn,
+                Some(A64FpSimdWriteback::Reg(rm)),
+            ),
+            _ => None,
+        }
+    }
+
+    /// The raw value of encoding field `name` (e.g. a SIMD&FP register number, which
+    /// has no `A64Reg` accessor), read back through the generated field table.
+    pub fn field_value(self, name: &str) -> Option<u32> {
+        let word = self.encode().ok()?;
+        GENERATED_A64_SUBSET
+            .iter()
+            .find(|spec| spec.key == self.key())?
+            .extract_field(word, name)
+    }
+
+    /// The instruction a fragment's PAN window may hold (A8, A9a): an LSE atomic, or
+    /// an A9a SIMD&FP load/store in its base-only encoding (`A64FpSimdMem::access`
+    /// of itself, no offset, no writeback). Translator side (layout's tag check);
+    /// the verifier decides this on its own.
+    pub fn is_pan_window_access(self) -> bool {
+        self.lse_atomic().is_some()
+            || self
+                .fpsimd_mem()
+                .is_some_and(|mem| mem.access == self && mem.offset == 0 && mem.writeback.is_none())
+    }
+}
+
+/// A word of `spec`'s form: its fixed bits, each `!=` exclusion it would hit
+/// escaped by setting the lowest free bit that exclusion covers (A9a: SHRN/USHR/
+/// SHL/USHLL's `immh != 0000`). Every other field is zero.
+pub fn form_base_word(spec: &GeneratedInsnSpec) -> u32 {
+    let mut word = spec.value;
+    for &(mask, value) in spec.excludes {
+        if word & mask == value {
+            let free = mask & !spec.mask;
+            word |= free & free.wrapping_neg();
+        }
+    }
+    word
+}
+
 pub fn decode_word(word: u32, pc: u64) -> Result<IrInsn, DecodeError> {
     let inner = A64Insn::decode(word)
         .filter(|insn| !insn.is_decode_undefined())
@@ -538,6 +1345,59 @@ impl A64Insn {
             | Self::LdrshRegLdrsh64LdstRegoff { option, .. }
             | Self::LdrswRegLdrsw64LdstRegoff { option, .. } => option & 0b010 == 0,
 
+            // A9a SIMD&FP (tmp/pipeline.md, "A9 contract"): the value rules of each
+            // form's decode pseudocode that its diagram does not fix.
+            // DUP/INS/UMOV: `imm5 == 'x0000'` (no element size); DUP (vector) and
+            // UMOV (32-bit) also reject a 64-bit element they cannot hold.
+            Self::DupAdvsimdEltDupAsisdoneOnly { imm5, .. }
+            | Self::InsAdvsimdEltInsAsimdinsIvV { imm5, .. }
+            | Self::InsAdvsimdGenInsAsimdinsIrR { imm5, .. } => imm5.raw() & 0b1111 == 0,
+            Self::DupAdvsimdEltDupAsimdinsDvV { q, imm5, .. }
+            | Self::DupAdvsimdGenDupAsimdinsDrR { q, imm5, .. } => {
+                imm5.raw() & 0b1111 == 0 || (imm5.raw() & 0b1111 == 0b1000 && q == 0)
+            }
+            // `datasize == 32 && esize >= 64`.
+            Self::UmovAdvsimdUmovAsimdinsWW { imm5, .. } => {
+                matches!(imm5.raw() & 0b1111, 0 | 0b1000)
+            }
+            // `size:Q == '110'` (a 64-bit vector of 64-bit elements is `1D`, reserved).
+            Self::CmeqAdvsimdRegCmeqAsimdsameOnly { q, size, .. }
+            | Self::CmeqAdvsimdZeroCmeqAsimdmiscZ { q, size, .. }
+            | Self::CmhiAdvsimdCmhiAsimdsameOnly { q, size, .. }
+            | Self::CmhsAdvsimdCmhsAsimdsameOnly { q, size, .. }
+            | Self::CmgtAdvsimdRegCmgtAsimdsameOnly { q, size, .. }
+            | Self::CmgtAdvsimdZeroCmgtAsimdmiscZ { q, size, .. }
+            | Self::CmgeAdvsimdRegCmgeAsimdsameOnly { q, size, .. }
+            | Self::CmgeAdvsimdZeroCmgeAsimdmiscZ { q, size, .. }
+            | Self::CmtstAdvsimdCmtstAsimdsameOnly { q, size, .. }
+            | Self::AddAdvsimdAddAsimdsameOnly { q, size, .. }
+            | Self::SubAdvsimdSubAsimdsameOnly { q, size, .. }
+            | Self::AddpAdvsimdVecAddpAsimdsameOnly { q, size, .. } => size == 0b11 && q == 0,
+            // UMAXP/UMINP, XTN: `size == '11'`.
+            Self::UmaxpAdvsimdUmaxpAsimdsameOnly { size, .. }
+            | Self::UminpAdvsimdUminpAsimdsameOnly { size, .. }
+            | Self::XtnAdvsimdXtnAsimdmiscN { size, .. } => size == 0b11,
+            // Across-lanes: `size:Q == '100'` or `size == '11'`.
+            Self::AddvAdvsimdAddvAsimdallOnly { q, size, .. }
+            | Self::UmaxvAdvsimdUmaxvAsimdallOnly { q, size, .. }
+            | Self::UminvAdvsimdUminvAsimdallOnly { q, size, .. } => {
+                size == 0b11 || (size == 0b10 && q == 0)
+            }
+            // Narrowing/lengthening shifts: `immh<3> == '1'` (the diagram excludes
+            // `immh == 0000`, which is the modified-immediate class).
+            Self::ShrnAdvsimdShrnAsimdshfN { immh, .. }
+            | Self::UshllAdvsimdUshllAsimdshfL { immh, .. } => immh.raw() & 0b1000 != 0,
+            // Vector shifts by immediate: `immh<3>:Q == '10'`.
+            Self::UshrAdvsimdUshrAsimdshfR { q, immh, .. }
+            | Self::ShlAdvsimdShlAsimdshfR { q, immh, .. } => immh.raw() & 0b1000 != 0 && q == 0,
+            // EXT: `Q == '0' && imm4<3> == '1'` (index past a 64-bit vector).
+            Self::ExtAdvsimdExtAsimdextOnly { q, imm4, .. } => q == 0 && imm4.raw() & 0b1000 != 0,
+            // REV16/32/64: `csize <= esize`.
+            Self::Rev16AdvsimdRev16AsimdmiscR { size, .. } => size != 0,
+            Self::Rev32AdvsimdRev32AsimdmiscR { size, .. } => size >= 0b10,
+            Self::Rev64AdvsimdRev64AsimdmiscR { size, .. } => size == 0b11,
+            // CNT: `size != '00'`.
+            Self::CntAdvsimdCntAsimdmiscR { size, .. } => size != 0,
             // Every remaining rule of these forms is fixed by the encoding diagram
             // (MOVZ/MOVK/MOVN 32-bit hw<1>, bitfield/EXTR N == sf, EXTR 32-bit
             // imms<5>, REV opc), or the form has no decode-time UNDEFINED case.
@@ -934,7 +1794,139 @@ impl A64Insn {
             | Self::CashCashC32Comswap { .. }
             | Self::CashCasahC32Comswap { .. }
             | Self::CashCasalhC32Comswap { .. }
-            | Self::CashCaslhC32Comswap { .. } => false,
+            | Self::CashCaslhC32Comswap { .. }
+            // A9a SIMD&FP with no decode-time value rule: loads/stores (the size and
+            // opc combinations are fixed per encoding; the only other UNDEFINED
+            // case is a missing FEAT_FP/FEAT_AdvSIMD, a CPU property; LDP `t == t2`
+            // is CONSTRAINED UNPREDICTABLE, rejected by reg-virt), scalar forms whose
+            // diagram fixes `size = 11` / `immh<3> = 1`, bitwise forms, MOVI/MVNI
+            // (every listed `cmode`/`op` is defined), FMOV (general, register:
+            // single/double only; FP16 forms are not in the subset), UMOV (64-bit:
+            // the diagram fixes `imm5<3:0> = 1000`), ADDP (scalar), TBL (one register).
+            | Self::LdrImmFpsimdLdrBLdstImmpost { .. }
+            | Self::LdrImmFpsimdLdrHLdstImmpost { .. }
+            | Self::LdrImmFpsimdLdrSLdstImmpost { .. }
+            | Self::LdrImmFpsimdLdrDLdstImmpost { .. }
+            | Self::LdrImmFpsimdLdrQLdstImmpost { .. }
+            | Self::LdrImmFpsimdLdrBLdstImmpre { .. }
+            | Self::LdrImmFpsimdLdrHLdstImmpre { .. }
+            | Self::LdrImmFpsimdLdrSLdstImmpre { .. }
+            | Self::LdrImmFpsimdLdrDLdstImmpre { .. }
+            | Self::LdrImmFpsimdLdrQLdstImmpre { .. }
+            | Self::LdrImmFpsimdLdrBLdstPos { .. }
+            | Self::LdrImmFpsimdLdrHLdstPos { .. }
+            | Self::LdrImmFpsimdLdrSLdstPos { .. }
+            | Self::LdrImmFpsimdLdrDLdstPos { .. }
+            | Self::LdrImmFpsimdLdrQLdstPos { .. }
+            | Self::StrImmFpsimdStrBLdstImmpost { .. }
+            | Self::StrImmFpsimdStrHLdstImmpost { .. }
+            | Self::StrImmFpsimdStrSLdstImmpost { .. }
+            | Self::StrImmFpsimdStrDLdstImmpost { .. }
+            | Self::StrImmFpsimdStrQLdstImmpost { .. }
+            | Self::StrImmFpsimdStrBLdstImmpre { .. }
+            | Self::StrImmFpsimdStrHLdstImmpre { .. }
+            | Self::StrImmFpsimdStrSLdstImmpre { .. }
+            | Self::StrImmFpsimdStrDLdstImmpre { .. }
+            | Self::StrImmFpsimdStrQLdstImmpre { .. }
+            | Self::StrImmFpsimdStrBLdstPos { .. }
+            | Self::StrImmFpsimdStrHLdstPos { .. }
+            | Self::StrImmFpsimdStrSLdstPos { .. }
+            | Self::StrImmFpsimdStrDLdstPos { .. }
+            | Self::StrImmFpsimdStrQLdstPos { .. }
+            | Self::LdurFpsimdLdurBLdstUnscaled { .. }
+            | Self::LdurFpsimdLdurHLdstUnscaled { .. }
+            | Self::LdurFpsimdLdurSLdstUnscaled { .. }
+            | Self::LdurFpsimdLdurDLdstUnscaled { .. }
+            | Self::LdurFpsimdLdurQLdstUnscaled { .. }
+            | Self::SturFpsimdSturBLdstUnscaled { .. }
+            | Self::SturFpsimdSturHLdstUnscaled { .. }
+            | Self::SturFpsimdSturSLdstUnscaled { .. }
+            | Self::SturFpsimdSturDLdstUnscaled { .. }
+            | Self::SturFpsimdSturQLdstUnscaled { .. }
+            | Self::LdpFpsimdLdpSLdstpairPost { .. }
+            | Self::LdpFpsimdLdpDLdstpairPost { .. }
+            | Self::LdpFpsimdLdpQLdstpairPost { .. }
+            | Self::LdpFpsimdLdpSLdstpairPre { .. }
+            | Self::LdpFpsimdLdpDLdstpairPre { .. }
+            | Self::LdpFpsimdLdpQLdstpairPre { .. }
+            | Self::LdpFpsimdLdpSLdstpairOff { .. }
+            | Self::LdpFpsimdLdpDLdstpairOff { .. }
+            | Self::LdpFpsimdLdpQLdstpairOff { .. }
+            | Self::StpFpsimdStpSLdstpairPost { .. }
+            | Self::StpFpsimdStpDLdstpairPost { .. }
+            | Self::StpFpsimdStpQLdstpairPost { .. }
+            | Self::StpFpsimdStpSLdstpairPre { .. }
+            | Self::StpFpsimdStpDLdstpairPre { .. }
+            | Self::StpFpsimdStpQLdstpairPre { .. }
+            | Self::StpFpsimdStpSLdstpairOff { .. }
+            | Self::StpFpsimdStpDLdstpairOff { .. }
+            | Self::StpFpsimdStpQLdstpairOff { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlseR11v { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlseR22v { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlseR33v { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlseR44v { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlsepI1I1 { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlsepR1R1 { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlsepI2I2 { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlsepR2R2 { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlsepI3I3 { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlsepR3R3 { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlsepI4I4 { .. }
+            | Self::Ld1AdvsimdMultLd1AsisdlsepR4R4 { .. }
+            | Self::St1AdvsimdMultSt1AsisdlseR11v { .. }
+            | Self::St1AdvsimdMultSt1AsisdlseR22v { .. }
+            | Self::St1AdvsimdMultSt1AsisdlseR33v { .. }
+            | Self::St1AdvsimdMultSt1AsisdlseR44v { .. }
+            | Self::St1AdvsimdMultSt1AsisdlsepI1I1 { .. }
+            | Self::St1AdvsimdMultSt1AsisdlsepR1R1 { .. }
+            | Self::St1AdvsimdMultSt1AsisdlsepI2I2 { .. }
+            | Self::St1AdvsimdMultSt1AsisdlsepR2R2 { .. }
+            | Self::St1AdvsimdMultSt1AsisdlsepI3I3 { .. }
+            | Self::St1AdvsimdMultSt1AsisdlsepR3R3 { .. }
+            | Self::St1AdvsimdMultSt1AsisdlsepI4I4 { .. }
+            | Self::St1AdvsimdMultSt1AsisdlsepR4R4 { .. }
+            | Self::UmovAdvsimdUmovAsimdinsXX { .. }
+            | Self::MoviAdvsimdMoviAsimdimmNB { .. }
+            | Self::MoviAdvsimdMoviAsimdimmLHl { .. }
+            | Self::MoviAdvsimdMoviAsimdimmLSl { .. }
+            | Self::MoviAdvsimdMoviAsimdimmMSm { .. }
+            | Self::MoviAdvsimdMoviAsimdimmDDs { .. }
+            | Self::MoviAdvsimdMoviAsimdimmD2D { .. }
+            | Self::MvniAdvsimdMvniAsimdimmLHl { .. }
+            | Self::MvniAdvsimdMvniAsimdimmLSl { .. }
+            | Self::MvniAdvsimdMvniAsimdimmMSm { .. }
+            | Self::FmovFloatGenFmovS32Float2int { .. }
+            | Self::FmovFloatGenFmov32sFloat2int { .. }
+            | Self::FmovFloatGenFmovD64Float2int { .. }
+            | Self::FmovFloatGenFmovV64iFloat2int { .. }
+            | Self::FmovFloatGenFmov64dFloat2int { .. }
+            | Self::FmovFloatGenFmov64vxFloat2int { .. }
+            | Self::FmovFloatFmovSFloatdp1 { .. }
+            | Self::FmovFloatFmovDFloatdp1 { .. }
+            | Self::CmeqAdvsimdRegCmeqAsisdsameOnly { .. }
+            | Self::CmeqAdvsimdZeroCmeqAsisdmiscZ { .. }
+            | Self::CmhiAdvsimdCmhiAsisdsameOnly { .. }
+            | Self::CmhsAdvsimdCmhsAsisdsameOnly { .. }
+            | Self::CmgtAdvsimdRegCmgtAsisdsameOnly { .. }
+            | Self::CmgtAdvsimdZeroCmgtAsisdmiscZ { .. }
+            | Self::CmgeAdvsimdRegCmgeAsisdsameOnly { .. }
+            | Self::CmgeAdvsimdZeroCmgeAsisdmiscZ { .. }
+            | Self::CmtstAdvsimdCmtstAsisdsameOnly { .. }
+            | Self::AndAdvsimdAndAsimdsameOnly { .. }
+            | Self::OrrAdvsimdRegOrrAsimdsameOnly { .. }
+            | Self::EorAdvsimdEorAsimdsameOnly { .. }
+            | Self::BicAdvsimdRegBicAsimdsameOnly { .. }
+            | Self::OrnAdvsimdOrnAsimdsameOnly { .. }
+            | Self::BitAdvsimdBitAsimdsameOnly { .. }
+            | Self::BifAdvsimdBifAsimdsameOnly { .. }
+            | Self::BslAdvsimdBslAsimdsameOnly { .. }
+            | Self::NotAdvsimdNotAsimdmiscR { .. }
+            | Self::AddAdvsimdAddAsisdsameOnly { .. }
+            | Self::SubAdvsimdSubAsisdsameOnly { .. }
+            | Self::AddpAdvsimdPairAddpAsisdpairOnly { .. }
+            | Self::UshrAdvsimdUshrAsisdshfR { .. }
+            | Self::ShlAdvsimdShlAsisdshfR { .. }
+            | Self::TblAdvsimdTblAsimdtblL11 { .. } => false,
         }
     }
 }
@@ -1096,7 +2088,7 @@ mod tests {
         use generated::GENERATED_A64_SUBSET;
         let mut unprivileged = 0;
         for spec in GENERATED_A64_SUBSET {
-            let insn = A64Insn::decode(spec.value)
+            let insn = A64Insn::decode(form_base_word(spec))
                 .unwrap_or_else(|| panic!("{} does not decode its own value", spec.key));
             assert_eq!(insn.key(), spec.key, "{:#010x}", spec.value);
             let family = spec.mnemonic.starts_with("LDTR") || spec.mnemonic.starts_with("STTR");
@@ -1106,7 +2098,9 @@ mod tests {
         assert_eq!(unprivileged, 13);
     }
 
-    /// Exclusive, pair-atomic (CASP, FEAT_LSE128) and FP/SIMD memory forms, and
+    /// Exclusive, pair-atomic (CASP, FEAT_LSE128) and the FP/SIMD memory forms
+    /// outside A9a (register offset, literal, LD2-4, single structure, replicate,
+    /// non-temporal), and
     /// the acquire/release forms beyond A7c's base-register ones (FEAT_LRCPC2
     /// unscaled, FEAT_LRCPC3 writeback, non-canonical should-be-one fields), stay
     /// outside the subset: they must not decode, so they take the Unsupported exit.
@@ -1130,12 +2124,12 @@ mod tests {
             (0x1921_1040, "ldclrp x0, x1, [x2] (FEAT_LSE128)"),
             (0x1921_8040, "swpp x0, x1, [x2] (FEAT_LSE128)"),
             (0x1921_3040, "ldsetp x0, x1, [x2] (FEAT_LSE128)"),
-            (0x3dc0_0020, "ldr q0, [x1]"),
-            (0xfd40_0420, "ldr d0, [x1, #8]"),
-            (0xbc40_4420, "ldr s0, [x1], #4"),
-            (0xad40_0420, "ldp q0, q1, [x1]"),
             (0xfc22_7820, "str d0, [x1, x2, lsl #3]"),
-            (0x3cdf_0020, "ldur q0, [x1, #-16]"),
+            (0x3ce2_6820, "str q0, [x1, x2]"),
+            (0x4c40_8020, "ld2 {v0.8h, v1.8h}, [x1]"),
+            (0x4d40_0020, "ld1 {v0.b}[8], [x1]"),
+            (0x4d40_c020, "ld1r {v0.16b}, [x1]"),
+            (0x2c40_0420, "ldnp s0, s1, [x1]"),
             (0x9c00_0000, "ldr q0, <literal>"),
             (0xa840_0440, "ldnp x0, x1, [x2]"),
             (0xf880_1000, "prfum pldl1keep, [x0, #1]"),
@@ -1147,6 +2141,70 @@ mod tests {
                 "{what}"
             );
         }
+    }
+
+    /// A9a: FP arithmetic, conversions and compares, half-precision FMOV, FMOV
+    /// (vector, immediate), saturating integer SIMD and multi-register TBL stay
+    /// outside the subset (Unsupported exit), next to the forms that joined it.
+    #[test]
+    fn a9a_subset_boundary() {
+        let outside: [(u32, &str); 10] = [
+            (0x1e60_2801, "fadd d1, d0, d0"),
+            (0x9e63_0020, "ucvtf d0, x1"),
+            (0x1e61_2010, "fcmpe d0, d1"),
+            (0x9e78_0000, "fcvtzs x0, d0"),
+            (0x4f03_f600, "fmov v0.4s, #1.0"),
+            (0x1ee6_0020, "fmov w0, h1 (FEAT_FP16)"),
+            (0x1ee0_4020, "fmov h0, h1 (FEAT_FP16)"),
+            (0x1e22_0020, "scvtf s0, w1"),
+            (0x4e22_0c20, "sqadd v0.16b, v1.16b, v2.16b"),
+            (0x4e03_2020, "tbl v0.16b, {v1.16b, v2.16b}, v3.16b"),
+        ];
+        for (word, what) in outside {
+            assert!(decode_word(word, 0).is_err(), "{what}");
+        }
+        let inside: [(u32, &str); 3] = [
+            (0x6f00_e400, "MOVI_advsimd.MOVI_asimdimm_D2_d"),
+            (0x3dc0_0020, "LDR_imm_fpsimd.LDR_Q_ldst_pos"),
+            (0x4e20_9820, "CMEQ_advsimd_zero.CMEQ_asimdmisc_Z"),
+        ];
+        for (word, key) in inside {
+            assert_eq!(decode_word(word, 0).unwrap().inner.key(), key);
+        }
+    }
+
+    /// A9a: `fpsimd_mem` is exactly the generated SIMD&FP loads/stores (a
+    /// `Memory` role and a `Vec*` role), each with its base-only access in the
+    /// same XML section family, and `is_pan_window_access` holds for exactly the
+    /// base-only encodings and the LSE atomics.
+    #[test]
+    fn fpsimd_mem_matches_the_generated_simd_memory_forms() {
+        use generated::GENERATED_A64_SUBSET;
+        let mut memory = 0;
+        let mut base_only = 0;
+        for spec in GENERATED_A64_SUBSET {
+            let insn = A64Insn::decode(form_base_word(spec)).expect("own value decodes");
+            let simd_memory = spec.operands.contains(&A64OperandRole::Memory)
+                && spec.operands.iter().any(|role| {
+                    matches!(
+                        role,
+                        A64OperandRole::VecRead { .. } | A64OperandRole::VecWrite { .. }
+                    )
+                });
+            assert_eq!(insn.fpsimd_mem().is_some(), simd_memory, "{}", spec.key);
+            if let Some(mem) = insn.fpsimd_mem() {
+                memory += 1;
+                assert!(mem.access.is_pan_window_access(), "{}", spec.key);
+                assert_eq!(mem.access.fpsimd_mem().unwrap().access, mem.access);
+                if insn.is_pan_window_access() {
+                    base_only += 1;
+                    assert_eq!(mem.access, insn, "{}", spec.key);
+                }
+            } else {
+                assert_eq!(insn.is_pan_window_access(), insn.lse_atomic().is_some());
+            }
+        }
+        assert_eq!((memory, base_only), (82, 24));
     }
 
     /// A7c: the barriers and base-register acquire/release forms decode as
@@ -1240,7 +2298,7 @@ mod tests {
         ];
         let mut atomics = 0;
         for spec in GENERATED_A64_SUBSET {
-            let insn = A64Insn::decode(spec.value).expect("own value decodes");
+            let insn = A64Insn::decode(form_base_word(spec)).expect("own value decodes");
             let section = spec.key.split('.').next().unwrap();
             let expected = ops.iter().find_map(|&(prefix, op)| {
                 let suffix = section.strip_prefix(prefix)?;

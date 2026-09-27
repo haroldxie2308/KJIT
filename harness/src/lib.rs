@@ -17,6 +17,7 @@ pub mod native;
 pub mod report_util;
 pub mod runtime;
 pub mod shared;
+pub(crate) mod simd;
 pub mod trace;
 
 #[cfg(test)]
@@ -28,13 +29,14 @@ mod verify_mutation_tests;
 
 use std::fmt;
 
+use crate::shared::arm64::A64OperandRole;
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::trans::cfg::{admit_at, RuntimeExitReason};
 use crate::shared::trans::input::{
     CodeProvider, CodeReadError, RegisterSnapshot, TranslationRequest, TranslationTrigger,
 };
 use crate::shared::trans::translate::{compile_request, translate_request, TranslatedProgram};
-use crate::shared::verify::{verify_fragment, FaultSiteEntry, VerifyError, VerifyInput};
+use crate::shared::verify::{verify_fragment, FaultSiteEntry, VerifyError, VerifyInput, VerifyOk};
 use arm64::OriginalStepper;
 use model::{ExecutionResult, HaltReason, MachineState, PagePerm, PAGE_SIZE};
 use runtime::{URuntime, URuntimeHalt, URuntimeReport, URuntimeStepper};
@@ -51,7 +53,7 @@ pub struct CaseReport {
     /// Where the original run was stopped to match a `Budget` exit of the fragment.
     pub original_cap: Option<InstanceCap>,
     /// See `DifferentialRun::original_footprint`.
-    pub original_footprint: Vec<StoreUnit>,
+    pub original_footprint: Footprint,
     /// See `DifferentialRun::original_accesses`.
     pub original_accesses: Vec<arm64::LoggedAccess>,
     pub fragment_state: MachineState,
@@ -246,28 +248,40 @@ pub struct DifferentialRun {
     pub original: ExecutionResult,
     /// Where the original was stopped to match a `Budget` exit of the fragment.
     pub original_cap: Option<InstanceCap>,
-    /// When the original faulted: the store units the fragment may already have
-    /// written (`faulting_store_footprint`). Empty otherwise.
-    pub original_footprint: Vec<StoreUnit>,
+    /// When the original faulted: what it may already have done
+    /// (`faulting_footprint`). Empty otherwise.
+    pub original_footprint: Footprint,
     /// Every user access the original attempted, in order (a faulting one last).
     pub original_accesses: Vec<arm64::LoggedAccess>,
     pub report: URuntimeReport,
 }
 
-/// `state` with every footprint unit that holds its new value reset to its value
-/// in `original` (the state before the faulting instruction).
-pub(crate) fn undo_store_footprint(
+/// `state` with every footprint unit, and every byte of a footprint register,
+/// that holds its new value reset to its value in `original` (the state before
+/// the faulting instruction).
+pub(crate) fn undo_footprint(
     original: &MachineState,
-    footprint: &[StoreUnit],
+    footprint: &Footprint,
     state: &MachineState,
 ) -> MachineState {
     let mut state = state.clone();
-    for unit in footprint {
+    for unit in &footprint.stores {
         let got = state.read_le(unit.addr, unit.size);
         let old = original.read_le(unit.addr, unit.size);
         if got != old && got == unit.value {
             state.write_le(unit.addr, unit.size, old);
         }
+    }
+    for &(reg, new) in &footprint.vregs {
+        let old = original.v[reg as usize];
+        let mut got = state.v[reg as usize];
+        for byte in 0..16 {
+            let mask = 0xff_u128 << (8 * byte);
+            if got & mask != old & mask && got & mask == new & mask {
+                got = (got & !mask) | (old & mask);
+            }
+        }
+        state.v[reg as usize] = got;
     }
     state
 }
@@ -325,8 +339,29 @@ pub fn run_differential(
             .map_err(DifferentialError::Translate)?;
     let encoded_fragment = encode_fragment(&fragment).map_err(DifferentialError::Translate)?;
     // The kernel runs only verified fragments; so does every differential run.
-    verify_encoded_fragment(&fragment, &encoded_fragment)
+    let verified = verify_encoded_fragment(&fragment, &encoded_fragment)
         .map_err(|err| DifferentialError::Verify(format!("{err:?}")))?;
+    // A9a: the verifier's `uses_fpsimd`, derived from the bytes alone, agrees with
+    // the translator's own view (some instruction names a V register).
+    let names_v_register = fragment.insns.iter().any(|insn| {
+        insn.operand_roles().iter().any(|role| {
+            matches!(
+                role,
+                A64OperandRole::VecRead { .. } | A64OperandRole::VecWrite { .. }
+            )
+        })
+    });
+    if verified.uses_fpsimd != names_v_register {
+        return Err(DifferentialError::Verify(format!(
+            "uses_fpsimd = {} but the fragment {} a V register",
+            verified.uses_fpsimd,
+            if names_v_register {
+                "names"
+            } else {
+                "never names"
+            }
+        )));
+    }
     let mut runtime = URuntime::new(fragment, initial_state.clone());
     let (report, original_cap) =
         run_fragment_counting_instances(&mut runtime, limits.map(|limits| limits.fragment))
@@ -361,7 +396,7 @@ pub fn run_differential(
             privilege: model::Privilege::User,
         });
     }
-    let original_footprint = faulting_store_footprint(&text_bytes, text_base, &original)
+    let original_footprint = faulting_footprint(&text_bytes, text_base, &original)
         .map_err(|message| DifferentialError::Original(OriginalRunError::Harness(message)))?;
     Ok(DifferentialRun {
         fragment: runtime.fragment,
@@ -374,20 +409,39 @@ pub fn run_differential(
     })
 }
 
-/// pipeline.md "Fault sites (A5)", store footprint: a store split into several
-/// user accesses (STP) that faults on a later one has already written the earlier
-/// units, which userspace then rewrites when it re-executes the instruction. So
-/// each of those units may hold its old or its new value. Returns them with the
-/// value the store writes there; empty unless a write before the faulting access
-/// of the faulting instruction succeeded.
-fn faulting_store_footprint(
+/// What a faulting original instruction may already have done when it aborted,
+/// and what userspace then redoes when it re-executes it:
+/// - pipeline.md "Fault sites (A5)", store footprint: a store split into several
+///   user accesses (STP) that faults on a later one has already written the
+///   earlier units;
+/// - A9a: a SIMD&FP access is performed in smaller single-copy-atomic parts, so
+///   the bytes of the faulting access itself that lie on permitted pages may
+///   already be written (hardware writes the part of an `stp q` before a
+///   read-only page), and a load's SIMD&FP destination registers are UNKNOWN
+///   after the abort (hardware loads `q0` of an `ldp q0, q1` and the first
+///   registers of an `ld1` before the faulting page).
+///
+/// Each unit or register byte may hold its old or its new value, the new one
+/// being what a complete execution writes. Empty unless the original halted on a
+/// permission fault (an alignment fault performs no access).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Footprint {
+    pub stores: Vec<StoreUnit>,
+    /// SIMD&FP registers (number, value after a complete execution).
+    pub vregs: Vec<(u8, u128)>,
+}
+
+fn faulting_footprint(
     text: &[u8],
     text_base: u64,
     original: &ExecutionResult,
-) -> Result<Vec<StoreUnit>, String> {
+) -> Result<Footprint, String> {
     let HaltReason::Fault(fault) = original.halt_reason else {
-        return Ok(Vec::new());
+        return Ok(Footprint::default());
     };
+    if fault.cause != model::FaultCause::Permission {
+        return Ok(Footprint::default());
+    }
     let insn = match admit_at(&MockCodeProvider::new(text_base, text), fault.pc)
         .map_err(|err| err.to_string())?
     {
@@ -408,43 +462,88 @@ fn faulting_store_footprint(
         (result, log)
     };
 
-    // The accesses before the faulting one passed their checks. (An SP alignment
-    // fault logs none: it happens before any access.)
+    // The accesses before the faulting one passed their checks.
     let (_, log) = execute(&mut original.state.clone());
-    let written_before_fault = log
+    let mut units = log
         .iter()
         .take(log.len().saturating_sub(1))
         .filter(|logged| logged.access.kind == model::AccessKind::Write)
-        .map(|logged| logged.access)
+        .map(|logged| (logged.access.addr, logged.access.size))
         .collect::<Vec<_>>();
-    if written_before_fault.is_empty() {
-        return Ok(Vec::new());
+    // An access that starts outside the 48-bit user VA (the kernel half, or past
+    // 2^48) performs nothing of itself: EL0 translation faults on its first byte
+    // and a window's range check leaves before it.
+    let user_address = fault.access.addr >> crate::shared::abi::USER_VA_BITS == 0;
+    // The faulting store's own bytes on writable pages (A9a).
+    if user_address && fault.access.kind == model::AccessKind::Write {
+        for addr in fault.access.addr
+            ..fault
+                .access
+                .addr
+                .saturating_add(u64::from(fault.access.size))
+        {
+            if original.state.user_access_allowed(model::MemAccess {
+                addr,
+                size: 1,
+                kind: model::AccessKind::Write,
+            }) {
+                units.push((addr, 1));
+            }
+        }
+    }
+    let simd_load =
+        user_address && insn.fpsimd_mem().is_some() && fault.access.kind == model::AccessKind::Read;
+    if units.is_empty() && !simd_load {
+        return Ok(Footprint::default());
     }
 
-    // Their new values: rerun with the faulting access's pages writable.
+    // New values: rerun with every page the instruction faults on made writable
+    // (a later access of an LD1/ST1 may fault on a further page).
     let mut state = original.state.clone();
-    let end = fault
-        .access
-        .addr
-        .checked_add(u64::from(fault.access.size))
-        .ok_or_else(|| format!("faulting access at {:#x} wraps", fault.access.addr))?;
-    let first_page = fault.access.addr & !(PAGE_SIZE - 1);
-    let end_page = (end + PAGE_SIZE - 1) & !(PAGE_SIZE - 1);
-    state.map_user_range(first_page, end_page, PagePerm::ReadWrite)?;
-    match execute(&mut state) {
-        (Ok(_), _) => Ok(written_before_fault
-            .iter()
-            .map(|access| StoreUnit {
-                addr: access.addr,
-                size: access.size,
-                value: state.read_le(access.addr, access.size),
-            })
-            .collect()),
-        (Err(err), _) => Err(format!(
-            "instruction at {:#x} still fails with its faulting page writable: {err:?}",
-            fault.pc
-        )),
+    let mut faulting = fault.access;
+    for _ in 0..8 {
+        let end = faulting
+            .addr
+            .checked_add(u64::from(faulting.size))
+            .ok_or_else(|| format!("faulting access at {:#x} wraps", faulting.addr))?;
+        let first_page = faulting.addr & !(PAGE_SIZE - 1);
+        let end_page = end.checked_add(PAGE_SIZE - 1).ok_or_else(|| {
+            format!(
+                "faulting access at {:#x} ends at the top page",
+                faulting.addr
+            )
+        })? & !(PAGE_SIZE - 1);
+        state.map_user_range(first_page, end_page, PagePerm::ReadWrite)?;
+        let mut attempt = state.clone();
+        match execute(&mut attempt) {
+            (Ok(_), _) => {
+                let stores = units
+                    .iter()
+                    .map(|&(addr, size)| StoreUnit {
+                        addr,
+                        size,
+                        value: attempt.read_le(addr, size),
+                    })
+                    .collect();
+                let vregs = (0..32u8)
+                    .filter(|&reg| attempt.v[reg as usize] != original.state.v[reg as usize])
+                    .map(|reg| (reg, attempt.v[reg as usize]))
+                    .collect();
+                return Ok(Footprint { stores, vregs });
+            }
+            (Err(arm64::InsnError::Fault(next)), _) => faulting = next.access,
+            (Err(err), _) => {
+                return Err(format!(
+                    "instruction at {:#x} fails with its faulting pages writable: {err:?}",
+                    fault.pc
+                ))
+            }
+        }
     }
+    Err(format!(
+        "instruction at {:#x} still faults with its faulting pages writable",
+        fault.pc
+    ))
 }
 
 
@@ -586,7 +685,7 @@ pub struct Mismatch {
 /// suite, `trace-tui --check` and the fuzzer all use it.
 pub fn compare_differential(name: &str, run: &DifferentialRun) -> Result<(), Mismatch> {
     let (original, report) = (&run.original, &run.report);
-    let fragment_state = undo_store_footprint(&original.state, &run.original_footprint, &report.state);
+    let fragment_state = undo_footprint(&original.state, &run.original_footprint, &report.state);
     if original.state != fragment_state {
         return Err(Mismatch {
             kind: MismatchKind::State,
@@ -875,7 +974,7 @@ impl FragmentTables {
 pub fn verify_encoded_fragment(
     fragment: &ExecutionFragment,
     code: &[u8],
-) -> Result<(), VerifyError> {
+) -> Result<VerifyOk, VerifyError> {
     verify_fragment(&FragmentTables::of(fragment).input(code))
 }
 
@@ -1153,7 +1252,7 @@ mod tests {
         let run = run_differential(text_base, text, text_base + 4, &state, None, &mut |_| {})
             .unwrap();
         assert_eq!(
-            run.original_footprint,
+            run.original_footprint.stores,
             [StoreUnit {
                 addr: FIXTURE_RO_BASE - 8,
                 size: 8,

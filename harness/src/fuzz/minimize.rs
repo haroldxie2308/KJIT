@@ -5,8 +5,9 @@
 //!    `default_fixture_state()`, keeping every change under which the program
 //!    still fails with the same `FailureKind` and the original still halts the
 //!    same way (RET, fault, fall off the end, ...).
-//! 2. Lift what is left of the state into a prelude (memory via `str`, SP via
-//!    `add sp`, NZCV via `subs xzr`, registers via `movz`/`movk`) so the case
+//! 2. Lift what is left of the state into a prelude (memory via `str`, V
+//!    registers via `fmov`, SP via `add sp`, NZCV via `subs xzr`, registers via
+//!    `movz`/`movk`) so the case
 //!    runs from `default_fixture_state()` like every fixture, re-check that it
 //!    still fails, and minimize again with the state fixed.
 //! 3. Write it as `.inst` words after `hot_svc_mark` and verify that
@@ -206,6 +207,15 @@ impl Minimizer<'_> {
             candidate.write_x(reg, base.read_x(reg));
             try_state(self, &mut state, candidate);
         }
+        // A9a: V registers, FPCR, FPSR.
+        for reg in 0..32 {
+            let mut candidate = state.clone();
+            candidate.v[reg] = base.v[reg];
+            try_state(self, &mut state, candidate);
+        }
+        let mut candidate = state.clone();
+        (candidate.fpcr, candidate.fpsr) = (base.fpcr, base.fpsr);
+        try_state(self, &mut state, candidate);
         state
     }
 }
@@ -249,6 +259,33 @@ fn lift(program: &Program, state: &MachineState) -> Result<Program, String> {
                 A64Imm::scaled_unsigned(((group - FIXTURE_DATA_BASE) / 8) as u32, 12, 3),
             ),
         }));
+    }
+    // A9a: V registers through x0 (`fmov dN, x0` zeroes the top half, `fmov
+    // vN.d[1], x0` sets it). No A9a form writes FPCR/FPSR, so a state that still
+    // needs them after minimization cannot be lifted.
+    for reg in 0..32u8 {
+        let value = state.v[reg as usize];
+        if value == base.v[reg as usize] {
+            continue;
+        }
+        materialize(&mut prelude, 0, value as u64);
+        prelude.push(encode(A64Insn::FmovFloatGenFmovD64Float2int {
+            rn: A64Reg::x(0),
+            rd: reg,
+        }));
+        if value >> 64 != 0 {
+            materialize(&mut prelude, 0, (value >> 64) as u64);
+            prelude.push(encode(A64Insn::FmovFloatGenFmovV64iFloat2int {
+                rn: A64Reg::x(0),
+                rd: reg,
+            }));
+        }
+    }
+    if (state.fpcr, state.fpsr) != (base.fpcr, base.fpsr) {
+        return Err(format!(
+            "FPCR {:#x} / FPSR {:#x} cannot be set by a subset prelude",
+            state.fpcr, state.fpsr
+        ));
     }
     if state.sp() != base.sp() {
         materialize(&mut prelude, 0, state.sp());

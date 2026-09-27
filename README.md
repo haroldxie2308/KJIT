@@ -260,7 +260,8 @@ LSE atomics in PAN windows) without FEAT_LSE, with `vabits_actual != 48`
 `SCTLR_EL1.SPAN` set. A fragment is installed only if
 `verify_fragment` accepts exactly the bytes, fault-site table and entry table
 that get installed; it is refused unless every text page it came from is in an
-executable, non-writable mapping.
+executable, non-writable mapping, and (A9a, until A9b brackets such runs) when
+the verifier reports `uses_fpsimd`.
 
 **Trigger and stats** (`/sys/kernel/debug/kjit/`, root only):
 
@@ -505,9 +506,20 @@ window, `ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>; msr pan, #0; <atomic on
 sA>; msr pan, #1`, after the SP or 16-byte-block alignment check (like the
 kernel's own futex ops, which clear PAN after `access_ok`). The range check
 admits only TTBR0 addresses below 2^48 (any top byte); a fault resumes at the
-PAN stub, which restores PAN before its `Mem` exit group. Exclusives, CASP,
-FEAT_LSE128 and FP/SIMD loads/stores stay outside the subset and take the
-`Unsupported` exit; so does user `msr pan`. Each access is a fault
+PAN stub, which restores PAN before its `Mem` exit group. SIMD&FP loads/stores
+(A9a: `LDR`/`STR`/`LDUR`/`STUR` b/h/s/d/q, `LDP`/`STP` s/d/q, `LD1`/`ST1` of 1-4
+registers, every addressing mode they have) run the same way: the access
+address goes into sA, and the window holds the user's access in its base-only
+encoding (`ldr q0, [sA]`, `ldp q0, q1, [sA]`, `ld1 {..}, [sA]`), with any base
+writeback after `msr pan, #1`. The SIMD&FP register-only forms of A9a (DUP, INS,
+UMOV, MOVI/MVNI, FMOV general/register, integer compares, logic, BIT/BIF/BSL,
+ADD/SUB, pairwise and across-lanes add/max/min, SHRN/USHR/SHL/USHLL/XTN, EXT,
+REV, CNT, one-register TBL) are emitted unchanged except for their general
+operands: V0-V31, FPCR and FPSR are never virtualized, they stay live in the
+hardware. FP arithmetic, conversions and compares, half-precision FMOV,
+exclusives, CASP, FEAT_LSE128 and the other SIMD&FP loads/stores (register
+offset, literal, LD2-4, ...) stay outside the subset and take the `Unsupported`
+exit; so does user `msr pan`. Each access is a fault
 site: `ExecutionFragment.fault_sites` maps it to an out-of-line `Mem` exit stub for its original instruction, placed after the
 body, and a faulting access resumes there, so userspace re-executes the
 instruction and takes the fault itself. The harness classifies fragment
@@ -563,7 +575,12 @@ reserves x18) it runs `scripts/native-test.sh` in a `linux/arm64` container
 (`kjit-dev:latest` if present, else `rust:1.85-bookworm` with LLVM installed at
 start), with its own `CARGO_HOME`/`CARGO_TARGET_DIR` under `.kjit/`. For every
 fixture case it requires interpreter original == native original == native
-fragment (registers, SP, NZCV, the data window, and the halt). Fixture text is
+fragment (registers, SP, NZCV, V0-V31, FPCR, FPSR, the data window, and the
+halt; V/FPCR/FPSR travel through the signal frame's `fpsimd_context` and the
+fragment call trampoline). A faulting instruction's partial effects that the
+architecture allows (earlier store units, the bytes of a faulting SIMD&FP store
+on writable pages, the destination V registers of a faulting SIMD&FP load) may
+hold their old or new values. Fixture text is
 based at `0x10000` and the data window (x12) at `0x20000`, both at or above
 Linux's `vm.mmap_min_addr`, so the native runs use the interpreter's addresses.
 Fixture TPIDR_EL0 is `0x23000` (a TLS block inside the data window); the native
@@ -578,7 +595,8 @@ entry table before anything may execute them, using only the generated decoder
 and `shared::abi` (never the translator). It accepts a fragment only if the
 prologue/epilogue are byte-exact, the body never writes SP or x29, user memory
 is touched only by the `LDTR*`/`STTR*` family with a fault-site entry or by an
-LSE atomic inside an exact PAN window (range check on its base register right
+LSE atomic or a base-only SIMD&FP load/store (A9a) inside an exact PAN window
+(range check on its base register right
 before `msr pan, #0`, `msr pan, #1` right after, no join point inside, fault
 site at a PAN stub that starts with `msr pan, #1` and that nothing else
 targets; `msr pan` nowhere else, no other MSR), no
@@ -594,7 +612,12 @@ through the registers the epilogue writes back), direct branches stay inside the
 epilogue), there are no calls, indirect branches, SVC or ADR/ADRP, every fault
 stub is an exit group ending in `b <epilogue>`, nothing falls off the end, and
 every back-edge is guarded by the budget check (which alone may touch the
-counter). Rules and decisions: `tmp/pipeline.md`, "Verifier (V3)".
+counter). SIMD&FP register-only forms are allowed anywhere; V registers are not
+general registers for rule 9 (a kernel value never enters one, since every
+general operand of a SIMD&FP form is checked). `verify_fragment` returns
+`VerifyOk { uses_fpsimd }`, derived from the bytes, which the kernel uses to
+decide how to run the fragment. Rules and decisions: `tmp/pipeline.md`,
+"Verifier (V3)" and "A9a implementation".
 
 Every fixture case is verified before it runs. `make harness-test` also runs the
 mutation suite (`verify_mutation_tests.rs`), which mutates every fixture
@@ -611,8 +634,12 @@ broken fault tables, dropped/retargeted/altered budget checks, stray counter
 writes, PAN windows with a dropped/moved/extra MSR, a widened window, an
 altered/inverted/retargeted range check, a window around a non-atomic, window
 fault sites at other stubs, branches into PAN stubs, atomics and `msr pan`
-inserted elsewhere, random words) and requires every deterministic mutation to
-be rejected; it prints a per-class table.
+inserted elsewhere, the same window classes around SIMD&FP accesses, SIMD&FP
+loads/stores inserted outside a window or with an offset/writeback, a window
+around a SIMD&FP access on another base, SIMD&FP forms writing x29, the
+pt_regs pointer moved into a V register or kept by a V-register write, random
+words) and requires every deterministic mutation to be rejected; it prints a
+per-class table.
 
 #### Differential fuzzer
 

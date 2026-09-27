@@ -68,7 +68,7 @@ pub fn parse_instruction(path: &Path) -> Result<InstructionSpec> {
                     fields: render_fields(&fields, combined_mask),
                     operand_roles: infer_operand_roles(
                         &variant_docvars,
-                        &fields,
+                        &encoding_fields(&fields, combined_mask),
                         &parse_asm_operands(encoding),
                         &decode_text,
                         &postdecode_text,
@@ -287,6 +287,22 @@ fn parse_ps_texts(root: Node<'_, '_>, iclass: Node<'_, '_>) -> (String, String, 
         .join(" ");
 
     (decode, postdecode, execute)
+}
+
+/// The iclass fields with `variable` cleared for every field the encoding fixes
+/// completely (LD1 (multiple) post-index by immediate fixes `Rm` = 31): such a
+/// field is no operand of the form, so no role may name it.
+fn encoding_fields(fields: &[FieldSlice], combined_mask: u32) -> Vec<FieldSlice> {
+    fields
+        .iter()
+        .map(|field| {
+            let mask = bit_mask(field.width) << field.lo();
+            FieldSlice {
+                variable: field.variable && (combined_mask & mask) != mask,
+                ..field.clone()
+            }
+        })
+        .collect()
 }
 
 fn render_fields(fields: &[FieldSlice], combined_mask: u32) -> Vec<FieldSpec> {

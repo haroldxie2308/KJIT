@@ -128,7 +128,39 @@ struct MContext {
     sp: u64,
     pc: u64,
     pstate: u64,
-    // `__reserved` (FP/SIMD and ESR records) follows; never touched here.
+    // `__reserved` (context records) follows at `MCONTEXT_RESERVED_OFFSET`; its
+    // first record is always the `fpsimd_context` (`FpsimdContext`).
+}
+
+/// Offset of `sigcontext.__reserved` (16-byte aligned, after `pstate`).
+const MCONTEXT_RESERVED_OFFSET: usize = 288;
+/// `FPSIMD_MAGIC` (arch/arm64/include/uapi/asm/sigcontext.h).
+const FPSIMD_MAGIC: u32 = 0x4650_8001;
+
+/// Linux's `struct fpsimd_context`, the first record of `__reserved`: the user's
+/// V0-V31, FPSR and FPCR at the signal (A9a). Written back to the registers on
+/// sigreturn.
+#[repr(C)]
+struct FpsimdContext {
+    magic: u32,
+    size: u32,
+    fpsr: u32,
+    fpcr: u32,
+    vregs: [u128; 32],
+}
+
+const _: () = assert!(offset_of!(FpsimdContext, vregs) == 16);
+const _: () = assert!(size_of::<FpsimdContext>() == 528);
+
+/// The frame's `fpsimd_context`, or `None` if the first record is not one.
+///
+/// # Safety
+/// `mc` is the `uc_mcontext` of a live signal frame.
+unsafe fn fpsimd_context(mc: &mut MContext) -> Option<&mut FpsimdContext> {
+    let record =
+        (mc as *mut MContext as *mut u8).add(MCONTEXT_RESERVED_OFFSET) as *mut FpsimdContext;
+    ((*record).magic == FPSIMD_MAGIC && (*record).size as usize >= size_of::<FpsimdContext>())
+        .then(|| &mut *record)
 }
 
 #[repr(C)]
@@ -186,6 +218,9 @@ struct NativeCtx {
     /// Fragment return value (x0 = RetStatus) and NZCV after the call.
     status: u64,
     nzcv: u64,
+    /// In: V0-V31/FPCR/FPSR for a fragment call (loaded right before `blr`).
+    /// Out: their values right after it returns (A9a).
+    fp: FpState,
     /// In: user state to start (enter_user). Out: register snapshot at the event.
     user: UserRegs,
     event: Event,
@@ -193,6 +228,8 @@ struct NativeCtx {
     fault_fixup: FaultFixup,
     /// Out: data aborts redirected to a fault stub during the call.
     fault_redirects: u64,
+    /// Out: a signal frame had no `fpsimd_context` first (A9a; never expected).
+    fpsimd_missing: bool,
 }
 
 /// The kernel's user-access fixup (tmp/pipeline.md, "Fault sites (A5)"): a data
@@ -242,6 +279,33 @@ struct UserRegs {
     sp: u64,
     pc: u64,
     pstate: u64,
+    fp: FpState,
+}
+
+/// V0-V31, FPCR and FPSR (A9a): in and out of user code through the signal
+/// frame's `fpsimd_context`, in and out of a fragment call through
+/// `NativeCtx::fp`, which the call trampoline loads before `blr` and stores after.
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct FpState {
+    v: [u128; 32],
+    fpcr: u64,
+    fpsr: u64,
+}
+
+const FP_STATE_FPCR: usize = 512;
+const FP_STATE_FPSR: usize = 520;
+const _: () = assert!(offset_of!(FpState, fpcr) == FP_STATE_FPCR);
+const _: () = assert!(offset_of!(FpState, fpsr) == FP_STATE_FPSR);
+
+impl FpState {
+    fn of(state: &MachineState) -> Self {
+        Self {
+            v: state.v,
+            fpcr: state.fpcr,
+            fpsr: state.fpsr,
+        }
+    }
 }
 
 /// `signal == 0`: the fragment returned normally.
@@ -266,6 +330,7 @@ const _: () = assert!(offset_of!(NativeCtx, host) == 0);
 const _: () = assert!(offset_of!(NativeCtx, after_call) == 176);
 const _: () = assert!(offset_of!(NativeCtx, status) == 280);
 const _: () = assert!(offset_of!(NativeCtx, nzcv) == 288);
+const _: () = assert!(offset_of!(NativeCtx, fp) == 304);
 
 impl NativeCtx {
     fn new(user: UserRegs) -> Self {
@@ -274,10 +339,12 @@ impl NativeCtx {
             after_call: [0; 13],
             status: 0,
             nzcv: 0,
+            fp: FpState::default(),
             user,
             event: Event::default(),
             fault_fixup: FaultFixup::NONE,
             fault_redirects: 0,
+            fpsimd_missing: false,
         }
     }
 }
@@ -321,6 +388,29 @@ global_asm!(
     "    sub sp, sp, #16",
     "    str x0, [sp]",
     "    msr nzcv, x5",
+    // The user's V0-V31/FPCR/FPSR from ctx->fp: live in the registers while the
+    // fragment runs, as the kernel keeps them (A9a).
+    "    add x10, x0, #304",
+    "    ldp q0, q1, [x10, #0]",
+    "    ldp q2, q3, [x10, #32]",
+    "    ldp q4, q5, [x10, #64]",
+    "    ldp q6, q7, [x10, #96]",
+    "    ldp q8, q9, [x10, #128]",
+    "    ldp q10, q11, [x10, #160]",
+    "    ldp q12, q13, [x10, #192]",
+    "    ldp q14, q15, [x10, #224]",
+    "    ldp q16, q17, [x10, #256]",
+    "    ldp q18, q19, [x10, #288]",
+    "    ldp q20, q21, [x10, #320]",
+    "    ldp q22, q23, [x10, #352]",
+    "    ldp q24, q25, [x10, #384]",
+    "    ldp q26, q27, [x10, #416]",
+    "    ldp q28, q29, [x10, #448]",
+    "    ldp q30, q31, [x10, #480]",
+    "    ldr x11, [x10, #512]",
+    "    msr fpcr, x11",
+    "    ldr x11, [x10, #520]",
+    "    msr fpsr, x11",
     "    adrp x10, {user_tpidr}",
     "    ldr x10, [x10, :lo12:{user_tpidr}]",
     "    msr tpidr_el0, x10",
@@ -346,6 +436,27 @@ global_asm!(
     "    str x11, [x9, #272]",
     "    str x0, [x9, #280]",
     "    str x10, [x9, #288]",
+    "    add x10, x9, #304",
+    "    stp q0, q1, [x10, #0]",
+    "    stp q2, q3, [x10, #32]",
+    "    stp q4, q5, [x10, #64]",
+    "    stp q6, q7, [x10, #96]",
+    "    stp q8, q9, [x10, #128]",
+    "    stp q10, q11, [x10, #160]",
+    "    stp q12, q13, [x10, #192]",
+    "    stp q14, q15, [x10, #224]",
+    "    stp q16, q17, [x10, #256]",
+    "    stp q18, q19, [x10, #288]",
+    "    stp q20, q21, [x10, #320]",
+    "    stp q22, q23, [x10, #352]",
+    "    stp q24, q25, [x10, #384]",
+    "    stp q26, q27, [x10, #416]",
+    "    stp q28, q29, [x10, #448]",
+    "    stp q30, q31, [x10, #480]",
+    "    mrs x11, fpcr",
+    "    str x11, [x10, #512]",
+    "    mrs x11, fpsr",
+    "    str x11, [x10, #520]",
     // Falls through: restore the host and return.
     // Also the signal handler's resume point, with x9 = ctx.
     ".globl kjit_native_landing",
@@ -481,6 +592,17 @@ extern "C" fn on_signal(sig: i32, info: *mut SigInfo, uc: *mut c_void) {
             mc.sp = user.sp;
             mc.pc = user.pc;
             mc.pstate = (mc.pstate & !NZCV_MASK) | (user.pstate & NZCV_MASK);
+            // A9a: sigreturn loads V0-V31/FPCR/FPSR from this record. Without it
+            // the run would start on the host's values: record the failure
+            // instead (magic 0 in the snapshot, checked by `enter_user`).
+            match fpsimd_context(mc) {
+                Some(fp) => {
+                    fp.vregs = user.fp.v;
+                    fp.fpcr = user.fp.fpcr as u32;
+                    fp.fpsr = user.fp.fpsr as u32;
+                }
+                None => (*ctx).fpsimd_missing = true,
+            }
             // Last: no TLS access may follow until the next signal switches back.
             asm!(
                 "msr tpidr_el0, {}",
@@ -518,11 +640,23 @@ extern "C" fn on_signal(sig: i32, info: *mut SigInfo, uc: *mut c_void) {
             fault_addr: (*info).si_addr,
             brk_word,
         };
+        let fp = match fpsimd_context(mc) {
+            Some(fp) => FpState {
+                v: fp.vregs,
+                fpcr: u64::from(fp.fpcr),
+                fpsr: u64::from(fp.fpsr),
+            },
+            None => {
+                (*ctx).fpsimd_missing = true;
+                FpState::default()
+            }
+        };
         (*ctx).user = UserRegs {
             x: mc.regs,
             sp: mc.sp,
             pc: mc.pc,
             pstate: mc.pstate,
+            fp,
         };
         mc.regs[9] = ctx as u64;
         mc.sp = (*ctx).host[HOST_SP_INDEX];
@@ -596,6 +730,9 @@ impl NativeSession {
         let _tpidr = UserTpidr::set(tpidr)?;
         let _active = ActiveCtx::set(&mut ctx);
         unsafe { kjit_native_enter_user(&mut ctx) };
+        if ctx.fpsimd_missing {
+            return Err("signal frame without an fpsimd_context record".to_string());
+        }
         Ok((ctx.event, ctx.user))
     }
 
@@ -608,9 +745,11 @@ impl NativeSession {
         fragment_len: u64,
         fault_sites: &[FixupSite],
         nzcv: u64,
+        fp: FpState,
         tpidr: u64,
     ) -> Result<Box<NativeCtx>, String> {
         let mut ctx = Box::new(NativeCtx::new(UserRegs::default()));
+        ctx.fp = fp;
         ctx.fault_fixup = FaultFixup {
             base: fragment_base,
             len: fragment_len,
@@ -852,6 +991,9 @@ fn native_state(base: &MachineState, regs: &UserRegs, memory: &UserMemory) -> Ma
     }
     state.set_sp(regs.sp);
     state.flags = nzcv_to_flags(regs.pstate);
+    state.v = regs.fp.v;
+    state.fpcr = regs.fp.fpcr;
+    state.fpsr = regs.fp.fpsr;
     for (page, _) in &memory.pages {
         for offset in (0..page.len).step_by(8) {
             state.write_u64(page.base() + offset as u64, page.read_u64(offset));
@@ -886,6 +1028,7 @@ fn user_regs(state: &MachineState, pc: u64) -> UserRegs {
         sp: state.sp(),
         pc,
         pstate: flags_to_nzcv(state.flags),
+        fp: FpState::of(state),
     }
 }
 
@@ -1388,6 +1531,9 @@ pub fn run_fragment(
     pt_regs[PT_REGS_SP_OFFSET as usize / 8] = initial.sp();
     let mut extra_params = [0u64; 2];
     let mut nzcv = flags_to_nzcv(initial.flags);
+    // The user's V0-V31/FPCR/FPSR stay live across fragment calls (A9a: the kernel
+    // keeps them in the registers); here they are carried from call to call.
+    let mut fp = FpState::of(initial);
     let mut offset = fragment.entry_offset;
     let fault_sites = fragment
         .fault_sites
@@ -1409,14 +1555,17 @@ pub fn run_fragment(
             encoded.len() as u64,
             &fault_sites,
             nzcv,
+            fp,
             initial.tpidr_el0,
         )?;
         fault_redirects += ctx.fault_redirects as usize;
+        fp = ctx.fp;
 
         let user_state = |nzcv: u64| {
             let mut regs = UserRegs {
                 sp: pt_regs[PT_REGS_SP_OFFSET as usize / 8],
                 pstate: nzcv,
+                fp,
                 ..UserRegs::default()
             };
             for reg in 0..31u8 {
@@ -1529,6 +1678,22 @@ pub fn diff_states(
             left.flags, right.flags
         ));
     }
+    for reg in 0..32 {
+        let (l, r) = (left.v[reg], right.v[reg]);
+        if l != r {
+            diffs.push(format!(
+                "v{reg}: {left_name}={l:#034x} {right_name}={r:#034x}"
+            ));
+        }
+    }
+    for (name, l, r) in [
+        ("fpcr", left.fpcr, right.fpcr),
+        ("fpsr", left.fpsr, right.fpsr),
+    ] {
+        if l != r {
+            diffs.push(format!("{name}: {left_name}={l:#x} {right_name}={r:#x}"));
+        }
+    }
     let addrs = left
         .memory()
         .keys()
@@ -1603,7 +1768,7 @@ pub enum NativeVerdict {
 /// agree: the native fragment, and the native original (capped like the
 /// interpreter's) unless it is unobservable, must match the interpreter's
 /// original, up to the store footprint of a faulting instruction
-/// (`crate::undo_store_footprint`), which the CPU may have partly written in
+/// (`crate::undo_footprint`), which the CPU may have partly written in
 /// either run.
 pub fn check_against_interpreter(
     session: &NativeSession,
@@ -1630,7 +1795,7 @@ pub fn check_against_interpreter(
         )?)
     };
     let undo = |state: &MachineState| {
-        crate::undo_store_footprint(&original.state, &run.original_footprint, state)
+        crate::undo_footprint(&original.state, &run.original_footprint, state)
     };
 
     let mut problems = diff_states(

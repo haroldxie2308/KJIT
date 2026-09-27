@@ -7,11 +7,12 @@ use crate::shared::abi::{
 };
 use crate::shared::arm64::ergo::{ldst64_offset, mem_off, scaled_simm, simm, sp, uimm, x, xzr};
 use crate::shared::arm64::{
-    A64Atomic, A64Insn, A64Mem, A64OperandRole, A64Reg, A64Reg31Mode, A64RegWidth, IrInsn,
+    A64Atomic, A64FpSimdMem, A64FpSimdWriteback, A64Insn, A64Mem, A64OperandRole, A64Reg,
+    A64Reg31Mode, A64RegWidth, IrInsn,
 };
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::rephrase::{
-    atomic_needs_check_stub, rephrase_insn, RephrasedInsn, RephrasedInsnKind, RephrasedProgram,
+    rephrase_insn, window_needs_check_stub, RephrasedInsn, RephrasedInsnKind, RephrasedProgram,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -437,7 +438,7 @@ fn rewrite_user_semantic(
     plan.emit_fills(rephrased.ori_pc, out)?;
     match plan.mem {
         Some(MemPlan::Unpriv(mem)) => plan.emit_mem_lowering(rephrased, mem, out)?,
-        Some(MemPlan::Atomic(atomic)) => plan.emit_atomic_window(rephrased, atomic, out)?,
+        Some(MemPlan::Window(window)) => plan.emit_window(rephrased, window, out)?,
         None => {
             let rewritten = plan.rewrite_insn(rephrased)?;
             push_rephrased(
@@ -484,13 +485,17 @@ fn access_mode_from_role(role: A64OperandRole) -> Option<(&'static str, A64RegWi
             Some((field, width, AccessMode::ReadWrite))
         }
         A64OperandRole::MemBase { field } => Some((field, A64RegWidth::X64, AccessMode::Read)),
+        // SIMD&FP registers (A9a) are user registers live in hardware while a
+        // fragment runs: never virtualized.
         A64OperandRole::ImplicitRegWrite { .. }
         | A64OperandRole::MemOffset { .. }
         | A64OperandRole::BranchTarget { .. }
         | A64OperandRole::FlagsRead
         | A64OperandRole::FlagsWrite
         | A64OperandRole::ControlFlow
-        | A64OperandRole::Memory => None,
+        | A64OperandRole::Memory
+        | A64OperandRole::VecRead { .. }
+        | A64OperandRole::VecWrite { .. } => None,
     }
 }
 
@@ -903,30 +908,57 @@ struct MemLowering {
     block_align_scratch: Option<u8>,
 }
 
-/// How one LSE atomic (A8) runs inside a PAN window (see `emit_atomic_window`).
+/// The one privileged user access a PAN window holds: an LSE atomic (A8) or an A9a
+/// SIMD&FP load/store (tmp/pipeline.md, "A9 contract"). Neither has an
+/// unprivileged form, so the fragment runs the user's own access.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct AtomicLowering {
-    atomic: A64Atomic,
-    /// `sA`: the scratch register holding the address the window checks and the
-    /// atomic uses as its base. A stack-backed base's own fill scratch, or a fresh
-    /// scratch loaded by `mov sA, <mapped base>` (`copy_base`).
+enum WindowInsn {
+    Atomic(A64Atomic),
+    FpSimd(A64FpSimdMem),
+}
+
+impl WindowInsn {
+    const fn base(self) -> A64Reg {
+        match self {
+            Self::Atomic(atomic) => atomic.rn,
+            Self::FpSimd(mem) => mem.base,
+        }
+    }
+
+    /// The access address is `base + offset` (an atomic has no offset).
+    const fn offset(self) -> i64 {
+        match self {
+            Self::Atomic(_) => 0,
+            Self::FpSimd(mem) => mem.offset,
+        }
+    }
+}
+
+/// How one PAN-window access (A8, A9a) is lowered (see `emit_window`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct WindowLowering {
+    insn: WindowInsn,
+    /// `sA`: the scratch register holding the access address the window checks
+    /// and the access uses as its base. A stack-backed base's own fill scratch
+    /// when the offset is 0, else a fresh scratch loaded from `addr_base`.
     addr: u8,
-    copy_base: Option<A64Reg>,
+    /// `sA = <mapped base> + offset` (`mov` for offset 0; `add`/`sub` otherwise).
+    addr_base: Option<A64Reg>,
     /// `sB`: the range check's result; also the SP / block alignment check's
     /// scratch, which run first.
     check: u8,
     /// SP base: `and sB, x17, #15; cbnz sB, <Mem stub>` (EL0 SP alignment check).
     sp_check: bool,
-    /// Wider than a byte, base not SP: the 16-byte block alignment check.
+    /// Atomic wider than a byte, base not SP: the 16-byte block alignment check.
     block_check: bool,
 }
 
-/// The memory lowering of one user instruction: `LDTR*`/`STTR*` accesses, or an LSE
-/// atomic in a PAN window.
+/// The memory lowering of one user instruction: `LDTR*`/`STTR*` accesses, or one
+/// privileged access in a PAN window.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum MemPlan {
     Unpriv(MemLowering),
-    Atomic(AtomicLowering),
+    Window(WindowLowering),
 }
 
 const fn fits_simm9(offset: i64) -> bool {
@@ -1022,8 +1054,20 @@ impl RewritePlan {
         }
 
         if insn.accesses_memory() {
-            plan.mem = Some(match insn.lse_atomic() {
-                Some(atomic) => MemPlan::Atomic(plan.plan_atomic(atomic)?),
+            let window = match (insn.lse_atomic(), insn.fpsimd_mem()) {
+                (Some(atomic), _) => Some(WindowInsn::Atomic(atomic)),
+                (None, Some(mem)) => Some(WindowInsn::FpSimd(mem)),
+                (None, None) => None,
+            };
+            plan.mem = Some(match window {
+                Some(window) => {
+                    let lowering = plan.plan_window(window)?;
+                    debug_assert_eq!(
+                        Some(lowering.sp_check || lowering.block_check),
+                        window_needs_check_stub(insn)
+                    );
+                    MemPlan::Window(lowering)
+                }
                 None => {
                     let shape = mem_shape(insn, rephrased.ori_pc).ok_or(
                         RegVirtError::UnloweredMemoryForm {
@@ -1159,67 +1203,76 @@ impl RewritePlan {
         })
     }
 
-    /// Scratch for an LSE atomic's PAN window (A8). Stack-backed operands were
-    /// mapped first (role order), so the worst case is three of them plus `sB`, or
-    /// two plus `sA` and `sB`: four.
-    fn plan_atomic(&mut self, atomic: A64Atomic) -> SharedResult<AtomicLowering, RegVirtError> {
-        let base_class = classify_reg(atomic.rn);
-        let (addr, copy_base) = if base_class == RegClass::StackBacked {
+    /// Scratch for a PAN window (A8, A9a). Stack-backed operands were mapped first
+    /// (role order), so the worst case is three of them plus `sB` (an atomic), or
+    /// two plus `sA` and `sB` (an atomic, or LD1/ST1 post-indexed by a register): four.
+    fn plan_window(&mut self, insn: WindowInsn) -> SharedResult<WindowLowering, RegVirtError> {
+        let base = insn.base();
+        let base_class = classify_reg(base);
+        let (addr, addr_base) = if base_class == RegClass::StackBacked && insn.offset() == 0 {
             // Mapped by the `MemBase` role in `build`; missing is a translator bug.
-            let mapping = self.stack_mapping(atomic.rn.enc).ok_or(
+            let mapping = self.stack_mapping(base.enc).ok_or(
                 RegVirtError::StackBackedRewriteNotImplemented {
                     pc: self.pc,
                     insn: self.insn,
-                    reg: atomic.rn,
+                    reg: base,
                 },
             )?;
             (mapping.scratch, None)
         } else {
-            (self.alloc_scratch()?, Some(x(self.phys(atomic.rn).enc)))
+            (self.alloc_scratch()?, Some(x(self.phys(base).enc)))
         };
         let check = self.alloc_scratch()?;
         let sp_check = base_class == RegClass::Sp;
-        let block_check = atomic.size > 1 && !sp_check;
-        debug_assert_eq!(sp_check || block_check, atomic_needs_check_stub(atomic));
-        Ok(AtomicLowering {
-            atomic,
+        let block_check =
+            matches!(insn, WindowInsn::Atomic(atomic) if atomic.size > 1) && !sp_check;
+        Ok(WindowLowering {
+            insn,
             addr,
-            copy_base,
+            addr_base,
             check,
             sp_check,
             block_check,
         })
     }
 
-    /// Emits one LSE atomic (A8; tmp/pipeline.md, "A8 contract") between its fills
-    /// and spills:
+    /// Emits one PAN-window access (tmp/pipeline.md, "A8 contract" and "A9
+    /// contract") between its fills and spills:
     ///
     /// ```text
     ///   [and sB, x17, #15; cbnz sB, <Mem stub>]         SP base: EL0 SP alignment
-    ///   [mov sA, <mapped base>]                          unless the base is stack-backed
+    ///   [mov sA, <mapped base>]                          offset 0, base not stack-backed
+    ///   [add/sub sA, <mapped base>, #offset]             SIMD&FP offset/pre-index forms
     ///   [and sB, sA, #15; add sB, sB, #(size - 1);
-    ///    and sB, sB, #16; cbnz sB, <Mem stub>]           wider than a byte, base not SP
+    ///    and sB, sB, #16; cbnz sB, <Mem stub>]           atomic wider than a byte, base not SP
     ///   ubfx sB, sA, #48, #8                             VA bits [55:48]
     ///   cbnz sB, <PAN stub>                              not a TTBR0 user address
     ///   msr  pan, #0
-    ///   <the atomic, operands mapped, base = sA>         fault site -> PAN stub
+    ///   <the access, base = sA>                          fault site -> PAN stub
     ///   msr  pan, #1
+    ///   [add/sub <mapped base>, <mapped base>, #amount   SIMD&FP writeback
+    ///    | add <mapped base>, <mapped base>, <mapped Xm>]
     /// ```
     ///
-    /// Commit-after-last-access: before the atomic only scratch is written; the
-    /// atomic is the only access and writes its destination (`Rt`, or CAS's `Rs`)
-    /// only when it retires; spills follow `msr pan, #1`. An atomic crossing a
+    /// The access is the atomic with its operands mapped, or the SIMD&FP load/store
+    /// in its base-only encoding (`A64FpSimdMem::access`: same access, `#0`, no
+    /// writeback), so the range check covers its start address and the access
+    /// (at most 64 bytes) cannot reach the kernel half. Commit-after-last-access:
+    /// before the access only scratch is written; the access writes its
+    /// destination (`Rt`, CAS's `Rs`, or V registers) only when it retires; the
+    /// base writeback and spills follow `msr pan, #1`. An atomic crossing a
     /// 16-byte boundary alignment-faults natively (FEAT_LSE2; `MemSingleGranule()`
     /// is at least 16), so leaving for it is exact or conservative: userspace
     /// re-executes the instruction natively either way.
-    fn emit_atomic_window(
+    fn emit_window(
         &self,
         rephrased: RephrasedInsn,
-        lowering: AtomicLowering,
+        lowering: WindowLowering,
         out: &mut SharedVec<RephrasedInsn>,
     ) -> SharedResult<(), RegVirtError> {
         let pc = rephrased.ori_pc;
         let (sa, sb) = (lowering.addr, lowering.check);
+        let helper = |insn| RephrasedInsn::reg_virt_helper(pc, insn);
         let and_15 = |rn: u8| A64Insn::AndLogImmAnd64LogImm {
             // #15: N=1, immr=0, imms=3 (four ones).
             n: 1,
@@ -1238,27 +1291,27 @@ impl RewritePlan {
                 push_rephrased(out, RephrasedInsn::align_check(pc, check))?;
             }
         }
-        if let Some(base) = lowering.copy_base {
-            push_rephrased(
-                out,
-                RephrasedInsn::reg_virt_helper(
-                    pc,
-                    A64Insn::OrrLogShiftOrr64LogShift {
+        if let Some(base) = lowering.addr_base {
+            match lowering.insn.offset() {
+                0 => push_rephrased(
+                    out,
+                    helper(A64Insn::OrrLogShiftOrr64LogShift {
                         shift: 0,
                         rm: base,
                         imm6: uimm(0, 6),
                         rn: xzr(),
                         rd: x(sa),
-                    },
-                ),
-            )?;
+                    }),
+                )?,
+                offset => self.push_add_sub_imm(out, helper, sa, base.enc, offset)?,
+            }
         }
-        if lowering.block_check {
+        if let (true, WindowInsn::Atomic(atomic)) = (lowering.block_check, lowering.insn) {
             let checks = [
                 and_15(sa),
                 A64Insn::AddAddsubImmAdd64AddsubImm {
                     sh: 0,
-                    imm12: uimm(u32::from(lowering.atomic.size) - 1, 12),
+                    imm12: uimm(u32::from(atomic.size) - 1, 12),
                     rn: A64Reg::x_sp(sb),
                     rd: A64Reg::x_sp(sb),
                 },
@@ -1287,23 +1340,53 @@ impl RewritePlan {
         push_rephrased(out, RephrasedInsn::range_check(pc, range))?;
         push_rephrased(out, RephrasedInsn::range_check(pc, cbnz()))?;
 
-        let atomic = self
-            .rewrite_insn(rephrased)?
-            .set_reg("Rn", A64Reg::x_sp(sa))
-            .map_err(|_| RegVirtError::MissingRegisterSetter {
-                pc,
-                insn: self.insn,
-                field: "Rn",
-            })?;
+        let access = match lowering.insn {
+            WindowInsn::Atomic(_) => self.rewrite_insn(rephrased)?,
+            WindowInsn::FpSimd(mem) => mem.access,
+        }
+        .set_reg("Rn", A64Reg::x_sp(sa))
+        .map_err(|_| RegVirtError::MissingRegisterSetter {
+            pc,
+            insn: self.insn,
+            field: "Rn",
+        })?;
         push_rephrased(
             out,
             RephrasedInsn::pan_toggle(pc, A64Insn::MsrImmMsrSiPstate { crm: 0 }),
         )?;
-        push_rephrased(out, RephrasedInsn::window_access(pc, atomic))?;
+        push_rephrased(out, RephrasedInsn::window_access(pc, access))?;
         push_rephrased(
             out,
             RephrasedInsn::pan_toggle(pc, A64Insn::MsrImmMsrSiPstate { crm: 1 }),
-        )
+        )?;
+
+        let WindowInsn::FpSimd(mem) = lowering.insn else {
+            return Ok(());
+        };
+        let base = self.phys(mem.base).enc;
+        match mem.writeback {
+            None => Ok(()),
+            Some(A64FpSimdWriteback::Imm(amount)) => self.push_add_sub_imm(
+                out,
+                |insn| RephrasedInsn { insn, ..rephrased },
+                base,
+                base,
+                amount,
+            ),
+            Some(A64FpSimdWriteback::Reg(index)) => push_rephrased(
+                out,
+                RephrasedInsn {
+                    insn: A64Insn::AddAddsubShiftAdd64AddsubShift {
+                        shift: 0,
+                        rm: x(self.phys(index).enc),
+                        imm6: uimm(0, 6),
+                        rn: x(base),
+                        rd: x(base),
+                    },
+                    ..rephrased
+                },
+            ),
+        }
     }
 
     /// The physical register every lowered access addresses from.
@@ -1839,7 +1922,9 @@ fn validate_runtime_exit_payload(rephrased: RephrasedInsn) -> SharedResult<(), R
             | A64OperandRole::FlagsRead
             | A64OperandRole::FlagsWrite
             | A64OperandRole::ControlFlow
-            | A64OperandRole::Memory => {}
+            | A64OperandRole::Memory
+            | A64OperandRole::VecRead { .. }
+            | A64OperandRole::VecWrite { .. } => {}
         }
     }
     Ok(())
@@ -1980,13 +2065,31 @@ fn reject_constrained_unpredictable(rephrased: RephrasedInsn) -> SharedResult<()
         }
     }
 
+    // SIMD&FP LDP `t == t2` (A9a): the same rule for the V register file.
+    let vec_writes = || {
+        roles.iter().filter_map(|role| match *role {
+            A64OperandRole::VecWrite { field } => Some(field),
+            _ => None,
+        })
+    };
+    for field in vec_writes() {
+        let reg = insn.field_value(field);
+        for other in vec_writes() {
+            if other != field && reg.is_some() && insn.field_value(other) == reg {
+                return Err(unpredictable);
+            }
+        }
+    }
+
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shared::arm64::ergo::{ldst64_offset, ldstpair64_offset, uimm, x, xzr};
+    use crate::shared::arm64::ergo::{
+        ldst64_offset, ldstpair64_offset, mem_post, mem_pre, scaled_uimm, uimm, x, xzr,
+    };
     use crate::shared::arm64::{A64Imm, A64Mem, A64Reg31Mode};
     use crate::shared::platform::{SharedVec, GFP_KERNEL};
     use crate::shared::trans::rephrase::{RephrasedBlock, RephrasedInsn};
@@ -3269,7 +3372,7 @@ mod tests {
         let regs = [0u8, 9, 12, 13, 14, 16, 17, 29, 30, 31];
         let mut checked = 0;
         for spec in GENERATED_A64_SUBSET {
-            let base_insn = A64Insn::decode(spec.value).unwrap();
+            let base_insn = A64Insn::decode(crate::shared::arm64::form_base_word(spec)).unwrap();
             if base_insn.lse_atomic().is_none() {
                 continue;
             }
@@ -3336,6 +3439,306 @@ mod tests {
             }
         }
         assert_eq!(checked, 160 * 1000);
+    }
+
+    fn original(insn: A64Insn) -> RephrasedInsn {
+        RephrasedInsn::original(0x1000, insn)
+    }
+
+    /// A9a: SIMD&FP loads/stores run their base-only encoding in the A8 window
+    /// (tmp/pipeline.md, "A9 contract"): the access address in sA, the writeback
+    /// after `msr pan, #1`, V registers untouched by reg-virt.
+    #[test]
+    fn simd_memory_lowers_to_the_exact_pan_window() {
+        let q_pos = |rt: u8, base: u8| A64Insn::LdrImmFpsimdLdrQLdstPos {
+            rt,
+            mem: mem_off(A64Reg::x_sp(base), scaled_uimm(0, 12, 4)),
+        };
+        // ldr q0, [x1, #32]: sA = x1 + 32, sB = x13.
+        let mut expected = vec![helper(add_imm(12, 1, 0, 32))];
+        expected.extend(range_check(12, 13));
+        expected.extend(pan_window(q_pos(0, 12)));
+        assert_eq!(
+            lowered(A64Insn::LdrImmFpsimdLdrQLdstPos {
+                rt: 0,
+                mem: mem_off(A64Reg::x_sp(1), scaled_uimm(2, 12, 4)),
+            })
+            .to_vec(),
+            expected
+        );
+
+        // ldp q0, q1, [x13], #32: the stack-backed base's fill scratch is sA
+        // (offset 0); the writeback follows the window, then the spill.
+        let mut expected = vec![fill(12, 13)];
+        expected.extend(range_check(12, 13));
+        expected.extend(pan_window(A64Insn::LdpFpsimdLdpQLdstpairOff {
+            rt2: 1,
+            rt: 0,
+            mem: mem_off(A64Reg::x_sp(12), scaled_simm(0, 7, 4)),
+        }));
+        expected.push(original(add_imm(12, 12, 0, 32)));
+        expected.push(spill(12, 13));
+        assert_eq!(
+            lowered(A64Insn::LdpFpsimdLdpQLdstpairPost {
+                rt2: 1,
+                rt: 0,
+                mem: mem_post(A64Reg::x_sp(13), scaled_simm(2, 7, 4)),
+            })
+            .to_vec(),
+            expected
+        );
+
+        // str q2, [sp, #-16]!: SP check through sB, sA = x17 - 16, SP (x17)
+        // written back after the window.
+        let mut expected = sp_align_check(13).to_vec();
+        expected.push(helper(sub_imm(12, 17, 16)));
+        expected.extend(range_check(12, 13));
+        expected.extend(pan_window(A64Insn::StrImmFpsimdStrQLdstPos {
+            rt: 2,
+            mem: mem_off(A64Reg::x_sp(12), scaled_uimm(0, 12, 4)),
+        }));
+        expected.push(original(sub_imm(17, 17, 16)));
+        assert_eq!(
+            lowered(A64Insn::StrImmFpsimdStrQLdstImmpre {
+                rt: 2,
+                mem: mem_pre(sp(), simm(0x1f0, 9)),
+            })
+            .to_vec(),
+            expected
+        );
+
+        // ld1 {v0.16b, v1.16b}, [x14], x15: base and index stack-backed (x12, x13),
+        // sA = the base's scratch, sB = x14; post-index by register after the window.
+        let mut expected = vec![fill(12, 14), fill(13, 15)];
+        expected.extend(range_check(12, 14));
+        expected.extend(pan_window(A64Insn::Ld1AdvsimdMultLd1AsisdlseR22v {
+            q: 1,
+            size: 0,
+            rn: A64Reg::x_sp(12),
+            rt: 0,
+        }));
+        expected.push(original(A64Insn::AddAddsubShiftAdd64AddsubShift {
+            shift: 0,
+            rm: x(13),
+            imm6: uimm(0, 6),
+            rn: x(12),
+            rd: x(12),
+        }));
+        expected.push(spill(12, 14));
+        assert_eq!(
+            lowered(A64Insn::Ld1AdvsimdMultLd1AsisdlsepR2R2 {
+                q: 1,
+                rm: x(15),
+                size: 0,
+                rn: A64Reg::x_sp(14),
+                rt: 0,
+            })
+            .to_vec(),
+            expected
+        );
+
+        // ldur d3, [x29, #-8]: x29 lives in x16.
+        let mut expected = vec![helper(sub_imm(12, 16, 8))];
+        expected.extend(range_check(12, 13));
+        expected.extend(pan_window(A64Insn::LdrImmFpsimdLdrDLdstPos {
+            rt: 3,
+            mem: mem_off(A64Reg::x_sp(12), scaled_uimm(0, 12, 3)),
+        }));
+        assert_eq!(
+            lowered(A64Insn::LdurFpsimdLdurDLdstUnscaled {
+                rt: 3,
+                mem: mem_off(A64Reg::x_sp(29), simm(0x1f8, 9)),
+            })
+            .to_vec(),
+            expected
+        );
+    }
+
+    /// A9a: register-only SIMD&FP forms are emitted unchanged except for their
+    /// general-register operands; V registers are never mapped.
+    #[test]
+    fn simd_register_forms_remap_only_general_registers() {
+        let cmeq = A64Insn::CmeqAdvsimdZeroCmeqAsimdmiscZ {
+            q: 1,
+            size: 0,
+            rn: 13,
+            rd: 12,
+        };
+        assert_eq!(lowered(cmeq).to_vec(), vec![original(cmeq)]);
+
+        // dup v0.16b, w13: the stack-backed source is filled into x12.
+        assert_eq!(
+            lowered(A64Insn::DupAdvsimdGenDupAsimdinsDrR {
+                q: 1,
+                imm5: uimm(1, 5),
+                rn: A64Reg::new(13, A64RegWidth::Unknown, A64Reg31Mode::Xzr),
+                rd: 0,
+            })
+            .to_vec(),
+            vec![
+                fill(12, 13),
+                original(A64Insn::DupAdvsimdGenDupAsimdinsDrR {
+                    q: 1,
+                    imm5: uimm(1, 5),
+                    rn: A64Reg::new(12, A64RegWidth::Unknown, A64Reg31Mode::Xzr),
+                    rd: 0,
+                }),
+            ]
+        );
+
+        // umov w14, v1.b[0]: written into scratch, spilled.
+        assert_eq!(
+            lowered(A64Insn::UmovAdvsimdUmovAsimdinsWW {
+                imm5: uimm(1, 5),
+                rn: 1,
+                rd: A64Reg::w(14),
+            })
+            .to_vec(),
+            vec![
+                original(A64Insn::UmovAdvsimdUmovAsimdinsWW {
+                    imm5: uimm(1, 5),
+                    rn: 1,
+                    rd: A64Reg::w(12),
+                }),
+                spill(12, 14),
+            ]
+        );
+
+        // fmov x29, d0: user x29 is x16.
+        assert_eq!(
+            lowered(A64Insn::FmovFloatGenFmov64dFloat2int { rn: 0, rd: x(29) }).to_vec(),
+            vec![original(A64Insn::FmovFloatGenFmov64dFloat2int {
+                rn: 0,
+                rd: x(16),
+            })]
+        );
+    }
+
+    /// A9a: every SIMD&FP load/store form with every register class in its base
+    /// (and LD1/ST1 post-index register): admitted, one window around the
+    /// base-only access on the range-checked register, only scratch written
+    /// before it, and after it only the base writeback and spills.
+    #[test]
+    fn every_simd_memory_lowering_is_one_window_committing_after_it() {
+        use crate::shared::arm64::GENERATED_A64_SUBSET;
+        let regs = [0u8, 9, 12, 13, 14, 16, 17, 29, 30, 31];
+        let scratch = crate::shared::abi::REG_VIRT_SCRATCH_GPR_START
+            ..=crate::shared::abi::REG_VIRT_SCRATCH_GPR_END;
+        let mut checked = 0;
+        for spec in GENERATED_A64_SUBSET {
+            // Pairs transfer V0 and V1 (`t == t2` is rejected, tested below).
+            let word = crate::shared::arm64::form_base_word(spec)
+                | spec.field("Rt2").map_or(0, |field| 1 << field.shift());
+            let base_insn = A64Insn::decode(word).unwrap();
+            if base_insn.fpsimd_mem().is_none() {
+                continue;
+            }
+            let has_index = base_insn.get_reg("Rm").is_some();
+            for rn in regs {
+                for rm in if has_index { &regs[..9] } else { &regs[..1] } {
+                    let mut insn = base_insn.set_reg("Rn", A64Reg::x_sp(rn)).unwrap();
+                    if has_index {
+                        insn = insn.set_reg("Rm", x(*rm)).unwrap();
+                    }
+                    let admitted = admit_insn(ir(insn));
+                    if has_index && *rm == rn && rn != 31 {
+                        // Post-index register == base: rejected like any writeback
+                        // overlap (conservative: an Unsupported exit is exact).
+                        assert!(admitted.is_err(), "{insn:?}");
+                        continue;
+                    }
+                    admitted.unwrap_or_else(|err| panic!("{insn:?}: {err:?}"));
+                    let out = lowered(insn);
+                    let windows = out
+                        .iter()
+                        .filter(|r| r.kind == RephrasedInsnKind::WindowAccess)
+                        .count();
+                    assert_eq!(windows, 1, "{out:?}");
+                    let window = out
+                        .iter()
+                        .position(|r| r.kind == RephrasedInsnKind::WindowAccess)
+                        .unwrap();
+                    let access = out[window].insn;
+                    assert!(access.is_pan_window_access(), "{out:?}");
+                    let A64Insn::UbfmUbfm64mBitfield { rn: sa, rd: sb, .. } = out[window - 3].insn
+                    else {
+                        panic!("{insn:?}: {out:?}");
+                    };
+                    assert_eq!(out[window - 1].insn.msr_pan(), Some(false));
+                    assert_eq!(out[window + 1].insn.msr_pan(), Some(true));
+                    assert!(scratch.contains(&sa.enc) && scratch.contains(&sb.enc));
+                    let mem = insn.fpsimd_mem().unwrap();
+                    assert_eq!(
+                        access,
+                        mem.access.set_reg("Rn", A64Reg::x_sp(sa.enc)).unwrap(),
+                        "{out:?}"
+                    );
+                    for before in &out[..window] {
+                        assert!(
+                            !matches!(before.insn, A64Insn::StrImmGenStr64LdstPos { .. }),
+                            "{insn:?}: spill before the access: {out:?}"
+                        );
+                        for role in before.insn.operand_roles() {
+                            if let A64OperandRole::RegWrite { field, .. } = *role {
+                                let reg = before.insn.get_reg(field).unwrap();
+                                assert!(reg.enc == 31 || scratch.contains(&reg.enc), "{out:?}");
+                            }
+                        }
+                    }
+                    let tail = &out[window + 2..];
+                    let spills = tail
+                        .iter()
+                        .filter(|r| matches!(r.insn, A64Insn::StrImmGenStr64LdstPos { .. }))
+                        .count();
+                    assert!(
+                        tail[..tail.len() - spills]
+                            .iter()
+                            .all(|r| r.kind == RephrasedInsnKind::Original),
+                        "{insn:?}: only the writeback, then spills: {out:?}"
+                    );
+                    // A writeback of #0 (the base word's offset) emits nothing.
+                    let writes_back = matches!(
+                        mem.writeback,
+                        Some(crate::shared::arm64::A64FpSimdWriteback::Reg(_))
+                    ) || matches!(
+                        mem.writeback,
+                        Some(crate::shared::arm64::A64FpSimdWriteback::Imm(amount)) if amount != 0
+                    );
+                    assert_eq!(writes_back, tail.len() > spills, "{out:?}");
+                    checked += 1;
+                }
+            }
+        }
+        assert_eq!(checked, (82 - 8) * 10 + 8 * (10 * 9 - 9));
+    }
+
+    /// A9a: SIMD&FP LDP with `t == t2` is CONSTRAINED UNPREDICTABLE: rejected.
+    #[test]
+    fn simd_ldp_same_destination_is_rejected() {
+        let insn = A64Insn::LdpFpsimdLdpQLdstpairOff {
+            rt2: 3,
+            rt: 3,
+            mem: mem_off(A64Reg::x_sp(1), scaled_simm(0, 7, 4)),
+        };
+        let err = admit_insn(ir(insn)).unwrap_err();
+        assert!(
+            matches!(err, RegVirtError::UnpredictableMemoryOp { .. }),
+            "{err:?}"
+        );
+        assert!(err.is_instruction_intrinsic());
+        // The same register in a store pair, or a writeback base named like a V
+        // register, is fine.
+        admit_insn(ir(A64Insn::StpFpsimdStpQLdstpairOff {
+            rt2: 3,
+            rt: 3,
+            mem: mem_off(A64Reg::x_sp(1), scaled_simm(0, 7, 4)),
+        }))
+        .unwrap();
+        admit_insn(ir(A64Insn::LdrImmFpsimdLdrQLdstImmpost {
+            rt: 1,
+            mem: mem_post(A64Reg::x_sp(1), simm(16, 9)),
+        }))
+        .unwrap();
     }
 
     #[test]
