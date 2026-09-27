@@ -554,6 +554,51 @@ pub(super) fn writes(insn: &A64Insn) -> Option<Writes> {
     Some(out)
 }
 
+/// Registers an instruction reads, from the generated operand roles. The memory
+/// base is kept apart from the data operands: rule 9 lets a kernel value be a base
+/// (of an allowed runtime access) and nothing else.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) struct Reads {
+    /// Bit n set: x_n / w_n (n < 31) is read as data (store data, ALU source,
+    /// branch operand, `MOVK`/`BFM` destination, atomic operand).
+    pub(super) gprs: u32,
+    /// Register 31 in its SP meaning (or an unknown reg31 mode) is read as data.
+    pub(super) sp: bool,
+    /// The memory base register, if the form has one.
+    pub(super) base: Option<A64Reg>,
+}
+
+/// `None` when the generated metadata names a register field the form cannot
+/// return: fail closed, the caller rejects the word.
+pub(super) fn reads(insn: &A64Insn) -> Option<Reads> {
+    let base_field = insn.operand_roles().iter().find_map(|role| match *role {
+        A64OperandRole::MemBase { field } => Some(field),
+        _ => None,
+    });
+    let mut out = Reads {
+        gprs: 0,
+        sp: false,
+        base: None,
+    };
+    for role in insn.operand_roles() {
+        let field = match *role {
+            A64OperandRole::RegRead { field, .. } | A64OperandRole::RegReadWrite { field, .. } => {
+                field
+            }
+            _ => continue,
+        };
+        let reg = insn.get_reg(field)?;
+        if Some(field) == base_field {
+            out.base = Some(reg);
+        } else if reg.enc() < 31 {
+            out.gprs |= 1 << reg.enc();
+        } else if reg.reg31 != A64Reg31Mode::Xzr {
+            out.sp = true;
+        }
+    }
+    Some(out)
+}
+
 pub(super) const fn is_sp(reg: A64Reg) -> bool {
     reg.enc() == 31 && !matches!(reg.reg31, A64Reg31Mode::Xzr)
 }
@@ -576,9 +621,25 @@ pub(super) const FRAME_USER_START: u32 =
     };
 pub(super) const FRAME_USER_END: u32 = RUNTIME_FRAME_ENTRY_ADDR_OFFSET;
 
-/// The one kernel-frame read the body may do: `ldr xN, [sp, #PT_REGS_PTR]`, which
-/// makes xN a pt_regs pointer for the dataflow in `mod.rs`.
-pub(super) const FRAME_PT_REGS_PTR: u32 = RUNTIME_FRAME_PT_REGS_PTR_OFFSET;
+/// The one kernel-frame read the body may do: `ldr xS, [sp, #PT_REGS_PTR]`
+/// (64-bit, offset form) with S a reg-virt scratch register, which makes xS a
+/// pt_regs pointer for the dataflow in `taint.rs`. Scratch only: the epilogue
+/// never writes scratch back to the user, and a kernel pointer in a user register
+/// is one edge away from `pt_regs` (rule 9). Returns S.
+pub(super) fn pt_regs_pointer_load(insn: &A64Insn) -> Option<u8> {
+    match insn {
+        A64Insn::LdrImmGenLdr64LdstPos {
+            rt,
+            mem: A64Mem::Offset { base, offset },
+        } if is_sp(*base)
+            && offset.value() == RUNTIME_FRAME_PT_REGS_PTR_OFFSET as i64
+            && (REG_VIRT_SCRATCH_GPR_START..=REG_VIRT_SCRATCH_GPR_END).contains(&rt.enc()) =>
+        {
+            Some(rt.enc())
+        }
+        _ => None,
+    }
+}
 
 /// `pt_regs` bytes the body may access: `regs[0..31]` and `sp`. `pc`, `pstate` and
 /// everything after them are never fragment-accessible (a `pstate` write would
