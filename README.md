@@ -556,7 +556,9 @@ native `redis-benchmark`, and segments each thread's instruction stream at
 syscalls. The harness binary `e1-report` then writes `tmp/e1/report.{md,json}`:
 syscall histogram, gap-length distribution per (start syscall -> end syscall)
 pair, and instruction forms weighted by dynamic count with `admit_word`
-admission, cumulative coverage and "fully admitted gap" rates. `coverage-scan`
+admission, cumulative coverage and "fully admitted gap" rates, with LSE
+atomics (`ld<op>`/`st<op>`/`swp`/`cas`) broken out so the remainder after them
+is visible. `coverage-scan`
 and `e1-report` share the llvm-mc form classifier (`harness/src/a64_forms.rs`).
 Semantics, knobs and known emulation distortions are in
 `tools/e1-trace/README.md`.

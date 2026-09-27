@@ -611,10 +611,81 @@ impl Ctx<'_> {
 
 const ADD_STEPS: [usize; 7] = [0, 5, 10, 25, 50, 100, usize::MAX];
 
-fn md_add_curve(m: &mut String, ctx: &Ctx, pair: Option<(i32, i32)>, t: &FormTable) {
+/// LSE atomic read-modify-write forms (`ld<op>`, `st<op>`, `swp`, `cas`, `casp`
+/// with any acquire/release and size suffix): the A8 user-atomics scope,
+/// reported separately so what remains after A8 is visible.
+fn is_lse_atomic(form: &str) -> bool {
+    let mnemonic = form.split_whitespace().next().unwrap_or("");
+    let ops = ["add", "clr", "eor", "set", "smax", "smin", "umax", "umin"];
+    let base = ["swp", "casp", "cas"]
+        .into_iter()
+        .map(str::to_string)
+        .chain(
+            ops.iter()
+                .flat_map(|op| [format!("ld{op}"), format!("st{op}")]),
+        );
+    for base in base {
+        let Some(rest) = mnemonic.strip_prefix(base.as_str()) else {
+            continue;
+        };
+        let rest = ["al", "a", "l"]
+            .into_iter()
+            .find_map(|order| rest.strip_prefix(order))
+            .unwrap_or(rest);
+        if matches!(rest, "" | "b" | "h") {
+            return true;
+        }
+    }
+    false
+}
+
+/// Forms-needed summary of a population: all non-admitted forms, how many of
+/// them are LSE atomics, and admission once LSE atomics are admitted.
+struct Needed {
+    forms: usize,
+    lse_forms: usize,
+    admitted_with_lse: u64,
+    adm_with_lse: GapAdmission,
+}
+
+fn needed(ctx: &Ctx, pair: Option<(i32, i32)>, t: &FormTable) -> Needed {
     let order = ctx.next_forms(t);
-    m.push_str("Gaps whose every instruction would be admitted after adding the first K \
-non-admitted forms (order of the table above):\n\n| K | forms added | fully admitted gaps | % gaps | % gap insns |\n|---|---|---|---|---|\n");
+    let lse: Vec<(&String, u64)> = order
+        .iter()
+        .copied()
+        .filter(|(f, _)| is_lse_atomic(f))
+        .collect();
+    Needed {
+        forms: order.len(),
+        lse_forms: lse.len(),
+        admitted_with_lse: t.admitted + lse.iter().map(|(_, n)| n).sum::<u64>(),
+        adm_with_lse: ctx.gap_admission_with(pair, &lse, lse.len()),
+    }
+}
+
+/// Fully admitted gaps after adding `pre` (all of it) and then the first K of
+/// `order`.
+fn json_needed(n: &Needed) -> String {
+    format!(
+        "{{\"forms\":{},\"lse_forms\":{},\"admitted_with_lse\":{},\"fully_admitted_gaps_with_lse\":{},\"fully_admitted_gap_insns_with_lse\":{}}}",
+        n.forms, n.lse_forms, n.admitted_with_lse, n.adm_with_lse.full_gaps, n.adm_with_lse.full_insns
+    )
+}
+
+fn md_add_curve(
+    m: &mut String,
+    ctx: &Ctx,
+    pair: Option<(i32, i32)>,
+    pre: &[(&String, u64)],
+    order: &[(&String, u64)],
+    what: &str,
+) {
+    writeln!(
+        m,
+        "Gaps whose every instruction would be admitted after adding {what}the first K \
+forms of the table above:\n\n| K | forms added | fully admitted gaps | % gaps | % gap insns |\n|---|---|---|---|---|"
+    )
+    .unwrap();
     let mut last = None;
     for k in ADD_STEPS {
         let k = k.min(order.len());
@@ -622,7 +693,8 @@ non-admitted forms (order of the table above):\n\n| K | forms added | fully admi
             continue;
         }
         last = Some(k);
-        let a = ctx.gap_admission_with(pair, &order, k);
+        let added: Vec<(&String, u64)> = pre.iter().chain(order.iter().take(k)).copied().collect();
+        let a = ctx.gap_admission_with(pair, &added, added.len());
         writeln!(
             m,
             "| {} | {k} | {} of {} | {:.1} | {:.1} |",
@@ -815,7 +887,7 @@ Distinct forms: {}.\n",
 
 /// Forms with non-admitted dynamic weight, ranked, with the admitted share of
 /// the population if they were supported in that order.
-fn md_next_forms(m: &mut String, ctx: &Ctx, t: &FormTable, limit: usize) {
+fn md_next_forms(m: &mut String, ctx: &Ctx, pair: Option<(i32, i32)>, t: &FormTable, limit: usize) {
     let rows = ctx.next_forms(t);
     writeln!(
         m,
@@ -824,22 +896,74 @@ fn md_next_forms(m: &mut String, ctx: &Ctx, t: &FormTable, limit: usize) {
         rows.len()
     )
     .unwrap();
-    m.push_str("| # | form | non-admitted dyn insns | % | admitted % after adding |\n|---|---|---|---|---|\n");
+    m.push_str("| # | form | non-admitted dyn insns | % | admitted % after adding | LSE atomic (A8) |\n|---|---|---|---|---|---|\n");
     let mut cum = t.admitted;
     for (i, (form, n)) in rows.iter().take(limit).enumerate() {
         cum += n;
         writeln!(
             m,
-            "| {} | `{}` | {} | {:.2} | {:.1} |",
+            "| {} | `{}` | {} | {:.2} | {:.1} | {} |",
             i + 1,
             form,
             n,
             pct(*n, t.total),
+            pct(cum, t.total),
+            if is_lse_atomic(form) { "yes" } else { "" }
+        )
+        .unwrap();
+    }
+    m.push('\n');
+    md_add_curve(m, ctx, pair, &[], &rows, "");
+}
+
+/// LSE atomics listed on their own, then what remains once they are admitted.
+fn md_lse_split(m: &mut String, ctx: &Ctx, pair: Option<(i32, i32)>, t: &FormTable, limit: usize) {
+    let rows = ctx.next_forms(t);
+    let (lse, rest): (Vec<(&String, u64)>, Vec<(&String, u64)>) =
+        rows.iter().copied().partition(|(f, _)| is_lse_atomic(f));
+    let n = needed(ctx, pair, t);
+    writeln!(
+        m,
+        "Non-admitted LSE atomics (A8 scope): {} forms, {:.2}% of dynamic instructions.\n",
+        lse.len(),
+        pct(n.admitted_with_lse - t.admitted, t.total)
+    )
+    .unwrap();
+    if !lse.is_empty() {
+        m.push_str("| form | dyn insns | % |\n|---|---|---|\n");
+        for (form, c) in &lse {
+            writeln!(m, "| `{form}` | {c} | {:.2} |", pct(*c, t.total)).unwrap();
+        }
+        m.push('\n');
+    }
+    writeln!(
+        m,
+        "With LSE atomics admitted: admitted {:.1}%, fully admitted gaps {} of {} ({:.1}%). \
+Remaining non-admitted forms: {}.\n",
+        pct(n.admitted_with_lse, t.total),
+        n.adm_with_lse.full_gaps,
+        n.adm_with_lse.gaps,
+        pct(n.adm_with_lse.full_gaps, n.adm_with_lse.gaps),
+        rest.len()
+    )
+    .unwrap();
+    m.push_str("| # | form | non-admitted dyn insns | % | admitted % after adding (LSE admitted) |\n|---|---|---|---|---|\n");
+    let mut cum = n.admitted_with_lse;
+    for (i, (form, c)) in rest.iter().take(limit).enumerate() {
+        cum += c;
+        writeln!(
+            m,
+            "| {} | `{}` | {} | {:.2} | {:.1} |",
+            i + 1,
+            form,
+            c,
+            pct(*c, t.total),
             pct(cum, t.total)
         )
         .unwrap();
     }
     m.push('\n');
+    md_add_curve(m, ctx, pair, &lse, &rest, "all LSE atomics and ");
 }
 
 fn md_images(m: &mut String, t: &FormTable) {
@@ -1067,11 +1191,12 @@ fn run(trace_path: &Path, out_dir: &Path) -> Result<(), String> {
     writeln!(j, "  \"vcpus\": [{}],", vj.join(",")).unwrap();
     writeln!(
         j,
-        "  \"short_gaps\": {{\"limit\":{limit},\"gaps\":{},\"insns\":{},\"fully_admitted_gaps\":{},\"fully_admitted_gap_insns\":{},\"forms\":{}}},",
+        "  \"short_gaps\": {{\"limit\":{limit},\"gaps\":{},\"insns\":{},\"fully_admitted_gaps\":{},\"fully_admitted_gap_insns\":{},\"needed\":{},\"forms\":{}}},",
         all_adm.gaps,
         all_adm.insns,
         all_adm.full_gaps,
         all_adm.full_insns,
+        json_needed(&needed(&ctx, None, &all_table)),
         json_form_table(&ctx, &all_table, usize::MAX)
     )
     .unwrap();
@@ -1079,12 +1204,13 @@ fn run(trace_path: &Path, out_dir: &Path) -> Result<(), String> {
         .iter()
         .map(|(p, t, a)| {
             format!(
-                "{{\"pair\":{},\"gaps\":{},\"insns\":{},\"fully_admitted_gaps\":{},\"fully_admitted_gap_insns\":{},\"forms\":{}}}",
+                "{{\"pair\":{},\"gaps\":{},\"insns\":{},\"fully_admitted_gaps\":{},\"fully_admitted_gap_insns\":{},\"needed\":{},\"forms\":{}}}",
                 json_pair(&trace, p),
                 a.gaps,
                 a.insns,
                 a.full_gaps,
                 a.full_insns,
+                json_needed(&needed(&ctx, Some((p.start, p.end)), t)),
                 json_form_table(&ctx, t, usize::MAX)
             )
         })
@@ -1231,14 +1357,45 @@ covering {:.1}% of their dynamic instructions.\n",
         "### Next forms to add (top {TOP_NEXT_FORMS} non-admitted by dynamic count)\n"
     )
     .unwrap();
-    md_next_forms(&mut m, &ctx, &all_table, TOP_NEXT_FORMS);
-    md_add_curve(&mut m, &ctx, None, &all_table);
+    md_next_forms(&mut m, &ctx, None, &all_table, TOP_NEXT_FORMS);
+    writeln!(
+        m,
+        "### Remaining after LSE atomics (top {TOP_NEXT_FORMS} non-LSE)\n"
+    )
+    .unwrap();
+    md_lse_split(&mut m, &ctx, None, &all_table, TOP_NEXT_FORMS);
 
     writeln!(
         m,
         "## 4. Hottest gap pairs (by dynamic instructions in gaps ≤{limit})\n"
     )
     .unwrap();
+    m.push_str("| pair | gaps | admitted % | admitted % with LSE | fully admitted gaps | forms needed | of which LSE | fully admitted gaps with LSE |\n|---|---|---|---|---|---|---|---|\n");
+    let summary_rows = std::iter::once(("**all ≤limit**".to_string(), None, &all_table, &all_adm))
+        .chain(
+            hot_tables
+                .iter()
+                .map(|(p, t, a)| (pair_label(p.start, p.end), Some((p.start, p.end)), t, a)),
+        );
+    for (label, pair, t, a) in summary_rows {
+        let n = needed(&ctx, pair, t);
+        writeln!(
+            m,
+            "| {} | {} | {:.1} | {:.1} | {} ({:.1}%) | {} | {} | {} ({:.1}%) |",
+            label.replace("limit", &limit.to_string()),
+            a.gaps,
+            pct(t.admitted, t.total),
+            pct(n.admitted_with_lse, t.total),
+            a.full_gaps,
+            pct(a.full_gaps, a.gaps),
+            n.forms,
+            n.lse_forms,
+            n.adm_with_lse.full_gaps,
+            pct(n.adm_with_lse.full_gaps, n.adm_with_lse.gaps)
+        )
+        .unwrap();
+    }
+    m.push('\n');
     for (p, t, a) in &hot_tables {
         writeln!(m, "### {}\n", pair_label(p.start, p.end)).unwrap();
         m.push_str("| gaps | n | min | median | p90 | p99 | max | dyn insns | % insns in gaps within limits |\n|---|---|---|---|---|---|---|---|---|\n");
@@ -1254,8 +1411,9 @@ covering {:.1}% of their dynamic instructions.\n",
         .unwrap();
         md_images(&mut m, t);
         md_form_table(&mut m, &ctx, t, TOP_PAIR_FORMS);
-        md_next_forms(&mut m, &ctx, t, 10);
-        md_add_curve(&mut m, &ctx, Some((p.start, p.end)), t);
+        let pair = Some((p.start, p.end));
+        md_next_forms(&mut m, &ctx, pair, t, 10);
+        md_lse_split(&mut m, &ctx, pair, t, 10);
     }
 
     std::fs::create_dir_all(out_dir)
@@ -1308,6 +1466,32 @@ C 63 63 0 0 2\nC 63 63 0 1 1\nT forks_not_traced 0\nE\n";
             .err()
             .expect("trace must be rejected")
             .contains("disagree"));
+    }
+
+    #[test]
+    fn classifies_lse_atomics_by_mnemonic() {
+        for form in [
+            "ldadd x, x, [x]",
+            "ldaddal w, w, [x]",
+            "swpalb w, w, [x]",
+            "casal x, x, [x]",
+            "caspl x, x, x, x, [x]",
+            "stclrlh w, [x]",
+            "ldumaxa x, x, [x]",
+        ] {
+            assert!(super::is_lse_atomic(form), "{form}");
+        }
+        for form in [
+            "ldar x, [x]",
+            "ldaxr x, [x]",
+            "stlr x, [x]",
+            "ldr x, [x]",
+            "ldrb w, [x]",
+            "stp x, x, [sp]",
+            "casx",
+        ] {
+            assert!(!super::is_lse_atomic(form), "{form}");
+        }
     }
 
     #[test]
