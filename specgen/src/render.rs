@@ -525,7 +525,7 @@ fn render_variants(specs: &[InstructionSpec]) -> Vec<RenderVariant<'_>> {
         .iter()
         .flat_map(|spec| &spec.variants)
         .map(|variant| {
-            let key = format!("{}.{}", variant.section_id, variant.encoding_name);
+            let key = variant.key();
             let mem_group = memory_group(variant);
             let fields = variant
                 .fields
@@ -883,7 +883,7 @@ fn render_tables(specs: &[InstructionSpec], lines: &mut Vec<String>) -> Result<(
 
     for spec in specs {
         for variant in &spec.variants {
-            let key = format!("{}.{}", variant.section_id, variant.encoding_name);
+            let key = variant.key();
             let array_name = format!("FIELDS_{}", rust_ident(&key));
             let operand_array_name = format!("OPERANDS_{}", rust_ident(&key));
 

@@ -75,6 +75,7 @@ pub fn parse_instruction(path: &Path) -> Result<InstructionSpec> {
                         &execute_text,
                     ),
                     asm,
+                    instance: None,
                 });
             }
         }

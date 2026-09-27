@@ -116,6 +116,7 @@ while [ "$i" -le "$iterations" ]; do
     grep -q "child" fork_cow.1.out || fail "fork_cow: no child output"
 
     onoff tight_loop budget 0 "$T/tight_loop" 2000
+    onoff call_loop chain 0 "$T/call_loop" 2000 5000
 
     onoff signal_loop inkernel 0 "$T/signal_loop" 200000
     grep -q "handled=1" signal_loop.1.out || fail "signal_loop: no signal handled"
@@ -155,6 +156,7 @@ while [ "$i" -le "$iterations" ]; do
 
     kill_hot toy_loop_kill "$T/toy_loop" 0
     kill_hot tight_loop_kill "$T/tight_loop" 0
+    kill_hot call_loop_kill "$T/call_loop" 0
 
     echo "k2: iteration $i PASS"
     i=$((i + 1))

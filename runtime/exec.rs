@@ -5,17 +5,13 @@
 //! `decide_runtime_return` (harness/src/runtime.rs), with the kernel's run
 //! conditions re-checked before every entry and every in-kernel syscall.
 
+use core::num::NonZeroU32;
+
 use kernel::ffi::c_long;
 
 use super::ffi::{self, KjitFrag, PtRegs};
 use super::stats::{self, Stat};
 use crate::shared::abi::RetStatus;
-
-/// Fragment entries per hook call through branch exits (chaining). Each entry
-/// is budget-bounded, and every run condition is re-checked before each one,
-/// so this bounds the time one hook call spends in fragments without a
-/// syscall in between.
-const MAX_CHAIN: u32 = 16;
 
 /// `kjit_profile` kinds (`enum kjit_hot_kind` in kjit_glue.c).
 const HOT_SVC_RESUME: u32 = 0;
@@ -115,11 +111,30 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
         return TO_USER;
     }
     let mut entry = 0u64;
-    let Some(mut run) = Running::lookup(pc, &mut entry) else {
+    let Some(run) = Running::lookup(pc, &mut entry) else {
         profile(pc, HOT_SVC_RESUME);
         return TO_USER;
     };
-    let mut chained = 0u32;
+    // SAFETY: reads a module parameter.
+    let budget = unsafe { ffi::kjit_chain_budget() };
+    let (ret, entries) = run_chain(regs, run, entry, budget);
+    stats::note_chain(entries);
+    ret
+}
+
+/// Runs `run` from `entry` and chains through branch exits while the run
+/// conditions hold, for at most `budget` fragment entries (the first one
+/// always runs): the `chain_budget` of tmp/pipeline.md, "K3", chaining rules.
+/// Returns the hook's result and the number of entries made.
+fn run_chain(
+    regs: *mut PtRegs,
+    mut run: Running,
+    mut entry: u64,
+    budget: u32,
+) -> (c_long, NonZeroU32) {
+    // SAFETY: as in `kjit_rs_after_syscall`.
+    let pc = unsafe { (*regs).pc };
+    let mut entries = NonZeroU32::MIN;
 
     loop {
         let mut extra = [0u64; 2];
@@ -140,12 +155,12 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
                     // SAFETY: as above.
                     unsafe { (*regs).pc = param1 };
                     stats::inc(Stat::SyscallsInKernel);
-                    return scno as c_long;
+                    return (scno as c_long, entries);
                 }
                 stats::inc(Stat::SvcDeclined);
                 // SAFETY: as above. Userspace re-executes the SVC itself.
                 unsafe { (*regs).pc = param1.wrapping_sub(4) };
-                return TO_USER;
+                return (TO_USER, entries);
             }
             BL | BLR | BR | RET => {
                 stats::inc(match status {
@@ -156,18 +171,18 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
                 });
                 // x10 = branch target; BL/BLR already wrote x30.
                 let target = param0;
-                if chained == MAX_CHAIN {
+                if entries.get() >= budget {
                     stats::inc(Stat::ChainCap);
                 } else if can_run(regs) {
                     if let Some(next) = run.entry_for(target) {
                         entry = next;
-                        chained += 1;
+                        entries = entries.saturating_add(1);
                         stats::inc(Stat::Chains);
                         continue;
                     }
                     if let Some(next) = Running::lookup(target, &mut entry) {
                         run = next;
-                        chained += 1;
+                        entries = entries.saturating_add(1);
                         stats::inc(Stat::Chains);
                         continue;
                     }
@@ -177,7 +192,7 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
                 }
                 // SAFETY: as above.
                 unsafe { (*regs).pc = target };
-                return TO_USER;
+                return (TO_USER, entries);
             }
             // Never re-entered at x11: userspace executes that instruction (and
             // takes its fault, or runs the back-edge) natively.
@@ -198,7 +213,7 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
                 }
                 // SAFETY: as above.
                 unsafe { (*regs).pc = param1 };
-                return TO_USER;
+                return (TO_USER, entries);
             }
             _ => {
                 stats::inc(Stat::ExitInvalid);
@@ -207,7 +222,7 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
                 unsafe { ffi::kjit_bad_status(status, pc) };
                 // SAFETY: as above.
                 unsafe { (*regs).pc = param1 };
-                return TO_USER;
+                return (TO_USER, entries);
             }
         }
     }

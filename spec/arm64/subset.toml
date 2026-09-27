@@ -603,11 +603,6 @@ forms = [
 # generated operands and its bits join the form's mask/value, so any other value
 # stays undecodable (-> Unsupported runtime exit).
 [decode.field_constraints]
-# MRS reads only TPIDR_EL0 (S3_3_C13_C0_2: op0 = 0b1:o0 = 3, op1 = 3, CRn = 13,
-# CRm = 0, op2 = 2). At EL1 it still returns the current task's user TLS pointer:
-# Linux switches TPIDR_EL0 only on context switch. Every other system register
-# must keep executing natively in userspace.
-"MRS.MRS_RS_systemmove" = { o0 = 1, op1 = 3, CRn = 13, CRm = 0, op2 = 2 }
 # SMULH/UMULH: Ra is a should-be-one field ("(1)" in the XML diagram); any other
 # value is CONSTRAINED UNPREDICTABLE, so only Ra = 31 decodes.
 "SMULH.SMULH_64_dp_3src" = { Ra = 31 }
@@ -632,3 +627,24 @@ forms = [
 # PSTATE field stays undecodable. CRm (the immediate) stays an operand; the
 # verifier accepts only CRm = 0 and 1, at the exact window positions.
 "MSR_imm.MSR_SI_pstate" = { op1 = 0, op2 = 4 }
+
+# Exact instances of one encoding, each generated as its own variant (key
+# `<form>@<instance>`), pinned like a field constraint. Words matching no
+# instance stay undecodable (-> Unsupported runtime exit).
+#
+# MRS reads only these system registers (op0 = 0b1:o0 = 3, op1 = 3); every other
+# one must keep executing natively in userspace. Each reads at EL1 what it reads
+# at EL0 while a fragment runs:
+# - TPIDR_EL0 (S3_3_C13_C0_2): the current task's user TLS pointer; Linux
+#   switches it only on context switch.
+# - CNTVCT_EL0 (S3_3_C14_C0_2), CNTFRQ_EL0 (S3_3_C14_C0_0), A10: the virtual
+#   count is CNTPCT - CNTVOFF at EL0 and EL1 alike (VirtualCounterTimer()), and
+#   CNTFRQ is one value. EL0 reads them directly only while
+#   CNTKCTL_EL1.EL0VCTEN is set and no timer erratum traps and emulates them;
+#   kjit.ko refuses to load otherwise (tmp/pipeline.md, "A10").
+# CNTVCTSS_EL0 (FEAT_ECV) is not admitted: UNDEFINED without ECV, which the
+# development hosts lack.
+[decode.field_instances."MRS.MRS_RS_systemmove"]
+TPIDR_EL0 = { o0 = 1, op1 = 3, CRn = 13, CRm = 0, op2 = 2 }
+CNTFRQ_EL0 = { o0 = 1, op1 = 3, CRn = 14, CRm = 0, op2 = 0 }
+CNTVCT_EL0 = { o0 = 1, op1 = 3, CRn = 14, CRm = 0, op2 = 2 }

@@ -357,7 +357,8 @@ mod tests {
 
     const BASE: u64 = 0x1000;
     // `mrs x0, tpidrro_el0`: outside the decoded subset (MRS decodes only for
-    // TPIDR_EL0, which differs from this word in op2 alone).
+    // TPIDR_EL0, CNTVCT_EL0 and CNTFRQ_EL0; TPIDR_EL0 differs from this word in
+    // op2 alone).
     const UNDECODABLE: u32 = 0xd53b_d060;
 
     struct SliceCode<'a> {

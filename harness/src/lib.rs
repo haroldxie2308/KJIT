@@ -127,6 +127,11 @@ pub const FIXTURE_TEXT_BASE: u64 = 0x10000;
 pub const FIXTURE_DATA_LEN: u64 = 0x4000;
 /// TPIDR_EL0 of fixture cases: a TLS block in the last page of the data window.
 pub const FIXTURE_TLS_BASE: u64 = FIXTURE_DATA_BASE + 0x3000;
+/// CNTVCT_EL0 of fixture cases: a plausible uptime (~2 h at 24 MHz) whose bytes
+/// all differ, so a misrouted or truncated read shows.
+pub const FIXTURE_CNTVCT: u64 = 0x0000_00a1_b2c3_d4e5;
+/// CNTFRQ_EL0 of fixture cases (the generic timer's common 24 MHz).
+pub const FIXTURE_CNTFRQ: u64 = 24_000_000;
 /// One read-only page right after the data window (x12 + 0x4000), so fixtures
 /// can fault on a store to it. The page after it (x12 + 0x5000) is unmapped.
 pub const FIXTURE_RO_BASE: u64 = FIXTURE_DATA_BASE + FIXTURE_DATA_LEN;
@@ -134,12 +139,15 @@ pub const FIXTURE_RO_BASE: u64 = FIXTURE_DATA_BASE + FIXTURE_DATA_LEN;
 /// Initial machine state for `.s` fixture cases, before the text is mapped
 /// (`fixture_state` adds it): x12 points at the fixture data window, which is
 /// read-write, followed by one read-only page (`FIXTURE_RO_BASE`); TPIDR_EL0 is
-/// `FIXTURE_TLS_BASE` inside the window. Everything else is unmapped. The
+/// `FIXTURE_TLS_BASE` inside the window; the counter reads `FIXTURE_CNTVCT` and
+/// `FIXTURE_CNTFRQ`. Everything else is unmapped. The
 /// fuzzer builds on it and its minimizer lifts states relative to it.
 pub fn default_fixture_state() -> MachineState {
     let mut state = MachineState::new();
     state.write_x(12, FIXTURE_DATA_BASE);
     state.tpidr_el0 = FIXTURE_TLS_BASE;
+    state.cntvct_el0 = FIXTURE_CNTVCT;
+    state.cntfrq_el0 = FIXTURE_CNTFRQ;
     state
         .map_user_range(
             FIXTURE_DATA_BASE,

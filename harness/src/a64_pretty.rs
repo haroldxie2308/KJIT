@@ -430,7 +430,9 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
             format!("rev16 {}, {}", reg_name(rd), reg_name(rn))
         }
         Rev32IntRev3264Dp1src { rn, rd } => format!("rev32 {}, {}", reg_name(rd), reg_name(rn)),
-        MrsMrsRsSystemmove { rt } => format!("mrs {}, tpidr_el0", reg_name(rt)),
+        MrsMrsRsSystemmoveTpidrEl0 { rt } => format!("mrs {}, tpidr_el0", reg_name(rt)),
+        MrsMrsRsSystemmoveCntvctEl0 { rt } => format!("mrs {}, cntvct_el0", reg_name(rt)),
+        MrsMrsRsSystemmoveCntfrqEl0 { rt } => format!("mrs {}, cntfrq_el0", reg_name(rt)),
         BUncondBOnlyBranchImm { imm26 } => pretty_branch("b", pc, imm26),
         BCondBOnlyCondbranch { imm19, cond } => {
             let mnemonic = format!("b.{}", condition_name(cond));

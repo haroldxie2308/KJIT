@@ -66,6 +66,27 @@ pub struct VariantSpec {
     pub fields: Vec<FieldSpec>,
     pub operand_roles: Vec<OperandRoleSpec>,
     pub asm: String,
+    /// Set for one exact instance of an encoding (`decode.field_instances`):
+    /// the encoding with some non-operand fields pinned, generated as its own
+    /// variant.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instance: Option<String>,
+}
+
+impl VariantSpec {
+    /// The XML form key `<section>.<encoding>`.
+    pub fn form_key(&self) -> String {
+        format!("{}.{}", self.section_id, self.encoding_name)
+    }
+
+    /// The generated form key: the XML form key, plus `@<instance>` for an
+    /// instance.
+    pub fn key(&self) -> String {
+        match &self.instance {
+            Some(instance) => format!("{}@{instance}", self.form_key()),
+            None => self.form_key(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]

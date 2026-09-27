@@ -44,6 +44,7 @@
 #include <linux/bottom_half.h>
 #include <linux/cacheflush.h>
 #include <linux/compat.h>
+#include <linux/cpuhotplug.h>
 #include <linux/debugfs.h>
 #include <linux/err.h>
 #include <linux/errno.h>
@@ -69,6 +70,7 @@
 #include <linux/set_memory.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
+#include <linux/srcu.h>
 #include <linux/timekeeping.h>
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
@@ -161,6 +163,7 @@ u64 kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 b
 u64 kjit_fpsimd_run_max_ns(void);
 void kjit_profile(u64 pc, u32 kind);
 u64 kjit_hook_calls(void);
+u32 kjit_chain_budget(void);
 
 /* kjit_profile()'s @kind: where the profiled PC came from. */
 enum kjit_hot_kind {
@@ -298,6 +301,48 @@ static unsigned long kjit_max_frags_total = 8192;
 module_param_named(max_frags_total, kjit_max_frags_total, ulong, 0644);
 static unsigned long kjit_max_code_total = 64UL << 20;
 module_param_named(max_code_total, kjit_max_code_total, ulong, 0644);
+/*
+ * Chaining (tmp/pipeline.md, "K3", chaining rules): at most chain_budget
+ * fragment entries per hook call (after-syscall return path), the first one
+ * included; 1 disables chaining. Module parameter and debugfs, both range
+ * checked. The maximum keeps runtime/stats.rs's chain histogram exact.
+ */
+#define KJIT_CHAIN_BUDGET_MAX	65536
+static unsigned int kjit_chain_budget_val = 1024;
+
+static int kjit_chain_budget_param_set(const char *val, const struct kernel_param *kp)
+{
+	return param_set_uint_minmax(val, kp, 1, KJIT_CHAIN_BUDGET_MAX);
+}
+
+static const struct kernel_param_ops kjit_chain_budget_param_ops = {
+	.set = kjit_chain_budget_param_set,
+	.get = param_get_uint,
+};
+module_param_cb(chain_budget, &kjit_chain_budget_param_ops, &kjit_chain_budget_val, 0644);
+MODULE_PARM_DESC(chain_budget, "Fragment entries per syscall-return hook call, chained ones included (1..65536, default 1024)");
+
+u32 kjit_chain_budget(void)
+{
+	return READ_ONCE(kjit_chain_budget_val);
+}
+
+static int kjit_chain_budget_debugfs_get(void *data, u64 *val)
+{
+	*val = READ_ONCE(kjit_chain_budget_val);
+	return 0;
+}
+
+static int kjit_chain_budget_debugfs_set(void *data, u64 val)
+{
+	if (val < 1 || val > KJIT_CHAIN_BUDGET_MAX)
+		return -EINVAL;
+	WRITE_ONCE(kjit_chain_budget_val, val);
+	return 0;
+}
+DEFINE_DEBUGFS_ATTRIBUTE(kjit_chain_budget_fops, kjit_chain_budget_debugfs_get,
+			 kjit_chain_budget_debugfs_set, "%llu\n");
+
 /* Installed fragments of every mm; see kjit_caps_allow(). */
 static atomic_long_t kjit_total_frags = ATOMIC_LONG_INIT(0);
 static atomic_long_t kjit_total_code = ATOMIC_LONG_INIT(0);
@@ -917,12 +962,28 @@ bool kjit_fpsimd_supported(void)
 	return system_supports_fpsimd() && !system_supports_sve() && !system_supports_sme();
 }
 
+/*
+ * Hook calls in flight, i.e. every fragment run. Module exit clears
+ * kjit_enabled and waits for them before it unregisters the hook, because
+ * kjit_unregister_hook() turns off the fragment extable search
+ * (search_kjit_extables(), patch 0002) before it waits for the calls in
+ * flight: a fragment still running then would take a user-access fault
+ * without its fixup (an oops). Readers sleep (fragment page faults), so SRCU.
+ */
+DEFINE_STATIC_SRCU(kjit_run_srcu);
+
 static long kjit_after_syscall(struct pt_regs *regs)
 {
-	if (!READ_ONCE(kjit_enabled))
-		return -1;
-	this_cpu_inc(kjit_hook_calls_pcpu);
-	return kjit_rs_after_syscall(regs);
+	long ret = -1;
+	int idx;
+
+	idx = srcu_read_lock(&kjit_run_srcu);
+	if (READ_ONCE(kjit_enabled)) {
+		this_cpu_inc(kjit_hook_calls_pcpu);
+		ret = kjit_rs_after_syscall(regs);
+	}
+	srcu_read_unlock(&kjit_run_srcu, idx);
+	return ret;
 }
 
 /*
@@ -1442,13 +1503,14 @@ out_mm:
 
 static ssize_t kjit_stats_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
-	char *buf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+	size_t size = 2 * PAGE_SIZE;
+	char *buf = kmalloc(size, GFP_KERNEL);
 	ssize_t ret;
 
 	if (!buf)
 		return -ENOMEM;
 	ret = simple_read_from_buffer(ubuf, count, ppos, buf,
-				      kjit_rs_stats_show(buf, PAGE_SIZE));
+				      kjit_rs_stats_show(buf, size));
 	kfree(buf);
 	return ret;
 }
@@ -1570,6 +1632,39 @@ static int kjit_check_cpu(void)
 	return 0;
 }
 
+/*
+ * A10: a fragment executes the user's `mrs Xt, cntvct_el0` and
+ * `mrs Xt, cntfrq_el0` at EL1. EL1 reads the same virtual count (CNTPCT -
+ * CNTVOFF at EL0 and EL1 alike) and frequency, so that is exact while EL0
+ * reads them from the hardware too: CNTKCTL_EL1.EL0VCTEN set (which also
+ * makes CNTFRQ_EL0 readable at EL0), and no out-of-line timer erratum
+ * workaround for CNTVCT (arch_counter_set_user_access() clears EL0VCTEN on
+ * such a CPU, so EL0 reads trap and the kernel emulates them with the
+ * workaround's stable read). Both are per CPU and established when the CPU
+ * starts (CPUHP_AP_ARM_ARCH_TIMER_STARTING, before this ONLINE_DYN state), so
+ * this runs on every online CPU at load (a failure fails the load) and on every
+ * CPU that comes online while kjit is loaded (a failure fails its onlining).
+ * EL0VCTEN changes after that only for compat tasks (ARM64_ERRATUM_1418040),
+ * which never run fragments.
+ */
+static enum cpuhp_state kjit_counter_cpuhp;
+
+static int kjit_counter_cpu_online(unsigned int cpu)
+{
+	if (!(read_sysreg(cntkctl_el1) & ARCH_TIMER_USR_VCT_ACCESS_EN)) {
+		pr_err("kjit: CPU%u: CNTKCTL_EL1.EL0VCTEN is clear: EL0 counter reads trap, a fragment's would not; refusing\n",
+		       cpu);
+		return -ENODEV;
+	}
+	/* Runs in this CPU's hotplug thread, so the per-CPU read is stable. */
+	if (has_erratum_handler(read_cntvct_el0)) {
+		pr_err("kjit: CPU%u: a timer erratum workaround emulates EL0 CNTVCT_EL0 reads; refusing\n",
+		       cpu);
+		return -ENODEV;
+	}
+	return 0;
+}
+
 int kjit_glue_init(void)
 {
 	int ret;
@@ -1579,10 +1674,17 @@ int kjit_glue_init(void)
 		return ret;
 	if (!kjit_fpsimd_supported())
 		pr_info("kjit: SVE/SME present or no FP/SIMD: fragments that use FP/SIMD will not be installed\n");
+	ret = cpuhp_setup_state(CPUHP_AP_ONLINE_DYN, "kjit/counter:online",
+				kjit_counter_cpu_online, NULL);
+	if (ret < 0)
+		return ret;
+	kjit_counter_cpuhp = ret;
 
 	kjit_wq = alloc_workqueue("kjit", WQ_UNBOUND, 0);
-	if (!kjit_wq)
+	if (!kjit_wq) {
+		cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
 		return -ENOMEM;
+	}
 	kjit_debugfs = debugfs_create_dir("kjit", NULL);
 	debugfs_create_file("translate", 0200, kjit_debugfs, NULL, &kjit_translate_fops);
 	debugfs_create_file("translate_svc_sites", 0200, kjit_debugfs, NULL, &kjit_svc_sites_fops);
@@ -1591,12 +1693,14 @@ int kjit_glue_init(void)
 	debugfs_create_bool("auto", 0600, kjit_debugfs, &kjit_auto);
 	debugfs_create_u32("hot_threshold", 0600, kjit_debugfs, &kjit_hot_threshold);
 	debugfs_create_u32("hot_window_ms", 0600, kjit_debugfs, &kjit_hot_window_ms);
+	debugfs_create_file_unsafe("chain_budget", 0600, kjit_debugfs, NULL, &kjit_chain_budget_fops);
 	debugfs_create_file("unsupported_top", 0400, kjit_debugfs, NULL, &kjit_unsupported_fops);
 
 	ret = kjit_register_hook(&kjit_hook_ops);
 	if (ret) {
 		debugfs_remove(kjit_debugfs);
 		destroy_workqueue(kjit_wq);
+		cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
 	}
 	return ret;
 }
@@ -1609,7 +1713,14 @@ void kjit_glue_exit(void)
 	/* No new translations (waits for writers in flight). */
 	debugfs_remove(kjit_debugfs);
 	/*
-	 * No fragment runs, extable lookups or task_work requests in here after
+	 * No fragment runs after this: hook calls in flight stop chaining at the
+	 * next run-condition check and new ones return at once. Their extable
+	 * lookups still work until they have finished (see kjit_run_srcu).
+	 */
+	WRITE_ONCE(kjit_enabled, false);
+	synchronize_srcu(&kjit_run_srcu);
+	/*
+	 * No hook calls, extable lookups or task_work requests in here after
 	 * this; requests still queued are freed by the kernel (0004).
 	 */
 	kjit_unregister_hook(&kjit_hook_ops);
@@ -1646,4 +1757,5 @@ void kjit_glue_exit(void)
 	/* ...and the image frees have run after this. */
 	destroy_workqueue(kjit_wq);
 	WARN_ON(!list_empty(&kjit_all_frags));
+	cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
 }

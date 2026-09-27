@@ -8,8 +8,6 @@ use crate::shared::arm64::{
     A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode, A64RegWidth, A64RewriteError,
 };
 
-const SUBSET_TOML: &str = include_str!("../../spec/arm64/subset.toml");
-
 struct EncodingCase {
     form: &'static str,
     asm: String,
@@ -27,14 +25,19 @@ fn encoding_matches_llvm_for_handwritten_cases() {
     cases.extend(bti_carry_crc_encoding_cases());
     cases.extend(lse_msr_encoding_cases());
     cases.extend(simd_encoding_cases());
-    let decode_forms = decode_forms_from_subset_toml(SUBSET_TOML);
+    // Generated keys: the subset.toml forms, with each field-instance form
+    // replaced by its `<form>@<instance>` keys.
+    let decode_forms = crate::shared::arm64::GENERATED_A64_SUBSET
+        .iter()
+        .map(|spec| spec.key.to_string())
+        .collect::<Vec<_>>();
     let decode_form_set = decode_forms.iter().cloned().collect::<BTreeSet<_>>();
     let covered_forms = cases.iter().map(|case| case.form).collect::<BTreeSet<_>>();
 
     for case in &cases {
         assert!(
             decode_form_set.contains(case.form),
-            "encoding test case references form not in subset.toml: {}",
+            "encoding test case references a form that is not generated: {}",
             case.form
         );
         assert_case_matches_llvm(case);
@@ -1976,16 +1979,41 @@ fn alu_encoding_cases() -> Vec<EncodingCase> {
             "    rev32 x8, x9",
             A64Insn::Rev32IntRev3264Dp1src { rn: x(9), rd: x(8) },
         ),
-        // MRS: TPIDR_EL0 only.
+        // MRS: TPIDR_EL0, CNTVCT_EL0, CNTFRQ_EL0 only (field instances).
         case(
-            "MRS.MRS_RS_systemmove",
+            "MRS.MRS_RS_systemmove@TPIDR_EL0",
             "    mrs x1, tpidr_el0",
-            A64Insn::MrsMrsRsSystemmove { rt: x(1) },
+            A64Insn::MrsMrsRsSystemmoveTpidrEl0 { rt: x(1) },
         ),
         case(
-            "MRS.MRS_RS_systemmove",
+            "MRS.MRS_RS_systemmove@TPIDR_EL0",
             "    mrs xzr, tpidr_el0",
-            A64Insn::MrsMrsRsSystemmove { rt: x(31) },
+            A64Insn::MrsMrsRsSystemmoveTpidrEl0 { rt: x(31) },
+        ),
+        case(
+            "MRS.MRS_RS_systemmove@CNTVCT_EL0",
+            "    mrs x11, cntvct_el0",
+            A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt: x(11) },
+        ),
+        case(
+            "MRS.MRS_RS_systemmove@CNTVCT_EL0",
+            "    mrs x0, cntvct_el0",
+            A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt: x(0) },
+        ),
+        case(
+            "MRS.MRS_RS_systemmove@CNTVCT_EL0",
+            "    mrs xzr, cntvct_el0",
+            A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt: x(31) },
+        ),
+        case(
+            "MRS.MRS_RS_systemmove@CNTFRQ_EL0",
+            "    mrs x12, cntfrq_el0",
+            A64Insn::MrsMrsRsSystemmoveCntfrqEl0 { rt: x(12) },
+        ),
+        case(
+            "MRS.MRS_RS_systemmove@CNTFRQ_EL0",
+            "    mrs x30, cntfrq_el0",
+            A64Insn::MrsMrsRsSystemmoveCntfrqEl0 { rt: x(30) },
         ),
     ]
 }
@@ -4292,54 +4320,6 @@ fn pair_imm(bytes: i64, scale: u8) -> A64Imm {
 
 fn literal_imm(words: i64) -> A64Imm {
     A64Imm::scaled_signed(signed_field(words, 19), 19, 2)
-}
-
-fn decode_forms_from_subset_toml(toml: &str) -> Vec<String> {
-    let mut forms = Vec::new();
-    let mut in_decode = false;
-    let mut in_forms = false;
-
-    for line in toml.lines() {
-        let line = line.split('#').next().unwrap_or("").trim();
-        if line.is_empty() {
-            continue;
-        }
-        if line.starts_with('[') {
-            in_decode = line == "[decode]";
-            in_forms = false;
-            continue;
-        }
-        if !in_decode {
-            continue;
-        }
-        if line.starts_with("forms") {
-            in_forms = line.contains('[') && !line.contains(']');
-            forms.extend(quoted_strings(line));
-            continue;
-        }
-        if in_forms {
-            forms.extend(quoted_strings(line));
-            if line.contains(']') {
-                in_forms = false;
-            }
-        }
-    }
-
-    forms
-}
-
-fn quoted_strings(line: &str) -> Vec<String> {
-    let mut values = Vec::new();
-    let mut rest = line;
-    while let Some(start) = rest.find('"') {
-        rest = &rest[start + 1..];
-        let Some(end) = rest.find('"') else {
-            break;
-        };
-        values.push(rest[..end].to_string());
-        rest = &rest[end + 1..];
-    }
-    values
 }
 
 fn branch_imm(offset_bytes: i64, bits: u8) -> u32 {

@@ -1481,7 +1481,9 @@ impl A64Insn {
             | Self::Rev16IntRev1632Dp1src { .. }
             | Self::Rev16IntRev1664Dp1src { .. }
             | Self::Rev32IntRev3264Dp1src { .. }
-            | Self::MrsMrsRsSystemmove { .. }
+            | Self::MrsMrsRsSystemmoveTpidrEl0 { .. }
+            | Self::MrsMrsRsSystemmoveCntvctEl0 { .. }
+            | Self::MrsMrsRsSystemmoveCntfrqEl0 { .. }
             | Self::TbzTbzOnlyTestbranch { .. }
             | Self::TbnzTbnzOnlyTestbranch { .. }
             | Self::LdrImmGenLdr32LdstImmpost { .. }

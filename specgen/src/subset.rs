@@ -1,4 +1,4 @@
-use crate::model::InstructionSpec;
+use crate::model::{InstructionSpec, VariantSpec};
 use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
@@ -20,6 +20,13 @@ pub struct DecodeConfig {
     /// constrained.
     #[serde(default)]
     pub field_constraints: BTreeMap<String, BTreeMap<String, u32>>,
+    /// Per-form exact instances: `form key -> instance name -> field name ->
+    /// value`. The form is replaced by one generated variant per instance, each
+    /// pinned like a field constraint (key `<form>@<instance>`), so only words
+    /// matching one instance decode, and every consumer's exhaustive match
+    /// decides each instance on its own.
+    #[serde(default)]
+    pub field_instances: BTreeMap<String, BTreeMap<String, BTreeMap<String, u32>>>,
 }
 
 pub fn load_decode_config(path: &Path) -> Result<DecodeConfig> {
@@ -38,46 +45,14 @@ pub fn apply_field_constraints(specs: &mut [InstructionSpec], config: &DecodeCon
     let mut applied = BTreeSet::new();
 
     for variant in specs.iter_mut().flat_map(|spec| spec.variants.iter_mut()) {
-        let key = format!("{}.{}", variant.section_id, variant.encoding_name);
+        let key = variant.form_key();
         let Some(constraints) = config.field_constraints.get(&key) else {
             continue;
         };
         if !forms.contains(&key) {
             bail!("field constraint for `{key}`, which is not in decode.forms");
         }
-
-        let mut mask =
-            parse_hex_word(&variant.mask).with_context(|| format!("bad mask for `{key}`"))?;
-        let mut value =
-            parse_hex_word(&variant.value).with_context(|| format!("bad value for `{key}`"))?;
-        for (field_name, fixed) in constraints {
-            let Some(field) = variant.fields.iter_mut().find(|f| &f.name == field_name) else {
-                bail!("field constraint `{key}.{field_name}`: no such field");
-            };
-            if !field.variable {
-                bail!("field constraint `{key}.{field_name}`: field is already fixed");
-            }
-            if variant
-                .operand_roles
-                .iter()
-                .any(|role| &role.field == field_name)
-            {
-                bail!("field constraint `{key}.{field_name}`: field carries an operand role");
-            }
-            if field.width < 32 && *fixed >= (1_u32 << field.width) {
-                bail!(
-                    "field constraint `{key}.{field_name}` = {fixed} does not fit {} bits",
-                    field.width
-                );
-            }
-            let field_mask = parse_hex_word(&field.mask)
-                .with_context(|| format!("bad field mask for `{key}.{field_name}`"))?;
-            mask |= field_mask;
-            value = (value & !field_mask) | (fixed << field.lo);
-            field.variable = false;
-        }
-        variant.mask = format!("0x{mask:08x}");
-        variant.value = format!("0x{value:08x}");
+        pin_fields(variant, &key, constraints)?;
         applied.insert(key);
     }
 
@@ -89,6 +64,102 @@ pub fn apply_field_constraints(specs: &mut [InstructionSpec], config: &DecodeCon
     if !missing.is_empty() {
         bail!("field constraints for forms not found in XML: {missing:?}");
     }
+    Ok(())
+}
+
+/// Replaces each form of `decode.field_instances` by its instances, in instance
+/// name order. Each instance is pinned with the field-constraint rules. Fails
+/// additionally if the form also has a field constraint, has no instance, an
+/// instance name is not `[A-Z0-9_]+`, or two instances decode the same words.
+pub fn apply_field_instances(specs: &mut [InstructionSpec], config: &DecodeConfig) -> Result<()> {
+    let forms = config.forms.iter().collect::<BTreeSet<_>>();
+    let mut applied = BTreeSet::new();
+
+    for spec in specs.iter_mut() {
+        let mut variants = Vec::with_capacity(spec.variants.len());
+        for variant in spec.variants.drain(..) {
+            let key = variant.form_key();
+            let Some(instances) = config.field_instances.get(&key) else {
+                variants.push(variant);
+                continue;
+            };
+            if !forms.contains(&key) {
+                bail!("field instances for `{key}`, which is not in decode.forms");
+            }
+            if config.field_constraints.contains_key(&key) {
+                bail!("`{key}` has both field constraints and field instances");
+            }
+            if instances.is_empty() {
+                bail!("field instances for `{key}`: no instance");
+            }
+            let mut patterns = BTreeSet::new();
+            for (name, constraints) in instances {
+                if name.is_empty()
+                    || !name
+                        .chars()
+                        .all(|ch| ch.is_ascii_uppercase() || ch.is_ascii_digit() || ch == '_')
+                {
+                    bail!("field instance `{key}@{name}`: name must be [A-Z0-9_]+");
+                }
+                let mut instance = variant.clone();
+                instance.instance = Some(name.clone());
+                let instance_key = instance.key();
+                pin_fields(&mut instance, &instance_key, constraints)?;
+                if !patterns.insert((instance.mask.clone(), instance.value.clone())) {
+                    bail!("field instance `{key}@{name}` decodes the same words as another instance");
+                }
+                variants.push(instance);
+            }
+            applied.insert(key);
+        }
+        spec.variants = variants;
+    }
+
+    let missing = config
+        .field_instances
+        .keys()
+        .filter(|key| !applied.contains(*key))
+        .collect::<Vec<_>>();
+    if !missing.is_empty() {
+        bail!("field instances for forms not found in XML: {missing:?}");
+    }
+    Ok(())
+}
+
+/// Fixes each constrained field of `variant` (`key` names it in errors): its
+/// bits join mask/value and it stops being variable.
+fn pin_fields(variant: &mut VariantSpec, key: &str, constraints: &BTreeMap<String, u32>) -> Result<()> {
+    let mut mask = parse_hex_word(&variant.mask).with_context(|| format!("bad mask for `{key}`"))?;
+    let mut value =
+        parse_hex_word(&variant.value).with_context(|| format!("bad value for `{key}`"))?;
+    for (field_name, fixed) in constraints {
+        let Some(field) = variant.fields.iter_mut().find(|f| &f.name == field_name) else {
+            bail!("field constraint `{key}.{field_name}`: no such field");
+        };
+        if !field.variable {
+            bail!("field constraint `{key}.{field_name}`: field is already fixed");
+        }
+        if variant
+            .operand_roles
+            .iter()
+            .any(|role| &role.field == field_name)
+        {
+            bail!("field constraint `{key}.{field_name}`: field carries an operand role");
+        }
+        if field.width < 32 && *fixed >= (1_u32 << field.width) {
+            bail!(
+                "field constraint `{key}.{field_name}` = {fixed} does not fit {} bits",
+                field.width
+            );
+        }
+        let field_mask = parse_hex_word(&field.mask)
+            .with_context(|| format!("bad field mask for `{key}.{field_name}`"))?;
+        mask |= field_mask;
+        value = (value & !field_mask) | (fixed << field.lo);
+        field.variable = false;
+    }
+    variant.mask = format!("0x{mask:08x}");
+    variant.value = format!("0x{value:08x}");
     Ok(())
 }
 
@@ -119,7 +190,7 @@ pub fn filter_specs_by_forms(
 
     for mut spec in specs {
         spec.variants.retain(|variant| {
-            let key = format!("{}.{}", variant.section_id, variant.encoding_name);
+            let key = variant.form_key();
             if wanted.contains(&key) {
                 found.insert(key);
                 true
@@ -201,6 +272,7 @@ mod tests {
                 width: "X64".to_string(),
             }],
             asm: String::new(),
+            instance: None,
         };
         InstructionSpec {
             source_file: "mrs.xml".to_string(),
@@ -220,7 +292,75 @@ mod tests {
                 key,
                 BTreeMap::from([(field.to_string(), value)]),
             )]),
+            field_instances: BTreeMap::new(),
         }
+    }
+
+    fn instances(list: &[(&str, &[(&str, u32)])]) -> DecodeConfig {
+        let key = "MRS.MRS_RS_systemmove".to_string();
+        DecodeConfig {
+            forms: vec![key.clone()],
+            field_constraints: BTreeMap::new(),
+            field_instances: BTreeMap::from([(
+                key,
+                list.iter()
+                    .map(|(name, fields)| {
+                        (
+                            name.to_string(),
+                            fields
+                                .iter()
+                                .map(|(field, value)| (field.to_string(), *value))
+                                .collect(),
+                        )
+                    })
+                    .collect(),
+            )]),
+        }
+    }
+
+    #[test]
+    fn field_instances_replace_the_form_by_pinned_variants() {
+        let mut specs = vec![mrs_like_spec()];
+        let config = instances(&[("B", &[("op2", 2)]), ("A", &[("op1", 3), ("op2", 0)])]);
+        apply_field_instances(&mut specs, &config).unwrap();
+
+        let variants = &specs[0].variants;
+        let keys = variants.iter().map(VariantSpec::key).collect::<Vec<_>>();
+        assert_eq!(
+            keys,
+            ["MRS.MRS_RS_systemmove@A", "MRS.MRS_RS_systemmove@B"]
+        );
+        assert_eq!(variants[0].mask, "0xfff700e0");
+        assert_eq!(variants[0].value, "0xd5330000");
+        assert_eq!(variants[1].mask, "0xfff000e0");
+        assert_eq!(variants[1].value, "0xd5300040");
+        assert!(variants.iter().all(|v| v.form_key() == "MRS.MRS_RS_systemmove"));
+    }
+
+    #[test]
+    fn field_instances_reject_bad_configs() {
+        let bad: [&[(&str, &[(&str, u32)])]; 5] = [
+            &[],
+            &[("lower", &[("op2", 2)])],
+            &[("A", &[("op2", 2)]), ("B", &[("op2", 2)])],
+            &[("A", &[("Rt", 0)])],
+            &[("A", &[("CRn", 0)])],
+        ];
+        for list in bad {
+            let mut specs = vec![mrs_like_spec()];
+            assert!(
+                apply_field_instances(&mut specs, &instances(list)).is_err(),
+                "{list:?} must be rejected"
+            );
+        }
+
+        let mut both = instances(&[("A", &[("op2", 2)])]);
+        both.field_constraints = config("op1", 3).field_constraints;
+        assert!(apply_field_instances(&mut vec![mrs_like_spec()], &both).is_err());
+
+        let mut unknown_form = instances(&[("A", &[("op2", 2)])]);
+        unknown_form.forms.clear();
+        assert!(apply_field_instances(&mut vec![mrs_like_spec()], &unknown_form).is_err());
     }
 
     #[test]

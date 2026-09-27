@@ -43,6 +43,7 @@ fn main() -> Result<()> {
         let specs = parse_instructions(&args.xml_dir, &instructions)?;
         let mut specs = subset::filter_specs_by_forms(specs, &decode.forms)?;
         subset::apply_field_constraints(&mut specs, &decode)?;
+        subset::apply_field_instances(&mut specs, &decode)?;
         specs
     };
 

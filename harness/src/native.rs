@@ -30,6 +30,17 @@
 //! the fixture's (`MachineState::tpidr_el0`, via `MRS`). It is switched to the
 //! fixture value only while user code or a fragment runs; `kjit_native_signal_entry`
 //! switches it back before any Rust (and so any TLS access) runs in the handler.
+//!
+//! Counter reads (A10): the hardware's CNTVCT_EL0 differs from run to run and
+//! from the interpreter's fixed counter (`MachineState::cntvct_el0`), so neither
+//! leg executes `mrs Xt, cntvct_el0` / `mrs Xt, cntfrq_el0` natively. Both
+//! replace each such word with a `BRK_COUNTER` that the signal handler emulates
+//! in place (Xt = the run's `MachineState` value, resume at the next word), like
+//! the mocked SVC. Every register, including the reads' destinations and
+//! everything computed from them, is then compared exactly. What stays
+//! unchecked natively is only the read itself, i.e. that the hardware counter
+//! is readable at EL0; the fragment's encoding of it is the generated encoder's
+//! (LLVM encoding cases) and its register virtualization is compared here.
 
 use core::arch::{asm, global_asm};
 use core::cell::Cell;
@@ -66,12 +77,28 @@ const BRK_SVC: u32 = brk(BRK_SVC_IMM);
 const BRK_STOP: u32 = brk(BRK_STOP_IMM);
 const BRK_FILL: u32 = brk(BRK_FILL_IMM);
 const BRK_CAP: u32 = brk(BRK_CAP_IMM);
+/// `brk #(BRK_COUNTER_IMM | kind | rt)`: an emulated counter read (A10) into
+/// Xt (XZR for 31); `kind` 0 = CNTVCT_EL0, `BRK_COUNTER_CNTFRQ` = CNTFRQ_EL0.
+const BRK_COUNTER_IMM: u16 = 0x4c00;
+const BRK_COUNTER_CNTFRQ: u16 = 1 << 5;
+const BRK_COUNTER_MASK: u16 = !0x3f;
 
 const NZCV_MASK: u64 = 0xf000_0000;
 const ALT_STACK_BYTES: usize = 256 * 1024;
 
 const fn brk(imm16: u16) -> u32 {
     0xd420_0000 | ((imm16 as u32) << 5)
+}
+
+/// The `BRK_COUNTER` word that stands in for a counter read in both native legs,
+/// or `None` for any other instruction.
+fn counter_brk(insn: A64Insn) -> Option<u32> {
+    let (kind, rt) = match insn {
+        A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt } => (0, rt),
+        A64Insn::MrsMrsRsSystemmoveCntfrqEl0 { rt } => (BRK_COUNTER_CNTFRQ, rt),
+        _ => return None,
+    };
+    Some(brk(BRK_COUNTER_IMM | kind | u16::from(rt.enc())))
 }
 
 // ---------------------------------------------------------------------------
@@ -230,6 +257,8 @@ struct NativeCtx {
     fault_redirects: u64,
     /// Out: a signal frame had no `fpsimd_context` first (A9a; never expected).
     fpsimd_missing: bool,
+    /// In: CNTVCT_EL0 and CNTFRQ_EL0 for `BRK_COUNTER` emulation (A10).
+    counter: [u64; 2],
 }
 
 /// The kernel's user-access fixup (tmp/pipeline.md, "Fault sites (A5)"): a data
@@ -345,6 +374,26 @@ impl NativeCtx {
             fault_fixup: FaultFixup::NONE,
             fault_redirects: 0,
             fpsimd_missing: false,
+            counter: [0; 2],
+        }
+    }
+}
+
+/// The user system registers a native run reads and never writes: TPIDR_EL0
+/// directly, CNTVCT_EL0 and CNTFRQ_EL0 through `BRK_COUNTER` emulation.
+#[derive(Clone, Copy)]
+struct UserSysregs {
+    tpidr: u64,
+    cntvct: u64,
+    cntfrq: u64,
+}
+
+impl UserSysregs {
+    fn of(state: &MachineState) -> Self {
+        Self {
+            tpidr: state.tpidr_el0,
+            cntvct: state.cntvct_el0,
+            cntfrq: state.cntfrq_el0,
         }
     }
 }
@@ -634,6 +683,24 @@ extern "C" fn on_signal(sig: i32, info: *mut SigInfo, uc: *mut c_void) {
         } else {
             0
         };
+
+        // An emulated counter read (A10): write Xt, resume at the next word, then
+        // the run's TPIDR_EL0 goes back, last (as for a fault redirect).
+        let imm16 = ((brk_word >> 5) & 0xffff) as u16;
+        if brk_word != 0 && imm16 & BRK_COUNTER_MASK == BRK_COUNTER_IMM {
+            let rt = usize::from(imm16 & 0x1f);
+            let value = (*ctx).counter[usize::from(imm16 & BRK_COUNTER_CNTFRQ != 0)];
+            if rt != 31 {
+                mc.regs[rt] = value;
+            }
+            mc.pc += 4;
+            asm!(
+                "msr tpidr_el0, {}",
+                in(reg) USER_TPIDR.load(Ordering::SeqCst),
+                options(nostack)
+            );
+            return;
+        }
         (*ctx).event = Event {
             signal: sig,
             pc: mc.pc,
@@ -725,9 +792,14 @@ impl NativeSession {
 
     /// Starts user code at `regs.pc` with every register from `regs` and runs it
     /// until the first trap or fault.
-    fn enter_user(&self, regs: UserRegs, tpidr: u64) -> Result<(Event, UserRegs), String> {
+    fn enter_user(
+        &self,
+        regs: UserRegs,
+        sysregs: UserSysregs,
+    ) -> Result<(Event, UserRegs), String> {
         let mut ctx = NativeCtx::new(regs);
-        let _tpidr = UserTpidr::set(tpidr)?;
+        ctx.counter = [sysregs.cntvct, sysregs.cntfrq];
+        let _tpidr = UserTpidr::set(sysregs.tpidr)?;
         let _active = ActiveCtx::set(&mut ctx);
         unsafe { kjit_native_enter_user(&mut ctx) };
         if ctx.fpsimd_missing {
@@ -746,17 +818,18 @@ impl NativeSession {
         fault_sites: &[FixupSite],
         nzcv: u64,
         fp: FpState,
-        tpidr: u64,
+        sysregs: UserSysregs,
     ) -> Result<Box<NativeCtx>, String> {
         let mut ctx = Box::new(NativeCtx::new(UserRegs::default()));
         ctx.fp = fp;
+        ctx.counter = [sysregs.cntvct, sysregs.cntfrq];
         ctx.fault_fixup = FaultFixup {
             base: fragment_base,
             len: fragment_len,
             sites: fault_sites.as_ptr(),
             sites_len: fault_sites.len(),
         };
-        let _tpidr = UserTpidr::set(tpidr)?;
+        let _tpidr = UserTpidr::set(sysregs.tpidr)?;
         let _active = ActiveCtx::set(&mut ctx);
         unsafe {
             kjit_native_call_fragment(
@@ -1076,6 +1149,7 @@ pub struct NativeOriginal {
 /// `admit_word`) to every word: SVCs become `BRK_SVC`, rejected words and
 /// non-SVC runtime exits become `BRK_STOP`. The interpreter halts nowhere else
 /// inside the text, apart from user-access faults, which trap natively too.
+/// Counter reads become their `BRK_COUNTER` (emulated, never a halt).
 fn stop_point_words(words: &[u32], text_base: u64) -> Vec<u32> {
     words
         .iter()
@@ -1086,7 +1160,7 @@ fn stop_point_words(words: &[u32], text_base: u64) -> Vec<u32> {
                 Ok(Ok(insn)) => match insn.inner.runtime_exit_reason(pc) {
                     Some(RuntimeExitReason::Svc { .. }) => BRK_SVC,
                     Some(_) => BRK_STOP,
-                    None => word,
+                    None => counter_brk(insn.inner).unwrap_or(word),
                 },
                 Ok(Err(_unsupported)) => BRK_STOP,
                 // The interpreter reports an error if it reaches this word, so the
@@ -1188,7 +1262,7 @@ pub fn run_original(
     let mut runtime_exits = 0usize;
     let mut cap_arrivals = 0u64;
     loop {
-        let (event, snapshot) = session.enter_user(regs, initial.tpidr_el0)?;
+        let (event, snapshot) = session.enter_user(regs, UserSysregs::of(initial))?;
         let pc = event.pc;
         match (event.signal, event.brk()) {
             (SIGTRAP, Some(BRK_SVC)) => {
@@ -1300,7 +1374,7 @@ fn step_capped_branch(
         let mut solo = vec![BRK_FILL; words.len()];
         solo[index] = word;
         text_map.install_code(&solo)?;
-        let (event, snapshot) = session.enter_user(at, initial.tpidr_el0)?;
+        let (event, snapshot) = session.enter_user(at, UserSysregs::of(initial))?;
         return match (event.signal, event.brk()) {
             (SIGTRAP, Some(BRK_FILL)) if text_map.contains(event.pc) => Ok(snapshot),
             _ => Err(unexpected(&event)),
@@ -1327,7 +1401,7 @@ fn step_capped_branch(
             pc: scratch.base(),
             ..at
         },
-        initial.tpidr_el0,
+        UserSysregs::of(initial),
     )?;
     snapshot.pc = match (event.signal, event.brk()) {
         (SIGTRAP, Some(BRK_FILL)) if event.pc == scratch.base() + 4 => at.pc + 4,
@@ -1353,7 +1427,7 @@ fn execute_branch_exit(
     solo[index] = words[index];
     text_map.install_code(&solo)?;
 
-    let (event, snapshot) = session.enter_user(at, initial.tpidr_el0)?;
+    let (event, snapshot) = session.enter_user(at, UserSysregs::of(initial))?;
     let target_pc = match (event.signal, event.brk()) {
         (SIGTRAP, Some(BRK_FILL)) if text_map.contains(event.pc) => event.pc,
         // Instruction abort: the branch left every executable mapping. A target
@@ -1496,23 +1570,23 @@ pub fn run_fragment(
             fragment.len_bytes()
         ));
     }
-    // The one native-leg deviation (A8): the fragment runs at EL0 here, where
+    // The native-leg deviations: (A8) the fragment runs at EL0 here, where
     // `msr pan` is UNDEFINED, so the copy has NOPs for the PAN window's and PAN
     // stubs' `msr pan, #0/#1`. The window atomic at EL0 already has the user
     // permissions the window grants at EL1; the modelled PSTATE.PAN is checked by
-    // the interpreter (`URuntime`).
+    // the interpreter (`URuntime`). (A10) Counter reads are `BRK_COUNTER`s,
+    // emulated with the run's values, as in the native original.
     let nop = A64Insn::NopNopHiHints {}
         .encode()
         .map_err(|err| format!("encode nop: {err:?}"))?;
     let words = encoded
         .chunks_exact(4)
         .map(|chunk| u32::from_le_bytes(chunk.try_into().expect("chunks_exact(4)")))
-        .map(
-            |word| match A64Insn::decode(word).and_then(A64Insn::msr_pan) {
-                Some(_) => nop,
-                None => word,
-            },
-        )
+        .map(|word| match A64Insn::decode(word) {
+            Some(insn) if insn.msr_pan().is_some() => nop,
+            Some(insn) => counter_brk(insn).unwrap_or(word),
+            None => word,
+        })
         .collect::<Vec<_>>();
     let code = Mapping::anywhere(
         round_up(encoded.len() + 4, session.page),
@@ -1556,7 +1630,7 @@ pub fn run_fragment(
             &fault_sites,
             nzcv,
             fp,
-            initial.tpidr_el0,
+            UserSysregs::of(initial),
         )?;
         fault_redirects += ctx.fault_redirects as usize;
         fp = ctx.fp;

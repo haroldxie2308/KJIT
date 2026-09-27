@@ -260,7 +260,11 @@ the feature) on a CPU without FEAT_LSE2 (or with `SCTLR_EL1.nAA` set) or
 FEAT_LRCPC, which the translated acquire/release accesses rely on, and (A8,
 LSE atomics in PAN windows) without FEAT_LSE, with `vabits_actual != 48`
 (`CONFIG_ARM64_VA_BITS_48` is a K1 invariant), with MTE in use, or with
-`SCTLR_EL1.SPAN` set. A fragment is installed only if
+`SCTLR_EL1.SPAN` set. (A10) On every online CPU, and on every CPU that comes
+online while it is loaded (a CPU hotplug callback: a failure fails the load or
+that CPU's onlining), `CNTKCTL_EL1.EL0VCTEN` must be set and no timer erratum
+workaround may emulate EL0 `CNTVCT_EL0` reads, because fragments execute the
+user's `mrs cntvct_el0`/`mrs cntfrq_el0` at EL1. A fragment is installed only if
 `verify_fragment` accepts exactly the bytes, fault-site table and entry table
 that get installed; it is refused unless every text page it came from is in an
 executable, non-writable mapping.
@@ -285,8 +289,9 @@ measurements: `tmp/pipeline.md`, "A9b implementation".
 |---|---|
 | `translate` | write `"<pid> <pc>"`: translate that entry PC (logs the result) |
 | `translate_svc_sites` | write `"<pid>"`: translate `svc_pc + 4` for every SVC word in the process's executable, non-writable mappings |
-| `stats` | counters: `syscalls_in_kernel`, `fragment_entries`, `chains`, `chain_cap`, exits per status, `svc_declined`, translations ok/exists/unreadable/entry-unsupported/compile/encode/verify-rejected (and FallsOffEnd)/raced/capped/install-failed, `invalidated_fragments`, `released_fragments`, `svc_sites_scanned`, the K3 `auto_*` counters, `unsupported_top_dropped`, `unsupported_bad_word`, A9b `fpsimd_entries` (entries of FP/SIMD fragments), `fpsimd_restores` (... that reloaded the user FP/SIMD state first), `fpsimd_exit_mem` (their `Mem` exits, taken with page faults disabled), `fpsimd_refused_sve_sme`, `hook_calls` (hook calls while enabled: syscalls without syscall work, in-kernel ones included), `fpsimd_run_max_ns` (longest FP/SIMD bracket, i.e. non-preemptible run, on any CPU since load) |
+| `stats` | counters: `syscalls_in_kernel`, `fragment_entries`, `chains`, `chain_cap` (branch exits not chained because the hook call used its `chain_budget`), `chain_max` (most fragment entries in one hook call since load) and `chain_hist_<lo>_<hi>` (hook calls that made lo..hi entries, log2 buckets), exits per status, `svc_declined`, translations ok/exists/unreadable/entry-unsupported/compile/encode/verify-rejected (and FallsOffEnd)/raced/capped/install-failed, `invalidated_fragments`, `released_fragments`, `svc_sites_scanned`, the K3 `auto_*` counters, `unsupported_top_dropped`, `unsupported_bad_word`, A9b `fpsimd_entries` (entries of FP/SIMD fragments), `fpsimd_restores` (... that reloaded the user FP/SIMD state first), `fpsimd_exit_mem` (their `Mem` exits, taken with page faults disabled), `fpsimd_refused_sve_sme`, `hook_calls` (hook calls while enabled: syscalls without syscall work, in-kernel ones included), `fpsimd_run_max_ns` (longest FP/SIMD bracket, i.e. non-preemptible run, on any CPU since load) |
 | `enable` | `Y`/`N` (global; also stops fragment runs and chains at the next run-condition check) |
+| `chain_budget` | fragment entries per hook call, chained ones included (1..65536, default 1024; also module parameter `chain_budget`) |
 | `auto`, `hot_threshold`, `hot_window_ms` | K3 auto mode (below) |
 | `unsupported_top` | `word exits entry_stops` per line, most frequent first (below) |
 
@@ -309,7 +314,9 @@ Unsupported exit, pipe and /dev/null I/O), `fault_segv` (NULL, unmapped and
 read-only stores after a hot SVC: same SIGSEGV code, address and PC, via a Mem
 exit), `fork_cow` (fragment stores to CoW pages in parent and child, no Mem
 exit), `tight_loop` (countdown past the back-edge budget: Budget exits,
-progress), `signal_loop` (1 ms SIGALRM during the hot loop), `munmap_race`
+progress), `call_loop` (A10: 5000 function calls per syscall and no syscall
+between them: every syscall's chain stops at `chain_budget` entries, userspace
+finishes natively), `signal_loop` (1 ms SIGALRM during the hot loop), `munmap_race`
 (hot text unmapped while another thread runs it: SIGSEGV, fragment
 invalidated), `seccomp_loop` and `ptrace_loop` (no fragment entry at all), the
 A9b FP/SIMD tests `fp_loop` (SIMD copy/compare/fill/strlen of 1-4000 bytes
@@ -323,7 +330,7 @@ page, `ldp q` from an unmapped page, `ld1` from address 16: same SIGSEGV via
 an FP/SIMD `Mem` exit; `st1` to 512 fresh pages: one `Mem` exit per first
 touch, data complete) and `fp_budget` (a 1 MiB SIMD copy per syscall: Budget
 exits, the longest FP/SIMD run), plus
-`kill -9` of a hot `toy_loop` and `tight_loop`, and a hot process left running
+`kill -9` of a hot `toy_loop`, `tight_loop` and `call_loop`, and a hot process left running
 while `/init` unloads the module. `run-k2.sh --auto` runs the same tests with
 the K3 auto mode instead of self-registration.
 
@@ -354,9 +361,9 @@ the in-kernel path follows branch exits out of libc into the callers. Contract:
   a cap fails with `-ENOSPC` (`translate_capped`), for every trigger. At most 8
   requests per mm are queued at a time.
 - **Chaining.** A branch exit continues in a fragment for the target (in the
-  same fragment or the mm's table), at most 16 entries per hook call, every run
-  condition re-checked before each. `Unsupported`/`Mem`/`Budget` exits return
-  to userspace and are not learned.
+  same fragment or the mm's table), at most `chain_budget` (default 1024)
+  fragment entries per hook call, every run condition re-checked before each.
+  `Unsupported`/`Mem`/`Budget` exits return to userspace and are not learned.
 - **Switch.** `insmod kjit.ko auto=1` or debugfs `auto` (default off). The
   manual `translate`/`translate_svc_sites` triggers keep working either way.
 - **`unsupported_top`.** Per word: `exits` = `Unsupported` exits at that word
@@ -391,8 +398,8 @@ Current reach: where the code is in the subset the path follows the callers
 redis's) stopped at its first `bti c` (0% of its syscalls in the kernel); BTI
 and ADC/SBC now translate, and since A8 so do LSE atomics; since A9b the
 glibc SIMD code (`memcpy`/`memset`/`strlen`) runs in fragments too, and
-redis's request paths no longer stop at an Unsupported word but at the
-16-entry chain cap (see "K4").
+redis's request paths no longer stop at an Unsupported word; A10 replaced
+the 16-entry chain cap they then ended at with `chain_budget` (see "K4").
 Fragment entries cost more than the mode switches they save on short chains;
 speed is not a goal yet. Details: `tmp/pipeline.md`, "K3", Findings, and
 "A7d".
@@ -498,6 +505,22 @@ syscall). Under the suite the top Unsupported words are now `mrs CNTVCT_EL0`
 identical, 30 adversarial runs and 3 consistency checks PASS, no kernel
 report (KASAN, lockdep, atomic-sleep checks).
 
+After A10 (`chain_budget` 1024 instead of the 16-entry cap, `mrs
+cntvct_el0`/`cntfrq_el0` in fragments; kjit-guest, 2026-09-27, `RESULT
+PASS`): suite 2866 / 2868 passed without / with KJIT, 0 failed, same outcome
+for all 2518 distinct tests; 40.0% of the suite's syscalls in the kernel
+(13.8M of 34.4M). Benchmark 78.8% (default), 39.5% (`-P 16`, whose 16-request
+batches exceed the budget) and 78.7% (256 clients), ~140 fragment entries per
+syscall; datasets identical, every adversarial test identical. The paths now
+stop at SIMD&FP register-offset loads/stores (`ldr d0, [x14, x12, lsl #3]`,
+`str q0, [x0, x3]`), `ucvtf`/`scvtf`, `dc zva` and `mrs fpcr`. The price is
+speed: with the request path in fragments redis-benchmark SET/GET drops from
+274k/275k to 62k/71k req/s (KJIT off vs on; `-P 16` 1.85M/2.53M vs
+332k/329k): fragment entry and exit, not the mode switch, now dominate
+(`tmp/pipeline.md`, "A10"). kjit-guest-debug, `K4_ITERATIONS=3`: `RESULT
+PASS`, suite identical, 30 adversarial runs and 3 consistency checks PASS, no
+kernel report.
+
 ### Harness
 
 The `harness/` crate is userspace-only and exercises the executable-fragment
@@ -516,8 +539,10 @@ raw word, `x11` = its PC), and userspace executes that instruction natively.
 A word that matches a subset form's encoding diagram but that the form's decode
 pseudocode makes UNDEFINED (for example a reserved shift or logical-immediate
 pattern) counts as undecodable, so a fragment never executes an UNDEFINED
-encoding at EL1. The only system-register access in the subset is
-`MRS Xt, TPIDR_EL0`; every other system register stays undecodable. The
+encoding at EL1. The only system-register accesses in the subset are
+`MRS Xt, TPIDR_EL0`, `MRS Xt, CNTVCT_EL0` and `MRS Xt, CNTFRQ_EL0` (A10; one
+generated form each, `decode.field_instances` in `subset.toml`); every other
+system register stays undecodable. The
 barriers `DMB`, `DSB` (not the nXS forms) and `ISB`, with every option, are
 the only other system instructions: they behave the same at EL1 as at EL0 for
 every observer of user memory and are emitted unchanged. `BTI` (every target)
@@ -631,6 +656,13 @@ Linux's `vm.mmap_min_addr`, so the native runs use the interpreter's addresses.
 Fixture TPIDR_EL0 is `0x23000` (a TLS block inside the data window); the native
 runner switches the thread's TPIDR_EL0 to it only while fixture code or a
 fragment runs, and its signal entry switches back before any Rust runs.
+Fixture CNTVCT_EL0/CNTFRQ_EL0 are `FIXTURE_CNTVCT`/`FIXTURE_CNTFRQ`; the
+interpreter's counter never advances (one legal behaviour of the real one,
+and the only value the original and the fragment, which run different
+instruction counts, both see). The native legs replace every counter `MRS`
+(original text and fragment copy alike) with a BRK that the signal handler
+emulates in place with those values, so every register is still compared
+exactly.
 The target fails unless the native test actually ran and passed.
 
 #### Verifier (V3)
@@ -647,7 +679,7 @@ site at a PAN stub that starts with `msr pan, #1` and that nothing else
 targets; `msr pan` nowhere else, no other MSR), no
 user-code memory form (byte/half, unscaled, register-offset, literal, PRFM,
 acquire/release, ...) and no BTI appears at all, the only system instructions
-are `MRS TPIDR_EL0`, NOP and DMB/DSB/ISB, every other load/store
+are `MRS` of TPIDR_EL0/CNTVCT_EL0/CNTFRQ_EL0 (user values), NOP and DMB/DSB/ISB, every other load/store
 stays in the user-state frame slots or `pt_regs` `regs[]`/`sp` through a pointer
 loaded from the frame into a scratch register, no kernel value (SP, x29, the
 entry address, the pt_regs pointer, any other kernel frame slot) is ever read

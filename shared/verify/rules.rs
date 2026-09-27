@@ -18,12 +18,16 @@ pub(super) enum Form {
     Alu,
     Nop,
     /// `DMB`/`DSB`/`ISB` (every generated CRm value; DSB without nXS): the one
-    /// system-instruction group besides NOP and MRS TPIDR_EL0. Same effect at EL1
+    /// system-instruction group besides NOP and `MrsUserReg`. Same effect at EL1
     /// as at EL0 for every observer of user memory; no register, memory or PSTATE
     /// effect. Every other barrier-like or system instruction is undecodable.
     Barrier,
-    /// `MRS Xt, TPIDR_EL0`: the generated form is constrained to that one register.
-    MrsTpidrEl0,
+    /// `MRS Xt, <reg>` for exactly TPIDR_EL0, CNTVCT_EL0 and CNTFRQ_EL0 (the
+    /// generated instances of MRS; every other system register is undecodable,
+    /// rule 1). Each reads at EL1 what EL0 reads while the fragment runs (the
+    /// user's TLS pointer, the virtual count, the counter frequency), so the
+    /// result is a user value, never a kernel one (rule 9).
+    MrsUserReg,
     /// `ADR`/`ADRP`: would put a kernel (fragment) address in a user register.
     PcRelative,
     /// PC-relative direct branch; `delta` is the byte offset from the branch.
@@ -573,7 +577,9 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         A64Insn::AdrAdrOnlyPcreladdr { .. } | A64Insn::AdrpAdrpOnlyPcreladdr { .. } => {
             Form::PcRelative
         }
-        A64Insn::MrsMrsRsSystemmove { .. } => Form::MrsTpidrEl0,
+        A64Insn::MrsMrsRsSystemmoveTpidrEl0 { .. }
+        | A64Insn::MrsMrsRsSystemmoveCntvctEl0 { .. }
+        | A64Insn::MrsMrsRsSystemmoveCntfrqEl0 { .. } => Form::MrsUserReg,
         A64Insn::NopNopHiHints {} => Form::Nop,
         A64Insn::DmbDmbBoBarriers { .. }
         | A64Insn::DsbDsbBoBarriers { .. }

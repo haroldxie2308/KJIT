@@ -295,7 +295,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
         }
         let form = classify(*insn);
         match form {
-            Form::Alu | Form::Nop | Form::Barrier | Form::MrsTpidrEl0 => {}
+            Form::Alu | Form::Nop | Form::Barrier | Form::MrsUserReg => {}
             Form::Simd => uses_fpsimd = true,
             Form::PcRelative => return Err(err(offset, VerifyRule::PcRelative)),
             Form::UserOnly => return Err(err(offset, VerifyRule::UserOnlyForm)),
@@ -559,7 +559,7 @@ fn check_exit_group(
             | Form::Simd
             | Form::Nop
             | Form::Barrier
-            | Form::MrsTpidrEl0
+            | Form::MrsUserReg
             | Form::PcRelative
             | Form::RuntimeAccess { .. } => {}
         }

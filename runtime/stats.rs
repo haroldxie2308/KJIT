@@ -4,6 +4,7 @@
 //! Unsupported-word histogram behind `/sys/kernel/debug/kjit/unsupported_top`.
 
 use core::fmt::Write;
+use core::num::NonZeroU32;
 use core::sync::atomic::{AtomicU64, Ordering};
 
 use kernel::alloc::flags::GFP_KERNEL;
@@ -20,7 +21,8 @@ pub(crate) enum Stat {
     FragmentEntries,
     /// Chained entries (branch exits continued in a fragment).
     Chains,
-    /// Branch exits not chained because the hook call reached `MAX_CHAIN`.
+    /// Branch exits not chained because the hook call used its `chain_budget`
+    /// of fragment entries.
     ChainCap,
     ExitSvc,
     ExitBl,
@@ -152,6 +154,19 @@ const NAMES: [&str; COUNT] = [
 #[allow(clippy::declare_interior_mutable_const)]
 const ZERO: AtomicU64 = AtomicU64::new(0);
 static STATS: [AtomicU64; COUNT] = [ZERO; COUNT];
+
+/// Fragment entries per hook call that ran a fragment (chained entries plus
+/// the first): the most seen, and a log2 histogram. Bucket `b` counts calls
+/// with `2^b <= entries < 2^(b+1)`, one bucket per bit of a `u32`.
+static CHAIN_MAX: AtomicU64 = ZERO;
+const CHAIN_BUCKETS: usize = u32::BITS as usize;
+static CHAIN_HIST: [AtomicU64; CHAIN_BUCKETS] = [ZERO; CHAIN_BUCKETS];
+
+/// Records one hook call's fragment entries.
+pub(crate) fn note_chain(entries: NonZeroU32) {
+    CHAIN_MAX.fetch_max(u64::from(entries.get()), Ordering::Relaxed);
+    CHAIN_HIST[entries.ilog2() as usize].fetch_add(1, Ordering::Relaxed);
+}
 
 pub(crate) fn add(stat: Stat, n: u64) {
     STATS[stat as usize].fetch_add(n, Ordering::Relaxed);
@@ -324,5 +339,15 @@ extern "C" fn kjit_rs_stats_show(buf: *mut u8, len: usize) -> usize {
     // SAFETY: plain read of per-CPU maxima.
     let fpsimd_max = unsafe { ffi::kjit_fpsimd_run_max_ns() };
     let _ = writeln!(out, "fpsimd_run_max_ns {fpsimd_max}");
+    let _ = writeln!(out, "chain_max {}", CHAIN_MAX.load(Ordering::Relaxed));
+    // `chain_hist_<lo>_<hi> n`: hook calls with lo <= entries <= hi, the
+    // non-empty buckets only (entries never exceed chain_budget <= 65536).
+    for (bucket, count) in CHAIN_HIST.iter().enumerate() {
+        let count = count.load(Ordering::Relaxed);
+        if count != 0 {
+            let lo = 1u64 << bucket;
+            let _ = writeln!(out, "chain_hist_{lo}_{} {count}", 2 * lo - 1);
+        }
+    }
     out.len
 }
