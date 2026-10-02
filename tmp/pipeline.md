@@ -2579,3 +2579,255 @@ for `fp_switch`, `fpsimd_exit_mem >= 1` per fault mode and `>= 100` for
 - Preemption inside chains under `PREEMPT_NONE`/`VOLUNTARY`/`LAZY`: argued
   from the per-entry `need_resched` check, not run (the guest is `PREEMPT`).
 - CNTVCTSS_EL0 and hosts with FEAT_ECV.
+
+# A11 contract: in-fragment branch dispatch (2026-09-29)
+
+Written before implementation. Why: A10 put 98% of redis-benchmark's
+syscalls in the kernel and made it 4-6x slower than native. Every `BL`,
+`BLR`, `BR` and `RET` ends a run: epilogue (31-GPR `pt_regs` writeback),
+trampoline, Rust dispatch, run conditions, label search or `kjit_lookup`
+(RCU hash + refcount), prologue (31-GPR load) and, for FP/SIMD fragments,
+the bracket, ~140 times per syscall. The ~240 ns one in-kernel syscall saves
+cannot pay for that at any per-entry cost the runtime path can reach
+(break-even is ~1.7 ns per entry), so the number of runtime round trips has
+to drop, not only their price. Goal: a branch whose target already has a
+translation continues there from inside fragment code, and the runtime is
+entered only on a miss.
+
+## Step 0: baseline (before any A11 code)
+
+The A10 slowdown is attributed to entry cost by deduction, and its
+`chain_budget=16` run (~17 entries per syscall, faster than KJIT off)
+contradicts a linear per-entry cost. Measure first, on kjit-guest, at least
+3 runs per point: `call_loop` KJIT off/on wall clock (fixed cost of one
+non-FP/SIMD entry; plus an FP/SIMD-callee variant for the bracket), and
+`redis-benchmark -t set,get -n 200000` at `chain_budget` 1, 16, 64, 256, 1024
+with the `fragment_entries`/`fpsimd_entries` deltas. If time per entry from
+the sweep matches the microbenchmark, round trips are the cost and A11
+removes them. If it is much larger, the loss is inside fragment code or the
+in-kernel syscall path, and A11 alone will not recover it. Either way these
+numbers are the before/after baseline.
+
+## Mechanism: one dispatch path for every branch exit
+
+- Per `kjit_mm`, two direct-mapped **dispatch tables** (IBTC) of
+  `2^IBTC_BITS` slots, `IBTC_BITS = 12` (32 KiB each): `table_all` and
+  `table_nofp`. A slot is 0 or a pointer to a **record**
+  `{ u64 pc; u64 host; }`: a user PC and the absolute address of a verified
+  entry of a live fragment of this mm translated for exactly that PC. Slot
+  index = `pc[13:2]`.
+- Records are the fragment's labels: `struct kjit_label` becomes
+  `{ u64 pc; u64 host; }` (host = image + offset, filled at install, sorted by
+  pc, immutable after install), so no second copy of the entry table exists.
+  `kjit_frag_offset_for_pc` becomes a host lookup on the same array.
+- `table_all` may hold records of every fragment; `table_nofp` only records of
+  fragments with `uses_fpsimd == false`. A run of an FP/SIMD fragment (inside
+  the bracket) dispatches through `table_all`; any other run through
+  `table_nofp`. So a run outside the bracket can never reach FP/SIMD code, and
+  a bracketed run may continue into non-FP/SIMD code (its faults become `Mem`
+  exits, as for any bracketed access: correct).
+- Only the runtime writes tables. Fragment code only reads them, and only
+  through the dispatch template below.
+- Why not patched direct branches: a patched `b` per BL site is the cheapest
+  possible transfer, but it needs text patching of ROX images (CMODX-legal
+  only for B/BL/NOP words), a ±128 MiB range between images, per-target
+  incoming-link lists for unlinking, and it cannot cover `BR`/`BLR`/`RET`,
+  which still need a table. One table-based path covers all four kinds with
+  no text writes and makes unlinking a single store. Direct links remain a
+  later optimization on top of the same records and lifetimes (see Deferred).
+
+## ABI
+
+- Extra params grow from 2 to 3 words: `[0]`, `[1]` = x10, x11 out (epilogue,
+  unchanged), `[2]` = the run's dispatch table (in). The runtime always passes
+  a valid table: a run executes a fragment of `current->mm`, and the tables
+  are allocated with that mm's first install.
+- Frame: the padding slot 200..208 becomes `RUNTIME_FRAME_IBTC_OFFSET = 200`
+  (table pointer). The frame stays 208 bytes. The prologue stores it while x1
+  still holds the extra pointer: `ldr x12, [x1, #16]; str x12, [sp, #200]`.
+  The prologue grows by 2 words, `EPILOGUE_OFFSET` moves with it, and the
+  rule 9 join state is re-derived from the new prologue (expected unchanged:
+  {x29, x12}).
+- Kernel BTI stays off (K1): the dispatch `br x12` lands on unmarked words, as
+  the prologue's does.
+
+## Lowering (rephrase; one site per original `BL`/`BLR`/`BR`/`RET`)
+
+In the body, in this order, replacing today's `b <exit group>`:
+
+```text
+ldr  x12, [sp, #192]            ; budget check (rule 6 form) -> Budget stub
+sub  x12, x12, #1
+str  x12, [sp, #192]
+cbz  x12, <Budget stub of pc>
+<T -> x13>                      ; BL: movz/movk of the target;
+                                ; BLR/BR/RET: mov or fill from the target's mapping,
+                                ; before any x30 write (`blr x30`)
+<x30 = resume>                  ; BL/BLR only (existing link write)
+ldr  x12, [sp, #200]            ; --- dispatch template (byte-exact) ---
+ubfx x14, x13, #2, #12
+ldr  x12, [x12, x14, lsl #3]
+cbz  x12, <exit group of pc>
+ldr  x14, [x12]
+sub  x14, x14, x13
+cbnz x14, <exit group of pc>
+ldr  x12, [x12, #8]
+br   x12
+```
+
+- The exit group is today's branch exit for the site (same status, x11 =
+  resume) with x10 taken from x13, so a miss behaves exactly like A10.
+  `SUB`/`CBZ`/`CBNZ` keep NZCV (user state) untouched, as the budget check
+  already does.
+- Budget: every dispatch attempt costs one unit of the existing
+  `KJIT_BACKEDGE_BUDGET` counter, whether it hits or misses. The check
+  precedes the whole lowered branch, so a Budget exit leaves the state from
+  before the instruction and userspace re-executes the branch natively (also
+  correct for `blr x30`). This is what bounds recursion and call loops, which
+  no longer pass through the runtime.
+- Scratch: x12 (kernel values only), x13 (T, a user value), x14. x15 stays
+  free. All are dead at original-instruction boundaries; x13 stays live from
+  the site into its own exit group, which is part of the same original
+  instruction's lowering.
+- `B`/`B.cond` inside the CFG are unchanged (in-fragment). `SVC` is not a
+  branch: its resume stays a runtime path (the syscall runs in the hook loop
+  anyway).
+
+## Verifier (V3)
+
+The bytes alone no longer determine every branch target: a dispatch target
+comes from a table the runtime owns. What the verifier still proves is that
+the only way to use a table is the exact template, that it cannot read out of
+bounds, that it is budget-charged, and that no kernel value escapes. What the
+runtime must guarantee (table content) is stated under Kernel and tested
+there.
+
+- Rule 2: the prologue's byte-exact check covers the two new words.
+- Rule 3: new runtime accesses, valid only as template words: `ldr x12, [sp,
+  #200]` (first word), `ldr x12, [x12, x14, lsl #3]` (x14 the preceding
+  `ubfx x14, x13, #2, #12`, so the index is < 2^12 by construction),
+  `ldr x14, [x12]`, `ldr x12, [x12, #8]`. Slot 200 is never written by the
+  body and never read outside a template's first word.
+- Rule 4: `br x12` is allowed only as a template's last word. `BL`, `BLR`,
+  `RET` and every other `BR` stay rejected.
+- Template: the 9 words are byte-exact (registers, `#200`, `#2`, `#12`, `#8`).
+  There is no join point from the preceding budget check's `sub` to the `br`.
+  Both `cbz`/`cbnz` target the same forward exit-group start.
+- Rule 6: a budget check may guard a template as well as a back-edge. Between
+  its `cbz` and the template's first word: only data-processing words,
+  reg-virt fills and the link write. No branch, no memory access other than
+  fills, no join point.
+- Rule 9: inside a template, the `ldr x12` results are kernel values. The key
+  load `ldr x14, [x12]` is not a source (a user PC the runtime copied from a
+  user branch target). `cbz x12` and `br x12` may read kernel x12. At both
+  miss edges and at the `br`, the kernel set is {x12, x29} = the join state.
+  x13 must be non-kernel at the `ubfx` (the existing `KernelValueRead`).
+- `VerifyOk` is unchanged. The runtime needs nothing new from the verifier.
+
+## Kernel
+
+- Tables: `kvzalloc` of both at a `kjit_mm`'s first install (failure: that
+  install fails with -ENOMEM, like any install allocation); freed with the
+  `kjit_mm`, after a hook-SRCU grace period.
+- Insert: whenever the runtime resolves a branch exit's target T to a
+  fragment F and an entry (`entry_for` or lookup), it publishes F's label for
+  T under `kmm->lock`, only if F is not retired: `smp_store_release` into
+  `table_all[h(T)]`, and into `table_nofp[h(T)]` if `!F.uses_fpsimd`.
+  Replacing a live slot is allowed (direct-mapped, last writer wins). Readers
+  are ordered by the address dependency slot -> record -> fields.
+- Invariant (not verified, owned by the runtime): every non-zero slot of a
+  table points at a label of a non-retired fragment of this `kjit_mm` whose
+  host is `image + a verified entry offset`, for exactly the label's pc; a
+  `table_nofp` slot never points into an FP/SIMD fragment.
+- Retire (`kjit_mm_flush_locked`, `kjit_bad_status`, mm release, module
+  exit), under `kmm->lock`: mark F retired; for each label, for each table,
+  if `slot[h(pc)] == &label` then `WRITE_ONCE(slot, 0)`; `hash_del_rcu`. Then
+  the free runs after a **hook-SRCU grace period** (`call_srcu`, legal in the
+  non-blocking mmu-notifier path). Its callback takes F off the extable list
+  and queues the existing RCU free (`execmem_free` in process context).
+- Lifetime change: a linked run enters fragments it never looked up, so
+  per-run references cannot protect them. The per-run `kjit_frag` refcount
+  and `kjit_frag_put` go. Every fragment execution already happens inside the
+  hook call's `kjit_hook_srcu` read section (patch 0001/0006), so "freed only
+  after a hook-SRCU grace period following retirement" protects every run,
+  linked or not. It also gives the A10 extable invariant ("fixups stay
+  reachable until every hook call that could run the fragment has returned")
+  by construction. Kernel **patch 0007** exports `kjit_hook_call_srcu(head,
+  cb)` and `kjit_hook_srcu_barrier()`. Module exit: unregister (drain),
+  retire everything, `kjit_hook_srcu_barrier()`, `rcu_barrier()`,
+  `destroy_workqueue()`.
+- Run: `extra[2] = F.uses_fpsimd ? table_all : table_nofp` for the fragment F
+  the run enters.
+- Stats: `ibtc_insert`, `ibtc_replace` (a slot held another record),
+  `ibtc_clear` (retire), `ibtc_fpsimd_boundary` (a branch exit of a non-FP/SIMD
+  run whose target resolved to an FP/SIMD fragment). Hits are not counted
+  (no atomics in fragment code). `fragment_entries`, `chains` and `exit_*`
+  now count runtime round trips only: not comparable with A10 numbers.
+
+## Run conditions and bounds (amends K2 "Run conditions", K3 "Chaining rules")
+
+- Run conditions are re-checked at every runtime entry and every in-kernel
+  syscall, as today, but no longer at every call and return. Between two
+  checks a run executes at most `KJIT_BACKEDGE_BUDGET` budget units (one per
+  back-edge or dispatch attempt). Each unit is at most one acyclic path of
+  one fragment plus a template. So the A10 per-hook-call worst case
+  (`chain_budget` x 4096 x longest acyclic path) is unchanged, but typical
+  runs get much longer.
+- Signal / `need_resched` / `enable` latency is one run, not one call. Under
+  full `PREEMPT` a non-FP/SIMD run is still preempted directly. An FP/SIMD run
+  is non-preemptible for its whole length, now across fragments: re-measure
+  `fpsimd_run_max_ns`.
+- A thread that loaded a slot before retirement may enter a retired F and run
+  it until its next dispatch or exit. This is the same class as today's run
+  that continues in a fragment removed from its table, now bounded by one run.
+
+## Harness (A11a)
+
+- A code cache in the harness runtime mirroring the kernel's: fragments by
+  entry pc, both tables, labels as records, insert on resolution and retire
+  with the same rules. On `NeedsTranslation` the harness translates T,
+  installs it and continues (like the kernel's chaining). The native runner
+  maps every fragment RX and passes `extra[2]`. The interpreter models tables
+  and records as runtime memory and executes the template.
+- Every `_mark` case runs **cold** (empty tables: every transfer misses, as
+  A10) and **warm** (the same case again on the populated cache: transfers
+  hit). Both must equal native.
+- New fixtures: nested calls and returns across functions; recursion that
+  exhausts the budget through dispatch (native resume at the call);
+  PLT-shaped `adrp/ldr/br x17`; one `blr` alternating between two callees
+  16 KiB apart (same slot: replace ping-pong); `blr x30` and `ret x5`; a
+  non-FP/SIMD caller of an FP/SIMD callee (the `table_nofp` invariant
+  asserted, those transfers go through the runtime); callee retired between
+  the cold and warm run (warm misses on it).
+- Verifier mutation classes, each 100% rejected: every template word altered
+  (register, `#200`, `ubfx` lsb/width, `#8`), key compare dropped, `br` of x13
+  or x14, a join point inside, no budget check, slot 200 read outside a
+  template or written anywhere, a kernel value in x13.
+
+## Kernel tests (A11b)
+
+- `call_loop`: 5000 calls per syscall now hit the budget (Budget exit, native
+  resume), not `chain_cap`; its `KJIT_EXPECT` changes accordingly. The
+  `chain_budget` checks move to an always-missing transfer (the 16 KiB alias
+  ping-pong, `alias_loop`), which still chains through the runtime.
+- `link_race`: threads calling across fragments whose callee text sits in its
+  own mapping, while another thread munmaps/remaps/mprotects it. KJIT on/off
+  identical output; `kjit-guest-debug` clean (KASAN, lockdep).
+- `unload-stress` with linked runs in flight.
+- `make redis-campaign` on both profiles: PASS. Report req/s against KJIT off,
+  `fragment_entries` per syscall, `exit_budget`, the `ibtc_*` counters and
+  `fpsimd_run_max_ns`, next to the Step 0 baseline.
+
+## Deferred (and why that is safe)
+
+- Patched direct `b` for `BL` sites and a return-address stack for `RET`: pure
+  speed on top of the same records and lifetimes. Revisit if a profile shows
+  the ~20-word dispatch sequence dominating fragment time.
+- A bracket that spans non-FP/SIMD runs (so non-FP/SIMD -> FP/SIMD transfers
+  stop missing): decide from `ibtc_fpsimd_boundary`. It trades page faults
+  handled in place for `Mem` exits and longer non-preemptible stretches.
+- Re-entering after a Budget exit (instead of resuming in userspace): needs
+  Budget resume PCs to be entry labels. Decide from `exit_budget`.
+- In-fragment code quality (budget counter read-modify-write through memory,
+  stack-backed x12..x15, `LDTR` imm9-only splits): separate work. Step 0
+  tells whether it matters.
