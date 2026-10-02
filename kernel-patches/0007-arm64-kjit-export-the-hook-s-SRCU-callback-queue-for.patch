@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Tue, 29 Sep 2026 12:00:00 +0800
+Subject: [PATCH] arm64: kjit: export the hook's SRCU callback queue for the
+ runtime
+
+The KJIT runtime frees translated fragments, and the dispatch tables that
+point into them, only after every hook call that could still be running
+them has returned. Every execution of translated code happens inside one
+kjit_call_after_syscall(), under kjit_hook_srcu, so "a grace period of
+that SRCU after the object was retired" is the whole condition. Until now
+the runtime approximated it with a reference count taken per run, which
+cannot cover a run that continues into a fragment it never looked up.
+
+Export two entry points on the hook's own SRCU, whose srcu_struct stays
+private to this file:
+
+  kjit_hook_call_srcu(head, cb)   call_srcu(): runs cb after a grace
+                                  period; legal wherever a spinlock may be
+                                  taken, so the runtime can retire a
+                                  fragment from its mmu_notifier callback
+  kjit_hook_srcu_barrier()        srcu_barrier(): waits for every queued
+                                  callback, for the runtime's module exit,
+                                  which must not leave a callback pointing
+                                  into freed module text
+
+Nothing else changes: no new lock, no new state, and the unregister
+sequence of the previous patch is untouched.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/kernel/kjit.c | 29 +++++++++++++++++++++++++++++
+ include/linux/kjit.h     |  2 ++
+ 2 files changed, 31 insertions(+)
+
+diff --git a/arch/arm64/kernel/kjit.c b/arch/arm64/kernel/kjit.c
+--- a/arch/arm64/kernel/kjit.c
++++ b/arch/arm64/kernel/kjit.c
+@@ -85,6 +85,35 @@
+ }
+ EXPORT_SYMBOL_GPL(kjit_unregister_hook);
+ 
++/**
++ * kjit_hook_call_srcu - run @cb after a grace period of the hook's SRCU
++ * @head: rcu_head embedded in the object @cb frees or unlinks
++ * @cb: called, in a workqueue context with bottom halves disabled, once every
++ *	after_syscall call and extable search that was in flight when this was
++ *	called has returned
++ *
++ * Every execution of translated code happens inside such a call, so an object
++ * a running fragment may still reach (a fragment, its dispatch tables) can be
++ * retired, then freed from @cb. Like call_srcu() it may be called from any
++ * context that may take a spinlock, including with one held.
++ */
++void kjit_hook_call_srcu(struct rcu_head *head, rcu_callback_t cb)
++{
++	call_srcu(&kjit_hook_srcu, head, cb);
++}
++EXPORT_SYMBOL_GPL(kjit_hook_call_srcu);
++
++/*
++ * Returns once every callback queued with kjit_hook_call_srcu() has run. For
++ * the runtime's exit path, after kjit_unregister_hook() and after it stopped
++ * queueing: nothing of the runtime's may be called after the module is gone.
++ */
++void kjit_hook_srcu_barrier(void)
++{
++	srcu_barrier(&kjit_hook_srcu);
++}
++EXPORT_SYMBOL_GPL(kjit_hook_srcu_barrier);
++
+ long kjit_call_after_syscall(struct pt_regs *regs)
+ {
+ 	const struct kjit_hook_ops *ops;
+diff --git a/include/linux/kjit.h b/include/linux/kjit.h
+--- a/include/linux/kjit.h
++++ b/include/linux/kjit.h
+@@ -61,6 +61,8 @@
+ 
+ int kjit_register_hook(const struct kjit_hook_ops *ops);
+ void kjit_unregister_hook(const struct kjit_hook_ops *ops);
++void kjit_hook_call_srcu(struct rcu_head *head, rcu_callback_t cb);
++void kjit_hook_srcu_barrier(void);
+ long kjit_call_after_syscall(struct pt_regs *regs);
+ int kjit_queue_task_work(struct kjit_task_work *work);
+ const struct exception_table_entry *search_kjit_extables(unsigned long addr);
+-- 
+2.43.0

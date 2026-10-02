@@ -21,7 +21,8 @@
 #       histogram and the top Unsupported words during the benchmark.
 #   (u) module unload/reload while jit_churn keeps translations queued.
 #   (v) unload-stress.sh: 20 unloads/reloads while fragments fault on fresh
-#       pages (the unload race, kernel-patches/0006).
+#       pages (the unload race, kernel-patches/0006) and linked runs (A11
+#       dispatch tables) are in flight.
 # Exits non-zero on the first failure; prints "k3: ALL PASS" at the end.
 set -eu
 
@@ -57,10 +58,11 @@ report() {
         { d[$1] = $2 - a[$1] }
         END {
             frac = d["hook_calls"] ? 100 * d["syscalls_in_kernel"] / d["hook_calls"] : 0
-            printf "k3:   %s: translated=%d (req svc=%d exit=%d neg=%d) entries=%d chains=%d chain_cap=%d in_kernel=%d/%d syscalls (%.1f%%)\n",
+            printf "k3:   %s: translated=%d (req svc=%d exit=%d neg=%d) entries=%d chains=%d chain_cap=%d in_kernel=%d/%d syscalls (%.1f%%) ibtc insert=%d replace=%d clear=%d\n",
                 name, d["translate_ok"], d["auto_req_svc_resume"], d["auto_req_exit_target"],
                 d["auto_neg_added"], d["fragment_entries"], d["chains"], d["chain_cap"],
-                d["syscalls_in_kernel"], d["hook_calls"], frac
+                d["syscalls_in_kernel"], d["hook_calls"], frac,
+                d["ibtc_insert"], d["ibtc_replace"], d["ibtc_clear"]
             printf "k3:   %s: exits svc=%d bl=%d blr=%d br=%d ret=%d mem=%d unsupported=%d budget=%d; translate fail entry_unsupported=%d compile=%d verify=%d text=%d capped=%d\n",
                 name, d["exit_svc"], d["exit_bl"], d["exit_blr"], d["exit_br"], d["exit_ret"],
                 d["exit_mem"], d["exit_unsupported"], d["exit_budget"], d["translate_entry_unsupported"], d["translate_compile_failed"],

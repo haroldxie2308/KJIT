@@ -11,25 +11,31 @@
  * task_work requests (kernel-patches/0004), the FP/SIMD bracket around
  * fragments that use the user's FP/SIMD registers (kernel-patches/0005), and
  * the debugfs files.
- * Design notes: tmp/pipeline.md, "K2 implementation", "K3" and "A9b".
+ * Design notes: tmp/pipeline.md, "K2 implementation", "K3", "A9b" and "A11".
  *
  * Lifetimes and locking
  *
  *   kjit_mm   One per mm with at least one translation request, or (auto mode)
  *             one eligible syscall; embeds the mmu_notifier
- *             (mmu_notifier_get/put) and the mm's profile table. Found from the
+ *             (mmu_notifier_get/put), the mm's profile table and, from its
+ *             first install on, the two dispatch tables (A11). Found from the
  *             syscall path
  *             through kjit_mm_hash (RCU). The hash membership owns exactly
  *             one notifier reference; whoever unhashes it (mm release or
  *             module exit, under kjit_mm_lock) drops it. Freed by
- *             free_notifier after the notifier SRCU grace period, then
- *             kvfree_rcu for the hash readers.
- *   kjit_frag One installed translation. refcount: one reference held by its
- *             kjit_mm's table while it is installed, one per running call.
- *             It stays on kjit_all_frags (the extable search list, RCU) until
- *             its last reference is gone, so a fragment removed from its table
- *             while it runs still has its fault fixups. The image is freed
- *             by a work item after an RCU grace period.
+ *             free_notifier after the notifier SRCU grace period, then (when
+ *             it has tables) after a hook-SRCU grace period, which covers the
+ *             runs that read them, then kvfree_rcu for the hash readers.
+ *   kjit_frag One installed translation. Retired (under kjit_mm.lock) when it
+ *             is removed from its kjit_mm: out of the table and the dispatch
+ *             tables, then freed after a grace period of the hook's SRCU
+ *             (kernel-patches/0007). Every execution of a fragment, chained
+ *             or dispatched into, is inside one hook call, which is inside
+ *             that SRCU's read section, so nothing else protects a run. The
+ *             SRCU callback takes it off kjit_all_frags (the extable search
+ *             list, RCU), so a fragment removed while it runs still has its
+ *             fault fixups, and queues the image's free (an RCU work item:
+ *             execmem_free needs process context).
  *   kjit_request  One queued auto-mode translation (task_work). Holds no
  *             reference: it names its kjit_mm by (mm, id) and finds it again
  *             under RCU, and it runs through the kernel's
@@ -62,7 +68,6 @@
 #include <linux/percpu.h>
 #include <linux/pid.h>
 #include <linux/rculist.h>
-#include <linux/refcount.h>
 #include <linux/sched.h>
 #include <linux/sched/mm.h>
 #include <linux/sched/signal.h>
@@ -131,6 +136,9 @@ enum kjit_note {
 	KJIT_NOTE_NEG_EVICTED = 14,	/* ... evicting an older one */
 	KJIT_NOTE_TRANSLATE_NS = 15,	/* time spent in auto-mode translations */
 	KJIT_NOTE_FPSIMD_RESTORES = 16,	/* FP/SIMD runs that reloaded the user state */
+	KJIT_NOTE_IBTC_INSERT = 17,	/* dispatch-table slot stores */
+	KJIT_NOTE_IBTC_REPLACE = 18,	/* ... that replaced another record */
+	KJIT_NOTE_IBTC_CLEAR = 19,	/* slots cleared by a fragment's retirement */
 };
 void kjit_rs_note(u32 note, u64 n);
 
@@ -139,7 +147,7 @@ void kjit_rs_note(u32 note, u64 n);
 
 struct kjit_frag;
 struct kjit_site;
-struct kjit_label;
+struct kjit_entry;
 int kjit_glue_init(void);
 void kjit_glue_exit(void);
 u64 kjit_mm_seq(struct kjit_mm *kmm);
@@ -147,14 +155,14 @@ int kjit_read_text_page(struct kjit_mm *kmm, u64 addr, u8 *buf);
 int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		 const u8 *code, u32 code_len, u32 entry_offset,
 		 const struct kjit_site *sites, u32 n_sites,
-		 const struct kjit_label *labels, u32 n_labels,
+		 const struct kjit_entry *entries, u32 n_entries,
 		 u64 src_start, u64 src_end, bool uses_fpsimd);
 bool kjit_fpsimd_supported(void);
 bool kjit_can_run(const struct pt_regs *regs);
-struct kjit_frag *kjit_lookup(u64 pc, u64 *entry);
-void kjit_frag_put(struct kjit_frag *f);
+struct kjit_frag *kjit_lookup(u64 pc, bool link, u64 *entry);
 u64 kjit_frag_base(const struct kjit_frag *f);
-s64 kjit_frag_offset_for_pc(const struct kjit_frag *f, u64 pc);
+u64 kjit_frag_link(struct kjit_frag *f, u64 pc);
+u64 kjit_frag_table(const struct kjit_frag *f);
 bool kjit_frag_uses_fpsimd(const struct kjit_frag *f);
 void kjit_bad_status(u64 status, u64 pc);
 u64 kjit_call_fragment(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
@@ -176,24 +184,55 @@ struct kjit_site {
 	u32 stub;
 };
 
-/* One verified entry: original PC -> code offset. Sorted by @pc. */
-struct kjit_label {
+/* A verified entry as the runtime passes it to kjit_install(). Sorted by @pc. */
+struct kjit_entry {
 	u64 pc;
 	u32 offset;
 	u32 pad;
 };
 
+/*
+ * A verified entry of an installed fragment: the user PC and the absolute
+ * address of its code (image + a verified entry offset). Immutable after
+ * install and sorted by @pc in kjit_frag.labels. It is also the record the
+ * dispatch tables point to, which fragment code reads (tmp/pipeline.md,
+ * "A11 contract"): the layout is part of the dispatch template, so @pc is
+ * first and @host second.
+ */
+struct kjit_label {
+	u64 pc;
+	u64 host;
+};
+static_assert(offsetof(struct kjit_label, pc) == 0);
+static_assert(offsetof(struct kjit_label, host) == 8);
+
+/*
+ * Dispatch tables (IBTC): per kjit_mm, direct mapped, 2^KJIT_IBTC_BITS slots
+ * indexed by pc[13:2]; a slot is 0 or a record of a live fragment of that mm.
+ * Same constants as the dispatch template (shared/).
+ */
+#define KJIT_IBTC_BITS 12
+#define KJIT_IBTC_SLOTS (1U << KJIT_IBTC_BITS)
+
+static inline u32 kjit_ibtc_index(u64 pc)
+{
+	return (pc >> 2) & (KJIT_IBTC_SLOTS - 1);
+}
+
 struct kjit_frag {
-	refcount_t ref;
 	struct hlist_node table_node;	/* kjit_mm.table, under kjit_mm.lock */
 	struct list_head all_node;	/* kjit_all_frags, under kjit_frags_lock */
+	struct kjit_mm *kmm;		/* valid while the fragment is reachable */
+	struct rcu_head retire;		/* hook-SRCU callback: kjit_frag_retired_cb() */
 	struct rcu_work free_work;
+	/* Removed from kmm: no record of it may be published. Under kmm->lock. */
+	bool retired;
 	u64 entry_pc;
 	u64 src_start, src_end;		/* user text the translation read */
 	void *image;			/* execmem: code, then the extable */
 	size_t image_size;
 	u32 code_len;
-	u32 entry_offset;
+	struct kjit_label *entry_label;	/* the label of entry_pc, in labels[] */
 	/*
 	 * verify_fragment's uses_fpsimd: the code reads or writes the user's
 	 * V0-V31/FPCR/FPSR, so every run goes through kjit_call_fragment_fpsimd().
@@ -202,7 +241,7 @@ struct kjit_frag {
 	const struct exception_table_entry *extable;
 	u32 n_extable;
 	u32 n_labels;
-	struct kjit_label labels[] __counted_by(n_labels);
+	struct kjit_label labels[] __counted_by(n_labels);	/* sorted by pc */
 };
 
 #define KJIT_TABLE_BITS 6
@@ -247,6 +286,17 @@ struct kjit_mm {
 	u64 id;				/* unique per kjit_mm, for requests */
 	spinlock_t lock;		/* everything below */
 	DECLARE_HASHTABLE(table, KJIT_TABLE_BITS);
+	/*
+	 * Dispatch tables (tmp/pipeline.md, "A11 contract"): both are allocated
+	 * together at the first install and never replaced, so they are valid
+	 * for every fragment of this kjit_mm. Slots are written under @lock
+	 * (smp_store_release / WRITE_ONCE); fragment code reads them without
+	 * it. Invariant: a non-zero slot points at a label of a non-retired
+	 * fragment of this kjit_mm, and a table_nofp slot only at a fragment
+	 * with !uses_fpsimd.
+	 */
+	struct kjit_label **table_all;
+	struct kjit_label **table_nofp;
 	u64 seq;			/* invalidations started */
 	unsigned int invalidating;	/* invalidations in progress */
 	bool dead;			/* mm released or module exiting */
@@ -365,19 +415,65 @@ static void kjit_frag_free_work(struct work_struct *work)
 }
 
 /*
- * Drops a reference. The last one takes the fragment off the extable list and
- * frees it after an RCU grace period (extable searchers and hot-path lookups
- * are RCU readers). Callable in atomic context.
+ * Takes the fragment off the extable list and frees it after an RCU grace
+ * period (extable searchers are RCU readers). Callable in atomic context. The
+ * caller guarantees that no run can still be inside the fragment: either it
+ * was never published (a failed install) or a hook-SRCU grace period has
+ * passed since it was retired.
  */
-void kjit_frag_put(struct kjit_frag *f)
+static void kjit_frag_unlist_and_free(struct kjit_frag *f)
 {
-	if (!refcount_dec_and_test(&f->ref))
-		return;
 	spin_lock(&kjit_frags_lock);
 	list_del_rcu(&f->all_node);
 	spin_unlock(&kjit_frags_lock);
 	INIT_RCU_WORK(&f->free_work, kjit_frag_free_work);
 	queue_rcu_work(kjit_wq, &f->free_work);
+}
+
+/*
+ * Hook-SRCU callback of kjit_frag_retire_locked(): every hook call that could
+ * have been running the fragment has returned, so its fault fixups are no
+ * longer needed and its image can go. Runs in a workqueue context with BHs
+ * disabled; kjit_frags_lock is never taken from a context it can interrupt.
+ */
+static void kjit_frag_retired_cb(struct rcu_head *head)
+{
+	kjit_frag_unlist_and_free(container_of(head, struct kjit_frag, retire));
+}
+
+/*
+ * Retires @f, which the caller has already removed from its kjit_mm's table
+ * and accounting: no new run can look it up, no table slot may point into it
+ * (a slot is cleared if it holds one of its labels), and no record of it can
+ * be published any more. A run that loaded a slot or looked the fragment up
+ * before this may enter it and run until its next dispatch or exit; it is
+ * inside a hook call, so the fragment stays allocated until the hook-SRCU
+ * grace period that starts here has ended. Caller holds kmm->lock; callable in
+ * atomic context.
+ */
+static void kjit_frag_retire_locked(struct kjit_mm *kmm, struct kjit_frag *f)
+{
+	u64 cleared = 0;
+	u32 i;
+
+	lockdep_assert_held(&kmm->lock);
+	f->retired = true;
+	for (i = 0; i < f->n_labels; i++) {
+		struct kjit_label *label = &f->labels[i];
+		u32 idx = kjit_ibtc_index(label->pc);
+
+		if (kmm->table_all[idx] == label) {
+			WRITE_ONCE(kmm->table_all[idx], NULL);
+			cleared++;
+		}
+		if (kmm->table_nofp[idx] == label) {
+			WRITE_ONCE(kmm->table_nofp[idx], NULL);
+			cleared++;
+		}
+	}
+	if (cleared)
+		kjit_rs_note(KJIT_NOTE_IBTC_CLEAR, cleared);
+	kjit_hook_call_srcu(&f->retire, kjit_frag_retired_cb);
 }
 
 u64 kjit_frag_base(const struct kjit_frag *f)
@@ -391,10 +487,21 @@ bool kjit_frag_uses_fpsimd(const struct kjit_frag *f)
 }
 
 /*
- * Offset of the verified entry for @pc in @f, or -1. Every label offset was an
- * entry offset of verify_fragment's input.
+ * The dispatch table every run of @f passes as extra[2] (tmp/pipeline.md,
+ * "A11 contract"): a run inside the FP/SIMD bracket may continue into any
+ * fragment, any other run only into fragments without FP/SIMD. Both tables
+ * exist before the first fragment of the mm does (kjit_install()).
  */
-s64 kjit_frag_offset_for_pc(const struct kjit_frag *f, u64 pc)
+u64 kjit_frag_table(const struct kjit_frag *f)
+{
+	return (u64)(f->uses_fpsimd ? f->kmm->table_all : f->kmm->table_nofp);
+}
+
+/*
+ * The label of the verified entry for @pc in @f, or NULL. Every label host is
+ * image + an entry offset of verify_fragment's input.
+ */
+static struct kjit_label *kjit_frag_find_label(struct kjit_frag *f, u64 pc)
 {
 	u32 lo = 0, hi = f->n_labels;
 
@@ -402,13 +509,87 @@ s64 kjit_frag_offset_for_pc(const struct kjit_frag *f, u64 pc)
 		u32 mid = lo + (hi - lo) / 2;
 
 		if (f->labels[mid].pc == pc)
-			return f->labels[mid].offset;
+			return &f->labels[mid];
 		if (f->labels[mid].pc < pc)
 			lo = mid + 1;
 		else
 			hi = mid;
 	}
-	return -1;
+	return NULL;
+}
+
+/* Stores @label into @table's slot @idx under kmm->lock; counts insert and replace. */
+static void kjit_ibtc_store_locked(struct kjit_label **table, u32 idx, struct kjit_label *label)
+{
+	struct kjit_label *old = table[idx];
+
+	/*
+	 * Any live record for the same pc is equivalent: every fragment's label
+	 * for a pc enters a translation of the same text, and a retired one is
+	 * no longer in a slot. Replacing it would only make two fragments sharing
+	 * a pc take turns in the slot, one lock round trip per resolution.
+	 */
+	if (old && old->pc == label->pc)
+		return;
+	/*
+	 * Fragment code reads slot -> record -> fields through address
+	 * dependencies, no barrier of its own; the release orders the store after
+	 * everything that made the record valid.
+	 */
+	smp_store_release(&table[idx], label);
+	kjit_rs_note(KJIT_NOTE_IBTC_INSERT, 1);
+	if (old)
+		kjit_rs_note(KJIT_NOTE_IBTC_REPLACE, 1);
+}
+
+/*
+ * A branch exit's target resolved to @label of @f: publishes it in the
+ * dispatch tables it belongs to (always table_all, table_nofp unless @f uses
+ * FP/SIMD), so the next transfer to its pc from a run of that class hits
+ * inside fragment code. Direct mapped: a record for another pc is replaced,
+ * one for the same pc kept. Nothing is published for a retired fragment.
+ *
+ * Must run in the hook call that found @f (it keeps @f allocated).
+ */
+static void kjit_ibtc_publish(struct kjit_frag *f, struct kjit_label *label)
+{
+	struct kjit_mm *kmm = f->kmm;
+	u32 idx = kjit_ibtc_index(label->pc);
+	struct kjit_label *all = READ_ONCE(kmm->table_all[idx]);
+	struct kjit_label *nofp = READ_ONCE(kmm->table_nofp[idx]);
+
+	/*
+	 * Each table it belongs in already has a record for this pc (see
+	 * kjit_ibtc_store_locked()): nothing to store, so no lock. Dereferencing
+	 * a slot's record is safe here: it is retired at the earliest now, and
+	 * freed only after this hook call. A retire racing with this clears the
+	 * slot under the lock; seeing it set here changes no state.
+	 */
+	if (all && all->pc == label->pc &&
+	    (f->uses_fpsimd || (nofp && nofp->pc == label->pc)))
+		return;
+	spin_lock(&kmm->lock);
+	if (!f->retired) {
+		kjit_ibtc_store_locked(kmm->table_all, idx, label);
+		if (!f->uses_fpsimd)
+			kjit_ibtc_store_locked(kmm->table_nofp, idx, label);
+	}
+	spin_unlock(&kmm->lock);
+}
+
+/*
+ * A branch exit's target @pc resolved to @f, the fragment the run is in:
+ * publishes the label of @pc and returns its host (the address to continue
+ * at), or 0 if @f has no entry for @pc.
+ */
+u64 kjit_frag_link(struct kjit_frag *f, u64 pc)
+{
+	struct kjit_label *label = kjit_frag_find_label(f, pc);
+
+	if (!label)
+		return 0;
+	kjit_ibtc_publish(f, label);
+	return label->host;
 }
 
 /* Removes every fragment of @kmm from its table. Caller holds kmm->lock. */
@@ -427,7 +608,7 @@ static u64 kjit_mm_flush_locked(struct kjit_mm *kmm, unsigned long start, unsign
 			kmm->code_bytes -= f->code_len;
 			atomic_long_dec(&kjit_total_frags);
 			atomic_long_sub(f->code_len, &kjit_total_code);
-			kjit_frag_put(f);
+			kjit_frag_retire_locked(kmm, f);
 			n++;
 		}
 	}
@@ -544,12 +725,34 @@ static struct mmu_notifier *kjit_mn_alloc(struct mm_struct *mm)
 	return &kmm->mn;
 }
 
+/*
+ * Hook-SRCU callback: every hook call that could be running a fragment of this
+ * kjit_mm, and so reading its dispatch tables, has returned.
+ */
+static void kjit_mm_free_cb(struct rcu_head *head)
+{
+	struct kjit_mm *kmm = container_of(head, struct kjit_mm, rcu);
+
+	kvfree(kmm->table_all);
+	kvfree(kmm->table_nofp);
+	/* Syscall-path readers found it under RCU, not the notifier SRCU. */
+	kvfree_rcu(kmm, rcu);
+}
+
 static void kjit_mn_free(struct mmu_notifier *mn)
 {
 	struct kjit_mm *kmm = container_of(mn, struct kjit_mm, mn);
 
-	/* Syscall-path readers found it under RCU, not the notifier SRCU. */
-	kvfree_rcu(kmm, rcu);
+	/*
+	 * Nothing installed, so no run ever read a table: the hook-SRCU grace
+	 * period would wait for nothing. Most kjit_mms of the auto mode are such
+	 * (a process that never got a translation).
+	 */
+	if (!kmm->table_all) {
+		kvfree_rcu(kmm, rcu);
+		return;
+	}
+	kjit_hook_call_srcu(&kmm->rcu, kjit_mm_free_cb);
 }
 
 static const struct mmu_notifier_ops kjit_mn_ops = {
@@ -661,6 +864,9 @@ out:
  * @uses_fpsimd is verify_fragment's verdict on @code: every run of the fragment
  * then goes through the FP/SIMD bracket (kjit_call_fragment_fpsimd()).
  *
+ * The first install of a kjit_mm also allocates its two dispatch tables (32 KiB
+ * each); a failure to do so fails that install with -ENOMEM.
+ *
  * Returns 0, -EEXIST (@entry_pc already has a fragment), -EAGAIN (raced with
  * an invalidation), -ESRCH (mm gone), -ENOSPC (a fragment cap is reached,
  * kjit_caps_allow()), -ENOMEM, -EINVAL (malformed tables; the Rust side never
@@ -669,11 +875,13 @@ out:
 int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		 const u8 *code, u32 code_len, u32 entry_offset,
 		 const struct kjit_site *sites, u32 n_sites,
-		 const struct kjit_label *labels, u32 n_labels,
+		 const struct kjit_entry *entries, u32 n_entries,
 		 u64 src_start, u64 src_end, bool uses_fpsimd)
 {
+	struct kjit_label **new_all = NULL, **new_nofp = NULL;
 	struct exception_table_entry *ex;
 	struct kjit_frag *f, *old;
+	bool has_entry = false;
 	size_t ex_off, size;
 	int ret;
 	u32 i;
@@ -684,26 +892,53 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		if (sites[i].access >= code_len || sites[i].stub >= code_len ||
 		    (i && sites[i].access <= sites[i - 1].access))
 			return -EINVAL;
-	for (i = 0; i < n_labels; i++)
-		if (labels[i].offset >= code_len || (i && labels[i].pc <= labels[i - 1].pc))
+	for (i = 0; i < n_entries; i++) {
+		if (entries[i].offset >= code_len || (i && entries[i].pc <= entries[i - 1].pc))
 			return -EINVAL;
+		/* kjit_lookup() enters at the label of entry_pc: it must be entry_offset. */
+		if (entries[i].pc == entry_pc)
+			has_entry = entries[i].offset == entry_offset;
+	}
+	if (!has_entry)
+		return -EINVAL;
 
-	f = kzalloc(struct_size(f, labels, n_labels), GFP_KERNEL);
-	if (!f)
-		return -ENOMEM;
-	f->n_labels = n_labels;
-	memcpy(f->labels, labels, flex_array_size(f, labels, n_labels));
+	/*
+	 * Allocated outside kmm->lock, only by installs that find none; the
+	 * loser of a race frees its copy below.
+	 */
+	if (!READ_ONCE(kmm->table_all)) {
+		new_all = kvzalloc(KJIT_IBTC_SLOTS * sizeof(*new_all), GFP_KERNEL);
+		new_nofp = kvzalloc(KJIT_IBTC_SLOTS * sizeof(*new_nofp), GFP_KERNEL);
+		if (!new_all || !new_nofp) {
+			ret = -ENOMEM;
+			goto out_tables;
+		}
+	}
+
+	f = kzalloc(struct_size(f, labels, n_entries), GFP_KERNEL);
+	if (!f) {
+		ret = -ENOMEM;
+		goto out_tables;
+	}
+	f->kmm = kmm;
+	f->n_labels = n_entries;
 
 	ex_off = ALIGN(code_len, 4);
 	size = ex_off + (size_t)n_sites * sizeof(*ex);
 	f->image = execmem_alloc(EXECMEM_BPF, size);
 	if (!f->image) {
 		kfree(f);
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto out_tables;
+	}
+	for (i = 0; i < n_entries; i++) {
+		f->labels[i].pc = entries[i].pc;
+		f->labels[i].host = (u64)f->image + entries[i].offset;
+		if (entries[i].pc == entry_pc)
+			f->entry_label = &f->labels[i];
 	}
 	f->image_size = PAGE_ALIGN(size);
 	f->code_len = code_len;
-	f->entry_offset = entry_offset;
 	f->entry_pc = entry_pc;
 	f->src_start = src_start;
 	f->src_end = src_end;
@@ -726,9 +961,8 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	if (ret) {
 		execmem_free(f->image);
 		kfree(f);
-		return ret;
+		goto out_tables;
 	}
-	refcount_set(&f->ref, 1);
 
 	/* On the extable list before anything can run it. */
 	spin_lock(&kjit_frags_lock);
@@ -748,6 +982,15 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		if (!ret && !kjit_caps_allow(kmm, code_len))
 			ret = -ENOSPC;
 		if (!ret) {
+			/*
+			 * Before the fragment is visible: whoever finds it (table or
+			 * dispatch) finds tables too.
+			 */
+			if (!kmm->table_all) {
+				WRITE_ONCE(kmm->table_all, new_all);
+				WRITE_ONCE(kmm->table_nofp, new_nofp);
+				new_all = new_nofp = NULL;
+			}
 			hash_add_rcu(kmm->table, &f->table_node, entry_pc);
 			kmm->n_frags++;
 			kmm->code_bytes += code_len;
@@ -756,8 +999,13 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		}
 	}
 	spin_unlock(&kmm->lock);
+	/* Never published: nothing can be running it. */
 	if (ret)
-		kjit_frag_put(f);
+		kjit_frag_unlist_and_free(f);
+out_tables:
+	/* Tables another install published first, or that this one did not need. */
+	kvfree(new_all);
+	kvfree(new_nofp);
 	return ret;
 }
 
@@ -798,10 +1046,16 @@ bool kjit_can_run(const struct pt_regs *regs)
 }
 
 /*
- * Returns the installed fragment for (current->mm, @pc) with a reference, and
- * its entry address in @entry, or NULL.
+ * Returns the installed fragment for (current->mm, @pc) and its entry address
+ * in @entry, or NULL; with @link (a branch exit's target resolved to it) it
+ * also publishes the entry in the dispatch tables (kjit_ibtc_publish()). No
+ * reference is taken: the caller is inside a hook call
+ * (kjit_hook_srcu read section), and a fragment found in one is not freed
+ * before that call returns, even if it is retired meanwhile (the hook-SRCU
+ * grace period of kjit_frag_retire_locked() waits for it). Not for use outside
+ * the hook (the debugfs paths hold a kjit_mm reference instead).
  */
-struct kjit_frag *kjit_lookup(u64 pc, u64 *entry)
+struct kjit_frag *kjit_lookup(u64 pc, bool link, u64 *entry)
 {
 	struct mm_struct *mm = current->mm;
 	struct kjit_frag *f, *found = NULL;
@@ -813,15 +1067,18 @@ struct kjit_frag *kjit_lookup(u64 pc, u64 *entry)
 	kmm = kjit_mm_find_rcu(mm);
 	if (kmm && !READ_ONCE(kmm->disabled)) {
 		hash_for_each_possible_rcu(kmm->table, f, table_node, pc) {
-			if (f->entry_pc == pc && refcount_inc_not_zero(&f->ref)) {
+			if (f->entry_pc == pc) {
 				found = f;
 				break;
 			}
 		}
 	}
 	rcu_read_unlock();
-	if (found)
-		*entry = (u64)found->image + found->entry_offset;
+	if (found) {
+		if (link)
+			kjit_ibtc_publish(found, found->entry_label);
+		*entry = found->entry_label->host;
+	}
 	return found;
 }
 
@@ -846,14 +1103,15 @@ void kjit_bad_status(u64 status, u64 pc)
 }
 
 /*
- * u64 kjit_call_fragment(struct pt_regs *regs, u64 extra[2], u64 entry, u64 base)
+ * u64 kjit_call_fragment(struct pt_regs *regs, u64 extra[3], u64 entry, u64 base)
  *
  * The ABI call (tmp/pipeline.md, "ABI: fragment entry"; mirrors
  * harness/src/native.rs): x0 = regs, x1 = extra params, x2 = entry address,
  * call the fragment at its base. The fragment runs user code, so the user's
  * NZCV (regs->pstate) is live in PSTATE while it runs and is written back
  * afterwards; x19..x29, x30 and sp come back through the fragment epilogue.
- * Returns x0 = RetStatus; extra[0], extra[1] = x10, x11.
+ * Returns x0 = RetStatus; extra[0], extra[1] = x10, x11 (out), extra[2] = the
+ * run's dispatch table (in, kjit_frag_table()).
  */
 asm(
 "	.pushsection .text, \"ax\"\n"
@@ -986,7 +1244,9 @@ u64 kjit_hook_calls(void)
 /*
  * Fault fixups of running fragments. Only reached for addresses no other
  * exception table claims. The entry stays valid while the caller runs: only
- * the task running a fragment faults in it, and it holds a reference.
+ * the task running a fragment faults in it, inside a hook call, and a retired
+ * fragment stays on the list until a hook-SRCU grace period after its
+ * retirement.
  */
 static const struct exception_table_entry *kjit_search_extable(unsigned long addr)
 {
@@ -1730,7 +1990,12 @@ void kjit_glue_exit(void)
 	}
 	/* free_notifier callbacks (module code) have run after this. */
 	mmu_notifier_synchronize();
-	/* kvfree_rcu and the rcu_work frees are queued after this... */
+	/*
+	 * Fragment retirements and kjit_mm frees are hook-SRCU callbacks (module
+	 * code); all of them have run after this, and what they queue is queued...
+	 */
+	kjit_hook_srcu_barrier();
+	/* ...kvfree_rcu and the rcu_work frees are queued after this... */
 	rcu_barrier();
 	/* ...and the image frees have run after this. */
 	destroy_workqueue(kjit_wq);

@@ -40,6 +40,11 @@ phase() {
         || k4_fail "benchmark $name: fewer results than the default test set"
     report "$name" "$work/$name.before" "$work/$name.after"
     hot_check "$name" "$work/$name.before"
+    # A11: a hot server resolves its branch targets into the dispatch tables.
+    inserts=$(( $(stat_of "$work/$name.after.stats" ibtc_insert) - $(stat_of "$work/$name.before.stats" ibtc_insert) ))
+    if [ "$K4_REQUIRE_HOT" = 1 ] && [ "$inserts" -le 0 ]; then
+        k4_fail "benchmark $name: nothing published in the dispatch tables (ibtc_insert +0)"
+    fi
 }
 
 set_mode 1

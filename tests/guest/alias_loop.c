@@ -1,0 +1,146 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Transfers that always miss the dispatch table (tmp/pipeline.md, "A11
+ * contract", Kernel tests): one `blr x5` alternating between two callees 16 KiB
+ * apart. A dispatch table slot is indexed by pc[13:2], so the two callees share
+ * one slot: publishing the second replaces the first (ibtc_replace), and the
+ * transfer to the first misses again, and so on. Every blr therefore goes
+ * through the runtime, which chains into the callee's fragment (the return
+ * transfer, always to the same site, may hit). A hook call chains until it has
+ * made chain_budget fragment entries, userspace resumes at the next branch
+ * target and finishes the loop natively until the next svc. The loop cannot
+ * keep a task in the kernel beyond the chain budget.
+ *
+ * KJIT_EXPECT=alias:
+ *  - every outer iteration hits the chain budget (chain_cap), unless a run
+ *    condition ended its hook call first (run_declined: a timer tick's
+ *    need_resched, say);
+ *  - no hook call made more entries than chain_budget (chain_max);
+ *  - the ping-pong replaced slot records (ibtc_replace), about one per blr.
+ *
+ *   alias_loop [outer] [calls]     outer 0 = forever (kill test)
+ */
+#include "kjit_test.h"
+
+void alias_loop_run(uint64_t outer, uint64_t calls, uint64_t *acc);
+extern char alias_loop_callee_a[], alias_loop_callee_b[], alias_loop_ret[];
+
+/*
+ * The callees sit on 16 KiB boundaries, one boundary apart: the same pc[13:2].
+ * The return site after the blr is a third PC.
+ */
+asm(".text\n"
+    ".global alias_loop_run\n"
+    ".type alias_loop_run, %function\n"
+    "alias_loop_run:\n"
+    "	mov	x9, x30\n"
+    "	mov	x4, x0\n"
+    "	ldr	x6, [x2]\n"
+    "	adr	x5, alias_loop_callee_a\n"
+    "	add	x7, x5, #4, lsl #12\n"		/* alias_loop_callee_b */
+    "	eor	x7, x5, x7\n"			/* a ^ b: x5 ^= x7 swaps the callees */
+    "1:	mov	x8, #173\n"			/* getppid */
+    "	svc	#0\n"
+    "	mov	x3, x1\n"
+    "2:	blr	x5\n"
+    ".global alias_loop_ret\n"
+    "alias_loop_ret:\n"
+    "	eor	x5, x5, x7\n"
+    "	subs	x3, x3, #1\n"
+    "	b.ne	2b\n"
+    "	subs	x4, x4, #1\n"
+    "	b.ne	1b\n"
+    "	str	x6, [x2]\n"
+    "	mov	x30, x9\n"
+    "	ret\n"
+    ".p2align 14\n"
+    ".global alias_loop_callee_a\n"
+    "alias_loop_callee_a:\n"
+    "	add	x6, x6, #1\n"
+    "	ret\n"
+    ".p2align 14\n"
+    ".global alias_loop_callee_b\n"
+    "alias_loop_callee_b:\n"
+    "	add	x6, x6, #2\n"
+    "	ret\n");
+
+static long long read_debugfs_ll(const char *file)
+{
+	char path[128], line[32];
+	FILE *f;
+
+	snprintf(path, sizeof(path), KJIT_DEBUGFS "/%s", file);
+	f = fopen(path, "r");
+	if (!f || !fgets(line, sizeof(line), f))
+		die("read %s: %s", path, strerror(errno));
+	fclose(f);
+	return atoll(line);
+}
+
+int main(int argc, char **argv)
+{
+	long outer = argc > 1 ? atol(argv[1]) : 2000;
+	long calls = argc > 2 ? atol(argv[2]) : 5000;
+	uint64_t a = (uintptr_t)alias_loop_callee_a, b = (uintptr_t)alias_loop_callee_b;
+	long long cap0, cap1, dec0, dec1, rep0, rep1, budget, max;
+	uint64_t acc = 0;
+	struct kjit_snap s0, s1;
+	int err;
+
+	/* The whole point: one table slot for both. */
+	if (b != a + 16384 || ((a >> 2) & 0xfff) != ((b >> 2) & 0xfff))
+		die("alias_loop: callees at %#llx and %#llx do not share a dispatch slot",
+		    (unsigned long long)a, (unsigned long long)b);
+
+	kjit_register_self();
+	if (!kjit_auto_mode()) {
+		/* The callees and the return site are branch targets, not SVC resume PCs. */
+		const uint64_t targets[] = { a, b, (uintptr_t)alias_loop_ret };
+
+		for (unsigned int i = 0; i < sizeof(targets) / sizeof(targets[0]); i++) {
+			err = kjit_translate_self(targets[i]);
+			if (err && err != EEXIST)
+				die("translate %#llx: %s", (unsigned long long)targets[i], strerror(err));
+		}
+	}
+	s0 = kjit_snap();
+	cap0 = kjit_stat("chain_cap");
+	dec0 = kjit_stat("run_declined");
+	rep0 = kjit_stat("ibtc_replace");
+	alias_loop_run(outer, calls, &acc);
+	cap1 = kjit_stat("chain_cap");
+	dec1 = kjit_stat("run_declined");
+	rep1 = kjit_stat("ibtc_replace");
+	s1 = kjit_snap();
+	kjit_report("alias_loop", s0, s1);
+	printf("alias_loop outer=%ld calls=%ld acc=%llu\n", outer, calls, (unsigned long long)acc);
+	if (kjit_expect("alias")) {
+		budget = read_debugfs_ll("chain_budget");
+		max = kjit_stat("chain_max");
+		fprintf(stderr, "alias_loop: chain_cap=%lld run_declined=%lld chain_max=%lld chain_budget=%lld ibtc_replace=%lld\n",
+			cap1 - cap0, dec1 - dec0, max, budget, rep1 - rep0);
+		/* One miss (one chained entry) per call at least: more calls than the budget. */
+		if (calls <= budget)
+			die("alias_loop: %ld calls per svc do not exceed chain_budget %lld", calls, budget);
+		/*
+		 * Auto mode learns both callees, then the return site: three
+		 * warmups. run_declined is global: another task's declined hook calls
+		 * only loosen this bound, they cannot fail it.
+		 */
+		if (cap1 - cap0 + dec1 - dec0 < outer - 3 * kjit_auto_warmup())
+			die("alias_loop: %lld chain_cap + %lld run_declined for %ld outer iterations",
+			    cap1 - cap0, dec1 - dec0, outer);
+		if (max > budget)
+			die("alias_loop: a hook call made %lld entries, chain_budget is %lld", max, budget);
+		/*
+		 * A hook call that reached the budget made about budget / 2 blr
+		 * misses at least (A10: blr and ret each one entry; A11: the ret
+		 * hits, so one entry per blr), each replacing the other callee's
+		 * record in the shared slot.
+		 */
+		if (rep1 - rep0 < (cap1 - cap0) * (budget / 4))
+			die("alias_loop: %lld ibtc_replace for %lld budget-capped hook calls of %lld entries",
+			    rep1 - rep0, cap1 - cap0, budget);
+	}
+	return 0;
+}

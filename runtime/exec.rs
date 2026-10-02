@@ -29,37 +29,59 @@ const MEM: u64 = RetStatus::Mem.as_reg();
 const UNSUPPORTED: u64 = RetStatus::Unsupported.as_reg();
 const BUDGET: u64 = RetStatus::Budget.as_reg();
 
-/// A fragment reference taken by `kjit_lookup`, dropped on every path.
+/// A fragment found by `kjit_lookup`. No reference is held: the fragment stays
+/// allocated until this hook call returns (it is freed a hook-SRCU grace
+/// period after it is retired, kernel-patches/0007), also if it is retired
+/// meanwhile. So a `Running` must not outlive the call that made it.
+#[derive(Clone, Copy)]
 struct Running {
     frag: *mut KjitFrag,
     base: u64,
     /// Installed with the verifier's `uses_fpsimd`: every entry (chained ones
     /// included) runs inside the FP/SIMD bracket.
     fpsimd: bool,
+    /// The dispatch table of runs of this fragment (`kjit_frag_table`).
+    table: u64,
 }
 
 impl Running {
-    fn lookup(pc: u64, entry: &mut u64) -> Option<Self> {
-        // SAFETY: called on the syscall path of the current task.
-        let frag = unsafe { ffi::kjit_lookup(pc, entry) };
+    /// The fragment for `pc` and its entry address in `entry`. `link`: `pc` is
+    /// a branch exit's target, resolved here, so its entry is also published in
+    /// the dispatch tables.
+    fn lookup(pc: u64, link: bool, entry: &mut u64) -> Option<Self> {
+        // SAFETY: called on the syscall path of the current task, inside the
+        // hook call.
+        let frag = unsafe { ffi::kjit_lookup(pc, link, entry) };
         if frag.is_null() {
             return None;
         }
-        // SAFETY: `frag` is referenced until `Drop`.
-        let (base, fpsimd) =
-            unsafe { (ffi::kjit_frag_base(frag), ffi::kjit_frag_uses_fpsimd(frag)) };
-        Some(Self { frag, base, fpsimd })
+        // SAFETY: `frag` stays allocated for this hook call.
+        let (base, fpsimd, table) = unsafe {
+            (
+                ffi::kjit_frag_base(frag),
+                ffi::kjit_frag_uses_fpsimd(frag),
+                ffi::kjit_frag_table(frag),
+            )
+        };
+        Some(Self {
+            frag,
+            base,
+            fpsimd,
+            table,
+        })
     }
 
-    /// Runs the fragment from `entry` (`base` + one of its verified entry
-    /// offsets); `extra` receives x10/x11. Returns the status in x0.
-    fn call(&self, regs: *mut PtRegs, extra: &mut [u64; 2], entry: u64) -> u64 {
+    /// Runs the fragment from `entry` (the host address of one of its verified
+    /// entries); `extra` receives x10/x11 and gets the dispatch table. Returns
+    /// the status in x0.
+    fn call(&self, regs: *mut PtRegs, extra: &mut [u64; ffi::EXTRA_WORDS], entry: u64) -> u64 {
         stats::inc(Stat::FragmentEntries);
-        // SAFETY (both calls): `entry` is `base` + a verified entry offset of
-        // the referenced fragment; `extra` receives x10/x11 (epilogue `stp x10,
-        // x11, [x1]`). A fragment the verifier found to use FP/SIMD only runs
-        // inside the FP/SIMD bracket (kjit_glue.c), which makes the user's
-        // FP/SIMD state live in the registers for the run.
+        extra[ffi::EXTRA_DISPATCH_TABLE_INDEX] = self.table;
+        // SAFETY (both calls): `entry` is the host of a label of this
+        // fragment; `extra` receives x10/x11 (epilogue `stp x10, x11, [x1]`)
+        // and holds this run's dispatch table. A fragment the verifier found to
+        // use FP/SIMD only runs inside the FP/SIMD bracket (kjit_glue.c), which
+        // makes the user's FP/SIMD state live in the registers for the run.
         if self.fpsimd {
             stats::inc(Stat::FpsimdEntries);
             unsafe { ffi::kjit_call_fragment_fpsimd(regs, extra.as_mut_ptr(), entry, self.base) }
@@ -68,21 +90,12 @@ impl Running {
         }
     }
 
-    /// The entry address for `pc` inside this fragment (one of its verified
-    /// entry offsets), if it has one.
-    fn entry_for(&self, pc: u64) -> Option<u64> {
-        // SAFETY: `frag` is referenced.
-        let offset = unsafe { ffi::kjit_frag_offset_for_pc(self.frag, pc) };
-        u64::try_from(offset)
-            .ok()
-            .map(|offset| self.base.wrapping_add(offset))
-    }
-}
-
-impl Drop for Running {
-    fn drop(&mut self) {
-        // SAFETY: drops the reference `kjit_lookup` took.
-        unsafe { ffi::kjit_frag_put(self.frag) }
+    /// A branch exit's target `pc` resolved inside this fragment: its verified
+    /// entry address, if it has one, also published in the dispatch tables.
+    fn link(&self, pc: u64) -> Option<u64> {
+        // SAFETY: `frag` stays allocated for this hook call.
+        let host = unsafe { ffi::kjit_frag_link(self.frag, pc) };
+        (host != 0).then_some(host)
     }
 }
 
@@ -112,7 +125,7 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
         return TO_USER;
     }
     let mut entry = 0u64;
-    let Some(run) = Running::lookup(pc, &mut entry) else {
+    let Some(run) = Running::lookup(pc, false, &mut entry) else {
         profile(pc, HOT_SVC_RESUME);
         return TO_USER;
     };
@@ -127,6 +140,12 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
 /// conditions hold, for at most `budget` fragment entries (the first one
 /// always runs): the `chain_budget` of tmp/pipeline.md, "K3", chaining rules.
 /// Returns the hook's result and the number of entries made.
+///
+/// Since A11 an "entry" is a runtime round trip: a branch whose target is in
+/// the run's dispatch table continues inside the fragment code and is neither
+/// counted here nor preceded by the run-condition check. Between two checks a
+/// run spends at most `KJIT_BACKEDGE_BUDGET` units (tmp/pipeline.md, "A11
+/// contract", run conditions and bounds).
 fn run_chain(
     regs: *mut PtRegs,
     mut run: Running,
@@ -138,15 +157,14 @@ fn run_chain(
     let mut entries = NonZeroU32::MIN;
 
     loop {
-        let mut extra = [0u64; 2];
+        let mut extra = [0u64; ffi::EXTRA_WORDS];
         let status = run.call(regs, &mut extra, entry);
-        let [param0, param1] = extra;
+        let (param0, param1) = (extra[0], extra[1]);
 
         match status {
             SVC => {
                 // x11 = PC after the SVC; x8 holds the syscall number.
                 stats::inc(Stat::ExitSvc);
-                drop(run);
                 // SAFETY: as above.
                 let scno = unsafe { (*regs).regs[8] } as i32;
                 // The kernel's own entry uses the low 32 bits of x8 as a signed
@@ -175,20 +193,24 @@ fn run_chain(
                 if entries.get() >= budget {
                     stats::inc(Stat::ChainCap);
                 } else if can_run(regs) {
-                    if let Some(next) = run.entry_for(target) {
+                    if let Some(next) = run.link(target) {
                         entry = next;
                         entries = entries.saturating_add(1);
                         stats::inc(Stat::Chains);
                         continue;
                     }
-                    if let Some(next) = Running::lookup(target, &mut entry) {
+                    if let Some(next) = Running::lookup(target, true, &mut entry) {
+                        if next.fpsimd && !run.fpsimd {
+                            // Published in table_all only: this run's table
+                            // (table_nofp) never holds an FP/SIMD fragment.
+                            stats::inc(Stat::IbtcFpsimdBoundary);
+                        }
                         run = next;
                         entries = entries.saturating_add(1);
                         stats::inc(Stat::Chains);
                         continue;
                     }
                     // Exit-target learning: userspace resumes at `target`.
-                    drop(run);
                     profile(target, HOT_EXIT_TARGET);
                 } else {
                     stats::inc(Stat::RunDeclined);
@@ -220,7 +242,6 @@ fn run_chain(
             }
             _ => {
                 stats::inc(Stat::ExitInvalid);
-                drop(run);
                 // SAFETY: current task context; WARN_ONCE + disable this mm.
                 unsafe { ffi::kjit_bad_status(status, pc) };
                 // SAFETY: as above.
