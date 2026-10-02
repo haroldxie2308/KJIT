@@ -2831,3 +2831,220 @@ there.
 - In-fragment code quality (budget counter read-modify-write through memory,
   stack-backed x12..x15, `LDTR` imm9-only splits): separate work. Step 0
   tells whether it matters.
+
+# A11a implementation (2026-10-02)
+
+Implements the Mechanism (shared/harness parts), ABI, Lowering, Verifier (V3) and
+Harness (A11a) parts of "A11 contract". The kernel runtime (A11b) is separate; it
+consumes the names below from `shared/abi` after merge. Decisions the contract left
+open, then what changed, tests, and what is not verified.
+
+## ABI (`shared/abi`)
+
+- One named constant each, used by lowering, verifier and harness:
+  `RUNTIME_FRAME_IBTC_OFFSET = 200` (frame stays 208 bytes), `EXTRA_PARAMS_WORDS = 3`
+  with `EXTRA_PARAM_IBTC_TABLE_INDEX = 2` / `EXTRA_PARAM_IBTC_TABLE_OFFSET = 16`,
+  `IBTC_BITS = 12`, `IBTC_INDEX_LSB = 2` (slot = `ibtc_slot_index(pc)` = pc[13:2]),
+  `IBTC_SLOT_BYTES`/`IBTC_SLOTS`/`IBTC_TABLE_BYTES`, the record
+  `IBTC_RECORD_PC_OFFSET = 0`, `IBTC_RECORD_HOST_OFFSET = 8`, `IBTC_RECORD_BYTES = 16`,
+  and the template registers `DISPATCH_SLOT_REG = 12`, `DISPATCH_TARGET_REG = 13`,
+  `DISPATCH_KEY_REG = 14`.
+- The template is `KJIT_DISPATCH_TEMPLATE` (9 `A64Insn`s, miss offsets 0) in
+  `abi/wrapper.rs`, next to `KJIT_PROLOGUE`, with `dispatch_template_matches(&[u32])`:
+  compares encoded words (the encoding is the contract, like the prologue's check),
+  frees only the two `imm19` fields and returns them. A test pins the nine words to
+  `llvm-mc`'s encodings.
+- Prologue: `ldr x12, [x1, #16]; str x12, [sp, #200]` after the pt_regs/extra
+  pointer store and before the `ldp x0, x1` that overwrites x1 (a test pins the
+  order). `PROLOGUE_LEN_BYTES` = `EPILOGUE_OFFSET` = 0xa8 (was 0xa0).
+- Rule 9's join state is derived from the prologue and is unchanged: {x29, x12}
+  (`join_state_is_derived_from_the_prologue` passes unmodified). The new `ldr x12`
+  is a runtime-memory load, and x12 is overwritten by the user-state loads and the
+  budget init before the final `ldr x12, [sp, #80]`.
+
+## Lowering
+
+- New kinds `DispatchTarget` (T into physical x13) and `DispatchLookup` (a template
+  word). `rephrase_insn` lowers BL/BLR/BR/RET as: target move, link write (BL/BLR),
+  template, miss exit group (`x9` = status, `x10` = x13, `x11` = resume, `b
+  <epilogue>`); `rephrase` puts the budget check (same four words, same cold Budget
+  stub) before the whole site, as for a back-edge. Order is fixed so `blr x30` reads
+  x30 into x13 before the link write.
+- BL's target move is the usual four `movz`/`movk` words; BLR/BR/RET use `orr x13,
+  xzr, Xm` with `Xm` the *user* register. Reg-virt maps it with the capture
+  machinery the exit group's RET_PARAM0 already had (generalized to a destination
+  register and an output kind): stack-backed x12..x17 are loaded from their slot,
+  user x29/sp are read from x16/x17, everything else is copied (a test covers every
+  register 0..31 for all three forms).
+- The miss exit group's RET_PARAM0 copy is `add x10, x13, #0`, not `orr x10, xzr,
+  x13`: that `orr` shape is the param0 capture of a *user* register and would load
+  user x13's slot. `validate_runtime_exit_payload` lets exactly this word read
+  physical x13 (`is_dispatch_miss_param0_copy`); any other payload reading a
+  stack-backed number is still rejected.
+- Layout resolves the template's two miss branches to the word after its `br`, so
+  the exit group directly follows the template inside the body (not in the cold
+  region). `LayoutError::MalformedDispatchTemplate` for a template that is cut
+  short or has no word after its `br`.
+
+## Verifier (V3)
+
+- Pre-pass `find_dispatch_templates`: every `br x12` must end the byte-exact
+  template (`dispatch_template_matches`), both miss branches naming the same forward
+  body word; any other `br`/`blr`/`ret`/`bl` stays `IndirectBranch`/`Call`. Rule
+  numbers in `VerifyRule::DispatchTemplate` doc.
+- Rule 3: slot 200 needs no new case: the user-state window `[16, 80)` plus the
+  budget slot and the pt_regs pointer load are still the only SP-relative accesses,
+  so `ldr x12, [sp, #200]` is accepted only as a template's first word (the
+  template's words skip the generic access check, being exact) and any other read or
+  write of it is `FrameAccessOutOfRange`.
+- Rule 6: the budget check guards a template when only data-processing words and
+  reg-virt fills sit between its `cbz` and the template; at most
+  `DISPATCH_GUARD_MAX_GAP = 16` of them (BL's 4 target + 4 link words is the longest
+  real site, 8), so a template's walk back is O(1). Its Budget stub and its miss
+  target (the exit group) are checked as exit groups; `check_exit_group` accepts a
+  template's `br` as the word before a group, besides an unconditional `B`. The
+  budget slot's own accesses are accepted for a back-edge or a template guard.
+  A join point from the `sub` to the `br` is rejected (`MissingBudgetCheck` in the
+  gap, `DispatchTemplate` inside the template); the check's `ldr` may be one.
+- Rule 9: `step_dispatch_template` is the transfer function for the nine words:
+  the three `ldr x12` make x12 a kernel value, the key load into x14 is not a
+  source, `x13` must not be kernel where `ubfx`/`sub` read it
+  (`KernelValueRead`), and both miss branches and the `br` are control edges that
+  may carry only the join state {x12, x29}; after the `br` the state is the join
+  state. x12 as the operand of `cbz`/`br` is the one kernel operand allowed.
+- `VerifyOk` unchanged; no runtime-side verifier input added.
+
+## Harness
+
+- `harness/src/code_cache.rs` mirrors the kernel's store: fragments by entry pc,
+  labels as records `{pc, host}` (`vlabels` sorted by pc), two direct-mapped tables,
+  `publish` (insert on resolution, last writer wins, `ibtc_insert`/`ibtc_replace`),
+  `retire` (clear only the slots that still point at the fragment's records,
+  `ibtc_clear`), `check_invariants` (non-zero slot -> a label of a live fragment,
+  at the right hash; `table_nofp` never an FP/SIMD fragment, from the *verifier's*
+  `uses_fpsimd`), and `decide`. Pure bookkeeping over an address layout; every table
+  or record change is queued as an 8-byte `(addr, value)` write for the backend
+  (interpreter `MachineState` memory, or the native runner's mapping).
+- `URuntime` executes over a cache: pc -> (fragment, offset), fault sites per
+  fragment, `extra[2]` = `table_for(entered.uses_fpsimd)` at every entry, tables
+  and records in runtime-owned ranges (a PAN violation outside them). `URuntime::
+  new(fragment, ..)` is a cache of one fragment that never publishes (empty
+  tables, every exit misses): the A10 single-fragment behaviour, so the fuzzer and
+  every existing test see no change but the longer prologue.
+- Cached runs (`cached_run.rs`) compare with the original *following* its branches
+  (`OriginalStepper::follow_branches`), so the run ends where a fragment run ends: a
+  fault, an `Unsupported` pc, a `Budget` exit (capped like before, over all
+  fragments: pc P's instance count is the sum of the executions of P's label over the
+  fragments holding one), or the chain budget below.
+- Decisions the contract left open:
+  - `decide` translates the target of every branch exit on a miss, `RET` included
+    (the contract says `NeedsTranslation`, which A10's `decide_runtime_return` only
+    returns for BL/BLR/BR). A return point is never a fragment entry, so without it
+    no `RET` site could ever hit; the kernel learns them (K3 exit-target learning),
+    the harness learns at once. A target that is not readable text has no
+    fragment: stop with `ReturnedToUserspace { Unsupported, target }`, which is what
+    the following original halts on (`admit_at` -> `Unreadable`). The kernel refuses
+    a translation whose entry word is itself unsupported; the harness translates it
+    (the fragment exits `Unsupported` at its first word): same observable run.
+  - Fixture text is not always a terminating program once branches are followed
+    (`bti_entry.s`, `reserved_regs_hard.s`: a `ret` to a pc that `bl` set, forever).
+    An endless cycle must pass the runtime at an `SVC` (a loop without one is bounded
+    by the budget), so the cache has the kernel's `chain_budget` (1024 entries,
+    first included) and `decide` returns to userspace at an SVC exit once spent
+    (`ReturnedToUserspace { Svc, resume }`); the original is capped before that SVC
+    (`InstanceCap`, native too). Only SVC exits stop: a branch exit stop would need
+    "stop after the k-th branch" on the original side.
+  - An SVC exit continues in the first live fragment with a label for the resume pc
+    (entry-keyed fragment first). The kernel's rule ("the fragment that just
+    exited") is ill-defined once a run spans fragments; any label for the pc is a
+    correct continuation.
+  - Records of retired fragments stay in memory (nothing points at them); record
+    addresses are never reused, the code stays mapped.
+- Native: `FaultFixup` covers every fragment of the cache (a dispatch hit runs in
+  another fragment inside one call); `run_cached` calls fragments through the real
+  tables and records (one RW mapping `[table_all | table_nofp | records]`, hosts are
+  the RX mappings' addresses) with `extra[2]` the table of the entered fragment;
+  the cache is the same `CodeCache`, its writes applied with `write_volatile`. After
+  cold and warm the native cache's statistics must equal the interpreter's and its
+  memory every record/slot word of the interpreter cache's image. The native
+  original follows branches (`stop_point_words(follow = true)`: BL/BLR/BR/RET are
+  plain code), caps at any branch or an SVC (`step_capped_branch` runs a capped
+  BL/BLR/BR/RET in place in a text copy where every other word traps, like a direct
+  branch), and reports an instruction abort at a followed branch's target as the
+  `Unsupported` stop. Limit: a capped indirect branch to itself would spin; no case
+  caps one.
+
+## Fixtures (`tests/arm64`)
+
+`dispatch_calls.s` (nested calls and returns with frames; tail calls through `b` and
+`br`; 200-level recursion with frames), `dispatch_recursion.s` (5000 calls exhaust
+the budget at a `bl`), `dispatch_plt.s` (`adrp x16, 0x10000; ldr x17, [x16, #0x40];
+br x17` and the x16/x17-swapped stub: the `adrp` immediate is assembled as an
+absolute +16 pages, which reaches the data window from the text page), `dispatch_alias.s`
+(`blr` alternating between two callees 0x4000 apart, and the `bl` form),
+`dispatch_lr_forms.s` (`blr x30`, `ret x5`, `br x30`), `dispatch_fpsimd.s`
+(non-FP/SIMD caller of an FP/SIMD callee, and the reverse). Every case ends in a `ret`
+to the entry x30 (0), an unreadable target. 125 cases across 37 fixtures now
+(112/31 before). `dispatch_tests.rs` asserts what the suite alone does not: warm
+runs of calls/PLT/`blr x30`/`ret x5` take no runtime entry, aliasing callees replace
+each other's slot and keep missing warm, the FP/SIMD callee is in `table_all` only
+(`ibtc_fpsimd_boundary` 2 cold, +1 warm: the second call of the warm run comes from
+a bracketed run and hits), the recursion exits `Budget` at its `bl`, a retired callee
+misses in the warm run and is translated and published again (interpreter and native).
+
+## Verifier mutation classes (A11)
+
+In `verify_mutation_tests.rs`, each 100% rejected over 114 templates in 125
+fragments: `dispatch template word altered` (registers, `#200` and other slots,
+ubfx lsb/width, the shift/extend of the indexed load, `#8`, the compare, both
+branch kinds and targets, nop), `dispatch key compare dropped`, `br/blr/ret of x13
+or x14 or another register`, `br x12 outside the dispatch template`, `dispatch
+template entered inside` (entry on every word and on the word before, direct branches
+into it), `dispatch template without budget check` (check replaced by ALU/nops, a
+store/load/branch/nop in the gap), `dispatch table slot read outside a template`,
+`dispatch table slot written`, `kernel value in x13 at a dispatch template`
+(`mov x13, x29`, `add x13, sp`, kernel-slot loads), `dispatch miss branches
+disagree`. `Suite::replace` now skips a replacement equal to the original word (not a
+mutation): the "kernel-valued frame slot loaded" class tries `ldr x12, [sp, #200]` at
+every word, which is the template's own first word.
+
+## Existing tests whose expectations changed
+
+- `wrapper_lengths_match_contract`: 0xa0 -> 0xa8 (two prologue words).
+- `runtime::tests::budget_exits_exactly_on_the_budget_th_back_edge_execution`, now
+  `..._budget_th_unit`: a `ret` is a dispatch attempt, hence one unit; `countdown(N -
+  1)` ends with its `ret` as the N-th unit (exit at the `ret`), `countdown(N - 2)`
+  completes, `countdown(N)` exits at the `cbnz` as before.
+- `rephrase::tests::runtime_exit_rewrites_have_explicit_exit_branch_only` and
+  `blr_x30_captures_old_lr_before_link_update`: BL/BLR/BR/RET lower to target move,
+  template and miss exit group; the template's own `br x12` is not a raw exit.
+- `tests/arm64/golden/toy_cfg_hot_svc_mark.rs`: regenerated (`make kernel-golden`); it
+  embeds the prologue and a `ret` site.
+- The verifier mutation suite's `str x0, [sp, #200] (padding)` is now `(dispatch table
+  pointer)`, and `replace` skips identity replacements (above).
+- Test-only plumbing: `URuntime.fragment` -> `fragment()`, `runtime_owned_ranges` is
+  a `Vec`, `URuntimeStep`/`Continued` carry the fragment index,
+  `original_reads_patched_text`/`native::run_original` take `follow_branches`.
+
+## Tests
+
+- `make harness-test`: 245 passed, 0 failed, 2 ignored (the two `--ignored`
+  encoding/spec tests, run by `make spec-test-encoding`); interpreter and
+  verify-mutation fixture suites 125 cases, 0 failed.
+- `make fuzz ITERS=10000`: passed 9968, failed 0, chained 0 (the rest non-terminating).
+- `make harness-test-native` (linux/arm64 container, same fixtures cold and warm
+  against the CPU, native original and native fragment): 248 passed, 0 failed, 2
+  ignored; native fixture suite 125 cases, 0 failed, none unobservable; the native
+  retire test passes.
+
+## Not verified
+
+- The kernel side (A11b): nothing here runs in the kernel. The prologue now reads
+  `extra[2]`: a runtime that still passes a two-word block reads past it.
+- Atomicity of publish/retire against concurrent fragment code (the harness is
+  single-threaded; the memory model argument is the contract's).
+- A capped indirect branch to itself, an `unreadable`-entry translation refused as in
+  the kernel, `chain_budget` stops at branch exits.
+- Hits on hardware: native hits run, but the native check compares final state and
+  halt, not that a given transfer hit (`dispatch_tests.rs` asserts that on the
+  interpreter; the native cache statistics are asserted equal).

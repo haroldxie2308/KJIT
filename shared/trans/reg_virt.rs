@@ -1,6 +1,6 @@
 use crate::shared::abi::{
     pt_regs_x_slot_offset, reg_virt_scratch_gpr, reg_virt_stack_backed_slot_offset,
-    PAN_WINDOW_RANGE_TOP_BIT, REG_VIRT_SCRATCH_GPR_LIMIT, REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
+    DISPATCH_TARGET_REG, PAN_WINDOW_RANGE_TOP_BIT, REG_VIRT_SCRATCH_GPR_LIMIT, REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
     REG_VIRT_STABLE_MAPPED_X29_PHYS_REG, REG_VIRT_STABLE_MAPPED_X29_REG,
     REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START, RET_PARAM0_REG, RET_PARAM1_REG,
     RET_STATUS_REG, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, USER_VA_BITS,
@@ -12,7 +12,8 @@ use crate::shared::arm64::{
 };
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::rephrase::{
-    rephrase_insn, window_needs_check_stub, RephrasedInsn, RephrasedInsnKind, RephrasedProgram,
+    is_dispatch_miss_param0_copy, rephrase_insn, window_needs_check_stub, RephrasedInsn,
+    RephrasedInsnKind, RephrasedProgram,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -231,6 +232,10 @@ fn virtualize_insn(
         // Runtime-owned (frame counter + branch to its stub) and placed at an
         // instruction boundary, where every scratch register is dead: nothing to map.
         RephrasedInsnKind::BudgetCheck => push_rephrased(out, rephrased),
+        // The dispatch template (A11) is runtime-owned scratch code (x12, x13, x14 at an
+        // instruction boundary): nothing to map.
+        RephrasedInsnKind::DispatchLookup => push_rephrased(out, rephrased),
+        RephrasedInsnKind::DispatchTarget => emit_dispatch_target(rephrased, out),
         // These kinds are reg-virt output (or, for `PanRestore`, only valid at the
         // start of a cold PAN stub); seeing one here is a pipeline bug.
         RephrasedInsnKind::RegVirtHelper
@@ -295,7 +300,13 @@ fn emit_runtime_exit_group(
     }
 
     if let Some(source) = capture {
-        emit_runtime_param0_capture(pc, source, out)?;
+        emit_register_capture(
+            pc,
+            source,
+            RET_PARAM0_REG,
+            RephrasedInsnKind::RuntimeExitPayload,
+            out,
+        )?;
     }
 
     for payload in payloads {
@@ -374,59 +385,85 @@ fn runtime_param0_capture_source(insn: A64Insn) -> Option<A64Reg> {
     }
 }
 
-fn emit_runtime_param0_capture(
+/// `dest = <user register source>`, for the one physical destination `dest` and
+/// output kind `kind` (the exit group's RET_PARAM0 capture, or a dispatch site's
+/// target in x13). `source` is a user register, so it is mapped: loaded from its
+/// frame slot when stack-backed, read from x16/x17 for user x29/sp, copied as is
+/// otherwise.
+fn emit_register_capture(
     pc: u64,
     source: A64Reg,
+    dest: u8,
+    kind: RephrasedInsnKind,
     out: &mut SharedVec<RephrasedInsn>,
 ) -> SharedResult<(), RegVirtError> {
+    let copy = |source: A64Reg, out: &mut SharedVec<RephrasedInsn>| {
+        push_rephrased(
+            out,
+            RephrasedInsn {
+                kind,
+                ori_pc: pc,
+                insn: A64Insn::OrrLogShiftOrr64LogShift {
+                    shift: 0,
+                    rm: A64Reg::new(source.enc, A64RegWidth::X64, source.reg31),
+                    imm6: uimm(0, 6),
+                    rn: xzr(),
+                    rd: x(dest),
+                },
+            },
+        )
+    };
     match classify_reg(source) {
         RegClass::StackBacked => {
             let offset = reg_virt_stack_backed_slot_offset(source.enc).ok_or(
                 RegVirtError::StackBackedRewriteNotImplemented {
                     pc,
-                    insn: "runtime_param0_capture",
+                    insn: "register_capture",
                     reg: source,
                 },
             )?;
             push_rephrased(
                 out,
-                RephrasedInsn::runtime_exit_payload(
-                    pc,
-                    A64Insn::LdrImmGenLdr64LdstPos {
-                        rt: x(RET_PARAM0_REG),
+                RephrasedInsn {
+                    kind,
+                    ori_pc: pc,
+                    insn: A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(dest),
                         mem: mem_off(sp(), ldst64_offset(offset)),
                     },
-                ),
+                },
             )
         }
-        RegClass::StableMapped => {
-            push_runtime_param0_copy(pc, x(REG_VIRT_STABLE_MAPPED_X29_PHYS_REG), out)
-        }
-        RegClass::Sp => push_runtime_param0_copy(pc, x(REG_VIRT_STABLE_MAPPED_SP_PHYS_REG), out),
-        RegClass::Zero | RegClass::Direct | RegClass::RuntimeReserved => {
-            push_runtime_param0_copy(pc, source, out)
-        }
+        RegClass::StableMapped => copy(x(REG_VIRT_STABLE_MAPPED_X29_PHYS_REG), out),
+        RegClass::Sp => copy(x(REG_VIRT_STABLE_MAPPED_SP_PHYS_REG), out),
+        RegClass::Zero | RegClass::Direct | RegClass::RuntimeReserved => copy(source, out),
     }
 }
 
-fn push_runtime_param0_copy(
-    pc: u64,
-    source: A64Reg,
+/// A dispatch site's target move (A11): `movz`/`movk x13, #imm` (BL) pass through;
+/// `orr x13, xzr, X<user>` is a capture of a user register.
+fn emit_dispatch_target(
+    rephrased: RephrasedInsn,
     out: &mut SharedVec<RephrasedInsn>,
 ) -> SharedResult<(), RegVirtError> {
-    push_rephrased(
-        out,
-        RephrasedInsn::runtime_exit_payload(
-            pc,
-            A64Insn::OrrLogShiftOrr64LogShift {
-                shift: 0,
-                rm: A64Reg::new(source.enc, A64RegWidth::X64, source.reg31),
-                imm6: uimm(0, 6),
-                rn: xzr(),
-                rd: x(RET_PARAM0_REG),
-            },
-        ),
-    )
+    let pc = rephrased.ori_pc;
+    match rephrased.insn {
+        A64Insn::MovzMovz64Movewide { rd, .. } | A64Insn::MovkMovk64Movewide { rd, .. }
+            if rd.enc == DISPATCH_TARGET_REG =>
+        {
+            push_rephrased(out, rephrased)
+        }
+        A64Insn::OrrLogShiftOrr64LogShift {
+            shift: 0,
+            rm,
+            imm6,
+            rn,
+            rd,
+        } if imm6.raw() == 0 && is_zero_reg(rn) && rd.enc == DISPATCH_TARGET_REG => {
+            emit_register_capture(pc, rm, DISPATCH_TARGET_REG, RephrasedInsnKind::DispatchTarget, out)
+        }
+        _ => Err(RegVirtError::MalformedRuntimeExitGroup { pc }),
+    }
 }
 
 fn rewrite_user_semantic(
@@ -1873,6 +1910,11 @@ fn validate_runtime_exit_payload(rephrased: RephrasedInsn) -> SharedResult<(), R
             A64OperandRole::RegRead { field, .. } => {
                 let reg = require_reg(rephrased, field)?;
                 if runtime_field_is_owned_by_payload(insn, field, reg) || is_zero_reg(reg) {
+                    continue;
+                }
+                // A dispatch miss's RET_PARAM0 = T reads the physical x13 (A11), the one
+                // payload that may read a stack-backed number as a runtime register.
+                if reg.enc == DISPATCH_TARGET_REG && is_dispatch_miss_param0_copy(insn) {
                     continue;
                 }
                 if !classify_reg(reg).is_direct() {
@@ -4294,5 +4336,108 @@ mod tests {
 
         assert_eq!(err, RegVirtError::UnexpectedRegVirtHelper { pc: 0x1000 });
         assert!(!err.is_instruction_intrinsic());
+    }
+
+    /// A dispatch site's target move (A11): whatever register holds the target, x13
+    /// gets its *user* value -- loaded from its frame slot (stack-backed x12..x17),
+    /// copied from x16 (user x29), or copied as is -- and nothing but x13 is written
+    /// before the template.
+    #[test]
+    fn dispatch_target_moves_the_users_register_into_x13() {
+        use crate::shared::abi::{reg_virt_stack_backed_slot_offset, DISPATCH_TARGET_REG};
+        use crate::shared::arm64::IrInsn;
+
+        for reg in 0..=31u8 {
+            for insn in [
+                A64Insn::BrBr64BranchReg { rn: x(reg) },
+                A64Insn::RetRet64rBranchReg { rn: x(reg) },
+                A64Insn::BlrBlr64BranchReg { rn: x(reg) },
+            ] {
+                let lowered = rephrase_insn(IrInsn {
+                    pc: 0x1000,
+                    word: 0,
+                    inner: insn,
+                })
+                .unwrap();
+                let out = virtualize_registers(program_from_insns(&lowered)).unwrap();
+                let moves = out[0]
+                    .insns
+                    .iter()
+                    .filter(|insn| insn.kind == RephrasedInsnKind::DispatchTarget)
+                    .map(|insn| insn.insn)
+                    .collect::<Vec<_>>();
+                let expected = match reg {
+                    12..=17 => A64Insn::LdrImmGenLdr64LdstPos {
+                        rt: x(DISPATCH_TARGET_REG),
+                        mem: mem_off(
+                            A64Reg::x_sp(31),
+                            ldst64_offset(reg_virt_stack_backed_slot_offset(reg).unwrap()),
+                        ),
+                    },
+                    29 => orr_mov(DISPATCH_TARGET_REG, x(REG_VIRT_STABLE_MAPPED_X29_PHYS_REG)),
+                    _ => orr_mov(DISPATCH_TARGET_REG, x(reg)),
+                };
+                assert_eq!(moves, [expected], "{} x{reg}", insn.key());
+                // The link write of BLR comes after, and is the only user write before
+                // the exit group.
+                assert_eq!(
+                    out[0]
+                        .insns
+                        .iter()
+                        .take_while(|insn| insn.kind != RephrasedInsnKind::DispatchLookup)
+                        .filter(|insn| insn.kind != RephrasedInsnKind::DispatchTarget)
+                        .all(|insn| matches!(
+                            insn.insn,
+                            A64Insn::MovzMovz64Movewide { rd, .. }
+                                | A64Insn::MovkMovk64Movewide { rd, .. } if rd.enc == 30
+                        )),
+                    true,
+                    "{} x{reg}",
+                    insn.key()
+                );
+            }
+        }
+    }
+
+    fn orr_mov(rd: u8, rm: A64Reg) -> A64Insn {
+        A64Insn::OrrLogShiftOrr64LogShift {
+            shift: 0,
+            rm: A64Reg::new(rm.enc, A64RegWidth::X64, rm.reg31),
+            imm6: uimm(0, 6),
+            rn: xzr(),
+            rd: x(rd),
+        }
+    }
+
+    /// The miss exit group reads the physical x13 for RET_PARAM0, and only that one
+    /// word may: any other payload reading a stack-backed number is rejected.
+    #[test]
+    fn only_the_dispatch_miss_copy_may_read_x13_in_an_exit_group() {
+        use crate::shared::trans::rephrase::dispatch_miss_param0_copy;
+
+        let group = |payload: A64Insn| {
+            let mut insns = vec![
+                RephrasedInsn::runtime_exit_payload(0x1000, movz(x(RET_STATUS_REG))),
+                RephrasedInsn::runtime_exit_payload(0x1000, payload),
+            ];
+            insns.push(RephrasedInsn::runtime_exit_branch(
+                0x1000,
+                A64Insn::BUncondBOnlyBranchImm {
+                    imm26: scaled_simm(0, 26, 2),
+                },
+            ));
+            virtualize_registers(program_from_insns(&insns))
+        };
+        assert!(group(dispatch_miss_param0_copy()).is_ok());
+        let other = A64Insn::AddAddsubImmAdd64AddsubImm {
+            sh: 0,
+            imm12: uimm(1, 12),
+            rn: A64Reg::x_sp(DISPATCH_TARGET_REG),
+            rd: A64Reg::x_sp(RET_PARAM0_REG),
+        };
+        assert!(matches!(
+            group(other),
+            Err(RegVirtError::UnsupportedRuntimeExitSource { .. })
+        ));
     }
 }

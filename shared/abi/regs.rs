@@ -10,6 +10,16 @@ pub const RET_STATUS_REG: u8 = 9;
 pub const RET_PARAM0_REG: u8 = 10;
 pub const RET_PARAM1_REG: u8 = 11;
 
+/// Dispatch template registers (A11, tmp/pipeline.md "A11 contract"). All three are
+/// reg-virt scratch, dead at every original-instruction boundary.
+/// `DISPATCH_SLOT_REG` holds kernel values only (table pointer, slot, record, host);
+/// `DISPATCH_TARGET_REG` holds the branch target T, a user value, from the site's
+/// target move until the template or the site's exit group; `DISPATCH_KEY_REG` holds
+/// the slot index, then the record key compare, both user-derived.
+pub const DISPATCH_SLOT_REG: u8 = 12;
+pub const DISPATCH_TARGET_REG: u8 = 13;
+pub const DISPATCH_KEY_REG: u8 = 14;
+
 pub const REG_VIRT_SCRATCH_GPR_LIMIT: usize = 4;
 pub const REG_VIRT_SCRATCH_GPR_START: u8 = 12;
 pub const REG_VIRT_SCRATCH_GPR_END: u8 = 15;
@@ -18,6 +28,10 @@ pub const REG_VIRT_STACK_BACKED_REG_END: u8 = 17;
 pub const REG_VIRT_STABLE_MAPPED_X29_REG: u8 = 29;
 pub const REG_VIRT_STABLE_MAPPED_X29_PHYS_REG: u8 = 16;
 pub const REG_VIRT_STABLE_MAPPED_SP_PHYS_REG: u8 = 17;
+
+const _: () = assert!(DISPATCH_SLOT_REG == REG_VIRT_SCRATCH_GPR_START);
+const _: () = assert!(DISPATCH_TARGET_REG > DISPATCH_SLOT_REG && DISPATCH_KEY_REG > DISPATCH_TARGET_REG);
+const _: () = assert!(DISPATCH_KEY_REG <= REG_VIRT_SCRATCH_GPR_END);
 
 pub const fn reg_virt_scratch_gpr(index: usize) -> Option<u8> {
     if index >= REG_VIRT_SCRATCH_GPR_LIMIT {

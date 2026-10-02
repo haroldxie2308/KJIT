@@ -8,12 +8,44 @@ use super::{REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START};
 //   88..96   caller x18
 //   96..176  caller x19..x28
 //   176..192 pt_regs pointer, extra-params pointer
-//   192..200 back-edge budget counter (KJIT_BACKEDGE_BUDGET at every entry)
-//   200..208 padding: sp stays 16-byte aligned
+//   192..200 back-edge/dispatch budget counter (KJIT_BACKEDGE_BUDGET at every entry)
+//   200..208 dispatch table pointer (extra params [2], stored by the prologue);
+//            also keeps sp 16-byte aligned
 pub const RUNTIME_FRAME_SIZE_BYTES: u32 = 208;
 pub const RUNTIME_FRAME_ENTRY_ADDR_OFFSET: u32 = 80;
 pub const RUNTIME_FRAME_PT_REGS_PTR_OFFSET: u32 = 176;
 pub const RUNTIME_FRAME_BUDGET_OFFSET: u32 = 192;
+/// The run's dispatch table (IBTC, tmp/pipeline.md "A11 contract"). The prologue
+/// stores `extra params[EXTRA_PARAM_IBTC_TABLE_INDEX]` here; only a dispatch
+/// template's first word reads it, and nothing in a body writes it.
+pub const RUNTIME_FRAME_IBTC_OFFSET: u32 = 200;
+
+/// Extra params block (`ABI_EXTRA_PARAMS_ARG_REG` points at it): `[0]`, `[1]` are
+/// RET_PARAM0/1 (out, written by the epilogue), `[2]` is the run's dispatch table
+/// (in, read by the prologue).
+pub const EXTRA_PARAMS_WORDS: usize = 3;
+pub const EXTRA_PARAM_IBTC_TABLE_INDEX: usize = 2;
+pub const EXTRA_PARAM_IBTC_TABLE_OFFSET: u32 = (EXTRA_PARAM_IBTC_TABLE_INDEX * 8) as u32;
+pub const EXTRA_PARAMS_BYTES: usize = EXTRA_PARAMS_WORDS * 8;
+
+/// Dispatch tables (A11): direct-mapped, `1 << IBTC_BITS` slots of `IBTC_SLOT_BYTES`.
+/// A slot is 0 or the address of a record `{ u64 pc @IBTC_RECORD_PC_OFFSET; u64 host
+/// @IBTC_RECORD_HOST_OFFSET }` (a user PC and the absolute address of a verified
+/// entry of a live fragment translated for exactly that PC). The slot index is
+/// `pc[IBTC_INDEX_LSB + IBTC_BITS - 1 : IBTC_INDEX_LSB]` (`ibtc_slot_index`).
+pub const IBTC_BITS: u32 = 12;
+pub const IBTC_INDEX_LSB: u32 = 2;
+pub const IBTC_SLOT_SHIFT: u32 = 3;
+pub const IBTC_SLOT_BYTES: u32 = 1 << IBTC_SLOT_SHIFT;
+pub const IBTC_SLOTS: usize = 1 << IBTC_BITS;
+pub const IBTC_TABLE_BYTES: usize = IBTC_SLOTS * IBTC_SLOT_BYTES as usize;
+pub const IBTC_RECORD_PC_OFFSET: u32 = 0;
+pub const IBTC_RECORD_HOST_OFFSET: u32 = 8;
+pub const IBTC_RECORD_BYTES: usize = 16;
+
+pub const fn ibtc_slot_index(pc: u64) -> usize {
+    ((pc >> IBTC_INDEX_LSB) & ((1 << IBTC_BITS) - 1)) as usize
+}
 
 /// Back-edge executions a fragment may perform per entry. The prologue stores it in
 /// `RUNTIME_FRAME_BUDGET_OFFSET`; every back-edge first decrements the counter and
@@ -34,6 +66,13 @@ pub const KJIT_BACKEDGE_BUDGET: u64 = 4096;
 const _: () = assert!(KJIT_BACKEDGE_BUDGET > 0 && KJIT_BACKEDGE_BUDGET <= 0xFFFF);
 const _: () = assert!(RUNTIME_FRAME_SIZE_BYTES % 16 == 0);
 const _: () = assert!(RUNTIME_FRAME_BUDGET_OFFSET + 8 <= RUNTIME_FRAME_SIZE_BYTES);
+const _: () = assert!(RUNTIME_FRAME_BUDGET_OFFSET + 8 <= RUNTIME_FRAME_IBTC_OFFSET);
+const _: () = assert!(RUNTIME_FRAME_IBTC_OFFSET + 8 == RUNTIME_FRAME_SIZE_BYTES);
+// `ldr x12, [sp, #200]` and `ldr x12, [x1, #16]` take a scaled 12-bit offset.
+const _: () = assert!(RUNTIME_FRAME_IBTC_OFFSET % 8 == 0 && RUNTIME_FRAME_IBTC_OFFSET / 8 < 4096);
+const _: () = assert!(IBTC_RECORD_HOST_OFFSET as usize + 8 == IBTC_RECORD_BYTES);
+const _: () = assert!(IBTC_RECORD_PC_OFFSET == 0);
+const _: () = assert!(IBTC_SLOT_BYTES == 8);
 const REG_VIRT_STACK_BACKED_FRAME_OFFSET_START: u32 = 16;
 const REG_VIRT_STACK_BACKED_FRAME_SLOT_SIZE: u32 = 8;
 const PT_REGS_GPR_SLOT_SIZE: u32 = 8;

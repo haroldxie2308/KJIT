@@ -12,7 +12,8 @@ use std::collections::BTreeMap;
 use crate::asm_fixture::CompiledCase;
 use crate::asm_fixture_tests::run_every_case;
 use crate::shared::abi::{
-    EPILOGUE_OFFSET, PROLOGUE_LEN_BYTES, REG_VIRT_SCRATCH_GPR_START, RUNTIME_FRAME_BUDGET_OFFSET,
+    dispatch_template_matches, DISPATCH_TEMPLATE_LEN, EPILOGUE_OFFSET, PROLOGUE_LEN_BYTES,
+    REG_VIRT_SCRATCH_GPR_START, RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_IBTC_OFFSET,
     RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
 };
 use crate::shared::arm64::ergo::{
@@ -323,6 +324,12 @@ impl Suite {
         word: u32,
         what: &str,
     ) {
+        // Writing back the word that is already there is not a mutation: the one
+        // place a replacement can legitimately be accepted (A11: `ldr x12, [sp,
+        // #200]` or `br x12` at a dispatch template's own first/last word).
+        if fixture.words[index] == word {
+            return;
+        }
         let mut words = fixture.words.clone();
         words[index] = word;
         self.expect_reject(
@@ -368,6 +375,7 @@ impl Suite {
         self.budget_checks(fixture);
         self.pan_windows_checks(fixture);
         self.kernel_values(fixture);
+        self.dispatch_templates(fixture);
         self.random_words(fixture);
     }
 
@@ -770,7 +778,10 @@ impl Suite {
                 "ldr x0, [sp, #184] (extra-params pointer)",
                 ldr64(0, sp(), 184),
             ),
-            ("str x0, [sp, #200] (padding)", str64(0, sp(), 200)),
+            (
+                "str x0, [sp, #200] (dispatch table pointer)",
+                str64(0, sp(), RUNTIME_FRAME_IBTC_OFFSET),
+            ),
             (
                 "str x0, [sp, #208] (caller frame)",
                 str64(0, sp(), RUNTIME_FRAME_SIZE_BYTES),
@@ -1813,6 +1824,561 @@ impl Suite {
         }
     }
 
+    /// Start index of every dispatch template (A11) of the fragment, found on the
+    /// bytes: nine words that are `KJIT_DISPATCH_TEMPLATE` up to the miss offsets.
+    fn find_dispatch_templates(fixture: &Fixture) -> Vec<usize> {
+        fixture
+            .body()
+            .filter(|&start| {
+                start + DISPATCH_TEMPLATE_LEN <= fixture.words.len()
+                    && dispatch_template_matches(&fixture.words[start..start + DISPATCH_TEMPLATE_LEN])
+                        .is_some()
+            })
+            .collect()
+    }
+
+    /// The A11 mutation classes (tmp/pipeline.md, "A11 contract", "Harness"): every
+    /// template word altered, the key compare dropped, `br` of x13/x14, join points
+    /// inside the template, no budget check, slot 200 read outside a template or
+    /// written anywhere, a kernel value in x13, a retargeted miss branch.
+    fn dispatch_templates(&mut self, fixture: &Fixture) {
+        let nop = enc(A64Insn::NopNopHiHints {});
+        let x12 = A64Reg::x_sp(12);
+        let table_slot = RUNTIME_FRAME_IBTC_OFFSET;
+
+        // Slot 200 outside any template: read, and written, by every form that can.
+        let slot_reads = [
+            ("ldr x12, [sp, #200]", ldr64(12, sp(), table_slot)),
+            ("ldr x0, [sp, #200]", ldr64(0, sp(), table_slot)),
+            ("ldr x13, [sp, #200]", ldr64(13, sp(), table_slot)),
+            (
+                "ldr w12, [sp, #200]",
+                A64Insn::LdrImmGenLdr32LdstPos {
+                    rt: w(12),
+                    mem: mem_off(sp(), scaled_uimm(table_slot / 4, 12, 2)),
+                },
+            ),
+            (
+                "ldp x0, x1, [sp, #192] (budget + table)",
+                A64Insn::LdpGenLdp64LdstpairOff {
+                    rt2: x(1),
+                    rt: x(0),
+                    mem: mem_off(sp(), ldstpair64_offset(RUNTIME_FRAME_BUDGET_OFFSET as i32)),
+                },
+            ),
+        ];
+        for (what, insn) in slot_reads {
+            self.replace_everywhere(
+                "dispatch table slot read outside a template (A11)",
+                fixture,
+                enc(insn),
+                what,
+            );
+        }
+        let slot_writes = [
+            ("str x12, [sp, #200]", str64(12, sp(), table_slot)),
+            ("str xzr, [sp, #200]", str64(31, sp(), table_slot)),
+            ("str x0, [sp, #200]", str64(0, sp(), table_slot)),
+            (
+                "str w0, [sp, #200]",
+                A64Insn::StrImmGenStr32LdstPos {
+                    rt: w(0),
+                    mem: mem_off(sp(), scaled_uimm(table_slot / 4, 12, 2)),
+                },
+            ),
+            (
+                "stp x12, x13, [sp, #192] (budget + table)",
+                A64Insn::StpGenStp64LdstpairOff {
+                    rt2: x(13),
+                    rt: x(12),
+                    mem: mem_off(sp(), ldstpair64_offset(RUNTIME_FRAME_BUDGET_OFFSET as i32)),
+                },
+            ),
+            (
+                "stp x0, x1, [sp, #200]",
+                A64Insn::StpGenStp64LdstpairOff {
+                    rt2: x(1),
+                    rt: x(0),
+                    mem: mem_off(sp(), ldstpair64_offset(table_slot as i32)),
+                },
+            ),
+        ];
+        for (what, insn) in slot_writes {
+            self.replace_everywhere(
+                "dispatch table slot written (A11)",
+                fixture,
+                enc(insn),
+                what,
+            );
+        }
+        // `br` of anything but x12, anywhere (template ends included), and `br x12`
+        // anywhere but a template's last word.
+        for reg in [13, 14, 15, 0, 30] {
+            for (what, insn) in [
+                (format!("br x{reg}"), A64Insn::BrBr64BranchReg { rn: x(reg) }),
+                (format!("blr x{reg}"), A64Insn::BlrBlr64BranchReg { rn: x(reg) }),
+                (format!("ret x{reg}"), A64Insn::RetRet64rBranchReg { rn: x(reg) }),
+            ] {
+                self.replace_everywhere(
+                    "br/blr/ret of x13 or x14 or another register (A11)",
+                    fixture,
+                    enc(insn),
+                    &what,
+                );
+            }
+        }
+        for (what, insn) in [
+            ("br x12", A64Insn::BrBr64BranchReg { rn: x(12) }),
+            ("blr x12", A64Insn::BlrBlr64BranchReg { rn: x(12) }),
+            ("ret x12", A64Insn::RetRet64rBranchReg { rn: x(12) }),
+        ] {
+            self.replace_everywhere(
+                "br x12 outside the dispatch template (A11)",
+                fixture,
+                enc(insn),
+                what,
+            );
+        }
+
+        let len = fixture.words.len();
+        for start in Self::find_dispatch_templates(fixture) {
+            let at = |position: usize| {
+                format!("template at {:#x}, word {position}", start * 4)
+            };
+            let word_at = |position: usize| start + position;
+            // The miss exit group is the word right after the template's `br`.
+            let group = start + DISPATCH_TEMPLATE_LEN;
+
+            // Every word altered: register, #200, ubfx lsb/width, #8, the shift, the
+            // compare, the branch kinds.
+            let by_position: Vec<(usize, Vec<(&str, A64Insn)>)> = vec![
+                (
+                    0,
+                    vec![
+                        ("ldr x13, [sp, #200]", ldr64(13, sp(), table_slot)),
+                        ("ldr x15, [sp, #200]", ldr64(15, sp(), table_slot)),
+                        ("ldr x12, [sp, #192]", ldr64(12, sp(), 192)),
+                        ("ldr x12, [sp, #208]", ldr64(12, sp(), 208)),
+                        ("ldr x12, [sp, #176]", ldr64(12, sp(), 176)),
+                        ("ldr x12, [sp, #16]", ldr64(12, sp(), 16)),
+                        ("ldr x12, [sp, #184]", ldr64(12, sp(), 184)),
+                        ("ldr x12, [x29, #200]", ldr64(12, A64Reg::x_sp(29), table_slot)),
+                        (
+                            "ldr w12, [sp, #200]",
+                            A64Insn::LdrImmGenLdr32LdstPos {
+                                rt: w(12),
+                                mem: mem_off(sp(), scaled_uimm(table_slot / 4, 12, 2)),
+                            },
+                        ),
+                    ],
+                ),
+                (
+                    1,
+                    vec![
+                        ("ubfx x14, x13, #3, #12", ubfx_insn(13, 14, 3, 14)),
+                        ("ubfx x14, x13, #1, #12", ubfx_insn(13, 14, 1, 12)),
+                        ("ubfx x14, x13, #0, #12", ubfx_insn(13, 14, 0, 11)),
+                        ("ubfx x14, x13, #2, #13", ubfx_insn(13, 14, 2, 14)),
+                        ("ubfx x14, x13, #2, #11", ubfx_insn(13, 14, 2, 12)),
+                        ("ubfx x14, x13, #2, #14", ubfx_insn(13, 14, 2, 15)),
+                        ("lsr x14, x13, #2", ubfx_insn(13, 14, 2, 63)),
+                        ("ubfx x14, x12, #2, #12", ubfx_insn(12, 14, 2, 13)),
+                        ("ubfx x14, x14, #2, #12", ubfx_insn(14, 14, 2, 13)),
+                        ("ubfx x13, x13, #2, #12", ubfx_insn(13, 13, 2, 13)),
+                        ("ubfx x15, x13, #2, #12", ubfx_insn(13, 15, 2, 13)),
+                        ("mov x14, x13", mov_reg(14, 13)),
+                    ],
+                ),
+                (
+                    2,
+                    vec![
+                        ("ldr x12, [x12, x14, lsl #0]", ldr_reg(12, 12, 14, 0b011, 0)),
+                        ("ldr x12, [x12, w14, uxtw #3]", ldr_reg(12, 12, 14, 0b010, 1)),
+                        ("ldr x12, [x12, w14, sxtw #3]", ldr_reg(12, 12, 14, 0b110, 1)),
+                        ("ldr x12, [x12, x14, sxtx #3]", ldr_reg(12, 12, 14, 0b111, 1)),
+                        ("ldr x12, [x12, x13, lsl #3]", ldr_reg(12, 12, 13, 0b011, 1)),
+                        ("ldr x12, [x12, x12, lsl #3]", ldr_reg(12, 12, 12, 0b011, 1)),
+                        ("ldr x12, [x13, x14, lsl #3]", ldr_reg(12, 13, 14, 0b011, 1)),
+                        ("ldr x14, [x12, x14, lsl #3]", ldr_reg(14, 12, 14, 0b011, 1)),
+                        ("ldr x13, [x12, x14, lsl #3]", ldr_reg(13, 12, 14, 0b011, 1)),
+                    ],
+                ),
+                (
+                    3,
+                    vec![
+                        ("cbz x13", cbz_to(word_at(3), group, 13)),
+                        ("cbz x14", cbz_to(word_at(3), group, 14)),
+                        ("cbnz x12", cbnz_to(word_at(3), group, 12)),
+                        (
+                            "cbz w12",
+                            A64Insn::CbzCbz32Compbranch {
+                                imm19: scaled_simm(
+                                    ((group as i64 - word_at(3) as i64) as u32) & 0x7ffff,
+                                    19,
+                                    2,
+                                ),
+                                rt: w(12),
+                            },
+                        ),
+                        ("cbz x12 -> template start", cbz_to(word_at(3), start, 12)),
+                        ("cbz x12 -> br", cbz_to(word_at(3), word_at(8), 12)),
+                        ("cbz x12 -> group + 1", cbz_to(word_at(3), group + 1, 12)),
+                        ("cbz x12 -> group + 2", cbz_to(word_at(3), group + 2, 12)),
+                        ("cbz x12 -> first body word", cbz_to(word_at(3), BODY_OFFSET / 4, 12)),
+                        ("cbz x12 -> last word", cbz_to(word_at(3), len - 1, 12)),
+                        ("cbz x12 -> epilogue", cbz_to(word_at(3), EPILOGUE_OFFSET / 4, 12)),
+                        ("cbz x12 -> outside", cbz_to(word_at(3), len + 4, 12)),
+                    ],
+                ),
+                (
+                    4,
+                    vec![
+                        ("ldr x14, [x12, #8]", ldr64(14, x12, 8)),
+                        ("ldr x14, [x12, #16]", ldr64(14, x12, 16)),
+                        ("ldr x13, [x12]", ldr64(13, x12, 0)),
+                        ("ldr x15, [x12]", ldr64(15, x12, 0)),
+                        ("ldr x14, [x13]", ldr64(14, A64Reg::x_sp(13), 0)),
+                        ("ldr x14, [x14]", ldr64(14, A64Reg::x_sp(14), 0)),
+                        (
+                            "ldr w14, [x12]",
+                            A64Insn::LdrImmGenLdr32LdstPos {
+                                rt: w(14),
+                                mem: mem_off(x12, scaled_uimm(0, 12, 2)),
+                            },
+                        ),
+                        (
+                            "ldur x14, [x12, #-8]",
+                            A64Insn::LdurGenLdur64LdstUnscaled {
+                                rt: x(14),
+                                mem: mem_off(x12, simm(0x1f8, 9)),
+                            },
+                        ),
+                    ],
+                ),
+                (
+                    5,
+                    vec![
+                        (
+                            "subs x14, x14, x13",
+                            A64Insn::SubsAddsubShiftSubs64AddsubShift {
+                                shift: 0,
+                                rm: x(13),
+                                imm6: uimm(0, 6),
+                                rn: x(14),
+                                rd: x(14),
+                            },
+                        ),
+                        (
+                            "add x14, x14, x13",
+                            A64Insn::AddAddsubShiftAdd64AddsubShift {
+                                shift: 0,
+                                rm: x(13),
+                                imm6: uimm(0, 6),
+                                rn: x(14),
+                                rd: x(14),
+                            },
+                        ),
+                        ("sub x14, x14, x12", sub_reg(14, 14, 12, 0)),
+                        ("sub x14, x14, x14", sub_reg(14, 14, 14, 0)),
+                        ("sub x13, x14, x13", sub_reg(13, 14, 13, 0)),
+                        ("sub x15, x14, x13", sub_reg(15, 14, 13, 0)),
+                        ("sub x14, x14, x13, lsl #1", sub_reg(14, 14, 13, 1)),
+                        ("mov x14, xzr", mov_reg(14, 31)),
+                        ("mov x14, x13", mov_reg(14, 13)),
+                    ],
+                ),
+                (
+                    6,
+                    vec![
+                        ("cbz x14", cbz_to(word_at(6), group, 14)),
+                        ("cbnz x13", cbnz_to(word_at(6), group, 13)),
+                        ("cbnz x12", cbnz_to(word_at(6), group, 12)),
+                        ("cbnz x14 -> template start", cbnz_to(word_at(6), start, 14)),
+                        ("cbnz x14 -> br", cbnz_to(word_at(6), word_at(8), 14)),
+                        ("cbnz x14 -> group + 1", cbnz_to(word_at(6), group + 1, 14)),
+                        ("cbnz x14 -> first body word", cbnz_to(word_at(6), BODY_OFFSET / 4, 14)),
+                        ("cbnz x14 -> epilogue", cbnz_to(word_at(6), EPILOGUE_OFFSET / 4, 14)),
+                        ("cbnz x14 -> outside", cbnz_to(word_at(6), len + 4, 14)),
+                    ],
+                ),
+                (
+                    7,
+                    vec![
+                        ("ldr x12, [x12]", ldr64(12, x12, 0)),
+                        ("ldr x12, [x12, #16]", ldr64(12, x12, 16)),
+                        ("ldr x14, [x12, #8]", ldr64(14, x12, 8)),
+                        ("ldr x13, [x12, #8]", ldr64(13, x12, 8)),
+                        ("ldr x12, [x14, #8]", ldr64(12, A64Reg::x_sp(14), 8)),
+                        (
+                            "ldr w12, [x12, #8]",
+                            A64Insn::LdrImmGenLdr32LdstPos {
+                                rt: w(12),
+                                mem: mem_off(x12, scaled_uimm(2, 12, 2)),
+                            },
+                        ),
+                    ],
+                ),
+                (
+                    8,
+                    vec![
+                        ("br x13", A64Insn::BrBr64BranchReg { rn: x(13) }),
+                        ("br x14", A64Insn::BrBr64BranchReg { rn: x(14) }),
+                        ("br x15", A64Insn::BrBr64BranchReg { rn: x(15) }),
+                        ("blr x12", A64Insn::BlrBlr64BranchReg { rn: x(12) }),
+                        ("ret x12", A64Insn::RetRet64rBranchReg { rn: x(12) }),
+                        ("ret", A64Insn::RetRet64rBranchReg { rn: x(30) }),
+                        ("nop", A64Insn::NopNopHiHints {}),
+                    ],
+                ),
+            ];
+            for (position, alterations) in by_position {
+                for (what, insn) in alterations {
+                    self.replace(
+                        "dispatch template word altered (A11)",
+                        fixture,
+                        word_at(position),
+                        enc(insn),
+                        &format!("{what}, {}", at(position)),
+                    );
+                }
+                // Dropped.
+                self.replace(
+                    "dispatch template word altered (A11)",
+                    fixture,
+                    word_at(position),
+                    nop,
+                    &format!("nop, {}", at(position)),
+                );
+            }
+
+            // Key compare dropped: the `sub`, the `cbnz`, both, or the whole record
+            // check (load, sub, cbnz).
+            for (what, range) in [
+                ("sub", 5..6),
+                ("cbnz", 6..7),
+                ("sub + cbnz", 5..7),
+                ("ldr key + sub + cbnz", 4..7),
+            ] {
+                let mut words = fixture.words.clone();
+                for position in range {
+                    words[word_at(position)] = nop;
+                }
+                self.expect_reject(
+                    "dispatch key compare dropped (A11)",
+                    fixture,
+                    format!("{what}, {}", at(0)),
+                    &words,
+                    &fixture.tables,
+                );
+            }
+
+            // Join points inside the template or between its budget check and it.
+            let guard = start.saturating_sub(1);
+            for inner in start..=start + 8 {
+                let mut tables = clone_tables(&fixture.tables);
+                tables.entry_offsets.push(inner * 4);
+                self.expect_reject(
+                    "dispatch template entered inside (A11)",
+                    fixture,
+                    format!("entry {:#x}, {}", inner * 4, at(0)),
+                    &fixture.words,
+                    &tables,
+                );
+            }
+            let mut tables = clone_tables(&fixture.tables);
+            tables.entry_offsets.push(guard * 4);
+            self.expect_reject(
+                "dispatch template entered inside (A11)",
+                fixture,
+                format!("entry on the word before, {}", at(0)),
+                &fixture.words,
+                &tables,
+            );
+            for index in fixture.body() {
+                if (start..=start + 8).contains(&index) {
+                    continue;
+                }
+                let Some(insn) = fixture.decoded(index) else {
+                    continue;
+                };
+                let Some((field, scale, bits)) = branch_role(insn) else {
+                    continue;
+                };
+                if matches!(insn, A64Insn::BlBlOnlyBranchImm { .. }) {
+                    continue;
+                }
+                for inner in [start, start + 1, start + 4, start + 8] {
+                    let delta = (inner as i64 - index as i64) * 4;
+                    let encoded = ((delta >> scale) as u32) & ((1 << bits) - 1);
+                    let Ok(moved) = insn.set_branch_target_imm(field, encoded) else {
+                        continue;
+                    };
+                    self.replace(
+                        "dispatch template entered inside (A11)",
+                        fixture,
+                        index,
+                        enc(moved),
+                        &format!("{} -> {:#x}", insn.key(), inner * 4),
+                    );
+                }
+            }
+
+            // No budget check: its four words replaced by data processing (the gap
+            // may hold those), or the word before the template by something a gap
+            // may not hold (a branch, a store, a non-fill load, a nop).
+            let check = start
+                .checked_sub(1)
+                .and_then(|from| (0..=16).find_map(|gap| {
+                    let end = from + 1 - gap;
+                    let begin = end.checked_sub(4)?;
+                    (fixture.words[begin] == enc(ldr64(12, sp(), RUNTIME_FRAME_BUDGET_OFFSET)))
+                        .then_some(begin)
+                }));
+            if let Some(check) = check {
+                let mut words = fixture.words.clone();
+                let movz = enc(A64Insn::MovzMovz64Movewide {
+                    hw: 0,
+                    imm16: uimm(0, 16),
+                    rd: x(14),
+                });
+                words[check..check + 4].fill(movz);
+                self.expect_reject(
+                    "dispatch template without budget check (A11)",
+                    fixture,
+                    format!("check replaced by data processing, {}", at(0)),
+                    &words,
+                    &fixture.tables,
+                );
+                words[check..check + 4].fill(nop);
+                self.expect_reject(
+                    "dispatch template without budget check (A11)",
+                    fixture,
+                    format!("check replaced by nops, {}", at(0)),
+                    &words,
+                    &fixture.tables,
+                );
+                let mut words = fixture.words.clone();
+                // The check's `str` (the counter is never written back) and `sub`.
+                words[check + 2] = nop;
+                self.expect_reject(
+                    "dispatch template without budget check (A11)",
+                    fixture,
+                    format!("check without its store, {}", at(0)),
+                    &words,
+                    &fixture.tables,
+                );
+            }
+            for (what, insn) in [
+                ("nop", A64Insn::NopNopHiHints {}),
+                ("str x0, [sp, #16]", str64(0, sp(), 16)),
+                ("ldr x0, [sp, #16]", ldr64(0, sp(), 16)),
+                ("ldr x13, [sp, #176]", ldr64(13, sp(), 176)),
+                (
+                    "b <next>",
+                    A64Insn::BUncondBOnlyBranchImm {
+                        imm26: scaled_simm(1, 26, 2),
+                    },
+                ),
+                (
+                    "cbz x0, <next>",
+                    A64Insn::CbzCbz64Compbranch {
+                        imm19: scaled_simm(1, 19, 2),
+                        rt: x(0),
+                    },
+                ),
+                ("dmb ish", A64Insn::DmbDmbBoBarriers { crm: 11 }),
+            ] {
+                // A gap word that is not data processing or a fill. Skipped where the
+                // word is the budget check's own `cbz` (no gap at all).
+                if matches!(fixture.decoded(start - 1), Some(A64Insn::CbzCbz64Compbranch { .. })) {
+                    continue;
+                }
+                self.replace(
+                    "dispatch template without budget check (A11)",
+                    fixture,
+                    start - 1,
+                    enc(insn),
+                    &format!("{what} in the gap, {}", at(0)),
+                );
+            }
+
+            // A kernel value in x13 when the template reads it.
+            let kernel_into_x13 = [
+                ("mov x13, x29", mov_reg(13, 29)),
+                ("add x13, sp, #0", add_imm(13, 31, 0)),
+                ("add x13, sp, #8", add_imm(13, 31, 8)),
+            ];
+            for (what, insn) in kernel_into_x13 {
+                if matches!(fixture.decoded(start - 1), Some(A64Insn::CbzCbz64Compbranch { .. })) {
+                    // No gap: the word before the template is the check's `cbz`.
+                    continue;
+                }
+                self.replace(
+                    "kernel value in x13 at a dispatch template (A11, rule 9)",
+                    fixture,
+                    start - 1,
+                    enc(insn),
+                    &format!("{what}, {}", at(0)),
+                );
+            }
+            for (what, insn) in [
+                ("ldr x13, [sp, #80] (entry address)", ldr64(13, sp(), 80)),
+                ("ldr x13, [sp, #176] (pt_regs pointer)", ldr64(13, sp(), 176)),
+                ("ldr x13, [sp, #184] (extra pointer)", ldr64(13, sp(), 184)),
+            ] {
+                if matches!(fixture.decoded(start - 1), Some(A64Insn::CbzCbz64Compbranch { .. })) {
+                    continue;
+                }
+                self.replace(
+                    "kernel value in x13 at a dispatch template (A11, rule 9)",
+                    fixture,
+                    start - 1,
+                    enc(insn),
+                    &format!("{what}, {}", at(0)),
+                );
+            }
+            // A kernel value in x13 across the target move: the table pointer itself
+            // (x12 holds it right after the template's first word) copied to x13 is
+            // not expressible without moving words, so x13 is made kernel-valued
+            // right at the template's first word instead.
+            for (what, insn) in [
+                ("mov x13, x12 (table pointer)", mov_reg(13, 12)),
+                ("mov x14, x12", mov_reg(14, 12)),
+            ] {
+                // Replacing the `ubfx`: x13/x14 then hold a kernel value (x12) that the
+                // next words read as T / as the index.
+                self.replace(
+                    "kernel value in x13 at a dispatch template (A11, rule 9)",
+                    fixture,
+                    word_at(1),
+                    enc(insn),
+                    &format!("{what}, {}", at(1)),
+                );
+            }
+
+            // Both miss branches to another word each, or only one moved.
+            for (position, other) in [(3, 6), (6, 3)] {
+                for target in [group + 1, group + 2, word_at(8)] {
+                    let mut words = fixture.words.clone();
+                    let insn = if position == 3 {
+                        cbz_to(word_at(3), target, 12)
+                    } else {
+                        cbnz_to(word_at(6), target, 14)
+                    };
+                    words[word_at(position)] = enc(insn);
+                    let _ = other;
+                    self.expect_reject(
+                        "dispatch miss branches disagree (A11)",
+                        fixture,
+                        format!("miss branch {position} -> {:#x}, {}", target * 4, at(0)),
+                        &words,
+                        &fixture.tables,
+                    );
+                }
+            }
+        }
+    }
+
     fn end_and_entries(&mut self, fixture: &Fixture) {
         let last = fixture.words.len() - 1;
         let nop = enc(A64Insn::NopNopHiHints {});
@@ -2121,6 +2687,35 @@ fn cbnz_to(from: usize, to: usize, rt: u8) -> A64Insn {
     A64Insn::CbnzCbnz64Compbranch {
         imm19: scaled_simm(delta, 19, 2),
         rt: x(rt),
+    }
+}
+
+/// `cbz x<rt>` at body word `from` aimed at word `to`.
+fn cbz_to(from: usize, to: usize, rt: u8) -> A64Insn {
+    let delta = ((to as i64 - from as i64) as u32) & 0x7ffff;
+    A64Insn::CbzCbz64Compbranch {
+        imm19: scaled_simm(delta, 19, 2),
+        rt: x(rt),
+    }
+}
+
+fn ldr_reg(rt: u8, rn: u8, rm: u8, option: u8, s: u8) -> A64Insn {
+    A64Insn::LdrRegGenLdr64LdstRegoff {
+        rm: x(rm),
+        option,
+        s,
+        rn: A64Reg::x_sp(rn),
+        rt: x(rt),
+    }
+}
+
+fn sub_reg(rd: u8, rn: u8, rm: u8, imm6: u32) -> A64Insn {
+    A64Insn::SubAddsubShiftSub64AddsubShift {
+        shift: 0,
+        rm: x(rm),
+        imm6: uimm(imm6, 6),
+        rn: x(rn),
+        rd: x(rd),
     }
 }
 

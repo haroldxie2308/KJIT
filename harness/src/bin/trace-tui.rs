@@ -2656,6 +2656,8 @@ fn rephrased_kind_label(kind: RephrasedInsnKind) -> &'static str {
         RephrasedInsnKind::PanToggle => "PAN",
         RephrasedInsnKind::WindowAccess => "WAC",
         RephrasedInsnKind::PanRestore => "PNR",
+        RephrasedInsnKind::DispatchTarget => "DTG",
+        RephrasedInsnKind::DispatchLookup => "DLK",
         RephrasedInsnKind::RuntimeExitPayload => "RTP",
         RephrasedInsnKind::RuntimeExitBranch => "REB",
     }

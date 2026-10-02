@@ -515,6 +515,10 @@ fn layout_err_info(err: LayoutError) -> ErrInfo {
             "MissingBudgetStub",
             format!("insn_index={insn_index} pc={ori_pc:#x}"),
         ),
+        LayoutError::MalformedDispatchTemplate { insn_index } => (
+            "MalformedDispatchTemplate",
+            format!("insn_index={insn_index}"),
+        ),
         LayoutError::UnguardedBackEdge {
             insn_index,
             target_original_pc,

@@ -879,6 +879,13 @@ pub(super) fn is_budget_fill(insn: &A64Insn) -> bool {
             && offset.value() <= last as i64)
 }
 
+/// A word that may sit between a dispatch template's budget `cbz` and the
+/// template (A11): the site's target move and link write (data-processing
+/// words) and reg-virt fill loads. No branch, no other memory access.
+pub(super) fn is_dispatch_gap_word(insn: &A64Insn) -> bool {
+    classify(*insn) == Form::Alu || is_budget_fill(insn)
+}
+
 /// `ldr s, [sp, #slot]`, `sub s, s, #1`, `str s, [sp, #slot]`, `cbz s, <label>`
 /// (64-bit forms). Returns the `cbz` byte delta.
 pub(super) fn budget_sequence(seq: &[A64Insn]) -> Option<i64> {

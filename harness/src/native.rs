@@ -50,7 +50,15 @@ use core::ptr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::arm64::LoggedAccess;
+use crate::cached_run::{
+    cached_halt_matches, compare_cached, new_interpreter_cache, run_cached_differential,
+    CachedRun, CACHED_CHAIN_BUDGET,
+};
+use crate::code_cache::{CacheAction, CacheLayout, CachedFragment, CodeCache};
 use crate::model::{
     AccessKind, ExecutionResult, FaultCause, Flags, HaltReason, MachineState, PagePerm, PAGE_SIZE,
 };
@@ -58,7 +66,10 @@ use crate::runtime::{
     decide_runtime_return, validate_entry_offset, RuntimeAction, URuntimeHalt, PT_REGS_BYTES,
     PT_REGS_SP_OFFSET,
 };
-use crate::shared::abi::pt_regs_x_slot_offset;
+use crate::shared::abi::{
+    pt_regs_x_slot_offset, EXTRA_PARAMS_WORDS, EXTRA_PARAM_IBTC_TABLE_INDEX, IBTC_SLOTS,
+    IBTC_TABLE_BYTES,
+};
 use crate::shared::arm64::{decode_word, A64Insn, A64OperandRole};
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::trans::cfg::admit_word;
@@ -261,16 +272,25 @@ struct NativeCtx {
     counter: [u64; 2],
 }
 
-/// The kernel's user-access fixup (tmp/pipeline.md, "Fault sites (A5)"): a data
+/// One fragment's user-access fixup (tmp/pipeline.md, "Fault sites (A5)"): a data
 /// abort at `base + access_offset` resumes at `base + stub_offset`, nothing else
-/// changes. `sites` is sorted by access offset. Empty outside fragment calls.
+/// changes. `sites` is sorted by access offset.
 #[repr(C)]
 #[derive(Clone, Copy)]
-struct FaultFixup {
+struct FragmentFixup {
     base: u64,
     len: u64,
     sites: *const FixupSite,
     sites_len: usize,
+}
+
+/// The fixups of every fragment a call may run in (a dispatch hit enters another
+/// fragment inside the same call). Empty outside fragment calls.
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct FaultFixup {
+    fragments: *const FragmentFixup,
+    count: usize,
 }
 
 #[repr(C)]
@@ -282,23 +302,76 @@ struct FixupSite {
 
 impl FaultFixup {
     const NONE: Self = Self {
-        base: 0,
-        len: 0,
-        sites: ptr::null(),
-        sites_len: 0,
+        fragments: ptr::null(),
+        count: 0,
     };
 
-    /// Async-signal-safe: reads only the caller-owned site slice.
+    /// Async-signal-safe: reads only the caller-owned slices.
     unsafe fn stub_for(&self, pc: u64) -> Option<u64> {
-        let offset = pc
-            .checked_sub(self.base)
-            .filter(|offset| *offset < self.len)?;
-        let sites = core::slice::from_raw_parts(self.sites, self.sites_len);
-        sites
-            .binary_search_by_key(&offset, |site| site.access_offset)
-            .ok()
-            .map(|index| self.base + sites[index].stub_offset)
+        if self.count == 0 {
+            return None;
+        }
+        let fragments = core::slice::from_raw_parts(self.fragments, self.count);
+        for fragment in fragments {
+            let Some(offset) = pc
+                .checked_sub(fragment.base)
+                .filter(|offset| *offset < fragment.len)
+            else {
+                continue;
+            };
+            let sites = core::slice::from_raw_parts(fragment.sites, fragment.sites_len);
+            return sites
+                .binary_search_by_key(&offset, |site| site.access_offset)
+                .ok()
+                .map(|index| fragment.base + sites[index].stub_offset);
+        }
+        None
     }
+}
+
+/// The fixup tables of the fragments of a call: owns the site lists the
+/// `FragmentFixup`s point into, so it outlives the call.
+struct FixupSet {
+    sites: Vec<Vec<FixupSite>>,
+    spans: Vec<(u64, u64)>,
+}
+
+impl FixupSet {
+    fn new() -> Self {
+        Self {
+            sites: Vec::new(),
+            spans: Vec::new(),
+        }
+    }
+
+    fn push(&mut self, base: u64, len: usize, sites: Vec<FixupSite>) {
+        self.sites.push(sites);
+        self.spans.push((base, len as u64));
+    }
+
+    fn view(&self) -> Vec<FragmentFixup> {
+        self.sites
+            .iter()
+            .zip(&self.spans)
+            .map(|(sites, &(base, len))| FragmentFixup {
+                base,
+                len,
+                sites: sites.as_ptr(),
+                sites_len: sites.len(),
+            })
+            .collect()
+    }
+}
+
+fn fault_sites_of(fragment: &ExecutionFragment) -> Vec<FixupSite> {
+    fragment
+        .fault_sites
+        .iter()
+        .map(|site| FixupSite {
+            access_offset: site.access_offset as u64,
+            stub_offset: site.stub_offset as u64,
+        })
+        .collect()
 }
 
 #[repr(C)]
@@ -811,11 +884,10 @@ impl NativeSession {
     fn call_fragment(
         &self,
         pt_regs: &mut [u64],
-        extra_params: &mut [u64; 2],
+        extra_params: &mut [u64; EXTRA_PARAMS_WORDS],
         entry_addr: u64,
         fragment_base: u64,
-        fragment_len: u64,
-        fault_sites: &[FixupSite],
+        fixups: &[FragmentFixup],
         nzcv: u64,
         fp: FpState,
         sysregs: UserSysregs,
@@ -824,10 +896,8 @@ impl NativeSession {
         ctx.fp = fp;
         ctx.counter = [sysregs.cntvct, sysregs.cntfrq];
         ctx.fault_fixup = FaultFixup {
-            base: fragment_base,
-            len: fragment_len,
-            sites: fault_sites.as_ptr(),
-            sites_len: fault_sites.len(),
+            fragments: fixups.as_ptr(),
+            count: fixups.len(),
         };
         let _tpidr = UserTpidr::set(sysregs.tpidr)?;
         let _active = ActiveCtx::set(&mut ctx);
@@ -1150,7 +1220,10 @@ pub struct NativeOriginal {
 /// non-SVC runtime exits become `BRK_STOP`. The interpreter halts nowhere else
 /// inside the text, apart from user-access faults, which trap natively too.
 /// Counter reads become their `BRK_COUNTER` (emulated, never a halt).
-fn stop_point_words(words: &[u32], text_base: u64) -> Vec<u32> {
+///
+/// `follow_branches` (a run over a code cache, A11): BL/BLR/BR/RET are not stop
+/// points, the hardware runs them in place (`OriginalStepper::follow_branches`).
+fn stop_point_words(words: &[u32], text_base: u64, follow_branches: bool) -> Vec<u32> {
     words
         .iter()
         .enumerate()
@@ -1159,6 +1232,7 @@ fn stop_point_words(words: &[u32], text_base: u64) -> Vec<u32> {
             match admit_word(word, pc) {
                 Ok(Ok(insn)) => match insn.inner.runtime_exit_reason(pc) {
                     Some(RuntimeExitReason::Svc { .. }) => BRK_SVC,
+                    Some(_) if follow_branches => word,
                     Some(_) => BRK_STOP,
                     None => counter_brk(insn.inner).unwrap_or(word),
                 },
@@ -1179,13 +1253,20 @@ fn original_text_words(
     words: &[u32],
     text_base: u64,
     cap: Option<InstanceCap>,
+    follow_branches: bool,
 ) -> Result<Vec<u32>, String> {
-    let mut stop_words = stop_point_words(words, text_base);
+    let mut stop_words = stop_point_words(words, text_base, follow_branches);
     if let Some(cap) = cap {
         let index = text_index(cap.pc, text_base, words.len())
             .ok_or_else(|| format!("instance cap pc {:#x} is outside the text", cap.pc))?;
-        // A back-edge branch: never an SVC, a runtime exit or a rejected word.
-        if stop_words[index] != words[index] {
+        // A branch (a back-edge, or a dispatch site's BL/BLR/BR/RET: a stop point when
+        // the original halts at branch exits) or, for the chain budget's stop, an SVC:
+        // never a rejected word.
+        let branch_exit = matches!(
+            admit_word(words[index], cap.pc),
+            Ok(Ok(insn)) if insn.inner.runtime_exit_reason(cap.pc).is_some()
+        );
+        if stop_words[index] != words[index] && stop_words[index] != BRK_SVC && !branch_exit {
             return Err(format!("instance cap pc {:#x} is a stop point", cap.pc));
         }
         stop_words[index] = BRK_CAP;
@@ -1201,13 +1282,14 @@ pub fn original_reads_patched_text(
     text_base: u64,
     text: &[u8],
     cap: Option<InstanceCap>,
+    follow_branches: bool,
     accesses: &[LoggedAccess],
 ) -> Result<bool, String> {
     let words = text
         .chunks_exact(4)
         .map(|chunk| u32::from_le_bytes(chunk.try_into().expect("chunks_exact(4)")))
         .collect::<Vec<_>>();
-    let native_words = original_text_words(&words, text_base, cap)?;
+    let native_words = original_text_words(&words, text_base, cap, follow_branches)?;
     // `run_original`'s mapping length; `UserMemory::map` requires the host page to
     // be the interpreter's `PAGE_SIZE`.
     let mapped_words = round_up(text.len() + 4, PAGE_SIZE as usize) / 4;
@@ -1239,6 +1321,7 @@ pub fn run_original(
     entry_pc: u64,
     initial: &MachineState,
     cap: Option<InstanceCap>,
+    follow_branches: bool,
 ) -> Result<NativeOriginal, String> {
     if text.len() % 4 != 0 {
         return Err("fixture text length must be a multiple of 4 bytes".to_string());
@@ -1253,7 +1336,7 @@ pub fn run_original(
         round_up(text.len() + 4, session.page),
         PROT_READ | PROT_WRITE,
     )?;
-    let stop_words = original_text_words(&words, text_base, cap)?;
+    let stop_words = original_text_words(&words, text_base, cap, follow_branches)?;
     text_map.install_code(&stop_words)?;
     // The text's own user pages (`crate::with_text_mapped`) are this mapping.
     let memory = UserMemory::map(initial, session.page, Some(&text_map))?;
@@ -1310,6 +1393,16 @@ pub fn run_original(
                     stop: NativeStop::Unsupported { pc },
                 });
             }
+            // A followed branch left every executable mapping: an instruction abort at
+            // its target, where the translated code takes its `Unsupported` exit
+            // (unreadable text; a target that is not 4-byte aligned faults the same
+            // way, as a PC alignment fault).
+            (SIGSEGV | SIGBUS, None) if follow_branches && event.pc == event.fault_addr => {
+                return Ok(NativeOriginal {
+                    state: native_state(initial, &snapshot, &memory),
+                    stop: NativeStop::Unsupported { pc },
+                });
+            }
             // A data abort from an instruction in the text: precise, so the
             // snapshot is the state before it, as in the interpreter's fault halt.
             (SIGSEGV | SIGBUS, None) if text_map.contains(pc) && pc != event.fault_addr => {
@@ -1358,10 +1451,6 @@ fn step_capped_branch(
     let insn = decode_word(word, at.pc)
         .map_err(|err| format!("capped word at {:#x}: {err:?}", at.pc))?
         .inner;
-    let taken = insn
-        .direct_branch_target(at.pc)
-        .or_else(|| insn.conditional_targets(at.pc).map(|(taken, _)| taken))
-        .ok_or_else(|| format!("capped instruction at {:#x} is not a direct branch", at.pc))?;
     let unexpected = |event: &Event| {
         format!(
             "native capped branch at {:#x}: unexpected {}",
@@ -1369,6 +1458,34 @@ fn step_capped_branch(
             describe_event(event)
         )
     };
+    // The chain budget's stop is an SVC: an earlier arrival is the mocked SVC.
+    if matches!(
+        insn.runtime_exit_reason(at.pc),
+        Some(RuntimeExitReason::Svc { .. })
+    ) {
+        return Ok(UserRegs {
+            pc: at.pc + 4,
+            ..at
+        });
+    }
+    // BL/BLR/BR/RET (a dispatch site, A11): the hardware executes it in place in a
+    // text copy where every other word traps, so the link write and the target come
+    // from the CPU, and the trap at the target gives the registers to continue with.
+    // (A branch to itself would spin there; the fragment run never capped one.)
+    if insn.runtime_exit_reason(at.pc).is_some() {
+        let mut solo = vec![BRK_FILL; words.len()];
+        solo[index] = word;
+        text_map.install_code(&solo)?;
+        let (event, snapshot) = session.enter_user(at, UserSysregs::of(initial))?;
+        return match (event.signal, event.brk()) {
+            (SIGTRAP, Some(BRK_FILL)) if text_map.contains(event.pc) => Ok(snapshot),
+            _ => Err(unexpected(&event)),
+        };
+    }
+    let taken = insn
+        .direct_branch_target(at.pc)
+        .or_else(|| insn.conditional_targets(at.pc).map(|(taken, _)| taken))
+        .ok_or_else(|| format!("capped instruction at {:#x} is not a direct branch", at.pc))?;
 
     if taken != at.pc {
         let mut solo = vec![BRK_FILL; words.len()];
@@ -1597,26 +1714,20 @@ pub fn run_fragment(
     let fragment_end = fragment_base + encoded.len() as u64;
     let memory = UserMemory::map(initial, session.page, None)?;
 
-    let mut pt_regs = vec![0u64; PT_REGS_BYTES as usize / 8];
-    for reg in 0..31u8 {
-        let slot = pt_regs_x_slot_offset(reg).expect("x0..x30 have pt_regs slots") as usize / 8;
-        pt_regs[slot] = initial.read_x(reg);
-    }
-    pt_regs[PT_REGS_SP_OFFSET as usize / 8] = initial.sp();
-    let mut extra_params = [0u64; 2];
+    let mut pt_regs = initial_pt_regs(initial);
+    // The run's dispatch table: empty, so every branch exit misses and takes the
+    // runtime path (the single-fragment run never publishes).
+    let empty_table = vec![0u64; IBTC_SLOTS];
+    let mut extra_params = [0u64; EXTRA_PARAMS_WORDS];
+    extra_params[EXTRA_PARAM_IBTC_TABLE_INDEX] = empty_table.as_ptr() as u64;
     let mut nzcv = flags_to_nzcv(initial.flags);
     // The user's V0-V31/FPCR/FPSR stay live across fragment calls (A9a: the kernel
     // keeps them in the registers); here they are carried from call to call.
     let mut fp = FpState::of(initial);
     let mut offset = fragment.entry_offset;
-    let fault_sites = fragment
-        .fault_sites
-        .iter()
-        .map(|site| FixupSite {
-            access_offset: site.access_offset as u64,
-            stub_offset: site.stub_offset as u64,
-        })
-        .collect::<Vec<_>>();
+    let mut fixups = FixupSet::new();
+    fixups.push(fragment_base, encoded.len(), fault_sites_of(fragment));
+    let fixup_view = fixups.view();
     let mut fault_redirects = 0;
 
     for calls in 1..=MAX_RUNTIME_EXITS {
@@ -1626,8 +1737,7 @@ pub fn run_fragment(
             &mut extra_params,
             fragment_base + offset as u64,
             fragment_base,
-            encoded.len() as u64,
-            &fault_sites,
+            &fixup_view,
             nzcv,
             fp,
             UserSysregs::of(initial),
@@ -1635,19 +1745,7 @@ pub fn run_fragment(
         fault_redirects += ctx.fault_redirects as usize;
         fp = ctx.fp;
 
-        let user_state = |nzcv: u64| {
-            let mut regs = UserRegs {
-                sp: pt_regs[PT_REGS_SP_OFFSET as usize / 8],
-                pstate: nzcv,
-                fp,
-                ..UserRegs::default()
-            };
-            for reg in 0..31u8 {
-                let slot = pt_regs_x_slot_offset(reg).expect("x0..x30 have pt_regs slots");
-                regs.x[reg as usize] = pt_regs[slot as usize / 8];
-            }
-            native_state(initial, &regs, &memory)
-        };
+        let user_state = |nzcv: u64| user_state_of(&pt_regs, nzcv, fp, initial, &memory);
 
         let event = ctx.event;
         if event.signal != 0 {
@@ -1694,6 +1792,39 @@ pub fn run_fragment(
     Err("native fragment run exceeded the runtime-exit continuation limit".to_string())
 }
 
+/// The `pt_regs` block of a run: the initial registers and SP.
+fn initial_pt_regs(initial: &MachineState) -> Vec<u64> {
+    let mut pt_regs = vec![0u64; PT_REGS_BYTES as usize / 8];
+    for reg in 0..31u8 {
+        let slot = pt_regs_x_slot_offset(reg).expect("x0..x30 have pt_regs slots") as usize / 8;
+        pt_regs[slot] = initial.read_x(reg);
+    }
+    pt_regs[PT_REGS_SP_OFFSET as usize / 8] = initial.sp();
+    pt_regs
+}
+
+/// The user state at a runtime boundary: registers from `pt_regs`, the run's NZCV
+/// and V registers, every mapped user page read back.
+fn user_state_of(
+    pt_regs: &[u64],
+    nzcv: u64,
+    fp: FpState,
+    initial: &MachineState,
+    memory: &UserMemory,
+) -> MachineState {
+    let mut regs = UserRegs {
+        sp: pt_regs[PT_REGS_SP_OFFSET as usize / 8],
+        pstate: nzcv,
+        fp,
+        ..UserRegs::default()
+    };
+    for reg in 0..31u8 {
+        let slot = pt_regs_x_slot_offset(reg).expect("x0..x30 have pt_regs slots");
+        regs.x[reg as usize] = pt_regs[slot as usize / 8];
+    }
+    native_state(initial, &regs, memory)
+}
+
 /// The kernel calls a fragment as a C function: x18..x29 and sp must survive.
 fn check_callee_saved(ctx: &NativeCtx) -> Result<(), String> {
     let mut broken = Vec::new();
@@ -1719,6 +1850,351 @@ fn check_callee_saved(ctx: &NativeCtx) -> Result<(), String> {
             broken.join(", ")
         ))
     }
+}
+
+// ---------------------------------------------------------------------------
+// Native run over a code cache (A11)
+// ---------------------------------------------------------------------------
+
+/// Records the native cache may hold: its record area, in the same mapping as the
+/// two dispatch tables.
+const NATIVE_RECORDS_BYTES: usize = 0x40000;
+
+/// A `CodeCache` whose fragments are RX mappings and whose dispatch tables and
+/// records are one RW mapping, so fragment code reads them as the kernel's would:
+/// the cache bookkeeping is the interpreter's own (`crate::code_cache`), only the
+/// addresses are the host's.
+pub struct NativeCache {
+    pub cache: CodeCache,
+    /// `[table_all | table_nofp | records]`.
+    memory: Mapping,
+    /// Every fragment's code, kept alive for as long as the cache.
+    _code: Rc<RefCell<Vec<Mapping>>>,
+}
+
+impl NativeCache {
+    pub fn new(session: &NativeSession, text_base: u64, text: &[u8]) -> Result<Self, String> {
+        let memory = Mapping::anywhere(
+            2 * IBTC_TABLE_BYTES + NATIVE_RECORDS_BYTES,
+            PROT_READ | PROT_WRITE,
+        )?;
+        let layout = CacheLayout {
+            table_all: memory.base(),
+            table_nofp: memory.base() + IBTC_TABLE_BYTES as u64,
+            records: memory.base() + 2 * IBTC_TABLE_BYTES as u64,
+            records_len: NATIVE_RECORDS_BYTES,
+        };
+        let code = Rc::new(RefCell::new(Vec::new()));
+        let page = session.page;
+        let loader_code = Rc::clone(&code);
+        let loader = Box::new(move |frag: &CachedFragment| -> Result<u64, String> {
+            let mapping = Mapping::anywhere(
+                round_up(frag.encoded.len() + 4, page),
+                PROT_READ | PROT_WRITE,
+            )?;
+            mapping.install_code(&native_fragment_words(&frag.encoded)?)?;
+            let base = mapping.base();
+            loader_code.borrow_mut().push(mapping);
+            Ok(base)
+        });
+        let cache = CodeCache::new(
+            layout,
+            Some(crate::MockCodeProvider::new(text_base, text.to_vec())),
+            loader,
+        )
+        .with_chain_budget(CACHED_CHAIN_BUDGET);
+        Ok(Self {
+            cache,
+            memory,
+            _code: code,
+        })
+    }
+
+    /// Applies the cache's queued table and record writes to the mapping.
+    fn flush(&mut self) -> Result<(), String> {
+        for (addr, value) in self.cache.drain_writes() {
+            if !self.memory.contains(addr) || !self.memory.contains(addr + 7) {
+                return Err(format!("cache write at {addr:#x} is outside the cache memory"));
+            }
+            unsafe { ptr::write_volatile(addr as *mut u64, value) };
+        }
+        Ok(())
+    }
+
+    fn read_u64(&self, addr: u64) -> u64 {
+        self.memory.read_u64((addr - self.memory.base()) as usize)
+    }
+}
+
+/// The native-leg deviations of a fragment's words (see `run_fragment`): `msr pan`
+/// is a NOP at EL0, counter reads are emulated `BRK_COUNTER`s.
+fn native_fragment_words(encoded: &[u8]) -> Result<Vec<u32>, String> {
+    let nop = A64Insn::NopNopHiHints {}
+        .encode()
+        .map_err(|err| format!("encode nop: {err:?}"))?;
+    Ok(encoded
+        .chunks_exact(4)
+        .map(|chunk| u32::from_le_bytes(chunk.try_into().expect("chunks_exact(4)")))
+        .map(|word| match A64Insn::decode(word) {
+            Some(insn) if insn.msr_pan().is_some() => nop,
+            Some(insn) => counter_brk(insn).unwrap_or(word),
+            None => word,
+        })
+        .collect())
+}
+
+/// One run over the native cache, as `URuntime::with_cache` runs it in the
+/// interpreter: enters the fragment translated for `entry_pc` (translating it if the
+/// cache has none), and after every return lets the cache decide
+/// (`CodeCache::decide`: resolve, publish, translate on a miss). Dispatch hits
+/// inside a call run on the CPU through the real tables and records.
+pub fn run_cached(
+    session: &NativeSession,
+    native: &mut NativeCache,
+    entry_pc: u64,
+    initial: &MachineState,
+) -> Result<NativeFragment, String> {
+    let entry = match native.cache.fragment_for_entry(entry_pc) {
+        Some(entry) => entry,
+        None => native
+            .cache
+            .translate(entry_pc, entry_pc.wrapping_sub(4))?
+            .ok_or_else(|| format!("entry {entry_pc:#x} is not readable text"))?,
+    };
+    native.cache.begin_run();
+    native.flush()?;
+    let memory = UserMemory::map(initial, session.page, None)?;
+    let mut pt_regs = initial_pt_regs(initial);
+    let mut extra_params = [0u64; EXTRA_PARAMS_WORDS];
+    let mut nzcv = flags_to_nzcv(initial.flags);
+    let mut fp = FpState::of(initial);
+    let mut fragment = entry;
+    let mut offset = native.cache.fragments[entry].fragment.entry_offset;
+    let mut fault_redirects = 0;
+
+    for calls in 1..=MAX_RUNTIME_EXITS {
+        // A fragment installed by the last decision is in the set from this call on.
+        let mut fixups = FixupSet::new();
+        for frag in &native.cache.fragments {
+            fixups.push(frag.base, frag.encoded.len(), fault_sites_of(&frag.fragment));
+        }
+        let fixup_view = fixups.view();
+        let frag = &native.cache.fragments[fragment];
+        validate_entry_offset(&frag.fragment, offset)?;
+        let (base, uses_fpsimd) = (frag.base, frag.uses_fpsimd);
+        extra_params[EXTRA_PARAM_IBTC_TABLE_INDEX] = native.cache.table_for(uses_fpsimd);
+        let ctx = session.call_fragment(
+            &mut pt_regs,
+            &mut extra_params,
+            base + offset as u64,
+            base,
+            &fixup_view,
+            nzcv,
+            fp,
+            UserSysregs::of(initial),
+        )?;
+        fault_redirects += ctx.fault_redirects as usize;
+        fp = ctx.fp;
+        let user_state = |nzcv: u64| user_state_of(&pt_regs, nzcv, fp, initial, &memory);
+
+        let event = ctx.event;
+        if event.signal != 0 {
+            let fell_off = native
+                .cache
+                .fragments
+                .iter()
+                .any(|frag| event.pc == frag.base + frag.encoded.len() as u64);
+            if event.brk() == Some(BRK_FILL) && fell_off {
+                return Ok(NativeFragment {
+                    state: user_state(ctx.user.pstate & NZCV_MASK),
+                    halt: URuntimeHalt::FellOffFragment { pc: event.pc },
+                    calls,
+                    fault_redirects,
+                });
+            }
+            let at = match native.cache.locate(event.pc) {
+                Some((frag, offset)) => format!(
+                    " (fragment {frag} offset {offset:#x}, no fault-site entry)"
+                ),
+                None => String::new(),
+            };
+            return Err(format!(
+                "native cached call {calls}: {}{at}",
+                describe_event(&event)
+            ));
+        }
+        check_callee_saved(&ctx)?;
+
+        nzcv = ctx.nzcv & NZCV_MASK;
+        let action = native
+            .cache
+            .decide(uses_fpsimd, ctx.status, extra_params[0], extra_params[1])?;
+        native.flush()?;
+        match action {
+            CacheAction::ContinueAt {
+                fragment: next_fragment,
+                offset: next_offset,
+            } => {
+                fragment = next_fragment;
+                offset = next_offset;
+            }
+            CacheAction::Stop(halt) => {
+                native.cache.check_invariants()?;
+                return Ok(NativeFragment {
+                    state: user_state(nzcv),
+                    halt,
+                    calls,
+                    fault_redirects,
+                });
+            }
+        }
+    }
+    Err("native cached run exceeded the runtime-exit continuation limit".to_string())
+}
+
+/// Cold then warm, on the interpreter and on the CPU: for each run, the interpreter
+/// fragment run == the interpreter original following its branches
+/// (`compare_cached`), and the native cached run == the native original (stopped at
+/// the same dynamic instruction) == the interpreter original. The native cache,
+/// driven by the same decisions, ends with the interpreter cache's statistics. A
+/// native original that read patched text is unobservable and says so.
+pub fn check_cached_case(
+    session: &NativeSession,
+    text_base: u64,
+    text: &[u8],
+    entry_pc: u64,
+    initial: &MachineState,
+) -> Result<String, String> {
+    check_cached_case_between(session, text_base, text, entry_pc, initial, &|_| Ok(()))
+}
+
+/// `check_cached_case` with `between` applied to both caches (the interpreter's and
+/// the native one, which hold the same fragments at the same indexes) after the cold
+/// run: e.g. retiring a fragment, so the warm run misses on it.
+pub fn check_cached_case_between(
+    session: &NativeSession,
+    text_base: u64,
+    text: &[u8],
+    entry_pc: u64,
+    initial: &MachineState,
+    between: &dyn Fn(&mut CodeCache) -> Result<(), String>,
+) -> Result<String, String> {
+    let mut interp_cache = new_interpreter_cache(text_base, text);
+    let mut native = NativeCache::new(session, text_base, text)?;
+    let mut summaries = Vec::new();
+    for phase in ["cold", "warm"] {
+        if phase == "warm" {
+            between(&mut interp_cache)?;
+            between(&mut native.cache)?;
+        }
+        let (run, cache) =
+            run_cached_differential(interp_cache, text_base, text, entry_pc, initial)
+                .map_err(|err| format!("{phase}: {err}"))?;
+        interp_cache = cache;
+        compare_cached(phase, &run).map_err(|mismatch| mismatch.message)?;
+        summaries.push(format!(
+            "{phase}: {}",
+            check_cached_run_natively(session, &mut native, text_base, text, entry_pc, initial, &run)
+                .map_err(|message| format!("{phase}: {message}"))?
+        ));
+    }
+    if native.cache.stats != interp_cache.stats {
+        return Err(format!(
+            "native cache statistics {:?} differ from the interpreter's {:?}",
+            native.cache.stats, interp_cache.stats
+        ));
+    }
+    // The tables the CPU read are the cache's: every non-zero word agrees.
+    for (addr, value) in native.cache.image() {
+        if native.read_u64(addr) != value {
+            return Err(format!(
+                "native cache memory at {addr:#x} holds {:#x}, the cache says {value:#x}",
+                native.read_u64(addr)
+            ));
+        }
+    }
+    Ok(summaries.join("; "))
+}
+
+fn check_cached_run_natively(
+    session: &NativeSession,
+    native: &mut NativeCache,
+    text_base: u64,
+    text: &[u8],
+    entry_pc: u64,
+    initial: &MachineState,
+    run: &CachedRun,
+) -> Result<String, String> {
+    let original = &run.original;
+    let unobservable = original_reads_patched_text(
+        text_base,
+        text,
+        run.original_cap,
+        true,
+        &run.original_accesses,
+    )?;
+    let native_fragment = run_cached(session, native, entry_pc, initial)?;
+    let native_original = if unobservable {
+        None
+    } else {
+        Some(run_original(
+            session,
+            text_base,
+            text,
+            entry_pc,
+            initial,
+            run.original_cap,
+            true,
+        )?)
+    };
+    let undo = |state: &MachineState| {
+        crate::undo_footprint(&original.state, &run.original_footprint, state)
+    };
+
+    let mut problems = diff_states(
+        "interp-original",
+        &original.state,
+        "native-fragment",
+        &undo(&native_fragment.state),
+    );
+    if !cached_halt_matches(original, &native_fragment.halt) {
+        problems.push(format!(
+            "native-fragment halt mismatch: interpreter {:?}, native {:?}",
+            original.halt_reason, native_fragment.halt
+        ));
+    }
+    if native_fragment.halt != run.report.halt {
+        problems.push(format!(
+            "native-fragment halt {:?} differs from the interpreter fragment's {:?}",
+            native_fragment.halt, run.report.halt
+        ));
+    }
+    if let Some(native_original) = &native_original {
+        problems.extend(diff_states(
+            "interp-original",
+            &original.state,
+            "native-original",
+            &undo(&native_original.state),
+        ));
+        if let Err(message) =
+            original_halt_matches(original, text_base, text, &native_original.stop)
+        {
+            problems.push(format!("native-original {message}"));
+        }
+    }
+    if !problems.is_empty() {
+        return Err(problems.join("\n"));
+    }
+    Ok(format!(
+        "halt={:?} native-original={} native-fragment-calls={} fault-redirects={}",
+        native_fragment.halt,
+        match &native_original {
+            Some(native) => format!("{:?}", native.stop),
+            None => "UNOBSERVABLE (reads patched text)".to_string(),
+        },
+        native_fragment.calls,
+        native_fragment.fault_redirects
+    ))
 }
 
 // ---------------------------------------------------------------------------
@@ -1853,8 +2329,13 @@ pub fn check_against_interpreter(
     run: &crate::DifferentialRun,
 ) -> Result<NativeVerdict, String> {
     let original = &run.original;
-    let unobservable =
-        original_reads_patched_text(text_base, text, run.original_cap, &run.original_accesses)?;
+    let unobservable = original_reads_patched_text(
+        text_base,
+        text,
+        run.original_cap,
+        false,
+        &run.original_accesses,
+    )?;
     let native_fragment = run_fragment(session, &run.fragment, &run.encoded_fragment, initial)?;
     let native_original = if unobservable {
         None
@@ -1866,6 +2347,7 @@ pub fn check_against_interpreter(
             entry_pc,
             initial,
             run.original_cap,
+            false,
         )?)
     };
     let undo = |state: &MachineState| {
@@ -1954,7 +2436,7 @@ mod tests {
             .collect::<Vec<u8>>();
         let base = 0x10000;
         let reads = |accesses: &[LoggedAccess]| {
-            original_reads_patched_text(base, &text, None, accesses).unwrap()
+            original_reads_patched_text(base, &text, None, false, accesses).unwrap()
         };
 
         assert!(!reads(&[read(base + 4, 4)]), "the NOP is the real word");

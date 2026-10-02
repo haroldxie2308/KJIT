@@ -94,6 +94,8 @@ fn main() {
                 RephrasedInsnKind::PanToggle => "pan-toggle",
                 RephrasedInsnKind::WindowAccess => "window-access",
                 RephrasedInsnKind::PanRestore => "pan-restore",
+                RephrasedInsnKind::DispatchTarget => "dispatch-target",
+                RephrasedInsnKind::DispatchLookup => "dispatch-lookup",
                 RephrasedInsnKind::RuntimeExitPayload => "rt-payload",
                 RephrasedInsnKind::RuntimeExitBranch => "rt-branch",
             };

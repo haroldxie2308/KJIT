@@ -112,6 +112,10 @@ pub struct OriginalStepper<'a> {
     stopped: bool,
     user_accesses: UserAccessCounter,
     access_log: Option<Vec<LoggedAccess>>,
+    /// Execute BL/BLR/BR/RET (target, link write) instead of halting at them. A run
+    /// over a code cache (A11) follows branches: its fragments call and return
+    /// without leaving the runtime, so the original has no reason to stop there.
+    follow_branches: bool,
 }
 
 impl<'a> OriginalStepper<'a> {
@@ -132,7 +136,16 @@ impl<'a> OriginalStepper<'a> {
             stopped: false,
             user_accesses: UserAccessCounter::default(),
             access_log: None,
+            follow_branches: false,
         })
+    }
+
+    /// Executes BL/BLR/BR/RET like any instruction (the PC becomes the target,
+    /// BL/BLR write the link register after reading the target) instead of halting
+    /// at them with `HaltReason::RuntimeExit`.
+    pub fn follow_branches(mut self) -> Self {
+        self.follow_branches = true;
+        self
     }
 
     /// Records every attempted access of this stepper's run.
@@ -210,7 +223,25 @@ impl<'a> OriginalStepper<'a> {
         };
 
         if let Some(reason) = decoded.inner.runtime_exit_reason(self.pc) {
+            let target = match reason {
+                RuntimeExitReason::Bl { target_pc, .. } => Some(target_pc),
+                RuntimeExitReason::Blr { target_reg: reg, .. }
+                | RuntimeExitReason::Br { target_reg: reg }
+                | RuntimeExitReason::Ret { lr_reg: reg } => Some(self.state.read_x(reg)),
+                RuntimeExitReason::Svc { .. } | RuntimeExitReason::Unsupported { .. } => None,
+            };
             apply_runtime_exit_side_effect(decoded.inner, self.pc, &mut self.state);
+            if let (true, Some(target)) = (self.follow_branches, target) {
+                let pc = self.pc;
+                self.pc = target;
+                return Ok(Some(OriginalAdvance {
+                    pc,
+                    next_pc: Some(target),
+                    executed: true,
+                    runtime_exit: None,
+                    halt_reason: None,
+                }));
+            }
             self.stopped = true;
             return Ok(Some(OriginalAdvance {
                 pc: self.pc,

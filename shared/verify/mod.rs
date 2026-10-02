@@ -16,8 +16,9 @@ mod rules;
 mod taint;
 
 use crate::shared::abi::{
-    ABI_INSN_SIZE, EPILOGUE_LEN_BYTES, EPILOGUE_OFFSET, KJIT_EPILOGUE, KJIT_PROLOGUE,
-    PROLOGUE_LEN_BYTES,
+    dispatch_template_matches, ABI_INSN_SIZE, DISPATCH_KEY_REG, DISPATCH_SLOT_REG,
+    DISPATCH_TARGET_REG, DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES, EPILOGUE_LEN_BYTES,
+    EPILOGUE_OFFSET, KJIT_EPILOGUE, KJIT_PROLOGUE, PROLOGUE_LEN_BYTES,
 };
 use crate::shared::arm64::{A64Insn, A64Mem};
 use crate::shared::platform::{SharedVec, GFP_KERNEL};
@@ -112,8 +113,14 @@ pub enum VerifyRule {
     },
     /// 4: `BL`.
     Call,
-    /// 4: `BR`/`BLR`/`RET` outside the prologue/epilogue.
+    /// 4: `BR`/`BLR`/`RET` outside the prologue/epilogue and the dispatch template's
+    /// last word.
     IndirectBranch,
+    /// 4/6/9 (A11): a `br x12` that does not end the exact dispatch template, a
+    /// template whose miss branches are not the same forward body word that is an
+    /// exit-group start, a join point inside the template, or two overlapping
+    /// templates.
+    DispatchTemplate,
     /// 4: the last word can fall through past the fragment.
     FallsOffEnd,
     /// 4: an entry offset outside the body, in the cold region, or unaligned.
@@ -125,7 +132,8 @@ pub enum VerifyRule {
     /// 5: `ADR`/`ADRP` (kernel address into a user register).
     PcRelative,
     /// 6: a back-edge not preceded by the budget sequence (plus only reg-virt fill
-    /// loads), or a join point inside that run.
+    /// loads), or a dispatch template (A11) not preceded by it (plus only
+    /// data-processing words and fills), or a join point inside that run.
     MissingBudgetCheck,
     /// 7: a fault/budget stub that does not start an exit group, or an exit group
     /// that does not end in `b <epilogue>`.
@@ -171,9 +179,13 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
     check_wrapper(code, EPILOGUE_OFFSET, KJIT_EPILOGUE, VerifyRule::Epilogue)?;
 
     let body = decode_body(code)?;
+    // Dispatch templates (A11): every `br x12` ends the exact template. Found before
+    // the other tables because every later check treats their words specially.
+    let templates = find_dispatch_templates(code, &body)?;
     let frag = Fragment {
         body: &body,
         len: code.len(),
+        templates: &templates,
     };
 
     // PAN windows (rule 8): every `msr pan, #0` must start an exact window. Records
@@ -231,6 +243,24 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
         }
     }
 
+    // A dispatch template's budget check has a Budget stub like a back-edge's (an
+    // exit group, a join point); its miss target is the site's exit group. A
+    // template without its check is rejected here.
+    for index in 0..body.len() {
+        if templates.position[index] != Some(0) {
+            continue;
+        }
+        let (_, stub) = frag
+            .template_guard(index)
+            .ok_or(err(frag.offset(index), VerifyRule::MissingBudgetCheck))?;
+        check_exit_group(&frag, stub, &mut exit_group_checked)?;
+        join[stub] = true;
+        cold_start = cold_start.min(stub);
+        let miss = templates.miss[index].ok_or(err(frag.offset(index), VerifyRule::DispatchTemplate))?;
+        check_exit_group(&frag, miss, &mut exit_group_checked)?;
+        join[miss] = true;
+    }
+
     // Cold region: from the first stub on, the fragment is exit groups only (layout
     // order). It is entered by fault fixup or by a branch to an exit-group start,
     // never through the entry table.
@@ -268,6 +298,24 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
         }
     }
 
+    // Rules 4/6 (A11): nothing arrives inside a dispatch template, or between its
+    // budget check's `sub` and the template, by any edge: every path to the `br`
+    // runs the whole check and the whole template.
+    for index in 0..body.len() {
+        if templates.position[index] != Some(0) {
+            continue;
+        }
+        let (guard, _) = frag
+            .template_guard(index)
+            .ok_or(err(frag.offset(index), VerifyRule::MissingBudgetCheck))?;
+        if (index..index + DISPATCH_TEMPLATE_LEN).any(|inner| join[inner]) {
+            return Err(err(frag.offset(index), VerifyRule::DispatchTemplate));
+        }
+        if (guard + 1..index).any(|inner| join[inner]) {
+            return Err(err(frag.offset(index), VerifyRule::MissingBudgetCheck));
+        }
+    }
+
     // Rule 8: nothing jumps into a window past its range check (the `ubfx` may be a
     // join point: it recomputes the checked value).
     for (index, is_start) in windows.clear.iter().enumerate() {
@@ -292,6 +340,10 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
             // Falling through into a join point is an edge too.
             check_edge(state, join_state, offset)?;
             state = join_state;
+        }
+        if let Some(position) = templates.position[index] {
+            state = step_dispatch_template(position, state, join_state, offset)?;
+            continue;
         }
         let form = classify(*insn);
         match form {
@@ -399,7 +451,13 @@ struct Fragment<'a> {
     /// Decoded words from `BODY_OFFSET` on.
     body: &'a [A64Insn],
     len: usize,
+    templates: &'a DispatchTemplates,
 }
+
+/// Most words (target move, link write, fills) the budget check's `cbz` may be away
+/// from its dispatch template: BL's 4-word target and 4-word link are the longest
+/// site (8). Bounded so each template's walk back is O(1).
+const DISPATCH_GUARD_MAX_GAP: usize = 16;
 
 impl Fragment<'_> {
     fn offset(&self, index: usize) -> usize {
@@ -450,6 +508,45 @@ impl Fragment<'_> {
         Some((start, self.body_index(usize::try_from(target).ok()?)?))
     }
 
+    /// The budget check guarding the dispatch template whose first word is at
+    /// `template` (A11): the four-word sequence, then only data-processing words and
+    /// fill loads (target move, link write) up to the template. Returns the
+    /// sequence's first index and its `cbz` target, which must be a forward body word.
+    fn template_guard(&self, template: usize) -> Option<(usize, usize)> {
+        let mut end = template;
+        while end > 0
+            && template - end < DISPATCH_GUARD_MAX_GAP
+            && rules::is_dispatch_gap_word(&self.body[end - 1])
+        {
+            end -= 1;
+        }
+        let start = end.checked_sub(4)?;
+        let delta = rules::budget_sequence(&self.body[start..end])?;
+        let cbz = self.offset(end - 1) as i64;
+        let target = cbz + delta;
+        if target <= cbz {
+            return None;
+        }
+        Some((start, self.body_index(usize::try_from(target).ok()?)?))
+    }
+
+    /// Whether a budget sequence starting at `start` is the guard of a dispatch
+    /// template.
+    fn guards_template(&self, start: usize) -> bool {
+        let mut index = start + 4;
+        while index < self.body.len()
+            && index - (start + 4) <= DISPATCH_GUARD_MAX_GAP
+            && rules::is_dispatch_gap_word(&self.body[index])
+        {
+            index += 1;
+        }
+        index < self.body.len()
+            && self.templates.position[index] == Some(0)
+            && self
+                .template_guard(index)
+                .is_some_and(|(guard, _)| guard == start)
+    }
+
     /// Whether a budget sequence starting at `start` is the guard of a back-edge.
     fn guards_back_edge(&self, start: usize) -> bool {
         let mut branch = start + 4;
@@ -462,6 +559,125 @@ impl Fragment<'_> {
                 .budget_guard(branch)
                 .is_some_and(|(guard, _)| guard == start)
     }
+}
+
+/// Rule 4/6/9 (A11) facts: which body words belong to a dispatch template.
+struct DispatchTemplates {
+    /// `Some(p)`: word `p` (0..`DISPATCH_TEMPLATE_LEN`) of a template.
+    position: SharedVec<Option<u8>>,
+    /// Template's first word -> the body index its miss branches target.
+    miss: SharedVec<Option<usize>>,
+}
+
+/// Every `br x12` must be the last word of the exact dispatch template
+/// (`dispatch_template_matches`: registers, `#200`, `ubfx` lsb/width, `#8`, the key
+/// compare), with both miss branches targeting the same forward body word. Any other
+/// `br` is `Form::IndirectBranch`, rejected by the main pass. Two templates never
+/// share a word (the template has exactly one `br`, at its end).
+fn find_dispatch_templates(
+    code: &[u8],
+    body: &[A64Insn],
+) -> Result<DispatchTemplates, VerifyError> {
+    let offset = |index: usize| BODY_OFFSET + index * ABI_INSN_SIZE;
+    let mut templates = DispatchTemplates {
+        position: alloc_positions(body.len())?,
+        miss: alloc_none(body.len())?,
+    };
+    for (index, insn) in body.iter().enumerate() {
+        let A64Insn::BrBr64BranchReg { rn } = insn else {
+            continue;
+        };
+        if rn.enc() != DISPATCH_SLOT_REG {
+            continue;
+        }
+        let reject = err(offset(index), VerifyRule::DispatchTemplate);
+        let start = (index + 1)
+            .checked_sub(DISPATCH_TEMPLATE_LEN)
+            .ok_or(reject)?;
+        let mut words = [0_u32; DISPATCH_TEMPLATE_LEN];
+        for (position, word) in words.iter_mut().enumerate() {
+            *word = read_word(code, offset(start + position)).ok_or(reject)?;
+        }
+        let deltas = dispatch_template_matches(&words).ok_or(reject)?;
+        let [first, second] = DISPATCH_TEMPLATE_MISS_BRANCHES;
+        let first_target = offset(start + first) as i64 + deltas[0];
+        let second_target = offset(start + second) as i64 + deltas[1];
+        // Forward past the `br`, in the body, the same word for both branches.
+        let miss = (first_target == second_target && first_target > offset(index) as i64)
+            .then(|| usize::try_from(first_target).ok())
+            .flatten()
+            .filter(|&target| target >= BODY_OFFSET && (target - BODY_OFFSET) % ABI_INSN_SIZE == 0)
+            .map(|target| (target - BODY_OFFSET) / ABI_INSN_SIZE)
+            .filter(|&target| target < body.len())
+            .ok_or(reject)?;
+        if templates.position[start..=index].iter().any(Option::is_some) {
+            return Err(reject);
+        }
+        for (position, slot) in templates.position[start..=index].iter_mut().enumerate() {
+            *slot = Some(position as u8);
+        }
+        templates.miss[start] = Some(miss);
+    }
+    Ok(templates)
+}
+
+fn alloc_positions(len: usize) -> Result<SharedVec<Option<u8>>, VerifyError> {
+    let mut out =
+        SharedVec::with_capacity(len, GFP_KERNEL).map_err(|_| err(0, VerifyRule::Alloc))?;
+    for _ in 0..len {
+        out.push(None, GFP_KERNEL)
+            .map_err(|_| err(0, VerifyRule::Alloc))?;
+    }
+    Ok(out)
+}
+
+/// Rules 3 and 9 for one word of a dispatch template, whose bytes
+/// `find_dispatch_templates` already proved exact (so nothing else about the word
+/// is checked here: its accesses are the template's, its registers are x12/x14).
+/// `ldr x12` results are kernel values (the table, a slot, a record's host); the
+/// key load into x14 is a user PC copied from a branch target by the runtime, not a
+/// source; x13 (T) must hold no kernel value where it is read. Both miss branches
+/// and the final `br x12` are control edges carrying exactly the join state
+/// ({x12, x29}): x12 may be read by `cbz` and `br` (the one kernel register
+/// operand a branch may have), nothing else is kernel-valued.
+fn step_dispatch_template(
+    position: u8,
+    state: Taint,
+    join_state: Taint,
+    offset: usize,
+) -> Result<Taint, VerifyError> {
+    const SLOT: u32 = 1 << DISPATCH_SLOT_REG;
+    const TARGET: u32 = 1 << DISPATCH_TARGET_REG;
+    const KEY: u32 = 1 << DISPATCH_KEY_REG;
+    let mut next = state;
+    match position {
+        // ldr x12, [sp, #200]; ldr x12, [x12, x14, lsl #3]; ldr x12, [x12, #8]
+        0 | 2 | 7 => {
+            next.kernel |= SLOT;
+            next.pt_regs &= !SLOT;
+        }
+        // ubfx x14, x13, ...; sub x14, x14, x13: T is read as data.
+        1 | 5 => {
+            if state.kernel & TARGET != 0 {
+                return Err(err(offset, VerifyRule::KernelValueRead));
+            }
+            next.kernel &= !KEY;
+            next.pt_regs &= !KEY;
+        }
+        // ldr x14, [x12]: the record's pc.
+        4 => {
+            next.kernel &= !KEY;
+            next.pt_regs &= !KEY;
+        }
+        // cbz x12 / cbnz x14 (miss) and br x12 (hit): control edges.
+        3 | 6 | 8 => check_edge(state, join_state, offset)?,
+        _ => return Err(err(offset, VerifyRule::DispatchTemplate)),
+    }
+    if position == 8 {
+        // Only a join point can reach the next word.
+        return Ok(join_state);
+    }
+    Ok(next)
 }
 
 fn check_wrapper(
@@ -523,14 +739,16 @@ fn check_exit_group(
         return Ok(());
     }
     let reject = |index: usize| err(frag.offset(index), VerifyRule::ExitGroup);
+    // The word before cannot fall through: an unconditional `B`, or (A11) the `br x12`
+    // that ends a dispatch template, whose miss branches target the group after it.
     let starts_group = stub > 0
-        && matches!(
+        && (matches!(
             classify(frag.body[stub - 1]),
             Form::Branch {
                 conditional: false,
                 ..
             }
-        );
+        ) || frag.templates.position[stub - 1] == Some((DISPATCH_TEMPLATE_LEN - 1) as u8));
     if !starts_group {
         return Err(reject(stub));
     }
@@ -695,13 +913,16 @@ fn check_runtime_access(
             return Ok(());
         }
         if start == rules::BUDGET_SLOT_OFFSET as i64 && bytes == 8 {
-            // Only the budget check's own load and store touch the counter.
+            // Only a budget check's own load and store touch the counter (a check
+            // guards a back-edge or, A11, a dispatch template).
             let seq_start = if store {
                 index.checked_sub(2)
             } else {
                 Some(index)
             };
-            if seq_start.is_some_and(|start| frag.guards_back_edge(start)) {
+            if seq_start
+                .is_some_and(|start| frag.guards_back_edge(start) || frag.guards_template(start))
+            {
                 return Ok(());
             }
             return Err(err(offset, VerifyRule::BudgetSlotAccess));

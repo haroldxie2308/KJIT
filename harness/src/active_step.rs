@@ -333,7 +333,7 @@ impl ActiveStepSession {
         }
     }
 
-    pub fn runtime_owned_ranges(&self) -> [(u64, u64); 3] {
+    pub fn runtime_owned_ranges(&self) -> Vec<(u64, u64)> {
         self.translated.runtime_owned_ranges()
     }
 

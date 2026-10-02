@@ -7,6 +7,8 @@ pub(crate) mod asm_fixture;
 pub mod explorer;
 pub mod golden;
 pub mod arm64;
+pub mod cached_run;
+pub mod code_cache;
 pub mod fuzz;
 pub mod model;
 // Platform gate, not a skip: the native oracle executes AArch64 code on the host
@@ -22,6 +24,8 @@ pub mod trace;
 
 #[cfg(test)]
 mod asm_fixture_tests;
+#[cfg(test)]
+mod dispatch_tests;
 #[cfg(test)]
 mod encoding_tests;
 #[cfg(test)]
@@ -406,8 +410,9 @@ pub fn run_differential(
     }
     let original_footprint = faulting_footprint(&text_bytes, text_base, &original)
         .map_err(|message| DifferentialError::Original(OriginalRunError::Harness(message)))?;
+    let mut cache = runtime.into_cache();
     Ok(DifferentialRun {
-        fragment: runtime.fragment,
+        fragment: cache.fragments.swap_remove(0).fragment,
         encoded_fragment,
         original,
         original_cap,
@@ -439,7 +444,7 @@ pub struct Footprint {
     pub vregs: Vec<(u8, u128)>,
 }
 
-fn faulting_footprint(
+pub(crate) fn faulting_footprint(
     text: &[u8],
     text_base: u64,
     original: &ExecutionResult,
@@ -570,11 +575,36 @@ pub(crate) fn run_fragment_counting_instances(
     runtime: &mut URuntime,
     max_steps: Option<usize>,
 ) -> Result<(URuntimeReport, Option<InstanceCap>), String> {
-    let mut executions = vec![0_u64; runtime.fragment.insns.len()];
+    let counted = run_counting(runtime, max_steps, false)?;
+    Ok((counted.report, counted.cap))
+}
+
+/// A fragment run with its dynamic instance counts resolved (`run_counting`).
+pub(crate) struct CountedRun {
+    pub(crate) report: URuntimeReport,
+    pub(crate) cap: Option<InstanceCap>,
+    /// Runtime round trips: fragment entries after the first.
+    pub(crate) runtime_entries: usize,
+}
+
+/// `run_fragment_counting_instances` over every fragment the run executes. Original
+/// pc P's dynamic instances are the executions of P's body label, summed over the
+/// fragments that hold one (a dispatch hit enters another fragment at its label).
+///
+/// `cap_svc_exits`: a cached run's chain budget can return to userspace at an `SVC`
+/// (`CodeCache::with_chain_budget`); the original, which does not stop at an SVC,
+/// is capped before that SVC like before a `Budget` exit's branch.
+pub(crate) fn run_counting(
+    runtime: &mut URuntime,
+    max_steps: Option<usize>,
+    cap_svc_exits: bool,
+) -> Result<CountedRun, String> {
+    // executions[fragment][insn index]
+    let mut executions: Vec<Vec<u64>> = Vec::new();
+    let mut continuations = 0usize;
     let report = {
         let mut stepper = URuntimeStepper::new(runtime)
             .map_err(|message| format!("fragment runtime setup failed: {message}"))?;
-        let mut continuations = 0usize;
         loop {
             if max_steps.is_some_and(|max| stepper.steps() >= max) {
                 break stepper.report_for_halt(URuntimeHalt::StepLimit {
@@ -598,7 +628,14 @@ pub(crate) fn run_fragment_counting_instances(
                 }
             };
             if let (true, Some(offset)) = (step.executed, step.offset) {
-                executions[offset / 4] += 1;
+                if executions.len() <= step.fragment {
+                    executions.resize_with(step.fragment + 1, Vec::new);
+                }
+                let counts = &mut executions[step.fragment];
+                if counts.len() <= offset / 4 {
+                    counts.resize(offset / 4 + 1, 0);
+                }
+                counts[offset / 4] += 1;
             }
             if step.runtime_transition.is_some_and(|transition| {
                 matches!(transition, runtime::URuntimeTransition::Continued { .. })
@@ -622,24 +659,48 @@ pub(crate) fn run_fragment_counting_instances(
         }
     };
 
-    let URuntimeHalt::ReturnedToUserspace {
-        status: crate::shared::abi::RetStatus::Budget,
-        target_pc: pc,
-    } = report.halt
-    else {
-        return Ok((report, None));
+    let pc = match report.halt {
+        URuntimeHalt::ReturnedToUserspace {
+            status: crate::shared::abi::RetStatus::Budget,
+            target_pc,
+        } => target_pc,
+        URuntimeHalt::ReturnedToUserspace {
+            status: crate::shared::abi::RetStatus::Svc,
+            target_pc,
+        } if cap_svc_exits => target_pc.wrapping_sub(4),
+        _ => {
+            return Ok(CountedRun {
+                report,
+                cap: None,
+                runtime_entries: continuations,
+            })
+        }
     };
-    let label = runtime
-        .fragment
-        .offset_for_pc(pc)
-        .ok_or_else(|| format!("Budget exit at {pc:#x}, which has no body label"))?;
-    let instance = executions[label / 4];
+    let mut instance = 0;
+    let mut labelled = false;
+    for (index, frag) in runtime.cache().fragments.iter().enumerate() {
+        if let Some(label) = frag.label_for_pc(pc) {
+            labelled = true;
+            instance += executions
+                .get(index)
+                .and_then(|counts| counts.get(label.offset / 4))
+                .copied()
+                .unwrap_or(0);
+        }
+    }
+    if !labelled {
+        return Err(format!("exit at {pc:#x}, which has no body label"));
+    }
     if instance == 0 {
         return Err(format!(
-            "Budget exit at {pc:#x}, but its body label {label:#x} never executed"
+            "exit at {pc:#x}, but its body label never executed"
         ));
     }
-    Ok((report, Some(InstanceCap { pc, instance })))
+    Ok(CountedRun {
+        report,
+        cap: Some(InstanceCap { pc, instance }),
+        runtime_entries: continuations,
+    })
 }
 
 /// `InstanceCap` of a fixture case: compiles and runs its fragment
@@ -780,8 +841,61 @@ pub(crate) fn run_original_with_mocked_svc(
     step_limit: Option<usize>,
     before_step: &mut dyn FnMut(&OriginalStepper),
 ) -> Result<ExecutionResult, OriginalRunError> {
+    run_original(
+        program,
+        text_base,
+        entry_pc,
+        initial_state,
+        fail_user_access,
+        cap,
+        step_limit,
+        false,
+        before_step,
+    )
+}
+
+/// `run_original_with_mocked_svc` for a run over a code cache: BL/BLR/BR/RET are
+/// executed (`OriginalStepper::follow_branches`), so the run ends only at an SVC-free
+/// halt: a fault, an `Unsupported` pc (an unreadable branch target included), or the
+/// `cap` (a `Budget` exit, or a `Ret` return to userspace, of the fragment run).
+pub(crate) fn run_original_following_branches(
+    program: &[u8],
+    text_base: u64,
+    entry_pc: u64,
+    initial_state: &MachineState,
+    cap: Option<InstanceCap>,
+    step_limit: Option<usize>,
+    before_step: &mut dyn FnMut(&OriginalStepper),
+) -> Result<ExecutionResult, OriginalRunError> {
+    run_original(
+        program,
+        text_base,
+        entry_pc,
+        initial_state,
+        None,
+        cap,
+        step_limit,
+        true,
+        before_step,
+    )
+}
+
+fn run_original(
+    program: &[u8],
+    text_base: u64,
+    entry_pc: u64,
+    initial_state: &MachineState,
+    fail_user_access: Option<u64>,
+    cap: Option<InstanceCap>,
+    step_limit: Option<usize>,
+    follow_branches: bool,
+    before_step: &mut dyn FnMut(&OriginalStepper),
+) -> Result<ExecutionResult, OriginalRunError> {
     let mut stepper =
         OriginalStepper::new(program, text_base, entry_pc, initial_state)?.record_accesses();
+    if follow_branches {
+        stepper = stepper.follow_branches();
+    }
     if let Some(k) = fail_user_access {
         stepper = stepper.fail_user_access(k);
     }

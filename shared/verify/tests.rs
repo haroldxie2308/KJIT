@@ -1,6 +1,8 @@
 use super::rules::{self, BUDGET_SCRATCH_REG, BUDGET_SLOT_OFFSET};
 use super::*;
-use crate::shared::abi::RUNTIME_FRAME_PT_REGS_PTR_OFFSET;
+use crate::shared::abi::{
+    KJIT_DISPATCH_TEMPLATE, RUNTIME_FRAME_IBTC_OFFSET, RUNTIME_FRAME_PT_REGS_PTR_OFFSET,
+};
 use crate::shared::arm64::ergo::{
     ldst64_offset, ldstpair64_offset, mem_off, mem_pre, scaled_simm, simm, sp, uimm, x,
 };
@@ -1405,4 +1407,206 @@ fn verifier_does_not_import_the_translator() {
             assert!(!source.contains(forbidden), "{name} mentions `{forbidden}`");
         }
     }
+}
+
+// ---- Dispatch templates (A11) ----
+
+/// A dispatch site whose first word is body word `base`: `<budget check>; <gap>;
+/// <template>; <exit group>; <budget stub>`. The check's `cbz` is aimed at the stub,
+/// and both miss branches target the exit group that follows the template's `br`.
+fn dispatch_site_from(base: usize, gap: &[A64Insn]) -> Vec<A64Insn> {
+    let template = base + 4 + gap.len();
+    let group = template + DISPATCH_TEMPLATE_LEN;
+    let stub = group + 2;
+    let mut body = budget_seq(base + 3, stub).to_vec();
+    body.extend_from_slice(gap);
+    for (position, insn) in KJIT_DISPATCH_TEMPLATE.iter().enumerate() {
+        let from = template + position;
+        body.push(match insn {
+            A64Insn::CbzCbz64Compbranch { rt, .. } => A64Insn::CbzCbz64Compbranch {
+                imm19: branch_imm(at(group) as i64 - at(from) as i64, 19),
+                rt: *rt,
+            },
+            A64Insn::CbnzCbnz64Compbranch { rt, .. } => A64Insn::CbnzCbnz64Compbranch {
+                imm19: branch_imm(at(group) as i64 - at(from) as i64, 19),
+                rt: *rt,
+            },
+            other => *other,
+        });
+    }
+    body.extend_from_slice(&[movz(9, 1), b_epi(group + 1), movz(9, 7), b_epi(stub + 1)]);
+    body
+}
+
+fn dispatch_site(gap: &[A64Insn]) -> Vec<A64Insn> {
+    dispatch_site_from(0, gap)
+}
+
+fn site_with(position: usize, insn: A64Insn) -> Frag {
+    let mut body = dispatch_site(&[movz(13, 0x4000)]);
+    body[5 + position] = insn;
+    Frag::new(&body)
+}
+
+#[test]
+fn accepts_the_exact_dispatch_template_behind_its_budget_check() {
+    let ok = Frag::new(&dispatch_site(&[movz(13, 0x4000)])).verify().unwrap();
+    assert!(!ok.uses_fpsimd);
+    // No gap at all (a target already in x13), or a fill and a link write in it.
+    assert_eq!(Frag::new(&dispatch_site(&[])).rule(), None);
+    assert_eq!(
+        Frag::new(&dispatch_site(&[fill(13, 56), movz(30, 0x1004)])).rule(),
+        None
+    );
+    // The check's first word may be a join point (the site's original PC label);
+    // so may the exit group (the miss target) and the budget stub.
+    assert_eq!(Frag::new(&dispatch_site(&[movz(13, 1)])).entry(0).rule(), None);
+}
+
+#[test]
+fn dispatch_template_words_are_byte_exact() {
+    let site = |position, insn| site_with(position, insn).rule();
+    // Every word of the template altered (the miss offsets are the only freedom).
+    assert_eq!(site(0, ldr(12, sp(), 192)), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(site(0, ldr(13, sp(), RUNTIME_FRAME_IBTC_OFFSET)), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(
+        site(
+            1,
+            A64Insn::UbfmUbfm64mBitfield {
+                immr: uimm(2, 6),
+                imms: uimm(14, 6),
+                rn: x(13),
+                rd: x(14),
+            }
+        ),
+        Some(VerifyRule::DispatchTemplate),
+        "a 13-bit index reaches past the 4096-slot table"
+    );
+    assert_eq!(site(4, ldr(14, xs(12), 8)), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(site(7, ldr(12, xs(12), 16)), Some(VerifyRule::DispatchTemplate));
+    // Without its `br x12` the template is nine plain words, and the check guards
+    // nothing: rejected (which of the rules fires first is not the point).
+    assert!(site(8, A64Insn::BrBr64BranchReg { rn: x(13) }).is_some());
+    // The key compare dropped.
+    assert_eq!(site(5, A64Insn::NopNopHiHints {}), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(site(6, A64Insn::NopNopHiHints {}), Some(VerifyRule::DispatchTemplate));
+}
+
+#[test]
+fn every_other_indirect_branch_stays_rejected() {
+    for insn in [
+        A64Insn::BrBr64BranchReg { rn: x(0) },
+        A64Insn::BrBr64BranchReg { rn: x(14) },
+        A64Insn::BlrBlr64BranchReg { rn: x(12) },
+        A64Insn::RetRet64rBranchReg { rn: x(30) },
+        A64Insn::RetRet64rBranchReg { rn: x(12) },
+    ] {
+        assert_eq!(
+            Frag::new(&[insn, b_epi(1)]).rule(),
+            Some(VerifyRule::IndirectBranch),
+            "{insn:?}"
+        );
+    }
+    // `br x12` outside a complete template.
+    assert_eq!(
+        Frag::new(&[A64Insn::BrBr64BranchReg { rn: x(12) }, b_epi(1)]).rule(),
+        Some(VerifyRule::DispatchTemplate)
+    );
+}
+
+#[test]
+fn dispatch_templates_need_a_budget_check_and_have_no_join_points() {
+    let site = dispatch_site(&[movz(13, 0x4000)]);
+    // No budget check: its words replaced.
+    let mut body = site.clone();
+    body[..4].fill(A64Insn::NopNopHiHints {});
+    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::MissingBudgetCheck));
+    let mut body = site.clone();
+    body[..4].fill(movz(14, 0));
+    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::MissingBudgetCheck));
+    // Something a gap may not hold between the check and the template.
+    for insn in [
+        A64Insn::NopNopHiHints {},
+        str(0, sp(), 16),
+        ldr(0, sp(), 16),
+        b(4, at(5) as i64),
+    ] {
+        let mut body = site.clone();
+        body[4] = insn;
+        assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::MissingBudgetCheck), "{insn:?}");
+    }
+    // A join point between the check's `sub` and the template, or inside it.
+    for index in 1..=4 {
+        assert_eq!(
+            Frag::new(&site).entry(index).rule(),
+            Some(VerifyRule::MissingBudgetCheck),
+            "entry at {index}"
+        );
+    }
+    for index in 5..5 + DISPATCH_TEMPLATE_LEN {
+        assert_eq!(
+            Frag::new(&site).entry(index).rule(),
+            Some(VerifyRule::DispatchTemplate),
+            "entry at {index}"
+        );
+    }
+    // A branch into the template.
+    let mut body = alloc::vec![b(0, at(1 + 5 + 4) as i64)];
+    body.extend(dispatch_site_from(1, &[movz(13, 0x4000)]));
+    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::DispatchTemplate));
+}
+
+#[test]
+fn dispatch_miss_branches_name_one_forward_exit_group() {
+    let site = dispatch_site(&[movz(13, 0x4000)]);
+    let template = 5;
+    let group = template + DISPATCH_TEMPLATE_LEN;
+    let retarget = |first: usize, second: usize| {
+        let mut body = site.clone();
+        body[template + 3] = A64Insn::CbzCbz64Compbranch {
+            imm19: branch_imm(at(first) as i64 - at(template + 3) as i64, 19),
+            rt: x(12),
+        };
+        body[template + 6] = A64Insn::CbnzCbnz64Compbranch {
+            imm19: branch_imm(at(second) as i64 - at(template + 6) as i64, 19),
+            rt: x(14),
+        };
+        Frag::new(&body).rule()
+    };
+    assert_eq!(retarget(group, group), None);
+    // Different targets, backward, into the template, into the middle of the group.
+    assert_eq!(retarget(group, group + 1), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(retarget(template, template), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(retarget(template + 8, template + 8), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(retarget(group + 1, group + 1), Some(VerifyRule::ExitGroup));
+}
+
+#[test]
+fn slot_200_is_readable_only_by_a_templates_first_word() {
+    let outside = |insn| Frag::new(&[insn, b_epi(1)]).rule();
+    assert_eq!(
+        outside(ldr(12, sp(), RUNTIME_FRAME_IBTC_OFFSET)),
+        Some(VerifyRule::FrameAccessOutOfRange)
+    );
+    assert_eq!(
+        outside(ldr(0, sp(), RUNTIME_FRAME_IBTC_OFFSET)),
+        Some(VerifyRule::FrameAccessOutOfRange)
+    );
+    assert_eq!(
+        outside(str(12, sp(), RUNTIME_FRAME_IBTC_OFFSET)),
+        Some(VerifyRule::FrameAccessOutOfRange)
+    );
+}
+
+#[test]
+fn kernel_values_never_reach_a_dispatch_template() {
+    // x13 holds a kernel value where the template reads it as T.
+    for insn in [mov(xs(13), xs(29)), mov(xs(13), sp())] {
+        let body = dispatch_site(&[insn]);
+        assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::KernelValueRead), "{insn:?}");
+    }
+    // Another kernel value (the pt_regs pointer) live across the template's edges.
+    let mut body = alloc::vec![ldr(15, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET)];
+    body.extend(dispatch_site_from(1, &[movz(13, 0x4000)]));
+    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::KernelValueAtEdge));
 }

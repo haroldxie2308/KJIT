@@ -1,6 +1,7 @@
 use crate::shared::abi::{
-    RetStatus, ABI_LINK_REG, REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG,
-    RET_STATUS_REG, RUNTIME_FRAME_BUDGET_OFFSET, UNSUPPORTED_WORD_UNREADABLE,
+    RetStatus, ABI_LINK_REG, DISPATCH_TARGET_REG, KJIT_DISPATCH_TEMPLATE,
+    REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
+    RUNTIME_FRAME_BUDGET_OFFSET, UNSUPPORTED_WORD_UNREADABLE,
 };
 use crate::shared::arm64::ergo::{ldst64_offset, mem_off, scaled_simm, sp, uimm, x, xzr};
 use crate::shared::arm64::{A64Atomic, A64Insn, A64Reg, A64Reg31Mode, IrInsn};
@@ -46,6 +47,17 @@ pub enum RephrasedInsnKind {
     /// stub restores PAN before its exit group. Runtime-owned: reg-virt passes it
     /// through, and it is always immediately followed by that exit group.
     PanRestore,
+    /// A branch site's target move (A11): writes the target T into
+    /// `DISPATCH_TARGET_REG` (physical x13, never user x13). Either `movz`/`movk x13`
+    /// of a constant (BL), or `orr x13, xzr, Xm` where `Xm` is the *user* register
+    /// holding the target, which reg-virt maps like any user source (fill from its
+    /// frame slot, x16/x17 for x29/sp). Runtime-owned: x13 is scratch.
+    DispatchTarget,
+    /// One word of the dispatch template (`KJIT_DISPATCH_TEMPLATE`), in the body of a
+    /// branch site between its link write and its exit group. Runtime-owned,
+    /// reg-virt passes it through; layout resolves its two miss branches to the exit
+    /// group that follows its `br`.
+    DispatchLookup,
     RuntimeExitPayload,
     RuntimeExitBranch,
 }
@@ -62,6 +74,8 @@ impl RephrasedInsnKind {
             | Self::PanToggle
             | Self::WindowAccess
             | Self::PanRestore
+            | Self::DispatchTarget
+            | Self::DispatchLookup
             | Self::RuntimeExitPayload
             | Self::RuntimeExitBranch => false,
         }
@@ -79,7 +93,9 @@ impl RephrasedInsnKind {
             | Self::RangeCheck
             | Self::PanToggle
             | Self::WindowAccess
-            | Self::PanRestore => false,
+            | Self::PanRestore
+            | Self::DispatchTarget
+            | Self::DispatchLookup => false,
         }
     }
 
@@ -184,6 +200,22 @@ impl RephrasedInsn {
         }
     }
 
+    pub const fn dispatch_target(ori_pc: u64, insn: A64Insn) -> Self {
+        Self {
+            kind: RephrasedInsnKind::DispatchTarget,
+            ori_pc,
+            insn,
+        }
+    }
+
+    pub const fn dispatch_lookup(ori_pc: u64, insn: A64Insn) -> Self {
+        Self {
+            kind: RephrasedInsnKind::DispatchLookup,
+            ori_pc,
+            insn,
+        }
+    }
+
     pub const fn runtime_exit_payload(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
             kind: RephrasedInsnKind::RuntimeExitPayload,
@@ -205,7 +237,8 @@ impl RephrasedInsn {
 ///
 /// `cold` holds out-of-line runtime-exit groups, in instruction order: one
 /// `RetStatus::Mem` fault stub per original memory instruction and one
-/// `RetStatus::Budget` stub per back-edge of this block. A branch never accesses
+/// `RetStatus::Budget` stub per back-edge or dispatch site (BL/BLR/BR/RET, A11) of
+/// this block. A branch never accesses
 /// memory, so each original instruction has at most one plain stub. An LSE atomic
 /// (A8) or SIMD&FP load/store (A9a) also has a PAN stub: `msr pan, #1`
 /// (`PanRestore`) followed by its `Mem` exit group; its plain stub exists only
@@ -291,6 +324,11 @@ pub(crate) fn rephrase_insn(
                 RephrasedInsnKind::UserSynthetic,
             )?;
         }
+        // Branch sites (A11, tmp/pipeline.md "A11 contract", "Lowering"). The budget
+        // check that precedes the whole sequence is added by `rephrase`. Order: the
+        // target into x13 (before any x30 write, so `blr x30` stays correct), the
+        // link write, the dispatch template, then the exit group a miss takes: the
+        // same status and x11 as before the template existed, x10 = x13.
         A64Insn::BlBlOnlyBranchImm { .. } => {
             let Some(RuntimeExitReason::Bl {
                 target_pc,
@@ -303,32 +341,19 @@ pub(crate) fn rephrase_insn(
             push_mov_imm64(
                 &mut ret,
                 insn.pc,
+                x(DISPATCH_TARGET_REG),
+                target_pc,
+                RephrasedInsnKind::DispatchTarget,
+            )?;
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
                 x(ABI_LINK_REG),
                 resume_pc,
                 RephrasedInsnKind::UserSynthetic,
             )?;
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                x(RET_STATUS_REG),
-                RetStatus::Bl.as_reg(),
-                RephrasedInsnKind::RuntimeExitPayload,
-            )?;
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                x(RET_PARAM0_REG),
-                target_pc,
-                RephrasedInsnKind::RuntimeExitPayload,
-            )?;
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                x(RET_PARAM1_REG),
-                resume_pc,
-                RephrasedInsnKind::RuntimeExitPayload,
-            )?;
-            push_branch_to_stub(&mut ret, insn.pc)?;
+            push_dispatch_template(&mut ret, insn.pc)?;
+            push_dispatch_miss_exit(&mut ret, insn.pc, RetStatus::Bl, resume_pc)?;
         }
         A64Insn::BlrBlr64BranchReg { .. } => {
             let Some(RuntimeExitReason::Blr {
@@ -340,17 +365,7 @@ pub(crate) fn rephrase_insn(
             };
 
             // BLR X30 must capture the old LR target before the user-visible link update.
-            push_runtime_exit_payload(
-                &mut ret,
-                insn.pc,
-                A64Insn::OrrLogShiftOrr64LogShift {
-                    shift: 0,
-                    rm: x(target_reg),
-                    imm6: uimm(0, 6),
-                    rn: xzr(),
-                    rd: x(RET_PARAM0_REG),
-                },
-            )?;
+            push_dispatch_target_capture(&mut ret, insn.pc, target_reg)?;
             push_mov_imm64(
                 &mut ret,
                 insn.pc,
@@ -358,21 +373,8 @@ pub(crate) fn rephrase_insn(
                 resume_pc,
                 RephrasedInsnKind::UserSynthetic,
             )?;
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                x(RET_STATUS_REG),
-                RetStatus::Blr.as_reg(),
-                RephrasedInsnKind::RuntimeExitPayload,
-            )?;
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                x(RET_PARAM1_REG),
-                resume_pc,
-                RephrasedInsnKind::RuntimeExitPayload,
-            )?;
-            push_branch_to_stub(&mut ret, insn.pc)?;
+            push_dispatch_template(&mut ret, insn.pc)?;
+            push_dispatch_miss_exit(&mut ret, insn.pc, RetStatus::Blr, resume_pc)?;
         }
         A64Insn::BrBr64BranchReg { .. } => {
             let Some(RuntimeExitReason::Br { target_reg }) =
@@ -381,32 +383,9 @@ pub(crate) fn rephrase_insn(
                 unreachable!("BR must produce a BR runtime exit reason");
             };
 
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                x(RET_STATUS_REG),
-                RetStatus::Br.as_reg(),
-                RephrasedInsnKind::RuntimeExitPayload,
-            )?;
-            push_runtime_exit_payload(
-                &mut ret,
-                insn.pc,
-                A64Insn::OrrLogShiftOrr64LogShift {
-                    shift: 0,
-                    rm: x(target_reg),
-                    imm6: uimm(0, 6),
-                    rn: xzr(),
-                    rd: x(RET_PARAM0_REG),
-                },
-            )?;
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                x(RET_PARAM1_REG),
-                insn.pc.wrapping_add(4),
-                RephrasedInsnKind::RuntimeExitPayload,
-            )?;
-            push_branch_to_stub(&mut ret, insn.pc)?;
+            push_dispatch_target_capture(&mut ret, insn.pc, target_reg)?;
+            push_dispatch_template(&mut ret, insn.pc)?;
+            push_dispatch_miss_exit(&mut ret, insn.pc, RetStatus::Br, insn.pc.wrapping_add(4))?;
         }
         A64Insn::RetRet64rBranchReg { .. } => {
             let Some(RuntimeExitReason::Ret { lr_reg }) = insn.inner.runtime_exit_reason(insn.pc)
@@ -414,32 +393,9 @@ pub(crate) fn rephrase_insn(
                 unreachable!("RET must produce a RET runtime exit reason");
             };
 
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                x(RET_STATUS_REG),
-                RetStatus::Ret.as_reg(),
-                RephrasedInsnKind::RuntimeExitPayload,
-            )?;
-            push_runtime_exit_payload(
-                &mut ret,
-                insn.pc,
-                A64Insn::OrrLogShiftOrr64LogShift {
-                    shift: 0,
-                    rm: x(lr_reg),
-                    imm6: uimm(0, 6),
-                    rn: xzr(),
-                    rd: x(RET_PARAM0_REG),
-                },
-            )?;
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
-                x(RET_PARAM1_REG),
-                insn.pc.wrapping_add(4),
-                RephrasedInsnKind::RuntimeExitPayload,
-            )?;
-            push_branch_to_stub(&mut ret, insn.pc)?;
+            push_dispatch_target_capture(&mut ret, insn.pc, lr_reg)?;
+            push_dispatch_template(&mut ret, insn.pc)?;
+            push_dispatch_miss_exit(&mut ret, insn.pc, RetStatus::Ret, insn.pc.wrapping_add(4))?;
         }
         A64Insn::SvcSvcExException { .. } => {
             let Some(RuntimeExitReason::Svc { resume_pc, .. }) =
@@ -561,6 +517,82 @@ fn push_runtime_exit_payload(
         RephrasedInsn::runtime_exit_payload(original_pc, insn),
         GFP_KERNEL,
     )
+}
+
+/// `orr x13, xzr, X<source>`: T into `DISPATCH_TARGET_REG`. `source` is a *user*
+/// register number; reg-virt maps it (`DispatchTarget`).
+fn push_dispatch_target_capture(
+    out: &mut SharedVec<RephrasedInsn>,
+    original_pc: u64,
+    source: u8,
+) -> SharedResult<(), SharedAllocError> {
+    out.push(
+        RephrasedInsn::dispatch_target(
+            original_pc,
+            A64Insn::OrrLogShiftOrr64LogShift {
+                shift: 0,
+                rm: x(source),
+                imm6: uimm(0, 6),
+                rn: xzr(),
+                rd: x(DISPATCH_TARGET_REG),
+            },
+        ),
+        GFP_KERNEL,
+    )
+}
+
+/// The dispatch template (`KJIT_DISPATCH_TEMPLATE`), miss branches unresolved.
+fn push_dispatch_template(
+    out: &mut SharedVec<RephrasedInsn>,
+    original_pc: u64,
+) -> SharedResult<(), SharedAllocError> {
+    for insn in KJIT_DISPATCH_TEMPLATE {
+        out.push(RephrasedInsn::dispatch_lookup(original_pc, insn), GFP_KERNEL)?;
+    }
+    Ok(())
+}
+
+/// `add x10, x13, #0`: the miss exit group's RET_PARAM0 = T. Not the `orr x10, xzr,
+/// Xm` shape reg-virt treats as a param0 capture of a *user* register: x13 here is
+/// the physical dispatch scratch, so reg-virt allows exactly this word to read it
+/// (`is_dispatch_miss_param0_copy`).
+pub(crate) fn dispatch_miss_param0_copy() -> A64Insn {
+    A64Insn::AddAddsubImmAdd64AddsubImm {
+        sh: 0,
+        imm12: uimm(0, 12),
+        rn: A64Reg::x_sp(DISPATCH_TARGET_REG),
+        rd: A64Reg::x_sp(RET_PARAM0_REG),
+    }
+}
+
+pub(crate) fn is_dispatch_miss_param0_copy(insn: A64Insn) -> bool {
+    insn == dispatch_miss_param0_copy()
+}
+
+/// The exit group of a dispatch miss: today's branch exit (`status`, x11 =
+/// `resume_pc`) with RET_PARAM0 taken from x13.
+fn push_dispatch_miss_exit(
+    out: &mut SharedVec<RephrasedInsn>,
+    original_pc: u64,
+    status: RetStatus,
+    resume_pc: u64,
+) -> SharedResult<(), SharedAllocError> {
+    push_mov_imm64(
+        out,
+        original_pc,
+        x(RET_STATUS_REG),
+        status.as_reg(),
+        RephrasedInsnKind::RuntimeExitPayload,
+    )?;
+    push_runtime_exit_payload(out, original_pc, dispatch_miss_param0_copy())?;
+    push_mov_imm64(
+        out,
+        original_pc,
+        x(RET_PARAM1_REG),
+        resume_pc,
+        RephrasedInsnKind::RuntimeExitPayload,
+    )?;
+    push_branch_to_stub(out, original_pc)
 }
 
 fn push_branch_to_stub(
@@ -699,6 +731,21 @@ fn user_branch_target(insn: A64Insn, pc: u64) -> Option<u64> {
         .or_else(|| insn.conditional_targets(pc).map(|(taken, _)| taken))
 }
 
+/// A branch site whose lowering ends in the dispatch template: the original BL, BLR,
+/// BR and RET. Each dispatch attempt is charged to the budget (A11), so the check
+/// precedes the whole lowered site exactly as it does a back-edge.
+fn is_dispatch_site(insn: &IrInsn) -> bool {
+    matches!(
+        insn.inner.runtime_exit_reason(insn.pc),
+        Some(
+            RuntimeExitReason::Bl { .. }
+                | RuntimeExitReason::Blr { .. }
+                | RuntimeExitReason::Br { .. }
+                | RuntimeExitReason::Ret { .. }
+        )
+    )
+}
+
 /// Whether the lowered sequence of one original instruction contains a back-edge: a
 /// user-semantic branch whose target label is at or before it in layout order
 /// (`layout_block_order`). A PC's label is its first emitted instruction, so that is
@@ -731,7 +778,7 @@ pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
         for insn in &block.insns {
             placed.push(insn.pc, GFP_KERNEL)?;
             let lowered = rephrase_insn(*insn)?;
-            if is_back_edge(&lowered, &placed) {
+            if is_back_edge(&lowered, &placed) || is_dispatch_site(insn) {
                 // The check precedes the whole lowered sequence, so the Budget exit
                 // leaves with the state before the instruction and userspace
                 // re-executes the branch natively.
@@ -797,6 +844,7 @@ fn copy_u64_vec(values: &SharedVec<u64>) -> SharedResult<SharedVec<u64>, SharedA
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::shared::abi::DISPATCH_TEMPLATE_LEN;
     use crate::shared::arm64::A64Imm;
 
     #[test]
@@ -830,6 +878,15 @@ mod tests {
                 "expected one runtime-exit branch for {}",
                 insn.key()
             );
+            // A11: BL/BLR/BR/RET are dispatch sites (target move, template, then the
+            // exit group a miss takes); SVC is a plain exit group.
+            let dispatch_site = !matches!(insn, A64Insn::SvcSvcExException { .. });
+            let dispatch_kind = |kind: RephrasedInsnKind| {
+                matches!(
+                    kind,
+                    RephrasedInsnKind::DispatchTarget | RephrasedInsnKind::DispatchLookup
+                )
+            };
             assert!(
                 rephrased
                     .iter()
@@ -837,20 +894,51 @@ mod tests {
                     .all(|insn| matches!(
                         insn.kind,
                         RephrasedInsnKind::RuntimeExitPayload | RephrasedInsnKind::UserSynthetic
-                    )),
-                "expected runtime-exit lowering instructions to be payload or user-synthetic for {}",
+                    ) || (dispatch_site && dispatch_kind(insn.kind))),
+                "expected runtime-exit lowering instructions to be payload, user-synthetic or dispatch for {}",
                 insn.key()
             );
             assert!(
-                rephrased
-                    .iter()
-                    .all(|insn| insn.kind.is_runtime_exit() || insn.kind.is_user_semantic()),
-                "expected only runtime-exit or user-semantic lowering instructions for {}",
+                rephrased.iter().all(|insn| insn.kind.is_runtime_exit()
+                    || insn.kind.is_user_semantic()
+                    || (dispatch_site && dispatch_kind(insn.kind))),
+                "expected only runtime-exit, user-semantic or dispatch lowering instructions for {}",
                 insn.key()
             );
+            let template = rephrased
+                .iter()
+                .filter(|insn| insn.kind == RephrasedInsnKind::DispatchLookup)
+                .map(|insn| insn.insn)
+                .collect::<Vec<_>>();
+            if dispatch_site {
+                assert_eq!(
+                    template,
+                    KJIT_DISPATCH_TEMPLATE,
+                    "expected the byte-exact dispatch template for {}",
+                    insn.key()
+                );
+                // The template is followed by the exit group, which copies T from x13.
+                let after_br = rephrased
+                    .iter()
+                    .position(|insn| matches!(insn.insn, A64Insn::BrBr64BranchReg { .. }))
+                    .expect("template ends in br")
+                    + 1;
+                assert!(
+                    rephrased[after_br..]
+                        .iter()
+                        .any(|insn| insn.kind == RephrasedInsnKind::RuntimeExitPayload
+                            && is_dispatch_miss_param0_copy(insn.insn)),
+                    "expected the miss exit group to take RET_PARAM0 from x13 for {}",
+                    insn.key()
+                );
+            } else {
+                assert!(template.is_empty(), "SVC has no dispatch template");
+            }
+            // (Except the template's own `br x12`, which only the verifier admits.)
             assert!(
                 rephrased
                     .iter()
+                    .filter(|insn| insn.kind != RephrasedInsnKind::DispatchLookup)
                     .all(|insn| insn.insn.runtime_exit_reason(insn.ori_pc).is_none()),
                 "raw runtime-exit instruction survived rephrase for {}",
                 insn.key()
@@ -904,14 +992,14 @@ mod tests {
 
         assert_eq!(
             rephrased[0],
-            RephrasedInsn::runtime_exit_payload(
+            RephrasedInsn::dispatch_target(
                 0x1000,
                 A64Insn::OrrLogShiftOrr64LogShift {
                     shift: 0,
                     rm: x(ABI_LINK_REG),
                     imm6: uimm(0, 6),
                     rn: xzr(),
-                    rd: x(RET_PARAM0_REG),
+                    rd: x(DISPATCH_TARGET_REG),
                 },
             )
         );
@@ -1170,6 +1258,63 @@ mod tests {
             assert_not_budget_checked(&program[0]);
             assert_budget_checked(&program[1], branch, 0x1008);
         }
+    }
+
+    /// A11: every dispatch attempt costs one budget unit, hit or miss, so BL, BLR, BR
+    /// and RET get the check before their whole lowered site (target move, link
+    /// write, template, exit group), with the Budget stub of the same pc in the
+    /// block's cold region: a Budget exit leaves the state from before the
+    /// instruction.
+    #[test]
+    fn dispatch_sites_get_the_budget_check_before_the_whole_site() {
+        let sites = [
+            A64Insn::BlBlOnlyBranchImm {
+                imm26: scaled_simm(8, 26, 2),
+            },
+            A64Insn::BlrBlr64BranchReg { rn: x(5) },
+            A64Insn::BrBr64BranchReg { rn: x(17) },
+            A64Insn::RetRet64rBranchReg { rn: x(30) },
+        ];
+        for site in sites {
+            let program = rephrase(cfg_of(&[&[(0x1000, site)]])).unwrap();
+            let block = &program[0];
+            assert_eq!(&block.insns[..4], &budget_check(0x1000), "{}", site.key());
+            assert_eq!(
+                native_resume_values(&block.cold),
+                (
+                    RetStatus::Budget.as_reg(),
+                    u64::from(site.encode().unwrap()),
+                    0x1000
+                ),
+                "{}",
+                site.key()
+            );
+            let template_at = block
+                .insns
+                .iter()
+                .position(|insn| insn.kind == RephrasedInsnKind::DispatchLookup)
+                .unwrap();
+            assert!(template_at > 4);
+            assert!(block.insns[4..template_at]
+                .iter()
+                .all(|insn| insn.kind != RephrasedInsnKind::BudgetCheck));
+            assert_eq!(
+                block.insns[template_at..template_at + DISPATCH_TEMPLATE_LEN]
+                    .iter()
+                    .map(|insn| insn.insn)
+                    .collect::<Vec<_>>(),
+                KJIT_DISPATCH_TEMPLATE
+            );
+            // The exit group of a miss follows the template and ends the site.
+            assert!(block.insns[template_at + DISPATCH_TEMPLATE_LEN..]
+                .iter()
+                .all(|insn| insn.kind.is_runtime_exit()));
+        }
+        // SVC is not a branch of the translated code: no check, no template.
+        let svc = A64Insn::SvcSvcExException {
+            imm16: A64Imm::unsigned(0, 16),
+        };
+        assert_not_budget_checked(&rephrase(cfg_of(&[&[(0x1000, svc)]])).unwrap()[0]);
     }
 
     #[test]

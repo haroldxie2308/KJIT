@@ -1,9 +1,12 @@
 use crate::arm64::{execute_insn, AccessContext, InsnError, LoggedAccess, UserAccessCounter};
+use crate::code_cache::{synthetic_loader, CacheAction, CacheLayout, CodeCache};
 use crate::model::{MachineState, PAGE_SIZE};
 use crate::shared::abi::{
     RetStatus, ABI_ENTRY_ARG_REG, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
-    PROLOGUE_LEN_BYTES, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG, RUNTIME_FRAME_SIZE_BYTES,
+    EXTRA_PARAMS_BYTES, EXTRA_PARAM_IBTC_TABLE_OFFSET, IBTC_TABLE_BYTES, PROLOGUE_LEN_BYTES,
+    RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG, RUNTIME_FRAME_SIZE_BYTES,
 };
+use crate::shared::arm64::A64OperandRole;
 use crate::shared::emit::layout::ExecutionFragment;
 
 pub const DEFAULT_BASE_PC: u64 = 0x400000;
@@ -11,10 +14,17 @@ pub const DEFAULT_PT_REGS_ADDR: u64 = 0x7fe000;
 pub const DEFAULT_EXTRA_PARAMS_ADDR: u64 = 0x7ff000;
 pub const DEFAULT_RETURN_PC: u64 = 0x123456;
 pub const DEFAULT_STACK_TOP: u64 = 0x800000;
+/// The dispatch tables and records (A11), in runtime-owned memory below the extra
+/// params page and above the code space (`DEFAULT_BASE_PC` up).
+pub const DEFAULT_CACHE_LAYOUT: CacheLayout = CacheLayout {
+    table_all: 0x600000,
+    table_nofp: 0x600000 + IBTC_TABLE_BYTES as u64,
+    records: 0x600000 + 2 * IBTC_TABLE_BYTES as u64,
+    records_len: 0x40000,
+};
 
 pub(crate) const PT_REGS_BYTES: u64 = 256;
 pub(crate) const PT_REGS_SP_OFFSET: u64 = 31 * 8;
-const EXTRA_PARAMS_BYTES: u64 = 16;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct URuntimeConfig {
@@ -37,11 +47,20 @@ impl Default for URuntimeConfig {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct URuntime {
     pub state: MachineState,
-    pub fragment: ExecutionFragment,
     pub config: URuntimeConfig,
+    /// Every fragment the run can execute, with the dispatch tables. A run of one
+    /// fragment (`URuntime::new`) has a cache of one fragment and never publishes: its
+    /// tables stay empty, so every branch exit misses and takes the runtime path.
+    cache: CodeCache,
+    /// The fragment of the current entry: its table is the run's (`extra params[2]`).
+    entered: usize,
+    /// `with_cache` runs resolve exits through the cache (publish, translate on a
+    /// miss, `CodeCache::decide`); a single-fragment run uses
+    /// `decide_runtime_return`.
+    resolving: bool,
     /// Numbers the fragment's user accesses (`LDTR`/`STTR`) across the whole run,
     /// runtime-loop continuations included; optionally fails one.
     user_accesses: UserAccessCounter,
@@ -93,6 +112,8 @@ pub enum URuntimeHalt {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct URuntimeStep {
+    /// The fragment `offset`, `insn_index` and `next_offset` are relative to.
+    pub fragment: usize,
     pub offset: Option<usize>,
     pub insn_index: Option<usize>,
     pub next_offset: Option<usize>,
@@ -105,6 +126,7 @@ pub struct URuntimeStep {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum URuntimeTransition {
     Continued {
+        fragment: usize,
         offset: usize,
     },
     /// A user access at `access_offset` faulted; execution resumes at its fault
@@ -122,22 +144,88 @@ impl URuntime {
 
     pub fn with_config(
         fragment: ExecutionFragment,
-        mut initial_state: MachineState,
+        initial_state: MachineState,
         config: URuntimeConfig,
     ) -> Self {
+        let entry_pc = fragment
+            .vlabels
+            .iter()
+            .find(|&&(_, offset)| offset == fragment.entry_offset)
+            .map(|&(pc, _)| pc)
+            .expect("a compiled fragment's entry offset is one of its labels");
+        // The translator's view of FP/SIMD use: this fragment was not verified here.
+        let uses_fpsimd = fragment.insns.iter().any(|insn| {
+            insn.operand_roles().iter().any(|role| {
+                matches!(
+                    role,
+                    A64OperandRole::VecRead { .. } | A64OperandRole::VecWrite { .. }
+                )
+            })
+        });
+        let mut cache = CodeCache::new(
+            DEFAULT_CACHE_LAYOUT,
+            None,
+            synthetic_loader(config.base_pc),
+        );
+        cache
+            .install(entry_pc, fragment, Vec::new(), uses_fpsimd)
+            .expect("one fragment fits an empty cache");
+        Self::start(cache, 0, initial_state, config, false)
+    }
+
+    /// A run over a code cache (`entry` is the fragment to enter first). Branch exits
+    /// resolve through the cache: they publish, and a miss translates its target.
+    /// The cache's memory (tables, records) is part of the run's runtime-owned memory.
+    /// The fragments' addresses are the cache loader's (`config.base_pc` is only the
+    /// first fragment's base for a single-fragment `URuntime::new`).
+    pub fn with_cache(
+        cache: CodeCache,
+        entry: usize,
+        initial_state: MachineState,
+        config: URuntimeConfig,
+    ) -> Self {
+        Self::start(cache, entry, initial_state, config, true)
+    }
+
+    fn start(
+        mut cache: CodeCache,
+        entry: usize,
+        mut initial_state: MachineState,
+        config: URuntimeConfig,
+        resolving: bool,
+    ) -> Self {
         seed_pt_regs(&mut initial_state, &config);
+        cache.begin_run();
+        for (addr, value) in cache.image() {
+            initial_state.write_u64(addr, value);
+        }
         initial_state.write_x(ABI_PT_REGS_ARG_REG, config.pt_regs_addr);
         initial_state.write_x(ABI_EXTRA_PARAMS_ARG_REG, config.extra_params_addr);
         initial_state.write_x(ABI_LINK_REG, config.return_pc);
         initial_state.set_sp(config.stack_top);
         Self {
             state: initial_state,
-            fragment,
             config,
+            cache,
+            entered: entry,
+            resolving,
             user_accesses: UserAccessCounter::default(),
             access_log: None,
             pan: true,
         }
+    }
+
+    /// The fragment this runtime was created with (its first fragment).
+    pub fn fragment(&self) -> &ExecutionFragment {
+        &self.cache.fragments[0].fragment
+    }
+
+    pub fn cache(&self) -> &CodeCache {
+        &self.cache
+    }
+
+    pub fn into_cache(self) -> CodeCache {
+        self.cache
     }
 
     /// Fails the `k`-th dynamic user access (`LDTR`/`STTR`) of the run (1-based)
@@ -175,43 +263,60 @@ impl URuntime {
         }
     }
 
-    fn handle_runtime_return(&self) -> RuntimeAction {
-        decide_runtime_return(
-            &self.fragment,
-            self.state.read_x(RET_STATUS_REG),
-            self.state.read_x(RET_PARAM0_REG),
-            self.state.read_x(RET_PARAM1_REG),
-        )
+    /// The runtime's decision for the exit the fragment just returned with. A cache
+    /// run applies the memory writes of any publish or install to the machine.
+    fn handle_runtime_return(&mut self) -> Result<CacheAction, String> {
+        let status = self.state.read_x(RET_STATUS_REG);
+        let param0 = self.state.read_x(RET_PARAM0_REG);
+        let param1 = self.state.read_x(RET_PARAM1_REG);
+        if !self.resolving {
+            return Ok(
+                match decide_runtime_return(&self.cache.fragments[0].fragment, status, param0, param1)
+                {
+                    RuntimeAction::ContinueAt(offset) => CacheAction::ContinueAt {
+                        fragment: 0,
+                        offset,
+                    },
+                    RuntimeAction::Stop(halt) => CacheAction::Stop(halt),
+                },
+            );
+        }
+        let run_fpsimd = self.cache.fragments[self.entered].uses_fpsimd;
+        let action = self.cache.decide(run_fpsimd, status, param0, param1)?;
+        for (addr, value) in self.cache.drain_writes() {
+            self.state.write_u64(addr, value);
+        }
+        Ok(action)
     }
 
     /// Sets up the ABI call: the fragment is always called at its base (the
-    /// prologue) and the prologue branches to `ABI_ENTRY_ARG_REG`.
-    fn prepare_entry_at(&mut self, offset: usize) -> Result<(), String> {
-        validate_entry_offset(&self.fragment, offset)?;
+    /// prologue) and the prologue branches to `ABI_ENTRY_ARG_REG`. Extra params
+    /// `[2]` is the dispatch table of this run, chosen by the fragment entered.
+    fn prepare_entry_at(&mut self, fragment: usize, offset: usize) -> Result<(), String> {
+        let frag = &self.cache.fragments[fragment];
+        validate_entry_offset(&frag.fragment, offset)?;
+        let (base, table) = (frag.base, self.cache.table_for(frag.uses_fpsimd));
+        self.entered = fragment;
         self.state
             .write_x(ABI_PT_REGS_ARG_REG, self.config.pt_regs_addr);
         self.state
             .write_x(ABI_EXTRA_PARAMS_ARG_REG, self.config.extra_params_addr);
+        self.state.write_u64(
+            self.config.extra_params_addr + u64::from(EXTRA_PARAM_IBTC_TABLE_OFFSET),
+            table,
+        );
         self.state
-            .write_x(ABI_ENTRY_ARG_REG, self.config.base_pc + offset as u64);
+            .write_x(ABI_ENTRY_ARG_REG, base + offset as u64);
         self.state.write_x(ABI_LINK_REG, self.config.return_pc);
         self.state.set_sp(self.config.stack_top);
         self.pan = true;
         Ok(())
     }
 
-    fn pc_to_index(&self, pc: u64) -> Option<usize> {
-        let offset = self.emitted_pc_to_offset(pc)?;
-        let index = offset / 4;
-        (index < self.fragment.insns.len()).then_some(index)
-    }
-
-    fn emitted_pc_to_offset(&self, pc: u64) -> Option<usize> {
-        let offset = pc.checked_sub(self.config.base_pc)?;
-        if offset % 4 != 0 {
-            return None;
-        }
-        usize::try_from(offset).ok()
+    /// The fragment holding emitted address `pc`, and the offset in it.
+    fn locate(&self, pc: u64) -> Option<(usize, usize)> {
+        let (fragment, offset) = self.cache.locate(pc)?;
+        (offset % 4 == 0).then_some((fragment, offset))
     }
 
     fn report(&self, halt: URuntimeHalt, steps: usize) -> URuntimeReport {
@@ -262,15 +367,15 @@ impl URuntime {
         Ok(())
     }
 
-    pub(crate) fn runtime_owned_ranges(&self) -> [(u64, u64); 3] {
-        [
+    pub(crate) fn runtime_owned_ranges(&self) -> Vec<(u64, u64)> {
+        let mut ranges = vec![
             (
                 self.config.pt_regs_addr,
                 self.config.pt_regs_addr + PT_REGS_BYTES,
             ),
             (
                 self.config.extra_params_addr,
-                self.config.extra_params_addr + EXTRA_PARAMS_BYTES,
+                self.config.extra_params_addr + EXTRA_PARAMS_BYTES as u64,
             ),
             (
                 self.config
@@ -278,7 +383,9 @@ impl URuntime {
                     .saturating_sub(RUNTIME_FRAME_SIZE_BYTES as u64),
                 self.config.stack_top,
             ),
-        ]
+        ];
+        ranges.extend(self.cache.layout().ranges());
+        ranges
     }
 }
 
@@ -292,13 +399,16 @@ struct URuntimeCursor {
 impl URuntimeCursor {
     fn new(runtime: &mut URuntime) -> Result<Self, String> {
         runtime.check_runtime_memory_not_user_mapped()?;
-        if runtime.fragment.len_bytes() <= PROLOGUE_LEN_BYTES {
+        let entry = runtime.entered;
+        let frag = &runtime.cache.fragments[entry];
+        if frag.fragment.len_bytes() <= PROLOGUE_LEN_BYTES {
             return Err("fragment is missing the ABI prologue".to_string());
         }
-        runtime.prepare_entry_at(runtime.fragment.entry_offset)?;
+        let (base, entry_offset) = (frag.base, frag.fragment.entry_offset);
+        runtime.prepare_entry_at(entry, entry_offset)?;
 
         Ok(Self {
-            pc: runtime.config.base_pc,
+            pc: base,
             steps: 0,
             stopped: false,
         })
@@ -309,8 +419,9 @@ impl URuntimeCursor {
     }
 
     fn current_offset(&self, runtime: &URuntime) -> Option<usize> {
-        runtime.emitted_pc_to_offset(self.pc)
+        runtime.locate(self.pc).map(|(_, offset)| offset)
     }
+
 
     fn steps(&self) -> usize {
         self.steps
@@ -331,14 +442,15 @@ impl URuntimeCursor {
 
         if self.pc == runtime.config.return_pc {
             return Ok(Some(
-                self.apply_runtime_return(runtime, None, None, None, false)?,
+                self.apply_runtime_return(runtime, None, None, None, None, false)?,
             ));
         }
 
-        let Some(index) = runtime.pc_to_index(self.pc) else {
+        let Some((fragment, offset)) = runtime.locate(self.pc) else {
             self.stopped = true;
             let halt = URuntimeHalt::FellOffFragment { pc: self.pc };
             return Ok(Some(Advanced {
+                fragment: runtime.entered,
                 offset: None,
                 insn_index: None,
                 next_offset: None,
@@ -348,10 +460,15 @@ impl URuntimeCursor {
                 snapshot: Snapshot::Physical,
             }));
         };
-
-        let offset = index * 4;
+        let Some(&insn) = runtime.cache.fragments[fragment]
+            .fragment
+            .insns
+            .get(offset / 4)
+        else {
+            unreachable!("`locate` returns offsets inside the fragment");
+        };
+        let index = offset / 4;
         let insn_pc = self.pc;
-        let insn = runtime.fragment.insns[index];
         self.steps += 1;
 
         let runtime_ranges = runtime.runtime_owned_ranges();
@@ -367,10 +484,14 @@ impl URuntimeCursor {
                 let message = match err {
                     // The faulting access did not retire. Like the kernel's fixup,
                     // only the PC changes: to the site's Mem stub.
-                    InsnError::Fault(fault) => match runtime.fragment.fault_site(offset) {
+                    InsnError::Fault(fault) => match runtime.cache.fragments[fragment]
+                        .fragment
+                        .fault_site(offset)
+                    {
                         Some(site) => {
-                            self.pc = runtime.config.base_pc + site.stub_offset as u64;
+                            self.pc = runtime.cache.fragments[fragment].base + site.stub_offset as u64;
                             return Ok(Some(Advanced {
+                                fragment,
                                 offset: Some(offset),
                                 insn_index: Some(index),
                                 next_offset: Some(site.stub_offset),
@@ -395,6 +516,7 @@ impl URuntimeCursor {
                     message,
                 };
                 return Ok(Some(Advanced {
+                    fragment,
                     offset: Some(offset),
                     insn_index: Some(index),
                     next_offset: None,
@@ -410,17 +532,19 @@ impl URuntimeCursor {
         if self.pc == runtime.config.return_pc {
             return Ok(Some(self.apply_runtime_return(
                 runtime,
+                Some(fragment),
                 Some(offset),
                 Some(index),
-                runtime.emitted_pc_to_offset(next_pc),
+                runtime.locate(next_pc).map(|(_, offset)| offset),
                 true,
             )?));
         }
 
         Ok(Some(Advanced {
+            fragment,
             offset: Some(offset),
             insn_index: Some(index),
-            next_offset: runtime.emitted_pc_to_offset(self.pc),
+            next_offset: runtime.locate(self.pc).map(|(_, offset)| offset),
             executed: true,
             runtime_transition: None,
             halt: None,
@@ -431,6 +555,7 @@ impl URuntimeCursor {
     fn apply_runtime_return(
         &mut self,
         runtime: &mut URuntime,
+        fragment: Option<usize>,
         offset: Option<usize>,
         insn_index: Option<usize>,
         next_offset: Option<usize>,
@@ -444,25 +569,32 @@ impl URuntimeCursor {
                 runtime.state.read_x(RET_STATUS_REG)
             ));
         }
-        match runtime.handle_runtime_return() {
-            RuntimeAction::ContinueAt(offset_to_enter) => {
-                runtime.prepare_entry_at(offset_to_enter)?;
-                self.pc = runtime.config.base_pc;
+        let fragment = fragment.unwrap_or(runtime.entered);
+        match runtime.handle_runtime_return()? {
+            CacheAction::ContinueAt {
+                fragment: fragment_to_enter,
+                offset: offset_to_enter,
+            } => {
+                runtime.prepare_entry_at(fragment_to_enter, offset_to_enter)?;
+                self.pc = runtime.cache.fragments[fragment_to_enter].base;
                 Ok(Advanced {
+                    fragment,
                     offset,
                     insn_index,
                     next_offset,
                     executed,
                     runtime_transition: Some(URuntimeTransition::Continued {
+                        fragment: fragment_to_enter,
                         offset: offset_to_enter,
                     }),
                     halt: None,
                     snapshot: Snapshot::UserFromPtRegs,
                 })
             }
-            RuntimeAction::Stop(halt) => {
+            CacheAction::Stop(halt) => {
                 self.stopped = true;
                 Ok(Advanced {
+                    fragment,
                     offset,
                     insn_index,
                     next_offset,
@@ -487,6 +619,8 @@ enum Snapshot {
 
 /// A `URuntimeStep` whose state has not been captured yet.
 pub(crate) struct Advanced {
+    /// The fragment `offset` is relative to: the one that ran the step.
+    pub(crate) fragment: usize,
     pub(crate) offset: Option<usize>,
     insn_index: Option<usize>,
     next_offset: Option<usize>,
@@ -499,6 +633,7 @@ pub(crate) struct Advanced {
 impl Advanced {
     fn into_step(self, runtime: &URuntime) -> URuntimeStep {
         URuntimeStep {
+            fragment: self.fragment,
             offset: self.offset,
             insn_index: self.insn_index,
             next_offset: self.next_offset,
@@ -583,7 +718,7 @@ impl OwnedURuntimeStepper {
         self.runtime.physical_user_state()
     }
 
-    pub fn runtime_owned_ranges(&self) -> [(u64, u64); 3] {
+    pub fn runtime_owned_ranges(&self) -> Vec<(u64, u64)> {
         self.runtime.runtime_owned_ranges()
     }
 
@@ -722,8 +857,9 @@ fn seed_pt_regs(state: &mut MachineState, config: &URuntimeConfig) {
         state.write_u64(config.pt_regs_addr + (reg as u64) * 8, state.read_x(reg));
     }
     state.write_u64(config.pt_regs_addr + PT_REGS_SP_OFFSET, state.sp());
-    state.write_u64(config.extra_params_addr, 0);
-    state.write_u64(config.extra_params_addr + 8, 0);
+    for word in 0..crate::shared::abi::EXTRA_PARAMS_WORDS as u64 {
+        state.write_u64(config.extra_params_addr + word * 8, 0);
+    }
 }
 
 #[cfg(test)]
@@ -850,6 +986,7 @@ mod tests {
                 let step = stepper.step().unwrap().unwrap();
                 if step.runtime_transition
                     == Some(URuntimeTransition::Continued {
+                        fragment: 0,
                         offset: resume_offset,
                     })
                 {
@@ -1189,14 +1326,17 @@ mod tests {
         assert_eq!(report.state.read_x(0), 0x1234);
     }
 
-    /// The N-th back-edge execution of one entry exits (N = the budget), before the
-    /// branch runs; N - 1 executions complete.
+    /// The N-th budget unit of one entry exits (N = the budget), before the branch
+    /// runs; N - 1 units complete. A back-edge execution is one unit and, since A11,
+    /// so is a dispatch attempt: the `ret` that ends `countdown` takes one more than
+    /// its loop does.
     #[test]
-    fn budget_exits_exactly_on_the_budget_th_back_edge_execution() {
+    fn budget_exits_exactly_on_the_budget_th_unit() {
         use crate::shared::abi::KJIT_BACKEDGE_BUDGET;
         let budget = KJIT_BACKEDGE_BUDGET as u32;
 
-        let (report, cap) = run_counting(&countdown(budget - 1));
+        // n back-edge executions + the `ret`'s dispatch = N - 1 units: all complete.
+        let (report, cap) = run_counting(&countdown(budget - 2));
         assert_eq!(
             report.halt,
             URuntimeHalt::ReturnedToUserspace {
@@ -1208,6 +1348,25 @@ mod tests {
         assert_eq!(cap, None);
         assert_eq!(report.state.read_x(0), 0);
 
+        // N - 1 back-edge executions + the `ret` = N units: the `ret` is the N-th.
+        let (report, cap) = run_counting(&countdown(budget - 1));
+        assert_eq!(
+            report.halt,
+            URuntimeHalt::ReturnedToUserspace {
+                status: RetStatus::Budget,
+                target_pc: 0x400c,
+            }
+        );
+        assert_eq!(
+            cap,
+            Some(crate::InstanceCap {
+                pc: 0x400c,
+                instance: 1,
+            })
+        );
+        assert_eq!(report.state.read_x(0), 0);
+
+        // N back-edge executions: the N-th one exits.
         let (report, cap) = run_counting(&countdown(budget));
         assert_eq!(
             report.halt,

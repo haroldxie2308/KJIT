@@ -16,6 +16,7 @@ use std::path::{Path, PathBuf};
 
 use crate::arm64::LoggedAccess;
 use crate::asm_fixture::{compile_case, list_cases, panic_message, CompiledCase};
+use crate::cached_run::{compare_cached, new_interpreter_cache, run_cached_differential, CachedRun};
 use crate::model::{AccessKind, HaltReason, MachineState, Privilege};
 use crate::runtime::{URuntime, URuntimeHalt};
 use crate::shared::abi::RetStatus;
@@ -57,12 +58,49 @@ fn every_asm_fixture_case_matches_original() {
             &initial_state,
         )
         .map_err(|message| format!("fragment fault differential: {message}"))?;
+        let cached = check_cached_case(&case.text_base, &case.text_bytes, case.entry_pc, &initial_state)
+            .map_err(|message| format!("cached run: {message}"))?;
         Ok(format!(
             "halt={:?} injected_user_accesses={user_accesses} \
-             injected_fragment_faults={fragment_faults}",
+             injected_fragment_faults={fragment_faults} {cached}",
             report.fragment_halt
         ))
     });
+}
+
+/// A11: the case runs cold (an empty code cache: every branch exit misses and is
+/// resolved by the runtime, which translates and publishes) and warm (the cache the
+/// cold run left: transfers hit in the dispatch tables), each equal to the original
+/// following its branches. The warm run takes at most as many runtime round trips.
+fn check_cached_case(
+    text_base: &u64,
+    text: &[u8],
+    entry_pc: u64,
+    initial_state: &MachineState,
+) -> Result<String, String> {
+    let cache = new_interpreter_cache(*text_base, text);
+    let (cold, cache) = run_cached_differential(cache, *text_base, text, entry_pc, initial_state)
+        .map_err(|err| format!("cold: {err}"))?;
+    compare_cached("cold", &cold).map_err(|mismatch| mismatch.message)?;
+    let (warm, cache) = run_cached_differential(cache, *text_base, text, entry_pc, initial_state)
+        .map_err(|err| format!("warm: {err}"))?;
+    compare_cached("warm", &warm).map_err(|mismatch| mismatch.message)?;
+    if warm.runtime_entries > cold.runtime_entries {
+        return Err(format!(
+            "the warm run took {} runtime entries, more than the cold run's {}",
+            warm.runtime_entries, cold.runtime_entries
+        ));
+    }
+    let stats = cache.stats;
+    let summary = |run: &CachedRun| format!("{:?}/{} entries", run.report.halt, run.runtime_entries);
+    Ok(format!(
+        "cold=[{}] warm=[{}] fragments={} ibtc_insert={} ibtc_replace={}",
+        summary(&cold),
+        summary(&warm),
+        cache.fragments.len(),
+        stats.ibtc_insert,
+        stats.ibtc_replace
+    ))
 }
 
 /// Three-way check on the host CPU: interpreter original == native original ==
@@ -73,13 +111,23 @@ fn every_asm_fixture_case_matches_original() {
 fn every_asm_fixture_case_matches_native() {
     let session = crate::native::NativeSession::new().expect("set up native runner");
     run_every_case("native", &mut |case| {
-        crate::native::check_case(
+        let initial_state = fixture_state(case.text_base, &case.text_bytes)?;
+        let single = crate::native::check_case(
             &session,
             case.text_base,
             &case.text_bytes,
             case.entry_pc,
-            &fixture_state(case.text_base, &case.text_bytes)?,
+            &initial_state,
+        )?;
+        let cached = crate::native::check_cached_case(
+            &session,
+            case.text_base,
+            &case.text_bytes,
+            case.entry_pc,
+            &initial_state,
         )
+        .map_err(|message| format!("cached run: {message}"))?;
+        Ok(format!("{single} | cached {cached}"))
     });
 }
 
@@ -443,7 +491,7 @@ fn check_fragment_fault_injection(
             }
             privilege @ (Privilege::User | Privilege::Window) => {
                 user_index += 1;
-                let insn = runtime.fragment.insns[offset / 4];
+                let insn = runtime.fragment().insns[offset / 4];
                 let tagged = match privilege {
                     Privilege::User => insn.is_unprivileged_access(),
                     _ => insn.is_pan_window_access(),
@@ -455,11 +503,11 @@ fn check_fragment_fault_injection(
                     ));
                 }
                 let site = runtime
-                    .fragment
+                    .fragment()
                     .fault_site(offset)
                     .ok_or_else(|| format!("user access at {offset:#x} has no fault site"))?;
                 let rank = runtime
-                    .fragment
+                    .fragment()
                     .fault_sites
                     .iter()
                     .filter(|other| other.ori_pc == site.ori_pc)
@@ -487,7 +535,7 @@ fn check_fragment_fault_injection(
         .skip(total as usize)
         .all(|logged| {
             let offset = (logged.pc - base_pc) as usize;
-            runtime.fragment.fault_site(offset).map(|site| site.ori_pc) == natural_fault_pc
+            runtime.fragment().fault_site(offset).map(|site| site.ori_pc) == natural_fault_pc
         });
     if user_index < total || !extras_ok {
         return Err(format!(
