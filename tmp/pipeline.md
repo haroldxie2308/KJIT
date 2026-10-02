@@ -2831,3 +2831,276 @@ there.
 - In-fragment code quality (budget counter read-modify-write through memory,
   stack-backed x12..x15, `LDTR` imm9-only splits): separate work. Step 0
   tells whether it matters.
+
+# A11 Step 0: baseline (2026-10-02)
+
+Pre-A11 code (06edb8f; runtime, module and kernel unchanged), `kjit-guest`
+(non-debug), M1 host, HVF, 4 vCPUs, built in this worktree's default build
+root. Other agents ran builds and QEMU guests on the same host throughout:
+every boot below waited for the host 1-minute load to be <= 6 first (waits
+and loads in the tables), none was gated while running.
+
+## Method
+
+- `tests/guest/entry_cost.c` (`entry_cost <gpr|fp> [outer] [calls] [reps]`):
+  per outer iteration one raw `svc` (getppid), then `calls` x (`bl` callee,
+  return site), no syscall in between. `gpr` callee: `add x6, x6, #1; ret`;
+  `fp` callee: `fmov d0, x6; fmov x6, d0; add x6, x6, #1; ret` (the verifier
+  marks its fragment `uses_fpsimd`, the return-site fragment stays integer
+  only). One call = two chained entries, so KJIT on makes `2 * calls + 1`
+  entries per syscall (at most 513 here, `chain_budget` 1024: `chain_cap` is
+  never hit; the program refuses to run otherwise). Timing:
+  `clock_gettime(CLOCK_MONOTONIC)` around the asm loop only; one warm-up
+  run, then 7 timed runs, median reported. Off: `enable=0`. On: self
+  registration (`translate_svc_sites` + `translate` of callee and return
+  site, as `call_loop`), plus one boot in auto mode. Counters are checked
+  (fragment entries >= 95% of `reps * outer * (2 * calls + 1)`, FP/SIMD
+  entries ~ `calls` per outer for `fp` and none for `gpr`, `chain_cap` 0).
+  Three `calls` values (16, 128, 256); the per-entry cost is the slope of
+  `T_on - T_off` per outer iteration against entries per outer iteration,
+  which removes the svc.
+- `tests/guest/a11-baseline.sh WORKDIR RUNS REQUESTS POINT...`: one
+  redis-server per invocation, warm-up (SET then GET, 200000 each, at the first
+  point), then RUNS passes over the points; per point and pass one
+  `redis-benchmark -t set -n 200000 -q` and one `-t get` (under nojit, 50
+  clients, fixed key; separate invocations so each test has its own counter
+  delta; set first so the GET hits). POINT is `off` or a `chain_budget`
+  (debugfs; auto mode on). Per run: req/s and the deltas of `hook_calls`,
+  `syscalls_in_kernel`, `fragment_entries`, `fpsimd_entries`,
+  `fpsimd_restores`, `chains`, `chain_cap`, `exit_{svc,bl,blr,br,ret,mem,
+  unsupported,budget}`, `run_declined`. It fails on a KJIT-on run without
+  fragment entries, a KJIT-off run with some, and any `exit_invalid` /
+  verifier rejection.
+- Redis data: 18 boots, one fresh server each, 3 passes (= 3 runs per test)
+  per boot: round A points in the order off,1,16,64,256,1024, round B
+  reversed, round C rotated: 9 runs per point and test. Plus two single-server
+  sweeps (all six points on one server, 3 passes; the A10 shape), forward and
+  reversed: 6 runs per point and test. `guest-run` PASS for every boot (no
+  kernel BUG/WARNING/oops/RCU line, `exit_invalid` 0).
+
+## Microbenchmark: cost of one fragment entry
+
+ns per outer iteration, median over 3 boots of the per-boot median of 7 runs
+(self registration). Host load before each boot: 5.45 (waited 660 s), 5.53
+(390 s), 5.29; after: 10.51, 5.29, 5.15.
+
+| variant | calls K | entries/outer | off | on | (on-off)/entries |
+|---|---|---|---|---|---|
+| gpr | 16 | 33 | 146.7 | 643.7 | 15.1 ns |
+| gpr | 128 | 257 | 255.6 | 4683.6 | 17.2 ns |
+| gpr | 256 | 513 | 380.5 | 9275.9 | 17.3 ns |
+| fp | 16 | 33 | 179.8 | 1469.7 | 39.1 ns |
+| fp | 128 | 257 | 542.2 | 11225.5 | 41.6 ns |
+| fp | 256 | 513 | 957.0 | 22321.5 | 41.7 ns |
+
+Fit of (on - off) per outer against entries per outer: gpr 17.50 ns/entry
+(R2 1.0000), fp 41.82 ns/entry (R2 1.0000). Auto mode (one boot, fit of the
+on time alone): gpr 18.06, fp 43.69 ns/entry. Native off: ~1 ns per call, ~131
+ns per svc. So: an integer-only entry costs ~17.5 ns, an FP/SIMD-bracketed
+entry ~66 ns (= 2 x 41.82 - 17.5, the fp variant has K bracketed callee
+entries and K+1 integer return-site entries), i.e. the bracket costs ~49 ns.
+Counters of the on runs (3 boots, same each): `fragment_entries` 33.0 / 257.0
+/ 513.0 per outer, `exit_bl` K and `exit_ret` K+1 per outer, `chain_cap` 0,
+`exit_mem`/`exit_unsupported`/`exit_budget` 0, `syscalls_in_kernel` = outer;
+`fpsimd_entries` K per outer for fp, 1 total for gpr, `fpsimd_restores` 0.
+
+## redis-benchmark: per point (fresh server per boot, 9 runs per cell)
+
+| point | SET req/s mean (min..max) | GET req/s mean (min..max) | SET / GET us/req | entries/req (SET / GET) | FP entries/req | in-kernel syscalls/req | hook calls/req | chain_cap/req |
+|---|---|---|---|---|---|---|---|---|
+| off | 234341 (213447..263852) | 235551 (218341..262123) | 4.288 / 4.259 | 0 | 0 | 0 | 0 | 0 |
+| 1 | 229833 (209424..261780) | 234930 (225989..258065) | 4.373 / 4.264 | 2.28 / 2.27 | 0 | 0 | 2.28 | 2.28 |
+| 16 | 241804 (221976..267023) | 246234 (234467..260078) | 4.146 / 4.067 | 34.99 / 35.38 | 0 | 0 | 2.19-2.22 | 2.19-2.21 |
+| 64 | 154923 (137552..167364) | 161132 (151976..172861) | 6.477 / 6.216 | 102.70 / 102.70 | 4.00 | 1.035 | 2.04 | 1.00 |
+| 256 | 66009 (61162..71480) | 65758 (60423..71301) | 15.200 / 15.264 | 294.40 / 294.51 | 15.98 | 1.034 | 2.04 | 1.00 |
+| 1024 | 55315 (53362..57937) | 62071 (43697..66467) | 18.087 / 16.356 | 352.10 / 299.33 | 16.01 | 1.998 | 2.04 | 0 |
+
+us/req is the mean of 1e6 / req/s per run. Slowdown at 1024: SET 4.2x, GET
+3.8x (4-6x in A10 reproduced); at 256 3.6x. Median req/s (SET / GET): off
+229k / 237k, 1: 224k / 232k, 16: 244k / 245k, 64: 155k / 160k, 256: 65k / 64k,
+1024: 55k / 64k.
+
+Raw req/s in thousands: the 9 runs of a cell are the 3 passes of boot A, of
+boot B and of boot C for that point.
+
+| test point | A1 A2 A3 | B1 B2 B3 | C1 C2 C3 |
+|---|---|---|---|
+| SET off | 235.3 213.4 216.2 | 263.9 262.5 227.3 | 233.4 229.1 228.1 |
+| SET 1 | 214.1 215.5 223.5 | 209.4 261.8 253.5 | 232.6 224.2 233.9 |
+| SET 16 | 243.9 222.0 244.2 | 267.0 227.0 244.5 | 240.7 245.4 241.5 |
+| SET 64 | 153.1 137.6 150.3 | 163.3 167.4 162.6 | 146.0 155.3 158.9 |
+| SET 256 | 61.4 63.0 61.2 | 71.5 70.7 70.9 | 64.5 65.5 65.4 |
+| SET 1024 | 54.1 53.4 55.1 | 55.3 55.1 57.9 | 56.0 55.5 55.6 |
+| GET off | 222.0 219.8 218.3 | 262.1 247.5 234.5 | 237.0 241.3 237.5 |
+| GET 1 | 234.2 227.8 232.3 | 234.5 258.1 246.0 | 226.0 227.5 228.1 |
+| GET 16 | 242.4 234.5 252.8 | 255.1 234.5 255.8 | 245.4 260.1 235.6 |
+| GET 64 | 154.7 160.3 152.0 | 154.3 164.9 172.9 | 165.6 159.0 166.7 |
+| GET 256 | 61.3 60.4 63.4 | 71.2 71.3 71.1 | 64.2 64.9 63.9 |
+| GET 1024 | 63.4 63.7 63.3 | 43.7 65.4 66.5 | 64.2 64.2 64.3 |
+
+Host 1-minute load before -> after each boot (waited): A-off 4.90 -> 5.39,
+A-1 5.39 -> 5.08, A-16 5.08 -> 5.38, A-64 5.38 -> 5.47, A-256 5.47 -> 6.02,
+A-1024 5.56 -> 7.89 (15 s), B-1024 5.73 -> 6.67 (90 s), B-256 5.07 -> 5.28
+(75 s), B-64 5.28 -> 4.68, B-16 4.68 -> 3.94, B-1 3.94 -> 3.72, B-off 3.72 ->
+3.75, C-64 3.75 -> 4.03, C-256 4.03 -> 5.44, C-1024 5.44 -> 5.41, C-off 5.41
+-> 5.26, C-1 5.26 -> 5.04, C-16 5.04 -> 4.65. The 43.7k GET 1024 run is B-1024
+pass 1 (the other two passes of that boot: 65.4k, 66.5k; the boot ended at
+load 6.67). Round B ran at the lowest load (3.7-5.3) and has the highest
+off/64/256 numbers (about +10% over A and C): the noise floor of these
+points is ~10% (per-point run-to-run sd 5-7%).
+
+Single-server sweeps (3 passes, all points on one server; load 4.65 -> 6.84,
+5.83 -> 9.35 (waited 15 s)), req/s in thousands, sweep 1 (forward) / sweep 2
+(reversed), 3 passes each:
+
+| test point | sweep 1 | sweep 2 |
+|---|---|---|
+| SET off | 228.6 239.5 237.2 | 250.9 121.0 250.9 |
+| SET 1 | 235.6 250.3 237.2 | 253.5 260.1 238.9 |
+| SET 16 | 235.3 247.5 244.2 | 245.4 277.4 197.8 |
+| SET 64 | 160.5 155.4 151.3 | 147.6 143.8 150.5 |
+| SET 256 | 66.6 64.8 36.6 | 64.0 66.6 62.8 |
+| SET 1024 | 55.1 56.9 56.8 | 35.5 59.6 43.6 |
+| GET off | 230.7 250.9 237.8 | 271.4 63.6 255.8 |
+| GET 1 | 231.2 237.8 236.1 | 261.1 263.5 243.3 |
+| GET 16 | 246.0 249.7 247.5 | 234.7 267.0 181.2 |
+| GET 64 | 165.0 156.0 156.9 | 132.0 161.3 131.1 |
+| GET 256 | 64.1 66.0 46.9 | 66.2 66.1 67.5 |
+| GET 1024 | 63.9 65.7 64.5 | 63.7 65.9 64.6 |
+
+Sweep 2 ended at load 9.35 and sweep 1 at 6.84: their low outliers (SET off
+121k, GET off 63.6k, SET 1024 35.5k / 43.6k, SET 256 36.6k, GET 256 46.9k,
+SET 16 197.8k, GET 16 181.2k) are host noise, not a KJIT effect (the counters
+of those runs are in line with their neighbours). Same per-point counters
+as the fresh-server table, within 1%.
+
+## Fit: time per request against fragment entries per request
+
+us/req = a + b * entries/req, least squares over the chain_budget points
+(1, 16, 64, 256, 1024), per run (n = 45 fresh, n = 30 sweeps):
+
+| data | test | a (us) | b (ns/entry) | R2 |
+|---|---|---|---|---|
+| fresh | SET | 3.17 | 41.2 | 0.979 |
+| fresh | GET | 3.01 | 42.4 | 0.937 |
+| fresh, per-point medians | SET / GET | 3.18 / 3.08 | 41.3 / 41.4 | 0.984 / 0.980 |
+| fresh, 64/256/1024 medians | SET / GET | 1.65 / 1.31 | 46.5 / 48.0 | 1.000 |
+| sweeps | SET | 2.83 | 48.8 | 0.856 (outliers) |
+| sweeps | GET | 3.17 | 42.1 | 0.947 |
+| sweeps, per-point medians | SET / GET | 3.10 / 3.10 | 41.7 / 40.6 | 0.991 / 0.985 |
+
+Adding `syscalls_in_kernel`/req as a second regressor (fresh, all 6 points,
+per run): SET 3.54 + 42.8 ns x entries - 0.58 us x in-kernel syscalls (R2
+0.977), GET 3.42 + 41.9 ns x entries - 0.21 us x in-kernel syscalls (R2
+0.938): the entry slope does not move, an in-kernel syscall is worth 0.2-0.6
+us at most and is poorly determined. Direct evidence for the same: GET median
+256 -> 1024 goes 15.57 -> 15.58 us while in-kernel syscalls go 1.03 -> 2.00
+per request and entries 294.5 -> 299.3.
+
+Marginal slopes between points (fresh means): 16 -> 64 ~34 ns/entry, 64 ->
+256 ~46, 256 -> 1024 ~50 (SET).
+
+Microbenchmark prediction applied to the redis counters (17.5 ns per integer
+entry, 66.1 ns per FP/SIMD entry, no credit for in-kernel syscalls), extra
+us/req over off, measured +- SE (SD of the 9 runs of both cells):
+
+| point | SET measured | SET predicted | GET measured | GET predicted |
+|---|---|---|---|---|
+| 1 | +0.085 +- 0.150 | +0.040 | +0.005 +- 0.104 | +0.040 |
+| 16 | -0.143 +- 0.126 | +0.612 | -0.192 +- 0.101 | +0.619 |
+| 64 | +2.188 +- 0.171 | +1.992 | +1.957 +- 0.122 | +1.992 |
+| 256 | +10.912 +- 0.325 | +5.929 | +11.006 +- 0.338 | +5.931 |
+| 1024 | +13.798 +- 0.172 | +6.941 | +12.097 +- 0.824 | +6.017 |
+
+## Conclusion
+
+1. The loss is proportional to fragment entries (R2 0.94-0.99 over five
+   points, slope 41-49 ns/entry, same for fresh and single-server runs and
+   for SET and GET), not to in-kernel syscalls: entries are the cost driver.
+2. The microbenchmark prices an entry at 17.5 ns (integer) / 66 ns (FP/SIMD
+   bracket). Applied to redis's counters it explains all of the loss at
+   chain_budget 64 (+2.0 predicted, +2.0..2.2 measured) but only ~50% at 256
+   and 1024 (+5.9 / +6.0..6.9 predicted, +11.0 / +12.1..13.8 measured): the
+   per-entry cost in redis is ~2.3x the hot-loop cost (41 vs ~20 ns, ~5% of
+   its entries being FP/SIMD). Round trips as measured in isolation are
+   about half the cost; the other half, ~17-20 ns per entry (~6-7 us per
+   request at 1024), also scales with entries but is absent from a loop that
+   re-enters the same two fragments.
+3. Not separable with these data: (a) a per-entry cost that grows with a
+   realistic working set (many fragments and targets: hash lookup, refcount,
+   label search, cache/TLB misses on images and tables), which in-fragment
+   dispatch (A11) must also pay at its own ~20-word table path and whose
+   tables are 32 KiB each; (b) code inside fragments being slower than the
+   native code it replaces (windowed memory accesses, budget counter
+   read-modify-write through memory, stack-backed registers), which A11 does
+   not touch. A11 as specified removes the runtime-path cost of (a) only: if
+   it removed exactly the microbenchmark's cost, 1024 would go from 18.1 / 16.4
+   us to 11.1 / 10.3 us per request (SET / GET; still 2.6x / 2.4x off). The
+   contract's break-even (~1.7 ns per entry) is 10-25x below the measured
+   entry cost (17.5-41 ns), so its premise (the runtime path cannot pay for
+   the saved syscalls) holds; what the data cannot say is how much of the
+   41 ns the in-fragment dispatch path removes. The in-kernel syscall path is
+   not the culprit (second regressor, 256 -> 1024 GET medians).
+4. The chain_budget=16 anomaly is explained by the counters: at 1 and 16
+   `syscalls_in_kernel` and `exit_svc` are 0 in every run (36 fresh, 24
+   sweep). Every hook call ends at the budget before the next svc
+   (`chain_cap`/req 2.19-2.21 = `hook_calls`/req 2.19-2.22), so that point
+   runs ~35 fragment entries per request (the first 16 after each of ~2.2
+   syscalls; 10-12% of the 300-350 of the 1024 point) and executes every
+   syscall natively; it is not "the request path in fragments" (the A11
+   contract's "~17 entries per syscall" reading). Result: on
+   = off within noise (-0.14 +- 0.13 and -0.19 +- 0.10 us, -3..-4%, 1.1 and
+   1.9 SE; 242k / 246k vs 234k / 236k req/s), A10's "faster than off" is not
+   significant here. The entry model alone predicts +0.6 us, so those 16
+   entries are not slower than the native code they replace (why they would
+   be cheaper, e.g. no cold EL0 resume after the kernel exit with this
+   guest's KPTI / BHB mitigations, is a guess, not measured).
+5. Baseline for A11 (req/s SET / GET, fresh servers, means): off 234k / 236k,
+   chain 1024 55k / 62k, 256 66k / 66k, 64 155k / 161k, 16 242k / 246k;
+   entries per request 352 / 299 at 1024; microbenchmark 17.5 ns (integer),
+   66 ns (FP/SIMD) per entry.
+
+## Reproduce
+
+```sh
+export KJIT_BUILD_ROOT=...   # optional; default <repo>/.kjit/build
+./scripts/docker-dev.sh -- make guest-kernel
+make guest-rootfs
+export QEMU_SSH_PORT=... QEMU_GDB_PORT=...     # if other guests run
+# microbenchmark (gpr and fp, K = 16/128/256; off then on, self registration)
+make guest-run CMD='mount -t debugfs debugfs /sys/kernel/debug; K=/sys/kernel/debug/kjit; T=/opt/kjit-tests; for c in 16 128 256; do for v in gpr fp; do echo 0 > $K/enable; echo 0 > $K/auto; $T/entry_cost $v 200000 $c 7; echo 1 > $K/enable; echo 0 > $K/auto; $T/entry_cost $v 20000 $c 7; done; done'
+# auto mode: echo 1 > $K/auto and KJIT_AUTO=1 $T/entry_cost ... (on only)
+# redis, one point per boot (the 18 fresh boots), or all points on one server
+make guest-run CMD='sh /opt/kjit-tests/a11-baseline.sh /tmp/a11 3 200000 1024'
+make guest-run CMD='sh /opt/kjit-tests/a11-baseline.sh /tmp/a11 3 200000 off 1 16 64 256 1024'
+```
+
+(In a worktree whose path makes the run directory's QMP socket path exceed
+104 bytes, call `scripts/guest-run.sh --run-dir /tmp/<short> --profile
+kjit-guest -- '<cmd>'` instead of `make guest-run`; `docker-dev.sh` fails in
+a worktree because its `git config --global` needs the superproject's
+`.git`, so the container was started with `docker run` and the same mounts.)
+
+## Not verified
+
+- Which of (a) working-set-dependent entry cost and (b) slower code inside
+  fragments makes up the ~17-20 ns per entry the microbenchmark does not
+  explain; nothing here times the runtime path or the fragment bodies
+  separately (e.g. a microbenchmark with ~100s of distinct callees, or a
+  per-phase timer).
+- The native time of the user code a fragment replaces: the entry slope is
+  net of it, so the true per-entry overhead is larger than the slope by that
+  amount (unknown; negative net at chain_budget 16 says it is not small).
+- The cold-EL0-resume explanation for chain_budget 16.
+- Run-to-run noise is 5-7% (sd) with outliers up to -75%, host load 3.7-10
+  (1-minute) from other agents' guests; only boot-start load was gated.
+  Rounds are not identical in load (round B ran at the lowest). Run in a
+  quiet host for a final before/after.
+- Only `kjit-guest`; not `-P 16`, 256 clients, other redis commands, other
+  chain_budget values, `kjit-guest-debug`.
+- SET and GET ran as separate `redis-benchmark` invocations (not
+  `-t set,get`), under nojit, 50 clients, one key (SET) / one key (GET).
+- `fpsimd_restores` is sporadic (0-126 per run) and was not analysed.
+- Microbenchmark in auto mode: one boot, `on` only (fit of the on time).
+- The A10 numbers (274k / 275k, 293k / 305k, 62k / 71k) were single runs on a
+  possibly different host load; compare ratios, not absolutes.
