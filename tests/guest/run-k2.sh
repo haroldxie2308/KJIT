@@ -116,7 +116,17 @@ while [ "$i" -le "$iterations" ]; do
     grep -q "child" fork_cow.1.out || fail "fork_cow: no child output"
 
     onoff tight_loop budget 0 "$T/tight_loop" 2000
-    onoff call_loop chain 0 "$T/call_loop" 2000 5000
+    # A11: bl/ret hit the dispatch tables, so the 5000 calls end in a Budget
+    # exit; alias_loop's transfers always miss and chain through the runtime.
+    onoff call_loop dispatch 0 "$T/call_loop" 2000 5000
+    before=$(stat ibtc_replace)
+    onoff alias_loop alias 0 "$T/alias_loop" 2000 5000
+    [ "$(( $(stat ibtc_replace) - before ))" -ge 1 ] || fail "alias_loop: no dispatch slot was replaced"
+
+    # A11: fragments linked across a mapping that changes under them.
+    before=$(stat ibtc_insert)
+    onoff link_race link 0 "$T/link_race"
+    [ "$(( $(stat ibtc_insert) - before ))" -ge 1 ] || fail "link_race: nothing published in the dispatch tables"
 
     onoff signal_loop inkernel 0 "$T/signal_loop" 200000
     grep -q "handled=1" signal_loop.1.out || fail "signal_loop: no signal handled"
@@ -157,6 +167,7 @@ while [ "$i" -le "$iterations" ]; do
     kill_hot toy_loop_kill "$T/toy_loop" 0
     kill_hot tight_loop_kill "$T/tight_loop" 0
     kill_hot call_loop_kill "$T/call_loop" 0
+    kill_hot alias_loop_kill "$T/alias_loop" 0
 
     echo "k2: iteration $i PASS"
     i=$((i + 1))

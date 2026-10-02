@@ -15,7 +15,7 @@ use kernel::ffi::c_int;
 use kernel::page::PAGE_SIZE;
 use kernel::prelude::*;
 
-use super::ffi::{self, KjitLabel, KjitMm, KjitSite};
+use super::ffi::{self, KjitEntry, KjitMm, KjitSite};
 use super::stats::{self, Stat};
 use crate::shared::trans::cfg::{admit_at, UnsupportedExit};
 use crate::shared::trans::input::{
@@ -333,19 +333,19 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
     entries
         .push(fragment.entry_offset, GFP_KERNEL)
         .map_err(|_| Failure::Alloc)?;
-    let mut labels = KVec::with_capacity(fragment.vlabels.len(), GFP_KERNEL)
+    let mut kentries = KVec::with_capacity(fragment.vlabels.len(), GFP_KERNEL)
         .map_err(|_| Failure::Alloc)?;
     for &(label_pc, offset) in fragment.vlabels.iter() {
         entries.push(offset, GFP_KERNEL).map_err(|_| Failure::Alloc)?;
-        let label = KjitLabel {
+        let entry = KjitEntry {
             pc: label_pc,
             offset: u32::try_from(offset).map_err(|_| Failure::Overflow)?,
             pad: 0,
         };
         // Sorted by PC for the C side's binary search (vlabels hold each PC once).
-        let at = labels.partition_point(|l: &KjitLabel| l.pc < label_pc);
-        labels
-            .insert_within_capacity(at, label)
+        let at = kentries.partition_point(|e: &KjitEntry| e.pc < label_pc);
+        kentries
+            .insert_within_capacity(at, entry)
             .map_err(|_| Failure::Alloc)?;
     }
 
@@ -381,7 +381,7 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
     let code_len = u32::try_from(code.len()).map_err(|_| Failure::Overflow)?;
     let entry_offset = u32::try_from(fragment.entry_offset).map_err(|_| Failure::Overflow)?;
     let n_sites = u32::try_from(ksites.len()).map_err(|_| Failure::Overflow)?;
-    let n_labels = u32::try_from(labels.len()).map_err(|_| Failure::Overflow)?;
+    let n_entries = u32::try_from(kentries.len()).map_err(|_| Failure::Overflow)?;
     // SAFETY: `kmm` is live (see above); every pointer/length pair describes a
     // live KVec.
     let rc = unsafe {
@@ -394,8 +394,8 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
             entry_offset,
             ksites.as_ptr(),
             n_sites,
-            labels.as_ptr(),
-            n_labels,
+            kentries.as_ptr(),
+            n_entries,
             state.lo,
             state.hi,
             verified.uses_fpsimd,
@@ -409,7 +409,7 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
     }
     if verbose {
         pr_info!(
-            "kjit: pc {pc:#x}: installed {code_len} bytes, {n_sites} fault sites, {n_labels} entries, text {:#x}..{:#x}, fpsimd {}\n",
+            "kjit: pc {pc:#x}: installed {code_len} bytes, {n_sites} fault sites, {n_entries} entries, text {:#x}..{:#x}, fpsimd {}\n",
             state.lo,
             state.hi,
             verified.uses_fpsimd

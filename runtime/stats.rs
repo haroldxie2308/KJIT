@@ -17,9 +17,12 @@ use crate::shared::abi::UNSUPPORTED_WORD_UNREADABLE;
 pub(crate) enum Stat {
     /// Syscalls the kernel invoked on a fragment's `Svc` exit (never went to EL0).
     SyscallsInKernel,
-    /// Fragment calls (first entries and chained entries).
+    /// Fragment calls (first entries and chained entries): runtime round trips
+    /// only since A11; a transfer dispatched inside fragment code is not
+    /// counted (no atomics there), nor are the `exit_*` and `chains` of the
+    /// runs it continues. Not comparable with A10 numbers.
     FragmentEntries,
-    /// Chained entries (branch exits continued in a fragment).
+    /// Chained entries (branch exits continued in a fragment by the runtime).
     Chains,
     /// Branch exits not chained because the hook call used its `chain_budget`
     /// of fragment entries.
@@ -102,9 +105,20 @@ pub(crate) enum Stat {
     /// Translations refused because they use FP/SIMD on a CPU with SVE/SME
     /// (or without FP/SIMD).
     FpsimdRefusedSveSme,
+    /// Dispatch-table slot stores (A11), per table: one resolution of a branch
+    /// target may store into `table_all` and `table_nofp`. Bumped through
+    /// `kjit_rs_note`.
+    IbtcInsert,
+    /// ... of which the slot held another record.
+    IbtcReplace,
+    /// Slots cleared by the retirement of the fragment they pointed into.
+    IbtcClear,
+    /// Branch exits of a non-FP/SIMD run whose target resolved to an FP/SIMD
+    /// fragment: the run continues through the runtime, never in fragment code.
+    IbtcFpsimdBoundary,
 }
 
-const COUNT: usize = Stat::FpsimdRefusedSveSme as usize + 1;
+const COUNT: usize = Stat::IbtcFpsimdBoundary as usize + 1;
 
 const NAMES: [&str; COUNT] = [
     "syscalls_in_kernel",
@@ -155,6 +169,10 @@ const NAMES: [&str; COUNT] = [
     "fpsimd_restores",
     "fpsimd_exit_mem",
     "fpsimd_refused_sve_sme",
+    "ibtc_insert",
+    "ibtc_replace",
+    "ibtc_clear",
+    "ibtc_fpsimd_boundary",
 ];
 
 #[allow(clippy::declare_interior_mutable_const)]
@@ -202,6 +220,9 @@ fn note_stat(note: u32) -> Option<Stat> {
         14 => Stat::NegEvicted,
         15 => Stat::TranslateNs,
         16 => Stat::FpsimdRestores,
+        17 => Stat::IbtcInsert,
+        18 => Stat::IbtcReplace,
+        19 => Stat::IbtcClear,
         _ => return None,
     })
 }

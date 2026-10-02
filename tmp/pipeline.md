@@ -2733,8 +2733,12 @@ there.
   fragment F and an entry (`entry_for` or lookup), it publishes F's label for
   T under `kmm->lock`, only if F is not retired: `smp_store_release` into
   `table_all[h(T)]`, and into `table_nofp[h(T)]` if `!F.uses_fpsimd`.
-  Replacing a live slot is allowed (direct-mapped, last writer wins). Readers
-  are ordered by the address dependency slot -> record -> fields.
+  A slot holding a record for another pc is replaced (direct-mapped); one
+  holding a live record for the same pc is kept, whichever fragment it belongs
+  to (all are translations of the same text). Without that, fragments sharing
+  a pc take turns in the slot on every resolution (A11b measured 36.1M inserts,
+  all of them replaces, under the default benchmark). Readers are ordered by
+  the address dependency slot -> record -> fields.
 - Invariant (not verified, owned by the runtime): every non-zero slot of a
   table points at a label of a non-retired fragment of this `kjit_mm` whose
   host is `image + a verified entry offset`, for exactly the label's pc; a
@@ -3048,3 +3052,168 @@ every word, which is the template's own first word.
 - Hits on hardware: native hits run, but the native check compares final state and
   halt, not that a given transfer hit (`dispatch_tests.rs` asserts that on the
   interpreter; the native cache statistics are asserted equal).
+
+# A11b implementation (2026-10-02)
+
+Implements the "Kernel", "Run conditions and bounds" and "Kernel tests (A11b)"
+sections of "A11 contract" exactly as written; nothing in them turned out
+unworkable. Built and run against the A10 translator (no `shared/` change):
+the fragment prologue does not read `extra[2]` and fragments contain no
+dispatch template yet, so no transfer can hit a table until A11a is merged.
+Everything the runtime does around the tables is exercised anyway (the
+runtime publishes on every resolution, retirement clears, lifetimes are the
+new ones).
+
+## Kernel patch 0007
+
+`arm64: kjit: export the hook's SRCU callback queue for the runtime`:
+`kjit_hook_call_srcu(head, cb)` (`call_srcu()` on `kjit_hook_srcu`) and
+`kjit_hook_srcu_barrier()` (`srcu_barrier()`), both `EXPORT_SYMBOL_GPL`; the
+`srcu_struct` stays private to `arch/arm64/kernel/kjit.c`. No new state or
+lock. `scripts/kjit-kernel-tree.sh` picks it up by its glob (the stamp covers
+its hash). Verified: the series applies to 254f49634ee1 and both guest
+kernels build with it.
+
+## Lifetime (`kjit_glue.c`)
+
+- The per-run `kjit_frag` refcount, `kjit_frag_put` and `Running`'s `Drop` are
+  gone. `kjit_lookup` takes no reference; a fragment is valid for the hook call
+  that found it, which is inside `kjit_hook_srcu`'s read section.
+- `kjit_frag_retire_locked(kmm, f)` (all four retire paths go through
+  `kjit_mm_flush_locked`: invalidation, `kjit_bad_status`, mm release, module
+  exit): `f->retired = true`, clears every slot of both tables that holds one
+  of its labels (`WRITE_ONCE`), counts `ibtc_clear`, then
+  `kjit_hook_call_srcu(&f->retire, ...)`. The callback (workqueue context, BHs
+  off) takes the fragment off `kjit_all_frags` and queues the existing
+  `queue_rcu_work` free. The extable invariant of A10 ("fixups stay reachable
+  until every hook call that could run the fragment has returned") now holds
+  by construction.
+- A fragment whose install failed was never visible, so it is unlisted and
+  freed directly (`kjit_frag_unlist_and_free`), without a hook grace period.
+- `kjit_mm`: `table_all` / `table_nofp`, `kvzalloc`ed (32 KiB each) by the
+  first install that finds none, outside `kmm->lock`, published together under
+  it (the race loser frees its copy), before the fragment becomes visible.
+  `-ENOMEM` fails that install. Freed with the `kjit_mm` after a hook-SRCU
+  grace period; a `kjit_mm` that never had a table (most processes in auto
+  mode) skips it and goes straight to `kvfree_rcu`.
+- Module exit: unregister, kill every `kjit_mm` (retires everything),
+  `mmu_notifier_synchronize()` (the free callbacks that queue the table
+  frees have run), `kjit_hook_srcu_barrier()`, `rcu_barrier()`,
+  `destroy_workqueue()`. The barrier has to sit after
+  `mmu_notifier_synchronize()`.
+
+## Labels, tables, publishing
+
+- `struct kjit_label { u64 pc; u64 host; }`, sorted, immutable after install;
+  `kjit_install` takes a separate input array `struct kjit_entry { pc, offset }`
+  (what Rust sends; the C side turns it into labels). Decision: two types
+  rather than one with `host` overloaded as an offset on input. `kjit_install`
+  now also rejects (-EINVAL) tables without a label for `entry_pc` at
+  `entry_offset`, so `kjit_lookup`'s entry is `f->entry_label->host` (the
+  `entry_offset` field is gone).
+- `kjit_lookup(pc, link, &entry)` and `kjit_frag_link(f, pc)` are the two
+  resolution points the runtime uses on a branch exit (a lookup in the same
+  fragment first, then the table, as before): both end in
+  `kjit_ibtc_publish(f, label)`. An SVC-resume lookup does not publish (it is
+  not a branch exit).
+- `kjit_ibtc_publish`: skips (no lock) when the slot already holds the label
+  in the table(s) it belongs to; otherwise `kmm->lock`, only if `!f->retired`,
+  `smp_store_release` into `table_all` and, unless `uses_fpsimd`,
+  `table_nofp`. The lock-free skip is the common case under A10 chaining
+  (every exit re-resolves) and in the FP/SIMD boundary case.
+- Counters: `ibtc_insert` and `ibtc_replace` count slot stores, so one
+  resolution of a non-FP/SIMD target counts up to twice (one per table);
+  `ibtc_clear` counts cleared slots; `ibtc_fpsimd_boundary` is counted in Rust
+  (`exec.rs`) where a non-FP/SIMD run resolves into an FP/SIMD fragment. The
+  A11 caveat about `fragment_entries`/`chains`/`exit_*` is in `stats.rs`.
+- Run: `Running` carries `kjit_frag_table(f)` (`uses_fpsimd ? table_all :
+  table_nofp`) and `call` stores it in `extra[EXTRA_DISPATCH_TABLE_INDEX]`
+  (`runtime/ffi.rs`, 2; extra block of `EXTRA_WORDS` = 3). The frame slot and
+  the prologue read are A11a's.
+- Run conditions: unchanged in the runtime (checked at every runtime entry and
+  every in-kernel syscall); the bound change is the translator's budget unit.
+  `chain_budget` now bounds runtime round trips per hook call.
+
+## Tests (tests/guest)
+
+- `call_loop`: `KJIT_EXPECT=dispatch`: `exit_budget + run_declined >= outer -
+  2 * warmup`, and more calls per svc than the 4096-unit budget. Its
+  `chain_budget` / `chain_cap` / `chain_max` checks moved to `alias_loop`
+  (nothing was dropped, only moved).
+- `alias_loop`: one `blr x5` alternating between two callees exactly 16 KiB
+  apart (asserted at start: same `pc[13:2]`). `KJIT_EXPECT=alias`: the old
+  call_loop checks (`chain_cap` + `run_declined` per outer iteration, `chain_max
+  <= chain_budget`, more calls than the budget) plus `ibtc_replace >= chain_cap
+  * budget / 4` (the ping-pong). `run-k2.sh` also requires `ibtc_replace >= 1`
+  and runs it as a kill test.
+- `link_race`: callers (`blr` into a callee in its own memfd-backed mapping, an
+  svc per round of 256 calls) against a remapper that never makes the mapping
+  unexecutable or writable: `MAP_FIXED` replacement from a memfd variant,
+  exec-only <-> read-exec `mprotect`, `MADV_DONTNEED`, each followed by a
+  translate request (non-auto). 2 s storm, every batch's sum checked; then
+  staleness (replace by a variant adding 1000, in-place rewrite via RWX to one
+  adding 3000: the next calls must run the new code) and a steady phase. KJIT
+  on/off output identical. The callee/return-site slot collision is avoided by
+  remapping until the two differ.
+- `unload_fault` (unload-stress): two more modes, `link` and `linkfp` (bl/ret
+  across three fragments; the middle one FP/SIMD in `linkfp`, so a non-FP/SIMD
+  run enters an FP/SIMD fragment and the bracketed run continues into
+  non-FP/SIMD code). `unload-stress.sh` counts loads with `ibtc_insert > 0` and
+  few runtime entries per in-kernel syscall (`entries <= 8 * in_kernel`).
+- `k4-lib.sh` report: `ibtc insert/replace/clear/fpsimd_boundary`, runtime
+  entries and Budget exits per in-kernel syscall, `fpsimd_run_max_ns`;
+  `k4-bench.sh` fails a phase with `ibtc_insert == 0`; `run-k3.sh`'s report
+  prints the `ibtc` counters.
+
+### Checks that can only pass after the A11a merge
+
+1. `call_loop` `KJIT_EXPECT=dispatch` (Budget exits need bl/ret hits).
+2. `link_race` steady phase, `KJIT_EXPECT=link`: at most 4 runtime entries per
+   round of 256 calls (about 513 without dispatch; measured 1026004 / 2000).
+3. `unload-stress.sh`: `entries <= 8 * in_kernel` inside the `linked` count
+   (needs dispatch; hundreds per syscall without).
+
+Counters that count runtime entries may also need a second look after the
+merge: `kill_hot`'s "more than 1000 fragment entries in 1 s", and the
+`kjit_check_fpsimd` entry-count checks of the `fp_*` tests.
+
+## Verification (kjit-guest, M1 host, HVF, 4 vCPUs)
+
+Pre-merge, with exactly the three checks above relaxed in a temporary copy of
+`tests/guest` (call_loop restored to its pre-A11 text and `chain` expectation,
+the link_race steady bound and the unload-stress entry bound disabled; the
+tree was restored afterwards):
+
+- `make guest-tests`: ALL PASS. `alias_loop` chain_cap 2000, chain_max 1024,
+  ibtc_replace 2047998 (about one per blr, both tables); `link_race` storm
+  about 1000 invalidated fragments and 2000 cleared slots, no mismatch.
+- `make guest-tests-k3`: ALL PASS (20 unloads with linked runs in flight).
+- `make redis-campaign K4_ARGS=--no-suite`: RESULT PASS, ibtc_insert > 0 in all
+  three benchmark phases.
+- `kjit-guest-debug` (KASAN, lockdep, DEBUG_ATOMIC_SLEEP): `make guest-tests`
+  ALL PASS, and `make guest-tests-k3` ALL PASS (20 unloads with linked runs
+  in flight, under KASAN and lockdep); no BUG/WARNING/KASAN/lockdep line in
+  either (guest-run fails on kernel reports).
+
+Observation, not a defect of the contract: under redis-benchmark nearly every
+slot store replaces another record (default phase: ibtc_insert 36.1M,
+ibtc_replace 36.1M, for 4.2M syscalls). Redis's hot targets (hundreds, over
+about 2 MiB of text) collide in a 4096-slot direct-mapped table, so a
+fraction of the transfers will keep missing even with A11a; and
+`ibtc_fpsimd_boundary` is 28.5M (about 7 per syscall): every non-FP/SIMD ->
+FP/SIMD transfer goes through the runtime. Measure the real hit rate after the
+merge before deciding on associativity or on a bracket that spans runs.
+
+## Not verified
+
+- Any dispatch hit: no fragment contains the template here. The concurrency
+  of a run reading a slot against a retire, and the table free against runs in
+  flight, are argued (every read is inside a hook SRCU section; slots are
+  cleared before the grace period starts), and exercised only through the
+  hook calls and chains, not through template reads.
+- Retire cost under the spinlock: it walks every label of the fragment and
+  compares two slots each; a fragment of ~16k labels, 512 per mm, is a
+  millisecond-scale hold in a worst-case mm teardown. Not measured.
+- Memory held between retirement and the end of the hook-SRCU grace period
+  (previously freed one RCU grace period after the last run): bounded by churn
+  times the longest hook call; `jit_churn` passes, no number measured.

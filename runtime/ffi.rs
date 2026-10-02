@@ -5,6 +5,12 @@
 
 use kernel::ffi::c_int;
 
+/// Words in the extra parameter block a run passes to a fragment (x1 at
+/// entry): `[0]` and `[1]` are the epilogue's x10/x11 (out), the word at
+/// `EXTRA_DISPATCH_TABLE_INDEX` is the run's dispatch table (in).
+pub(crate) const EXTRA_WORDS: usize = 3;
+pub(crate) const EXTRA_DISPATCH_TABLE_INDEX: usize = 2;
+
 /// `struct kjit_mm`: per-mm code cache (opaque).
 #[repr(C)]
 pub(crate) struct KjitMm {
@@ -33,9 +39,10 @@ pub(crate) struct KjitSite {
     pub(crate) stub: u32,
 }
 
-/// `struct kjit_label`: verified entry, original PC -> code offset.
+/// `struct kjit_entry`: a verified entry as `kjit_install` takes it, original
+/// PC -> code offset (the C side turns it into a `kjit_label`: PC -> host).
 #[repr(C)]
-pub(crate) struct KjitLabel {
+pub(crate) struct KjitEntry {
     pub(crate) pc: u64,
     pub(crate) offset: u32,
     pub(crate) pad: u32,
@@ -57,8 +64,8 @@ extern "C" {
         entry_offset: u32,
         sites: *const KjitSite,
         n_sites: u32,
-        labels: *const KjitLabel,
-        n_labels: u32,
+        entries: *const KjitEntry,
+        n_entries: u32,
         src_start: u64,
         src_end: u64,
         uses_fpsimd: bool,
@@ -66,10 +73,10 @@ extern "C" {
     pub(crate) fn kjit_fpsimd_supported() -> bool;
 
     pub(crate) fn kjit_can_run(regs: *const PtRegs) -> bool;
-    pub(crate) fn kjit_lookup(pc: u64, entry: *mut u64) -> *mut KjitFrag;
-    pub(crate) fn kjit_frag_put(frag: *mut KjitFrag);
+    pub(crate) fn kjit_lookup(pc: u64, link: bool, entry: *mut u64) -> *mut KjitFrag;
     pub(crate) fn kjit_frag_base(frag: *const KjitFrag) -> u64;
-    pub(crate) fn kjit_frag_offset_for_pc(frag: *const KjitFrag, pc: u64) -> i64;
+    pub(crate) fn kjit_frag_link(frag: *mut KjitFrag, pc: u64) -> u64;
+    pub(crate) fn kjit_frag_table(frag: *const KjitFrag) -> u64;
     pub(crate) fn kjit_frag_uses_fpsimd(frag: *const KjitFrag) -> bool;
     pub(crate) fn kjit_bad_status(status: u64, pc: u64);
     pub(crate) fn kjit_call_fragment(regs: *mut PtRegs, extra: *mut u64, entry: u64, base: u64)

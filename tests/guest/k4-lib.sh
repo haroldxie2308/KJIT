@@ -53,9 +53,17 @@ report() {
             printf "k4:   %s: exits svc=%d bl=%d blr=%d br=%d ret=%d mem=%d unsupported=%d budget=%d invalid=%d svc_declined=%d\n",
                 name, d["exit_svc"], d["exit_bl"], d["exit_blr"], d["exit_br"], d["exit_ret"], d["exit_mem"],
                 d["exit_unsupported"], d["exit_budget"], d["exit_invalid"], d["svc_declined"]
-            printf "k4:   %s: fpsimd entries=%d restores=%d exit_mem=%d refused_sve_sme=%d\n",
+            printf "k4:   %s: fpsimd entries=%d restores=%d exit_mem=%d refused_sve_sme=%d run_max_ns(since load)=%d\n",
                 name, d["fpsimd_entries"], d["fpsimd_restores"], d["fpsimd_exit_mem"],
-                d["fpsimd_refused_sve_sme"]
+                d["fpsimd_refused_sve_sme"], v["fpsimd_run_max_ns"]
+            # A11 dispatch tables: slot stores (per table), replacements,
+            # slots cleared by retirement, runtime resolutions of a transfer
+            # from a non-FP/SIMD run into an FP/SIMD fragment. Per syscall in
+            # the kernel: runtime entries (fragment_entries) and Budget exits.
+            printf "k4:   %s: ibtc insert=%d replace=%d clear=%d fpsimd_boundary=%d; per in-kernel syscall: entries=%.2f exit_budget=%.4f\n",
+                name, d["ibtc_insert"], d["ibtc_replace"], d["ibtc_clear"], d["ibtc_fpsimd_boundary"],
+                d["syscalls_in_kernel"] ? d["fragment_entries"] / d["syscalls_in_kernel"] : 0,
+                d["syscalls_in_kernel"] ? d["exit_budget"] / d["syscalls_in_kernel"] : 0
             # Fragment entries per hook call that ran one (log2 buckets), and
             # the longest chain since the module was loaded.
             hist = ""
