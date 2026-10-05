@@ -5,11 +5,22 @@
 
 use kernel::ffi::c_int;
 
-/// Words in the extra parameter block a run passes to a fragment (x1 at
-/// entry): `[0]` and `[1]` are the epilogue's x10/x11 (out), the word at
-/// `EXTRA_DISPATCH_TABLE_INDEX` is the run's dispatch table (in).
-pub(crate) const EXTRA_WORDS: usize = 3;
-pub(crate) const EXTRA_DISPATCH_TABLE_INDEX: usize = 2;
+use crate::shared::abi::{
+    IBTC_BITS, IBTC_INDEX_LSB, IBTC_RECORD_BYTES, IBTC_RECORD_HOST_OFFSET, IBTC_RECORD_PC_OFFSET,
+    IBTC_SLOT_BYTES,
+};
+
+// kjit_glue.c mirrors the dispatch-table layout the template reads
+// (`KJIT_IBTC_BITS`, `kjit_ibtc_index`, `struct kjit_label`, 8-byte slots); it
+// cannot include the Rust constants, so a change here must change it too.
+const _: () = assert!(
+    IBTC_BITS == 12
+        && IBTC_INDEX_LSB == 2
+        && IBTC_SLOT_BYTES == 8
+        && IBTC_RECORD_PC_OFFSET == 0
+        && IBTC_RECORD_HOST_OFFSET == 8
+        && IBTC_RECORD_BYTES == 16
+);
 
 /// `struct kjit_mm`: per-mm code cache (opaque).
 #[repr(C)]

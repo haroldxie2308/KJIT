@@ -208,7 +208,7 @@ returns, so a hot syscall loop issues its next syscall without going back to
 EL0. Contract and design: `tmp/pipeline.md`, "K2 contract: kernel runtime" and
 "K2 implementation".
 
-**Patched kernel.** `kernel-patches/` is a six-patch series on the pinned
+**Patched kernel.** `kernel-patches/` is a seven-patch series on the pinned
 `dep/linux` commit (7.1-rc1):
 
 1. `arm64: syscall: add a KJIT syscall-return hook`: `ARM64_KJIT`, a static key
@@ -232,6 +232,10 @@ EL0. Contract and design: `tmp/pipeline.md`, "K2 contract: kernel runtime" and
    `kjit_unregister_hook()` stops new hook calls, waits for the ones in flight
    while the fragment extable search still works, and only then clears the
    ops pointer, so a fragment faulting during `rmmod` still finds its fixup.
+7. `arm64: kjit: export the hook's SRCU callback queue for the runtime` (A11):
+   `kjit_hook_call_srcu(head, cb)` and `kjit_hook_srcu_barrier()` queue and
+   drain callbacks on the hook's SRCU, so a retired fragment is freed only
+   after every hook call that could still be running it has returned.
 
 `scripts/kjit-kernel-tree.sh` (`make kernel-tree`) creates the patched tree as a
 git worktree of `dep/linux` at `$KJIT_BUILD_ROOT/linux-kjit` (shared objects, no
@@ -287,15 +291,39 @@ demand-pages it or takes the signal. Such fragments are refused
 SME (or without FP/SIMD). The non-FP/SIMD path is unchanged. Details and
 measurements: `tmp/pipeline.md`, "A9b implementation".
 
+**In-fragment branch dispatch (A11).** `BL`, `BLR`, `BR` and `RET` no longer
+leave the fragment on every execution. Each `kjit_mm` has two direct-mapped
+dispatch tables of 4096 slots (`table_all`, and `table_nofp` without the
+records of FP/SIMD fragments), indexed by `pc[13:2]`; a slot is 0 or a record
+`{pc, host}`, a label of a live fragment of that mm. The lowered branch is a
+budget check (one `KJIT_BACKEDGE_BUDGET` unit per dispatch attempt, hit or
+miss), the target in `x13`, the link write, and a byte-exact 9-word template
+that loads the slot, compares its pc and `br`s to the record's host, falling
+through to the old runtime exit on a miss. The runtime passes the table of the
+entered fragment in the third extra-parameter word (the extra block is now
+three words, the prologue stores it at `[sp, #200]` and is `0xa8` bytes, so
+`EPILOGUE_OFFSET` moved with it), and publishes a label whenever it resolves a
+branch exit's target; fragment code only reads the tables. A bracketed
+FP/SIMD run dispatches through `table_all` and may continue into non-FP/SIMD
+code; a non-FP/SIMD run through `table_nofp`, so a transfer into an FP/SIMD
+fragment is always a runtime entry (`ibtc_fpsimd_boundary`). A retired
+fragment's slots are cleared, and it is freed only after a hook-SRCU grace
+period (patch 7): the per-run `kjit_frag` reference count is gone, because a
+linked run enters fragments it never looked up. `fragment_entries`, `chains`,
+`chain_cap` and the `exit_*` counters now count runtime round trips only, and
+run conditions are checked at every runtime entry and in-kernel syscall, not
+at every call and return. Contract and results: `tmp/pipeline.md`, "A11
+contract", "A11a implementation", "A11b implementation", "A11 integration".
+
 **Trigger and stats** (`/sys/kernel/debug/kjit/`, root only):
 
 | File | |
 |---|---|
 | `translate` | write `"<pid> <pc>"`: translate that entry PC (logs the result) |
 | `translate_svc_sites` | write `"<pid>"`: translate `svc_pc + 4` for every SVC word in the process's executable, non-writable mappings |
-| `stats` | counters: `syscalls_in_kernel`, `fragment_entries`, `chains`, `chain_cap` (branch exits not chained because the hook call used its `chain_budget`), `run_declined` (hook calls ended before their next fragment entry by a failed run condition, e.g. pending `need_resched`: at the hook for any task's syscall, or at a branch exit), `chain_max` (most fragment entries in one hook call since load) and `chain_hist_<lo>_<hi>` (hook calls that made lo..hi entries, log2 buckets), exits per status, `svc_declined`, translations ok/exists/unreadable/entry-unsupported/compile/encode/verify-rejected (and FallsOffEnd)/raced/capped/install-failed, `invalidated_fragments`, `released_fragments`, `svc_sites_scanned`, the K3 `auto_*` counters, `unsupported_top_dropped`, `unsupported_bad_word`, A9b `fpsimd_entries` (entries of FP/SIMD fragments), `fpsimd_restores` (... that reloaded the user FP/SIMD state first), `fpsimd_exit_mem` (their `Mem` exits, taken with page faults disabled), `fpsimd_refused_sve_sme`, `hook_calls` (hook calls while enabled: syscalls without syscall work, in-kernel ones included), `fpsimd_run_max_ns` (longest FP/SIMD bracket, i.e. non-preemptible run, on any CPU since load) |
+| `stats` | counters: `syscalls_in_kernel`, `fragment_entries`, `chains`, `chain_cap` (branch exits not chained because the hook call used its `chain_budget`), `run_declined` (hook calls ended before their next fragment entry by a failed run condition, e.g. pending `need_resched`: at the hook for any task's syscall, or at a branch exit), `chain_max` (most fragment entries in one hook call since load) and `chain_hist_<lo>_<hi>` (hook calls that made lo..hi entries, log2 buckets), exits per status, `svc_declined`, translations ok/exists/unreadable/entry-unsupported/compile/encode/verify-rejected (and FallsOffEnd)/raced/capped/install-failed, `invalidated_fragments`, `released_fragments`, `svc_sites_scanned`, the K3 `auto_*` counters, `unsupported_top_dropped`, `unsupported_bad_word`, A9b `fpsimd_entries` (entries of FP/SIMD fragments), `fpsimd_restores` (... that reloaded the user FP/SIMD state first), `fpsimd_exit_mem` (their `Mem` exits, taken with page faults disabled), `fpsimd_refused_sve_sme`, `hook_calls` (hook calls while enabled: syscalls without syscall work, in-kernel ones included), `fpsimd_run_max_ns` (longest FP/SIMD bracket, i.e. non-preemptible run, on any CPU since load), A11 `ibtc_insert` / `ibtc_replace` (dispatch-table slot stores, one per table; a store over another record) / `ibtc_clear` (slots cleared by a retirement) / `ibtc_fpsimd_boundary` (branch exits of a non-FP/SIMD run into an FP/SIMD fragment). Dispatch hits are not counted, and `fragment_entries`, `chains`, `chain_cap` and the exits count runtime round trips only |
 | `enable` | `Y`/`N` (global; also stops fragment runs and chains at the next run-condition check) |
-| `chain_budget` | fragment entries per hook call, chained ones included (1..65536, default 1024; also module parameter `chain_budget`) |
+| `chain_budget` | runtime fragment entries per hook call, chained ones included (1..65536, default 1024; also module parameter `chain_budget`); transfers dispatched inside fragments are not entries (each costs one `KJIT_BACKEDGE_BUDGET` unit instead) |
 | `auto`, `hot_threshold`, `hot_window_ms` | K3 auto mode (below) |
 | `unsupported_top` | `word exits entry_stops` per line, most frequent first (below) |
 
@@ -318,9 +346,15 @@ Unsupported exit, pipe and /dev/null I/O), `fault_segv` (NULL, unmapped and
 read-only stores after a hot SVC: same SIGSEGV code, address and PC, via a Mem
 exit), `fork_cow` (fragment stores to CoW pages in parent and child, no Mem
 exit), `tight_loop` (countdown past the back-edge budget: Budget exits,
-progress), `call_loop` (A10: 5000 function calls per syscall and no syscall
-between them: every syscall's chain stops at `chain_budget` entries, userspace
-finishes natively), `signal_loop` (1 ms SIGALRM during the hot loop), `munmap_race`
+progress), `call_loop` (5000 function calls per syscall and no syscall
+between them: since A11 the calls dispatch inside the fragments and every
+syscall's run ends at the dispatch budget (`exit_budget`), userspace finishes
+natively), `alias_loop` (A11: one `blr` alternating between two callees 16 KiB
+apart, which share a dispatch slot and always miss: every syscall's chain stops
+at `chain_budget` entries, `ibtc_replace` counts the ping-pong), `link_race`
+(A11: threads calling across fragments whose callee sits in its own mapping
+that another thread replaces, `mprotect`s and `MADV_DONTNEED`s; stale text
+must never run, and steady calls take almost no runtime entry), `signal_loop` (1 ms SIGALRM during the hot loop), `munmap_race`
 (hot text unmapped while another thread runs it: SIGSEGV, fragment
 invalidated), `seccomp_loop` and `ptrace_loop` (no fragment entry at all), the
 A9b FP/SIMD tests `fp_loop` (SIMD copy/compare/fill/strlen of 1-4000 bytes
@@ -333,7 +367,9 @@ runs glibc memset/memcpy/strlen), `fp_fault` (SIMD `str q` to a read-only
 page, `ldp q` from an unmapped page, `ld1` from address 16: same SIGSEGV via
 an FP/SIMD `Mem` exit; `st1` to 512 fresh pages: one `Mem` exit per first
 touch, data complete) and `fp_budget` (a 1 MiB SIMD copy per syscall: Budget
-exits, the longest FP/SIMD run), plus
+exits, the longest FP/SIMD run), plus the unload-stress modes `link` and
+`linkfp` (A11: `bl`/`ret` across three fragments, the middle one FP/SIMD in
+`linkfp`, while the module is unloaded), plus
 `kill -9` of a hot `toy_loop`, `tight_loop` and `call_loop`, and a hot process left running
 while `/init` unloads the module. `run-k2.sh --auto` runs the same tests with
 the K3 auto mode instead of self-registration.
@@ -367,6 +403,9 @@ the in-kernel path follows branch exits out of libc into the callers. Contract:
 - **Chaining.** A branch exit continues in a fragment for the target (in the
   same fragment or the mm's table), at most `chain_budget` (default 1024)
   fragment entries per hook call, every run condition re-checked before each.
+  Since A11 this is the miss path: a transfer whose target already has a
+  translation dispatches inside the fragment (see "In-fragment branch
+  dispatch (A11)" above) and is neither a chained entry nor checked.
   `Unsupported`/`Mem`/`Budget` exits return to userspace and are not learned.
 - **Switch.** `insmod kjit.ko auto=1` or debugfs `auto` (default off). The
   manual `translate`/`translate_svc_sites` triggers keep working either way.
@@ -529,6 +568,26 @@ speed: with the request path in fragments redis-benchmark SET/GET drops from
 PASS`, suite identical, 30 adversarial runs and 3 consistency checks PASS, no
 kernel report.
 
+After A11 (in-fragment branch dispatch; kjit-guest, 2026-10-05, `RESULT
+PASS`): suite 2864 / 2866 passed without / with KJIT, 0 failed, same outcome
+for all 2518 distinct tests; 41.6% of the suite's syscalls in the kernel
+(17.6M of 42.3M; 385M runtime fragment entries, 124M of them FP/SIMD, 51494
+translations, no verifier rejection or invalid exit). Benchmark 76.5%
+(default), 60.2% (`-P 16`) and 76.7% (256 clients) in the kernel, 9.0 / 91 /
+8.9 runtime fragment entries per in-kernel syscall (about 140 after A10);
+datasets identical, every adversarial test identical. redis-benchmark with
+`chain_budget` 1024, one fresh server per boot (`tests/guest/a11-baseline.sh`,
+9 runs per point, 200000 requests, 50 clients): SET / GET 119k / 144k req/s
+against 230k / 231k with KJIT off (1.93x / 1.61x slower, 4.2x / 3.8x before
+A11), 28.7 / 15.7 runtime entries per request (352 / 299 before); `chain_budget`
+256 gives the same (113k / 141k). What is left is the FP/SIMD boundary (8.0 /
+5.0 entries per request) and misses of the direct-mapped tables (every
+publish replaces another record). `tmp/pipeline.md`, "A11 integration".
+kjit-guest-debug, `K4_ITERATIONS=1`: `RESULT PASS` on the third run; the first
+two each failed one redis test that does not depend on KJIT (a 30 ms
+latency assertion of `Active defrag`, which also failed once with KJIT
+disabled, and a `FAILOVER` exception in the run without `kjit.ko`).
+
 ### Harness
 
 The `harness/` crate is userspace-only and exercises the executable-fragment
@@ -536,9 +595,11 @@ path through `compile_request`: CFG construction, rephrase, ordinary
 user-semantic register virtualization, wrapped layout, and `URuntime`. The
 wrapper includes the shared prologue and epilogue, and runtime exits return
 through `x9/x10/x11` with `x11` carrying the original resume PC. A fragment is
-always called at its base with `x0 = pt_regs`, `x1 = extra params` and
-`x2 = base + entry offset`; the prologue ends with `br` to that saved entry, so
-continuing at a resume offset is a real call, not a harness redirect.
+always called at its base with `x0 = pt_regs`, `x1 = extra params` (three
+words: `[0]`, `[1]` are x10/x11 out, `[2]` is the run's dispatch table in) and
+`x2 = base + entry offset`; the prologue (`0xa8` bytes) ends with `br` to that
+saved entry, so continuing at a resume offset is a real call, not a harness
+redirect.
 
 A reachable instruction outside the decoded subset, or one that decodes but
 that register virtualization rejects for an instruction-intrinsic reason, does
@@ -608,9 +669,11 @@ runtime-owned memory. User code that contains
 `LDTR*`/`STTR*` itself takes the `Unsupported` exit.
 
 Every back-edge (a user branch whose target is at or before it in layout order,
-i.e. block order) is preceded by a budget check on a runtime-frame counter that
+i.e. block order) and, since A11, every dispatch template is preceded by a
+budget check on a runtime-frame counter that
 the prologue resets to `KJIT_BACKEDGE_BUDGET` (4096) on every entry. The
-budget-th back-edge execution of one entry leaves through an out-of-line
+budget-th back-edge execution or dispatch attempt (hit or miss) of one entry
+leaves through an out-of-line
 `Budget` exit stub (`x10` = the branch word, `x11` = its PC), so a user tight
 loop never pins the CPU in the kernel; userspace resumes natively at the
 branch. The harness stops the original interpreter (and the native original)
@@ -619,10 +682,25 @@ Runtime-exit sequencing now preserves user-visible `x9`, `x10`, and `x11`
 to `pt_regs` before those physical registers become the runtime return channel.
 Dynamic exit targets such as `br x9`, stack-backed branch registers, and
 stable-mapped return registers are captured through the register-virtualization
-mapping before branching to the shared epilogue.
+mapping into `x13` (A11) before the dispatch template or the shared epilogue.
 `BL` and `BLR` link-register side effects are rephrased as user-semantic
 updates to `x30`, so the epilogue writes user LR back to `pt_regs` without a
 runtime-side patch.
+
+Since A11 every `BL`, `BLR`, `BR` and `RET` is lowered to a budget check, the
+target in `x13`, the link write, and a 9-word dispatch template
+(`KJIT_DISPATCH_TEMPLATE`, `shared/abi/wrapper.rs`) over the per-mm tables
+(`IBTC_*` constants in `shared/abi`): slot `pc[13:2]`, record `{pc, host}`, a
+`br` to the host on a pc match, the old exit group (status, `x10` = target,
+`x11` = resume) on a miss. The harness mirrors the kernel's store in
+`harness/src/code_cache.rs` (fragments by entry pc, both tables, publish on
+resolution, retire clears slots) and runs every `_mark` case cold (empty
+tables: every transfer misses, as before A11) and warm (the same case again on
+the populated cache: transfers hit); both must equal the original, and on
+Linux arm64 the native run's cache statistics and table memory must equal the
+interpreter's. Fixtures `tests/arm64/dispatch_*.s` cover nested calls, budget
+exhaustion through dispatch, PLT-shaped `br x17`, slot aliasing, `blr x30` /
+`ret x5` and non-FP/SIMD callers of FP/SIMD callees.
 
 The harness also exposes a trace model for debugging the full translation path.
 Use `trace-tui` for an interactive OpenTUI-backed view, or `--dump --check`
@@ -694,7 +772,11 @@ entry address, the pt_regs pointer, any other kernel frame slot) is ever read
 except as the base of such a runtime access or carried across a control edge
 into user-visible state (a taint dataflow, rule 9: no KASLR/kernel-stack leak
 through the registers the epilogue writes back), direct branches stay inside the body (or go to the
-epilogue), there are no calls, indirect branches, SVC or ADR/ADRP, every fault
+epilogue), there are no calls, SVC or ADR/ADRP and no indirect branch except
+the `br x12` that ends a byte-exact dispatch template (A11: a table is read only
+through the template, its key compare and index width are fixed, it is
+budget-charged, and no kernel value escapes: both miss edges and the `br` carry
+only the join state), every fault
 stub is an exit group ending in `b <epilogue>`, nothing falls off the end, and
 every back-edge is guarded by the budget check (which alone may touch the
 counter). SIMD&FP register-only forms are allowed anywhere; V registers are not
@@ -715,7 +797,9 @@ SP/x29 writes, SP/x29 reads, kernel frame slots loaded into any register, the
 pt_regs pointer moved/stored/used as exit payload, user-access data or base,
 PAN-window atomic operand, or live across a control edge, out-of-range frame
 and pt_regs accesses, corrupted wrapper words,
-broken fault tables, dropped/retargeted/altered budget checks, stray counter
+broken fault tables, dropped/retargeted/altered budget checks, every altered
+word of a dispatch template, dropped key compares, `br`/`blr`/`ret` of other
+registers, entries inside a template, tables read outside or written, stray counter
 writes, PAN windows with a dropped/moved/extra MSR, a widened window, an
 altered/inverted/retargeted range check, a window around a non-atomic, window
 fault sites at other stubs, branches into PAN stubs, atomics and `msr pan`

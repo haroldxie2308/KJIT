@@ -18,7 +18,8 @@
 #   a11 point=<p> pass=<i> test=<set|get> requests=<n> rps=<req/s> <counter>=<delta> ...
 # Exits non-zero when a run reports no throughput, when a KJIT-on run shows no
 # fragment entry, when a KJIT-off run shows one, or when the runtime reports
-# an invalid exit or a verifier rejection.
+# an invalid exit or a verifier rejection. The A11 dispatch counters (ibtc_*)
+# are deltas like the others; fpsimd_run_max_ns is the cumulative maximum.
 set -eu
 
 . /opt/kjit-tests/k4-lib.sh
@@ -42,7 +43,8 @@ for f in enable auto chain_budget stats unsupported_top; do
 done
 
 counters="hook_calls syscalls_in_kernel fragment_entries fpsimd_entries fpsimd_restores chains chain_cap
-exit_svc exit_bl exit_blr exit_br exit_ret exit_mem exit_unsupported exit_budget run_declined"
+exit_svc exit_bl exit_blr exit_br exit_ret exit_mem exit_unsupported exit_budget run_declined
+ibtc_insert ibtc_replace ibtc_clear ibtc_fpsimd_boundary"
 
 orig_budget=$(cat "$K/chain_budget")
 restore() { echo "$orig_budget" > "$K/chain_budget"; set_mode 0; }
@@ -73,6 +75,8 @@ run_test() {
         d=$(( $(stat_of "$work/after.stats" "$c") - $(stat_of "$work/before.stats" "$c") ))
         line="$line $c=$d"
     done
+    # A maximum since module load, not a delta.
+    line="$line fpsimd_run_max_ns=$(stat_of "$work/after.stats" fpsimd_run_max_ns)"
     echo "$line"
     for c in exit_invalid translate_verify_rejected unsupported_bad_word; do
         d=$(( $(stat_of "$work/after.stats" "$c") - $(stat_of "$work/before.stats" "$c") ))

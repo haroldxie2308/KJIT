@@ -3,11 +3,15 @@
  * A11 Step 0 microbenchmark: the wall-clock cost of one fragment entry.
  *
  * Per outer iteration: one raw svc (getppid), then `calls` calls (bl) to a
- * trivial callee and back, no syscall in between. Each call is two chained
- * fragment entries (the callee, then the return site), so with KJIT on one
- * outer iteration makes 2 * calls + 1 entries; (T_on - T_off) / calls / 2 is
- * the cost of one entry. The svc cost is a per-outer constant; run it with
- * two `calls` values and take the slope to remove it.
+ * trivial callee and back, no syscall in between. Each call is two control
+ * transfers (the call, then the return), so one outer iteration makes
+ * 2 * calls + 1 of them with KJIT on. Before A11 every one was a chained
+ * fragment entry through the runtime and (T_on - T_off) / (2 * calls) was the
+ * cost of one entry. Since A11 a transfer to a translated target is a dispatch
+ * in the fragment's own code and only a miss is a runtime entry; (T_on -
+ * T_off) / (2 * calls) is then the cost of one transfer, whichever path it
+ * took (see "Counters" below). The svc cost is a per-outer constant; run it
+ * with two `calls` values and take the slope to remove it.
  *
  * Callee variants (argv[1]):
  *   gpr   add x6, x6, #1; ret
@@ -22,9 +26,21 @@
  * (clock_gettime(CLOCK_MONOTONIC) around the asm loop only). Prints one
  * "rep" line per run and a "result" line with the median, all on stdout.
  * KJIT enabled (debugfs enable=1): the PCs are translated up front unless
- * KJIT_AUTO=1, and the timed phase must have run in fragments (entries,
- * fpsimd_entries, chain_cap == 0, 2 * calls + 1 <= chain_budget) or the test
- * fails. KJIT disabled: nothing is registered and the counters stay put.
+ * KJIT_AUTO=1, and the timed phase must have run in fragments or the test
+ * fails (see "Counters"). KJIT disabled: nothing is registered and the
+ * counters stay put.
+ *
+ * Counters (A11: `fragment_entries` counts runtime round trips only, not
+ * dispatched transfers): one syscall per outer iteration must have run in the
+ * kernel (syscalls_in_kernel), so the loop ran in fragments; no Budget exit
+ * and no chain_cap (a call is a bl, a ret and the loop's back-edge, so
+ * 3 * calls + 1 budget units must fit KJIT_BACKEDGE_BUDGET = 4096). Runtime
+ * entries are at most 10% of the pre-A11 entry count: gpr takes about one per outer iteration (the
+ * syscall resume), no FP/SIMD entry; fp takes two (the resume, then the one
+ * entry into the FP/SIMD callee, which a non-FP/SIMD run never dispatches to,
+ * `ibtc_fpsimd_boundary`): that bracketed run then continues through the
+ * return site (an integer fragment, in table_all) and every later call to the
+ * callee, so fpsimd_entries is about one per outer iteration, not `calls`.
  */
 #include <time.h>
 
@@ -65,19 +81,6 @@ asm(".text\n"
     EC_LOOP(fp, "	fmov	d0, x6\n"
 		"	fmov	x6, d0\n"
 		"	add	x6, x6, #1\n"));
-
-static long long read_debugfs_ll(const char *file)
-{
-	char path[128], line[32];
-	FILE *f;
-
-	snprintf(path, sizeof(path), KJIT_DEBUGFS "/%s", file);
-	f = fopen(path, "r");
-	if (!f || !fgets(line, sizeof(line), f))
-		die("read %s: %s", path, strerror(errno));
-	fclose(f);
-	return atoll(line);
-}
 
 /* debugfs bool: "Y"/"N" (or "1"/"0"). */
 static int read_debugfs_bool(const char *file)
@@ -127,8 +130,8 @@ int main(int argc, char **argv)
 	void (*run)(uint64_t, uint64_t, uint64_t *);
 	char *callee, *ret;
 	uint64_t acc = 0;
-	long long c0[NCOUNTERS], c1[NCOUNTERS], d[NCOUNTERS], budget = 0;
-	long long expected_entries, expected_fp;
+	long long c0[NCOUNTERS], c1[NCOUNTERS], d[NCOUNTERS];
+	long long expected_entries;
 	double ns[64], per_outer, per_call;
 	int enabled, err, is_fp;
 
@@ -143,10 +146,12 @@ int main(int argc, char **argv)
 
 	enabled = read_debugfs_bool("enable");
 	if (enabled) {
-		budget = read_debugfs_ll("chain_budget");
-		if (2 * calls + 1 > budget)
-			die("2 * calls + 1 = %ld entries per syscall exceed chain_budget %lld",
-			    2 * calls + 1, budget);
+		/*
+		 * One budget unit per dispatch attempt and per back-edge: each call is
+		 * a bl, a ret and the loop's b.ne. KJIT_BACKEDGE_BUDGET is 4096.
+		 */
+		if (3 * calls + 1 > 4096)
+			die("3 * calls + 1 = %ld budget units per syscall exceed 4096", 3 * calls + 1);
 		kjit_register_self();
 		if (!kjit_auto_mode()) {
 			/* The callee and the return site are branch targets, not SVC resume PCs. */
@@ -194,21 +199,29 @@ int main(int argc, char **argv)
 
 	/*
 	 * The timed phase must have run in fragments. The snapshots' own libc
-	 * syscalls add a few entries, hence the 1% slack on the FP/SIMD side.
+	 * syscalls add a few runs, hence the slack.
 	 */
 	expected_entries = outer * reps * (2 * calls + 1);
-	expected_fp = outer * reps * calls;
 	for (size_t i = 0; i < NCOUNTERS; i++) {
-		if (!strcmp(counters[i], "fragment_entries") && d[i] * 100 < expected_entries * 95)
-			die("only %lld fragment entries, want about %lld", d[i], expected_entries);
+		if (!strcmp(counters[i], "syscalls_in_kernel") && d[i] * 100 < outer * reps * 95)
+			die("only %lld of %ld syscalls ran in the kernel", d[i], outer * reps);
+		if (!strcmp(counters[i], "fragment_entries")) {
+			if (d[i] * 100 < outer * reps * 95)
+				die("only %lld runtime entries for %ld syscalls", d[i], outer * reps);
+			if (d[i] * 10 > expected_entries)
+				die("%lld runtime entries: the transfers did not dispatch (want <= %lld)",
+				    d[i], expected_entries / 10);
+		}
 		if (!strcmp(counters[i], "fpsimd_entries")) {
-			if (is_fp && d[i] * 100 < expected_fp * 95)
-				die("only %lld FP/SIMD entries, want about %lld", d[i], expected_fp);
+			if (is_fp && d[i] * 100 < outer * reps * 95)
+				die("only %lld FP/SIMD entries for %ld syscalls", d[i], outer * reps);
 			if (!is_fp && d[i] * 100 > expected_entries)
 				die("%lld FP/SIMD entries in the integer-only variant", d[i]);
 		}
 		if (!strcmp(counters[i], "chain_cap") && d[i] != 0)
-			die("chain_cap hit %lld times with 2 * calls + 1 <= chain_budget", d[i]);
+			die("chain_cap hit %lld times", d[i]);
+		if (!strcmp(counters[i], "exit_budget") && d[i] != 0)
+			die("%lld Budget exits with 3 * calls + 1 <= 4096", d[i]);
 	}
 	return 0;
 }

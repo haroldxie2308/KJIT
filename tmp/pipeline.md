@@ -3468,11 +3468,14 @@ tree was restored afterwards):
   in flight, under KASAN and lockdep); no BUG/WARNING/KASAN/lockdep line in
   either (guest-run fails on kernel reports).
 
-Observation, not a defect of the contract: under redis-benchmark nearly every
-slot store replaces another record (default phase: ibtc_insert 36.1M,
-ibtc_replace 36.1M, for 4.2M syscalls). Redis's hot targets (hundreds, over
-about 2 MiB of text) collide in a 4096-slot direct-mapped table, so a
-fraction of the transfers will keep missing even with A11a; and
+Defect found in review (the contract's "last writer wins"): under
+redis-benchmark nearly every slot store replaced another record (default
+phase: ibtc_insert 36.1M, ibtc_replace 36.1M, for 4.2M syscalls). The cause
+was not slot aliasing but several fragments holding a label for the same pc:
+the exiting fragment published its own label, the next lookup another
+fragment's, and the slot flipped on every resolution, each time under
+`kmm->lock`. Fixed in this commit: a slot keeps any live record for the same
+pc (contract amended), and the replace count left is real aliasing. Also
 `ibtc_fpsimd_boundary` is 28.5M (about 7 per syscall): every non-FP/SIMD ->
 FP/SIMD transfer goes through the runtime. Measure the real hit rate after the
 merge before deciding on associativity or on a bracket that spans runs.
@@ -3490,3 +3493,252 @@ merge before deciding on associativity or on a bracket that spans runs.
 - Memory held between retirement and the end of the hook-SRCU grace period
   (previously freed one RCU grace period after the last run): bounded by churn
   times the longest hook call; `jit_churn` passes, no number measured.
+
+# A11 integration (2026-10-05)
+
+Merge of the A11 contract, Step 0, A11a (translator, verifier, harness) and A11b
+(kernel module, patch 0007, guest tests) in one tree (branch `a11-integration`),
+validated on the host, in the linux/arm64 container and in the guests, then
+measured with the Step 0 protocol. M1 host, HVF, 4 vCPUs, `kjit.ko` of both
+profiles built from this tree (the A11b patched kernels were reused, patch 0007
+applied). The seam fixes made at merge (extra-block constants taken from
+`shared/abi` in `runtime/exec.rs`, an assertion on the table layout constants
+in `runtime/ffi.rs`, a comment in `kjit_glue.c`) are in the tree. Product code
+(`shared/`, `runtime/`, `kjit_glue.c`, `kernel-patches/`, `harness/`) was not
+changed here.
+
+## What ran
+
+Host and container:
+
+- `make harness-test`: 245 passed, 0 failed, 2 ignored; verify-mutation and
+  interp asm fixture suites 125 cases across 37 fixtures, 0 failed.
+- `make fuzz ITERS=10000`: passed 9968, failed 0, chained 0.
+- `make harness-test-native` (run on the host: the target starts its own
+  linux/arm64 container; inside the dev container it fails on the read-only
+  cargo registry): 248 passed, 0 failed, 2 ignored; native fixture suite 125
+  cases, 0 failed.
+
+kjit-guest (non-debug):
+
+- `make guest-tests`: ALL PASS (`guest-run: PASS`). The checks that could only
+  pass after the merge: `call_loop` `KJIT_EXPECT=dispatch` (2000 Budget exits
+  for 2000 outer iterations, 2046 entries, no in-kernel syscall); `link_race`
+  steady phase (2004 fragment entries for 2000 rounds of 256 calls, bound 4
+  per round) and storm (1459 invalidated fragments, `ibtc_clear` 2916, no
+  mismatch); `alias_loop` (chain_cap 2000, chain_max 1024, `ibtc_replace`
+  4091996); the kill tests (`kill_hot`'s ">1000 entries in 1 s") and the
+  `fp_*` entry-count checks passed unchanged. Final stats: `ibtc_insert`
+  57.6M, `ibtc_replace` 57.6M (the `alias_loop` ping-pong), `fpsimd_run_max_ns`
+  170625.
+- `make guest-tests-k3`: ALL PASS; unload-stress PASS (20 unloads, all 20 with
+  linked runs, `entries <= 8 * in_kernel`); redis smoke 85.7% of syscalls in
+  the kernel, 11 runtime entries per syscall, no `chain_cap`.
+- `make redis-campaign`: `RESULT PASS`. Suite 2864 / 2866 passed without / with
+  KJIT, 0 failed, same outcome for 2518 distinct tests; with KJIT 41.6% of
+  syscalls in the kernel (17.58M of 42.27M), 385.4M runtime entries, 124.5M
+  FP/SIMD, 6.6M restores, 296658 `Mem` exits, 51494 translations,
+  `exit_invalid` 0, no verifier rejection. 10 adversarial tests, consistency
+  PASS, dmesg clean. Benchmark (all in-kernel numbers are the server's, KJIT
+  on, `-q -n 100000`): default 76.5% in the kernel (3.24M of 4.23M syscalls),
+  9.02 runtime entries per in-kernel syscall, `exit_budget` 0, `ibtc_insert`
+  33.0M, `ibtc_replace` 33.0M, `ibtc_fpsimd_boundary` 8.4M, SET / GET 124k /
+  152k req/s; `-P 16` 60.2%, 91.3 entries per in-kernel syscall, SET / GET
+  229k / 326k; 256 clients 76.7%, 8.85, SET / GET 118k / 148k.
+
+kjit-guest-debug (KASAN, lockdep, DEBUG_ATOMIC_SLEEP):
+
+- `make guest-tests`: ALL PASS; same A11 checks (call_loop 2000 Budget exits,
+  link_race steady 2004 entries / 2000 rounds), `fpsimd_run_max_ns` 227000.
+- `make guest-tests-k3`: ALL PASS (20 unloads with linked runs in flight under
+  KASAN and lockdep).
+- `make redis-campaign K4_ITERATIONS=1`, three runs: run 1 `RESULT FAIL`, run 2
+  `RESULT FAIL`, run 3 `RESULT PASS`. Neither failure involves KJIT:
+  - run 1: one `[err]` with KJIT on, `Active defrag` (`assert {$max_latency
+    <= 30}`, 37 ms: redis's own latency check on its defrag cycle). Re-run in
+    isolation (`runtest --single unit/memefficiency`, debug guest, 3 passes
+    each with KJIT on and off): the same assertion failed in a first
+    attempt with KJIT on (61 ms) and in the last pass with KJIT disabled
+    (59 ms, no fragment ran); the other 5 passes were clean. Over every run of
+    this test on the debug kernel, 2 of 7 with KJIT on and 1 of 5 with it off
+    failed: not distinguishable (host load 5-8 during these runs).
+  - run 2: the KJIT-off suite (no `kjit.ko` loaded) aborted at 1647 tests with
+    `[exception]: ... ERR FAILOVER target replica is not online`; the KJIT-on
+    suite of that run completed with 0 failed (2864 passed).
+  - run 3: suite 2867 / 2863 passed, 0 failed, same outcome for 2518 distinct
+    tests; 10 adversarial, consistency PASS, dmesg clean, no
+    BUG/WARNING/KASAN/lockdep line (guest-run enforces it on every boot).
+  I did not change anything for these (a redis test's timing bound under a
+  loaded debug guest is not an A11 expectation); they are a flake, attributed
+  from the off-runs above, not proven impossible with KJIT.
+
+`make guest-rootfs` failed once in three when called as the dependency of a
+guest target immediately after a previous rootfs build (`/out/<test>: No such
+file or directory` from the container that compiles `tests/guest`, i.e. the
+bind mount of the freshly recreated `tests-root` directory was stale on the
+Docker file-sharing layer); an immediate retry works. The runs above used
+`make -o guest-rootfs <target>` after one successful build.
+
+## Test changes
+
+None of the A11b checks needed a change (they passed as written). Two files
+in `tests/guest` changed:
+
+- `entry_cost.c` (an expectation of the old behaviour): it required fragment
+  entries >= 95% of `reps * outer * (2 * calls + 1)`, FP/SIMD entries >= 95% of
+  `reps * outer * calls` (fp), and `2 * calls + 1 <= chain_budget`. With
+  dispatch the loop's transfers do not enter the runtime: gpr takes 1.000
+  runtime entry per outer iteration (the syscall resume), fp 2.000 with 1.000
+  FP/SIMD entry (the non-FP/SIMD return site enters the callee through the
+  runtime once; that bracketed run then continues through the return site and
+  every later call, because a bracketed run dispatches through `table_all`).
+  It now checks the A11 property: >= 95% of the syscalls ran in the kernel (the
+  loop ran in fragments), runtime entries >= 95% of the syscalls (one run per
+  syscall) and <= 10% of the old expectation (the transfers dispatched), fp:
+  FP/SIMD entries >= 95% of the syscalls, no FP/SIMD entry in gpr, no
+  `chain_cap`, no `exit_budget`; the chain-budget bound became the 4096-unit
+  dispatch budget. Its header documents the new meaning of the cost.
+- `a11-baseline.sh` (not an expectation): each line also prints the deltas of
+  `ibtc_insert`, `ibtc_replace`, `ibtc_clear`, `ibtc_fpsimd_boundary` and the
+  cumulative `fpsimd_run_max_ns`, which Step 0 did not have; the counters it
+  already had are unchanged.
+
+## Measurements against Step 0
+
+Protocol as Step 0 (`entry_cost`; `a11-baseline.sh WORKDIR 3 200000 POINT`, one
+fresh server per boot, warm-up, 3 passes SET then GET per boot), on the
+non-debug guest, with these differences: 9 boots instead of 18 (points `off`,
+`1024`, `256`; round A in the order off, 1024, 256, round B reversed, round C
+rotated: 9 runs per cell), no single-server sweeps, chain budget 1 / 16 / 64
+not run. Host 1-minute load before each redis boot (not gated; other apps
+were running on the host): A-off 4.49, A-1024 4.81, A-256 4.71, B-256 4.54,
+B-1024 9.54, B-off 8.02, C-1024 7.63, C-256 9.21, C-off 12.17. The raw rates
+do not follow the load (e.g. 1024 GET: 142 / 143 / 133 in round A at load
+~4.8, 145 / 146 / 151 in round B at 9.5, 144 / 144 / 144 in C at 7.6).
+
+Redis (req/s mean over 9 runs, min..max; per request = counter delta / 200000):
+
+| point | SET req/s | GET req/s | SET / GET us/req | runtime entries/req (SET / GET) | FP entries/req | in-kernel syscalls/req | hook calls/req | exit_budget/req |
+|---|---|---|---|---|---|---|---|---|
+| off | 230081 (218341..236967) | 231340 (218579..236128) | 4.348 / 4.325 | 0 | 0 | 0 | 0 | 0 |
+| 256 | 113419 (100351..120265) | 141020 (126502..147929) | 8.845 / 7.104 | 28.69 / 15.74 | 8.03 / 5.04 | 2.00 | 2.04 | 0 |
+| 1024 | 119213 (115674..121877) | 143603 (132979..150716) | 8.390 / 6.971 | 28.68 / 15.73 | 8.03 / 5.04 | 2.00 | 2.04 | 0 |
+
+Per request at 1024 (SET / GET): `ibtc_insert` 37.23 / 17.30, `ibtc_replace` 37.23
+/ 17.30 (equal in every run: no store went to an empty slot), `ibtc_clear` 0,
+`ibtc_fpsimd_boundary` 8.03 / 5.04; runtime exits svc 2.00 / 2.00, bl 10.19 /
+5.29, blr 1.05 / 1.01, br 5.03 / 3.04, ret 10.37 / 4.35; `chain_cap` 0,
+`run_declined` ~0.0001, `exit_mem` ~0. At 256 the same within 0.1%.
+`fpsimd_run_max_ns` (cumulative per boot): off 0; 1024 2.18 / 1.80 / 0.24 ms;
+256 6.92 / 3.14 / 1.10 ms. Ratio to KJIT off: SET 0.518 (1024), 0.493 (256);
+GET 0.621 (1024), 0.610 (256).
+
+Step 0 (pre-A11, fresh servers, 9 runs): off 234341 / 235551; 256 66009 /
+65758 (SET 3.6x, GET 3.6x slower); 1024 55315 / 62071 (4.2x / 3.8x), 352.1 /
+299.3 entries per request, 1.998 in-kernel syscalls per request.
+So at 1024 the runtime entries per request fell 12.3x (SET) and 19.0x (GET),
+the in-kernel syscalls per request are unchanged, and the slowdown against off
+went from 4.2x / 3.8x to 1.93x / 1.61x (us/req over off: +13.80 / +12.10 before,
++4.04 / +2.64 now). Step 0's bound "if A11 removed exactly the microbenchmark's
+cost per entry" was 11.1 / 10.3 us per request; measured 8.39 / 6.97. The
+256-vs-1024 difference (Step 0: 3.6x vs 4.2x) is gone (1.64x vs 1.61x GET,
+2.03x vs 1.93x SET): `chain_budget` binds round trips only and a request now
+makes ~29 or ~16 of them.
+
+Microbenchmark (`entry_cost`; ns per outer iteration, median over 3 boots of
+the per-boot median of 7 runs; host load before the boots 5.94 (waited 150 s),
+5.88, 5.65; a first set of 3 boots at load 13 gives the same within 3%):
+
+| variant | calls K | transfers/outer (2K+1) | off | on | (on-off)/transfers | Step 0 (on-off)/entries |
+|---|---|---|---|---|---|---|
+| gpr | 16 | 33 | 141.6 | 148.0 | 0.19 ns | 15.1 ns |
+| gpr | 128 | 257 | 257.1 | 852.0 | 2.31 ns | 17.2 ns |
+| gpr | 256 | 513 | 379.5 | 1639.0 | 2.46 ns | 17.3 ns |
+| fp | 16 | 33 | 177.9 | 211.0 | 1.00 ns | 39.1 ns |
+| fp | 128 | 257 | 537.2 | 918.1 | 1.48 ns | 41.6 ns |
+| fp | 256 | 513 | 946.6 | 1721.4 | 1.51 ns | 41.7 ns |
+
+Fit of (on - off) per outer against transfers per outer: gpr 2.61 ns per
+transfer (intercept -78 ns: one svc run in the kernel instead of through EL0),
+fp 1.55 ns (intercept -17 ns); Step 0: 17.50 and 41.82 ns per entry. Counters
+of the on runs: gpr 1.000 runtime entries per outer, `exit_budget` 0,
+`chain_cap` 0; fp 2.000 runtime entries and 1.000 FP/SIMD entry per outer.
+
+## Conclusion
+
+1. A11 removed the round trips: 28.7 / 15.7 runtime entries per request at
+   1024 against 352 / 299 (12x / 19x), 9 per in-kernel syscall in the
+   benchmark campaign against ~140 after A10, and a call/return costs
+   2.5 ns per transfer in the loop against 17.5 ns per entry (integer; 1.5
+   against 41.8 for the FP variant, where the bracket is entered once per
+   outer iteration, not per call).
+2. Throughput against KJIT off (fresh servers, 9 runs): SET 0.52, GET 0.62 at
+   `chain_budget` 1024 (0.49 / 0.61 at 256), up from 0.24 / 0.26; still
+   1.9x / 1.6x slower than native.
+3. What is left of the loss is 4.04 us (SET) and 2.64 us (GET) per request.
+   The runtime entries still made cost about 0.9 us (SET) and 0.5 us (GET) at
+   Step 0's microbenchmark prices (17.5 ns integer, 66 ns FP/SIMD entry); at
+   Step 0's redis-measured ~2.3x that price, about 2 and 1.2 us. So between
+   roughly 20% and 50% of the remainder is round trips (of which 28% / 32% are
+   the by-design FP/SIMD boundary entries, the rest misses), and 50% to 80% is
+   inside fragment code: the dispatch sequences and budget accounting,
+   windowed memory accesses. The whole remaining loss is 11.5 (SET) / 8.8
+   (GET) ns per Step 0 transfer (taking Step 0's branch-exit count as the
+   transfer count, which is an assumption), against 2.5 ns per transfer in the
+   hot loop. These are inferences from counters and the two models; nothing
+   here times the two parts separately.
+4. Every `ibtc_insert` was an `ibtc_replace` in every run: at steady state each
+   miss publishes over another record, which looks like conflict misses of the
+   4096-slot direct-mapped table (plus the FP/SIMD boundary, which does not hit
+   by design), the first thing to try next is a measurement of hit rate (a
+   debug-only counter) and then associativity or a larger table.
+5. Dispatch counts no hits (no atomics in fragment code), so the hit rate above
+   is deduced (about 92% of Step 0's 352 transfers per SET request no longer
+   enter the runtime), not measured.
+
+## Not verified
+
+- The cause of the remaining ~50-80% (in-fragment code vs runtime entries): no
+  per-phase timing; the two pieces are bounded by models.
+- Why every publish replaces: not shown to be slot conflicts (no hit/miss or
+  per-slot counter); alternative: the same few pcs ping-ponging, or the
+  per-mm table being replaced across the runs of one boot.
+- `fpsimd_run_max_ns`: 0.1-0.25 ms in most boots but up to 2-7 ms in redis
+  benchmark boots and 15.4 ms (kjit-guest) / 21.2 and 42.6 ms (kjit-guest-debug)
+  after a full redis suite, against 946 us for the A9b suite on a quieter host.
+  A9b traced such tails to host-side vCPU stalls; here the host ran other
+  apps (load 4.5-13) and a bracketed run can now span fragments (bounded by
+  4096 dispatch units, ~100 us per run of the largest loop body seen), but I did
+  not separate the two. The 30 ms latency check in redis's `Active defrag`
+  test is the visible consumer.
+- The debug campaign's two failures are attributed to flaky redis tests from
+  the off-runs (2/7 vs 1/5), not excluded as KJIT-induced.
+- Not run: the Step 0 points 1, 16, 64 and the single-server sweeps; 18 boots
+  (9 here); auto mode for `entry_cost`; `-P 16` and 256 clients on KJIT off
+  (the campaign's `-P 16` SET, 229k, is lower than A10's single 332k number
+  from an unknown load; not re-measured); more than one iteration of the
+  debug campaign's passing run; the kernel's behaviour on a CPU with SVE/SME.
+- Redis measurements ran with other host load (4.5-12.2 at boot start, not
+  gated); the per-cell sd of req/s was 1.5-5.8% (off 2.3-2.4%, 1024 1.5-3.3%, 256
+  4.4-5.8%), but a quiet-host run could move the ratio by a few points.
+
+## Review finding: FP/SIMD bracket length is now a whole run
+
+- The `fpsimd_run_max_ns` tail (2-7 ms in benchmark boots, 15.4 ms in the
+  kjit-guest suite, 21.2 / 42.6 ms on kjit-guest-debug; A9b: 946 us) is not
+  only host stalls. By the contract a bracketed run dispatches through
+  `table_all` and continues into non-FP/SIMD code, so once a run enters an
+  FP/SIMD fragment (glibc memcpy/memset) everything after it until the next
+  runtime exit runs with preemption and page faults disabled: up to
+  `KJIT_BACKEDGE_BUDGET` units, each an acyclic path of any fragment.
+  `entry_cost fp` shows the shape: one FP/SIMD entry per syscall, and the
+  bracket then covers every later call. Before A11 the bracket ended at the
+  FP/SIMD fragment's first branch exit.
+- Correct (no test fails, no report), but a preemption-latency regression
+  the contract allowed without bounding. Options: (a) FP/SIMD runs dispatch
+  only into FP/SIMD fragments (a third table), so the bracket covers FP/SIMD
+  code only and every return into integer code is a runtime entry; (b) a
+  smaller budget for bracketed runs; (c) accept and document the bound.
+  Decision pending.
+- `entry_cost`'s budget guard counted 2 units per call; a call is 3 (bl,
+  ret, the loop's back-edge). Fixed in review.

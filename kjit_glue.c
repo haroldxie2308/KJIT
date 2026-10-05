@@ -209,7 +209,8 @@ static_assert(offsetof(struct kjit_label, host) == 8);
 /*
  * Dispatch tables (IBTC): per kjit_mm, direct mapped, 2^KJIT_IBTC_BITS slots
  * indexed by pc[13:2]; a slot is 0 or a record of a live fragment of that mm.
- * Same constants as the dispatch template (shared/).
+ * Same constants as the dispatch template (shared/abi), pinned by an assertion
+ * in runtime/ffi.rs.
  */
 #define KJIT_IBTC_BITS 12
 #define KJIT_IBTC_SLOTS (1U << KJIT_IBTC_BITS)

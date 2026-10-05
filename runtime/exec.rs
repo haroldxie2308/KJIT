@@ -11,7 +11,7 @@ use kernel::ffi::c_long;
 
 use super::ffi::{self, KjitFrag, PtRegs};
 use super::stats::{self, Stat};
-use crate::shared::abi::RetStatus;
+use crate::shared::abi::{RetStatus, EXTRA_PARAMS_WORDS, EXTRA_PARAM_IBTC_TABLE_INDEX};
 
 /// `kjit_profile` kinds (`enum kjit_hot_kind` in kjit_glue.c).
 const HOT_SVC_RESUME: u32 = 0;
@@ -74,9 +74,9 @@ impl Running {
     /// Runs the fragment from `entry` (the host address of one of its verified
     /// entries); `extra` receives x10/x11 and gets the dispatch table. Returns
     /// the status in x0.
-    fn call(&self, regs: *mut PtRegs, extra: &mut [u64; ffi::EXTRA_WORDS], entry: u64) -> u64 {
+    fn call(&self, regs: *mut PtRegs, extra: &mut [u64; EXTRA_PARAMS_WORDS], entry: u64) -> u64 {
         stats::inc(Stat::FragmentEntries);
-        extra[ffi::EXTRA_DISPATCH_TABLE_INDEX] = self.table;
+        extra[EXTRA_PARAM_IBTC_TABLE_INDEX] = self.table;
         // SAFETY (both calls): `entry` is the host of a label of this
         // fragment; `extra` receives x10/x11 (epilogue `stp x10, x11, [x1]`)
         // and holds this run's dispatch table. A fragment the verifier found to
@@ -157,7 +157,7 @@ fn run_chain(
     let mut entries = NonZeroU32::MIN;
 
     loop {
-        let mut extra = [0u64; ffi::EXTRA_WORDS];
+        let mut extra = [0u64; EXTRA_PARAMS_WORDS];
         let status = run.call(regs, &mut extra, entry);
         let (param0, param1) = (extra[0], extra[1]);
 
