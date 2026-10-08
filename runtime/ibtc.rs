@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 
-//! Dispatch-miss classification (tmp/pipeline.md, "A11 contract"). A fragment
-//! looks a branch target up in its run's dispatch table; every `BL`, `BLR`,
+//! Dispatch-miss classification (docs/pipeline.md, "In-fragment branch
+//! dispatch (A11)"). A fragment looks a branch target up in its run's dispatch
+//! table; every `BL`, `BLR`,
 //! `BR` and `RET` exit that reaches `run_chain` is a miss. Before the runtime
 //! publishes anything it reads the slot the fragment missed in and classifies
 //! the miss by what it held:
