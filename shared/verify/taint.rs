@@ -1,6 +1,6 @@
 //! Rule 9 (confidentiality): which general registers hold kernel values. One
 //! forward analysis serves rule 3 (a base proven to hold the pt_regs pointer) and
-//! rule 9 (no kernel value reaches user-visible state). tmp/pipeline.md,
+//! rule 9 (no kernel value reaches user-visible state). docs/pipeline.md,
 //! "Verifier (V3)", "Confidentiality (rule 9)".
 
 use crate::shared::abi::KJIT_PROLOGUE;

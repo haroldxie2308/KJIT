@@ -4,8 +4,8 @@
 //!
 //! - `translate`: user text -> `compile_request` -> encode -> `verify_fragment`
 //!   -> install (C: execmem + extable + code cache).
-//! - `exec`: the `kjit_after_syscall` decision table (tmp/pipeline.md, "K2
-//!   contract").
+//! - `exec`: the `kjit_after_syscall` decision table (docs/pipeline.md,
+//!   "kjit_after_syscall decision").
 //! - `stats`: counters behind `/sys/kernel/debug/kjit/stats`.
 //! - `ibtc`: dispatch-miss classification and the per-slot conflict
 //!   diagnostics behind `/sys/kernel/debug/kjit/ibtc_slots`.

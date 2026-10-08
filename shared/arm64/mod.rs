@@ -221,8 +221,8 @@ impl A64Insn {
     }
 
     /// The LSE single-register atomics (A8): the only forms a fragment runs as a
-    /// privileged access to user memory, inside a PAN window (tmp/pipeline.md, "A8
-    /// contract"). Pinned by a test against the generated mnemonics.
+    /// privileged access to user memory, inside a PAN window (docs/pipeline.md, "LSE
+    /// atomics through a PAN window (A8)"). Pinned by a test against the generated mnemonics.
     pub const fn lse_atomic(self) -> Option<A64Atomic> {
         let (op, size, rs, rt, rn) = match self {
             Self::LdaddLdadd32Memop { rs, rn, rt }
@@ -467,8 +467,8 @@ pub enum A64FpSimdWriteback {
 }
 
 /// An A9a SIMD&FP load/store (LDR/STR (immediate), LDUR/STUR, LDP/STP, LD1/ST1
-/// (multiple structures)), split the way a fragment performs it (tmp/pipeline.md,
-/// "A9 contract"): the address `base + offset`, then `access` -- the same access in
+/// (multiple structures)), split the way a fragment performs it (docs/pipeline.md,
+/// "FP/SIMD in fragments (A9)"): the address `base + offset`, then `access` -- the same access in
 /// its base-only encoding (unsigned-offset LDR/STR or signed-offset LDP/STP with
 /// `#0`, LD1/ST1 without post-index; `Rn` still names `base`) -- then `writeback`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1345,7 +1345,7 @@ impl A64Insn {
             | Self::LdrshRegLdrsh64LdstRegoff { option, .. }
             | Self::LdrswRegLdrsw64LdstRegoff { option, .. } => option & 0b010 == 0,
 
-            // A9a SIMD&FP (tmp/pipeline.md, "A9 contract"): the value rules of each
+            // A9a SIMD&FP (docs/pipeline.md, "FP/SIMD in fragments (A9)"): the value rules of each
             // form's decode pseudocode that its diagram does not fix.
             // DUP/INS/UMOV: `imm5 == 'x0000'` (no element size); DUP (vector) and
             // UMOV (32-bit) also reject a 64-bit element they cannot hold.
@@ -1584,7 +1584,7 @@ impl A64Insn {
             // SY; DSB CRm 0000/0100 are SSBB/PSSBB). Acquire/release: no value rule
             // (their should-be-one Rs/Rt2 are pinned in subset.toml). LDAPR's only
             // UNDEFINED case is a missing FEAT_LRCPC, a CPU property, not an
-            // encoding one (tmp/pipeline.md, A7c).
+            // encoding one (docs/pipeline.md, "Barriers and acquire/release (A7c)").
             | Self::DmbDmbBoBarriers { .. }
             | Self::DsbDsbBoBarriers { .. }
             | Self::IsbIsbBiBarriers { .. }
@@ -1607,7 +1607,7 @@ impl A64Insn {
             // SBC/SBCS and SMSUBL/UMSUBL: no decode-time rule. CRC32*/CRC32C*: the
             // `sf`/`sz` UNDEFINED combinations are fixed by each form's diagram; the
             // remaining UNDEFINED case is a missing FEAT_CRC32, a CPU property
-            // (tmp/pipeline.md, A7d).
+            // (docs/pipeline.md, "BTI, carry arithmetic, CRC32 (A7d)").
             | Self::BtiBtiHbHints { .. }
             | Self::AdcAdc32AddsubCarry { .. }
             | Self::AdcAdc64AddsubCarry { .. }

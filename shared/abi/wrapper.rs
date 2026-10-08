@@ -414,8 +414,8 @@ pub const DISPATCH_TEMPLATE_LEN: usize = 9;
 /// compare). Both go to the same forward exit-group start.
 pub const DISPATCH_TEMPLATE_MISS_BRANCHES: [usize; 2] = [3, 6];
 
-/// The in-fragment branch dispatch (A11, tmp/pipeline.md "A11 contract: in-fragment
-/// branch dispatch", "Lowering"), emitted after a branch site's budget check and
+/// The in-fragment branch dispatch (A11, docs/pipeline.md "In-fragment branch
+/// dispatch (A11)", Lowering), emitted after a branch site's budget check and
 /// target move (T in `DISPATCH_TARGET_REG`):
 ///
 /// ```text

@@ -368,7 +368,7 @@ fn check_fault_injection(
     Ok(total)
 }
 
-/// The A5 acceptance check (tmp/pipeline.md, "Fault sites (A5)").
+/// The A5 acceptance check (docs/pipeline.md, "Fault sites (A5)").
 ///
 /// Uninjected, the fragment's accesses must be sandboxed: no runtime access
 /// touches user memory, and every user access is an `LDTR`/`STTR` with a

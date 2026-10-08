@@ -3,7 +3,7 @@
 // (the runtime translates the target and publishes it), on a hit straight into the
 // callee's fragment. The harness runs each case cold (an empty code cache) and warm
 // (the cache the cold run left); both must equal the original code following its
-// branches (tmp/pipeline.md, "A11 contract", "Harness").
+// branches (docs/pipeline.md, "Code cache and cached runs (A11a)").
 //
 // Cases: nested calls with compiler-style frames (stp/ldp x29, x30 on the data
 // window), a call chain ended by tail calls (`b`, then `br`), and recursion with

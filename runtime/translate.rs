@@ -150,7 +150,7 @@ enum Failure {
     Encode,
     Verify(VerifyRule),
     /// The verifier reports `uses_fpsimd`, but this system has SVE or SME (or
-    /// no FP/SIMD): not modelled, refused (tmp/pipeline.md, "A9 contract").
+    /// no FP/SIMD): not modelled, refused (docs/pipeline.md, "FP/SIMD in fragments (A9)").
     FpSimdUnsupportedCpu,
     Install(c_int),
     Alloc,

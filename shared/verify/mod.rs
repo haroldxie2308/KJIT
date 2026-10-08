@@ -5,7 +5,7 @@
 //! table and its entry-offset table, all offset-relative. The verifier re-derives
 //! every fact it checks from the generated A64 decoder and `shared::abi`; it never
 //! imports the translator (`shared::trans`, `shared::emit`), so a translator bug
-//! cannot also be a verifier bug. The rules are listed in tmp/pipeline.md,
+//! cannot also be a verifier bug. The rules are listed in docs/pipeline.md,
 //! "Verifier (V3)".
 //!
 //! Cost: one decode pass and one check pass over the words, one pass over each
@@ -52,7 +52,7 @@ pub struct VerifyInput<'a> {
 pub struct VerifyOk {
     /// Some word is an A9a SIMD&FP form (register-only, or a window load/store):
     /// the fragment reads or writes the user's V registers, which the kernel must
-    /// hold live while it runs (tmp/pipeline.md, "A9 contract", Kernel).
+    /// hold live while it runs (docs/pipeline.md, "FP/SIMD in fragments (A9)", Kernel).
     pub uses_fpsimd: bool,
 }
 

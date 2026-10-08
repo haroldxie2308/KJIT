@@ -1,4 +1,5 @@
-//! Differential runs over a code cache (A11, tmp/pipeline.md "Harness (A11a)").
+//! Differential runs over a code cache (A11, docs/pipeline.md "Code cache and cached
+//! runs (A11a)").
 //!
 //! A case runs against a `CodeCache` that starts empty (cold: every branch exit
 //! misses and goes through the runtime, which translates and publishes, as the
@@ -34,7 +35,7 @@ pub fn new_interpreter_cache(text_base: u64, text: &[u8]) -> CodeCache {
     .with_chain_budget(CACHED_CHAIN_BUDGET)
 }
 
-/// The kernel's default `chain_budget` (tmp/pipeline.md, "A10").
+/// The kernel's default `chain_budget` (docs/pipeline.md, "Chain budget (A10)").
 pub const CACHED_CHAIN_BUDGET: usize = 1024;
 
 /// Both sides of one cached run, not yet compared.

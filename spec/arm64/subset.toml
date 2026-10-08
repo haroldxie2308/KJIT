@@ -273,7 +273,7 @@ forms = [
   "SVC.SVC_EX_exception",
   # A8: LSE single-register atomics (LD<op>, SWP, CAS; every size and A/L/AL
   # variant; ST<op> is LD<op> with Rt = XZR). Lowered inside a PAN window
-  # (tmp/pipeline.md, "A8 contract").
+  # (docs/pipeline.md, "LSE atomics through a PAN window (A8)").
   "LDADD.LDADD_32_memop",
   "LDADD.LDADDA_32_memop",
   "LDADD.LDADDAL_32_memop",
@@ -437,7 +437,7 @@ forms = [
   # A8: translator-emitted only (the PAN window). Constrained to PSTATE.PAN
   # below; user code containing it is rejected by reg-virt (Unsupported exit).
   "MSR_imm.MSR_SI_pstate",
-  # A9a: FP/SIMD in fragments (tmp/pipeline.md, "A9 contract"). Memory forms run
+  # A9a: FP/SIMD in fragments (docs/pipeline.md, "FP/SIMD in fragments (A9)"). Memory forms run
   # as one privileged access inside a PAN window; V registers are never virtualized.
   # Half-precision FMOV (FEAT_FP16) and FP arithmetic/conversion/compare stay out.
   "LDR_imm_fpsimd.LDR_B_ldst_immpost",
@@ -641,7 +641,7 @@ forms = [
 #   count is CNTPCT - CNTVOFF at EL0 and EL1 alike (VirtualCounterTimer()), and
 #   CNTFRQ is one value. EL0 reads them directly only while
 #   CNTKCTL_EL1.EL0VCTEN is set and no timer erratum traps and emulates them;
-#   kjit.ko refuses to load otherwise (tmp/pipeline.md, "A10").
+#   kjit.ko refuses to load otherwise (docs/pipeline.md, "Counter reads (A10)").
 # CNTVCTSS_EL0 (FEAT_ECV) is not admitted: UNDEFINED without ECV, which the
 # development hosts lack.
 [decode.field_instances."MRS.MRS_RS_systemmove"]

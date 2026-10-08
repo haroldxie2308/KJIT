@@ -3234,7 +3234,7 @@ fn lse_msr_encoding_cases() -> Vec<EncodingCase> {
     cases
 }
 
-/// A9a SIMD&FP forms (tmp/pipeline.md, "A9 contract"): at least one case per
+/// A9a SIMD&FP forms (docs/pipeline.md, "FP/SIMD in fragments (A9)"): at least one case per
 /// form, built from the generated field table (`(field, raw value)`; `imm8` stands
 /// for MOVI/MVNI's `a:b:c:d:e:f:g:h`) and compared with LLVM's encoding of `asm`.
 fn simd_encoding_cases() -> Vec<EncodingCase> {

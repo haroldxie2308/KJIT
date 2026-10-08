@@ -31,7 +31,8 @@ pub enum RephrasedInsnKind {
     ///   #(size - 1); and xS, xS, #16; cbnz xS` (the access crosses a 16-byte
     ///   boundary, which alignment-faults natively).
     AlignCheck,
-    /// PAN window range check (A8; tmp/pipeline.md, "A8 contract"), emitted by
+    /// PAN window range check (A8; docs/pipeline.md, "LSE atomics through a PAN
+    /// window (A8)"), emitted by
     /// reg-virt right before a window: `ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>`.
     /// Its `CBNZ` targets the PAN stub of the same `ori_pc`.
     RangeCheck,
@@ -324,7 +325,8 @@ pub(crate) fn rephrase_insn(
                 RephrasedInsnKind::UserSynthetic,
             )?;
         }
-        // Branch sites (A11, tmp/pipeline.md "A11 contract", "Lowering"). The budget
+        // Branch sites (A11, docs/pipeline.md "In-fragment branch dispatch (A11)",
+        // Lowering). The budget
         // check that precedes the whole sequence is added by `rephrase`. Order: the
         // target into x13 (before any x30 write, so `blr x30` stays correct), the
         // link write, the dispatch template, then the exit group a miss takes: the
@@ -674,7 +676,7 @@ const fn is_sp_reg(reg: A64Reg) -> bool {
 /// instruction boundary, which is where the check runs (before the back-edge's fills).
 const BUDGET_CHECK_SCRATCH_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
 
-/// The back-edge budget check (tmp/pipeline.md, "Execution budget (A6)"):
+/// The back-edge budget check (docs/pipeline.md, "Execution budget (A6)"):
 ///
 /// ```text
 /// ldr x12, [sp, #RUNTIME_FRAME_BUDGET_OFFSET]

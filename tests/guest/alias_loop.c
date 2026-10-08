@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Transfers that always miss the dispatch table (tmp/pipeline.md, "A11
- * contract", Kernel tests): one `blr x5` alternating between two callees 16 KiB
+ * Transfers that always miss the dispatch table (docs/journal/2026-10-02.md,
+ * "A11 contract pinned: in-fragment branch dispatch", Kernel tests (A11b)): one `blr x5` alternating between two callees 16 KiB
  * apart. A dispatch table slot is indexed by pc[13:2], so the two callees share
  * one slot: publishing the second replaces the first (ibtc_replace), and the
  * transfer to the first misses again, and so on. Every blr therefore goes

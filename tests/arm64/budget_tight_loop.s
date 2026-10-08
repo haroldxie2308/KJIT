@@ -1,4 +1,4 @@
-// Execution budget fixture (tmp/pipeline.md, "Execution budget (A6)"). Every
+// Execution budget fixture (docs/pipeline.md, "Execution budget (A6)"). Every
 // case is a loop right after its hot SVC. A loop that runs its back-edges
 // KJIT_BACKEDGE_BUDGET (4096) times in one fragment entry must leave through a
 // Budget exit at the back-edge branch, with the user state the original has just

@@ -68,7 +68,7 @@ pub struct CaseReport {
 /// Stop an original run right before the `instance`-th (1-based) execution of the
 /// instruction at `pc`, counted over the whole run (SVC continuations included).
 /// This is the dynamic point where a fragment's `Budget` exit returns to userspace
-/// (tmp/pipeline.md, "Execution budget (A6)"); `fragment_instance_cap` derives it.
+/// (docs/pipeline.md, "Execution budget (A6)"); `fragment_instance_cap` derives it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct InstanceCap {
     pub pc: u64,
@@ -424,7 +424,7 @@ pub fn run_differential(
 
 /// What a faulting original instruction may already have done when it aborted,
 /// and what userspace then redoes when it re-executes it:
-/// - pipeline.md "Fault sites (A5)", store footprint: a store split into several
+/// - docs/pipeline.md "Fault sites (A5)", fault footprint: a store split into several
 ///   user accesses (STP) that faults on a later one has already written the
 ///   earlier units;
 /// - A9a: a SIMD&FP access is performed in smaller single-copy-atomic parts, so
@@ -1350,7 +1350,7 @@ mod tests {
 
     /// A pair store whose second unit faults (read-only page): the fragment has
     /// already stored the first unit, which the oracle accepts as the store
-    /// footprint (pipeline.md "Fault sites (A5)").
+    /// footprint (docs/pipeline.md "Fault sites (A5)").
     #[test]
     fn faulting_pair_store_may_leave_its_first_unit_written() {
         let text_base = FIXTURE_TEXT_BASE;

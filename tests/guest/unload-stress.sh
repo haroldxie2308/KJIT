@@ -1,6 +1,7 @@
 #!/bin/sh
-# Unload race stress (tmp/pipeline.md, "Unload race"; kernel-patches/0006,
-# "A11 contract"): rmmod/insmod kjit.ko `cycles` times while unload_fault keeps
+# Unload race stress (docs/pipeline.md, "Hook lifetime and unload (patch 0006)";
+# kernel-patches/0006, "Dispatch tables (A11, kernel side)"): rmmod/insmod kjit.ko
+# `cycles` times while unload_fault keeps
 # auto-mode fragments faulting on fresh pages, in long chains of in-place
 # demand paging (gpr threads) and through the Mem stub of FP/SIMD fragments (fp
 # threads), and keeps runs linked across fragments (link and linkfp threads:

@@ -2,7 +2,7 @@
 //
 // `blr x30`: the target is the old x30, and the dispatch site must read it before
 // its own link write overwrites x30 (the target move precedes the link write;
-// tmp/pipeline.md, "A11 contract", "Lowering"). On a budget exit the whole site
+// docs/pipeline.md, "In-fragment branch dispatch (A11)", Lowering). On a budget exit the whole site
 // re-executes natively, which is also correct for `blr x30`.
 //
 // `ret x5`: a return through another register, to a function entry that a call

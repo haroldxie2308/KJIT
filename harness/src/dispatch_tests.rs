@@ -1,5 +1,5 @@
 //! A11 dispatch behaviours the cold/warm fixture suite does not assert on its own
-//! (tmp/pipeline.md, "A11 contract", "Harness (A11a)"): which transfers hit, which
+//! (docs/pipeline.md, "Code cache and cached runs (A11a)"): which transfers hit, which
 //! always miss, what the tables hold. Each test runs one `tests/arm64/dispatch_*.s`
 //! case through `run_cached_differential` (so every run is also compared with the
 //! original following its branches).

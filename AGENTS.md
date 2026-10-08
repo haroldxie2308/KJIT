@@ -30,7 +30,13 @@ Current non-goals:
 
 ## Read First
 
-- `tmp/pipeline.md`: active design notes and pipeline requirements.
+- `docs/pipeline.md`: goals, non-goals, architecture and the current contracts
+  the code must match (ABI, privilege model, verifier rules, runtime/kernel
+  contracts), plus open decisions and an index of the journal.
+- `docs/journal/`: one file per day (`YYYY-MM-DD.md`) of timestamped entries:
+  experiments, measurements, implementation records, defect analyses and
+  discussion results, newest last. Read the latest entries for the state of the
+  work.
 - `README.md`: user-facing architecture and workflow overview. Keep it current.
 - `old-version/`: historical implementation and ideas. Use it as reference, not
   as code to bulk-copy.
@@ -49,8 +55,9 @@ Current non-goals:
   generalization until the current pipeline needs them.
 - Keep changes scoped. Avoid drive-by cleanup unless it directly reduces risk
   for the task.
-- If a decision affects the architecture, update `tmp/pipeline.md`. If it
-  affects how the project is understood or used, update `README.md`.
+- If a decision affects a contract or the architecture, write it into
+  `docs/pipeline.md` first. If it affects how the project is understood or
+  used, update `README.md`.
 
 ## Architecture Boundaries
 
@@ -208,17 +215,22 @@ Definition of done by change type:
   `make harness-test-asm`, whichever matches the touched path.
 - Generated instruction or encoding changes: run `make spec-gen` and
   `make spec-test-encoding`.
-- Architecture or workflow changes: update `tmp/pipeline.md` and, when
+- Architecture or workflow changes: update `docs/pipeline.md` and, when
   user-facing, `README.md`.
 
 ## Documentation Rules
 
-- Record active development requirements and design changes in
-  `tmp/pipeline.md`.
+- `docs/pipeline.md` holds goals, architecture and the current contracts. When
+  a decision changes a contract, rewrite the contract there (supersede the old
+  rule; do not append history). Write a contract there before implementing it.
+- Every experiment, measurement, implementation record and discussion result
+  goes into `docs/journal/<today>.md` as a new timestamped entry, newest last:
+  heading `## HH:MM +ZZZZ — <title>` (time from `date '+%H:%M %z'`), a line
+  `Commit: <short hash>`, then, as applicable: the question, method/commands,
+  raw-data location, results, conclusion.
 - Keep `README.md` aligned with the actual architecture and workflow.
 - Prefer concrete contracts over aspirational prose.
 - If a design is deferred, state the invariant that lets it remain deferred.
-- Keep general discussion results and actions log in `tmp/thoughts.md`.
 
 ## Code Preferences
 

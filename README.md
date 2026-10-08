@@ -129,7 +129,7 @@ fails while the checked-in golden is stale.
 Kernel profiles are fragment lists in `scripts/setup-kernel-build.sh`. All start
 from `tinyconfig` and end with `kernel-config/kjit-invariants.conf` (K1: shadow
 call stack, kCFI, kernel BTI and SW TTBR0 PAN off; `MODULES`, `RUST` on; see
-`tmp/pipeline.md`). The setup script fails, naming each option, when any option
+`docs/pipeline.md`, "Kernel config invariants (K1)"). The setup script fails, naming each option, when any option
 a fragment requests is missing from the final `.config` with the requested value.
 
 | Profile | Fragments | Use |
@@ -218,8 +218,7 @@ thread, plus the kernel version, CPU features and
 
 `kjit.ko` runs translated user code in the kernel right after a syscall
 returns, so a hot syscall loop issues its next syscall without going back to
-EL0. Contract and design: `tmp/pipeline.md`, "K2 contract: kernel runtime" and
-"K2 implementation".
+EL0. Contract and design: `docs/pipeline.md`, "Kernel runtime (K2)".
 
 **Patched kernel.** `kernel-patches/` is a seven-patch series on the pinned
 `dep/linux` commit (7.1-rc1):
@@ -302,7 +301,8 @@ its stub (`Mem` exit) and userspace re-executes the access natively, which
 demand-pages it or takes the signal. Such fragments are refused
 (`fpsimd_refused_sve_sme`, -ENODEV, negative-cached) on a system with SVE or
 SME (or without FP/SIMD). The non-FP/SIMD path is unchanged. Details and
-measurements: `tmp/pipeline.md`, "A9b implementation".
+measurements: `docs/pipeline.md`, "FP/SIMD in fragments (A9)" and
+`docs/journal/2026-09-27.md`, "A9b implementation: FP/SIMD bracket in the kernel".
 
 **In-fragment branch dispatch (A11).** `BL`, `BLR`, `BR` and `RET` no longer
 leave the fragment on every execution. Each `kjit_mm` has two direct-mapped
@@ -325,8 +325,10 @@ period (patch 7): the per-run `kjit_frag` reference count is gone, because a
 linked run enters fragments it never looked up. `fragment_entries`, `chains`,
 `chain_cap` and the `exit_*` counters now count runtime round trips only, and
 run conditions are checked at every runtime entry and in-kernel syscall, not
-at every call and return. Contract and results: `tmp/pipeline.md`, "A11
-contract", "A11a implementation", "A11b implementation", "A11 integration".
+at every call and return. Contract: `docs/pipeline.md`, "In-fragment
+branch dispatch (A11)" and "Dispatch tables (A11, kernel side)". Results:
+`docs/journal/2026-10-02.md` ("A11a implementation", "A11b implementation",
+"A11 Step 0") and `docs/journal/2026-10-05.md`, "A11 integration".
 
 **Trigger and stats** (`/sys/kernel/debug/kjit/`, root only):
 
@@ -396,7 +398,7 @@ make guest-tests GUEST_PROFILE=kjit-guest-debug K2_ITERATIONS=100
 
 With auto mode on, unmodified programs are accelerated without any trigger, and
 the in-kernel path follows branch exits out of libc into the callers. Contract:
-`tmp/pipeline.md`, "K3".
+`docs/pipeline.md`, "Automatic hot-path detection (K3)".
 
 - **Profiler.** After every syscall whose resume PC has no fragment, and after
   every `Bl`/`Blr`/`Br`/`Ret` exit whose target has none, the hook counts one
@@ -461,8 +463,8 @@ glibc SIMD code (`memcpy`/`memset`/`strlen`) runs in fragments too, and
 redis's request paths no longer stop at an Unsupported word; A10 replaced
 the 16-entry chain cap they then ended at with `chain_budget` (see "K4").
 Fragment entries cost more than the mode switches they save on short chains;
-speed is not a goal yet. Details: `tmp/pipeline.md`, "K3", Findings, and
-"A7d".
+speed is not a goal yet. Details: `docs/journal/2026-09-27.md`, "K3: automatic hot-path
+detection" (Findings) and "A7d: BTI, carry arithmetic, CRC32".
 
 ### K4: Redis under KJIT
 
@@ -470,8 +472,9 @@ The target workload: redis 7.0.15 (the version Debian bookworm ships, built
 from the official tarball with upstream's default flags, like Debian's: no BTI
 or PAC in redis itself; glibc is Debian's BTI-built one) in the guest with the
 auto mode on, checked with redis's own test suite, redis-benchmark and
-adversarial tests. Speed is not a goal; identical behaviour is. Contract,
-exclusions and findings: `tmp/pipeline.md`, "K4".
+adversarial tests. Speed is not a goal; identical behaviour is. Pass criteria
+and exclusions: `docs/pipeline.md`, "Validation of the kernel runtime (K2-K4)";
+environment and findings: `docs/journal/2026-09-27.md`, "K4: redis under KJIT".
 
 ```sh
 export KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/kjit-build
@@ -530,7 +533,8 @@ takes ~300 s vs ~250 s. Under the suite 5.0% of the syscalls ran in the kernel
 rejection or invalid exit). `unit/client-eviction` alone: 20 of 20 runs pass
 with KJIT. One KJIT-on suite run in eight had failed a
 racy `client-eviction` test; `tests/guest/redis-patches/` now backports
-upstream's fix for it (`tmp/pipeline.md`, "K4"). Benchmark: 0.0% (default), 1.6% (`-P 16`) and
+upstream's fix for it (`docs/journal/2026-09-27.md`, "K4: test race in redis
+7.0.15's suite (backported fix)"). Benchmark: 0.0% (default), 1.6% (`-P 16`) and
 0.7% (256 clients) of the server's syscalls in the kernel, ~9.5 fragment
 entries per syscall; datasets identical KJIT off and on; every adversarial
 test identical. The in-kernel path now stops at `ldadd x0, x0, [x1]`
@@ -547,7 +551,7 @@ the default run's 2.0M Unsupported exits); under the suite next come `mrs
 CNTVCT_EL0` (0xd53be04b, vDSO clock reads) and SIMD `dup`/`ldr q`/`str q`. kjit-guest-debug (KASAN,
 lockdep), `K4_ITERATIONS=10`: suite identical (0 failed either way), 100
 adversarial runs and 10 consistency checks PASS, no kernel report
-(`tmp/pipeline.md`, "K4").
+(`docs/journal/2026-09-27.md`, "K4: redis under KJIT").
 
 After A9b (FP/SIMD fragments; kjit-guest, 2026-09-27, `RESULT PASS`): suite
 2863 / 2868 passed without / with KJIT, 0 failed, same outcome for all 2518
@@ -577,7 +581,7 @@ stop at SIMD&FP register-offset loads/stores (`ldr d0, [x14, x12, lsl #3]`,
 speed: with the request path in fragments redis-benchmark SET/GET drops from
 274k/275k to 62k/71k req/s (KJIT off vs on; `-P 16` 1.85M/2.53M vs
 332k/329k): fragment entry and exit, not the mode switch, now dominate
-(`tmp/pipeline.md`, "A10"). kjit-guest-debug, `K4_ITERATIONS=3`: `RESULT
+(`docs/journal/2026-09-27.md`, "A10: chain budget and counter reads"). kjit-guest-debug, `K4_ITERATIONS=3`: `RESULT
 PASS`, suite identical, 30 adversarial runs and 3 consistency checks PASS, no
 kernel report.
 
@@ -595,7 +599,7 @@ against 230k / 231k with KJIT off (1.93x / 1.61x slower, 4.2x / 3.8x before
 A11), 28.7 / 15.7 runtime entries per request (352 / 299 before); `chain_budget`
 256 gives the same (113k / 141k). What is left is the FP/SIMD boundary (8.0 /
 5.0 entries per request) and misses of the direct-mapped tables (every
-publish replaces another record). `tmp/pipeline.md`, "A11 integration".
+publish replaces another record). `docs/journal/2026-10-05.md`, "A11 integration".
 kjit-guest-debug, `K4_ITERATIONS=1`: `RESULT PASS` on the third run; the first
 two each failed one redis test that does not depend on KJIT (a 30 ms
 latency assertion of `Active defrag`, which also failed once with KJIT
@@ -796,8 +800,8 @@ counter). SIMD&FP register-only forms are allowed anywhere; V registers are not
 general registers for rule 9 (a kernel value never enters one, since every
 general operand of a SIMD&FP form is checked). `verify_fragment` returns
 `VerifyOk { uses_fpsimd }`, derived from the bytes, which the kernel uses to
-decide how to run the fragment. Rules and decisions: `tmp/pipeline.md`,
-"Verifier (V3)" and "A9a implementation".
+decide how to run the fragment. Rules and decisions: `docs/pipeline.md`,
+"Verifier (V3)", and `docs/journal/2026-09-27.md`, "A9a implementation".
 
 Every fixture case is verified before it runs. `make harness-test` also runs the
 mutation suite (`verify_mutation_tests.rs`), which mutates every fixture

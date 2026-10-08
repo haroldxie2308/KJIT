@@ -272,7 +272,7 @@ struct NativeCtx {
     counter: [u64; 2],
 }
 
-/// One fragment's user-access fixup (tmp/pipeline.md, "Fault sites (A5)"): a data
+/// One fragment's user-access fixup (docs/pipeline.md, "Fault sites (A5)"): a data
 /// abort at `base + access_offset` resumes at `base + stub_offset`, nothing else
 /// changes. `sites` is sorted by access offset.
 #[repr(C)]

@@ -10,7 +10,8 @@ pub const RET_STATUS_REG: u8 = 9;
 pub const RET_PARAM0_REG: u8 = 10;
 pub const RET_PARAM1_REG: u8 = 11;
 
-/// Dispatch template registers (A11, tmp/pipeline.md "A11 contract"). All three are
+/// Dispatch template registers (A11, docs/pipeline.md "In-fragment branch dispatch
+/// (A11)"). All three are
 /// reg-virt scratch, dead at every original-instruction boundary.
 /// `DISPATCH_SLOT_REG` holds kernel values only (table pointer, slot, record, host);
 /// `DISPATCH_TARGET_REG` holds the branch target T, a user value, from the site's
@@ -41,8 +42,9 @@ pub const fn reg_virt_scratch_gpr(index: usize) -> Option<u8> {
     Some(REG_VIRT_SCRATCH_GPR_START + index as u8)
 }
 
-/// User VA size the A8 PAN window's range check assumes (tmp/pipeline.md, "A8
-/// contract"). Before a privileged LSE atomic the fragment requires VA bits
+/// User VA size the A8 PAN window's range check assumes (docs/pipeline.md, "LSE
+/// atomics through a PAN window (A8)"). Before a privileged LSE atomic the
+/// fragment requires VA bits
 /// `[PAN_WINDOW_RANGE_TOP_BIT:USER_VA_BITS]` of the address to be zero
 /// (`ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>`): bit 55 selects TTBR0 vs TTBR1
 /// and the top byte is ignored (TBI0), so the access is a TTBR0 user address below

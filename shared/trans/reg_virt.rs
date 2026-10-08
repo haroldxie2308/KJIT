@@ -946,7 +946,7 @@ struct MemLowering {
 }
 
 /// The one privileged user access a PAN window holds: an LSE atomic (A8) or an A9a
-/// SIMD&FP load/store (tmp/pipeline.md, "A9 contract"). Neither has an
+/// SIMD&FP load/store (docs/pipeline.md, "FP/SIMD in fragments (A9)"). Neither has an
 /// unprivileged form, so the fragment runs the user's own access.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum WindowInsn {
@@ -1273,8 +1273,8 @@ impl RewritePlan {
         })
     }
 
-    /// Emits one PAN-window access (tmp/pipeline.md, "A8 contract" and "A9
-    /// contract") between its fills and spills:
+    /// Emits one PAN-window access (docs/pipeline.md, "LSE atomics through a PAN
+    /// window (A8)" and "FP/SIMD in fragments (A9)") between its fills and spills:
     ///
     /// ```text
     ///   [and sB, x17, #15; cbnz sB, <Mem stub>]         SP base: EL0 SP alignment
@@ -1496,7 +1496,7 @@ impl RewritePlan {
     /// So each `LDTR*`/`STTR*` faults with every user-visible location (direct
     /// registers, frame slots, x16/x17) still holding its pre-instruction value.
     ///
-    /// Acquire/release forms (A7c; tmp/pipeline.md "Barriers and acquire/release")
+    /// Acquire/release forms (A7c; docs/pipeline.md "Barriers and acquire/release (A7c)")
     /// become `[alignment check] dmb ish; LDTR*/STTR* [xN, #0]; dmb ish`: no
     /// unprivileged ordered access exists without FEAT_LSUI, and the two full
     /// fences order the access at least as strongly as LDAR/STLR/LDAPR.
@@ -3317,7 +3317,7 @@ mod tests {
         ]
     }
 
-    /// A8: the exact PAN window (tmp/pipeline.md, "A8 contract").
+    /// A8: the exact PAN window (docs/pipeline.md, "LSE atomics through a PAN window (A8)").
     #[test]
     fn lse_atomic_lowers_to_the_exact_pan_window() {
         let w = A64Reg::w;
@@ -3488,7 +3488,7 @@ mod tests {
     }
 
     /// A9a: SIMD&FP loads/stores run their base-only encoding in the A8 window
-    /// (tmp/pipeline.md, "A9 contract"): the access address in sA, the writeback
+    /// (docs/pipeline.md, "FP/SIMD in fragments (A9)"): the access address in sA, the writeback
     /// after `msr pan, #1`, V registers untouched by reg-virt.
     #[test]
     fn simd_memory_lowers_to_the_exact_pan_window() {

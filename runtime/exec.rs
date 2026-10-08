@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
-//! `kjit_after_syscall(regs)`: the decision table of tmp/pipeline.md, "K2
-//! contract: kernel runtime". The kernel-side mirror of the harness's
+//! `kjit_after_syscall(regs)`: the decision table of docs/pipeline.md, "Kernel
+//! runtime (K2)". The kernel-side mirror of the harness's
 //! `decide_runtime_return` (harness/src/runtime.rs), with the kernel's run
 //! conditions re-checked before every entry and every in-kernel syscall.
 
@@ -139,14 +139,14 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
 
 /// Runs `run` from `entry` and chains through branch exits while the run
 /// conditions hold, for at most `budget` fragment entries (the first one
-/// always runs): the `chain_budget` of tmp/pipeline.md, "K3", chaining rules.
+/// always runs): the `chain_budget` of docs/pipeline.md, "Chaining rules".
 /// Returns the hook's result and the number of entries made.
 ///
 /// Since A11 an "entry" is a runtime round trip: a branch whose target is in
 /// the run's dispatch table continues inside the fragment code and is neither
 /// counted here nor preceded by the run-condition check. Between two checks a
-/// run spends at most `KJIT_BACKEDGE_BUDGET` units (tmp/pipeline.md, "A11
-/// contract", run conditions and bounds).
+/// run spends at most `KJIT_BACKEDGE_BUDGET` units (docs/pipeline.md, "Run
+/// conditions (kjit_can_run)", bounds).
 fn run_chain(
     regs: *mut PtRegs,
     mut run: Running,

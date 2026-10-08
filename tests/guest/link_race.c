@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Fragments linked across mappings while the callee's mapping changes
- * (tmp/pipeline.md, "A11 contract", Kernel tests). Callers run a hot loop of
+ * (docs/journal/2026-10-02.md, "A11 contract pinned: in-fragment branch dispatch",
+ * Kernel tests (A11b)). Callers run a hot loop of
  * `blr`/`ret` into a two-instruction callee that lives in its own mapping, one
  * `svc` per round, so their fragments (the loop, the callee) are entered and
  * left through the dispatch tables. Meanwhile one thread keeps changing that

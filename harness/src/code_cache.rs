@@ -1,5 +1,6 @@
 //! The harness code cache: a mirror of the kernel runtime's fragment store
-//! (tmp/pipeline.md, "A11 contract", "Kernel" and "Harness (A11a)").
+//! (docs/pipeline.md, "Dispatch tables (A11, kernel side)" and "Code cache and
+//! cached runs (A11a)").
 //!
 //! - Fragments by entry pc (`by_entry`), each with its labels as records
 //!   `{ u64 pc; u64 host }` (`IBTC_RECORD_*`): the verified entries of the fragment,
@@ -181,9 +182,9 @@ impl CodeCache {
     }
 
     /// The table a run of a fragment with this `uses_fpsimd` dispatches through
-    /// (tmp/pipeline.md "Kernel", Run): a run of an FP/SIMD fragment, inside the
-    /// bracket, may continue into any code; every other run only into non-FP/SIMD
-    /// code.
+    /// (docs/pipeline.md "Dispatch tables (A11, kernel side)", Run): a run of an
+    /// FP/SIMD fragment, inside the bracket, may continue into any code; every other
+    /// run only into non-FP/SIMD code.
     pub fn table_for(&self, uses_fpsimd: bool) -> u64 {
         if uses_fpsimd {
             self.layout.table_all
