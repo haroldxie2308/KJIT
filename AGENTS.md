@@ -38,8 +38,7 @@ Current non-goals:
   discussion results, newest last. Read the latest entries for the state of the
   work.
 - `README.md`: user-facing architecture and workflow overview. Keep it current.
-- `old-version/`: historical implementation and ideas. Use it as reference, not
-  as code to bulk-copy.
+- The old implementation (`old-version/`) was removed; see "Old Version Policy".
 - `spec/arm64/subset.toml`: canonical supported Arm XML subset.
 - `specgen/`: Rust generator for instruction metadata/code derived from Arm XML.
 - `shared/`: code intended to be usable from both userspace and kernel space.
@@ -161,14 +160,18 @@ generated subset unless there is a deliberate build-layout change.
 
 ## Old Version Policy
 
-`old-version/` contains important prior work. Read it to recover algorithms,
-contracts, and cautionary examples. Do not bulk-move old code into `shared/`.
-Audit helpers one at a time for purity, kernel suitability, and fit with the new
-typed A64 pipeline.
+The old implementation (`old-version/`) was removed from the tree. It is in git
+history; the last commit that contains it is `5a8437b`. Recover it with
+`git show 5a8437b:old-version/<path>` or `git checkout 5a8437b -- old-version`
+(and do not commit it back).
 
-Treat old conflict-resolution/register-allocation logic as a prototype, not as
-the new design base. Prefer deterministic, inspectable mappings first, even if
-they are slower.
+The same policy applies to anything recovered: reference only. Read it to
+recover algorithms, contracts, and cautionary examples. Do not bulk-move old
+code into `shared/`. Audit helpers one at a time for purity, kernel
+suitability, and fit with the new typed A64 pipeline. Treat old
+conflict-resolution/register-allocation logic as a prototype, not as the new
+design base. Prefer deterministic, inspectable mappings first, even if they are
+slower.
 
 ## Testing And Verification
 
