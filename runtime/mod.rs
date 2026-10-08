@@ -7,11 +7,14 @@
 //! - `exec`: the `kjit_after_syscall` decision table (tmp/pipeline.md, "K2
 //!   contract").
 //! - `stats`: counters behind `/sys/kernel/debug/kjit/stats`.
+//! - `ibtc`: dispatch-miss classification and the per-slot conflict
+//!   diagnostics behind `/sys/kernel/debug/kjit/ibtc_slots`.
 //! - `ffi`: the C glue (`kjit_glue.c`): hook registration, code cache,
 //!   mmu_notifier, fragment memory, trampoline, debugfs.
 
 mod exec;
 mod ffi;
+mod ibtc;
 mod stats;
 mod translate;
 

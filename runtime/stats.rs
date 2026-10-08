@@ -116,9 +116,20 @@ pub(crate) enum Stat {
     /// Branch exits of a non-FP/SIMD run whose target resolved to an FP/SIMD
     /// fragment: the run continues through the runtime, never in fragment code.
     IbtcFpsimdBoundary,
+    /// Branch exits (BL/BLR/BR/RET reaching `run_chain`) whose slot in the
+    /// run's own dispatch table was empty. With the next two and
+    /// `ibtc_fpsimd_boundary` they partition `exit_bl + exit_blr + exit_br +
+    /// exit_ret`. Classified by `runtime/ibtc.rs` before anything is published.
+    IbtcMissCold,
+    /// ... whose slot held a record for another pc (the publish evicts it).
+    IbtcMissConflict,
+    /// ... whose slot held a record for the same pc: only through a race (a
+    /// publish by another thread between the fragment's read and the
+    /// runtime's).
+    IbtcMissOther,
 }
 
-const COUNT: usize = Stat::IbtcFpsimdBoundary as usize + 1;
+const COUNT: usize = Stat::IbtcMissOther as usize + 1;
 
 const NAMES: [&str; COUNT] = [
     "syscalls_in_kernel",
@@ -173,6 +184,9 @@ const NAMES: [&str; COUNT] = [
     "ibtc_replace",
     "ibtc_clear",
     "ibtc_fpsimd_boundary",
+    "ibtc_miss_cold",
+    "ibtc_miss_conflict",
+    "ibtc_miss_other",
 ];
 
 #[allow(clippy::declare_interior_mutable_const)]
@@ -335,9 +349,9 @@ extern "C" fn kjit_rs_unsupported_show(buf: *mut u8, len: usize) -> usize {
 
 /// Writes into a byte buffer, silently stopping at its end (the caller sized
 /// it for the whole table; a short read is still well-formed lines).
-struct BufWriter<'a> {
-    buf: &'a mut [u8],
-    len: usize,
+pub(super) struct BufWriter<'a> {
+    pub(super) buf: &'a mut [u8],
+    pub(super) len: usize,
 }
 
 impl Write for BufWriter<'_> {

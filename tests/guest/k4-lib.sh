@@ -60,8 +60,9 @@ report() {
             # slots cleared by retirement, runtime resolutions of a transfer
             # from a non-FP/SIMD run into an FP/SIMD fragment. Per syscall in
             # the kernel: runtime entries (fragment_entries) and Budget exits.
-            printf "k4:   %s: ibtc insert=%d replace=%d clear=%d fpsimd_boundary=%d; per in-kernel syscall: entries=%.2f exit_budget=%.4f\n",
+            printf "k4:   %s: ibtc insert=%d replace=%d clear=%d fpsimd_boundary=%d miss cold=%d conflict=%d other=%d; per in-kernel syscall: entries=%.2f exit_budget=%.4f\n",
                 name, d["ibtc_insert"], d["ibtc_replace"], d["ibtc_clear"], d["ibtc_fpsimd_boundary"],
+                d["ibtc_miss_cold"], d["ibtc_miss_conflict"], d["ibtc_miss_other"],
                 d["syscalls_in_kernel"] ? d["fragment_entries"] / d["syscalls_in_kernel"] : 0,
                 d["syscalls_in_kernel"] ? d["exit_budget"] / d["syscalls_in_kernel"] : 0
             # Fragment entries per hook call that ran one (log2 buckets), and

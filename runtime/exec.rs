@@ -10,6 +10,7 @@ use core::num::NonZeroU32;
 use kernel::ffi::c_long;
 
 use super::ffi::{self, KjitFrag, PtRegs};
+use super::ibtc;
 use super::stats::{self, Stat};
 use crate::shared::abi::{RetStatus, EXTRA_PARAMS_WORDS, EXTRA_PARAM_IBTC_TABLE_INDEX};
 
@@ -190,10 +191,14 @@ fn run_chain(
                 });
                 // x10 = branch target; BL/BLR already wrote x30.
                 let target = param0;
+                // This exit is a dispatch miss: classify it against the run's
+                // own table before `link`/`lookup` publish into it.
+                let seen = ibtc::probe(run.table, run.fpsimd, target);
                 if entries.get() >= budget {
                     stats::inc(Stat::ChainCap);
                 } else if can_run(regs) {
                     if let Some(next) = run.link(target) {
+                        ibtc::note_miss(seen, target);
                         entry = next;
                         entries = entries.saturating_add(1);
                         stats::inc(Stat::Chains);
@@ -203,7 +208,10 @@ fn run_chain(
                         if next.fpsimd && !run.fpsimd {
                             // Published in table_all only: this run's table
                             // (table_nofp) never holds an FP/SIMD fragment.
+                            // Not classified by slot state (runtime/ibtc.rs).
                             stats::inc(Stat::IbtcFpsimdBoundary);
+                        } else {
+                            ibtc::note_miss(seen, target);
                         }
                         run = next;
                         entries = entries.saturating_add(1);
@@ -215,6 +223,9 @@ fn run_chain(
                 } else {
                     stats::inc(Stat::RunDeclined);
                 }
+                // Nothing was continued (chain budget, run condition or an
+                // untranslatable target): still a dispatch miss.
+                ibtc::note_miss(seen, target);
                 // SAFETY: as above.
                 unsafe { (*regs).pc = target };
                 return (TO_USER, entries);

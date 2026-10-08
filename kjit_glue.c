@@ -115,6 +115,8 @@ long kjit_rs_after_syscall(struct pt_regs *regs);
 int kjit_rs_translate(struct kjit_mm *kmm, u64 pc, bool verbose, u32 *entry_word);
 size_t kjit_rs_stats_show(char *buf, size_t len);
 size_t kjit_rs_unsupported_show(char *buf, size_t len);
+size_t kjit_rs_ibtc_slots_show(char *buf, size_t len);
+void kjit_rs_ibtc_slots_reset(void);
 void kjit_rs_note_entry_stop(u32 word);
 
 /* Counters this file bumps: runtime/stats.rs, enum Note (same values). */
@@ -1774,6 +1776,38 @@ static ssize_t kjit_unsupported_read(struct file *file, char __user *ubuf, size_
 	return ret;
 }
 
+/*
+ * Dispatch-table conflict diagnostics (runtime/ibtc.rs): the slots with most
+ * conflict misses, per table. Writing "reset" zeroes them.
+ */
+static ssize_t kjit_ibtc_slots_read(struct file *file, char __user *ubuf, size_t count,
+				    loff_t *ppos)
+{
+	size_t size = 2 * PAGE_SIZE;
+	char *buf = kmalloc(size, GFP_KERNEL);
+	ssize_t ret;
+
+	if (!buf)
+		return -ENOMEM;
+	ret = simple_read_from_buffer(ubuf, count, ppos, buf, kjit_rs_ibtc_slots_show(buf, size));
+	kfree(buf);
+	return ret;
+}
+
+static ssize_t kjit_ibtc_slots_write(struct file *file, const char __user *ubuf,
+				     size_t count, loff_t *ppos)
+{
+	char buf[16];
+	int ret = kjit_copy_cmd(buf, sizeof(buf), ubuf, count);
+
+	if (ret)
+		return ret;
+	if (strcmp(strim(buf), "reset"))
+		return -EINVAL;
+	kjit_rs_ibtc_slots_reset();
+	return count;
+}
+
 static const struct file_operations kjit_translate_fops = {
 	.owner = THIS_MODULE,
 	.write = kjit_translate_write,
@@ -1792,6 +1826,12 @@ static const struct file_operations kjit_stats_fops = {
 static const struct file_operations kjit_unsupported_fops = {
 	.owner = THIS_MODULE,
 	.read = kjit_unsupported_read,
+};
+
+static const struct file_operations kjit_ibtc_slots_fops = {
+	.owner = THIS_MODULE,
+	.read = kjit_ibtc_slots_read,
+	.write = kjit_ibtc_slots_write,
 };
 
 /* ------------------------------------------------------------------------- */
@@ -1939,6 +1979,7 @@ int kjit_glue_init(void)
 	debugfs_create_u32("hot_window_ms", 0600, kjit_debugfs, &kjit_hot_window_ms);
 	debugfs_create_file_unsafe("chain_budget", 0600, kjit_debugfs, NULL, &kjit_chain_budget_fops);
 	debugfs_create_file("unsupported_top", 0400, kjit_debugfs, NULL, &kjit_unsupported_fops);
+	debugfs_create_file("ibtc_slots", 0600, kjit_debugfs, NULL, &kjit_ibtc_slots_fops);
 
 	ret = kjit_register_hook(&kjit_hook_ops);
 	if (ret) {
