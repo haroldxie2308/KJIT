@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Fragments that take user-access faults while the module is unloaded
- * (tmp/pipeline.md, "Unload race"; kernel-patches/0006). Each thread loops
+ * (docs/pipeline.md, "Hook lifetime and unload (patch 0006)";
+ * kernel-patches/0006). Each thread loops
  * forever over a fresh anonymous region, so every store is a first touch:
  *
  *   gpr  after a raw svc getppid, `pages` calls (bl/ret) of a callee that
@@ -21,7 +22,7 @@
  * Two more modes (A11) keep runs linked across fragments in flight, with no
  * faults: the unload then has to retire fragments that other threads are in
  * the middle of reaching through the dispatch tables, and free the tables
- * themselves (tmp/pipeline.md, "A11 contract", Kernel).
+ * themselves (docs/pipeline.md, "Dispatch tables (A11, kernel side)").
  *
  *   link    after a raw svc getppid, 256 calls of a function that calls a leaf
  *           (bl/ret across three fragments); the leaf counts, the total is

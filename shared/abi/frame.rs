@@ -15,7 +15,8 @@ pub const RUNTIME_FRAME_SIZE_BYTES: u32 = 208;
 pub const RUNTIME_FRAME_ENTRY_ADDR_OFFSET: u32 = 80;
 pub const RUNTIME_FRAME_PT_REGS_PTR_OFFSET: u32 = 176;
 pub const RUNTIME_FRAME_BUDGET_OFFSET: u32 = 192;
-/// The run's dispatch table (IBTC, tmp/pipeline.md "A11 contract"). The prologue
+/// The run's dispatch table (IBTC, docs/pipeline.md "In-fragment branch dispatch
+/// (A11)"). The prologue
 /// stores `extra params[EXTRA_PARAM_IBTC_TABLE_INDEX]` here; only a dispatch
 /// template's first word reads it, and nothing in a body writes it.
 pub const RUNTIME_FRAME_IBTC_OFFSET: u32 = 200;

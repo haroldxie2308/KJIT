@@ -1837,7 +1837,7 @@ impl Suite {
             .collect()
     }
 
-    /// The A11 mutation classes (tmp/pipeline.md, "A11 contract", "Harness"): every
+    /// The A11 mutation classes (docs/pipeline.md, "Code cache and cached runs (A11a)"): every
     /// template word altered, the key compare dropped, `br` of x13/x14, join points
     /// inside the template, no budget check, slot 200 read outside a template or
     /// written anywhere, a kernel value in x13, a retargeted miss branch.

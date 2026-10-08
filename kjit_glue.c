@@ -11,7 +11,9 @@
  * task_work requests (kernel-patches/0004), the FP/SIMD bracket around
  * fragments that use the user's FP/SIMD registers (kernel-patches/0005), and
  * the debugfs files.
- * Design notes: tmp/pipeline.md, "K2 implementation", "K3", "A9b" and "A11".
+ * Design notes: docs/pipeline.md, "Kernel runtime (K2)", "Automatic hot-path
+ * detection (K3)", "FP/SIMD in fragments (A9)" and "In-fragment branch dispatch
+ * (A11)".
  *
  * Lifetimes and locking
  *
@@ -195,8 +197,8 @@ struct kjit_entry {
  * A verified entry of an installed fragment: the user PC and the absolute
  * address of its code (image + a verified entry offset). Immutable after
  * install and sorted by @pc in kjit_frag.labels. It is also the record the
- * dispatch tables point to, which fragment code reads (tmp/pipeline.md,
- * "A11 contract"): the layout is part of the dispatch template, so @pc is
+ * dispatch tables point to, which fragment code reads (docs/pipeline.md,
+ * "In-fragment branch dispatch (A11)"): the layout is part of the dispatch template, so @pc is
  * first and @host second.
  */
 struct kjit_label {
@@ -248,7 +250,7 @@ struct kjit_frag {
 #define KJIT_TABLE_BITS 6
 
 /*
- * Auto-mode profile table (tmp/pipeline.md, "K3"): open addressing over
+ * Auto-mode profile table (docs/pipeline.md, "Profiler"): open addressing over
  * KJIT_PROF_SLOTS, a PC may sit in any of the KJIT_PROF_PROBE slots after its
  * hash slot. Lookups scan all of them (no early stop at a free slot), so
  * freeing a slot needs no tombstone.
@@ -288,7 +290,7 @@ struct kjit_mm {
 	spinlock_t lock;		/* everything below */
 	DECLARE_HASHTABLE(table, KJIT_TABLE_BITS);
 	/*
-	 * Dispatch tables (tmp/pipeline.md, "A11 contract"): both are allocated
+	 * Dispatch tables (docs/pipeline.md, "Dispatch tables (A11, kernel side)"): both are allocated
 	 * together at the first install and never replaced, so they are valid
 	 * for every fragment of this kjit_mm. Slots are written under @lock
 	 * (smp_store_release / WRITE_ONCE); fragment code reads them without
@@ -324,7 +326,7 @@ static DEFINE_PER_CPU(u64, kjit_hook_calls_pcpu);
 /*
  * Auto mode (P3) and its limits. Module parameters (writable in
  * /sys/module/kjit/parameters/); auto, hot_threshold and hot_window_ms are
- * also in debugfs. Defaults: tmp/pipeline.md, "K3".
+ * also in debugfs. Defaults: docs/pipeline.md, "Profiler".
  */
 static bool kjit_auto;
 /*
@@ -352,7 +354,7 @@ module_param_named(max_frags_total, kjit_max_frags_total, ulong, 0644);
 static unsigned long kjit_max_code_total = 64UL << 20;
 module_param_named(max_code_total, kjit_max_code_total, ulong, 0644);
 /*
- * Chaining (tmp/pipeline.md, "K3", chaining rules): at most chain_budget
+ * Chaining (docs/pipeline.md, "Chaining rules"): at most chain_budget
  * fragment entries per hook call (after-syscall return path), the first one
  * included; 1 disables chaining. Module parameter and debugfs, both range
  * checked. The maximum keeps runtime/stats.rs's chain histogram exact.
@@ -488,8 +490,8 @@ bool kjit_frag_uses_fpsimd(const struct kjit_frag *f)
 }
 
 /*
- * The dispatch table every run of @f passes as extra[2] (tmp/pipeline.md,
- * "A11 contract"): a run inside the FP/SIMD bracket may continue into any
+ * The dispatch table every run of @f passes as extra[2] (docs/pipeline.md,
+ * "Dispatch tables (A11, kernel side)"): a run inside the FP/SIMD bracket may continue into any
  * fragment, any other run only into fragments without FP/SIMD. Both tables
  * exist before the first fragment of the mm does (kjit_install()).
  */
@@ -1026,8 +1028,8 @@ out_tables:
 	((EXIT_TO_USER_MODE_WORK & ~_TIF_FOREIGN_FPSTATE) | _TIF_SYSCALL_WORK | _TIF_SINGLESTEP)
 
 /*
- * The K2 run conditions on the current task (tmp/pipeline.md, "K2 contract",
- * decision table), checked before every fragment entry and before every
+ * The K2 run conditions on the current task (docs/pipeline.md, "Run conditions
+ * (kjit_can_run)"), checked before every fragment entry and before every
  * in-kernel syscall. A traced task is declined as a whole: a tracer may
  * single-step, set watchpoints or read registers at any instruction.
  */
@@ -1106,7 +1108,7 @@ void kjit_bad_status(u64 status, u64 pc)
 /*
  * u64 kjit_call_fragment(struct pt_regs *regs, u64 extra[3], u64 entry, u64 base)
  *
- * The ABI call (tmp/pipeline.md, "ABI: fragment entry"; mirrors
+ * The ABI call (docs/pipeline.md, "ABI: fragment entry"; mirrors
  * harness/src/native.rs): x0 = regs, x1 = extra params, x2 = entry address,
  * call the fragment at its base. The fragment runs user code, so the user's
  * NZCV (regs->pstate) is live in PSTATE while it runs and is written back
@@ -1148,7 +1150,7 @@ static DEFINE_PER_CPU(u64, kjit_fpsimd_max_ticks);
 /*
  * kjit_call_fragment() for a fragment that uses FP/SIMD: its code reads and
  * writes V0-V31, FPCR and FPSR as the user's own registers, live in hardware
- * (tmp/pipeline.md, "A9 contract", Kernel, and "A9b implementation"). Called
+ * (docs/pipeline.md, "FP/SIMD in fragments (A9)", Kernel). Called
  * for every entry of such a fragment, chained entries included, from task
  * context on the syscall return path with interrupts enabled.
  *
@@ -1211,8 +1213,8 @@ u64 kjit_fpsimd_run_max_ns(void)
  * Whether fragments that use FP/SIMD may be installed on this system. SVE and
  * SME change what the user's FP/SIMD state is (Z/P registers whose low bits
  * are the V registers, the SVE discard at syscall entry, streaming mode, ZA);
- * none of it is modelled, so such fragments are refused (tmp/pipeline.md, "A9
- * contract"). Without FP/SIMD at all (arm64.nofpsimd) the fragment's FP/SIMD
+ * none of it is modelled, so such fragments are refused (docs/pipeline.md, "FP/SIMD
+ * in fragments (A9)"). Without FP/SIMD at all (arm64.nofpsimd) the fragment's FP/SIMD
  * instructions would trap at EL1.
  */
 bool kjit_fpsimd_supported(void)
@@ -1798,8 +1800,8 @@ static const struct file_operations kjit_unsupported_fops = {
 /* Module init/exit (called from rust_kjit.rs)                                 */
 
 /*
- * CPU features the translator's output relies on (tmp/pipeline.md, "K2
- * contract", Preconditions). Sanitised ID registers: the value every CPU
+ * CPU features the translator's output relies on (docs/pipeline.md, "Kernel
+ * runtime (K2)", Preconditions). Sanitised ID registers: the value every CPU
  * supports. Returns 0 or -ENODEV, naming the missing feature.
  */
 static int kjit_check_cpu(void)
@@ -1836,7 +1838,8 @@ static int kjit_check_cpu(void)
 		return -ENODEV;
 	}
 	/*
-	 * A8 PAN windows (tmp/pipeline.md, "A8 contract"): user LSE atomics run as
+	 * A8 PAN windows (docs/pipeline.md, "LSE atomics through a PAN window
+	 * (A8)"): user LSE atomics run as
 	 * privileged accesses between `msr pan, #0` and `msr pan, #1`.
 	 * FEAT_LSE: else user LD<op>/SWP/CAS are UNDEFINED natively but would
 	 * run in a fragment.

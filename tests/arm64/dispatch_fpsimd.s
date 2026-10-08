@@ -1,6 +1,6 @@
 // A11 dispatch fixture: a non-FP/SIMD caller of an FP/SIMD callee. A run of a
 // non-FP/SIMD fragment dispatches through `table_nofp`, which never holds a record
-// of an FP/SIMD fragment (tmp/pipeline.md, "A11 contract", "Mechanism"): the call
+// of an FP/SIMD fragment (docs/pipeline.md, "In-fragment branch dispatch (A11)"): the call
 // into `fp_func` always misses and goes through the runtime (counted as
 // `ibtc_fpsimd_boundary`), which then runs the callee as an FP/SIMD run, whose
 // `table_all` may continue into non-FP/SIMD code (its return hits).

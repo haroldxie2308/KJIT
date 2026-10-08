@@ -1,5 +1,5 @@
-//! A9a SIMD&FP semantics of the interpreter (tmp/pipeline.md, "A9 contract",
-//! Harness): exactly the A9a forms, each written from its Arm XML execute
+//! A9a SIMD&FP semantics of the interpreter (docs/pipeline.md, "Harness memory model
+//! (A4)"): exactly the A9a forms, each written from its Arm XML execute
 //! pseudocode. A write of `V{datasize}(d)` with `datasize < 128` zero-extends to
 //! 128 bits; `Vpart{64}(d, 1)` writes bits 127:64 and keeps the rest. No A9a form
 //! reads or writes FPCR/FPSR.

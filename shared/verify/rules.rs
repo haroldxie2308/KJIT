@@ -78,7 +78,7 @@ pub(super) enum Form {
 
 pub(super) fn classify(insn: A64Insn) -> Form {
     match insn {
-        // The one list of user-access forms (tmp/pipeline.md, "Privilege model").
+        // The one list of user-access forms (docs/pipeline.md, "Privilege model").
         A64Insn::LdtrLdtr32LdstUnpriv { mem, .. }
         | A64Insn::LdtrLdtr64LdstUnpriv { mem, .. }
         | A64Insn::LdtrbLdtrb32LdstUnpriv { mem, .. }
@@ -854,7 +854,7 @@ pub(super) const PT_REGS_USER_STATE_END: u32 = match pt_regs_x_slot_offset(30) {
     None => panic!("pt_regs has an x30 slot"),
 };
 
-// Execution budget (A6, tmp/pipeline.md "Execution budget (A6)"). Before every
+// Execution budget (A6, docs/pipeline.md "Execution budget (A6)"). Before every
 // back-edge: `ldr s, [sp, #slot]; sub s, s, #1; str s, [sp, #slot]; cbz s, <stub>`,
 // then only reg-virt fill loads, then the branch. The counter slot is written by
 // the prologue (byte-exact) and by this sequence, nothing else.

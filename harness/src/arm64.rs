@@ -1770,7 +1770,7 @@ pub(crate) fn execute_insn(
                 .ok_or_else(|| format!("{} is not an LSE atomic", insn.key()))?;
             execute_atomic(ctx, state, pc, atomic)
         }
-        // A9a SIMD&FP (tmp/pipeline.md, "A9 contract").
+        // A9a SIMD&FP (docs/pipeline.md, "FP/SIMD in fragments (A9)").
         A64Insn::LdrImmFpsimdLdrBLdstImmpost { .. }
         | A64Insn::LdrImmFpsimdLdrHLdstImmpost { .. }
         | A64Insn::LdrImmFpsimdLdrSLdstImmpost { .. }
