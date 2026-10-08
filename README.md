@@ -156,7 +156,9 @@ with `kjit.ko` in `<build dir>/kjit-module/` (Kbuild `MO=`), so a module always
 stays with the kernel it was built for. To share builds between worktrees, export
 `KJIT_BUILD_ROOT` to a directory outside the repo; it must be on a case-sensitive
 filesystem. `scripts/docker-dev.sh` mounts it at the same absolute path, so the
-container and the host see the same paths.
+container and the host see the same paths. From a git worktree it also mounts the
+repository's common git dir at its host path (the worktree's `.git` file points
+there), so git works in the container exactly as in the main checkout.
 
 Build (container) and run (host):
 
@@ -173,12 +175,19 @@ make e0-bench GUEST_PROFILE=kjit-guest
 `$KJIT_BUILD_ROOT/runs/<profile>-<time>/` with `kjit-run.sh` (the command),
 a copy of the profile's `kjit.ko`, and `serial.log`. It shares that directory
 over virtio-9p and boots QEMU through `scripts/qemu-run.sh` (HVF/KVM,
-`-cpu host`, 4 GiB, no NIC, virtio-rng, `-no-reboot`). The initramfs `/init`
+`-cpu host`, 4 GiB, no NIC, virtio-rng, `-no-reboot`). The QMP socket is not in
+the run directory (a deep `KJIT_BUILD_ROOT` would exceed the 104-byte unix
+socket path limit on macOS) but in a private `mktemp -d` directory under
+`$TMPDIR`, removed when the run ends; a path that is still too long fails with
+a clear message. The initramfs `/init`
 (`scripts/guest/init`) mounts proc/sys/devtmpfs/tmpfs, brings up `lo`, mounts
 the share at `/kjit`, insmods `/kjit/kjit.ko`, runs `kjit-run.sh` in `/kjit`,
 rmmods the module, prints `kjit-init: run exit=N`, and powers off. Pass
 `--module none` to the script to skip the module, and use `CMD=sh` for an
-interactive shell on the serial console. `guest-run` fails if the run did not
+interactive shell on the serial console. `CMD` reaches the guest unchanged,
+including quotes; because make reads `$` on its command line, write `$$` for a
+literal `$` or pass it through the environment (`CMD='echo $HOME' make
+guest-run`). `guest-run` fails if the run did not
 exit 0, if QEMU hit the timeout, if `CPU features: detected: Privileged Access
 Never` is missing (K1: hardware PAN), or if any timestamped kernel line reports
 `BUG:`, `WARNING:`, an oops, a panic, `Call trace:`, a lockdep `INFO:` or an
@@ -191,6 +200,10 @@ layer: redis 7.0.15 built from the official tarball, with its test suite, in
 `--rebuild-redis`), then `tests.cpio` (the K2/K3/K4 guest tests, rebuilt every
 run); the kernel unpacks the archives in order. The guest kernel has the PL031
 RTC (wall clock) and core dumps enabled, both for the K4 redis tests.
+`mk-guest-rootfs.sh` stages everything it bind-mounts into Docker in a fresh
+`guest-rootfs/work.XXXXXX` directory per run: Docker Desktop resolved a
+recreated path to its deleted predecessor, so back-to-back runs intermittently
+saw `/out` as missing.
 
 `make e0-bench` (`scripts/e0-bench.sh`, `tools/e0/syscall_bench.c`) builds a
 static benchmark in the dev image. It runs the benchmark in a plain

@@ -61,6 +61,7 @@ if [[ -n "$QEMU_INITRAMFS" && ! -f "$QEMU_INITRAMFS" ]]; then
     exit 1
 fi
 
+require_unix_socket_path "$QEMU_QMP_SOCKET"
 mkdir -p "$QEMU_STATE_DIR"
 rm -f "$QEMU_QMP_SOCKET"
 

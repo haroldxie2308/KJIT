@@ -122,9 +122,11 @@ guest-rootfs:
 	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/mk-guest-rootfs.sh
 
 # CMD from the make command line is exported to the recipe environment;
-# reading it as $$CMD avoids re-quoting it through make.
+# reading it as $$CMD (never $(CMD), which pastes it into the recipe text and
+# breaks on quotes) passes it to the script unchanged. make itself still reads
+# `$` on its command line: write `$$`, or set CMD in the environment instead.
 guest-run:
-	@if [ -z "$(CMD)" ]; then echo "usage: make guest-run CMD='shell command' [GUEST_PROFILE=kjit-guest|kjit-guest-debug]" >&2; exit 2; fi
+	@if [ -z "$$CMD" ]; then echo "usage: make guest-run CMD='shell command' [GUEST_PROFILE=kjit-guest|kjit-guest-debug]" >&2; exit 2; fi
 	KJIT_BUILD_ROOT=$(KJIT_BUILD_ROOT) bash ./scripts/guest-run.sh --profile $(GUEST_PROFILE) -- "$$CMD"
 
 # K2 guest suite (tests/guest/run-k2.sh, in the rootfs since make guest-rootfs).

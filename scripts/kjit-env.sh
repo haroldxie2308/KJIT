@@ -57,6 +57,23 @@ require_cmd() {
     fi
 }
 
+# AF_UNIX sun_path holds 104 bytes on macOS and 108 on Linux, NUL included, and
+# QEMU rejects a longer -qmp unix: path.
+require_unix_socket_path() {
+    local path="$1"
+    local max=107
+    local len
+    if [[ "$(uname -s)" == "Darwin" ]]; then
+        max=103
+    fi
+    len="$(printf '%s' "$path" | wc -c | tr -d ' ')"
+    if (( len > max )); then
+        echo "Unix socket path is $len bytes, the limit on this host is $max: $path" >&2
+        echo "Use a shorter path: set QEMU_QMP_SOCKET (qemu-run.sh) or TMPDIR (guest-run.sh)." >&2
+        exit 1
+    fi
+}
+
 ensure_linux_host() {
     if [[ "$(uname -s)" != "Linux" ]]; then
         cat >&2 <<EOF

@@ -81,7 +81,16 @@ export QEMU_KERNEL_IMAGE="$kernel"
 export QEMU_INITRAMFS="$rootfs"
 export QEMU_SHARE_DIR="$run_dir"
 export QEMU_STATE_DIR="$run_dir/qemu"
-export QEMU_QMP_SOCKET="$QEMU_STATE_DIR/qmp.sock"
+# The QMP socket cannot live in the run dir: that sits under $KJIT_BUILD_ROOT,
+# which may be arbitrarily deep (e.g. inside a git worktree), and a unix socket
+# path is limited to ~104 bytes. A private dir directly under the temp dir keeps
+# it short; it exists only for this run. TMPDIR unset means /tmp (POSIX
+# convention for the temp dir, not an invented value).
+tmp_base="${TMPDIR:-/tmp}"
+sock_dir="$(mktemp -d "${tmp_base%/}/kjit-qmp.XXXXXX")"
+trap 'rm -rf "$sock_dir"' EXIT
+export QEMU_QMP_SOCKET="$sock_dir/qmp.sock"
+require_unix_socket_path "$QEMU_QMP_SOCKET"
 export QEMU_PID_FILE="$QEMU_STATE_DIR/qemu.pid"
 export QEMU_USER_NET=0
 

@@ -91,6 +91,22 @@ if [[ -n "${KJIT_BUILD_ROOT:-}" ]]; then
     build_root_args=(-e "KJIT_BUILD_ROOT=$KJIT_BUILD_ROOT" -v "$KJIT_BUILD_ROOT:$KJIT_BUILD_ROOT")
 fi
 
+# In a git worktree $ROOT_DIR/.git is a file ("gitdir: <common>/worktrees/<name>")
+# naming an absolute host path that is not inside the /workspace mount, so every
+# git call in the container (setup-dev-editor.sh, and the user's own commands)
+# dies with "not a git repository". Mount the repository's common git dir at the
+# same absolute path so that pointer resolves exactly as on the host. In the
+# main checkout .git is a directory inside /workspace and nothing extra is needed.
+git_dir_args=()
+if [[ -f "$ROOT_DIR/.git" ]]; then
+    git_common_dir="$(git -C "$ROOT_DIR" rev-parse --path-format=absolute --git-common-dir)"
+    if [[ ! -d "$git_common_dir" ]]; then
+        echo "git common dir of $ROOT_DIR is not a directory: '$git_common_dir'" >&2
+        exit 1
+    fi
+    git_dir_args=(-v "$git_common_dir:$git_common_dir")
+fi
+
 if [[ ${#cmd[@]} -eq 0 ]]; then
     cmd=(bash)
 fi
@@ -110,6 +126,7 @@ docker run --rm \
     -e LOGNAME="${USER:-user}" \
     -w /workspace \
     -v "$ROOT_DIR:/workspace" \
+    "${git_dir_args[@]}" \
     "${build_root_args[@]}" \
     "$IMAGE" \
     bash -lc "$container_cmd" bash "${cmd[@]}"

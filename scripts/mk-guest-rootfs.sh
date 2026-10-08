@@ -47,10 +47,17 @@ out="$out_dir/rootfs.cpio"
 container="kjit-guest-rootfs-$$"
 
 mkdir -p "$out_dir"
+# Scratch space, including every directory bind-mounted into a container, lives
+# in a directory with a fresh name each run and is never reused. Docker
+# Desktop's file sharing keeps resolving a path to the directory that was
+# deleted there when the same path is recreated and mounted soon after, so the
+# container saw /out as a missing directory ("cannot open output file /out/x")
+# in about 1 of 3 back-to-back runs. A retry would only hide that; a path that
+# was never mounted before cannot be stale.
+work="$(mktemp -d "$out_dir/work.XXXXXX")"
 cleanup() {
     docker rm -f "$container" >/dev/null 2>&1 || true
-    rm -rf "$base.tmp" "$redis.tmp" "$tests.tmp" "$out.tmp" "$out_dir/rootfs.tar" "$out_dir/dev.mtree" \
-        "$out_dir/tests-root" "$out_dir/redis-root"
+    rm -rf "$base.tmp" "$redis.tmp" "$tests.tmp" "$out.tmp" "$work"
 }
 trap cleanup EXIT
 
@@ -79,14 +86,14 @@ build_base() {
     # unlinks an existing path of a different file type (init/initramfs.c,
     # clean_path). "native" makes bsdtar store major 5 / minor 1 in the newc header
     # on both macOS and Linux hosts.
-    cat > "$out_dir/dev.mtree" <<'MTREE'
+    cat > "$work/dev.mtree" <<'MTREE'
 #mtree
 ./dev/console type=char mode=0600 uname=root gname=root device=native,5,1
 MTREE
 
-    docker export "$container" > "$out_dir/rootfs.tar"
+    docker export "$container" > "$work/rootfs.tar"
     bsdtar --format newc --exclude .dockerenv -cf "$base.tmp" \
-        @"$out_dir/rootfs.tar" @"$out_dir/dev.mtree"
+        @"$work/rootfs.tar" @"$work/dev.mtree"
     mv "$base.tmp" "$base"
 }
 
@@ -100,8 +107,7 @@ MTREE
 # dpkg-buildflags add no -mbranch-protection), the binaries have no BTI landing
 # pads and no PAC; the BTI-built code on redis's paths is glibc's.
 build_redis() {
-    local root="$out_dir/redis-root"
-    rm -rf "$root"
+    local root="$work/redis-root"
     mkdir -p "$root"
     docker run --rm --platform linux/arm64 -v "$root:/out" \
         -v "$ROOT_DIR/tests/guest/redis-patches:/redis-patches:ro" "$base_image" sh -euc '
@@ -160,7 +166,7 @@ fi
 
 # K2 guest tests: static binaries from the dev image (same toolchain as
 # e0-bench), owned by root in the archive.
-stage="$out_dir/tests-root/opt/kjit-tests"
+stage="$work/tests-root/opt/kjit-tests"
 mkdir -p "$stage"
 docker run --rm --user "$(id -u):$(id -g)" \
     -v "$ROOT_DIR/tests/guest:/src:ro" -v "$stage:/out" "$dev_image" \
@@ -170,7 +176,7 @@ docker run --rm --user "$(id -u):$(id -g)" \
 for script in "$ROOT_DIR"/tests/guest/*.sh; do
     install -m 0755 "$script" "$stage/$(basename "$script")"
 done
-(cd "$out_dir/tests-root" && bsdtar --format newc --uid 0 --gid 0 --uname root --gname root \
+(cd "$work/tests-root" && bsdtar --format newc --uid 0 --gid 0 --uname root --gname root \
     -cf "$tests.tmp" opt)
 mv "$tests.tmp" "$tests"
 
