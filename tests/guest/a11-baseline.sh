@@ -14,6 +14,10 @@
 # invocations so SET and GET get their own counter deltas; set first, so the
 # GET finds its key). chain_budget is restored at exit.
 #
+# Optional environment: A11_BENCH_ARGS, extra redis-benchmark arguments for the
+# warm-up and every run (word-split, default none), e.g. A11_BENCH_ARGS='-d 4096'
+# for 4 KiB values or '-d 3 -c 50'. Without it the invocations are unchanged.
+#
 # One line per benchmark run on stdout:
 #   a11 point=<p> pass=<i> test=<set|get> requests=<n> rps=<req/s> <counter>=<delta> ...
 # Exits non-zero when a run reports no throughput, when a KJIT-on run shows no
@@ -78,7 +82,8 @@ run_test() {
     local point=$1 pass=$2 test=$3 rps line d resid
     echo reset > "$K/ibtc_slots"
     snap "$work/before"
-    bench -t "$test" -n "$n" -q > "$work/bench.out" 2>&1 || { tail "$work/bench.out"; k4_fail "benchmark $test at $point"; }
+    # shellcheck disable=SC2086  # A11_BENCH_ARGS is a word list by contract
+    bench -t "$test" -n "$n" -q ${A11_BENCH_ARGS:-} > "$work/bench.out" 2>&1 || { tail "$work/bench.out"; k4_fail "benchmark $test at $point"; }
     snap "$work/after"
     cat "$K/ibtc_slots" > "$work/slots.$point.$pass.$test"
     rps=$(tr '\r' '\n' < "$work/bench.out" | awk -v t="$(echo "$test" | tr a-z A-Z):" \
@@ -116,8 +121,9 @@ set_point "$first"
 start_server "$work/srv"
 # Warm-up: auto mode translates the server's hot code, the keys exist.
 echo "a11: warm-up at $first"
-bench -t set -n "$n" -q > /dev/null 2>&1
-bench -t get -n "$n" -q > /dev/null 2>&1
+# shellcheck disable=SC2086  # A11_BENCH_ARGS is a word list by contract
+bench -t set -n "$n" -q ${A11_BENCH_ARGS:-} > /dev/null 2>&1
+bench -t get -n "$n" -q ${A11_BENCH_ARGS:-} > /dev/null 2>&1
 cp "/proc/$server/maps" "$work/redis.maps.start"
 sed 's/^/a11maps /' "$work/redis.maps.start"
 
