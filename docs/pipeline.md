@@ -459,15 +459,41 @@ kinds, needs no text writes (so no ROX patching, no +-128 MiB range limit, no
 incoming-link lists) and makes unlinking a single store. `B`/`B.cond` inside the
 CFG stay in-fragment. `SVC` is not a branch: its resume stays a runtime path.
 
-- Tables (kernel side, section 8): per `kjit_mm` two direct-mapped dispatch
-  tables of `2^IBTC_BITS` slots (`IBTC_BITS = 12`, 32 KiB each), slot index
-  `ibtc_slot_index(pc)` = `pc[13:2]` (`IBTC_INDEX_LSB = 2`). A slot is 0 or a
-  pointer to a record `{ u64 pc; u64 host; }` (`IBTC_RECORD_PC_OFFSET = 0`,
-  `IBTC_RECORD_HOST_OFFSET = 8`, `IBTC_RECORD_BYTES = 16`; table size
-  `IBTC_SLOT_BYTES`/`IBTC_SLOTS`/`IBTC_TABLE_BYTES`): a user PC and the
+- Tables (kernel side, section 8): per `kjit_mm` two dispatch tables. Each is
+  one array of 8-byte slots: a direct-mapped main part of `2^IBTC_BITS` slots
+  (`IBTC_BITS = 12`), main index `pc[13:2]` (`IBTC_INDEX_LSB = 2`), followed by
+  a victim part of `2^IBTC_VICTIM_BITS` slots (`IBTC_VICTIM_BITS = 8`) at byte
+  offset `IBTC_VICTIM_OFFSET = 2^IBTC_BITS * 8` (32 KiB), victim index
+  `((pc ^ (pc >> IBTC_VICTIM_FOLD_SHIFT)) >> 2) & 0xff` with
+  `IBTC_VICTIM_FOLD_SHIFT = 12`, i.e. `pc[9:2] ^ pc[21:14]`; table size
+  `(4096 + 256) * 8` = 34 KiB (`IBTC_TABLE_BYTES`). A slot is 0 or a pointer to
+  a record `{ u64 pc; u64 host; }` (`IBTC_RECORD_PC_OFFSET = 0`,
+  `IBTC_RECORD_HOST_OFFSET = 8`, `IBTC_RECORD_BYTES = 16`): a user PC and the
   absolute address of a verified entry of a live fragment of this mm translated
   for exactly that PC. Only the runtime writes tables; fragment code reads them
   only through the template below.
+- Why a victim part (A11c, decided 2026-10-09): under redis the direct-mapped
+  table lost 18.5 transfers per SET request to two-pc ping-pongs between pcs
+  16 KiB apart, with the table otherwise nearly empty (aliasing, not capacity).
+  A 256-slot victim part removed them (0.002 conflicts per request) at +2 KiB per
+  table with a main-slot hit identical to the direct-mapped one; 2-way sets of
+  the same total size left a 4-pc set conflicting, a folded index alone halved
+  them, 4096x2 ways matched the victim part at twice the memory
+  ([2026-10-09, dispatch-table conflict variants](journal/2026-10-09.md)).
+  Known limit: two evicted pcs may share a victim slot (none seen in 12 boots).
+- Publish and retire slot planning (which slots to store, in which order) is one
+  pure function set in `shared/abi`, called by the kernel runtime (under
+  `kmm->lock`) and by the harness code cache, so the harness mirrors the kernel
+  by construction. For target T with label L, per table L belongs in:
+  - nothing if T's main slot or T's victim slot already holds a record for T
+    (any fragment's: all are translations of the same text);
+  - else, if T's main slot is empty: store L there;
+  - else (the main slot holds a record R for another pc P): store R into P's
+    victim slot (dropping whatever it held), then store L into T's main slot.
+    Both are single 8-byte release stores in that order, so every slot always
+    holds 0 or a live record.
+  - Retire of a fragment clears, for each of its labels, the label's main slot
+    and the label's victim slot where they still point at the label.
 - `table_all` may hold records of every fragment; `table_nofp` only records of
   fragments with `uses_fpsimd == false`. A run of an FP/SIMD fragment (inside
   the bracket) dispatches through `table_all`; any other run through
@@ -486,8 +512,19 @@ CFG stay in-fragment. `SVC` is not a branch: its resume stays a runtime path.
                                   ; BLR/BR/RET: mov or fill from the target's mapping,
                                   ; before any x30 write (`blr x30`)
   <x30 = resume>                  ; BL/BLR only (existing link write)
-  ldr  x12, [sp, #200]            ; --- dispatch template (byte-exact) ---
-  ubfx x14, x13, #2, #12
+  ldr  x12, [sp, #200]            ; --- dispatch template (byte-exact, 20 words) ---
+  ubfx x14, x13, #2, #12          ; main probe: slot pc[13:2]
+  ldr  x12, [x12, x14, lsl #3]
+  cbz  x12, 1f
+  ldr  x14, [x12]
+  sub  x14, x14, x13
+  cbnz x14, 1f
+  ldr  x12, [x12, #8]
+  br   x12
+1:ldr  x12, [sp, #200]            ; victim probe
+  eor  x14, x13, x13, lsr #12
+  ubfx x14, x14, #2, #8           ; victim slot pc[9:2] ^ pc[21:14]
+  add  x12, x12, #8, lsl #12      ; victim part at table + 32 KiB
   ldr  x12, [x12, x14, lsl #3]
   cbz  x12, <exit group of pc>
   ldr  x14, [x12]
@@ -524,16 +561,18 @@ CFG stay in-fragment. `SVC` is not a branch: its resume stays a runtime path.
     free. All are dead at original-instruction boundaries; x13 stays live from
     the site into its own exit group. `DISPATCH_SLOT_REG = 12`,
     `DISPATCH_TARGET_REG = 13`, `DISPATCH_KEY_REG = 14`.
-  - Layout resolves the template's two miss branches to the word after its
-    `br`, so the exit group directly follows the template inside the body (not
-    in the cold region). `LayoutError::MalformedDispatchTemplate` for a
-    template that is cut short or has no word after its `br`.
-- The template is `KJIT_DISPATCH_TEMPLATE` (9 `A64Insn`s, miss offsets 0) in
-  `shared/abi/wrapper.rs`, next to `KJIT_PROLOGUE`, with
+  - Layout resolves the main probe's two miss branches to the victim probe's
+    first word (template word 9) and the victim probe's two to the word after
+    the final `br`, so the exit group directly follows the template inside the
+    body (not in the cold region). `LayoutError::MalformedDispatchTemplate` for
+    a template that is cut short or has no word after its final `br`.
+  - One dispatch attempt is one budget unit, whichever probe hits.
+- The template is `KJIT_DISPATCH_TEMPLATE` (20 `A64Insn`s, miss offsets 0) in
+  `shared/abi`, next to `KJIT_PROLOGUE`, with
   `dispatch_template_matches(&[u32])`, which compares encoded words (the
-  encoding is the contract, like the prologue's check), frees only the two
-  `imm19` fields and returns them; a test pins the nine words to `llvm-mc`'s
-  encodings.
+  encoding is the contract, like the prologue's check), frees only the four
+  `imm19` fields and returns them; a test pins the twenty words to `llvm-mc`'s
+  encodings. There is one template: no variant selection.
 - Verifier: see rules 2, 3, 4, 6, 7, 9 (section 6). The bytes alone no longer
   determine every branch target (a dispatch target comes from a table the
   runtime owns); the verifier proves that the only way to use a table is the
@@ -1143,14 +1182,19 @@ Reject with `VerifyError { offset, rule }`.
      epilogue's `ret` are covered by the byte-exact check.
    - The last word is an unconditional `B` (nothing falls off the end).
    - Entry offsets: non-empty, aligned, in the body and before the cold region.
-   - Dispatch templates (A11, `find_dispatch_templates`): every `br x12` must end
-     the byte-exact template (`dispatch_template_matches`: the 9 words,
-     registers, `#200`, `#2`, `#12`, `#8`), both miss branches naming the same
-     forward body word. Accesses inside a template skip the generic access check
-     (being exact), so `ldr x12, [x12, x14, lsl #3]` cannot read out of bounds
-     (x14 is the preceding `ubfx x14, x13, #2, #12`, so the index is < 2^12 by
-     construction). There is no join point from the preceding budget check's
-     `sub` to the `br` (`DispatchTemplate` inside the template).
+   - Dispatch templates (A11, A11c, `find_dispatch_templates`): every `br x12`
+     must be word 8 or word 19 of the byte-exact 20-word template
+     (`dispatch_template_matches`: registers, `#200`, `#2`, `#12`, `#8`, the
+     `eor ... lsr #12`, `ubfx ... #2, #8`, `add ... #8, lsl #12`). The main
+     probe's two miss branches name the template's word 9; that internal edge
+     is the only edge into a template and does not make word 9 a join point
+     (the dataflow carries the state across it). The victim probe's two miss
+     branches name the same forward body word after word 19. Accesses inside a
+     template skip the generic access check (being exact), so both slot loads
+     stay inside the table by construction (main index < 2^12 from
+     `ubfx #2, #12`; victim index < 2^8 from `ubfx #2, #8` at offset 32 KiB).
+     There is no join point from the preceding budget check's `sub` to the final
+     `br` (`DispatchTemplate`).
 5. System: only `MRS Xt, TPIDR_EL0`, `MRS Xt, CNTVCT_EL0` and `MRS Xt,
    CNTFRQ_EL0` (A10; the only MRS encodings the generated subset decodes, one
    generated form each, `Form::MrsUserReg`; every other value of
@@ -1239,7 +1283,7 @@ region; rule 3's pt_regs fact is its refinement.
   it); the entry scratch until overwritten; `ldr xS, [sp, #176]` (-> `pt_regs`
   fact); any other frame slot outside the user-state slots `[16, 80)` (rule 3
   already rejects every such load, rule 9 classifies it anyway); inside a
-  dispatch template the three `ldr x12` results.
+  dispatch template every `ldr x12` and the `add x12` result.
 - Not sources: user-state frame slots; `pt_regs` contents (loaded through the
   proven pointer); `LDTR*` and window-access results; `MRS` of TPIDR_EL0,
   CNTVCT_EL0, CNTFRQ_EL0 (EL1 reads what EL0 reads, module init pins it; they
@@ -1250,7 +1294,8 @@ region; rule 3's pt_regs fact is its refinement.
 - Transfer: a write gets the kernel mark if the instruction reads SP or a
   kernel-valued GPR as data (ALU), or loads a kernel frame slot; loads of user
   state clear it. `step_dispatch_template` is the transfer function for the
-  template's nine words.
+  template's twenty words: x12 is the only register that ever holds a kernel
+  value inside it; every other word's result is user-derived.
 - Checks (`VerifyRule`):
   - `KernelValueRead`: an instruction reads SP or a kernel-valued GPR as data
     (ALU source, store data, branch operand, `MOVK`/`BFM` destination, exit
@@ -1259,13 +1304,14 @@ region; rule 3's pt_regs fact is its refinement.
     kernel value may be a base only of a runtime access: SP for a frame access,
     a proven pt_regs pointer for a `pt_regs` access (rule 3). So a kernel value
     is never stored anywhere and never computed on. Exceptions inside a
-    template: `cbz x12` and `br x12` may read kernel x12; x13 must be non-kernel
-    where `ubfx`/`sub` read it.
+    template: `cbz x12`, `br x12` and the victim probe's `add x12, x12, #8, lsl
+    #12` may read kernel x12; x13 must be non-kernel where `ubfx`/`eor`/`sub`
+    read it.
   - `KernelValueAtEdge`: at every control edge the state may hold no kernel value
     outside the join state: every direct branch (into the body or to the
     epilogue), every fall-through into a join point, every user access / window
-    access (its fault edge to the stub), and, in a template, both miss edges and
-    the `br`, which carry only the join state {x12, x29}. This is what makes
+    access (its fault edge to the stub), and, in a template, every miss edge and
+    both `br`s, which carry only the join state {x12, x29}. This is what makes
     restarting each join point from the join state sound.
   - Exit edges: the epilogue reads no join-state register before writing it (x12
     and x29 are not in its live-in set x0..x11, x16..x28, x30);
@@ -1486,18 +1532,18 @@ no duplicate translation logic.
 ### Code cache and cached runs (A11a)
 
 - `harness/src/code_cache.rs` mirrors the kernel's store: fragments by entry pc,
-  labels as records `{pc, host}` (`vlabels` sorted by pc), two direct-mapped
-  tables (`table_all`, `table_nofp`), `publish` (insert on resolution, replacing a
-  live slot, `ibtc_insert`/`ibtc_replace`), `retire` (clear only the slots that
-  still point at the fragment's records, `ibtc_clear`), `check_invariants`
-  (non-zero slot -> a label of a live fragment, at the right hash; `table_nofp`
-  never an FP/SIMD fragment, from the *verifier's* `uses_fpsimd`), and `decide`.
+  labels as records `{pc, host}` (`vlabels` sorted by pc), the two tables
+  (`table_all`, `table_nofp`, main and victim part), `publish` and `retire`
+  through the shared slot planning of section 4 (the same functions the kernel
+  calls; `ibtc_insert`/`ibtc_replace`/`ibtc_clear`), `check_invariants`
+  (non-zero slot -> a label of a live fragment, at that label's main or victim
+  index; `table_nofp` never an FP/SIMD fragment, from the *verifier's*
+  `uses_fpsimd`), and `decide`.
   Pure bookkeeping over an address layout; every table or record change is queued
   as an 8-byte `(addr, value)` write for the backend (interpreter `MachineState`
   memory, or the native runner's mapping). Records of retired fragments stay in
   memory (nothing points at them); record addresses are never reused, the code
-  stays mapped. (The harness publish still replaces a live slot unconditionally;
-  the kernel keeps a live record for the same pc: section 11.)
+  stays mapped.
 - `URuntime` executes over a cache: pc -> (fragment, offset), fault sites per
   fragment, `extra[2]` = `table_for(entered.uses_fpsimd)` at every entry, tables
   and records in runtime-owned ranges (a PAN violation outside them). The
@@ -1814,22 +1860,24 @@ and one module shape is simpler than a K0-only build.
 ### Dispatch tables (A11, kernel side)
 
 - Per `kjit_mm`, `table_all` and `table_nofp` (section 4, In-fragment branch
-  dispatch): `kvzalloc`ed (32 KiB each) by the first install that finds none,
+  dispatch): `kvzalloc`ed (34 KiB each: main and victim part) by the first install that finds none,
   outside `kmm->lock`, published together under it (the race loser frees its
   copy), before the fragment becomes visible. `-ENOMEM` fails that install. Freed
   with the `kjit_mm` after a hook-SRCU grace period.
 - Insert: whenever the runtime resolves a branch exit's target T to a fragment F
-  and an entry, `kjit_ibtc_publish` skips (no lock) when the slot already holds
-  the label in the table(s) it belongs to; otherwise it takes `kmm->lock` and,
-  only if F is not retired, stores `smp_store_release` into `table_all[h(T)]` and,
-  unless `uses_fpsimd`, `table_nofp[h(T)]`. A slot holding a record for another
-  pc is replaced (direct-mapped); one holding a live record for the same pc is
-  kept, whichever fragment it belongs to (all are translations of the same text).
-  Without that, fragments sharing a pc take turns in the slot on every resolution
-  (seen under the default benchmark: every insert was a replace). Readers are ordered by the
-  address dependency slot -> record -> fields.
+  and an entry, `kjit_ibtc_publish` skips (no lock) when T's main or victim slot
+  already holds a record for T in each table it belongs to; otherwise it takes
+  `kmm->lock` and, only if F is not retired, applies the shared slot plan
+  (section 4) to `table_all` and, unless `uses_fpsimd`, to `table_nofp`, each
+  store an `smp_store_release`. A record for the same pc is never replaced,
+  whichever fragment it belongs to (without that, fragments sharing a pc take
+  turns in a slot on every resolution). Readers are ordered by the address
+  dependency slot -> record -> fields.
+- Retire clears the main and victim slot of each label where they still point
+  at it (section 4).
 - Invariant (not verified, owned by the runtime): every non-zero slot of a table
-  points at a label of a non-retired fragment of this `kjit_mm` whose host is
+  (main or victim part) points at a label of a non-retired fragment of this
+  `kjit_mm`, stored at that label's own main or victim index, whose host is
   `image + a verified entry offset`, for exactly the label's pc; a `table_nofp`
   slot never points into an FP/SIMD fragment.
 - Run: `extra[2]` = `F.uses_fpsimd ? table_all : table_nofp` for the fragment F
@@ -2103,21 +2151,15 @@ the reasoning, the numbers and the full list of what was not verified there.
   from `exit_budget`); in-fragment code quality (budget counter read-modify-write
   through memory, stack-backed x12..x15, `LDTR` imm9-only splits).
   [2026-10-02 16:25, A11 contract pinned](journal/2026-10-02.md).
-- **Dispatch table hit rate and shape.** At steady state every `ibtc_insert` was
-  an `ibtc_replace`; whether that is conflict misses of the 4096-slot
-  direct-mapped table, the same few pcs ping-ponging, or the per-mm table being
-  replaced across runs is not shown (hits are not counted: no atomics in
-  fragment code). Next: a debug-only hit/miss counter, then associativity or a
-  larger table. [2026-10-05 11:47](journal/2026-10-05.md).
+- **Dispatch table conflicts: decided (A11c victim part, section 4).** Misses
+  were classified (conflicts from a few two-pc aliases, not capacity) and five
+  table shapes measured; hits are still not counted (no atomics in fragment
+  code). [2026-10-09](journal/2026-10-09.md).
 - **Where the remaining A11 loss sits.** Of the remaining slowdown against
   native, a minority is runtime round trips and the larger part is inside
   fragment code (dispatch sequences, budget accounting, windowed memory
   accesses), inferred from counters and two models, not timed per phase.
   [2026-10-05 11:47](journal/2026-10-05.md).
-- **Harness cache vs kernel publish rule.** The kernel keeps a live record for
-  the same pc in a slot; the harness `publish` still replaces a live slot
-  unconditionally (last writer wins), so the harness mirror does not model it.
-  [2026-10-02 17:10](journal/2026-10-02.md), [2026-10-02 17:28](journal/2026-10-02.md).
 - **V2 chaining.** The fuzzer counts `chained` as a non-verdict; modelling
   chaining in the original runner of the single-fragment fuzzer is deferred
   (cached runs follow branches). [2026-09-27 03:40](journal/2026-09-27.md).
