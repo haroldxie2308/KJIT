@@ -56,8 +56,9 @@ pub enum RephrasedInsnKind {
     DispatchTarget,
     /// One word of the dispatch template (`KJIT_DISPATCH_TEMPLATE`), in the body of a
     /// branch site between its link write and its exit group. Runtime-owned,
-    /// reg-virt passes it through; layout resolves its two miss branches to the exit
-    /// group that follows its `br`.
+    /// reg-virt passes it through; layout resolves its miss branches (the main probe's
+    /// to the victim probe's first word, the victim probe's to the exit group that
+    /// follows the final `br`).
     DispatchLookup,
     RuntimeExitPayload,
     RuntimeExitBranch,
@@ -922,7 +923,7 @@ mod tests {
                 // The template is followed by the exit group, which copies T from x13.
                 let after_br = rephrased
                     .iter()
-                    .position(|insn| matches!(insn.insn, A64Insn::BrBr64BranchReg { .. }))
+                    .rposition(|insn| matches!(insn.insn, A64Insn::BrBr64BranchReg { .. }))
                     .expect("template ends in br")
                     + 1;
                 assert!(

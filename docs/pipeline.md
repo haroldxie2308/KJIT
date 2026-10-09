@@ -1882,8 +1882,9 @@ and one module shape is simpler than a K0-only build.
   slot never points into an FP/SIMD fragment.
 - Run: `extra[2]` = `F.uses_fpsimd ? table_all : table_nofp` for the fragment F
   the run enters.
-- Stats: `ibtc_insert`, `ibtc_replace` (a slot held another record; a resolution of
-  a non-FP/SIMD target counts up to twice, one per table), `ibtc_clear`
+- Stats: `ibtc_insert`, `ibtc_replace` (a slot store, and one over another
+  record; a resolution can store up to twice per table, a victim move and the
+  main store, so up to four for a non-FP/SIMD target in both tables), `ibtc_clear`
   (cleared slots), `ibtc_fpsimd_boundary` (counted in Rust, `exec.rs`: a
   branch exit of a non-FP/SIMD run whose target resolved to an FP/SIMD
   fragment). Hits are not counted (no atomics in fragment code).

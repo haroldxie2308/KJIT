@@ -16,7 +16,9 @@ pub const RET_PARAM1_REG: u8 = 11;
 /// `DISPATCH_SLOT_REG` holds kernel values only (table pointer, slot, record, host);
 /// `DISPATCH_TARGET_REG` holds the branch target T, a user value, from the site's
 /// target move until the template or the site's exit group; `DISPATCH_KEY_REG` holds
-/// the slot index, then the record key compare, both user-derived.
+/// the slot index, then the record key compare, both user-derived. The victim probe
+/// (A11c) reuses all three: it recomputes its index from T, so nothing but x13 is
+/// carried from the main probe to it.
 pub const DISPATCH_SLOT_REG: u8 = 12;
 pub const DISPATCH_TARGET_REG: u8 = 13;
 pub const DISPATCH_KEY_REG: u8 = 14;

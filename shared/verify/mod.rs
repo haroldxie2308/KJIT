@@ -16,9 +16,10 @@ mod rules;
 mod taint;
 
 use crate::shared::abi::{
-    dispatch_template_matches, ABI_INSN_SIZE, DISPATCH_KEY_REG, DISPATCH_SLOT_REG,
-    DISPATCH_TARGET_REG, DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES, EPILOGUE_LEN_BYTES,
-    EPILOGUE_OFFSET, KJIT_EPILOGUE, KJIT_PROLOGUE, PROLOGUE_LEN_BYTES,
+    dispatch_template_matches, ABI_INSN_SIZE, DISPATCH_SLOT_REG, DISPATCH_TARGET_REG,
+    DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES, DISPATCH_TEMPLATE_MISS_TARGETS,
+    DISPATCH_TEMPLATE_VICTIM_PROBE, EPILOGUE_LEN_BYTES, EPILOGUE_OFFSET, KJIT_DISPATCH_TEMPLATE,
+    KJIT_EPILOGUE, KJIT_PROLOGUE, PROLOGUE_LEN_BYTES,
 };
 use crate::shared::arm64::{A64Insn, A64Mem};
 use crate::shared::platform::{SharedVec, GFP_KERNEL};
@@ -114,12 +115,13 @@ pub enum VerifyRule {
     /// 4: `BL`.
     Call,
     /// 4: `BR`/`BLR`/`RET` outside the prologue/epilogue and the dispatch template's
-    /// last word.
+    /// two `br x12` words.
     IndirectBranch,
-    /// 4/6/9 (A11): a `br x12` that does not end the exact dispatch template, a
-    /// template whose miss branches are not the same forward body word that is an
-    /// exit-group start, a join point inside the template, or two overlapping
-    /// templates.
+    /// 4/6/9 (A11, A11c): a `br x12` that is not word 8 or word 19 of the exact
+    /// dispatch template, a template whose main-probe miss branches do not name its
+    /// word 9 or whose victim-probe miss branches are not the same forward body word
+    /// that is an exit-group start, a join point inside the template (an edge into
+    /// word 9 from outside it included), or two overlapping templates.
     DispatchTemplate,
     /// 4: the last word can fall through past the fragment.
     FallsOffEnd,
@@ -179,7 +181,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
     check_wrapper(code, EPILOGUE_OFFSET, KJIT_EPILOGUE, VerifyRule::Epilogue)?;
 
     let body = decode_body(code)?;
-    // Dispatch templates (A11): every `br x12` ends the exact template. Found before
+    // Dispatch templates (A11): every `br x12` is a probe's end of the exact template. Found before
     // the other tables because every later check treats their words specially.
     let templates = find_dispatch_templates(code, &body)?;
     let frag = Fragment {
@@ -283,6 +285,19 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
                 return Err(target_error);
             }
             if let Some(target_index) = frag.body_index(target as usize) {
+                // The main probe's miss branches name the victim probe's first word
+                // (checked exact by `find_dispatch_templates`): the one edge into a
+                // template's inside, and not a join point -- the dataflow carries the
+                // state across it (the join state, as after the main probe's `br`).
+                // Any other edge into the template makes a join point there.
+                if let Some(position) = templates.position[index] {
+                    if DISPATCH_TEMPLATE_MISS_BRANCHES[..2].contains(&(position as usize))
+                        && target_index + position as usize
+                            == index + DISPATCH_TEMPLATE_VICTIM_PROBE
+                    {
+                        continue;
+                    }
+                }
                 // A PAN stub is the target of its windows' range-check `cbnz` only.
                 if windows.pan_stub[target_index] && windows.cbnz_stub[index] != Some(target_index)
                 {
@@ -569,11 +584,14 @@ struct DispatchTemplates {
     miss: SharedVec<Option<usize>>,
 }
 
-/// Every `br x12` must be the last word of the exact dispatch template
-/// (`dispatch_template_matches`: registers, `#200`, `ubfx` lsb/width, `#8`, the key
-/// compare), with both miss branches targeting the same forward body word. Any other
-/// `br` is `Form::IndirectBranch`, rejected by the main pass. Two templates never
-/// share a word (the template has exactly one `br`, at its end).
+/// Every `br x12` must be word 8 (the main probe's) or word 19 (the victim probe's) of
+/// the exact dispatch template (`dispatch_template_matches`: registers, `#200`, the
+/// `ubfx` lsb/width, the fold, `#8, lsl #12`, the key compares). Its main-probe miss
+/// branches must name the template's word 9, its victim-probe ones the same forward
+/// body word after word 19 (`DISPATCH_TEMPLATE_MISS_TARGETS`). A `br x12` found
+/// first is taken as the main probe's end, which fixes the template's start; the
+/// second is then already inside it. Any other `br` is `Form::IndirectBranch`,
+/// rejected by the main pass. Two templates never share a word.
 fn find_dispatch_templates(
     code: &[u8],
     body: &[A64Insn],
@@ -587,33 +605,53 @@ fn find_dispatch_templates(
         let A64Insn::BrBr64BranchReg { rn } = insn else {
             continue;
         };
-        if rn.enc() != DISPATCH_SLOT_REG {
+        if rn.enc() != DISPATCH_SLOT_REG || templates.position[index].is_some() {
             continue;
         }
         let reject = err(offset(index), VerifyRule::DispatchTemplate);
         let start = (index + 1)
-            .checked_sub(DISPATCH_TEMPLATE_LEN)
+            .checked_sub(DISPATCH_TEMPLATE_VICTIM_PROBE)
             .ok_or(reject)?;
         let mut words = [0_u32; DISPATCH_TEMPLATE_LEN];
         for (position, word) in words.iter_mut().enumerate() {
             *word = read_word(code, offset(start + position)).ok_or(reject)?;
         }
         let deltas = dispatch_template_matches(&words).ok_or(reject)?;
-        let [first, second] = DISPATCH_TEMPLATE_MISS_BRANCHES;
-        let first_target = offset(start + first) as i64 + deltas[0];
-        let second_target = offset(start + second) as i64 + deltas[1];
-        // Forward past the `br`, in the body, the same word for both branches.
-        let miss = (first_target == second_target && first_target > offset(index) as i64)
-            .then(|| usize::try_from(first_target).ok())
-            .flatten()
+        let mut exit: Option<i64> = None;
+        for ((&branch, &to), &delta) in DISPATCH_TEMPLATE_MISS_BRANCHES
+            .iter()
+            .zip(&DISPATCH_TEMPLATE_MISS_TARGETS)
+            .zip(&deltas)
+        {
+            let target = offset(start + branch) as i64 + delta;
+            if to < DISPATCH_TEMPLATE_LEN {
+                if target != offset(start + to) as i64 {
+                    return Err(reject);
+                }
+            } else if exit.is_some_and(|exit| exit != target) {
+                return Err(reject);
+            } else {
+                exit = Some(target);
+            }
+        }
+        // Forward past the final `br`, in the body.
+        let miss = exit
+            .filter(|&target| target > offset(start + DISPATCH_TEMPLATE_LEN - 1) as i64)
+            .and_then(|target| usize::try_from(target).ok())
             .filter(|&target| target >= BODY_OFFSET && (target - BODY_OFFSET) % ABI_INSN_SIZE == 0)
             .map(|target| (target - BODY_OFFSET) / ABI_INSN_SIZE)
             .filter(|&target| target < body.len())
             .ok_or(reject)?;
-        if templates.position[start..=index].iter().any(Option::is_some) {
+        if templates.position[start..start + DISPATCH_TEMPLATE_LEN]
+            .iter()
+            .any(Option::is_some)
+        {
             return Err(reject);
         }
-        for (position, slot) in templates.position[start..=index].iter_mut().enumerate() {
+        for (position, slot) in templates.position[start..start + DISPATCH_TEMPLATE_LEN]
+            .iter_mut()
+            .enumerate()
+        {
             *slot = Some(position as u8);
         }
         templates.miss[start] = Some(miss);
@@ -633,13 +671,18 @@ fn alloc_positions(len: usize) -> Result<SharedVec<Option<u8>>, VerifyError> {
 
 /// Rules 3 and 9 for one word of a dispatch template, whose bytes
 /// `find_dispatch_templates` already proved exact (so nothing else about the word
-/// is checked here: its accesses are the template's, its registers are x12/x14).
-/// `ldr x12` results are kernel values (the table, a slot, a record's host); the
-/// key load into x14 is a user PC copied from a branch target by the runtime, not a
-/// source; x13 (T) must hold no kernel value where it is read. Both miss branches
-/// and the final `br x12` are control edges carrying exactly the join state
-/// ({x12, x29}): x12 may be read by `cbz` and `br` (the one kernel register
-/// operand a branch may have), nothing else is kernel-valued.
+/// is checked here: its accesses are the template's). The only kernel-valued register
+/// of a template is `DISPATCH_SLOT_REG` (x12: the table, the victim part's base, a
+/// slot, a record's host): a word that writes x12 makes it a kernel value; any other
+/// word writes a value derived from T and the record's pc (the key load reads the
+/// record's pc, a user PC the runtime copied from a user branch target: not a
+/// source). `template_register_discipline_holds` checks on the words that no other
+/// word writes or reads x12 as data. T (x13) must hold no kernel value where a word
+/// reads it. A miss branch (`cbz x12` / `cbnz x14`) and a `br x12` are control edges
+/// carrying exactly the join state ({x12, x29}): x12 may be read by `cbz` and `br`
+/// (the one kernel register operand a branch may have), nothing else is
+/// kernel-valued. After a `br` only a join point or the main probe's miss edge can
+/// reach the next word, and both carry the join state, so the walk continues from it.
 fn step_dispatch_template(
     position: u8,
     state: Taint,
@@ -648,35 +691,28 @@ fn step_dispatch_template(
 ) -> Result<Taint, VerifyError> {
     const SLOT: u32 = 1 << DISPATCH_SLOT_REG;
     const TARGET: u32 = 1 << DISPATCH_TARGET_REG;
-    const KEY: u32 = 1 << DISPATCH_KEY_REG;
+    let position = position as usize;
+    let insn = KJIT_DISPATCH_TEMPLATE
+        .get(position)
+        .ok_or(err(offset, VerifyRule::DispatchTemplate))?;
+    // Control edges: the miss branches and the `br x12` that ends a probe.
+    let is_br = matches!(insn, A64Insn::BrBr64BranchReg { .. });
+    if DISPATCH_TEMPLATE_MISS_BRANCHES.contains(&position) || is_br {
+        check_edge(state, join_state, offset)?;
+        return Ok(if is_br { join_state } else { state });
+    }
+    let read = reads(insn).ok_or(err(offset, VerifyRule::OperandMetadata))?;
+    if read.gprs & TARGET & state.kernel != 0 {
+        return Err(err(offset, VerifyRule::KernelValueRead));
+    }
+    let written = writes(insn).ok_or(err(offset, VerifyRule::OperandMetadata))?;
     let mut next = state;
-    match position {
-        // ldr x12, [sp, #200]; ldr x12, [x12, x14, lsl #3]; ldr x12, [x12, #8]
-        0 | 2 | 7 => {
-            next.kernel |= SLOT;
-            next.pt_regs &= !SLOT;
-        }
-        // ubfx x14, x13, ...; sub x14, x14, x13: T is read as data.
-        1 | 5 => {
-            if state.kernel & TARGET != 0 {
-                return Err(err(offset, VerifyRule::KernelValueRead));
-            }
-            next.kernel &= !KEY;
-            next.pt_regs &= !KEY;
-        }
-        // ldr x14, [x12]: the record's pc.
-        4 => {
-            next.kernel &= !KEY;
-            next.pt_regs &= !KEY;
-        }
-        // cbz x12 / cbnz x14 (miss) and br x12 (hit): control edges.
-        3 | 6 | 8 => check_edge(state, join_state, offset)?,
-        _ => return Err(err(offset, VerifyRule::DispatchTemplate)),
-    }
-    if position == 8 {
-        // Only a join point can reach the next word.
-        return Ok(join_state);
-    }
+    next.pt_regs &= !written.gprs;
+    next.kernel = if written.gprs & SLOT != 0 {
+        (next.kernel & !written.gprs) | SLOT
+    } else {
+        next.kernel & !written.gprs
+    };
     Ok(next)
 }
 

@@ -183,8 +183,10 @@ int main(int argc, char **argv)
 		if (pwrite(memfd, link_race_var[v], VARIANT_LEN, (off_t)v * PAGE) != VARIANT_LEN)
 			die("pwrite variant %d: %s", v, strerror(errno));
 	/*
-	 * The callee and the return site must not share a dispatch table slot
-	 * (pc[13:2]): that is alias_loop's case. Mappings land anywhere, so retry.
+	 * The callee and the return site must not share a dispatch table main
+	 * slot (pc[13:2]): the second one published would move the first into the
+	 * victim part, a different steady state than this test counts. Mappings
+	 * land anywhere, so retry.
 	 */
 	do {
 		map = mmap(NULL, PAGE, PROT_READ | PROT_EXEC, MAP_PRIVATE, memfd, 0);

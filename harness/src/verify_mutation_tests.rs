@@ -12,8 +12,9 @@ use std::collections::BTreeMap;
 use crate::asm_fixture::CompiledCase;
 use crate::asm_fixture_tests::run_every_case;
 use crate::shared::abi::{
-    dispatch_template_matches, DISPATCH_TEMPLATE_LEN, EPILOGUE_OFFSET, PROLOGUE_LEN_BYTES,
-    REG_VIRT_SCRATCH_GPR_START, RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_IBTC_OFFSET,
+    dispatch_template_matches, DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES,
+    DISPATCH_TEMPLATE_MISS_TARGETS, DISPATCH_TEMPLATE_VICTIM_PROBE, EPILOGUE_OFFSET,
+    KJIT_DISPATCH_TEMPLATE, PROLOGUE_LEN_BYTES, REG_VIRT_SCRATCH_GPR_START, RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_IBTC_OFFSET,
     RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
 };
 use crate::shared::arm64::ergo::{
@@ -1824,8 +1825,8 @@ impl Suite {
         }
     }
 
-    /// Start index of every dispatch template (A11) of the fragment, found on the
-    /// bytes: nine words that are `KJIT_DISPATCH_TEMPLATE` up to the miss offsets.
+    /// Start index of every dispatch template (A11, A11c) of the fragment, found on the
+    /// bytes: twenty words that are `KJIT_DISPATCH_TEMPLATE` up to the miss offsets.
     fn find_dispatch_templates(fixture: &Fixture) -> Vec<usize> {
         fixture
             .body()
@@ -1837,10 +1838,13 @@ impl Suite {
             .collect()
     }
 
-    /// The A11 mutation classes (docs/pipeline.md, "Code cache and cached runs (A11a)"): every
-    /// template word altered, the key compare dropped, `br` of x13/x14, join points
-    /// inside the template, no budget check, slot 200 read outside a template or
-    /// written anywhere, a kernel value in x13, a retargeted miss branch.
+    /// The A11/A11c mutation classes (docs/pipeline.md, "Code cache and cached runs
+    /// (A11a)"): every template word altered (by name per probe, and by nop, bounds
+    /// removed, a widened `ubfx` and every single-bit flip: `generic_template_mutations`),
+    /// the key compare dropped in each probe, `br` of x13/x14, join points inside the
+    /// template and branches into it (the victim probe's first word included), no
+    /// budget check, slot 200 read outside a template or written anywhere, a kernel
+    /// value in x13, every miss branch retargeted (the main probe's internal ones too).
     fn dispatch_templates(&mut self, fixture: &Fixture) {
         let nop = enc(A64Insn::NopNopHiHints {});
         let x12 = A64Reg::x_sp(12);
@@ -1946,191 +1950,326 @@ impl Suite {
                 format!("template at {:#x}, word {position}", start * 4)
             };
             let word_at = |position: usize| start + position;
-            // The miss exit group is the word right after the template's `br`.
+            // The miss exit group is the word right after the template's final `br`;
+            // the main probe's misses must name the victim probe's first word.
             let group = start + DISPATCH_TEMPLATE_LEN;
+            let victim_probe = word_at(DISPATCH_TEMPLATE_VICTIM_PROBE);
+            self.generic_template_mutations(fixture, start);
 
-            // Every word altered: register, #200, ubfx lsb/width, #8, the shift, the
-            // compare, the branch kinds.
-            let by_position: Vec<(usize, Vec<(&str, A64Insn)>)> = vec![
+            // Every word altered in the ways the contract lists, per probe: register,
+            // #200, ubfx lsb/width, the fold, the part offset, #8, the shift, the
+            // compare, the branch kinds. Position `base + p` is word `p` of the probe.
+            // `word(p)` is the template word that is the probe's word `p` (the main
+            // probe's `p`; the victim probe's is 9 + p, +2 from p = 2 on, for the fold
+            // and the part offset the main probe lacks).
+            let probe_alterations = |word: &dyn Fn(usize) -> usize,
+                                     proper_miss: usize|
+             -> Vec<(usize, Vec<(&'static str, A64Insn)>)> {
+                let miss_targets = |at_word: usize, reg: u8| -> Vec<(&'static str, A64Insn)> {
+                    let out = vec![
+                        ("-> template start", start),
+                        ("-> the probe's br", word_at(word(8))),
+                        ("-> group + 1", group + 1),
+                        ("-> group + 2", group + 2),
+                        ("-> first body word", BODY_OFFSET / 4),
+                        ("-> last word", len - 1),
+                        ("-> epilogue", EPILOGUE_OFFSET / 4),
+                        ("-> outside", len + 4),
+                        ("-> victim probe start", victim_probe),
+                        ("-> group", group),
+                    ]
+                    .into_iter()
+                    .filter(|&(_, target)| target != proper_miss)
+                    .map(|(name, target)| {
+                        let insn = if reg == 12 {
+                            cbz_to(at_word, target, reg)
+                        } else {
+                            cbnz_to(at_word, target, reg)
+                        };
+                        (name, insn)
+                    })
+                    .collect::<Vec<_>>();
+                    out
+                };
+                let mut cbz_cases = vec![
+                    ("cbz x13", cbz_to(word_at(word(3)), proper_miss, 13)),
+                    ("cbz x14", cbz_to(word_at(word(3)), proper_miss, 14)),
+                    ("cbnz x12", cbnz_to(word_at(word(3)), proper_miss, 12)),
+                    (
+                        "cbz w12",
+                        A64Insn::CbzCbz32Compbranch {
+                            imm19: scaled_simm(
+                                ((proper_miss as i64 - word_at(word(3)) as i64) as u32) & 0x7ffff,
+                                19,
+                                2,
+                            ),
+                            rt: w(12),
+                        },
+                    ),
+                ];
+                cbz_cases.extend(miss_targets(word_at(word(3)), 12));
+                let mut cbnz_cases = vec![
+                    ("cbz x14", cbz_to(word_at(word(6)), proper_miss, 14)),
+                    ("cbnz x13", cbnz_to(word_at(word(6)), proper_miss, 13)),
+                    ("cbnz x12", cbnz_to(word_at(word(6)), proper_miss, 12)),
+                ];
+                cbnz_cases.extend(miss_targets(word_at(word(6)), 14));
+                let tagged = vec![
+                    (
+                        0,
+                        vec![
+                            ("ldr x13, [sp, #200]", ldr64(13, sp(), table_slot)),
+                            ("ldr x15, [sp, #200]", ldr64(15, sp(), table_slot)),
+                            ("ldr x12, [sp, #192]", ldr64(12, sp(), 192)),
+                            ("ldr x12, [sp, #208]", ldr64(12, sp(), 208)),
+                            ("ldr x12, [sp, #176]", ldr64(12, sp(), 176)),
+                            ("ldr x12, [sp, #16]", ldr64(12, sp(), 16)),
+                            ("ldr x12, [sp, #184]", ldr64(12, sp(), 184)),
+                            ("ldr x12, [x29, #200]", ldr64(12, A64Reg::x_sp(29), table_slot)),
+                            (
+                                "ldr w12, [sp, #200]",
+                                A64Insn::LdrImmGenLdr32LdstPos {
+                                    rt: w(12),
+                                    mem: mem_off(sp(), scaled_uimm(table_slot / 4, 12, 2)),
+                                },
+                            ),
+                        ],
+                    ),
+                    (
+                        2,
+                        vec![
+                            ("ldr x12, [x12, x14, lsl #0]", ldr_reg(12, 12, 14, 0b011, 0)),
+                            ("ldr x12, [x12, w14, uxtw #3]", ldr_reg(12, 12, 14, 0b010, 1)),
+                            ("ldr x12, [x12, w14, sxtw #3]", ldr_reg(12, 12, 14, 0b110, 1)),
+                            ("ldr x12, [x12, x14, sxtx #3]", ldr_reg(12, 12, 14, 0b111, 1)),
+                            ("ldr x12, [x12, x13, lsl #3]", ldr_reg(12, 12, 13, 0b011, 1)),
+                            ("ldr x12, [x12, x12, lsl #3]", ldr_reg(12, 12, 12, 0b011, 1)),
+                            ("ldr x12, [x13, x14, lsl #3]", ldr_reg(12, 13, 14, 0b011, 1)),
+                            ("ldr x14, [x12, x14, lsl #3]", ldr_reg(14, 12, 14, 0b011, 1)),
+                            ("ldr x13, [x12, x14, lsl #3]", ldr_reg(13, 12, 14, 0b011, 1)),
+                        ],
+                    ),
+                    (3, cbz_cases),
+                    (
+                        4,
+                        vec![
+                            ("ldr x14, [x12, #8]", ldr64(14, x12, 8)),
+                            ("ldr x14, [x12, #16]", ldr64(14, x12, 16)),
+                            ("ldr x13, [x12]", ldr64(13, x12, 0)),
+                            ("ldr x15, [x12]", ldr64(15, x12, 0)),
+                            ("ldr x14, [x13]", ldr64(14, A64Reg::x_sp(13), 0)),
+                            ("ldr x14, [x14]", ldr64(14, A64Reg::x_sp(14), 0)),
+                            (
+                                "ldr w14, [x12]",
+                                A64Insn::LdrImmGenLdr32LdstPos {
+                                    rt: w(14),
+                                    mem: mem_off(x12, scaled_uimm(0, 12, 2)),
+                                },
+                            ),
+                            (
+                                "ldur x14, [x12, #-8]",
+                                A64Insn::LdurGenLdur64LdstUnscaled {
+                                    rt: x(14),
+                                    mem: mem_off(x12, simm(0x1f8, 9)),
+                                },
+                            ),
+                        ],
+                    ),
+                    (
+                        5,
+                        vec![
+                            (
+                                "subs x14, x14, x13",
+                                A64Insn::SubsAddsubShiftSubs64AddsubShift {
+                                    shift: 0,
+                                    rm: x(13),
+                                    imm6: uimm(0, 6),
+                                    rn: x(14),
+                                    rd: x(14),
+                                },
+                            ),
+                            (
+                                "add x14, x14, x13",
+                                A64Insn::AddAddsubShiftAdd64AddsubShift {
+                                    shift: 0,
+                                    rm: x(13),
+                                    imm6: uimm(0, 6),
+                                    rn: x(14),
+                                    rd: x(14),
+                                },
+                            ),
+                            ("sub x14, x14, x12", sub_reg(14, 14, 12, 0)),
+                            ("sub x14, x14, x14", sub_reg(14, 14, 14, 0)),
+                            ("sub x13, x14, x13", sub_reg(13, 14, 13, 0)),
+                            ("sub x15, x14, x13", sub_reg(15, 14, 13, 0)),
+                            ("sub x14, x14, x13, lsl #1", sub_reg(14, 14, 13, 1)),
+                            ("mov x14, xzr", mov_reg(14, 31)),
+                            ("mov x14, x13", mov_reg(14, 13)),
+                        ],
+                    ),
+                    (6, cbnz_cases),
+                    (
+                        7,
+                        vec![
+                            ("ldr x12, [x12]", ldr64(12, x12, 0)),
+                            ("ldr x12, [x12, #16]", ldr64(12, x12, 16)),
+                            ("ldr x14, [x12, #8]", ldr64(14, x12, 8)),
+                            ("ldr x13, [x12, #8]", ldr64(13, x12, 8)),
+                            ("ldr x12, [x14, #8]", ldr64(12, A64Reg::x_sp(14), 8)),
+                            (
+                                "ldr w12, [x12, #8]",
+                                A64Insn::LdrImmGenLdr32LdstPos {
+                                    rt: w(12),
+                                    mem: mem_off(x12, scaled_uimm(2, 12, 2)),
+                                },
+                            ),
+                        ],
+                    ),
+                    (
+                        8,
+                        vec![
+                            ("br x13", A64Insn::BrBr64BranchReg { rn: x(13) }),
+                            ("br x14", A64Insn::BrBr64BranchReg { rn: x(14) }),
+                            ("br x15", A64Insn::BrBr64BranchReg { rn: x(15) }),
+                            ("blr x12", A64Insn::BlrBlr64BranchReg { rn: x(12) }),
+                            ("ret x12", A64Insn::RetRet64rBranchReg { rn: x(12) }),
+                            ("ret", A64Insn::RetRet64rBranchReg { rn: x(30) }),
+                            ("nop", A64Insn::NopNopHiHints {}),
+                        ],
+                    ),
+                ];
+                tagged
+                    .into_iter()
+                    .map(|(position, alterations)| (word(position), alterations))
+                    .collect()
+            };
+            // The main probe's words 0..9 (word 1: its `ubfx`), the victim probe's 9..20
+            // (words 10..12: the fold, its `ubfx`, the part offset).
+            let mut by_position = probe_alterations(&|p| p, victim_probe);
+            by_position.push((
+                1,
+                vec![
+                    ("ubfx x14, x13, #3, #12", ubfx_insn(13, 14, 3, 14)),
+                    ("ubfx x14, x13, #1, #12", ubfx_insn(13, 14, 1, 12)),
+                    ("ubfx x14, x13, #0, #12", ubfx_insn(13, 14, 0, 11)),
+                    ("ubfx x14, x13, #2, #13", ubfx_insn(13, 14, 2, 14)),
+                    ("ubfx x14, x13, #2, #11", ubfx_insn(13, 14, 2, 12)),
+                    ("ubfx x14, x13, #2, #14", ubfx_insn(13, 14, 2, 15)),
+                    ("lsr x14, x13, #2", ubfx_insn(13, 14, 2, 63)),
+                    ("ubfx x14, x12, #2, #12", ubfx_insn(12, 14, 2, 13)),
+                    ("ubfx x14, x14, #2, #12", ubfx_insn(14, 14, 2, 13)),
+                    ("ubfx x13, x13, #2, #12", ubfx_insn(13, 13, 2, 13)),
+                    ("ubfx x15, x13, #2, #12", ubfx_insn(13, 15, 2, 13)),
+                    ("mov x14, x13", mov_reg(14, 13)),
+                ],
+            ));
+            let eor = |shift: u32, rm: u8, rn: u8, rd: u8, lsr: u8| A64Insn::EorLogShiftEor64LogShift {
+                shift: lsr,
+                rm: x(rm),
+                imm6: uimm(shift, 6),
+                rn: x(rn),
+                rd: x(rd),
+            };
+            let victim_alterations = vec![
                 (
-                    0,
+                    DISPATCH_TEMPLATE_VICTIM_PROBE + 1,
                     vec![
-                        ("ldr x13, [sp, #200]", ldr64(13, sp(), table_slot)),
-                        ("ldr x15, [sp, #200]", ldr64(15, sp(), table_slot)),
-                        ("ldr x12, [sp, #192]", ldr64(12, sp(), 192)),
-                        ("ldr x12, [sp, #208]", ldr64(12, sp(), 208)),
-                        ("ldr x12, [sp, #176]", ldr64(12, sp(), 176)),
-                        ("ldr x12, [sp, #16]", ldr64(12, sp(), 16)),
-                        ("ldr x12, [sp, #184]", ldr64(12, sp(), 184)),
-                        ("ldr x12, [x29, #200]", ldr64(12, A64Reg::x_sp(29), table_slot)),
-                        (
-                            "ldr w12, [sp, #200]",
-                            A64Insn::LdrImmGenLdr32LdstPos {
-                                rt: w(12),
-                                mem: mem_off(sp(), scaled_uimm(table_slot / 4, 12, 2)),
-                            },
-                        ),
+                        ("eor x14, x13, x13, lsr #11", eor(11, 13, 13, 14, 1)),
+                        ("eor x14, x13, x13, lsr #13", eor(13, 13, 13, 14, 1)),
+                        ("eor x14, x13, x13, lsr #0", eor(0, 13, 13, 14, 1)),
+                        ("eor x14, x13, x13, lsl #12", eor(12, 13, 13, 14, 0)),
+                        ("eor x14, x13, x13, asr #12", eor(12, 13, 13, 14, 2)),
+                        ("eor x14, x13, x12, lsr #12", eor(12, 12, 13, 14, 1)),
+                        ("eor x14, x12, x13, lsr #12", eor(12, 13, 12, 14, 1)),
+                        ("eor x15, x13, x13, lsr #12", eor(12, 13, 13, 15, 1)),
+                        ("eor x13, x13, x13, lsr #12", eor(12, 13, 13, 13, 1)),
+                        ("eor x12, x13, x13, lsr #12", eor(12, 13, 13, 12, 1)),
+                        ("eor x14, x14, x14, lsr #12", eor(12, 14, 14, 14, 1)),
+                        ("mov x14, x13 (fold removed)", mov_reg(14, 13)),
                     ],
                 ),
                 (
-                    1,
+                    DISPATCH_TEMPLATE_VICTIM_PROBE + 2,
                     vec![
-                        ("ubfx x14, x13, #3, #12", ubfx_insn(13, 14, 3, 14)),
-                        ("ubfx x14, x13, #1, #12", ubfx_insn(13, 14, 1, 12)),
-                        ("ubfx x14, x13, #0, #12", ubfx_insn(13, 14, 0, 11)),
-                        ("ubfx x14, x13, #2, #13", ubfx_insn(13, 14, 2, 14)),
-                        ("ubfx x14, x13, #2, #11", ubfx_insn(13, 14, 2, 12)),
-                        ("ubfx x14, x13, #2, #14", ubfx_insn(13, 14, 2, 15)),
-                        ("lsr x14, x13, #2", ubfx_insn(13, 14, 2, 63)),
-                        ("ubfx x14, x12, #2, #12", ubfx_insn(12, 14, 2, 13)),
+                        ("ubfx x14, x14, #2, #9", ubfx_insn(14, 14, 2, 10)),
                         ("ubfx x14, x14, #2, #12", ubfx_insn(14, 14, 2, 13)),
-                        ("ubfx x13, x13, #2, #12", ubfx_insn(13, 13, 2, 13)),
-                        ("ubfx x15, x13, #2, #12", ubfx_insn(13, 15, 2, 13)),
-                        ("mov x14, x13", mov_reg(14, 13)),
+                        ("ubfx x14, x14, #2, #7", ubfx_insn(14, 14, 2, 8)),
+                        ("ubfx x14, x14, #3, #8", ubfx_insn(14, 14, 3, 10)),
+                        ("ubfx x14, x14, #1, #8", ubfx_insn(14, 14, 1, 8)),
+                        ("ubfx x14, x14, #0, #8", ubfx_insn(14, 14, 0, 7)),
+                        ("ubfx x14, x13, #2, #8", ubfx_insn(13, 14, 2, 9)),
+                        ("ubfx x14, x12, #2, #8", ubfx_insn(12, 14, 2, 9)),
+                        ("ubfx x15, x14, #2, #8", ubfx_insn(14, 15, 2, 9)),
+                        ("ubfx x13, x14, #2, #8", ubfx_insn(14, 13, 2, 9)),
+                        ("mov x14, x14 (index unmasked)", mov_reg(14, 14)),
+                        ("lsr x14, x14, #2", ubfx_insn(14, 14, 2, 63)),
                     ],
                 ),
                 (
-                    2,
-                    vec![
-                        ("ldr x12, [x12, x14, lsl #0]", ldr_reg(12, 12, 14, 0b011, 0)),
-                        ("ldr x12, [x12, w14, uxtw #3]", ldr_reg(12, 12, 14, 0b010, 1)),
-                        ("ldr x12, [x12, w14, sxtw #3]", ldr_reg(12, 12, 14, 0b110, 1)),
-                        ("ldr x12, [x12, x14, sxtx #3]", ldr_reg(12, 12, 14, 0b111, 1)),
-                        ("ldr x12, [x12, x13, lsl #3]", ldr_reg(12, 12, 13, 0b011, 1)),
-                        ("ldr x12, [x12, x12, lsl #3]", ldr_reg(12, 12, 12, 0b011, 1)),
-                        ("ldr x12, [x13, x14, lsl #3]", ldr_reg(12, 13, 14, 0b011, 1)),
-                        ("ldr x14, [x12, x14, lsl #3]", ldr_reg(14, 12, 14, 0b011, 1)),
-                        ("ldr x13, [x12, x14, lsl #3]", ldr_reg(13, 12, 14, 0b011, 1)),
-                    ],
-                ),
-                (
-                    3,
-                    vec![
-                        ("cbz x13", cbz_to(word_at(3), group, 13)),
-                        ("cbz x14", cbz_to(word_at(3), group, 14)),
-                        ("cbnz x12", cbnz_to(word_at(3), group, 12)),
-                        (
-                            "cbz w12",
-                            A64Insn::CbzCbz32Compbranch {
-                                imm19: scaled_simm(
-                                    ((group as i64 - word_at(3) as i64) as u32) & 0x7ffff,
-                                    19,
-                                    2,
-                                ),
-                                rt: w(12),
-                            },
-                        ),
-                        ("cbz x12 -> template start", cbz_to(word_at(3), start, 12)),
-                        ("cbz x12 -> br", cbz_to(word_at(3), word_at(8), 12)),
-                        ("cbz x12 -> group + 1", cbz_to(word_at(3), group + 1, 12)),
-                        ("cbz x12 -> group + 2", cbz_to(word_at(3), group + 2, 12)),
-                        ("cbz x12 -> first body word", cbz_to(word_at(3), BODY_OFFSET / 4, 12)),
-                        ("cbz x12 -> last word", cbz_to(word_at(3), len - 1, 12)),
-                        ("cbz x12 -> epilogue", cbz_to(word_at(3), EPILOGUE_OFFSET / 4, 12)),
-                        ("cbz x12 -> outside", cbz_to(word_at(3), len + 4, 12)),
-                    ],
-                ),
-                (
-                    4,
-                    vec![
-                        ("ldr x14, [x12, #8]", ldr64(14, x12, 8)),
-                        ("ldr x14, [x12, #16]", ldr64(14, x12, 16)),
-                        ("ldr x13, [x12]", ldr64(13, x12, 0)),
-                        ("ldr x15, [x12]", ldr64(15, x12, 0)),
-                        ("ldr x14, [x13]", ldr64(14, A64Reg::x_sp(13), 0)),
-                        ("ldr x14, [x14]", ldr64(14, A64Reg::x_sp(14), 0)),
-                        (
-                            "ldr w14, [x12]",
-                            A64Insn::LdrImmGenLdr32LdstPos {
-                                rt: w(14),
-                                mem: mem_off(x12, scaled_uimm(0, 12, 2)),
-                            },
-                        ),
-                        (
-                            "ldur x14, [x12, #-8]",
-                            A64Insn::LdurGenLdur64LdstUnscaled {
-                                rt: x(14),
-                                mem: mem_off(x12, simm(0x1f8, 9)),
-                            },
-                        ),
-                    ],
-                ),
-                (
-                    5,
-                    vec![
-                        (
-                            "subs x14, x14, x13",
-                            A64Insn::SubsAddsubShiftSubs64AddsubShift {
-                                shift: 0,
-                                rm: x(13),
-                                imm6: uimm(0, 6),
-                                rn: x(14),
-                                rd: x(14),
-                            },
-                        ),
-                        (
-                            "add x14, x14, x13",
-                            A64Insn::AddAddsubShiftAdd64AddsubShift {
-                                shift: 0,
-                                rm: x(13),
-                                imm6: uimm(0, 6),
-                                rn: x(14),
-                                rd: x(14),
-                            },
-                        ),
-                        ("sub x14, x14, x12", sub_reg(14, 14, 12, 0)),
-                        ("sub x14, x14, x14", sub_reg(14, 14, 14, 0)),
-                        ("sub x13, x14, x13", sub_reg(13, 14, 13, 0)),
-                        ("sub x15, x14, x13", sub_reg(15, 14, 13, 0)),
-                        ("sub x14, x14, x13, lsl #1", sub_reg(14, 14, 13, 1)),
-                        ("mov x14, xzr", mov_reg(14, 31)),
-                        ("mov x14, x13", mov_reg(14, 13)),
-                    ],
-                ),
-                (
-                    6,
-                    vec![
-                        ("cbz x14", cbz_to(word_at(6), group, 14)),
-                        ("cbnz x13", cbnz_to(word_at(6), group, 13)),
-                        ("cbnz x12", cbnz_to(word_at(6), group, 12)),
-                        ("cbnz x14 -> template start", cbnz_to(word_at(6), start, 14)),
-                        ("cbnz x14 -> br", cbnz_to(word_at(6), word_at(8), 14)),
-                        ("cbnz x14 -> group + 1", cbnz_to(word_at(6), group + 1, 14)),
-                        ("cbnz x14 -> first body word", cbnz_to(word_at(6), BODY_OFFSET / 4, 14)),
-                        ("cbnz x14 -> epilogue", cbnz_to(word_at(6), EPILOGUE_OFFSET / 4, 14)),
-                        ("cbnz x14 -> outside", cbnz_to(word_at(6), len + 4, 14)),
-                    ],
-                ),
-                (
-                    7,
-                    vec![
-                        ("ldr x12, [x12]", ldr64(12, x12, 0)),
-                        ("ldr x12, [x12, #16]", ldr64(12, x12, 16)),
-                        ("ldr x14, [x12, #8]", ldr64(14, x12, 8)),
-                        ("ldr x13, [x12, #8]", ldr64(13, x12, 8)),
-                        ("ldr x12, [x14, #8]", ldr64(12, A64Reg::x_sp(14), 8)),
-                        (
-                            "ldr w12, [x12, #8]",
-                            A64Insn::LdrImmGenLdr32LdstPos {
-                                rt: w(12),
-                                mem: mem_off(x12, scaled_uimm(2, 12, 2)),
-                            },
-                        ),
-                    ],
-                ),
-                (
-                    8,
-                    vec![
-                        ("br x13", A64Insn::BrBr64BranchReg { rn: x(13) }),
-                        ("br x14", A64Insn::BrBr64BranchReg { rn: x(14) }),
-                        ("br x15", A64Insn::BrBr64BranchReg { rn: x(15) }),
-                        ("blr x12", A64Insn::BlrBlr64BranchReg { rn: x(12) }),
-                        ("ret x12", A64Insn::RetRet64rBranchReg { rn: x(12) }),
-                        ("ret", A64Insn::RetRet64rBranchReg { rn: x(30) }),
-                        ("nop", A64Insn::NopNopHiHints {}),
-                    ],
+                    DISPATCH_TEMPLATE_VICTIM_PROBE + 3,
+                    [0u32, 4, 7, 9, 16, 4095]
+                        .into_iter()
+                        .map(|imm| {
+                            (
+                                "add x12, x12, #imm, lsl #12 (another part offset)",
+                                A64Insn::AddAddsubImmAdd64AddsubImm {
+                                    sh: 1,
+                                    imm12: uimm(imm, 12),
+                                    rn: A64Reg::x_sp(12),
+                                    rd: A64Reg::x_sp(12),
+                                },
+                            )
+                        })
+                        .chain([
+                            (
+                                "add x12, x12, #8 (no shift)",
+                                A64Insn::AddAddsubImmAdd64AddsubImm {
+                                    sh: 0,
+                                    imm12: uimm(8, 12),
+                                    rn: A64Reg::x_sp(12),
+                                    rd: A64Reg::x_sp(12),
+                                },
+                            ),
+                            (
+                                "add x13, x12, #8, lsl #12",
+                                A64Insn::AddAddsubImmAdd64AddsubImm {
+                                    sh: 1,
+                                    imm12: uimm(8, 12),
+                                    rn: A64Reg::x_sp(12),
+                                    rd: A64Reg::x_sp(13),
+                                },
+                            ),
+                            (
+                                "add x12, x14, #8, lsl #12",
+                                A64Insn::AddAddsubImmAdd64AddsubImm {
+                                    sh: 1,
+                                    imm12: uimm(8, 12),
+                                    rn: A64Reg::x_sp(14),
+                                    rd: A64Reg::x_sp(12),
+                                },
+                            ),
+                            (
+                                "sub x12, x12, #8, lsl #12",
+                                A64Insn::SubAddsubImmSub64AddsubImm {
+                                    sh: 1,
+                                    imm12: uimm(8, 12),
+                                    rn: A64Reg::x_sp(12),
+                                    rd: A64Reg::x_sp(12),
+                                },
+                            ),
+                            ("mov x12, x12 (no offset)", mov_reg(12, 12)),
+                        ])
+                        .collect(),
                 ),
             ];
+            // The victim probe's shared words: the same alterations as the main
+            // probe's, at word 9 + p (its miss branches must name the group).
+            let victim_probe_words = probe_alterations(
+                &|p| DISPATCH_TEMPLATE_VICTIM_PROBE + p + if p >= 2 { 2 } else { 0 },
+                group,
+            );
+            by_position.extend(victim_alterations);
+            by_position.extend(victim_probe_words);
             for (position, alterations) in by_position {
                 for (what, insn) in alterations {
                     self.replace(
@@ -2151,30 +2290,37 @@ impl Suite {
                 );
             }
 
-            // Key compare dropped: the `sub`, the `cbnz`, both, or the whole record
-            // check (load, sub, cbnz).
-            for (what, range) in [
-                ("sub", 5..6),
-                ("cbnz", 6..7),
-                ("sub + cbnz", 5..7),
-                ("ldr key + sub + cbnz", 4..7),
-            ] {
-                let mut words = fixture.words.clone();
-                for position in range {
-                    words[word_at(position)] = nop;
+            // Key compare dropped, in each probe: the `sub`, the `cbnz`, both, or the
+            // whole record check (load, sub, cbnz). `cbnz` is word 6 (main) or 17
+            // (victim).
+            for cbnz in [6, DISPATCH_TEMPLATE_LEN - 3] {
+                assert!(matches!(
+                    KJIT_DISPATCH_TEMPLATE[cbnz],
+                    A64Insn::CbnzCbnz64Compbranch { .. }
+                ));
+                for (what, range) in [
+                    ("sub", cbnz - 1..cbnz),
+                    ("cbnz", cbnz..cbnz + 1),
+                    ("sub + cbnz", cbnz - 1..cbnz + 1),
+                    ("ldr key + sub + cbnz", cbnz - 2..cbnz + 1),
+                ] {
+                    let mut words = fixture.words.clone();
+                    for position in range {
+                        words[word_at(position)] = nop;
+                    }
+                    self.expect_reject(
+                        "dispatch key compare dropped (A11)",
+                        fixture,
+                        format!("{what} of the probe ending at word {cbnz}, {}", at(0)),
+                        &words,
+                        &fixture.tables,
+                    );
                 }
-                self.expect_reject(
-                    "dispatch key compare dropped (A11)",
-                    fixture,
-                    format!("{what}, {}", at(0)),
-                    &words,
-                    &fixture.tables,
-                );
             }
 
             // Join points inside the template or between its budget check and it.
             let guard = start.saturating_sub(1);
-            for inner in start..=start + 8 {
+            for inner in start..start + DISPATCH_TEMPLATE_LEN {
                 let mut tables = clone_tables(&fixture.tables);
                 tables.entry_offsets.push(inner * 4);
                 self.expect_reject(
@@ -2195,7 +2341,7 @@ impl Suite {
                 &tables,
             );
             for index in fixture.body() {
-                if (start..=start + 8).contains(&index) {
+                if (start..start + DISPATCH_TEMPLATE_LEN).contains(&index) {
                     continue;
                 }
                 let Some(insn) = fixture.decoded(index) else {
@@ -2207,7 +2353,17 @@ impl Suite {
                 if matches!(insn, A64Insn::BlBlOnlyBranchImm { .. }) {
                     continue;
                 }
-                for inner in [start, start + 1, start + 4, start + 8] {
+                // Branches into the template, the victim probe's first word (the only
+                // word its own miss branches reach) and a word after it included.
+                for inner in [
+                    start,
+                    start + 1,
+                    start + 4,
+                    start + DISPATCH_TEMPLATE_VICTIM_PROBE - 1,
+                    start + DISPATCH_TEMPLATE_VICTIM_PROBE,
+                    start + DISPATCH_TEMPLATE_VICTIM_PROBE + 1,
+                    start + DISPATCH_TEMPLATE_LEN - 1,
+                ] {
                     let delta = (inner as i64 - index as i64) * 4;
                     let encoded = ((delta >> scale) as u32) & ((1 << bits) - 1);
                     let Ok(moved) = insn.set_branch_target_imm(field, encoded) else {
@@ -2356,17 +2512,32 @@ impl Suite {
                 );
             }
 
-            // Both miss branches to another word each, or only one moved.
-            for (position, other) in [(3, 6), (6, 3)] {
-                for target in [group + 1, group + 2, word_at(8)] {
+            // Every miss branch to another word: the main probe's must name the
+            // victim probe's first word, the victim probe's the exit group (both of a
+            // pair, so moving only one disagrees).
+            for (&position, &proper) in DISPATCH_TEMPLATE_MISS_BRANCHES
+                .iter()
+                .zip(&DISPATCH_TEMPLATE_MISS_TARGETS)
+            {
+                let proper = word_at(proper);
+                for target in [
+                    group,
+                    group + 1,
+                    group + 2,
+                    word_at(DISPATCH_TEMPLATE_VICTIM_PROBE - 1),
+                    word_at(DISPATCH_TEMPLATE_VICTIM_PROBE + 1),
+                    word_at(DISPATCH_TEMPLATE_LEN - 1),
+                    start,
+                ] {
+                    if target == proper {
+                        continue;
+                    }
                     let mut words = fixture.words.clone();
-                    let insn = if position == 3 {
-                        cbz_to(word_at(3), target, 12)
-                    } else {
-                        cbnz_to(word_at(6), target, 14)
+                    let insn = match KJIT_DISPATCH_TEMPLATE[position] {
+                        A64Insn::CbzCbz64Compbranch { .. } => cbz_to(word_at(position), target, 12),
+                        _ => cbnz_to(word_at(position), target, 14),
                     };
                     words[word_at(position)] = enc(insn);
-                    let _ = other;
                     self.expect_reject(
                         "dispatch miss branches disagree (A11)",
                         fixture,
@@ -2375,6 +2546,64 @@ impl Suite {
                         &fixture.tables,
                     );
                 }
+            }
+        }
+    }
+
+    /// The template-word classes that need no per-word list: for the template at
+    /// `start`, every word replaced by a nop, the index words by an unmasked move
+    /// (bounds removed) or widened by one bit, and every single-bit flip of every word
+    /// (miss-branch offsets excepted: they are free, the targets checked by name).
+    fn generic_template_mutations(&mut self, fixture: &Fixture, start: usize) {
+        let nop = enc(A64Insn::NopNopHiHints {});
+        for (position, &insn) in KJIT_DISPATCH_TEMPLATE.iter().enumerate() {
+            let index = start + position;
+            let at = format!("template at {:#x}, word {position}", start * 4);
+            self.replace(
+                "dispatch template word altered (A11)",
+                fixture,
+                index,
+                nop,
+                &format!("nop, {at}"),
+            );
+            if let A64Insn::UbfmUbfm64mBitfield { rd, rn, .. }
+            | A64Insn::EorLogShiftEor64LogShift { rd, rn, .. } = insn
+            {
+                self.replace(
+                    "dispatch index bounds removed (A11)",
+                    fixture,
+                    index,
+                    enc(mov_reg(rd.enc(), rn.enc())),
+                    &format!("mov x{}, x{}, {at}", rd.enc(), rn.enc()),
+                );
+                if let A64Insn::UbfmUbfm64mBitfield { immr, imms, rn, rd } = insn {
+                    let widened = A64Insn::UbfmUbfm64mBitfield {
+                        immr,
+                        imms: uimm(imms.value() as u32 + 1, 6),
+                        rn,
+                        rd,
+                    };
+                    self.replace(
+                        "dispatch index bounds removed (A11)",
+                        fixture,
+                        index,
+                        enc(widened),
+                        &format!("ubfx widened by one bit, {at}"),
+                    );
+                }
+            }
+            let is_miss = DISPATCH_TEMPLATE_MISS_BRANCHES.contains(&position);
+            for bit in 0..32 {
+                if is_miss && (5..24).contains(&bit) {
+                    continue;
+                }
+                self.replace(
+                    "dispatch template word altered (A11)",
+                    fixture,
+                    index,
+                    fixture.words[index] ^ (1 << bit),
+                    &format!("bit {bit} flipped, {at}"),
+                );
             }
         }
     }

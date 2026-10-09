@@ -18,7 +18,7 @@ pub const RUNTIME_FRAME_BUDGET_OFFSET: u32 = 192;
 /// The run's dispatch table (IBTC, docs/pipeline.md "In-fragment branch dispatch
 /// (A11)"). The prologue
 /// stores `extra params[EXTRA_PARAM_IBTC_TABLE_INDEX]` here; only a dispatch
-/// template's first word reads it, and nothing in a body writes it.
+/// template's table loads (words 0 and 9) read it, and nothing in a body writes it.
 pub const RUNTIME_FRAME_IBTC_OFFSET: u32 = 200;
 
 /// Extra params block (`ABI_EXTRA_PARAMS_ARG_REG` points at it): `[0]`, `[1]` are
@@ -29,23 +29,41 @@ pub const EXTRA_PARAM_IBTC_TABLE_INDEX: usize = 2;
 pub const EXTRA_PARAM_IBTC_TABLE_OFFSET: u32 = (EXTRA_PARAM_IBTC_TABLE_INDEX * 8) as u32;
 pub const EXTRA_PARAMS_BYTES: usize = EXTRA_PARAMS_WORDS * 8;
 
-/// Dispatch tables (A11): direct-mapped, `1 << IBTC_BITS` slots of `IBTC_SLOT_BYTES`.
-/// A slot is 0 or the address of a record `{ u64 pc @IBTC_RECORD_PC_OFFSET; u64 host
-/// @IBTC_RECORD_HOST_OFFSET }` (a user PC and the absolute address of a verified
-/// entry of a live fragment translated for exactly that PC). The slot index is
-/// `pc[IBTC_INDEX_LSB + IBTC_BITS - 1 : IBTC_INDEX_LSB]` (`ibtc_slot_index`).
+/// Dispatch tables (A11, A11c): one array of `IBTC_SLOT_BYTES` slots, a direct-mapped
+/// main part of `IBTC_SLOTS` slots followed by a victim part of `IBTC_VICTIM_SLOTS`
+/// slots at byte offset `IBTC_VICTIM_OFFSET`. A slot is 0 or the address of a record
+/// `{ u64 pc @IBTC_RECORD_PC_OFFSET; u64 host @IBTC_RECORD_HOST_OFFSET }` (a user PC and
+/// the absolute address of a verified entry of a live fragment translated for exactly
+/// that PC). A pc's main slot is `pc[IBTC_INDEX_LSB + IBTC_BITS - 1 : IBTC_INDEX_LSB]`
+/// (`ibtc_slot_index`), its victim slot `((pc ^ (pc >> IBTC_VICTIM_FOLD_SHIFT)) >> 2) &
+/// 0xff` in the victim part (`ibtc_victim_index`), i.e. `pc[9:2] ^ pc[21:14]`.
 pub const IBTC_BITS: u32 = 12;
 pub const IBTC_INDEX_LSB: u32 = 2;
 pub const IBTC_SLOT_SHIFT: u32 = 3;
 pub const IBTC_SLOT_BYTES: u32 = 1 << IBTC_SLOT_SHIFT;
 pub const IBTC_SLOTS: usize = 1 << IBTC_BITS;
-pub const IBTC_TABLE_BYTES: usize = IBTC_SLOTS * IBTC_SLOT_BYTES as usize;
+pub const IBTC_VICTIM_BITS: u32 = 8;
+pub const IBTC_VICTIM_SLOTS: usize = 1 << IBTC_VICTIM_BITS;
+pub const IBTC_VICTIM_FOLD_SHIFT: u32 = 12;
+/// Byte offset of the victim part: the template adds it to the table pointer.
+pub const IBTC_VICTIM_OFFSET: usize = IBTC_SLOTS * IBTC_SLOT_BYTES as usize;
+pub const IBTC_TABLE_WORDS: usize = IBTC_SLOTS + IBTC_VICTIM_SLOTS;
+pub const IBTC_TABLE_BYTES: usize = IBTC_TABLE_WORDS * IBTC_SLOT_BYTES as usize;
 pub const IBTC_RECORD_PC_OFFSET: u32 = 0;
 pub const IBTC_RECORD_HOST_OFFSET: u32 = 8;
 pub const IBTC_RECORD_BYTES: usize = 16;
 
+/// Index of `pc`'s slot in the main part (a table word index).
 pub const fn ibtc_slot_index(pc: u64) -> usize {
     ((pc >> IBTC_INDEX_LSB) & ((1 << IBTC_BITS) - 1)) as usize
+}
+
+/// Index of `pc`'s slot in the victim part, as a table word index (it starts at
+/// `IBTC_SLOTS`).
+pub const fn ibtc_victim_index(pc: u64) -> usize {
+    IBTC_SLOTS
+        + (((pc ^ (pc >> IBTC_VICTIM_FOLD_SHIFT)) >> IBTC_INDEX_LSB) & ((1 << IBTC_VICTIM_BITS) - 1))
+            as usize
 }
 
 /// Back-edge executions a fragment may perform per entry. The prologue stores it in
@@ -74,6 +92,9 @@ const _: () = assert!(RUNTIME_FRAME_IBTC_OFFSET % 8 == 0 && RUNTIME_FRAME_IBTC_O
 const _: () = assert!(IBTC_RECORD_HOST_OFFSET as usize + 8 == IBTC_RECORD_BYTES);
 const _: () = assert!(IBTC_RECORD_PC_OFFSET == 0);
 const _: () = assert!(IBTC_SLOT_BYTES == 8);
+// The template adds the victim part's byte offset with one `add ..., #imm12, lsl #12`.
+const _: () = assert!(IBTC_VICTIM_OFFSET % 4096 == 0 && IBTC_VICTIM_OFFSET >> 12 < 4096);
+const _: () = assert!(IBTC_TABLE_BYTES == (4096 + 256) * 8);
 const REG_VIRT_STACK_BACKED_FRAME_OFFSET_START: u32 = 16;
 const REG_VIRT_STACK_BACKED_FRAME_SLOT_SIZE: u32 = 8;
 const PT_REGS_GPR_SLOT_SIZE: u32 = 8;

@@ -102,10 +102,13 @@ frame layout and statuses: [section 3](docs/pipeline.md#3-fragment-abi).
 
 `BL`, `BLR`, `BR` and `RET` do not leave the fragment on every execution.
 Each is lowered to a budget check, the target in `x13`, the link write, and a
-byte-exact 9-word template that indexes a per-mm direct-mapped table
-(`pc[13:2]`, 4096 slots of `{pc, host}`) and `br`s to the host of a matching
-record. Only a miss takes the old exit group into the runtime, which resolves
-the target and publishes its label. Fragments never write text or tables, so
+byte-exact 20-word template that probes a per-mm table (34 KiB: a
+direct-mapped main part of 4096 slots indexed by `pc[13:2]`, then a 256-slot
+victim part indexed by `pc[9:2] ^ pc[21:14]`, slots pointing at `{pc, host}`
+records) and `br`s to the host of a matching record. Only a miss in both parts
+takes the old exit group into the runtime, which resolves the target and
+publishes its label; a record that the publish evicts from the main part moves
+to its own victim slot. Fragments never write text or tables, so
 unlinking is one store by the runtime, and retired fragments are freed after a
 hook-SRCU grace period. Contract:
 [In-fragment branch dispatch](docs/pipeline.md#in-fragment-branch-dispatch-a11)

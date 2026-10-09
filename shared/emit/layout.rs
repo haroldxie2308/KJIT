@@ -1,6 +1,7 @@
 use crate::shared::abi::{
     append_epilogue, append_prologue, DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES,
-    EPILOGUE_LEN_BYTES, EPILOGUE_OFFSET, PROLOGUE_LEN_BYTES,
+    DISPATCH_TEMPLATE_MISS_TARGETS, DISPATCH_TEMPLATE_VICTIM_PROBE, EPILOGUE_LEN_BYTES,
+    EPILOGUE_OFFSET, PROLOGUE_LEN_BYTES,
 };
 use crate::shared::arm64::{A64Insn, A64OperandRole, A64RewriteError};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
@@ -226,8 +227,10 @@ pub(crate) enum BranchRelocKind {
 /// the cold region (every block's `cold` exit groups -- fault and budget stubs -- in
 /// the same order). The entry block is `program[0]` (CFG order). Each cold group
 /// ends in its runtime-exit branch, so nothing falls through into or out of the
-/// region. A dispatch template's two miss branches (A11) resolve to the word right
-/// after the template's `br`, where the site's exit group starts. A budget check's
+/// region. A dispatch template's miss branches (A11, A11c) resolve per
+/// `DISPATCH_TEMPLATE_MISS_TARGETS`: the main probe's to the victim probe's first word,
+/// the victim probe's to the word right after the template's final `br`, where the
+/// site's exit group starts. A budget check's
 /// `CBZ` and an alignment check's `CBNZ` resolve to the
 /// plain stub of their `ori_pc`; a PAN window's range-check `CBNZ` and its atomic's
 /// fault site resolve to the PAN stub (A8). A user branch that resolves backward
@@ -325,25 +328,30 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
             } else if rephrased.kind == RephrasedInsnKind::DispatchLookup {
                 let start = *dispatch_start.get_or_insert(insn_index);
                 let position = insn_index - start;
-                let is_miss = DISPATCH_TEMPLATE_MISS_BRANCHES.contains(&position);
+                let miss = DISPATCH_TEMPLATE_MISS_BRANCHES
+                    .iter()
+                    .position(|&branch| branch == position);
                 let is_last = position + 1 == DISPATCH_TEMPLATE_LEN;
+                let is_br = is_last || position + 1 == DISPATCH_TEMPLATE_VICTIM_PROBE;
                 let well_formed = position < DISPATCH_TEMPLATE_LEN
-                    && is_miss
+                    && miss.is_some()
                         == matches!(
                             rephrased.insn,
                             A64Insn::CbzCbz64Compbranch { .. }
                                 | A64Insn::CbnzCbnz64Compbranch { .. }
                         )
-                    && is_last == matches!(rephrased.insn, A64Insn::BrBr64BranchReg { .. });
+                    && is_br == matches!(rephrased.insn, A64Insn::BrBr64BranchReg { .. });
                 if !well_formed {
                     return Err(LayoutError::MalformedDispatchTemplate { insn_index });
                 }
-                if is_miss {
-                    // The exit group starts right after the template's `br`.
+                if let Some(miss) = miss {
+                    // The main probe's misses go to the victim probe's first word, the
+                    // victim probe's to the exit group, which starts right after the
+                    // template's final `br`.
                     dispatch_misses.push(
                         (
                             insn_index,
-                            start + DISPATCH_TEMPLATE_LEN,
+                            start + DISPATCH_TEMPLATE_MISS_TARGETS[miss],
                             rephrased.ori_pc,
                         ),
                         GFP_KERNEL,
@@ -717,12 +725,12 @@ mod tests {
         PROLOGUE_LEN_BYTES + EPILOGUE_LEN_BYTES
     }
 
-    /// A11: both miss branches of a dispatch template resolve to the word right
-    /// after its `br` (the site's exit group); a template that is cut short, or whose
-    /// `br` nothing follows, is a layout error.
+    /// A11, A11c: the main probe's miss branches resolve to the victim probe's first
+    /// word, the victim probe's to the word right after the final `br` (the site's exit
+    /// group); a template that is cut short (also right after the main probe), or whose
+    /// final `br` nothing follows, is a layout error.
     #[test]
-    fn dispatch_template_miss_branches_resolve_to_the_exit_group() {
-        use crate::shared::abi::{DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES};
+    fn dispatch_template_miss_branches_resolve_to_the_next_probe_or_the_exit_group() {
         use crate::shared::abi::KJIT_DISPATCH_TEMPLATE;
 
         let template = |count: usize, followed: bool| {
@@ -743,12 +751,15 @@ mod tests {
         let layout = layout_program(one_block(template(DISPATCH_TEMPLATE_LEN, true))).unwrap();
         let start = body_start_offset() / 4;
         let exit_group = start + DISPATCH_TEMPLATE_LEN;
-        for position in DISPATCH_TEMPLATE_MISS_BRANCHES {
+        for (position, target) in DISPATCH_TEMPLATE_MISS_BRANCHES
+            .into_iter()
+            .zip(DISPATCH_TEMPLATE_MISS_TARGETS)
+        {
             assert_eq!(
                 layout.insns[start + position]
                     .conditional_targets(((start + position) * 4) as u64)
                     .map(|(taken, _)| taken),
-                Some((exit_group * 4) as u64),
+                Some(((start + target) * 4) as u64),
                 "miss branch {position}"
             );
         }
@@ -758,7 +769,7 @@ mod tests {
             A64Insn::BrBr64BranchReg { .. }
         ));
 
-        for count in [DISPATCH_TEMPLATE_LEN - 1, 3] {
+        for count in [DISPATCH_TEMPLATE_LEN - 1, DISPATCH_TEMPLATE_VICTIM_PROBE, 3] {
             assert!(matches!(
                 layout_program(one_block(template(count, true))),
                 Err(LayoutError::MalformedDispatchTemplate { .. })

@@ -41,8 +41,11 @@ phase() {
     report "$name" "$work/$name.before" "$work/$name.after"
     hot_check "$name" "$work/$name.before"
     # A11: a hot server resolves its branch targets into the dispatch tables.
+    # Checked on the first phase only: with the victim part (A11c) the main-slot
+    # aliasing that used to keep publishing is gone, so once the first phase has
+    # published the server's targets a later phase may publish nothing.
     inserts=$(( $(stat_of "$work/$name.after.stats" ibtc_insert) - $(stat_of "$work/$name.before.stats" ibtc_insert) ))
-    if [ "$K4_REQUIRE_HOT" = 1 ] && [ "$inserts" -le 0 ]; then
+    if [ "$K4_REQUIRE_HOT" = 1 ] && [ "$name" = default ] && [ "$inserts" -le 0 ]; then
         k4_fail "benchmark $name: nothing published in the dispatch tables (ibtc_insert +0)"
     fi
 }

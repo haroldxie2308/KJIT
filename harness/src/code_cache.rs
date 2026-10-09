@@ -5,11 +5,14 @@
 //! - Fragments by entry pc (`by_entry`), each with its labels as records
 //!   `{ u64 pc; u64 host }` (`IBTC_RECORD_*`): the verified entries of the fragment,
 //!   `host` = the absolute address of the label's word in the code space.
-//! - Two direct-mapped dispatch tables, `table_all` and `table_nofp` (`IBTC_BITS`,
-//!   slot = `ibtc_slot_index(pc)`). A slot is 0 or a record address. `table_nofp`
+//! - Two dispatch tables, `table_all` and `table_nofp` (`IBTC_TABLE_WORDS` slots each:
+//!   the main part, slot `ibtc_slot_index(pc)`, then the victim part, slot
+//!   `ibtc_victim_index(pc)`; A11c). A slot is 0 or a record address. `table_nofp`
 //!   never holds a record of a `uses_fpsimd` fragment (`check_invariants`).
-//! - Insert on resolution (`publish`), replacing a live slot allowed (last writer
-//!   wins); `retire` clears the fragment's slots and its entry.
+//! - Insert on resolution (`publish`; the stores are `ibtc_plan_publish`, the function
+//!   the kernel runtime executes: an evicted main-slot record moves to its victim
+//!   slot first); `retire` clears the fragment's main and victim slots that still
+//!   hold its records, and its entry.
 //! - The runtime decision for a fragment return (`decide`): continue at the
 //!   resolved fragment's label, translate on a miss (the harness translates a
 //!   branch exit's target at once, where the kernel's profiler learns it after a
@@ -26,8 +29,9 @@ use std::collections::BTreeMap;
 use crate::model::PAGE_SIZE;
 use crate::runtime::URuntimeHalt;
 use crate::shared::abi::{
-    ibtc_slot_index, RetStatus, IBTC_RECORD_BYTES, IBTC_RECORD_HOST_OFFSET, IBTC_RECORD_PC_OFFSET,
-    IBTC_SLOTS, IBTC_SLOT_BYTES, IBTC_TABLE_BYTES,
+    ibtc_lookup_slots, ibtc_plan_publish, IbtcSource, RetStatus, IBTC_RECORD_BYTES,
+    IBTC_RECORD_HOST_OFFSET, IBTC_RECORD_PC_OFFSET, IBTC_SLOT_BYTES, IBTC_TABLE_BYTES,
+    IBTC_TABLE_WORDS,
 };
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::trans::cfg::CfgError;
@@ -157,8 +161,8 @@ impl CodeCache {
             loader,
             fragments: Vec::new(),
             by_entry: BTreeMap::new(),
-            slots_all: vec![0; IBTC_SLOTS],
-            slots_nofp: vec![0; IBTC_SLOTS],
+            slots_all: vec![0; IBTC_TABLE_WORDS],
+            slots_nofp: vec![0; IBTC_TABLE_WORDS],
             record_owner: Vec::new(),
             writes: Vec::new(),
             chain_budget: None,
@@ -297,13 +301,39 @@ impl CodeCache {
         let label = *frag
             .label_for_pc(pc)
             .ok_or_else(|| format!("fragment {fragment} has no label for pc {pc:#x}"))?;
-        let slot = ibtc_slot_index(pc);
         let uses_fpsimd = frag.uses_fpsimd;
-        self.set_slot(true, slot, label.record);
+        self.publish_into(true, label.record, pc);
         if !uses_fpsimd {
-            self.set_slot(false, slot, label.record);
+            self.publish_into(false, label.record, pc);
         }
         Ok(())
+    }
+
+    /// The pc of the record `record` (0: no record).
+    fn record_pc(&self, record: u64) -> Option<u64> {
+        if record == 0 {
+            return None;
+        }
+        let number = ((record - self.layout.records) / IBTC_RECORD_BYTES as u64) as usize;
+        let (fragment, label) = self.record_owner[number];
+        Some(self.fragments[fragment].labels[label].pc)
+    }
+
+    /// Applies the shared publish plan (`ibtc_plan_publish`) for `pc` to `table_all`
+    /// (`all`) or `table_nofp`, store by store in the planned order.
+    fn publish_into(&mut self, all: bool, new_record: u64, pc: u64) {
+        let plan = {
+            let slots = if all { &self.slots_all } else { &self.slots_nofp };
+            ibtc_plan_publish(pc, &|slot| self.record_pc(slots[slot]))
+        };
+        for store in plan.stores() {
+            let slots = if all { &self.slots_all } else { &self.slots_nofp };
+            let value = match store.src {
+                IbtcSource::New => new_record,
+                IbtcSource::Slot(slot) => slots[slot],
+            };
+            self.set_slot(all, store.dst, value);
+        }
     }
 
     fn set_slot(&mut self, all: bool, slot: usize, record: u64) {
@@ -335,26 +365,27 @@ impl CodeCache {
             self.by_entry.remove(&frag.entry_pc);
         }
         for label in frag.labels.clone() {
-            let slot = ibtc_slot_index(label.pc);
-            for all in [true, false] {
-                let (slots, table) = if all {
-                    (&mut self.slots_all, self.layout.table_all)
-                } else {
-                    (&mut self.slots_nofp, self.layout.table_nofp)
-                };
-                if slots[slot] == label.record {
-                    slots[slot] = 0;
-                    self.stats.ibtc_clear += 1;
-                    self.writes
-                        .push((table + slot as u64 * u64::from(IBTC_SLOT_BYTES), 0));
+            for slot in ibtc_lookup_slots(label.pc) {
+                for all in [true, false] {
+                    let (slots, table) = if all {
+                        (&mut self.slots_all, self.layout.table_all)
+                    } else {
+                        (&mut self.slots_nofp, self.layout.table_nofp)
+                    };
+                    if slots[slot] == label.record {
+                        slots[slot] = 0;
+                        self.stats.ibtc_clear += 1;
+                        self.writes
+                            .push((table + slot as u64 * u64::from(IBTC_SLOT_BYTES), 0));
+                    }
                 }
             }
         }
     }
 
-    /// The kernel's table invariant: every non-zero slot points at a label of a
-    /// non-retired fragment, for exactly the slot's pc index, and `table_nofp`
-    /// never points into an FP/SIMD fragment.
+    /// The kernel's table invariant: every non-zero slot (main or victim part) points
+    /// at a label of a non-retired fragment, at that label's pc's main or victim
+    /// index, and `table_nofp` never points into an FP/SIMD fragment.
     pub fn check_invariants(&self) -> Result<(), String> {
         for (name, slots, nofp) in [
             ("table_all", &self.slots_all, false),
@@ -375,7 +406,7 @@ impl CodeCache {
                 if frag.retired {
                     return Err(format!("{name}[{slot}] points into retired fragment {fragment}"));
                 }
-                if ibtc_slot_index(label.pc) != slot {
+                if !ibtc_lookup_slots(label.pc).contains(&slot) {
                     return Err(format!(
                         "{name}[{slot}] holds the record of pc {:#x}, which hashes elsewhere",
                         label.pc
@@ -392,17 +423,24 @@ impl CodeCache {
         Ok(())
     }
 
-    /// The label a table slot of `pc` points at, as (fragment, label pc): `table_all`
-    /// when `all`, else `table_nofp`.
-    pub fn slot_target(&self, all: bool, pc: u64) -> Option<(usize, u64)> {
+    /// What the dispatch template finds for `pc` in `table_all` (`all`) or `table_nofp`:
+    /// the fragment of the main slot's record if it is `pc`'s, else of the victim
+    /// slot's if it is, else `None` (a miss).
+    pub fn lookup(&self, all: bool, pc: u64) -> Option<usize> {
         let slots = if all { &self.slots_all } else { &self.slots_nofp };
-        let record = slots[ibtc_slot_index(pc)];
-        if record == 0 {
-            return None;
-        }
-        let number = ((record - self.layout.records) / IBTC_RECORD_BYTES as u64) as usize;
-        let (fragment, label) = self.record_owner[number];
-        Some((fragment, self.fragments[fragment].labels[label].pc))
+        ibtc_lookup_slots(pc).into_iter().find_map(|slot| {
+            let record = slots[slot];
+            (self.record_pc(record) == Some(pc)).then(|| {
+                let number = ((record - self.layout.records) / IBTC_RECORD_BYTES as u64) as usize;
+                self.record_owner[number].0
+            })
+        })
+    }
+
+    /// The pc of the record in table word `slot` of `table_all` / `table_nofp`.
+    pub fn resident_pc(&self, all: bool, slot: usize) -> Option<u64> {
+        let slots = if all { &self.slots_all } else { &self.slots_nofp };
+        self.record_pc(slots[slot])
     }
 
     /// The queued memory writes, oldest first.
@@ -550,6 +588,7 @@ pub fn synthetic_loader(first: u64) -> FragmentLoader {
 mod tests {
     use super::*;
     use crate::runtime::DEFAULT_CACHE_LAYOUT;
+    use crate::shared::abi::{ibtc_slot_index, ibtc_victim_index};
     use crate::shared::arm64::ergo::{mem_off, scaled_uimm, sp, x};
     use crate::shared::arm64::A64Insn;
 
@@ -564,7 +603,7 @@ mod tests {
     }
 
     /// `[ret]` at 0x1000, `[ldr q0, [sp]; ret]` at 0x2000 (FP/SIMD), `[ret]` at 0x5000:
-    /// 0x1000 and 0x5000 are 0x4000 apart, so they share a table slot.
+    /// 0x1000 and 0x5000 are 0x4000 apart, so they share their main slot.
     fn cache() -> CodeCache {
         let mut text = vec![0u8; 0x4004];
         text[0..4].copy_from_slice(&word(ret()));
@@ -582,33 +621,75 @@ mod tests {
     }
 
     #[test]
-    fn aliasing_publishes_replace_and_retire_clears_only_the_live_records() {
+    fn aliasing_publishes_move_the_old_record_to_the_victim_part_and_retire_clears_both() {
         let mut cache = cache();
         let a = cache.translate(0x1000, 0).unwrap().unwrap();
         let b = cache.translate(0x5000, 0).unwrap().unwrap();
         assert_eq!(ibtc_slot_index(0x1000), ibtc_slot_index(0x5000));
+        assert_ne!(ibtc_victim_index(0x1000), ibtc_victim_index(0x5000));
 
         cache.publish(a, 0x1000).unwrap();
-        assert_eq!(cache.slot_target(false, 0x1000), Some((a, 0x1000)));
+        assert_eq!(cache.lookup(false, 0x1000), Some(a));
+        assert_eq!(cache.resident_pc(false, ibtc_slot_index(0x1000)), Some(0x1000));
         cache.publish(b, 0x5000).unwrap();
-        // Last writer wins, in both tables; one replace per table.
-        assert_eq!(cache.slot_target(true, 0x1000), Some((b, 0x5000)));
-        assert_eq!(cache.slot_target(false, 0x1000), Some((b, 0x5000)));
+        // b takes the main slot, a moves to its victim slot, in both tables; the main
+        // store replaced a's record, the victim store filled an empty slot.
+        for all in [true, false] {
+            assert_eq!(cache.lookup(all, 0x5000), Some(b));
+            assert_eq!(cache.lookup(all, 0x1000), Some(a));
+            assert_eq!(cache.resident_pc(all, ibtc_slot_index(0x5000)), Some(0x5000));
+            assert_eq!(cache.resident_pc(all, ibtc_victim_index(0x1000)), Some(0x1000));
+        }
         assert_eq!(cache.stats.ibtc_replace, 2);
+        assert_eq!(cache.stats.ibtc_insert, 2 + 2 + 2, "a: 2, b: 2 per table");
         cache.check_invariants().unwrap();
+        // Publishing a pc that is resident (in either part) stores nothing.
+        cache.drain_writes();
+        cache.publish(a, 0x1000).unwrap();
+        cache.publish(b, 0x5000).unwrap();
+        assert_eq!(cache.drain_writes(), [], "nothing is stored for a resident pc");
 
-        // `a`'s record is no longer in a slot: retiring `a` clears nothing.
+        // Retiring `a` clears its victim records (one per table); `b` stays.
         cache.retire(a);
-        assert_eq!(cache.stats.ibtc_clear, 0);
-        assert_eq!(cache.slot_target(true, 0x5000), Some((b, 0x5000)));
+        assert_eq!(cache.stats.ibtc_clear, 2);
+        assert_eq!(cache.lookup(true, 0x1000), None);
+        assert_eq!(cache.lookup(true, 0x5000), Some(b));
         assert_eq!(cache.fragment_for_entry(0x1000), None);
         cache.retire(b);
-        assert_eq!(cache.stats.ibtc_clear, 2);
-        assert_eq!(cache.slot_target(true, 0x5000), None);
-        assert_eq!(cache.slot_target(false, 0x5000), None);
+        assert_eq!(cache.stats.ibtc_clear, 4);
+        assert_eq!(cache.lookup(true, 0x5000), None);
+        assert_eq!(cache.lookup(false, 0x5000), None);
         cache.check_invariants().unwrap();
         // A retired fragment is never published again.
         assert!(cache.publish(a, 0x1000).is_err());
+    }
+
+    /// The stores of a conflicting publish reach the backend victim-first.
+    #[test]
+    fn a_conflicting_publish_queues_the_victim_store_before_the_main_store() {
+        let mut cache = cache();
+        let a = cache.translate(0x1000, 0).unwrap().unwrap();
+        let b = cache.translate(0x5000, 0).unwrap().unwrap();
+        cache.publish(a, 0x1000).unwrap();
+        cache.drain_writes();
+        cache.publish(b, 0x5000).unwrap();
+        let writes = cache.drain_writes();
+        let table = DEFAULT_CACHE_LAYOUT.table_all;
+        let slot = |index: usize| table + (index as u64) * 8;
+        let a_record = cache.fragments[a].label_for_pc(0x1000).unwrap().record;
+        let b_record = cache.fragments[b].label_for_pc(0x5000).unwrap().record;
+        let all = writes
+            .iter()
+            .copied()
+            .filter(|&(addr, _)| addr >= table && addr < table + crate::shared::abi::IBTC_TABLE_BYTES as u64)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            all,
+            [
+                (slot(ibtc_victim_index(0x1000)), a_record),
+                (slot(ibtc_slot_index(0x5000)), b_record),
+            ]
+        );
     }
 
     #[test]
@@ -617,8 +698,8 @@ mod tests {
         let fp = cache.translate(0x2000, 0).unwrap().unwrap();
         assert!(cache.fragments[fp].uses_fpsimd);
         cache.publish(fp, 0x2000).unwrap();
-        assert_eq!(cache.slot_target(true, 0x2000), Some((fp, 0x2000)));
-        assert_eq!(cache.slot_target(false, 0x2000), None);
+        assert_eq!(cache.lookup(true, 0x2000), Some(fp));
+        assert_eq!(cache.lookup(false, 0x2000), None);
         cache.check_invariants().unwrap();
     }
 
@@ -639,12 +720,25 @@ mod tests {
         let err = cache.check_invariants().unwrap_err();
         assert!(err.contains("FP/SIMD"), "{err}");
         cache.slots_nofp[slot] = 0;
-
-        // A record under a slot its pc does not hash to.
-        cache.slots_all[slot + 1] = fp_record;
+        // ... in the victim part too.
+        cache.slots_nofp[ibtc_victim_index(0x2000)] = fp_record;
         let err = cache.check_invariants().unwrap_err();
-        assert!(err.contains("hashes elsewhere"), "{err}");
-        cache.slots_all[slot + 1] = 0;
+        assert!(err.contains("FP/SIMD"), "{err}");
+        cache.slots_nofp[ibtc_victim_index(0x2000)] = 0;
+
+        // A record under a slot its pc is not looked up in: next to its main slot, and
+        // next to its victim slot.
+        for elsewhere in [slot + 1, ibtc_victim_index(0x2000) + 1] {
+            cache.slots_all[elsewhere] = fp_record;
+            let err = cache.check_invariants().unwrap_err();
+            assert!(err.contains("hashes elsewhere"), "{err}");
+            cache.slots_all[elsewhere] = 0;
+        }
+        // A record in either of its slots is fine (a published record may be in the
+        // victim part).
+        cache.slots_all[ibtc_victim_index(0x2000)] = fp_record;
+        cache.check_invariants().unwrap();
+        cache.slots_all[ibtc_victim_index(0x2000)] = 0;
 
         // A slot into a retired fragment.
         cache.retire(plain);
@@ -661,7 +755,7 @@ mod tests {
         let action = cache.decide(false, RetStatus::Bl.as_reg(), 0x1000, 0x2004).unwrap();
         assert!(matches!(action, CacheAction::ContinueAt { .. }), "{action:?}");
         assert_eq!(cache.stats.translations, 1);
-        assert!(cache.slot_target(false, 0x1000).is_some());
+        assert!(cache.lookup(false, 0x1000).is_some());
         // The same target again resolves without translating.
         cache.decide(false, RetStatus::Ret.as_reg(), 0x1000, 0x3004).unwrap();
         assert_eq!(cache.stats.translations, 1);
