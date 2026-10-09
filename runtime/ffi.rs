@@ -7,16 +7,26 @@ use kernel::ffi::c_int;
 
 use crate::shared::abi::{
     IBTC_BITS, IBTC_INDEX_LSB, IBTC_RECORD_BYTES, IBTC_RECORD_HOST_OFFSET, IBTC_RECORD_PC_OFFSET,
-    IBTC_SLOT_BYTES,
+    IBTC_SLOT_BYTES, IBTC_SLOTS, IBTC_TABLE_BYTES, IBTC_TABLE_WORDS, IBTC_VICTIM_BITS,
+    IBTC_VICTIM_OFFSET, IBTC_VICTIM_SLOTS,
 };
 
 // kjit_glue.c mirrors the dispatch-table layout the template reads
-// (`KJIT_IBTC_BITS`, `kjit_ibtc_index`, `struct kjit_label`, 8-byte slots); it
-// cannot include the Rust constants, so a change here must change it too.
+// (`KJIT_IBTC_BITS`, `KJIT_IBTC_VICTIM_BITS`, `KJIT_IBTC_TABLE_SLOTS` for the
+// allocation, `struct kjit_label`, 8-byte slots); it cannot include the Rust
+// constants, so a change here must change it too. Which slots a pc lives in and
+// which stores publish a record reach the C side through `kjit_rs_ibtc_*`
+// (runtime/ibtc.rs), not through mirrored constants.
 const _: () = assert!(
     IBTC_BITS == 12
+        && IBTC_VICTIM_BITS == 8
         && IBTC_INDEX_LSB == 2
         && IBTC_SLOT_BYTES == 8
+        && IBTC_SLOTS == 4096
+        && IBTC_VICTIM_SLOTS == 256
+        && IBTC_TABLE_WORDS == (1 << 12) + (1 << 8)
+        && IBTC_TABLE_BYTES == (4096 + 256) * 8
+        && IBTC_VICTIM_OFFSET == 4096 * 8
         && IBTC_RECORD_PC_OFFSET == 0
         && IBTC_RECORD_HOST_OFFSET == 8
         && IBTC_RECORD_BYTES == 16

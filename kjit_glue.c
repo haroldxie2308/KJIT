@@ -119,6 +119,19 @@ size_t kjit_rs_stats_show(char *buf, size_t len);
 size_t kjit_rs_unsupported_show(char *buf, size_t len);
 size_t kjit_rs_ibtc_slots_show(char *buf, size_t len);
 void kjit_rs_ibtc_slots_reset(void);
+
+/*
+ * Dispatch-table slot planning (shared/abi dispatch.rs, reached through
+ * runtime/ibtc.rs): the slots a pc may sit in (main, then victim) and the
+ * stores that publish a record. struct kjit_ibtc_store mirrors IbtcStoreC.
+ */
+struct kjit_ibtc_store {
+	u32 dst;	/* table word to store into */
+	u32 src;	/* KJIT_IBTC_SRC_NEW, or the table word whose record moves */
+};
+#define KJIT_IBTC_SRC_NEW U32_MAX
+u32 kjit_rs_ibtc_plan_publish(const u64 *table, u64 pc, struct kjit_ibtc_store *out);
+void kjit_rs_ibtc_lookup_slots(u64 pc, u32 *out);
 void kjit_rs_note_entry_stop(u32 word);
 
 /* Counters this file bumps: runtime/stats.rs, enum Note (same values). */
@@ -211,18 +224,16 @@ static_assert(offsetof(struct kjit_label, pc) == 0);
 static_assert(offsetof(struct kjit_label, host) == 8);
 
 /*
- * Dispatch tables (IBTC): per kjit_mm, direct mapped, 2^KJIT_IBTC_BITS slots
- * indexed by pc[13:2]; a slot is 0 or a record of a live fragment of that mm.
- * Same constants as the dispatch template (shared/abi), pinned by an assertion
- * in runtime/ffi.rs.
+ * Dispatch tables (IBTC): per kjit_mm one array of 8-byte slots, a
+ * direct-mapped main part of 2^KJIT_IBTC_BITS slots followed by a victim part
+ * of 2^KJIT_IBTC_VICTIM_BITS slots; a slot is 0 or a record of a live fragment
+ * of that mm. Which slots a pc may sit in and which stores publish a record
+ * are the shared planning's (kjit_rs_ibtc_*). Same constants as the dispatch
+ * template (shared/abi), pinned by an assertion in runtime/ffi.rs.
  */
 #define KJIT_IBTC_BITS 12
-#define KJIT_IBTC_SLOTS (1U << KJIT_IBTC_BITS)
-
-static inline u32 kjit_ibtc_index(u64 pc)
-{
-	return (pc >> 2) & (KJIT_IBTC_SLOTS - 1);
-}
+#define KJIT_IBTC_VICTIM_BITS 8
+#define KJIT_IBTC_TABLE_SLOTS ((1U << KJIT_IBTC_BITS) + (1U << KJIT_IBTC_VICTIM_BITS))
 
 struct kjit_frag {
 	struct hlist_node table_node;	/* kjit_mm.table, under kjit_mm.lock */
@@ -296,9 +307,10 @@ struct kjit_mm {
 	 * together at the first install and never replaced, so they are valid
 	 * for every fragment of this kjit_mm. Slots are written under @lock
 	 * (smp_store_release / WRITE_ONCE); fragment code reads them without
-	 * it. Invariant: a non-zero slot points at a label of a non-retired
-	 * fragment of this kjit_mm, and a table_nofp slot only at a fragment
-	 * with !uses_fpsimd.
+	 * it. Invariant: a non-zero slot (main or victim part) points at a label
+	 * of a non-retired fragment of this kjit_mm, stored at that label's pc's
+	 * main or victim index, and a table_nofp slot only at a fragment with
+	 * !uses_fpsimd.
 	 */
 	struct kjit_label **table_all;
 	struct kjit_label **table_nofp;
@@ -465,15 +477,19 @@ static void kjit_frag_retire_locked(struct kjit_mm *kmm, struct kjit_frag *f)
 	f->retired = true;
 	for (i = 0; i < f->n_labels; i++) {
 		struct kjit_label *label = &f->labels[i];
-		u32 idx = kjit_ibtc_index(label->pc);
+		u32 slots[2], j;
 
-		if (kmm->table_all[idx] == label) {
-			WRITE_ONCE(kmm->table_all[idx], NULL);
-			cleared++;
-		}
-		if (kmm->table_nofp[idx] == label) {
-			WRITE_ONCE(kmm->table_nofp[idx], NULL);
-			cleared++;
+		/* The label's main and victim slot, where they still point at it. */
+		kjit_rs_ibtc_lookup_slots(label->pc, slots);
+		for (j = 0; j < 2; j++) {
+			if (kmm->table_all[slots[j]] == label) {
+				WRITE_ONCE(kmm->table_all[slots[j]], NULL);
+				cleared++;
+			}
+			if (kmm->table_nofp[slots[j]] == label) {
+				WRITE_ONCE(kmm->table_nofp[slots[j]], NULL);
+				cleared++;
+			}
 		}
 	}
 	if (cleared)
@@ -523,61 +539,77 @@ static struct kjit_label *kjit_frag_find_label(struct kjit_frag *f, u64 pc)
 	return NULL;
 }
 
-/* Stores @label into @table's slot @idx under kmm->lock; counts insert and replace. */
-static void kjit_ibtc_store_locked(struct kjit_label **table, u32 idx, struct kjit_label *label)
+/*
+ * Publishes @label into @table under kmm->lock with the shared plan
+ * (kjit_rs_ibtc_plan_publish): up to two slot stores, performed in the planned
+ * order. A conflicting publish first stores the record that is in the main
+ * slot into its own victim slot, then @label into the main slot, so every slot
+ * always holds 0 or a live record and a concurrent probe of the moved record's
+ * pc finds it in one of the two. Counts insert (a slot store) and replace (a
+ * store over another record).
+ */
+static void kjit_ibtc_store_locked(struct kjit_label **table, struct kjit_label *label)
 {
-	struct kjit_label *old = table[idx];
+	struct kjit_ibtc_store stores[2];
+	u32 n = kjit_rs_ibtc_plan_publish((const u64 *)table, label->pc, stores);
+	u32 i;
 
 	/*
-	 * Any live record for the same pc is equivalent: every fragment's label
-	 * for a pc enters a translation of the same text, and a retired one is
-	 * no longer in a slot. Replacing it would only make two fragments sharing
-	 * a pc take turns in the slot, one lock round trip per resolution.
+	 * An empty plan: any live record for the same pc, in its main or victim
+	 * slot, is equivalent (every fragment's label for a pc enters a
+	 * translation of the same text, and a retired one is no longer in a
+	 * slot). Replacing it would only make two fragments sharing a pc take
+	 * turns in the slot, one lock round trip per resolution.
 	 */
-	if (old && old->pc == label->pc)
-		return;
-	/*
-	 * Fragment code reads slot -> record -> fields through address
-	 * dependencies, no barrier of its own; the release orders the store after
-	 * everything that made the record valid.
-	 */
-	smp_store_release(&table[idx], label);
-	kjit_rs_note(KJIT_NOTE_IBTC_INSERT, 1);
-	if (old)
-		kjit_rs_note(KJIT_NOTE_IBTC_REPLACE, 1);
+	for (i = 0; i < n; i++) {
+		struct kjit_label *old = table[stores[i].dst];
+		struct kjit_label *value = stores[i].src == KJIT_IBTC_SRC_NEW ?
+					   label : table[stores[i].src];
+
+		/*
+		 * Fragment code reads slot -> record -> fields through address
+		 * dependencies, no barrier of its own; the release orders the
+		 * store after everything that made the record valid.
+		 */
+		smp_store_release(&table[stores[i].dst], value);
+		kjit_rs_note(KJIT_NOTE_IBTC_INSERT, 1);
+		if (old)
+			kjit_rs_note(KJIT_NOTE_IBTC_REPLACE, 1);
+	}
 }
 
 /*
  * A branch exit's target resolved to @label of @f: publishes it in the
  * dispatch tables it belongs to (always table_all, table_nofp unless @f uses
  * FP/SIMD), so the next transfer to its pc from a run of that class hits
- * inside fragment code. Direct mapped: a record for another pc is replaced,
- * one for the same pc kept. Nothing is published for a retired fragment.
+ * inside fragment code. A record for another pc in the main slot moves to its
+ * victim slot, one for the same pc (main or victim slot) is kept. Nothing is
+ * published for a retired fragment.
  *
  * Must run in the hook call that found @f (it keeps @f allocated).
  */
 static void kjit_ibtc_publish(struct kjit_frag *f, struct kjit_label *label)
 {
 	struct kjit_mm *kmm = f->kmm;
-	u32 idx = kjit_ibtc_index(label->pc);
-	struct kjit_label *all = READ_ONCE(kmm->table_all[idx]);
-	struct kjit_label *nofp = READ_ONCE(kmm->table_nofp[idx]);
+	struct kjit_ibtc_store scratch[2];
 
 	/*
-	 * Each table it belongs in already has a record for this pc (see
-	 * kjit_ibtc_store_locked()): nothing to store, so no lock. Dereferencing
-	 * a slot's record is safe here: it is retired at the earliest now, and
-	 * freed only after this hook call. A retire racing with this clears the
-	 * slot under the lock; seeing it set here changes no state.
+	 * Each table it belongs in already has a record for this pc (an empty
+	 * plan, see kjit_ibtc_store_locked()): nothing to store, so no lock.
+	 * Dereferencing a slot's record is safe here: it is retired at the
+	 * earliest now, and freed only after this hook call. A retire racing with
+	 * this clears the slot under the lock; seeing it set here changes no
+	 * state.
 	 */
-	if (all && all->pc == label->pc &&
-	    (f->uses_fpsimd || (nofp && nofp->pc == label->pc)))
+	if (!kjit_rs_ibtc_plan_publish((const u64 *)kmm->table_all, label->pc, scratch) &&
+	    (f->uses_fpsimd ||
+	     !kjit_rs_ibtc_plan_publish((const u64 *)kmm->table_nofp, label->pc, scratch)))
 		return;
 	spin_lock(&kmm->lock);
 	if (!f->retired) {
-		kjit_ibtc_store_locked(kmm->table_all, idx, label);
+		kjit_ibtc_store_locked(kmm->table_all, label);
 		if (!f->uses_fpsimd)
-			kjit_ibtc_store_locked(kmm->table_nofp, idx, label);
+			kjit_ibtc_store_locked(kmm->table_nofp, label);
 	}
 	spin_unlock(&kmm->lock);
 }
@@ -912,8 +944,8 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	 * loser of a race frees its copy below.
 	 */
 	if (!READ_ONCE(kmm->table_all)) {
-		new_all = kvzalloc(KJIT_IBTC_SLOTS * sizeof(*new_all), GFP_KERNEL);
-		new_nofp = kvzalloc(KJIT_IBTC_SLOTS * sizeof(*new_nofp), GFP_KERNEL);
+		new_all = kvzalloc(KJIT_IBTC_TABLE_SLOTS * sizeof(*new_all), GFP_KERNEL);
+		new_nofp = kvzalloc(KJIT_IBTC_TABLE_SLOTS * sizeof(*new_nofp), GFP_KERNEL);
 		if (!new_all || !new_nofp) {
 			ret = -ENOMEM;
 			goto out_tables;

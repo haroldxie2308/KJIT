@@ -117,7 +117,8 @@ while [ "$i" -le "$iterations" ]; do
 
     onoff tight_loop budget 0 "$T/tight_loop" 2000
     # A11: bl/ret hit the dispatch tables, so the 5000 calls end in a Budget
-    # exit; alias_loop's transfers always miss and chain through the runtime.
+    # exit; alias_loop's three callees share a main and a victim slot, so its
+    # transfers always miss and chain through the runtime.
     onoff call_loop dispatch 0 "$T/call_loop" 2000 5000
     before=$(stat ibtc_replace)
     onoff alias_loop alias 0 "$T/alias_loop" 2000 5000

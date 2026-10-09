@@ -67,8 +67,8 @@ use crate::runtime::{
     PT_REGS_SP_OFFSET,
 };
 use crate::shared::abi::{
-    pt_regs_x_slot_offset, EXTRA_PARAMS_WORDS, EXTRA_PARAM_IBTC_TABLE_INDEX, IBTC_SLOTS,
-    IBTC_TABLE_BYTES,
+    pt_regs_x_slot_offset, EXTRA_PARAMS_WORDS, EXTRA_PARAM_IBTC_TABLE_INDEX, IBTC_TABLE_BYTES,
+    IBTC_TABLE_WORDS,
 };
 use crate::shared::arm64::{decode_word, A64Insn, A64OperandRole};
 use crate::shared::emit::layout::ExecutionFragment;
@@ -1717,7 +1717,7 @@ pub fn run_fragment(
     let mut pt_regs = initial_pt_regs(initial);
     // The run's dispatch table: empty, so every branch exit misses and takes the
     // runtime path (the single-fragment run never publishes).
-    let empty_table = vec![0u64; IBTC_SLOTS];
+    let empty_table = vec![0u64; IBTC_TABLE_WORDS];
     let mut extra_params = [0u64; EXTRA_PARAMS_WORDS];
     extra_params[EXTRA_PARAM_IBTC_TABLE_INDEX] = empty_table.as_ptr() as u64;
     let mut nzcv = flags_to_nzcv(initial.flags);

@@ -1,12 +1,13 @@
 use super::rules::{self, BUDGET_SCRATCH_REG, BUDGET_SLOT_OFFSET};
 use super::*;
 use crate::shared::abi::{
-    KJIT_DISPATCH_TEMPLATE, RUNTIME_FRAME_IBTC_OFFSET, RUNTIME_FRAME_PT_REGS_PTR_OFFSET,
+    DISPATCH_KEY_REG, KJIT_DISPATCH_TEMPLATE, RUNTIME_FRAME_IBTC_OFFSET,
+    RUNTIME_FRAME_PT_REGS_PTR_OFFSET,
 };
 use crate::shared::arm64::ergo::{
     ldst64_offset, ldstpair64_offset, mem_off, mem_pre, scaled_simm, simm, sp, uimm, x,
 };
-use crate::shared::arm64::{A64Insn, A64OperandRole};
+use crate::shared::arm64::{A64Insn, A64OperandRole, A64Reg};
 
 use alloc::vec::Vec;
 
@@ -1409,11 +1410,23 @@ fn verifier_does_not_import_the_translator() {
     }
 }
 
-// ---- Dispatch templates (A11) ----
+// ---- Dispatch templates (A11, A11c) ----
+
+/// `miss` (a miss branch of the template, `cbz x12` / `cbnz x14`) with its offset set
+/// to reach body word `to` from body word `from`.
+fn miss_branch_to(miss: A64Insn, from: usize, to: usize) -> A64Insn {
+    let imm19 = branch_imm(at(to) as i64 - at(from) as i64, 19);
+    match miss {
+        A64Insn::CbzCbz64Compbranch { rt, .. } => A64Insn::CbzCbz64Compbranch { imm19, rt },
+        A64Insn::CbnzCbnz64Compbranch { rt, .. } => A64Insn::CbnzCbnz64Compbranch { imm19, rt },
+        other => panic!("{other:?} is not a miss branch"),
+    }
+}
 
 /// A dispatch site whose first word is body word `base`: `<budget check>; <gap>;
-/// <template>; <exit group>; <budget stub>`. The check's `cbz` is aimed at the stub,
-/// and both miss branches target the exit group that follows the template's `br`.
+/// <template>; <exit group>; <budget stub>`. The check's `cbz` is aimed at the stub;
+/// the main probe's miss branches target the victim probe's first word, the victim
+/// probe's the exit group that follows the template's final `br`.
 fn dispatch_site_from(base: usize, gap: &[A64Insn]) -> Vec<A64Insn> {
     let template = base + 4 + gap.len();
     let group = template + DISPATCH_TEMPLATE_LEN;
@@ -1422,16 +1435,14 @@ fn dispatch_site_from(base: usize, gap: &[A64Insn]) -> Vec<A64Insn> {
     body.extend_from_slice(gap);
     for (position, insn) in KJIT_DISPATCH_TEMPLATE.iter().enumerate() {
         let from = template + position;
-        body.push(match insn {
-            A64Insn::CbzCbz64Compbranch { rt, .. } => A64Insn::CbzCbz64Compbranch {
-                imm19: branch_imm(at(group) as i64 - at(from) as i64, 19),
-                rt: *rt,
-            },
-            A64Insn::CbnzCbnz64Compbranch { rt, .. } => A64Insn::CbnzCbnz64Compbranch {
-                imm19: branch_imm(at(group) as i64 - at(from) as i64, 19),
-                rt: *rt,
-            },
-            other => *other,
+        body.push(match DISPATCH_TEMPLATE_MISS_BRANCHES
+            .iter()
+            .position(|&branch| branch == position)
+        {
+            Some(miss) => {
+                miss_branch_to(*insn, from, template + DISPATCH_TEMPLATE_MISS_TARGETS[miss])
+            }
+            None => *insn,
         });
     }
     body.extend_from_slice(&[movz(9, 1), b_epi(group + 1), movz(9, 7), b_epi(stub + 1)]);
@@ -1466,9 +1477,42 @@ fn accepts_the_exact_dispatch_template_behind_its_budget_check() {
 #[test]
 fn dispatch_template_words_are_byte_exact() {
     let site = |position, insn| site_with(position, insn).rule();
-    // Every word of the template altered (the miss offsets are the only freedom).
-    assert_eq!(site(0, ldr(12, sp(), 192)), Some(VerifyRule::DispatchTemplate));
-    assert_eq!(site(0, ldr(13, sp(), RUNTIME_FRAME_IBTC_OFFSET)), Some(VerifyRule::DispatchTemplate));
+    let nop = A64Insn::NopNopHiHints {};
+    // Every word dropped (replaced by a nop) is rejected as a broken template.
+    for position in 0..DISPATCH_TEMPLATE_LEN {
+        assert_eq!(site(position, nop), Some(VerifyRule::DispatchTemplate), "word {position}");
+    }
+    // Every word altered by a flipped bit that still decodes: registers, immediates
+    // and shift amounts are the contract. Only the offsets of the miss branches are free.
+    for position in 0..DISPATCH_TEMPLATE_LEN {
+        let word = KJIT_DISPATCH_TEMPLATE[position].encode().unwrap();
+        let is_miss = DISPATCH_TEMPLATE_MISS_BRANCHES.contains(&position);
+        for bit in 0..32 {
+            if is_miss && (5..24).contains(&bit) {
+                continue;
+            }
+            let Some(altered) =
+                A64Insn::decode(word ^ (1 << bit)).filter(|insn| !insn.is_decode_undefined())
+            else {
+                continue;
+            };
+            assert!(site(position, altered).is_some(), "word {position} bit {bit}");
+        }
+    }
+    // The ways the contract lists, by name, in both probes (words 0..9 and 9..20).
+    for base in [0, DISPATCH_TEMPLATE_VICTIM_PROBE] {
+        assert_eq!(site(base, ldr(12, sp(), 192)), Some(VerifyRule::DispatchTemplate));
+        assert_eq!(
+            site(base, ldr(13, sp(), RUNTIME_FRAME_IBTC_OFFSET)),
+            Some(VerifyRule::DispatchTemplate)
+        );
+        assert_eq!(site(base + 4, ldr(14, xs(12), 8)), Some(VerifyRule::DispatchTemplate));
+        assert_eq!(site(base + 7, ldr(12, xs(12), 16)), Some(VerifyRule::DispatchTemplate));
+        // The key compare dropped: the `sub`, the `cbnz`.
+        assert_eq!(site(base + 5, nop), Some(VerifyRule::DispatchTemplate));
+        assert_eq!(site(base + 6, nop), Some(VerifyRule::DispatchTemplate));
+    }
+    // A wider main index (13 bits) reaches past the 4096-slot main part.
     assert_eq!(
         site(
             1,
@@ -1480,16 +1524,55 @@ fn dispatch_template_words_are_byte_exact() {
             }
         ),
         Some(VerifyRule::DispatchTemplate),
-        "a 13-bit index reaches past the 4096-slot table"
+        "a 13-bit index reaches past the 4096-slot main part"
     );
-    assert_eq!(site(4, ldr(14, xs(12), 8)), Some(VerifyRule::DispatchTemplate));
-    assert_eq!(site(7, ldr(12, xs(12), 16)), Some(VerifyRule::DispatchTemplate));
-    // Without its `br x12` the template is nine plain words, and the check guards
-    // nothing: rejected (which of the rules fires first is not the point).
-    assert!(site(8, A64Insn::BrBr64BranchReg { rn: x(13) }).is_some());
-    // The key compare dropped.
-    assert_eq!(site(5, A64Insn::NopNopHiHints {}), Some(VerifyRule::DispatchTemplate));
-    assert_eq!(site(6, A64Insn::NopNopHiHints {}), Some(VerifyRule::DispatchTemplate));
+    // The victim index: a wider ubfx, a changed fold shift, a changed part offset.
+    let victim_index = |lsb: u32, width: u32| A64Insn::UbfmUbfm64mBitfield {
+        immr: uimm(lsb, 6),
+        imms: uimm(lsb + width - 1, 6),
+        rn: x(14),
+        rd: x(14),
+    };
+    assert_eq!(site(11, victim_index(2, 8)), None, "the template's own word");
+    assert_eq!(site(11, victim_index(2, 9)), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(site(11, victim_index(3, 8)), Some(VerifyRule::DispatchTemplate));
+    for shift in [0, 11, 13] {
+        assert_eq!(
+            site(
+                10,
+                A64Insn::EorLogShiftEor64LogShift {
+                    shift: 1,
+                    rm: x(13),
+                    imm6: uimm(shift, 6),
+                    rn: x(13),
+                    rd: x(14),
+                }
+            ),
+            Some(VerifyRule::DispatchTemplate),
+            "fold shift {shift}"
+        );
+    }
+    for imm in [0, 4, 7, 9, 16] {
+        assert_eq!(
+            site(
+                12,
+                A64Insn::AddAddsubImmAdd64AddsubImm {
+                    sh: 1,
+                    imm12: uimm(imm, 12),
+                    rn: A64Reg::x_sp(12),
+                    rd: A64Reg::x_sp(12),
+                }
+            ),
+            Some(VerifyRule::DispatchTemplate),
+            "victim part offset {imm} << 12"
+        );
+    }
+    // Without a probe's `br x12` the words are plain, and the check guards nothing:
+    // rejected (which of the rules fires first is not the point).
+    for position in [8, 19] {
+        assert!(site(position, A64Insn::BrBr64BranchReg { rn: x(13) }).is_some());
+        assert!(site(position, A64Insn::BrBr64BranchReg { rn: x(14) }).is_some());
+    }
 }
 
 #[test]
@@ -1535,7 +1618,9 @@ fn dispatch_templates_need_a_budget_check_and_have_no_join_points() {
         body[4] = insn;
         assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::MissingBudgetCheck), "{insn:?}");
     }
-    // A join point between the check's `sub` and the template, or inside it.
+    // A join point between the check's `sub` and the template, or inside it
+    // (the victim probe's first word included: only the main probe's own miss
+    // branches may reach it).
     for index in 1..=4 {
         assert_eq!(
             Frag::new(&site).entry(index).rule(),
@@ -1550,39 +1635,59 @@ fn dispatch_templates_need_a_budget_check_and_have_no_join_points() {
             "entry at {index}"
         );
     }
-    // A branch into the template.
-    let mut body = alloc::vec![b(0, at(1 + 5 + 4) as i64)];
-    body.extend(dispatch_site_from(1, &[movz(13, 0x4000)]));
-    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::DispatchTemplate));
+    // A branch into the template, at each of its words (the victim probe's first
+    // word, template word 9, included).
+    for inner in 0..DISPATCH_TEMPLATE_LEN {
+        let mut body = alloc::vec![b(0, at(1 + 5 + inner) as i64)];
+        body.extend(dispatch_site_from(1, &[movz(13, 0x4000)]));
+        assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::DispatchTemplate), "word {inner}");
+    }
 }
 
 #[test]
-fn dispatch_miss_branches_name_one_forward_exit_group() {
+fn dispatch_miss_branches_name_the_victim_probe_or_one_forward_exit_group() {
     let site = dispatch_site(&[movz(13, 0x4000)]);
     let template = 5;
     let group = template + DISPATCH_TEMPLATE_LEN;
-    let retarget = |first: usize, second: usize| {
+    let retarget = |miss: usize, to: usize| {
         let mut body = site.clone();
-        body[template + 3] = A64Insn::CbzCbz64Compbranch {
-            imm19: branch_imm(at(first) as i64 - at(template + 3) as i64, 19),
-            rt: x(12),
-        };
-        body[template + 6] = A64Insn::CbnzCbnz64Compbranch {
-            imm19: branch_imm(at(second) as i64 - at(template + 6) as i64, 19),
-            rt: x(14),
-        };
+        let from = template + DISPATCH_TEMPLATE_MISS_BRANCHES[miss];
+        body[from] = miss_branch_to(body[from], from, to);
         Frag::new(&body).rule()
     };
-    assert_eq!(retarget(group, group), None);
+    // The victim probe's pair (misses 2 and 3): the same forward exit group.
+    assert_eq!(retarget(2, group), None);
     // Different targets, backward, into the template, into the middle of the group.
-    assert_eq!(retarget(group, group + 1), Some(VerifyRule::DispatchTemplate));
-    assert_eq!(retarget(template, template), Some(VerifyRule::DispatchTemplate));
-    assert_eq!(retarget(template + 8, template + 8), Some(VerifyRule::DispatchTemplate));
-    assert_eq!(retarget(group + 1, group + 1), Some(VerifyRule::ExitGroup));
+    assert_eq!(retarget(2, group + 1), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(retarget(3, group + 1), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(retarget(2, template), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(retarget(3, template + 8), Some(VerifyRule::DispatchTemplate));
+    assert_eq!(retarget(2, template + DISPATCH_TEMPLATE_VICTIM_PROBE), Some(VerifyRule::DispatchTemplate));
+    // Both moved to the middle of the group: the exit-group check.
+    let mut body = site.clone();
+    for miss in [2, 3] {
+        let from = template + DISPATCH_TEMPLATE_MISS_BRANCHES[miss];
+        body[from] = miss_branch_to(body[from], from, group + 1);
+    }
+    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::ExitGroup));
+    // The main probe's pair (misses 0 and 1) must name word 9 exactly: not the word
+    // before or after it, not the exit group, not anything else of the template.
+    for miss in [0, 1] {
+        for to in [
+            template + DISPATCH_TEMPLATE_VICTIM_PROBE - 1,
+            template + DISPATCH_TEMPLATE_VICTIM_PROBE + 1,
+            template,
+            group,
+            group + 1,
+            template + DISPATCH_TEMPLATE_LEN - 1,
+        ] {
+            assert_eq!(retarget(miss, to), Some(VerifyRule::DispatchTemplate), "miss {miss} -> {to}");
+        }
+    }
 }
 
 #[test]
-fn slot_200_is_readable_only_by_a_templates_first_word() {
+fn slot_200_is_readable_only_by_a_templates_table_loads() {
     let outside = |insn| Frag::new(&[insn, b_epi(1)]).rule();
     assert_eq!(
         outside(ldr(12, sp(), RUNTIME_FRAME_IBTC_OFFSET)),
@@ -1609,4 +1714,59 @@ fn kernel_values_never_reach_a_dispatch_template() {
     let mut body = alloc::vec![ldr(15, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET)];
     body.extend(dispatch_site_from(1, &[movz(13, 0x4000)]));
     assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::KernelValueAtEdge));
+}
+
+/// The verifier's template transfer function (`step_dispatch_template`) assumes, of
+/// the exact template words: x12 is the only register that ever holds a kernel value
+/// in a template; the other words (x14 as index, key and compare, x13 never written)
+/// read only T, x14 and, for the two key loads, x12 as the record base; x14 is written
+/// before it is read on every path, including a miss branch to the victim probe.
+/// Checked here on the words, from the generated operand metadata.
+#[test]
+fn template_register_discipline_holds() {
+    const SLOT: u32 = 1 << DISPATCH_SLOT_REG;
+    const TARGET: u32 = 1 << DISPATCH_TARGET_REG;
+    const KEY: u32 = 1 << DISPATCH_KEY_REG;
+    for (position, insn) in KJIT_DISPATCH_TEMPLATE.iter().enumerate() {
+        let read = rules::reads(insn).unwrap();
+        let written = rules::writes(insn).unwrap();
+        let is_edge = DISPATCH_TEMPLATE_MISS_BRANCHES.contains(&position)
+            || matches!(insn, A64Insn::BrBr64BranchReg { .. });
+        if is_edge {
+            assert_eq!(written.gprs, 0, "word {position}");
+            assert!(read.gprs & !(SLOT | KEY) == 0, "word {position}");
+            continue;
+        }
+        assert!(!written.sp, "word {position}");
+        // Words read x12..x14 only (and sp for the table load); never x15, never a
+        // user register.
+        assert_eq!(read.gprs & !(SLOT | TARGET | KEY), 0, "word {position}");
+        // T is never written; the only registers written are x12 and x14.
+        assert_eq!(written.gprs & TARGET, 0, "word {position}");
+        if written.gprs & SLOT != 0 {
+            // A kernel value (table, slot, record, host) is never computed from T.
+            assert_eq!(written.gprs, SLOT, "word {position}");
+            assert_eq!(read.gprs & (TARGET | KEY), read.gprs & KEY, "word {position}");
+        } else {
+            assert_eq!(written.gprs, KEY, "word {position}");
+            // x14 is derived from T and the record's pc, never from the kernel value
+            // x12 -- except the key load, whose source is the record (user data).
+            let key_load = matches!(insn, A64Insn::LdrImmGenLdr64LdstPos { rt, mem }
+                if rt.enc() == DISPATCH_KEY_REG && mem.base().enc() == DISPATCH_SLOT_REG);
+            assert!(key_load || read.gprs & SLOT == 0, "word {position}");
+        }
+    }
+    // x14 defined before read, on the fall-through path and on the path a main-probe
+    // miss branch takes into the victim probe (the miss branches read x12 / x14 as
+    // tests, whose values the previous words defined).
+    let mut defined = 0u32;
+    for (position, insn) in KJIT_DISPATCH_TEMPLATE.iter().enumerate() {
+        if position == DISPATCH_TEMPLATE_VICTIM_PROBE {
+            // Entered by a miss edge or the fall-after-br: x14 is not relied on.
+            defined = 0;
+        }
+        let read = rules::reads(insn).unwrap().gprs & KEY;
+        assert_eq!(read & !defined, 0, "word {position} reads x14 before it is written");
+        defined |= rules::writes(insn).unwrap().gprs & KEY;
+    }
 }

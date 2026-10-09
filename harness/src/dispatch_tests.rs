@@ -12,7 +12,7 @@ use crate::cached_run::{compare_cached, new_interpreter_cache, run_cached_differ
 use crate::code_cache::{CacheStats, CodeCache};
 use crate::model::{HaltReason, MachineState};
 use crate::runtime::URuntimeHalt;
-use crate::shared::abi::RetStatus;
+use crate::shared::abi::{ibtc_slot_index, ibtc_victim_index, RetStatus};
 use crate::shared::trans::cfg::{admit_at, RuntimeExitReason};
 use crate::{fixture_state, MockCodeProvider};
 
@@ -102,20 +102,78 @@ fn blr_x30_and_ret_x5_dispatch_through_their_registers() {
     }
 }
 
-/// Two callees 16 KiB apart share a table slot: every call finds the other
-/// callee's record, so it misses and the runtime's resolution replaces the slot.
-/// The warm run misses just the same.
+/// The two callees of `dispatch_alias.s`: the entries of two fragments 16 KiB apart.
+fn alias_pair(cache: &CodeCache) -> (u64, u64) {
+    cache
+        .fragments
+        .iter()
+        .find_map(|a| {
+            cache
+                .fragments
+                .iter()
+                .find(|b| b.entry_pc == a.entry_pc + 0x4000)
+                .map(|b| (a.entry_pc, b.entry_pc))
+        })
+        .expect("two fragments 16 KiB apart")
+}
+
+/// Two callees 16 KiB apart share their main slot, not their victim slot: the second
+/// one's resolution moves the first into the victim part, so both callees hit from
+/// then on, the repeated calls of the cold run included (A11c; the direct-mapped
+/// table of A11 ping-ponged on every call, 14+ runtime entries).
 #[test]
-fn aliasing_targets_replace_each_others_slot_and_keep_missing() {
-    let (_, cold, warm, _, cache) = cold_and_warm("dispatch_alias", "alias_blr_mark");
-    // 8 iterations x 2 calls, each a replace after the first of each callee.
-    assert!(cache.stats.ibtc_replace >= 14, "{:?}", cache.stats);
-    assert!(cold.runtime_entries >= 14, "{}", cold.runtime_entries);
-    assert!(
-        warm.runtime_entries >= 14,
-        "the warm run still ping-pongs: {} runtime entries",
-        warm.runtime_entries
-    );
+fn aliasing_targets_keep_both_callees_resident_through_the_victim_part() {
+    for symbol in ["alias_blr_mark", "alias_bl_mark"] {
+        let (_, cold, warm, _, cache) = cold_and_warm("dispatch_alias", symbol);
+        assert!(
+            cold.runtime_entries < 8,
+            "{symbol}: the cold run took {} runtime entries",
+            cold.runtime_entries
+        );
+        assert_eq!(warm.runtime_entries, 0, "{symbol}");
+        // Both callees are in `table_nofp`: one in its main slot, the other in the
+        // victim part; each record sits where the template probes.
+        let (a, b) = alias_pair(&cache);
+        assert!(cache.lookup(false, a).is_some() && cache.lookup(false, b).is_some(), "{symbol}");
+        assert_eq!(ibtc_slot_index(a), ibtc_slot_index(b));
+        let in_victim = [a, b]
+            .into_iter()
+            .filter(|&pc| cache.resident_pc(false, ibtc_victim_index(pc)) == Some(pc))
+            .count();
+        assert_eq!(in_victim, 1, "{symbol}: exactly one of the aliases is in the victim part");
+        // The conflict still replaced a main-slot record once.
+        assert!(cache.stats.ibtc_replace >= 1, "{:?}", cache.stats);
+        cache.check_invariants().unwrap();
+    }
+}
+
+/// Two evicted pcs that share a victim slot: the later eviction drops the earlier
+/// one (the documented limit of the victim part), which then misses once and is
+/// republished; correctness is untouched (every run is compared with the original).
+/// The control case has the same alternation with victim slots that differ.
+#[test]
+fn two_evicted_pcs_sharing_a_victim_slot_lose_one_of_them() {
+    let (case, cold, warm, _, cache) = cold_and_warm("dispatch_victim_share", "victim_share_mark");
+    let (x, y) = (case.text_base + 0x100, case.text_base + 0x500);
+    let (x2, y2) = (x + 0x4000, y + 0x4000);
+    assert_eq!(ibtc_slot_index(x), ibtc_slot_index(x2));
+    assert_eq!(ibtc_slot_index(y), ibtc_slot_index(y2));
+    assert_ne!(ibtc_slot_index(x), ibtc_slot_index(y));
+    assert_eq!(ibtc_victim_index(x), ibtc_victim_index(y));
+    // Cold: all four calls miss. The warm run starts with x gone (y2's eviction of y
+    // took x's victim slot), and its one miss, on x, moves x2 to its own victim slot.
+    assert!(cold.runtime_entries >= 4, "{}", cold.runtime_entries);
+    assert_eq!(warm.runtime_entries, 1, "only x misses in the warm run");
+    // After the warm run everything is resident: x and y2 in the main part, x2 and y in
+    // the victim part.
+    for pc in [x, y, x2, y2] {
+        assert!(cache.lookup(false, pc).is_some(), "{pc:#x}");
+    }
+    cache.check_invariants().unwrap();
+
+    // Control: the evicted pcs have different victim slots, so nothing is dropped.
+    let (_, _, warm, _, cache) = cold_and_warm("dispatch_victim_share", "victim_distinct_mark");
+    assert_eq!(warm.runtime_entries, 0);
     cache.check_invariants().unwrap();
 }
 
@@ -131,8 +189,8 @@ fn a_non_fpsimd_caller_reaches_an_fpsimd_callee_only_through_the_runtime() {
         .position(|frag| frag.uses_fpsimd)
         .expect("the callee is an FP/SIMD fragment");
     let entry = cache.fragments[fp].entry_pc;
-    assert_eq!(cache.slot_target(true, entry).map(|(frag, _)| frag), Some(fp));
-    assert_eq!(cache.slot_target(false, entry), None);
+    assert_eq!(cache.lookup(true, entry), Some(fp));
+    assert_eq!(cache.lookup(false, entry), None);
     // Cold: both calls come from a non-FP/SIMD run and miss. Warm: the first call
     // misses again; the run it starts is an FP/SIMD one, so the second call, made
     // from non-FP/SIMD code that run continued into, dispatches through `table_all`
@@ -189,13 +247,13 @@ fn a_retired_callee_misses_in_the_warm_run() {
     let (cold, mut cache) = run(cache, &case, &state, "cold");
     let func_f = bl_target(&case, case.entry_pc + 12);
     let fragment = cache.fragment_for_entry(func_f).expect("func_f has a fragment");
-    assert!(cache.slot_target(false, func_f).is_some(), "func_f was published");
+    assert!(cache.lookup(false, func_f).is_some(), "func_f was published");
 
     let translations = cache.stats.translations;
     cache.retire(fragment);
     assert!(cache.stats.ibtc_clear >= 1);
-    assert!(cache.slot_target(true, func_f).is_none());
-    assert!(cache.slot_target(false, func_f).is_none());
+    assert!(cache.lookup(true, func_f).is_none());
+    assert!(cache.lookup(false, func_f).is_none());
     assert!(cache.fragment_for_entry(func_f).is_none());
     cache.check_invariants().unwrap();
 
@@ -203,7 +261,7 @@ fn a_retired_callee_misses_in_the_warm_run() {
     assert_eq!(cache.stats.translations, translations + 1, "func_f is translated again");
     assert!(warm.runtime_entries >= 1, "the call into the retired callee misses");
     assert!(warm.runtime_entries < cold.runtime_entries);
-    assert!(cache.slot_target(false, func_f).is_some(), "and is published again");
+    assert!(cache.lookup(false, func_f).is_some(), "and is published again");
     cache.check_invariants().unwrap();
 }
 

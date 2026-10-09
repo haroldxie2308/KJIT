@@ -1,9 +1,11 @@
-// A11 dispatch fixture: one `blr` alternating between two callees 16 KiB apart.
-// The dispatch table is direct-mapped by pc[13:2] (IBTC_BITS = 12 slots), so two
-// targets 0x4000 apart share a slot: each call finds the other callee's record,
-// the key compare fails, and the miss goes through the runtime, which publishes the
-// target it resolved and so replaces the slot (the replace ping-pong; `ibtc_replace`
-// counts it). The returns go to two different resume points and hit.
+// A11c dispatch fixture: one `blr` alternating between two callees 16 KiB apart.
+// Their main slots (pc[13:2]) are the same, so the second callee's resolution evicts
+// the first's record from the main slot; the eviction moves it to its own victim slot
+// (pc[9:2] ^ pc[21:14], different for pcs 16 KiB apart), so the next call to the
+// first callee hits in the victim part. Both callees stay resident: only the first
+// call of each goes through the runtime (the direct-mapped table of A11 missed on
+// every call, a replace ping-pong). The returns go to two different resume points
+// and hit.
 //
 //   make harness-test-asm ASM=tests/arm64/dispatch_alias.s HOT_SVC_SYMBOL=alias_blr_mark
 //

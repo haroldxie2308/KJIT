@@ -2,6 +2,7 @@ use super::{
     ABI_ENTRY_ARG_REG, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
     DISPATCH_KEY_REG, DISPATCH_SLOT_REG, DISPATCH_TARGET_REG, EXTRA_PARAM_IBTC_TABLE_OFFSET,
     IBTC_BITS, IBTC_INDEX_LSB, IBTC_RECORD_HOST_OFFSET, IBTC_RECORD_PC_OFFSET, IBTC_SLOT_SHIFT,
+    IBTC_VICTIM_BITS, IBTC_VICTIM_FOLD_SHIFT, IBTC_VICTIM_OFFSET,
     KJIT_BACKEDGE_BUDGET, REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG,
     RET_STATUS_REG, RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_ENTRY_ADDR_OFFSET,
     RUNTIME_FRAME_IBTC_OFFSET, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
@@ -9,7 +10,7 @@ use super::{
 use crate::shared::arm64::ergo::{
     ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, scaled_simm, sp, uimm, x, xzr,
 };
-use crate::shared::arm64::A64Insn;
+use crate::shared::arm64::{A64Insn, A64Reg};
 use crate::shared::platform::{AllocFlags, SharedAllocError, SharedResult, SharedVec};
 
 pub const ABI_INSN_SIZE: usize = 4;
@@ -409,77 +410,169 @@ pub const KJIT_EPILOGUE: &[A64Insn] = &[
     },
 ];
 
-pub const DISPATCH_TEMPLATE_LEN: usize = 9;
-/// Indices of the template's two miss branches (`cbz` on the slot, `cbnz` on the key
-/// compare). Both go to the same forward exit-group start.
-pub const DISPATCH_TEMPLATE_MISS_BRANCHES: [usize; 2] = [3, 6];
+pub const DISPATCH_TEMPLATE_LEN: usize = 20;
+/// Indices of the template's four miss branches (`cbz` on the slot, `cbnz` on the key
+/// compare, once per probe).
+pub const DISPATCH_TEMPLATE_MISS_BRANCHES: [usize; 4] = [3, 6, 14, 17];
+/// First word of the victim probe; the main probe ends with the `br` before it.
+pub const DISPATCH_TEMPLATE_VICTIM_PROBE: usize = 9;
+/// Word index the template's miss branches target, one per `DISPATCH_TEMPLATE_MISS_BRANCHES`
+/// entry: the main probe's two go to the victim probe's first word (inside the template),
+/// the victim probe's two to `DISPATCH_TEMPLATE_LEN`, the word after the final `br`
+/// (the site's exit group).
+pub const DISPATCH_TEMPLATE_MISS_TARGETS: [usize; 4] = [
+    DISPATCH_TEMPLATE_VICTIM_PROBE,
+    DISPATCH_TEMPLATE_VICTIM_PROBE,
+    DISPATCH_TEMPLATE_LEN,
+    DISPATCH_TEMPLATE_LEN,
+];
 
-/// The in-fragment branch dispatch (A11, docs/pipeline.md "In-fragment branch
-/// dispatch (A11)", Lowering), emitted after a branch site's budget check and
-/// target move (T in `DISPATCH_TARGET_REG`):
-///
-/// ```text
-/// ldr  x12, [sp, #RUNTIME_FRAME_IBTC_OFFSET]     ; the run's table
-/// ubfx x14, x13, #IBTC_INDEX_LSB, #IBTC_BITS     ; slot index < 2^IBTC_BITS
-/// ldr  x12, [x12, x14, lsl #IBTC_SLOT_SHIFT]     ; slot: 0 or a record
-/// cbz  x12, <miss>
-/// ldr  x14, [x12, #IBTC_RECORD_PC_OFFSET]        ; the record's pc
-/// sub  x14, x14, x13
-/// cbnz x14, <miss>
-/// ldr  x12, [x12, #IBTC_RECORD_HOST_OFFSET]      ; a verified entry of a live fragment
-/// br   x12
-/// ```
-///
-/// The two miss branches carry placeholder offsets (0) until layout resolves them to
-/// the exit-group start that directly follows the `br`. Every register, immediate and
-/// offset is part of the ABI: the verifier accepts exactly these words
-/// (`dispatch_template_matches`), so this is the only way a fragment can branch
-/// through a table.
-pub const KJIT_DISPATCH_TEMPLATE: [A64Insn; DISPATCH_TEMPLATE_LEN] = [
+/// `ldr x12, [sp, #RUNTIME_FRAME_IBTC_OFFSET]`: the run's table.
+const fn w_table() -> A64Insn {
     A64Insn::LdrImmGenLdr64LdstPos {
         rt: x(DISPATCH_SLOT_REG),
         mem: mem_off(sp(), ldst64_offset(RUNTIME_FRAME_IBTC_OFFSET)),
-    },
+    }
+}
+
+/// `ubfx rd, rn, #lsb, #width`.
+const fn w_ubfx(rd: u8, rn: u8, lsb: u32, width: u32) -> A64Insn {
     A64Insn::UbfmUbfm64mBitfield {
-        immr: uimm(IBTC_INDEX_LSB, 6),
-        imms: uimm(IBTC_INDEX_LSB + IBTC_BITS - 1, 6),
-        rn: x(DISPATCH_TARGET_REG),
-        rd: x(DISPATCH_KEY_REG),
-    },
-    // LDR (register), 64-bit: `lsl #IBTC_SLOT_SHIFT` is option 0b011 (LSL/UXTX), S = 1.
+        immr: uimm(lsb, 6),
+        imms: uimm(lsb + width - 1, 6),
+        rn: x(rn),
+        rd: x(rd),
+    }
+}
+
+/// `ldr x12, [x12, xI, lsl #IBTC_SLOT_SHIFT]` (LDR register, 64-bit: `lsl #3` is
+/// option 0b011 (LSL/UXTX), S = 1): the slot, 0 or a record.
+const fn w_slot() -> A64Insn {
     A64Insn::LdrRegGenLdr64LdstRegoff {
         rm: x(DISPATCH_KEY_REG),
         option: 0b011,
         s: 1,
         rn: x(DISPATCH_SLOT_REG),
         rt: x(DISPATCH_SLOT_REG),
-    },
+    }
+}
+
+/// `cbz x12, <miss>` / `cbnz x14, <miss>`; the offsets are placeholders (0) until
+/// layout resolves them.
+const fn w_cbz_slot() -> A64Insn {
     A64Insn::CbzCbz64Compbranch {
         imm19: scaled_simm(0, 19, 2),
         rt: x(DISPATCH_SLOT_REG),
-    },
+    }
+}
+
+const fn w_cbnz_key() -> A64Insn {
+    A64Insn::CbnzCbnz64Compbranch {
+        imm19: scaled_simm(0, 19, 2),
+        rt: x(DISPATCH_KEY_REG),
+    }
+}
+
+/// `ldr x14, [x12, #IBTC_RECORD_PC_OFFSET]`: the record's pc.
+const fn w_record_pc() -> A64Insn {
     A64Insn::LdrImmGenLdr64LdstPos {
         rt: x(DISPATCH_KEY_REG),
         mem: mem_off(x(DISPATCH_SLOT_REG), ldst64_offset(IBTC_RECORD_PC_OFFSET)),
-    },
+    }
+}
+
+/// `sub x14, x14, x13`: zero iff the record's pc is T.
+const fn w_compare() -> A64Insn {
     A64Insn::SubAddsubShiftSub64AddsubShift {
         shift: 0,
         rm: x(DISPATCH_TARGET_REG),
         imm6: uimm(0, 6),
         rn: x(DISPATCH_KEY_REG),
         rd: x(DISPATCH_KEY_REG),
-    },
-    A64Insn::CbnzCbnz64Compbranch {
-        imm19: scaled_simm(0, 19, 2),
-        rt: x(DISPATCH_KEY_REG),
-    },
+    }
+}
+
+/// `ldr x12, [x12, #IBTC_RECORD_HOST_OFFSET]`.
+const fn w_record_host() -> A64Insn {
     A64Insn::LdrImmGenLdr64LdstPos {
         rt: x(DISPATCH_SLOT_REG),
         mem: mem_off(x(DISPATCH_SLOT_REG), ldst64_offset(IBTC_RECORD_HOST_OFFSET)),
-    },
+    }
+}
+
+/// `br x12`.
+const fn w_br() -> A64Insn {
     A64Insn::BrBr64BranchReg {
         rn: x(DISPATCH_SLOT_REG),
+    }
+}
+
+/// The in-fragment branch dispatch (A11, A11c; docs/pipeline.md "In-fragment branch
+/// dispatch (A11)", Lowering), emitted after a branch site's budget check and
+/// target move (T in `DISPATCH_TARGET_REG`): a probe of the main part, then, on its
+/// miss, a probe of the victim part.
+///
+/// ```text
+/// ldr  x12, [sp, #RUNTIME_FRAME_IBTC_OFFSET]     ; the run's table
+/// ubfx x14, x13, #IBTC_INDEX_LSB, #IBTC_BITS     ; main index < 2^IBTC_BITS
+/// ldr  x12, [x12, x14, lsl #IBTC_SLOT_SHIFT]     ; slot: 0 or a record
+/// cbz  x12, 1f
+/// ldr  x14, [x12, #IBTC_RECORD_PC_OFFSET]        ; the record's pc
+/// sub  x14, x14, x13
+/// cbnz x14, 1f
+/// ldr  x12, [x12, #IBTC_RECORD_HOST_OFFSET]      ; a verified entry of a live fragment
+/// br   x12
+/// 1: ldr  x12, [sp, #RUNTIME_FRAME_IBTC_OFFSET]
+/// eor  x14, x13, x13, lsr #IBTC_VICTIM_FOLD_SHIFT
+/// ubfx x14, x14, #IBTC_INDEX_LSB, #IBTC_VICTIM_BITS  ; victim index < 2^IBTC_VICTIM_BITS
+/// add  x12, x12, #(IBTC_VICTIM_OFFSET >> 12), lsl #12 ; the victim part
+/// ldr  x12, [x12, x14, lsl #IBTC_SLOT_SHIFT]
+/// cbz  x12, <miss>
+/// ldr  x14, [x12, #IBTC_RECORD_PC_OFFSET]
+/// sub  x14, x14, x13
+/// cbnz x14, <miss>
+/// ldr  x12, [x12, #IBTC_RECORD_HOST_OFFSET]
+/// br   x12
+/// ```
+///
+/// The miss branches carry placeholder offsets (0) until layout resolves them
+/// (`DISPATCH_TEMPLATE_MISS_TARGETS`). Every register, immediate and offset is part of
+/// the ABI: the verifier accepts exactly these words (`dispatch_template_matches`),
+/// so this is the only way a fragment can branch through a table.
+pub const KJIT_DISPATCH_TEMPLATE: [A64Insn; DISPATCH_TEMPLATE_LEN] = [
+    // Main probe.
+    w_table(),
+    w_ubfx(DISPATCH_KEY_REG, DISPATCH_TARGET_REG, IBTC_INDEX_LSB, IBTC_BITS),
+    w_slot(),
+    w_cbz_slot(),
+    w_record_pc(),
+    w_compare(),
+    w_cbnz_key(),
+    w_record_host(),
+    w_br(),
+    // Victim probe (word 9).
+    w_table(),
+    A64Insn::EorLogShiftEor64LogShift {
+        shift: 1,
+        rm: x(DISPATCH_TARGET_REG),
+        imm6: uimm(IBTC_VICTIM_FOLD_SHIFT, 6),
+        rn: x(DISPATCH_TARGET_REG),
+        rd: x(DISPATCH_KEY_REG),
     },
+    w_ubfx(DISPATCH_KEY_REG, DISPATCH_KEY_REG, IBTC_INDEX_LSB, IBTC_VICTIM_BITS),
+    A64Insn::AddAddsubImmAdd64AddsubImm {
+        sh: 1,
+        imm12: uimm((IBTC_VICTIM_OFFSET >> 12) as u32, 12),
+        rn: A64Reg::x_sp(DISPATCH_SLOT_REG),
+        rd: A64Reg::x_sp(DISPATCH_SLOT_REG),
+    },
+    w_slot(),
+    w_cbz_slot(),
+    w_record_pc(),
+    w_compare(),
+    w_cbnz_key(),
+    w_record_host(),
+    w_br(),
 ];
 
 const _: () = assert!(IBTC_SLOT_SHIFT == 3, "the template's lsl #3 is option 0b011 with S = 1");
@@ -487,15 +580,16 @@ const _: () = assert!(IBTC_SLOT_SHIFT == 3, "the template's lsl #3 is option 0b0
 /// `imm19` of CBZ/CBNZ (bits 23:5): the only bits of a miss branch that vary.
 const MISS_BRANCH_IMM19_MASK: u32 = 0x00ff_ffe0;
 
-/// Whether the encoded `words` are exactly `KJIT_DISPATCH_TEMPLATE`, up to the two
-/// miss branches' offsets. Returns those offsets (byte deltas from each branch), which
-/// the caller checks (both must name the same forward exit-group start). Compared as
-/// words, like the prologue: the encoding is the contract.
-pub fn dispatch_template_matches(words: &[u32]) -> Option<[i64; 2]> {
+/// Whether the encoded `words` are exactly `KJIT_DISPATCH_TEMPLATE`, up to the four
+/// miss branches' offsets. Returns those offsets (byte deltas from each branch, in
+/// `DISPATCH_TEMPLATE_MISS_BRANCHES` order), which the caller checks against
+/// `DISPATCH_TEMPLATE_MISS_TARGETS`. Compared as words, like the prologue: the
+/// encoding is the contract.
+pub fn dispatch_template_matches(words: &[u32]) -> Option<[i64; 4]> {
     if words.len() != DISPATCH_TEMPLATE_LEN {
         return None;
     }
-    let mut deltas = [0_i64; 2];
+    let mut deltas = [0_i64; 4];
     let mut next_miss = 0;
     for (index, (&word, expected)) in words.iter().zip(KJIT_DISPATCH_TEMPLATE.iter()).enumerate() {
         let expected = expected.encode().ok()?;
@@ -605,24 +699,33 @@ mod tests {
     }
 
     #[test]
-    fn dispatch_template_is_the_contract_nine_words() {
+    fn dispatch_template_is_the_contract_twenty_words() {
         let words = KJIT_DISPATCH_TEMPLATE
             .iter()
             .map(|insn| insn.encode().unwrap())
             .collect::<Vec<_>>();
-        // The contract's nine words as `llvm-mc` encodes them (miss offsets 0):
-        // ldr x12, [sp, #200]; ubfx x14, x13, #2, #12; ldr x12, [x12, x14, lsl #3];
-        // cbz x12; ldr x14, [x12]; sub x14, x14, x13; cbnz x14; ldr x12, [x12, #8];
-        // br x12
+        // The contract's twenty words as `llvm-mc` encodes them (miss offsets 0):
+        //  0 ldr  x12, [sp, #200]            10 eor  x14, x13, x13, lsr #12
+        //  1 ubfx x14, x13, #2, #12          11 ubfx x14, x14, #2, #8
+        //  2 ldr  x12, [x12, x14, lsl #3]    12 add  x12, x12, #8, lsl #12
+        //  3 cbz  x12                        13 ldr  x12, [x12, x14, lsl #3]
+        //  4 ldr  x14, [x12]                 14 cbz  x12
+        //  5 sub  x14, x14, x13              15 ldr  x14, [x12]
+        //  6 cbnz x14                        16 sub  x14, x14, x13
+        //  7 ldr  x12, [x12, #8]             17 cbnz x14
+        //  8 br   x12                        18 ldr  x12, [x12, #8]
+        //  9 ldr  x12, [sp, #200]            19 br   x12
         assert_eq!(
             words,
             [
                 0xf94067ec, 0xd34235ae, 0xf86e798c, 0xb400000c, 0xf940018e, 0xcb0d01ce,
-                0xb500000e, 0xf940058c, 0xd61f0180,
+                0xb500000e, 0xf940058c, 0xd61f0180, 0xf94067ec, 0xca4d31ae, 0xd34225ce,
+                0x9140218c, 0xf86e798c, 0xb400000c, 0xf940018e, 0xcb0d01ce, 0xb500000e,
+                0xf940058c, 0xd61f0180,
             ]
         );
         assert_eq!(words.len(), DISPATCH_TEMPLATE_LEN);
-        assert_eq!(dispatch_template_matches(&words), Some([0, 0]));
+        assert_eq!(dispatch_template_matches(&words), Some([0; 4]));
         // Any other word in a non-miss position, or another register in a miss
         // branch, is not the template; the miss offsets are free.
         for index in 0..DISPATCH_TEMPLATE_LEN {
@@ -635,11 +738,37 @@ mod tests {
             };
             assert_eq!(dispatch_template_matches(&altered).map(|_| ()), expected, "word {index}");
         }
-        // The two miss offsets are returned as byte deltas, sign-extended.
+        // The miss offsets are returned as byte deltas, sign-extended.
         let mut moved = words.clone();
         moved[DISPATCH_TEMPLATE_MISS_BRANCHES[0]] |= 6 << 5;
         moved[DISPATCH_TEMPLATE_MISS_BRANCHES[1]] |= 0x7ffff << 5;
-        assert_eq!(dispatch_template_matches(&moved), Some([24, -4]));
+        moved[DISPATCH_TEMPLATE_MISS_BRANCHES[2]] |= 3 << 5;
+        assert_eq!(dispatch_template_matches(&moved), Some([24, -4, 12, 0]));
+    }
+
+    /// The structure `layout` and the verifier rely on: every miss branch is a forward
+    /// `cbz x12` / `cbnz x14`; the main probe's go to the victim probe's first word
+    /// (which follows the first `br`), the victim probe's to the word after the final
+    /// `br`; the only `br`s are the two probes' ends.
+    #[test]
+    fn dispatch_template_structure() {
+        let t = &KJIT_DISPATCH_TEMPLATE;
+        for (&at, &to) in DISPATCH_TEMPLATE_MISS_BRANCHES.iter().zip(&DISPATCH_TEMPLATE_MISS_TARGETS) {
+            assert!(to > at && to <= DISPATCH_TEMPLATE_LEN);
+            match t[at] {
+                A64Insn::CbzCbz64Compbranch { rt, .. } => assert_eq!(rt.enc(), DISPATCH_SLOT_REG),
+                A64Insn::CbnzCbnz64Compbranch { rt, .. } => assert_eq!(rt.enc(), DISPATCH_KEY_REG),
+                other => panic!("word {at} is {other:?}, not a miss branch"),
+            }
+            assert!(
+                to == DISPATCH_TEMPLATE_LEN || matches!(t[to - 1], A64Insn::BrBr64BranchReg { .. })
+            );
+        }
+        let brs = (0..DISPATCH_TEMPLATE_LEN)
+            .filter(|&i| matches!(t[i], A64Insn::BrBr64BranchReg { .. }))
+            .collect::<Vec<_>>();
+        assert_eq!(brs, [DISPATCH_TEMPLATE_VICTIM_PROBE - 1, DISPATCH_TEMPLATE_LEN - 1]);
+        assert_eq!(DISPATCH_TEMPLATE_MISS_TARGETS, [9, 9, 20, 20]);
     }
 
     #[test]
