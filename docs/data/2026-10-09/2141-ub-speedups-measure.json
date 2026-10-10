@@ -1,0 +1,68 @@
+{
+ "meta": {"extracted_by": "tests/guest/host/extract_journal_tables.py", "source": "journal-table", "journal": "docs/journal/2026-10-09.md", "entry": "21:41 +0800 — Why KJIT does not reach Userspace Bypass's speedups", "note": "The \"Model of one request\" table is derived arithmetic over the measured tables and is not transcribed."},
+ "tables": {
+  "null_syscall_ns_per_syscall": {
+   "columns": ["kpti", "kjit_off_ns_per_syscall", "kjit_on_ns_per_syscall", "module_not_loaded_ns_per_syscall", "module_not_loaded_boots", "source"],
+   "rows": [
+    ["off", 130.6, 60.8, 119.3, 1, "journal-table"],
+    ["on", 209.0, 60.2, 193.9, 1, "journal-table"]
+   ]
+  },
+  "io_microbenchmark_ns_per_syscall": {
+   "columns": ["mode", "size_bytes", "kpti", "kjit_off_ns_per_syscall", "kjit_on_ns_per_syscall", "speedup_off_over_on", "source"],
+   "rows": [
+    ["raw `svc` read /dev/zero + write /dev/null (2)", 1, "off", 148.3, 74.5, 1.99, "journal-table"],
+    ["raw `svc` read /dev/zero + write /dev/null (2)", 1, "on", 223.1, 74.7, 2.98, "journal-table"],
+    ["raw `svc` write + read on a pipe (2)", 1, "off", 168.0, 94.5, 1.78, "journal-table"],
+    ["raw `svc` write + read on a pipe (2)", 1, "on", 244.2, 94.3, 2.59, "journal-table"],
+    ["libc read/write /dev/zero,/dev/null (2)", 1, "off", 152.8, 76.5, 2.0, "journal-table"],
+    ["libc read/write /dev/zero,/dev/null (2)", 1, "on", 229.1, 77.2, 2.97, "journal-table"],
+    ["libc", 16, "off", 153.4, 75.9, 2.02, "journal-table"],
+    ["libc", 16, "on", 229.7, 77.0, 2.99, "journal-table"],
+    ["libc", 64, "off", 153.2, 76.6, 2.0, "journal-table"],
+    ["libc", 64, "on", 229.7, 77.4, 2.97, "journal-table"],
+    ["libc pipe write + read (2)", 1, "off", 172.1, 96.4, 1.79, "journal-table"],
+    ["libc pipe write + read (2)", 1, "on", 250.5, 96.9, 2.59, "journal-table"],
+    ["libc pipe", 16, "off", 173.1, 96.8, 1.79, "journal-table"],
+    ["libc pipe", 16, "on", 250.7, 98.1, 2.56, "journal-table"],
+    ["libc pipe", 64, "off", 172.8, 97.4, 1.77, "journal-table"],
+    ["libc pipe", 64, "on", 250.9, 97.8, 2.57, "journal-table"]
+   ]
+  },
+  "redis_req_per_s": {
+   "columns": ["value_size", "test", "kpti", "kjit_off_req_per_s_mean", "kjit_off_req_per_s_sd", "kjit_on_req_per_s_mean", "kjit_on_req_per_s_sd", "ratio_on_over_off", "source"],
+   "rows": [
+    ["3 B (`-d 3`, default)", "SET", "off", 209980, 3257, 112840, 1431, 0.537, "journal-table"],
+    ["3 B (`-d 3`, default)", "SET", "on", 181338, 7008, 112245, 3375, 0.619, "journal-table"],
+    ["3 B (`-d 3`, default)", "GET", "off", 212304, 2618, 136558, 2531, 0.643, "journal-table"],
+    ["3 B (`-d 3`, default)", "GET", "on", 181840, 3267, 138145, 1973, 0.76, "journal-table"],
+    ["4096 B", "SET", "off", 191192, 3351, 83101, 981, 0.435, "journal-table"],
+    ["4096 B", "SET", "on", 168357, 3305, 82343, 1626, 0.489, "journal-table"],
+    ["4096 B", "GET", "off", 188737, 2516, 98901, 819, 0.524, "journal-table"],
+    ["4096 B", "GET", "on", 166478, 1977, 97690, 492, 0.587, "journal-table"]
+   ]
+  },
+  "code_speed_slopes": {
+   "columns": ["variant", "work_unit", "native_ns_per_unit", "fragment_ns_per_unit", "slowdown", "native_ns_per_insn", "fragment_ns_per_insn", "source"],
+   "rows": [
+    ["hash (djb2, 5 insn/byte)", "byte", 0.978, 2.19, 2.2, 0.196, 0.439, "journal-table"],
+    ["strlen (ldrb, cbnz)", "byte", 0.33, 2.23, 6.8, 0.165, 1.12, "journal-table"],
+    ["copy (ldrb/strb)", "byte", 0.36, 2.22, 6.2, 0.09, 0.556, "journal-table"],
+    ["copy16 (ldp/stp x)", "byte", 0.0252, 0.134, 5.3, 0.101, 0.537, "journal-table"],
+    ["simd32 (ldp/stp q, bracket)", "byte", 0.0146, 0.499, 34, 0.117, 3.99, "journal-table"],
+    ["calls (framed leaf, bl/ret)", "call", 1.564, 6.476, 4.1, 0.112, 0.463, "journal-table"],
+    ["callsi (blr)", "call", 1.551, 6.618, 4.3, 0.111, 0.473, "journal-table"],
+    ["calls2 (framed function calling a leaf)", "call", 2.5, 10.77, 4.3, 0.109, 0.468, "journal-table"],
+    ["foot (24-insn functions, n distinct, <= 12 KB)", "function", 5.486, 15.08, 2.7, 0.189, 0.52, "journal-table"],
+    ["footl (71-insn functions, n distinct, <= 49 KB)", "function", 20.06, 23.41, 1.17, 0.264, 0.308, "journal-table"]
+   ]
+  },
+  "server_cpu_us_per_req": {
+   "columns": ["test", "kjit_off_user_us_per_req", "kjit_off_user_sd_us", "kjit_off_system_us_per_req", "kjit_off_system_sd_us", "kjit_off_total_us_per_req", "kjit_on_total_us_per_req", "kjit_on_total_runs", "kjit_on_user_us_per_req", "source"],
+   "rows": [
+    ["SET", 0.95, 0.07, 2.56, 0.19, 3.51, 8.81, 3, 0.01, "journal-table"],
+    ["GET", 0.89, 0.03, 2.47, 0.19, 3.36, 7.23, 4, 0.01, "journal-table"]
+   ]
+  }
+ }
+}

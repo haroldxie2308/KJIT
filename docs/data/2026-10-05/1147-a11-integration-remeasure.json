@@ -1,0 +1,24 @@
+{
+ "meta": {"extracted_by": "tests/guest/host/extract_journal_tables.py", "source": "journal-table", "journal": "docs/journal/2026-10-05.md", "entry": "11:47 +0800 — A11 integration: merged tree validated and re-measured against Step 0"},
+ "tables": {
+  "redis_per_point": {
+   "columns": ["point", "set_req_per_s_mean", "set_req_per_s_min", "set_req_per_s_max", "get_req_per_s_mean", "get_req_per_s_min", "get_req_per_s_max", "set_us_per_req", "get_us_per_req", "runtime_entries_per_req_set", "runtime_entries_per_req_get", "fp_entries_per_req_set", "fp_entries_per_req_get", "in_kernel_syscalls_per_req", "hook_calls_per_req", "exit_budget_per_req", "source"],
+   "rows": [
+    ["off", 230081, 218341, 236967, 231340, 218579, 236128, 4.348, 4.325, 0, 0, 0, 0, 0, 0, 0, "journal-table"],
+    ["256", 113419, 100351, 120265, 141020, 126502, 147929, 8.845, 7.104, 28.69, 15.74, 8.03, 5.04, 2.0, 2.04, 0, "journal-table"],
+    ["1024", 119213, 115674, 121877, 143603, 132979, 150716, 8.39, 6.971, 28.68, 15.73, 8.03, 5.04, 2.0, 2.04, 0, "journal-table"]
+   ]
+  },
+  "microbench_ns_per_outer": {
+   "columns": ["variant", "calls_k", "transfers_per_outer", "off_ns_per_outer", "on_ns_per_outer", "on_minus_off_ns_per_transfer", "step0_on_minus_off_ns_per_entry", "source"],
+   "rows": [
+    ["gpr", 16, 33, 141.6, 148.0, 0.19, 15.1, "journal-table"],
+    ["gpr", 128, 257, 257.1, 852.0, 2.31, 17.2, "journal-table"],
+    ["gpr", 256, 513, 379.5, 1639.0, 2.46, 17.3, "journal-table"],
+    ["fp", 16, 33, 177.9, 211.0, 1.0, 39.1, "journal-table"],
+    ["fp", 128, 257, 537.2, 918.1, 1.48, 41.6, "journal-table"],
+    ["fp", 256, 513, 946.6, 1721.4, 1.51, 41.7, "journal-table"]
+   ]
+  }
+ }
+}
