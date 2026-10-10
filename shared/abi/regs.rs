@@ -26,8 +26,24 @@ pub const DISPATCH_KEY_REG: u8 = 14;
 pub const REG_VIRT_SCRATCH_GPR_LIMIT: usize = 4;
 pub const REG_VIRT_SCRATCH_GPR_START: u8 = 12;
 pub const REG_VIRT_SCRATCH_GPR_END: u8 = 15;
+/// Physical x18 is the execution budget counter for the whole run (A12, docs/pipeline.md
+/// "Execution budget (A6)"): the prologue sets it, only a budget check's
+/// `sub x18, x18, #1; cbz x18, <stub>` touches it, and user x18 is stack-backed
+/// (`RUNTIME_FRAME_USER_X18_OFFSET`). Linux userspace rarely uses x18 (K1 builds the
+/// kernel without SHADOW_CALL_STACK, so the fragment owns it), and every use costs a
+/// fill/spill.
+pub const BUDGET_COUNTER_REG: u8 = 18;
+/// Stack-backed user registers: the contiguous x12..x17 (frame slots `[16, 64)`) and
+/// x18 (`REG_VIRT_STACK_BACKED_X18_REG`, its own slot, A12).
 pub const REG_VIRT_STACK_BACKED_REG_START: u8 = 12;
 pub const REG_VIRT_STACK_BACKED_REG_END: u8 = 17;
+pub const REG_VIRT_STACK_BACKED_X18_REG: u8 = BUDGET_COUNTER_REG;
+
+/// Whether user register `reg` lives in a frame slot (`reg_virt_stack_backed_slot_offset`).
+pub const fn reg_virt_is_stack_backed(reg: u8) -> bool {
+    (reg >= REG_VIRT_STACK_BACKED_REG_START && reg <= REG_VIRT_STACK_BACKED_REG_END)
+        || reg == REG_VIRT_STACK_BACKED_X18_REG
+}
 pub const REG_VIRT_STABLE_MAPPED_X29_REG: u8 = 29;
 pub const REG_VIRT_STABLE_MAPPED_X29_PHYS_REG: u8 = 16;
 pub const REG_VIRT_STABLE_MAPPED_SP_PHYS_REG: u8 = 17;

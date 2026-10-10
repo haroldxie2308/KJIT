@@ -16,7 +16,7 @@ mod rules;
 mod taint;
 
 use crate::shared::abi::{
-    dispatch_template_matches, ABI_INSN_SIZE, DISPATCH_SLOT_REG, DISPATCH_TARGET_REG,
+    dispatch_template_matches, ABI_INSN_SIZE, BUDGET_COUNTER_REG, DISPATCH_SLOT_REG, DISPATCH_TARGET_REG,
     DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES, DISPATCH_TEMPLATE_MISS_TARGETS,
     DISPATCH_TEMPLATE_VICTIM_PROBE, EPILOGUE_LEN_BYTES, EPILOGUE_OFFSET, KJIT_DISPATCH_TEMPLATE,
     KJIT_EPILOGUE, KJIT_PROLOGUE, PROLOGUE_LEN_BYTES,
@@ -104,8 +104,10 @@ pub enum VerifyRule {
     FrameAccessOutOfRange,
     /// 3: a pt_regs access outside `regs[]` + `sp`.
     PtRegsAccessOutOfRange,
-    /// 3/6: a budget-slot access that is not part of a budget sequence.
-    BudgetSlotAccess,
+    /// 2/6 (A12): physical x18 (`BUDGET_COUNTER_REG`) read or written by any word but
+    /// a budget check's `sub x18, x18, #1` and `cbz x18` (or a check that guards
+    /// neither a back-edge nor a dispatch template).
+    BudgetRegisterAccess,
     /// 4: a direct branch target outside the fragment, into the prologue, into
     /// the epilogue other than its first word, or into the cold region other than
     /// an exit-group start.
@@ -133,7 +135,7 @@ pub enum VerifyRule {
     Exception,
     /// 5: `ADR`/`ADRP` (kernel address into a user register).
     PcRelative,
-    /// 6: a back-edge not preceded by the budget sequence (plus only reg-virt fill
+    /// 6: a back-edge not preceded by the budget check (plus only reg-virt fill
     /// loads), or a dispatch template (A11) not preceded by it (plus only
     /// data-processing words and fills), or a join point inside that run.
     MissingBudgetCheck,
@@ -361,6 +363,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
             continue;
         }
         let form = classify(*insn);
+        check_budget_register(&frag, index, insn)?;
         match form {
             Form::Alu | Form::Nop | Form::Barrier | Form::MrsUserReg => {}
             Form::Simd => uses_fpsimd = true,
@@ -409,8 +412,8 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
                 }
             }
             Form::MsrOther => return Err(err(offset, VerifyRule::Msr)),
-            Form::RuntimeAccess { mem, bytes, store } => {
-                check_runtime_access(&frag, index, *insn, mem, bytes, store, state)?;
+            Form::RuntimeAccess { mem, bytes, .. } => {
+                check_runtime_access(&frag, index, *insn, mem, bytes, state)?;
             }
         }
 
@@ -469,6 +472,9 @@ struct Fragment<'a> {
     templates: &'a DispatchTemplates,
 }
 
+/// Words of a budget check: `sub x18, x18, #1; cbz x18, <stub>`.
+const BUDGET_CHECK_WORDS: usize = 2;
+
 /// Most words (target move, link write, fills) the budget check's `cbz` may be away
 /// from its dispatch template: BL's 4-word target and 4-word link are the longest
 /// site (8). Bounded so each template's walk back is O(1).
@@ -505,7 +511,7 @@ impl Fragment<'_> {
         target <= offset && target >= BODY_OFFSET as i64
     }
 
-    /// The budget check guarding the branch at `index`: the four-word sequence,
+    /// The budget check guarding the branch at `index`: the two-word sequence,
     /// then only fill loads up to the branch. Returns the sequence's first index
     /// and its `cbz` target, which must be a forward body word.
     fn budget_guard(&self, index: usize) -> Option<(usize, usize)> {
@@ -513,7 +519,7 @@ impl Fragment<'_> {
         while end > 0 && rules::is_budget_fill(&self.body[end - 1]) {
             end -= 1;
         }
-        let start = end.checked_sub(4)?;
+        let start = end.checked_sub(BUDGET_CHECK_WORDS)?;
         let delta = rules::budget_sequence(&self.body[start..end])?;
         let cbz = self.offset(end - 1) as i64;
         let target = cbz + delta;
@@ -524,7 +530,7 @@ impl Fragment<'_> {
     }
 
     /// The budget check guarding the dispatch template whose first word is at
-    /// `template` (A11): the four-word sequence, then only data-processing words and
+    /// `template` (A11): the two-word sequence, then only data-processing words and
     /// fill loads (target move, link write) up to the template. Returns the
     /// sequence's first index and its `cbz` target, which must be a forward body word.
     fn template_guard(&self, template: usize) -> Option<(usize, usize)> {
@@ -535,7 +541,7 @@ impl Fragment<'_> {
         {
             end -= 1;
         }
-        let start = end.checked_sub(4)?;
+        let start = end.checked_sub(BUDGET_CHECK_WORDS)?;
         let delta = rules::budget_sequence(&self.body[start..end])?;
         let cbz = self.offset(end - 1) as i64;
         let target = cbz + delta;
@@ -548,9 +554,9 @@ impl Fragment<'_> {
     /// Whether a budget sequence starting at `start` is the guard of a dispatch
     /// template.
     fn guards_template(&self, start: usize) -> bool {
-        let mut index = start + 4;
+        let mut index = start + BUDGET_CHECK_WORDS;
         while index < self.body.len()
-            && index - (start + 4) <= DISPATCH_GUARD_MAX_GAP
+            && index - (start + BUDGET_CHECK_WORDS) <= DISPATCH_GUARD_MAX_GAP
             && rules::is_dispatch_gap_word(&self.body[index])
         {
             index += 1;
@@ -564,7 +570,7 @@ impl Fragment<'_> {
 
     /// Whether a budget sequence starting at `start` is the guard of a back-edge.
     fn guards_back_edge(&self, start: usize) -> bool {
-        let mut branch = start + 4;
+        let mut branch = start + BUDGET_CHECK_WORDS;
         while branch < self.body.len() && rules::is_budget_fill(&self.body[branch]) {
             branch += 1;
         }
@@ -899,8 +905,8 @@ fn alloc_none(len: usize) -> Result<SharedVec<Option<usize>>, VerifyError> {
 }
 
 /// Rule 6: the back-edge at `index` is guarded by the budget check, and nothing
-/// jumps past the check's first word (onto the `sub`, `str`, `cbz`, a fill, or the
-/// back-edge itself), so every path to the back-edge decrements the budget.
+/// jumps past the check's first word (onto the `cbz`, a fill, or the back-edge
+/// itself), so every path to the back-edge decrements the budget.
 fn check_budget_before(
     frag: &Fragment<'_>,
     join: &SharedVec<bool>,
@@ -914,6 +920,46 @@ fn check_budget_before(
     Ok(())
 }
 
+/// Rule 2 (A12): physical x18 is the budget counter. The only body words that read or
+/// write it are a budget check's `sub x18, x18, #1` and `cbz x18`, and a check must
+/// guard a back-edge or a dispatch template (`guards_back_edge`/`guards_template`:
+/// the exact shape, the fills and gap words between, and the guarded word). Every
+/// other operand naming x18 -- any role, a memory base or its writeback included --
+/// is `BudgetRegisterAccess`. Words of a dispatch template never name x18 (they are
+/// byte-exact).
+fn check_budget_register(
+    frag: &Fragment<'_>,
+    index: usize,
+    insn: &A64Insn,
+) -> Result<(), VerifyError> {
+    let offset = frag.offset(index);
+    let read = reads(insn).ok_or(err(offset, VerifyRule::OperandMetadata))?;
+    let written = writes(insn).ok_or(err(offset, VerifyRule::OperandMetadata))?;
+    let counter = 1_u32 << BUDGET_COUNTER_REG;
+    let names_counter = (read.gprs | written.gprs) & counter != 0
+        || read.base.is_some_and(|base| base.enc() == BUDGET_COUNTER_REG);
+    if !names_counter {
+        return Ok(());
+    }
+    let check_start = if rules::is_budget_sub(insn) {
+        index
+    } else if index > 0 && matches!(insn, A64Insn::CbzCbz64Compbranch { .. }) {
+        index - 1
+    } else {
+        return Err(err(offset, VerifyRule::BudgetRegisterAccess));
+    };
+    let is_check = frag
+        .body
+        .get(check_start..check_start + BUDGET_CHECK_WORDS)
+        .and_then(rules::budget_sequence)
+        .is_some();
+    if is_check && (frag.guards_back_edge(check_start) || frag.guards_template(check_start)) {
+        Ok(())
+    } else {
+        Err(err(offset, VerifyRule::BudgetRegisterAccess))
+    }
+}
+
 /// Rule 9: at a control edge, no register holds a kernel value the join state
 /// does not already assume.
 fn check_edge(state: Taint, join_state: Taint, offset: usize) -> Result<(), VerifyError> {
@@ -924,14 +970,12 @@ fn check_edge(state: Taint, join_state: Taint, offset: usize) -> Result<(), Veri
 }
 
 /// Rule 3 for a plain load/store.
-#[allow(clippy::too_many_arguments)]
 fn check_runtime_access(
     frag: &Fragment<'_>,
     index: usize,
     insn: A64Insn,
     mem: A64Mem,
     bytes: u32,
-    store: bool,
     state: Taint,
 ) -> Result<(), VerifyError> {
     let offset = frag.offset(index);
@@ -943,25 +987,9 @@ fn check_runtime_access(
     let within = |lo: u32, hi: u32| start >= lo as i64 && end <= hi as i64;
 
     if rules::is_sp(base) {
-        if within(rules::FRAME_USER_START, rules::FRAME_USER_END)
-            || rules::pt_regs_pointer_load(&insn).is_some()
+        if rules::is_user_state_slot(start, bytes) || rules::pt_regs_pointer_load(&insn).is_some()
         {
             return Ok(());
-        }
-        if start == rules::BUDGET_SLOT_OFFSET as i64 && bytes == 8 {
-            // Only a budget check's own load and store touch the counter (a check
-            // guards a back-edge or, A11, a dispatch template).
-            let seq_start = if store {
-                index.checked_sub(2)
-            } else {
-                Some(index)
-            };
-            if seq_start
-                .is_some_and(|start| frag.guards_back_edge(start) || frag.guards_template(start))
-            {
-                return Ok(());
-            }
-            return Err(err(offset, VerifyRule::BudgetSlotAccess));
         }
         return Err(err(offset, VerifyRule::FrameAccessOutOfRange));
     }

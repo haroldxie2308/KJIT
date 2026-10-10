@@ -1,9 +1,8 @@
 use crate::shared::abi::{
-    RetStatus, ABI_LINK_REG, DISPATCH_TARGET_REG, KJIT_DISPATCH_TEMPLATE,
-    REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
-    RUNTIME_FRAME_BUDGET_OFFSET, UNSUPPORTED_WORD_UNREADABLE,
+    RetStatus, ABI_LINK_REG, BUDGET_COUNTER_REG, DISPATCH_TARGET_REG, KJIT_DISPATCH_TEMPLATE,
+    RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG, UNSUPPORTED_WORD_UNREADABLE,
 };
-use crate::shared::arm64::ergo::{ldst64_offset, mem_off, scaled_simm, sp, uimm, x, xzr};
+use crate::shared::arm64::ergo::{scaled_simm, uimm, x, xzr};
 use crate::shared::arm64::{A64Atomic, A64Insn, A64Reg, A64Reg31Mode, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::{layout_block_order, Cfg, RuntimeExitReason};
@@ -673,54 +672,36 @@ const fn is_sp_reg(reg: A64Reg) -> bool {
     reg.enc() == 31 && matches!(reg.reg31, A64Reg31Mode::Sp)
 }
 
-/// Scratch register of the budget check. Reg-virt scratch is dead at every original
-/// instruction boundary, which is where the check runs (before the back-edge's fills).
-const BUDGET_CHECK_SCRATCH_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
+/// Words of the budget check.
+const BUDGET_CHECK_LEN: usize = 2;
 
-/// The back-edge budget check (docs/pipeline.md, "Execution budget (A6)"):
+/// The budget check (docs/pipeline.md, "Execution budget (A6)", A12):
 ///
 /// ```text
-/// ldr x12, [sp, #RUNTIME_FRAME_BUDGET_OFFSET]
-/// sub x12, x12, #1
-/// str x12, [sp, #RUNTIME_FRAME_BUDGET_OFFSET]
-/// cbz x12, <Budget stub of pc>
+/// sub x18, x18, #1                  ; d1000652
+/// cbz x18, <Budget stub of pc>
 /// ```
 ///
-/// Plain `LDR`/`STR` on `sp` are runtime accesses to the frame. `SUB` (not `SUBS`)
-/// and `CBZ` leave NZCV, which is user state here, untouched. The `CBZ` offset is 0
-/// until layout resolves it to the stub.
-pub fn budget_check(pc: u64) -> [RephrasedInsn; 4] {
-    let scratch = x(BUDGET_CHECK_SCRATCH_REG);
-    let slot = mem_off(sp(), ldst64_offset(RUNTIME_FRAME_BUDGET_OFFSET));
+/// Physical x18 is the budget counter for the whole run (`BUDGET_COUNTER_REG`; user
+/// x18 is stack-backed), so the check touches no memory and no scratch register.
+/// `SUB` (not `SUBS`) and `CBZ` leave NZCV, which is user state here, untouched. The
+/// `CBZ` offset is 0 until layout resolves it to the stub.
+pub fn budget_check(pc: u64) -> [RephrasedInsn; BUDGET_CHECK_LEN] {
     [
-        RephrasedInsn::budget_check(
-            pc,
-            A64Insn::LdrImmGenLdr64LdstPos {
-                rt: scratch,
-                mem: slot,
-            },
-        ),
         RephrasedInsn::budget_check(
             pc,
             A64Insn::SubAddsubImmSub64AddsubImm {
                 sh: 0,
                 imm12: uimm(1, 12),
-                rn: A64Reg::x_sp(BUDGET_CHECK_SCRATCH_REG),
-                rd: A64Reg::x_sp(BUDGET_CHECK_SCRATCH_REG),
-            },
-        ),
-        RephrasedInsn::budget_check(
-            pc,
-            A64Insn::StrImmGenStr64LdstPos {
-                rt: scratch,
-                mem: slot,
+                rn: A64Reg::x_sp(BUDGET_COUNTER_REG),
+                rd: A64Reg::x_sp(BUDGET_COUNTER_REG),
             },
         ),
         RephrasedInsn::budget_check(
             pc,
             A64Insn::CbzCbz64Compbranch {
                 imm19: scaled_simm(0, 19, 2),
-                rt: scratch,
+                rt: x(BUDGET_COUNTER_REG),
             },
         ),
     ]
@@ -1213,7 +1194,7 @@ mod tests {
     fn assert_budget_checked(block: &RephrasedBlock, branch: A64Insn, pc: u64) {
         let check = budget_check(pc);
         assert_eq!(
-            &block.insns[block.insns.len() - 5..block.insns.len() - 1],
+            &block.insns[block.insns.len() - BUDGET_CHECK_LEN - 1..block.insns.len() - 1],
             &check
         );
         assert_eq!(
@@ -1281,7 +1262,7 @@ mod tests {
         for site in sites {
             let program = rephrase(cfg_of(&[&[(0x1000, site)]])).unwrap();
             let block = &program[0];
-            assert_eq!(&block.insns[..4], &budget_check(0x1000), "{}", site.key());
+            assert_eq!(&block.insns[..BUDGET_CHECK_LEN], &budget_check(0x1000), "{}", site.key());
             assert_eq!(
                 native_resume_values(&block.cold),
                 (
@@ -1297,8 +1278,8 @@ mod tests {
                 .iter()
                 .position(|insn| insn.kind == RephrasedInsnKind::DispatchLookup)
                 .unwrap();
-            assert!(template_at > 4);
-            assert!(block.insns[4..template_at]
+            assert!(template_at > BUDGET_CHECK_LEN);
+            assert!(block.insns[BUDGET_CHECK_LEN..template_at]
                 .iter()
                 .all(|insn| insn.kind != RephrasedInsnKind::BudgetCheck));
             assert_eq!(
@@ -1383,6 +1364,8 @@ mod tests {
         use crate::shared::arm64::A64OperandRole;
 
         let check = budget_check(0x1000);
+        // `sub x18, x18, #1` as `llvm-mc` encodes it.
+        assert_eq!(check[0].insn.encode().unwrap(), 0xd100_0652);
         for insn in &check {
             assert_eq!(insn.kind, RephrasedInsnKind::BudgetCheck);
             assert!(!insn.kind.is_user_semantic() && !insn.kind.is_runtime_exit());

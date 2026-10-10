@@ -2,10 +2,10 @@
 //! the ABI constants only. Nothing here knows how the translator produced a word.
 
 use crate::shared::abi::{
-    pt_regs_x_slot_offset, reg_virt_stack_backed_slot_offset, PAN_WINDOW_RANGE_TOP_BIT,
-    REG_VIRT_SCRATCH_GPR_END, REG_VIRT_SCRATCH_GPR_START, REG_VIRT_STACK_BACKED_REG_END,
-    REG_VIRT_STACK_BACKED_REG_START, RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_ENTRY_ADDR_OFFSET,
-    RUNTIME_FRAME_PT_REGS_PTR_OFFSET, USER_VA_BITS,
+    pt_regs_x_slot_offset, reg_virt_stack_backed_slot_offset, BUDGET_COUNTER_REG,
+    PAN_WINDOW_RANGE_TOP_BIT, REG_VIRT_SCRATCH_GPR_END, REG_VIRT_SCRATCH_GPR_START,
+    REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START, RUNTIME_FRAME_ENTRY_ADDR_OFFSET,
+    RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_USER_X18_OFFSET, USER_VA_BITS,
 };
 use crate::shared::arm64::{A64Insn, A64Mem, A64OperandRole, A64Reg, A64Reg31Mode};
 
@@ -815,9 +815,10 @@ pub(super) const KERNEL_FP_REG: u8 = 29;
 
 // Runtime frame windows (shared/abi/frame.rs layout). The body may only touch the
 // user-state slots: stack-backed x12..x17, then user x29 and user sp, ending where
-// the entry-address slot starts. Everything else in the frame (caller x29/x30, the
-// entry address, caller x18..x28, the pt_regs / extra-params pointers) is kernel
-// state the epilogue trusts: a body write there is a kernel write primitive (the
+// the entry-address slot starts, and the stack-backed user x18's slot (A12).
+// Everything else in the frame (caller x29/x30, the entry address, caller x18..x28,
+// the pt_regs / extra-params pointers, the dispatch table pointer) is kernel state
+// the epilogue trusts: a body write there is a kernel write primitive (the
 // epilogue's `ret`, callee-saved registers, or the pt_regs store target).
 pub(super) const FRAME_USER_START: u32 =
     match reg_virt_stack_backed_slot_offset(REG_VIRT_STACK_BACKED_REG_START) {
@@ -825,6 +826,17 @@ pub(super) const FRAME_USER_START: u32 =
         None => panic!("stack-backed range has a first slot"),
     };
 pub(super) const FRAME_USER_END: u32 = RUNTIME_FRAME_ENTRY_ADDR_OFFSET;
+pub(super) const FRAME_USER_X18_START: u32 = RUNTIME_FRAME_USER_X18_OFFSET;
+pub(super) const FRAME_USER_X18_END: u32 = RUNTIME_FRAME_USER_X18_OFFSET + 8;
+
+/// Whether the frame bytes `[start, start + bytes)` lie wholly in one user-state window:
+/// `[FRAME_USER_START, FRAME_USER_END)` or `[FRAME_USER_X18_START, FRAME_USER_X18_END)`.
+/// An access straddling two windows (or a window and a kernel slot) is not one.
+pub(super) const fn is_user_state_slot(start: i64, bytes: u32) -> bool {
+    let end = start + bytes as i64;
+    (start >= FRAME_USER_START as i64 && end <= FRAME_USER_END as i64)
+        || (start >= FRAME_USER_X18_START as i64 && end <= FRAME_USER_X18_END as i64)
+}
 
 /// The one kernel-frame read the body may do: `ldr xS, [sp, #PT_REGS_PTR]`
 /// (64-bit, offset form) with S a reg-virt scratch register, which makes xS a
@@ -854,17 +866,16 @@ pub(super) const PT_REGS_USER_STATE_END: u32 = match pt_regs_x_slot_offset(30) {
     None => panic!("pt_regs has an x30 slot"),
 };
 
-// Execution budget (A6, docs/pipeline.md "Execution budget (A6)"). Before every
-// back-edge: `ldr s, [sp, #slot]; sub s, s, #1; str s, [sp, #slot]; cbz s, <stub>`,
-// then only reg-virt fill loads, then the branch. The counter slot is written by
-// the prologue (byte-exact) and by this sequence, nothing else.
-pub(super) const BUDGET_SLOT_OFFSET: u32 = RUNTIME_FRAME_BUDGET_OFFSET;
-/// The check's scratch: the first reg-virt scratch register, as in the prologue's
-/// budget init (dead at every instruction boundary).
-pub(super) const BUDGET_SCRATCH_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
+// Execution budget (A6, A12, docs/pipeline.md "Execution budget (A6)"). Before every
+// back-edge and dispatch site: `sub x18, x18, #1; cbz x18, <stub>`, then only
+// reg-virt fill loads (and, for a dispatch site, its data-processing words), then the
+// guarded branch or template. Physical x18 is written only by the prologue
+// (byte-exact) and by the `sub`, and read only by the `sub` and the `cbz`.
 
 /// A reg-virt fill that may sit between the budget `cbz` and its back-edge:
-/// `ldr x<scratch>, [sp, #<stack-backed slot>]` (64-bit, offset form).
+/// `ldr x<scratch>, [sp, #<stack-backed slot>]` (64-bit, offset form), the slot of
+/// one of the stack-backed registers x12..x17 or x18 (never the x29/sp slots, which
+/// reg-virt maps to x16/x17 and never fills).
 pub(super) fn is_budget_fill(insn: &A64Insn) -> bool {
     let (Some(first), Some(last)) = (
         reg_virt_stack_backed_slot_offset(REG_VIRT_STACK_BACKED_REG_START),
@@ -875,8 +886,8 @@ pub(super) fn is_budget_fill(insn: &A64Insn) -> bool {
     matches!(insn, A64Insn::LdrImmGenLdr64LdstPos { rt, mem: A64Mem::Offset { base, offset } }
         if (REG_VIRT_SCRATCH_GPR_START..=REG_VIRT_SCRATCH_GPR_END).contains(&rt.enc())
             && is_sp(*base)
-            && offset.value() >= first as i64
-            && offset.value() <= last as i64)
+            && ((offset.value() >= first as i64 && offset.value() <= last as i64)
+                || offset.value() == FRAME_USER_X18_START as i64))
 }
 
 /// A word that may sit between a dispatch template's budget `cbz` and the
@@ -886,26 +897,20 @@ pub(super) fn is_dispatch_gap_word(insn: &A64Insn) -> bool {
     classify(*insn) == Form::Alu || is_budget_fill(insn)
 }
 
-/// `ldr s, [sp, #slot]`, `sub s, s, #1`, `str s, [sp, #slot]`, `cbz s, <label>`
-/// (64-bit forms). Returns the `cbz` byte delta.
+/// `sub x18, x18, #1` (64-bit, no `lsl #12`, not `SUBS`).
+pub(super) fn is_budget_sub(insn: &A64Insn) -> bool {
+    matches!(insn, A64Insn::SubAddsubImmSub64AddsubImm { sh: 0, imm12, rn, rd }
+        if imm12.value() == 1 && rn.enc() == BUDGET_COUNTER_REG && rd.enc() == BUDGET_COUNTER_REG)
+}
+
+/// `sub x18, x18, #1`, `cbz x18, <label>` (64-bit forms). Returns the `cbz` byte delta.
 pub(super) fn budget_sequence(seq: &[A64Insn]) -> Option<i64> {
-    let [ldr, sub, str, cbz] = seq else {
+    let [sub, cbz] = seq else {
         return None;
     };
-    let s = BUDGET_SCRATCH_REG;
-    let slot = |mem: &A64Mem| {
-        matches!(mem, A64Mem::Offset { base, offset }
-            if is_sp(*base) && offset.value() == BUDGET_SLOT_OFFSET as i64)
-    };
-    let ldr_ok =
-        matches!(ldr, A64Insn::LdrImmGenLdr64LdstPos { rt, mem } if rt.enc() == s && slot(mem));
-    let sub_ok = matches!(sub, A64Insn::SubAddsubImmSub64AddsubImm { sh: 0, imm12, rn, rd }
-        if imm12.value() == 1 && rn.enc() == s && rd.enc() == s);
-    let str_ok =
-        matches!(str, A64Insn::StrImmGenStr64LdstPos { rt, mem } if rt.enc() == s && slot(mem));
     match cbz {
         A64Insn::CbzCbz64Compbranch { imm19, rt }
-            if ldr_ok && sub_ok && str_ok && rt.enc() == s =>
+            if is_budget_sub(sub) && rt.enc() == BUDGET_COUNTER_REG =>
         {
             Some(imm19.value())
         }

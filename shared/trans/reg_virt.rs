@@ -1,9 +1,9 @@
 use crate::shared::abi::{
     pt_regs_x_slot_offset, reg_virt_scratch_gpr, reg_virt_stack_backed_slot_offset,
-    DISPATCH_TARGET_REG, PAN_WINDOW_RANGE_TOP_BIT, REG_VIRT_SCRATCH_GPR_LIMIT, REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
-    REG_VIRT_STABLE_MAPPED_X29_PHYS_REG, REG_VIRT_STABLE_MAPPED_X29_REG,
-    REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START, RET_PARAM0_REG, RET_PARAM1_REG,
-    RET_STATUS_REG, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, USER_VA_BITS,
+    reg_virt_is_stack_backed, DISPATCH_TARGET_REG, PAN_WINDOW_RANGE_TOP_BIT,
+    REG_VIRT_SCRATCH_GPR_LIMIT, REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
+    REG_VIRT_STABLE_MAPPED_X29_PHYS_REG, REG_VIRT_STABLE_MAPPED_X29_REG, RET_PARAM0_REG,
+    RET_PARAM1_REG, RET_STATUS_REG, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, USER_VA_BITS,
 };
 use crate::shared::arm64::ergo::{ldst64_offset, mem_off, scaled_simm, simm, sp, uimm, x, xzr};
 use crate::shared::arm64::{
@@ -229,8 +229,9 @@ fn virtualize_insn(
             push_rephrased(out, rephrased)
         }
         RephrasedInsnKind::RuntimeExitBranch => push_rephrased(out, rephrased),
-        // Runtime-owned (frame counter + branch to its stub) and placed at an
-        // instruction boundary, where every scratch register is dead: nothing to map.
+        // Runtime-owned (`sub x18, x18, #1; cbz x18, <stub>`: physical x18 is the budget
+        // counter, user x18 is stack-backed) and placed at an instruction boundary:
+        // nothing to map.
         RephrasedInsnKind::BudgetCheck => push_rephrased(out, rephrased),
         // The dispatch template (A11) is runtime-owned scratch code (x12, x13, x14 at an
         // instruction boundary): nothing to map.
@@ -2049,7 +2050,7 @@ fn classify_reg(reg: A64Reg) -> RegClass {
     if is_runtime_return_reg(reg) {
         return RegClass::RuntimeReserved;
     }
-    if (REG_VIRT_STACK_BACKED_REG_START..=REG_VIRT_STACK_BACKED_REG_END).contains(&reg.enc) {
+    if reg_virt_is_stack_backed(reg.enc) {
         return RegClass::StackBacked;
     }
     if reg.enc == REG_VIRT_STABLE_MAPPED_X29_REG {
@@ -4277,7 +4278,7 @@ mod tests {
     }
 
     /// The budget check passes through unchanged and stays before the back-edge's
-    /// fills, so its scratch use cannot clash with them.
+    /// fills. It names only physical x18 (the counter), no scratch register.
     #[test]
     fn budget_check_precedes_the_back_edge_fills_and_is_not_rewritten() {
         use crate::shared::trans::rephrase::budget_check;
@@ -4292,10 +4293,10 @@ mod tests {
         let program = virtualize_registers(program_from_insns(&raw)).unwrap();
 
         let insns = &program[0].insns;
-        assert_eq!(&insns[..4], &check);
-        assert_eq!(insns[4], fill(12, 12));
-        assert_eq!(insns[5], RephrasedInsn::original(0x1000, cbnz));
-        assert_eq!(insns.len(), 6);
+        assert_eq!(&insns[..2], &check);
+        assert_eq!(insns[2], fill(12, 12));
+        assert_eq!(insns[3], RephrasedInsn::original(0x1000, cbnz));
+        assert_eq!(insns.len(), 4);
 
         // Never inside an exit group or the cold region.
         let mut program = one_insn(RephrasedInsn::original(0x1000, movz(x(0))));
@@ -4338,8 +4339,110 @@ mod tests {
         assert!(!err.is_instruction_intrinsic());
     }
 
+    /// A12: user x18 is stack-backed like x12..x17, in frame slot 192; physical x18
+    /// (the budget counter) is never an operand of a rewritten instruction.
+    #[test]
+    fn user_x18_is_stack_backed_in_its_own_slot() {
+        use crate::shared::abi::RUNTIME_FRAME_USER_X18_OFFSET;
+
+        assert_eq!(reg_virt_stack_backed_slot_offset(18), Some(RUNTIME_FRAME_USER_X18_OFFSET));
+        let slot = frame_slot(RUNTIME_FRAME_USER_X18_OFFSET);
+        // A write goes through scratch and is spilled to the slot.
+        let program = validate_one(RephrasedInsn::original(0x1000, movz(x(18)))).unwrap();
+        assert_eq!(
+            &program[0].insns[..],
+            [
+                RephrasedInsn::original(0x1000, movz(x(12))),
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::StrImmGenStr64LdstPos { rt: x(12), mem: slot },
+                ),
+            ]
+        );
+        // A read is a fill from the slot; a 32-bit write spills the zero-extended X.
+        let program = validate_one(RephrasedInsn::original(0x1000, orr_mov(0, x(18)))).unwrap();
+        assert_eq!(
+            &program[0].insns[..],
+            [
+                RephrasedInsn::reg_virt_helper(
+                    0x1000,
+                    A64Insn::LdrImmGenLdr64LdstPos { rt: x(12), mem: slot },
+                ),
+                RephrasedInsn::original(0x1000, orr_mov(0, x(12))),
+            ]
+        );
+        let program = validate_one(RephrasedInsn::original(
+            0x1000,
+            A64Insn::MovzMovz32Movewide { hw: 0, imm16: uimm(1, 16), rd: A64Reg::w(18) },
+        ))
+        .unwrap();
+        assert_eq!(
+            program[0].insns[1],
+            RephrasedInsn::reg_virt_helper(
+                0x1000,
+                A64Insn::StrImmGenStr64LdstPos { rt: x(12), mem: slot },
+            )
+        );
+    }
+
+    /// A12 scratch worst case. The pool is four registers because the most
+    /// stack-backed operands one instruction has (plus its address scratch) is four.
+    /// Making x18 stack-backed adds a candidate register, not an operand, so putting
+    /// x18 into any operand position of the worst-case forms (4-operand `madd`,
+    /// register-offset load, pair with writeback, LSE atomic, `ld1` post-indexed by a
+    /// register) admits or rejects exactly as the same form on x12..x15 does.
+    #[test]
+    fn x18_in_any_operand_position_needs_no_more_scratch_than_x12_to_x15() {
+        let forms: [(&str, fn([u8; 4]) -> A64Insn); 5] = [
+            ("madd", |r| A64Insn::MaddMadd64aDp3src {
+                ra: x(r[3]),
+                rm: x(r[2]),
+                rn: x(r[1]),
+                rd: x(r[0]),
+            }),
+            ("ldr regoffset", |r| A64Insn::LdrRegGenLdr64LdstRegoff {
+                rm: x(r[2]),
+                option: 0b110,
+                s: 1,
+                rn: A64Reg::x_sp(r[1]),
+                rt: x(r[0]),
+            }),
+            ("ldp post", |r| A64Insn::LdpGenLdp64LdstpairPost {
+                rt2: x(r[2]),
+                rt: x(r[0]),
+                mem: crate::shared::arm64::ergo::mem_post(
+                    A64Reg::x_sp(r[1]),
+                    crate::shared::arm64::ergo::ldstpair64_offset(0x1000),
+                ),
+            }),
+            ("cas", |r| A64Insn::CasCasC64Comswap {
+                rs: x(r[0]),
+                rn: A64Reg::x_sp(r[1]),
+                rt: x(r[2]),
+            }),
+            ("swpb", |r| A64Insn::SwpbSwpb32Memop {
+                rs: A64Reg::w(r[0]),
+                rn: A64Reg::x_sp(r[1]),
+                rt: A64Reg::w(r[2]),
+            }),
+        ];
+        for (name, form) in forms {
+            let base = [12, 13, 14, 15];
+            let reference = admit_insn(ir(form(base)));
+            for position in 0..4 {
+                let mut regs = base;
+                regs[position] = 18;
+                assert_eq!(
+                    admit_insn(ir(form(regs))),
+                    reference,
+                    "{name} with x18 at operand {position}"
+                );
+            }
+        }
+    }
+
     /// A dispatch site's target move (A11): whatever register holds the target, x13
-    /// gets its *user* value -- loaded from its frame slot (stack-backed x12..x17),
+    /// gets its *user* value -- loaded from its frame slot (stack-backed x12..x18),
     /// copied from x16 (user x29), or copied as is -- and nothing but x13 is written
     /// before the template.
     #[test]
@@ -4367,7 +4470,7 @@ mod tests {
                     .map(|insn| insn.insn)
                     .collect::<Vec<_>>();
                 let expected = match reg {
-                    12..=17 => A64Insn::LdrImmGenLdr64LdstPos {
+                    12..=18 => A64Insn::LdrImmGenLdr64LdstPos {
                         rt: x(DISPATCH_TARGET_REG),
                         mem: mem_off(
                             A64Reg::x_sp(31),

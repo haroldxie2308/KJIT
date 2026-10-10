@@ -1,8 +1,8 @@
-use super::rules::{self, BUDGET_SCRATCH_REG, BUDGET_SLOT_OFFSET};
+use super::rules;
 use super::*;
 use crate::shared::abi::{
-    DISPATCH_KEY_REG, KJIT_DISPATCH_TEMPLATE, RUNTIME_FRAME_IBTC_OFFSET,
-    RUNTIME_FRAME_PT_REGS_PTR_OFFSET,
+    BUDGET_COUNTER_REG, DISPATCH_KEY_REG, KJIT_DISPATCH_TEMPLATE, RUNTIME_FRAME_IBTC_OFFSET,
+    RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_USER_X18_OFFSET,
 };
 use crate::shared::arm64::ergo::{
     ldst64_offset, ldstpair64_offset, mem_off, mem_pre, scaled_simm, simm, sp, uimm, x,
@@ -614,8 +614,9 @@ fn join_state_is_dead_in_the_epilogue() {
             .map_or(0, |base| 1 << base.enc());
         live = (live & !rules::writes(insn).unwrap().gprs) | read.gprs | base;
     }
-    // Not vacuous: everything the epilogue copies to the user or the runtime.
-    let user = (0..=11).chain(16..=28).chain([30]);
+    // Not vacuous: everything the epilogue copies to the user or the runtime. x18 is
+    // not live-in: the epilogue loads user x18 from its slot (A12) before writing it back.
+    let user = (0..=11).chain(16..=17).chain(19..=28).chain([30]);
     assert_eq!(live, user.fold(0, |mask, reg| mask | (1 << reg)));
     assert_eq!(live & taint::Taint::at_entry().unwrap().kernel, 0);
 }
@@ -791,30 +792,35 @@ fn control_flow_rules() {
     assert_eq!(frag.rule(), Some(VerifyRule::NoEntry));
 }
 
-fn budget_seq(cbz_index: usize, stub_index: usize) -> [A64Insn; 4] {
-    let s = BUDGET_SCRATCH_REG;
-    [
-        ldr(s, sp(), BUDGET_SLOT_OFFSET),
-        A64Insn::SubAddsubImmSub64AddsubImm {
-            sh: 0,
-            imm12: uimm(1, 12),
-            rn: xs(s),
-            rd: xs(s),
-        },
-        str(s, sp(), BUDGET_SLOT_OFFSET),
-        A64Insn::CbzCbz64Compbranch {
-            imm19: branch_imm(at(stub_index) as i64 - at(cbz_index) as i64, 19),
-            rt: x(s),
-        },
-    ]
+/// Words of a budget check: `sub x18, x18, #1; cbz x18, <stub>`.
+const CHECK: usize = 2;
+
+fn budget_sub() -> A64Insn {
+    A64Insn::SubAddsubImmSub64AddsubImm {
+        sh: 0,
+        imm12: uimm(1, 12),
+        rn: xs(BUDGET_COUNTER_REG),
+        rd: xs(BUDGET_COUNTER_REG),
+    }
+}
+
+fn budget_cbz(cbz_index: usize, stub_index: usize) -> A64Insn {
+    A64Insn::CbzCbz64Compbranch {
+        imm19: branch_imm(at(stub_index) as i64 - at(cbz_index) as i64, 19),
+        rt: x(BUDGET_COUNTER_REG),
+    }
+}
+
+fn budget_seq(cbz_index: usize, stub_index: usize) -> [A64Insn; CHECK] {
+    [budget_sub(), budget_cbz(cbz_index, stub_index)]
 }
 
 /// `loop: nop; <budget check>; <fills>; b loop; stub: movz x9; b <epilogue>`.
-/// The check is words 1..=4, the fills 5..5+fills, the back-edge at 5+fills.
+/// The check is words 1..=2, the fills 3..3+fills, the back-edge at 3+fills.
 fn budget_loop(fills: &[A64Insn]) -> Vec<A64Insn> {
-    let branch = 5 + fills.len();
+    let branch = 1 + CHECK + fills.len();
     let mut body = alloc::vec![A64Insn::NopNopHiHints {}];
-    body.extend_from_slice(&budget_seq(4, branch + 1));
+    body.extend_from_slice(&budget_seq(2, branch + 1));
     body.extend_from_slice(fills);
     body.extend_from_slice(&[b(branch, at(0) as i64), movz(9, 7), b_epi(branch + 2)]);
     body
@@ -831,6 +837,9 @@ fn budget_rule_accepts_the_check_and_fill_loads() {
     assert_eq!(Frag::new(&budget_loop(&fills)).rule(), None);
     // The check's first word may be a join point (it is the original PC's label).
     assert_eq!(Frag::new(&budget_loop(&fills)).entry(1).rule(), None);
+    // Stack-backed user x18's fill (A12) is a fill like x12..x17's.
+    let fills = [fill(14, RUNTIME_FRAME_USER_X18_OFFSET), fill(12, 16)];
+    assert_eq!(Frag::new(&budget_loop(&fills)).rule(), None);
 }
 
 #[test]
@@ -839,11 +848,11 @@ fn budget_rule_rejects_unguarded_or_bypassable_back_edges() {
 
     // No check at all.
     let mut body = budget_loop(&[]);
-    body[1..5].copy_from_slice(&[A64Insn::NopNopHiHints {}; 4]);
+    body[1..1 + CHECK].copy_from_slice(&[A64Insn::NopNopHiHints {}; CHECK]);
     assert_eq!(
         Frag::new(&body).verify().unwrap_err(),
         VerifyError {
-            offset: at(5),
+            offset: at(3),
             rule: VerifyRule::MissingBudgetCheck
         }
     );
@@ -855,12 +864,18 @@ fn budget_rule_rejects_unguarded_or_bypassable_back_edges() {
     );
 
     // Anything but a fill between the cbz and the back-edge: the check no longer
-    // guards the back-edge, so its counter load is the first rejected word.
+    // guards the back-edge, so its `sub` is the first rejected word.
     for between in [
         A64Insn::NopNopHiHints {},
         fill(0, 16),
+        // The user x29 / sp slots, caller x30, the entry address, the pt_regs pointer
+        // and the dispatch table pointer are not stack-backed registers' slots.
         fill(12, 64),
+        fill(12, 72),
         fill(12, 8),
+        fill(12, 80),
+        fill(12, 176),
+        fill(12, RUNTIME_FRAME_IBTC_OFFSET),
         A64Insn::LdrImmGenLdr32LdstPos {
             rt: crate::shared::arm64::ergo::w(12),
             mem: mem_off(sp(), crate::shared::arm64::ergo::scaled_uimm(4, 12, 2)),
@@ -870,71 +885,182 @@ fn budget_rule_rejects_unguarded_or_bypassable_back_edges() {
             Frag::new(&budget_loop(&[between])).verify().unwrap_err(),
             VerifyError {
                 offset: at(1),
-                rule: VerifyRule::BudgetSlotAccess
+                rule: VerifyRule::BudgetRegisterAccess
             },
             "{between:?}"
         );
     }
 
-    // A join point past the check's first word bypasses the decrement. On the
-    // `sub`, `str` or `cbz`, the check's scratch still holds the entry address
-    // there (rule 9 rejects the read first).
+    // A join point past the check's first word bypasses the decrement: on the `cbz`,
+    // a fill, or the back-edge itself.
     let fills = [fill(12, 16), fill(13, 24)];
-    for inner in 2..=7 {
-        let rule = if inner <= 4 {
-            VerifyRule::KernelValueRead
-        } else {
-            VerifyRule::MissingBudgetCheck
-        };
+    for inner in 2..=5 {
         assert_eq!(
             Frag::new(&budget_loop(&fills)).entry(inner).rule(),
-            Some(rule),
+            Some(VerifyRule::MissingBudgetCheck),
             "entry at word {inner}"
         );
     }
 }
 
+/// Every word of the check altered or dropped, x18 read or written anywhere else,
+/// and the old four-word form (A6) are rejected.
 #[test]
 fn budget_rule_rejects_altered_checks() {
-    let s = BUDGET_SCRATCH_REG;
-    // `sub s, s, #2`: the load no longer belongs to a check.
-    let mut body = budget_loop(&[]);
-    body[2] = A64Insn::SubAddsubImmSub64AddsubImm {
-        sh: 0,
-        imm12: uimm(2, 12),
-        rn: xs(s),
-        rd: xs(s),
+    let c = BUDGET_COUNTER_REG;
+    let sub = |sh, imm, rn, rd| A64Insn::SubAddsubImmSub64AddsubImm {
+        sh,
+        imm12: uimm(imm, 12),
+        rn: xs(rn),
+        rd: xs(rd),
     };
-    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::BudgetSlotAccess));
-
-    // `cbz` backward, or into the middle of the stub.
-    for target in [0, 7] {
+    // The `sub` altered: another amount, `lsl #12`, another source or destination.
+    for altered in [
+        sub(0, 2, c, c),
+        sub(0, 0, c, c),
+        sub(1, 1, c, c),
+        sub(0, 1, 17, c),
+        sub(0, 1, c, 17),
+        sub(0, 1, 17, 17),
+        A64Insn::SubsAddsubImmSubs64sAddsubImm {
+            sh: 0,
+            imm12: uimm(1, 12),
+            rn: xs(c),
+            rd: x(c),
+        },
+        A64Insn::SubAddsubImmSub32AddsubImm {
+            sh: 0,
+            imm12: uimm(1, 12),
+            rn: A64Reg::w_sp(c),
+            rd: A64Reg::w_sp(c),
+        },
+        A64Insn::AddAddsubImmAdd64AddsubImm {
+            sh: 0,
+            imm12: uimm(1, 12),
+            rn: xs(c),
+            rd: xs(c),
+        },
+        A64Insn::NopNopHiHints {},
+    ] {
         let mut body = budget_loop(&[]);
-        body[4] = A64Insn::CbzCbz64Compbranch {
-            imm19: branch_imm(at(target) as i64 - at(4) as i64, 19),
-            rt: x(s),
-        };
-        assert!(Frag::new(&body).rule().is_some(), "cbz -> word {target}");
+        body[1] = altered;
+        assert!(Frag::new(&body).rule().is_some(), "{altered:?}");
     }
 
-    // A check that guards no back-edge.
-    let mut body = budget_loop(&[]);
-    body[5] = b_epi(5);
-    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::BudgetSlotAccess));
+    // The `cbz` altered: a 32-bit test, `cbnz`, another register, backward, into
+    // the middle of the stub, or dropped.
+    let stub = at(4);
+    let target = branch_imm(stub as i64 - at(2) as i64, 19);
+    for altered in [
+        A64Insn::CbzCbz32Compbranch {
+            imm19: target,
+            rt: crate::shared::arm64::ergo::w(c),
+        },
+        A64Insn::CbnzCbnz64Compbranch { imm19: target, rt: x(c) },
+        A64Insn::CbzCbz64Compbranch { imm19: target, rt: x(17) },
+        A64Insn::CbzCbz64Compbranch {
+            imm19: branch_imm(at(0) as i64 - at(2) as i64, 19),
+            rt: x(c),
+        },
+        A64Insn::CbzCbz64Compbranch {
+            imm19: branch_imm(at(5) as i64 - at(2) as i64, 19),
+            rt: x(c),
+        },
+        A64Insn::NopNopHiHints {},
+    ] {
+        let mut body = budget_loop(&[]);
+        body[2] = altered;
+        assert!(Frag::new(&body).rule().is_some(), "{altered:?}");
+    }
+    // Dropped words: the `sub` or the `cbz` alone guard nothing.
+    for word in [1, 2] {
+        let mut body = budget_loop(&[]);
+        body[word] = A64Insn::NopNopHiHints {};
+        assert!(Frag::new(&body).rule().is_some(), "word {word} dropped");
+    }
+    // The check doubled: the first decrement guards nothing.
+    let mut body = alloc::vec![A64Insn::NopNopHiHints {}];
+    body.extend_from_slice(&budget_seq(2, 6));
+    body.extend_from_slice(&budget_seq(4, 6));
+    body.extend_from_slice(&[b(5, at(0) as i64), movz(9, 7), b_epi(7)]);
+    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::BudgetRegisterAccess));
 
-    // The counter written anywhere else.
+    // The old four-word form (A6): `ldr s; sub s; str s; cbz s`, counter in slot 192.
+    let old = [
+        ldr(12, sp(), RUNTIME_FRAME_USER_X18_OFFSET),
+        sub(0, 1, 12, 12),
+        str(12, sp(), RUNTIME_FRAME_USER_X18_OFFSET),
+        A64Insn::CbzCbz64Compbranch {
+            imm19: branch_imm(at(6) as i64 - at(4) as i64, 19),
+            rt: x(12),
+        },
+        b(5, at(0) as i64),
+    ];
+    let mut body = alloc::vec![A64Insn::NopNopHiHints {}];
+    body.extend_from_slice(&old);
+    body.extend_from_slice(&[movz(9, 7), b_epi(7)]);
+    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::MissingBudgetCheck));
+
+    // The counter read or written anywhere else, as any operand.
     for insn in [
-        str(0, sp(), BUDGET_SLOT_OFFSET),
-        str(s, sp(), BUDGET_SLOT_OFFSET),
-        ldr(s, sp(), BUDGET_SLOT_OFFSET),
+        movz(c, 5),
+        mov(xs(0), xs(c)),
+        mov(xs(c), xs(0)),
+        sub(0, 1, c, c),
+        ldr(0, xs(c), 0),
+        str(c, xs(0), 0),
+        A64Insn::LdrImmGenLdr64LdstImmpre {
+            rt: x(0),
+            mem: crate::shared::arm64::A64Mem::PreIndex {
+                base: xs(c),
+                offset: simm(8, 9),
+            },
+        },
+        A64Insn::CbzCbz64Compbranch {
+            imm19: branch_imm(4, 19),
+            rt: x(c),
+        },
     ] {
         let body = [insn, b_epi(1)];
         assert_eq!(
             Frag::new(&body).rule(),
-            Some(VerifyRule::BudgetSlotAccess),
+            Some(VerifyRule::BudgetRegisterAccess),
             "{insn:?}"
         );
     }
+    // A well-formed check that guards neither a back-edge nor a template.
+    let mut body = budget_loop(&[]);
+    body[3] = b_epi(3);
+    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::BudgetRegisterAccess));
+}
+
+/// Slot 192 is stack-backed user x18's: an ordinary user-state slot (A12), accessed
+/// as a whole 8 bytes by fills and spills; never half of a pair that reaches the
+/// pointer slots or the dispatch table pointer.
+#[test]
+fn slot_192_is_a_user_state_slot() {
+    let access = |insn| Frag::new(&[insn, b_epi(1)]).rule();
+    for slot in [16, 56, 64, 72, RUNTIME_FRAME_USER_X18_OFFSET] {
+        assert_eq!(access(ldr(12, sp(), slot)), None, "ldr slot {slot}");
+        assert_eq!(access(str(0, sp(), slot)), None, "str slot {slot}");
+    }
+    let pair = |slot: u32| A64Insn::LdpGenLdp64LdstpairOff {
+        rt2: x(13),
+        rt: x(12),
+        mem: mem_off(sp(), ldstpair64_offset(slot as i32)),
+    };
+    assert_eq!(access(pair(RUNTIME_FRAME_USER_X18_OFFSET - 8)), Some(VerifyRule::FrameAccessOutOfRange));
+    assert_eq!(access(pair(RUNTIME_FRAME_USER_X18_OFFSET)), Some(VerifyRule::FrameAccessOutOfRange));
+    // The slots around it stay kernel state.
+    for slot in [80, 88, 176, 184, RUNTIME_FRAME_IBTC_OFFSET] {
+        assert_eq!(access(ldr(12, sp(), slot)).is_some(), slot != 176, "ldr slot {slot}");
+    }
+    // A value loaded from slot 192 is a user value (rule 9): it may be copied out.
+    assert_eq!(
+        Frag::new(&[ldr(12, sp(), RUNTIME_FRAME_USER_X18_OFFSET), mov(xs(0), xs(12)), b_epi(2)])
+            .rule(),
+        None
+    );
 }
 
 /// A8 PAN window: `ubfx x5, x4, #48, #8; cbnz x5, <S>; msr pan, #0;
@@ -1428,10 +1554,10 @@ fn miss_branch_to(miss: A64Insn, from: usize, to: usize) -> A64Insn {
 /// the main probe's miss branches target the victim probe's first word, the victim
 /// probe's the exit group that follows the template's final `br`.
 fn dispatch_site_from(base: usize, gap: &[A64Insn]) -> Vec<A64Insn> {
-    let template = base + 4 + gap.len();
+    let template = base + CHECK + gap.len();
     let group = template + DISPATCH_TEMPLATE_LEN;
     let stub = group + 2;
-    let mut body = budget_seq(base + 3, stub).to_vec();
+    let mut body = budget_seq(base + CHECK - 1, stub).to_vec();
     body.extend_from_slice(gap);
     for (position, insn) in KJIT_DISPATCH_TEMPLATE.iter().enumerate() {
         let from = template + position;
@@ -1455,7 +1581,7 @@ fn dispatch_site(gap: &[A64Insn]) -> Vec<A64Insn> {
 
 fn site_with(position: usize, insn: A64Insn) -> Frag {
     let mut body = dispatch_site(&[movz(13, 0x4000)]);
-    body[5 + position] = insn;
+    body[CHECK + 1 + position] = insn;
     Frag::new(&body)
 }
 
@@ -1602,33 +1728,33 @@ fn dispatch_templates_need_a_budget_check_and_have_no_join_points() {
     let site = dispatch_site(&[movz(13, 0x4000)]);
     // No budget check: its words replaced.
     let mut body = site.clone();
-    body[..4].fill(A64Insn::NopNopHiHints {});
+    body[..CHECK].fill(A64Insn::NopNopHiHints {});
     assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::MissingBudgetCheck));
     let mut body = site.clone();
-    body[..4].fill(movz(14, 0));
+    body[..CHECK].fill(movz(14, 0));
     assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::MissingBudgetCheck));
     // Something a gap may not hold between the check and the template.
     for insn in [
         A64Insn::NopNopHiHints {},
         str(0, sp(), 16),
         ldr(0, sp(), 16),
-        b(4, at(5) as i64),
+        b(CHECK, at(CHECK + 1) as i64),
     ] {
         let mut body = site.clone();
-        body[4] = insn;
+        body[CHECK] = insn;
         assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::MissingBudgetCheck), "{insn:?}");
     }
     // A join point between the check's `sub` and the template, or inside it
     // (the victim probe's first word included: only the main probe's own miss
     // branches may reach it).
-    for index in 1..=4 {
+    for index in 1..=CHECK {
         assert_eq!(
             Frag::new(&site).entry(index).rule(),
             Some(VerifyRule::MissingBudgetCheck),
             "entry at {index}"
         );
     }
-    for index in 5..5 + DISPATCH_TEMPLATE_LEN {
+    for index in CHECK + 1..CHECK + 1 + DISPATCH_TEMPLATE_LEN {
         assert_eq!(
             Frag::new(&site).entry(index).rule(),
             Some(VerifyRule::DispatchTemplate),
@@ -1638,7 +1764,7 @@ fn dispatch_templates_need_a_budget_check_and_have_no_join_points() {
     // A branch into the template, at each of its words (the victim probe's first
     // word, template word 9, included).
     for inner in 0..DISPATCH_TEMPLATE_LEN {
-        let mut body = alloc::vec![b(0, at(1 + 5 + inner) as i64)];
+        let mut body = alloc::vec![b(0, at(1 + CHECK + 1 + inner) as i64)];
         body.extend(dispatch_site_from(1, &[movz(13, 0x4000)]));
         assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::DispatchTemplate), "word {inner}");
     }
@@ -1647,7 +1773,7 @@ fn dispatch_templates_need_a_budget_check_and_have_no_join_points() {
 #[test]
 fn dispatch_miss_branches_name_the_victim_probe_or_one_forward_exit_group() {
     let site = dispatch_site(&[movz(13, 0x4000)]);
-    let template = 5;
+    let template = CHECK + 1;
     let group = template + DISPATCH_TEMPLATE_LEN;
     let retarget = |miss: usize, to: usize| {
         let mut body = site.clone();

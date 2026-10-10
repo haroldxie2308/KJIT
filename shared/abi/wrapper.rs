@@ -1,11 +1,11 @@
 use super::{
-    ABI_ENTRY_ARG_REG, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
+    BUDGET_COUNTER_REG, ABI_ENTRY_ARG_REG, ABI_EXTRA_PARAMS_ARG_REG, ABI_LINK_REG, ABI_PT_REGS_ARG_REG,
     DISPATCH_KEY_REG, DISPATCH_SLOT_REG, DISPATCH_TARGET_REG, EXTRA_PARAM_IBTC_TABLE_OFFSET,
     IBTC_BITS, IBTC_INDEX_LSB, IBTC_RECORD_HOST_OFFSET, IBTC_RECORD_PC_OFFSET, IBTC_SLOT_SHIFT,
     IBTC_VICTIM_BITS, IBTC_VICTIM_FOLD_SHIFT, IBTC_VICTIM_OFFSET,
     KJIT_BACKEDGE_BUDGET, REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG,
-    RET_STATUS_REG, RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_ENTRY_ADDR_OFFSET,
-    RUNTIME_FRAME_IBTC_OFFSET, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
+    RET_STATUS_REG, RUNTIME_FRAME_ENTRY_ADDR_OFFSET, RUNTIME_FRAME_IBTC_OFFSET,
+    RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES, RUNTIME_FRAME_USER_X18_OFFSET,
 };
 use crate::shared::arm64::ergo::{
     ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, scaled_simm, sp, uimm, x, xzr,
@@ -25,9 +25,9 @@ const PROLOGUE_ENTRY_SCRATCH_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
 
 /// Entered at offset 0 with x0 = pt_regs, x1 = extra params and
 /// x2 = `ABI_ENTRY_ARG_REG` (absolute body address to start at). It stores the
-/// run's dispatch table (extra params `[2]`) in the frame, resets the budget counter
-/// and ends with the prologue's own indirect branch, `br` to that saved entry
-/// address.
+/// run's dispatch table (extra params `[2]`) in the frame, moves user x18 to its frame
+/// slot, sets the budget counter (physical x18, A12) and ends with the prologue's own
+/// indirect branch, `br` to that saved entry address.
 pub const KJIT_PROLOGUE: &[A64Insn] = &[
     A64Insn::StpGenStp64LdstpairPre {
         rt2: x(30),
@@ -223,15 +223,16 @@ pub const KJIT_PROLOGUE: &[A64Insn] = &[
         rt: x(16),
         mem: mem_off(sp(), ldstpair64_offset(64)),
     },
-    // Every entry starts with a full budget (x12 is scratch here, see above).
+    // User x18 (loaded into physical x18 above, untouched since) goes to its frame
+    // slot; physical x18 becomes the budget counter (A12), full at every entry.
+    A64Insn::StrImmGenStr64LdstPos {
+        rt: x(BUDGET_COUNTER_REG),
+        mem: mem_off(sp(), ldst64_offset(RUNTIME_FRAME_USER_X18_OFFSET)),
+    },
     A64Insn::MovzMovz64Movewide {
         hw: 0,
         imm16: uimm(KJIT_BACKEDGE_BUDGET as u32, 16),
-        rd: x(PROLOGUE_ENTRY_SCRATCH_REG),
-    },
-    A64Insn::StrImmGenStr64LdstPos {
-        rt: x(PROLOGUE_ENTRY_SCRATCH_REG),
-        mem: mem_off(sp(), ldst64_offset(RUNTIME_FRAME_BUDGET_OFFSET)),
+        rd: x(BUDGET_COUNTER_REG),
     },
     A64Insn::LdrImmGenLdr64LdstPos {
         rt: x(PROLOGUE_ENTRY_SCRATCH_REG),
@@ -330,6 +331,12 @@ pub const KJIT_EPILOGUE: &[A64Insn] = &[
     A64Insn::StrImmGenStr64LdstPos {
         rt: x(8),
         mem: mem_off(x(16), ldst64_offset(64)),
+    },
+    // Physical x18 is the budget counter; user x18 comes from its frame slot (A12).
+    // The caller's x18 is restored below, from its own slot.
+    A64Insn::LdrImmGenLdr64LdstPos {
+        rt: x(BUDGET_COUNTER_REG),
+        mem: mem_off(sp(), ldst64_offset(RUNTIME_FRAME_USER_X18_OFFSET)),
     },
     A64Insn::StpGenStp64LdstpairOff {
         rt2: x(19),
@@ -658,7 +665,7 @@ mod tests {
     fn wrapper_lengths_match_contract() {
         assert_eq!(PROLOGUE_LEN_BYTES, 0xa8);
         assert_eq!(EPILOGUE_OFFSET, 0xa8);
-        assert_eq!(EPILOGUE_LEN_BYTES, 0x88);
+        assert_eq!(EPILOGUE_LEN_BYTES, 0x8c);
     }
 
     #[test]
@@ -696,6 +703,56 @@ mod tests {
             })
             .expect("the prologue loads user x1");
         assert!(load + 1 < x1_overwritten);
+    }
+
+    /// A12: user x18 goes to frame slot 192 and physical x18 becomes the budget counter
+    /// as the prologue's last two x18 words; the epilogue reloads user x18 from the
+    /// slot before it writes x18..x19 to `pt_regs`, and restores the caller's x18 last.
+    #[test]
+    fn x18_is_the_budget_counter_between_prologue_and_epilogue() {
+        let encode = |insns: &[A64Insn]| {
+            insns.iter().map(|insn| insn.encode().unwrap()).collect::<Vec<_>>()
+        };
+        let slot = mem_off(sp(), ldst64_offset(RUNTIME_FRAME_USER_X18_OFFSET));
+        let spill = A64Insn::StrImmGenStr64LdstPos { rt: x(BUDGET_COUNTER_REG), mem: slot };
+        let fill = A64Insn::LdrImmGenLdr64LdstPos { rt: x(BUDGET_COUNTER_REG), mem: slot };
+        let init = A64Insn::MovzMovz64Movewide {
+            hw: 0,
+            imm16: uimm(KJIT_BACKEDGE_BUDGET as u32, 16),
+            rd: x(BUDGET_COUNTER_REG),
+        };
+        // `movz x18, #4096`
+        assert_eq!(encode(&[init]), [0xd282_0012]);
+
+        let prologue = encode(KJIT_PROLOGUE);
+        let spill_at = prologue.iter().position(|&w| w == encode(&[spill])[0]).unwrap();
+        let init_at = prologue.iter().position(|&w| w == encode(&[init])[0]).unwrap();
+        assert_eq!(init_at, spill_at + 1);
+        // Nothing after the init touches x18: the words from there on are the entry
+        // address load and the `br` through x12.
+        assert!(KJIT_PROLOGUE[init_at + 1..].iter().all(|insn| matches!(
+            insn,
+            A64Insn::LdrImmGenLdr64LdstPos { rt, .. } if rt.enc == PROLOGUE_ENTRY_SCRATCH_REG
+        ) || matches!(insn, A64Insn::BrBr64BranchReg { .. })));
+        // The user value read from `pt_regs` (`ldp x18, x19, [x16, #144]`) is spilled
+        // before anything else is written to x18.
+        let load_at = KJIT_PROLOGUE
+            .iter()
+            .position(|insn| matches!(insn, A64Insn::LdpGenLdp64LdstpairOff { rt, .. } if rt.enc == BUDGET_COUNTER_REG))
+            .unwrap();
+        assert!(load_at < spill_at);
+
+        let epilogue = encode(KJIT_EPILOGUE);
+        let fill_at = epilogue.iter().position(|&w| w == encode(&[fill])[0]).unwrap();
+        assert!(matches!(
+            KJIT_EPILOGUE[fill_at + 1],
+            A64Insn::StpGenStp64LdstpairOff { rt, rt2, .. } if rt.enc == 18 && rt2.enc == 19
+        ));
+        // The caller's x18 is restored from its own slot (88), last.
+        assert!(matches!(
+            KJIT_EPILOGUE[fill_at + 2..].iter().find(|insn| matches!(insn, A64Insn::LdrImmGenLdr64LdstPos { rt, .. } if rt.enc == 18)),
+            Some(A64Insn::LdrImmGenLdr64LdstPos { mem, .. }) if *mem == mem_off(sp(), ldst64_offset(88))
+        ));
     }
 
     #[test]

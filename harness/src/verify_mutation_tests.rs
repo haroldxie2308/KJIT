@@ -14,8 +14,8 @@ use crate::asm_fixture_tests::run_every_case;
 use crate::shared::abi::{
     dispatch_template_matches, DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES,
     DISPATCH_TEMPLATE_MISS_TARGETS, DISPATCH_TEMPLATE_VICTIM_PROBE, EPILOGUE_OFFSET,
-    KJIT_DISPATCH_TEMPLATE, PROLOGUE_LEN_BYTES, REG_VIRT_SCRATCH_GPR_START, RUNTIME_FRAME_BUDGET_OFFSET, RUNTIME_FRAME_IBTC_OFFSET,
-    RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
+    KJIT_DISPATCH_TEMPLATE, PROLOGUE_LEN_BYTES, BUDGET_COUNTER_REG, RUNTIME_FRAME_IBTC_OFFSET,
+    RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES, RUNTIME_FRAME_USER_X18_OFFSET,
 };
 use crate::shared::arm64::ergo::{
     ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, scaled_simm, scaled_uimm, simm,
@@ -24,9 +24,6 @@ use crate::shared::arm64::ergo::{
 use crate::shared::arm64::{A64Insn, A64Mem, A64OperandRole, A64Reg, A64Reg31Mode};
 use crate::shared::verify::{verify_fragment, VerifyRule, BODY_OFFSET};
 use crate::{compile_fixture_fragment, encode_fragment, fixture_state, FragmentTables};
-
-/// The budget check's scratch register (the prologue's budget init uses it too).
-const BUDGET_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
 
 /// Words outside the generated subset (test-only raw encodings).
 const FOREIGN_WORDS: &[(&str, u32)] = &[
@@ -834,24 +831,32 @@ impl Suite {
         }
     }
 
-    /// Budget checks found on the bytes: `(check start, back-edge index)`. The
-    /// check is `ldr x12, [sp, #192]` + 3 words, then scratch fill loads, then the
-    /// back-edge.
+    /// Budget checks found on the bytes: `(check start, back-edge index)`. A check
+    /// is `sub x18, x18, #1; cbz x18, <stub>`, then scratch fill loads, then the
+    /// back-edge. Dispatch sites' checks (A11) are found by `dispatch_templates`.
     fn budget_guards(fixture: &Fixture) -> Vec<(usize, usize)> {
-        let counter_load = enc(ldr64(BUDGET_REG, sp(), RUNTIME_FRAME_BUDGET_OFFSET));
+        let sub = enc(budget_sub());
         let mut guards = Vec::new();
         for start in fixture.body() {
-            if fixture.words[start] != counter_load {
+            if fixture.words[start] != sub
+                || !matches!(
+                    fixture.decoded(start + 1),
+                    Some(A64Insn::CbzCbz64Compbranch { rt, .. }) if rt.enc() == BUDGET_COUNTER_REG
+                )
+            {
                 continue;
             }
-            let mut branch = start + 4;
+            let mut branch = start + 2;
             while fixture.decoded(branch).is_some_and(|insn| {
                 matches!(insn, A64Insn::LdrImmGenLdr64LdstPos { rt, mem: A64Mem::Offset { base, .. } }
                     if (12..=15).contains(&rt.enc()) && base.enc() == 31)
             }) {
                 branch += 1;
             }
-            guards.push((start, branch));
+            // A dispatch site's check is followed by its gap and template instead.
+            if fixture.decoded(branch).is_some_and(|insn| branch_role(insn).is_some()) {
+                guards.push((start, branch));
+            }
         }
         guards
     }
@@ -862,7 +867,7 @@ impl Suite {
         for &(start, branch) in &guards {
             // Dropped: the whole check, or any one of its words.
             let mut words = fixture.words.clone();
-            words[start..start + 4].fill(nop);
+            words[start..start + 2].fill(nop);
             self.expect_reject(
                 "budget check dropped",
                 fixture,
@@ -870,7 +875,7 @@ impl Suite {
                 &words,
                 &fixture.tables,
             );
-            for word in start..start + 4 {
+            for word in start..start + 2 {
                 self.replace(
                     "budget check dropped",
                     fixture,
@@ -882,7 +887,7 @@ impl Suite {
 
             // `cbz` retargeted: backward, onto the back-edge, into the stub, to the
             // epilogue, outside the fragment.
-            let cbz = start + 3;
+            let cbz = start + 1;
             let Some(A64Insn::CbzCbz64Compbranch { imm19, rt }) = fixture.decoded(cbz) else {
                 panic!(
                     "{}: budget check at {:#x} has no cbz",
@@ -914,8 +919,26 @@ impl Suite {
                 );
             }
 
-            // Decrement altered: #0 (no progress), #2, #4095, `#1, lsl #12`, `add`.
-            let s = A64Reg::x_sp(BUDGET_REG);
+            // `cbz` altered: another register, 32-bit, the inverse test.
+            let target = scaled_simm(imm19.raw(), 19, 2);
+            for altered in [
+                A64Insn::CbzCbz64Compbranch { imm19: target, rt: x(17) },
+                A64Insn::CbzCbz32Compbranch { imm19: target, rt: w(BUDGET_COUNTER_REG) },
+                A64Insn::CbnzCbnz64Compbranch { imm19: target, rt: x(BUDGET_COUNTER_REG) },
+            ] {
+                self.replace(
+                    "budget cbz altered",
+                    fixture,
+                    cbz,
+                    enc(altered),
+                    &format!("{altered:?}"),
+                );
+            }
+
+            // Decrement altered: #0 (no progress), #2, #4095, `#1, lsl #12`, `add`,
+            // another source or destination register, `subs`, 32-bit.
+            let s = A64Reg::x_sp(BUDGET_COUNTER_REG);
+            let other = A64Reg::x_sp(BUDGET_COUNTER_REG - 1);
             let subs = [
                 A64Insn::SubAddsubImmSub64AddsubImm {
                     sh: 0,
@@ -951,14 +974,32 @@ impl Suite {
                     sh: 0,
                     imm12: uimm(1, 12),
                     rn: s,
-                    rd: A64Reg::x_sp(BUDGET_REG + 1),
+                    rd: other,
+                },
+                A64Insn::SubAddsubImmSub64AddsubImm {
+                    sh: 0,
+                    imm12: uimm(1, 12),
+                    rn: other,
+                    rd: s,
+                },
+                A64Insn::SubsAddsubImmSubs64sAddsubImm {
+                    sh: 0,
+                    imm12: uimm(1, 12),
+                    rn: s,
+                    rd: x(BUDGET_COUNTER_REG),
+                },
+                A64Insn::SubAddsubImmSub32AddsubImm {
+                    sh: 0,
+                    imm12: uimm(1, 12),
+                    rn: A64Reg::w_sp(BUDGET_COUNTER_REG),
+                    rd: A64Reg::w_sp(BUDGET_COUNTER_REG),
                 },
             ];
             for sub in subs {
                 self.replace(
                     "budget sub amount altered",
                     fixture,
-                    start + 1,
+                    start,
                     enc(sub),
                     &format!("{sub:?}"),
                 );
@@ -978,51 +1019,112 @@ impl Suite {
             }
         }
 
-        // The counter written anywhere but the check's own store.
-        let own_stores: Vec<usize> = guards.iter().map(|&(start, _)| start + 2).collect();
-        let writes = [
+        // Physical x18 (the counter) read or written by any word but a check's own
+        // `sub` and `cbz`: every form that can name it, at every body word.
+        let checks: Vec<usize> = guards
+            .iter()
+            .flat_map(|&(start, _)| [start, start + 1])
+            .collect();
+        let c = BUDGET_COUNTER_REG;
+        let xc = A64Reg::x_sp(c);
+        let counter_access = [
+            ("movz x18, #7", enc(A64Insn::MovzMovz64Movewide { hw: 0, imm16: uimm(7, 16), rd: x(c) })),
+            ("movz w18, #7", enc(A64Insn::MovzMovz32Movewide { hw: 0, imm16: uimm(7, 16), rd: w(c) })),
+            ("mov x0, x18", enc(mov_reg(0, c))),
+            ("mov x18, x0", enc(mov_reg(c, 0))),
+            ("mov x18, xzr", enc(mov_reg(c, 31))),
+            ("add x0, x18, #0", enc(add_imm(0, c, 0))),
+            ("add x18, x18, #1", enc(add_imm(c, c, 1))),
             (
-                "str x12, [sp, #192]",
-                str64(BUDGET_REG, sp(), RUNTIME_FRAME_BUDGET_OFFSET),
+                "sub x18, x18, #1 (alone, not a check)",
+                enc(budget_sub()),
             ),
             (
-                "str xzr, [sp, #192]",
-                str64(31, sp(), RUNTIME_FRAME_BUDGET_OFFSET),
+                "cmp x18, #0 (flags)",
+                enc(A64Insn::SubsAddsubImmSubs64sAddsubImm {
+                    sh: 0,
+                    imm12: uimm(0, 12),
+                    rn: xc,
+                    rd: x(31),
+                }),
+            ),
+            ("str x18, [sp, #16]", enc(str64(c, sp(), 16))),
+            ("ldr x18, [sp, #16]", enc(ldr64(c, sp(), 16))),
+            ("ldr x18, [sp, #192]", enc(ldr64(c, sp(), RUNTIME_FRAME_USER_X18_OFFSET))),
+            ("str x18, [sp, #192]", enc(str64(c, sp(), RUNTIME_FRAME_USER_X18_OFFSET))),
+            ("ldr x0, [x18]", enc(ldr64(0, xc, 0))),
+            (
+                "ldr x0, [x18, #8]! (writeback)",
+                enc(A64Insn::LdrImmGenLdr64LdstImmpre {
+                    rt: x(0),
+                    mem: mem_pre(xc, simm(8, 9)),
+                }),
             ),
             (
-                "str w12, [sp, #192]",
-                A64Insn::StrImmGenStr32LdstPos {
-                    rt: w(BUDGET_REG),
-                    mem: mem_off(sp(), scaled_uimm(RUNTIME_FRAME_BUDGET_OFFSET / 4, 12, 2)),
+                "ldp x0, x18, [x16]",
+                enc(A64Insn::LdpGenLdp64LdstpairOff {
+                    rt2: x(c),
+                    rt: x(0),
+                    mem: mem_off(A64Reg::x_sp(16), ldstpair64_offset(0)),
+                }),
+            ),
+            (
+                "cbz x18, <next>",
+                enc(A64Insn::CbzCbz64Compbranch { imm19: scaled_simm(1, 19, 2), rt: x(c) }),
+            ),
+            (
+                "cbnz x18, <next>",
+                enc(A64Insn::CbnzCbnz64Compbranch { imm19: scaled_simm(1, 19, 2), rt: x(c) }),
+            ),
+            ("mrs x18, tpidr_el0", 0xd53b_d052),
+            ("ldtr x0, [x18]", enc(A64Insn::LdtrLdtr64LdstUnpriv { rt: x(0), mem: mem_off(xc, simm(0, 9)) })),
+        ];
+        for (what, word) in counter_access {
+            for index in fixture.body().filter(|index| !checks.contains(index)) {
+                self.replace("budget register accessed elsewhere", fixture, index, word, what);
+            }
+        }
+
+        // Slot 192 is stack-backed user x18's: a user-state slot, so an 8-byte
+        // offset ldr/str is an ordinary spill/fill (like any user-state slot, a
+        // narrower access is admitted too: it only touches user state). Anything else
+        // at that slot is rejected: a pair that reaches a neighbour, writeback, a
+        // user access based on SP.
+        let slot = RUNTIME_FRAME_USER_X18_OFFSET;
+        let slot_accesses = [
+            (
+                "stp x12, x13, [sp, #192] (reaches the dispatch table slot)",
+                A64Insn::StpGenStp64LdstpairOff {
+                    rt2: x(13),
+                    rt: x(12),
+                    mem: mem_off(sp(), ldstpair64_offset(slot as i32)),
                 },
             ),
             (
-                "stp x12, x13, [sp, #192]",
-                A64Insn::StpGenStp64LdstpairOff {
-                    rt2: x(BUDGET_REG + 1),
-                    rt: x(BUDGET_REG),
-                    mem: mem_off(sp(), ldstpair64_offset(RUNTIME_FRAME_BUDGET_OFFSET as i32)),
-                },
-            ),
-            (
-                "stp x0, x1, [sp, #184]",
-                A64Insn::StpGenStp64LdstpairOff {
+                "ldp x0, x1, [sp, #184] (reaches the extra-params pointer)",
+                A64Insn::LdpGenLdp64LdstpairOff {
                     rt2: x(1),
                     rt: x(0),
                     mem: mem_off(sp(), ldstpair64_offset(184)),
                 },
             ),
+            (
+                "str x0, [sp, #192]! (writeback)",
+                A64Insn::StrImmGenStr64LdstImmpre {
+                    rt: x(0),
+                    mem: mem_pre(sp(), simm(slot, 9)),
+                },
+            ),
+            (
+                "ldtr x0, [sp, #192] (user access based on SP)",
+                A64Insn::LdtrLdtr64LdstUnpriv {
+                    rt: x(0),
+                    mem: mem_off(sp(), simm(slot, 9)),
+                },
+            ),
         ];
-        for (what, insn) in writes {
-            for index in fixture.body().filter(|index| !own_stores.contains(index)) {
-                self.replace(
-                    "budget slot written elsewhere",
-                    fixture,
-                    index,
-                    enc(insn),
-                    what,
-                );
-            }
+        for (what, insn) in slot_accesses {
+            self.replace_everywhere("slot 192 accessed as other than a user-state slot", fixture, enc(insn), what);
         }
     }
 
@@ -1560,11 +1662,11 @@ impl Suite {
         // Every kernel-valued frame slot loaded, whole (`ldr`, `ldp`) or in part
         // (`ldr w`), at every body word; the destination rotates with the word so
         // every register is a destination. The only admitted kernel-slot read is
-        // the 64-bit `ldr x12..x15, [sp, #176]`. (The budget counter is not a
-        // kernel value; its accesses are the budget classes'.)
+        // the 64-bit `ldr x12..x15, [sp, #176]`. (Slot 192, stack-backed user x18, is
+        // a user-state slot like [16, 80).)
         let user_slots = 16..80;
         for slot in (0..RUNTIME_FRAME_SIZE_BYTES).step_by(8) {
-            if user_slots.contains(&slot) || slot == RUNTIME_FRAME_BUDGET_OFFSET {
+            if user_slots.contains(&slot) || slot == RUNTIME_FRAME_USER_X18_OFFSET {
                 continue;
             }
             for index in fixture.body() {
@@ -1863,11 +1965,11 @@ impl Suite {
                 },
             ),
             (
-                "ldp x0, x1, [sp, #192] (budget + table)",
+                "ldp x0, x1, [sp, #192] (user x18 + table)",
                 A64Insn::LdpGenLdp64LdstpairOff {
                     rt2: x(1),
                     rt: x(0),
-                    mem: mem_off(sp(), ldstpair64_offset(RUNTIME_FRAME_BUDGET_OFFSET as i32)),
+                    mem: mem_off(sp(), ldstpair64_offset(RUNTIME_FRAME_USER_X18_OFFSET as i32)),
                 },
             ),
         ];
@@ -1891,11 +1993,11 @@ impl Suite {
                 },
             ),
             (
-                "stp x12, x13, [sp, #192] (budget + table)",
+                "stp x12, x13, [sp, #192] (user x18 + table)",
                 A64Insn::StpGenStp64LdstpairOff {
                     rt2: x(13),
                     rt: x(12),
-                    mem: mem_off(sp(), ldstpair64_offset(RUNTIME_FRAME_BUDGET_OFFSET as i32)),
+                    mem: mem_off(sp(), ldstpair64_offset(RUNTIME_FRAME_USER_X18_OFFSET as i32)),
                 },
             ),
             (
@@ -2379,16 +2481,21 @@ impl Suite {
                 }
             }
 
-            // No budget check: its four words replaced by data processing (the gap
+            // No budget check: its two words replaced by data processing (the gap
             // may hold those), or the word before the template by something a gap
             // may not hold (a branch, a store, a non-fill load, a nop).
+            let sub_word = enc(budget_sub());
             let check = start
                 .checked_sub(1)
                 .and_then(|from| (0..=16).find_map(|gap| {
                     let end = from + 1 - gap;
-                    let begin = end.checked_sub(4)?;
-                    (fixture.words[begin] == enc(ldr64(12, sp(), RUNTIME_FRAME_BUDGET_OFFSET)))
-                        .then_some(begin)
+                    let begin = end.checked_sub(2)?;
+                    (fixture.words[begin] == sub_word
+                        && matches!(
+                            fixture.decoded(begin + 1),
+                            Some(A64Insn::CbzCbz64Compbranch { rt, .. }) if rt.enc() == BUDGET_COUNTER_REG
+                        ))
+                    .then_some(begin)
                 }));
             if let Some(check) = check {
                 let mut words = fixture.words.clone();
@@ -2397,7 +2504,7 @@ impl Suite {
                     imm16: uimm(0, 16),
                     rd: x(14),
                 });
-                words[check..check + 4].fill(movz);
+                words[check..check + 2].fill(movz);
                 self.expect_reject(
                     "dispatch template without budget check (A11)",
                     fixture,
@@ -2405,7 +2512,7 @@ impl Suite {
                     &words,
                     &fixture.tables,
                 );
-                words[check..check + 4].fill(nop);
+                words[check..check + 2].fill(nop);
                 self.expect_reject(
                     "dispatch template without budget check (A11)",
                     fixture,
@@ -2413,16 +2520,18 @@ impl Suite {
                     &words,
                     &fixture.tables,
                 );
-                let mut words = fixture.words.clone();
-                // The check's `str` (the counter is never written back) and `sub`.
-                words[check + 2] = nop;
-                self.expect_reject(
-                    "dispatch template without budget check (A11)",
-                    fixture,
-                    format!("check without its store, {}", at(0)),
-                    &words,
-                    &fixture.tables,
-                );
+                // Either word of the check alone.
+                for word in [check, check + 1] {
+                    let mut words = fixture.words.clone();
+                    words[word] = nop;
+                    self.expect_reject(
+                        "dispatch template without budget check (A11)",
+                        fixture,
+                        format!("check without word {}, {}", word - check, at(0)),
+                        &words,
+                        &fixture.tables,
+                    );
+                }
             }
             for (what, insn) in [
                 ("nop", A64Insn::NopNopHiHints {}),
@@ -2964,6 +3073,17 @@ fn add_imm(rd: u8, rn: u8, imm: u32) -> A64Insn {
         imm12: uimm(imm, 12),
         rn: A64Reg::x_sp(rn),
         rd: A64Reg::x_sp(rd),
+    }
+}
+
+/// `sub x18, x18, #1`: the first word of a budget check (0xd1000652).
+fn budget_sub() -> A64Insn {
+    let counter = A64Reg::x_sp(BUDGET_COUNTER_REG);
+    A64Insn::SubAddsubImmSub64AddsubImm {
+        sh: 0,
+        imm12: uimm(1, 12),
+        rn: counter,
+        rd: counter,
     }
 }
 

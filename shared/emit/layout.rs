@@ -866,22 +866,22 @@ mod tests {
 
         let layout = layout_program(program).unwrap();
         let body_index = body_start_offset() / 4;
-        let cold_index = body_index + 8;
+        let cold_index = body_index + 6;
 
-        // The CBNZ follows its 4-instruction budget check and goes back 7.
+        // The CBNZ follows its 2-instruction budget check and goes back 5.
         assert_eq!(
-            layout.insns[body_index + 7].branch_target_imm("imm19"),
-            Some(524288 - 7)
+            layout.insns[body_index + 5].branch_target_imm("imm19"),
+            Some(524288 - 5)
         );
         // The check's CBZ goes to the Budget stub in the cold region.
         assert_eq!(
-            layout.insns[body_index + 6].direct_branch_target(0),
+            layout.insns[body_index + 4].direct_branch_target(0),
             None,
             "CBZ is conditional"
         );
         assert_eq!(
-            layout.insns[body_index + 6]
-                .conditional_targets(((body_index + 6) * 4) as u64)
+            layout.insns[body_index + 4]
+                .conditional_targets(((body_index + 4) * 4) as u64)
                 .map(|(taken, _)| taken),
             Some((cold_index * 4) as u64)
         );
@@ -966,7 +966,7 @@ mod tests {
         assert_eq!(
             layout_program(one_block(backward_cbnz_block(true))),
             Err(LayoutError::MissingBudgetStub {
-                insn_index: body_start_offset() / 4 + 6,
+                insn_index: body_start_offset() / 4 + 4,
                 ori_pc: 0x1008,
             })
         );
