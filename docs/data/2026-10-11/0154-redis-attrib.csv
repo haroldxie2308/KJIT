@@ -1,0 +1,875 @@
+test,group,item,metric,value,unit,tag,note
+set,summary,F_cntvct_onprof,us_per_req,4.9988456249999995,us,measured,
+set,summary,F_sampler_onprof,us_per_req,4.934277735701792,us,measured(sampled),
+set,summary,native_el0_tail_under_kjit,us_per_req,0.022870732795715824,us,measured(sampled),
+set,counters,exit_svc,per_req,1.998505,1,measured,"module counters, median of runs"
+set,counters,exit_br,per_req,1.000005,1,measured,"module counters, median of runs"
+set,counters,exit_bl,per_req,0.00225,1,measured,"module counters, median of runs"
+set,counters,exit_blr,per_req,0.00012,1,measured,"module counters, median of runs"
+set,counters,exit_ret,per_req,0.001865,1,measured,"module counters, median of runs"
+set,counters,exit_unsupported,per_req,0.03718,1,measured,"module counters, median of runs"
+set,counters,ibtc_fpsimd_boundary,per_req,1.000005,1,measured,"module counters, median of runs"
+set,counters,ibtc_miss_cold,per_req,0.003985,1,measured,"module counters, median of runs"
+set,counters,ibtc_miss_conflict,per_req,0.000255,1,measured,"module counters, median of runs"
+set,counters,syscalls_in_kernel,per_req,1.998505,1,measured,"module counters, median of runs"
+set,counters,hook_calls,per_req,2.042875,1,measured,"module counters, median of runs"
+set,windows,simd,insitu_ns_per_window,11.750406579257872,ns,measured(sampled),
+set,windows,simd,count_per_req,11.01019,1,counted,
+set,windows,atomic,insitu_ns_per_window,22.566234424204442,ns,measured(sampled),
+set,windows,atomic,count_per_req,13.99829,1,counted,
+set,attribution,PAN windows (SIMD&FP 11.0 + LSE atomics 14.0),insitu_ns_per_unit,17.804476829174586,ns,derived,
+set,attribution,PAN windows (SIMD&FP 11.0 + LSE atomics 14.0),count_per_req,25.00848,1,counted,
+set,attribution,PAN windows (SIMD&FP 11.0 + LSE atomics 14.0),model_ns_per_req,225.7207844,ns,modelled,"7.66 ns/SIMD&FP window, 10.1 ns/atomic window (ldadd microbenchmark)"
+set,attribution,PAN windows (SIMD&FP 11.0 + LSE atomics 14.0),insitu_ns_per_req,445.262902692876,ns,measured(sampled),
+set,attribution,PAN windows (SIMD&FP 11.0 + LSE atomics 14.0),share_of_loss_insitu,0.1693014799486386,fraction,derived,
+set,attribution,Dispatch template words (185 BL/BLR/BR + 166 RET sites),insitu_ns_per_unit,1.3364084646809118,ns,derived,
+set,attribution,Dispatch template words (185 BL/BLR/BR + 166 RET sites),count_per_req,350.23528999999996,1,counted,
+set,attribution,Dispatch template words (185 BL/BLR/BR + 166 RET sites),model_ns_per_req,136.59176309999998,ns,modelled,0.39 ns/transfer (monomorphic loop)
+set,attribution,Dispatch template words (185 BL/BLR/BR + 166 RET sites),insitu_ns_per_req,468.05740618597383,ns,measured(sampled),
+set,attribution,Dispatch template words (185 BL/BLR/BR + 166 RET sites),share_of_loss_insitu,0.17796859133999055,fraction,derived,
+set,attribution,"Dispatch: stall at call/branch targets (function entries), net of native",insitu_ns_per_unit,5.399177799911828,ns,derived,
+set,attribution,"Dispatch: stall at call/branch targets (function entries), net of native",count_per_req,184.6507,1,counted,
+set,attribution,"Dispatch: stall at call/branch targets (function entries), net of native",model_ns_per_req,620.426352,ns,modelled,"3.36 ns/transfer (sites microbenchmark, distinct sites) minus the template words"
+set,attribution,"Dispatch: stall at call/branch targets (function entries), net of native",insitu_ns_per_req,996.961960178179,ns,measured(sampled),
+set,attribution,"Dispatch: stall at call/branch targets (function entries), net of native",share_of_loss_insitu,0.37907297978310084,fraction,derived,
+set,attribution,"Dispatch: stall at return targets, net of native",insitu_ns_per_unit,4.977445367556754,ns,derived,
+set,attribution,"Dispatch: stall at return targets, net of native",count_per_req,165.58459,1,counted,
+set,attribution,"Dispatch: stall at return targets, net of native",model_ns_per_req,556.3642223999999,ns,modelled,3.36 ns/transfer (sites microbenchmark) minus the template words
+set,attribution,"Dispatch: stall at return targets, net of native",insitu_ns_per_req,824.1882504342844,ns,measured(sampled),
+set,attribution,"Dispatch: stall at return targets, net of native",share_of_loss_insitu,0.31337955556349123,fraction,derived,
+set,attribution,Budget checks,insitu_ns_per_unit,0.3440087998618699,ns,derived,
+set,attribution,Budget checks,count_per_req,529.64346,1,counted,
+set,attribution,Budget checks,model_ns_per_req,21.1857384,ns,modelled,0.04 ns/unit
+set,attribution,Budget checks,insitu_ns_per_req,182.2020110292883,ns,measured(sampled),
+set,attribution,Budget checks,share_of_loss_insitu,0.06927832956736059,fraction,derived,
+set,attribution,Reg-virt fills/spills/helpers,insitu_ns_per_unit,0.06440529223974434,ns,derived,
+set,attribution,Reg-virt fills/spills/helpers,count_per_req,2616.1593199999998,1,counted,
+set,attribution,Reg-virt fills/spills/helpers,model_ns_per_req,235.45433879999996,ns,modelled,0.09..1.17 ns/word
+set,attribution,Reg-virt fills/spills/helpers,insitu_ns_per_req,168.4945055503308,ns,measured(sampled),
+set,attribution,Reg-virt fills/spills/helpers,share_of_loss_insitu,0.06406635041985839,fraction,derived,
+set,attribution,Alignment checks away from entries (LDTR/STTR splits: 509 pairs),insitu_ns_per_unit,0.1250868801548882,ns,derived,
+set,attribution,Alignment checks away from entries (LDTR/STTR splits: 509 pairs),count_per_req,581.16394,1,counted,
+set,attribution,Alignment checks away from entries (LDTR/STTR splits: 509 pairs),model_ns_per_req,0.0,ns,modelled,0.00 ns/check
+set,attribution,Alignment checks away from entries (LDTR/STTR splits: 509 pairs),insitu_ns_per_req,72.69598411312263,ns,measured(sampled),
+set,attribution,Alignment checks away from entries (LDTR/STTR splits: 509 pairs),share_of_loss_insitu,0.02764105795079814,fraction,derived,
+set,attribution,Fragment prologue/epilogue/exit groups,insitu_ns_per_unit,10.741112641233874,ns,derived,
+set,attribution,Fragment prologue/epilogue/exit groups,count_per_req,3.03987,1,counted,
+set,attribution,Fragment prologue/epilogue/exit groups,model_ns_per_req,0.0,ns,modelled,measured with runtime entries
+set,attribution,Fragment prologue/epilogue/exit groups,insitu_ns_per_req,32.65158608470762,ns,measured(sampled),
+set,attribution,Fragment prologue/epilogue/exit groups,share_of_loss_insitu,0.012415051452477129,fraction,derived,
+set,attribution,"Native-equivalent instructions mid-block, beyond native",insitu_ns_per_unit,0.11695890111920133,ns,derived,
+set,attribution,"Native-equivalent instructions mid-block, beyond native",count_per_req,5165.12891,1,counted,
+set,attribution,"Native-equivalent instructions mid-block, beyond native",model_ns_per_req,0.0,ns,modelled,no model
+set,attribution,"Native-equivalent instructions mid-block, beyond native",insitu_ns_per_req,604.1078014526182,ns,measured(sampled),
+set,attribution,"Native-equivalent instructions mid-block, beyond native",share_of_loss_insitu,0.22969877844279468,fraction,derived,
+set,attribution,"Runtime entries: hook logic (can_run, lookup, link) per entry",insitu_ns_per_unit,79.45597454277086,ns,derived,
+set,attribution,"Runtime entries: hook logic (can_run, lookup, link) per entry",count_per_req,3.03987,1,counted,
+set,attribution,"Runtime entries: hook logic (can_run, lookup, link) per entry",model_ns_per_req,306.39757186389284,ns,modelled,"100.8 ns/entry (nopub ablation, incl. fragment call)"
+set,attribution,"Runtime entries: hook logic (can_run, lookup, link) per entry",insitu_ns_per_req,241.53583333333285,ns,measured,
+set,attribution,"Runtime entries: hook logic (can_run, lookup, link) per entry",share_of_loss_insitu,0.09183871774776357,fraction,derived,
+set,attribution,FP/SIMD bracket,insitu_ns_per_unit,108.57008214958928,ns,derived,
+set,attribution,FP/SIMD bracket,count_per_req,1.000005,1,counted,
+set,attribution,FP/SIMD bracket,model_ns_per_req,108.57062500000004,ns,modelled,"measured, kernel_neon_begin/end + load/save"
+set,attribution,FP/SIMD bracket,insitu_ns_per_req,108.57062500000004,ns,measured,
+set,attribution,FP/SIMD bracket,share_of_loss_insitu,0.041281605497072445,fraction,derived,
+set,attribution,"Syscall path (exception round trips saved, batching, hook srcu), net",insitu_ns_per_unit,-145.52376120552506,ns,derived,
+set,attribution,"Syscall path (exception round trips saved, batching, hook srcu), net",count_per_req,1.998505,1,counted,
+set,attribution,"Syscall path (exception round trips saved, batching, hook srcu), net",model_ns_per_req,-290.82996438804787,ns,modelled,measured
+set,attribution,"Syscall path (exception round trips saved, batching, hook srcu), net",insitu_ns_per_req,-290.82996438804787,ns,measured,
+set,attribution,"Syscall path (exception round trips saved, batching, hook srcu), net",share_of_loss_insitu,-0.1105817329189642,fraction,derived,
+set,attribution,Instrumentation of these timings (A/B),count_per_req,0,1,counted,
+set,attribution,Instrumentation of these timings (A/B),model_ns_per_req,-250.0004468047683,ns,modelled,measured
+set,attribution,Instrumentation of these timings (A/B),insitu_ns_per_req,-250.0004468047683,ns,measured,
+set,attribution,Instrumentation of these timings (A/B),share_of_loss_insitu,-0.09505720188205868,fraction,derived,
+set,attribution,Native server idle time (not CPU-bound at native: slack the loop absorbs),count_per_req,0,1,counted,
+set,attribution,Native server idle time (not CPU-bound at native: slack the loop absorbs),model_ns_per_req,-973.003406631002,ns,modelled,measured
+set,attribution,Native server idle time (not CPU-bound at native: slack the loop absorbs),insitu_ns_per_req,-973.003406631002,ns,measured,
+set,attribution,Native server idle time (not CPU-bound at native: slack the loop absorbs),share_of_loss_insitu,-0.3699632638188145,fraction,derived,
+set,summary,Tn,us_per_req,3.854999921631002,us,measured,
+set,summary,Tk,us_per_req,6.484999983225009,us,measured,
+set,summary,L,us_per_req,2.630000061594007,us,measured,
+set,summary,Bn,us_per_req,2.881996515,us,measured,
+set,summary,Bk,us_per_req,6.7389451849999995,us,measured,
+set,summary,slack,us_per_req,0.973003406631002,us,measured,
+set,summary,instrumentation,us_per_req,0.2500004468047683,us,measured,
+set,summary,F,us_per_req,4.585545625,us,measured,
+set,summary,F_nofp,us_per_req,0.80133375,us,measured,
+set,summary,F_fp,us_per_req,3.784211875,us,measured,
+set,summary,bracket,us_per_req,0.10857062500000003,us,measured,
+set,summary,R,us_per_req,0.24153583333333284,us,measured,
+set,summary,GSYS,us_per_req,1.4532514583333331,us,measured,
+set,summary,GUSR,us_per_req,0.346991875,us,measured,
+set,summary,U0,us_per_req,0.790923217278619,us,derived,
+set,summary,S0,us_per_req,2.091073297721381,us,derived,
+set,summary,syspath,us_per_req,-0.29082996438804787,us,derived,
+set,summary,per_entry_ns,per_entry_ns,100.79298518156791,ns,measured,
+set,summary,entries,entries,3.03987,1,measured,
+set,summary,residual_model,us_per_req,1.9331224834539327,us,derived,
+get,summary,F_cntvct_onprof,us_per_req,4.218567083333333,us,measured,
+get,summary,F_sampler_onprof,us_per_req,4.098364358953468,us,measured(sampled),
+get,summary,native_el0_tail_under_kjit,us_per_req,0.020976595880671037,us,measured(sampled),
+get,counters,exit_svc,per_req,1.998785,1,measured,"module counters, median of runs"
+get,counters,exit_br,per_req,1.000005,1,measured,"module counters, median of runs"
+get,counters,exit_bl,per_req,0.001835,1,measured,"module counters, median of runs"
+get,counters,exit_blr,per_req,0.000105,1,measured,"module counters, median of runs"
+get,counters,exit_ret,per_req,0.00186,1,measured,"module counters, median of runs"
+get,counters,exit_unsupported,per_req,0.03743,1,measured,"module counters, median of runs"
+get,counters,ibtc_fpsimd_boundary,per_req,1.000005,1,measured,"module counters, median of runs"
+get,counters,ibtc_miss_cold,per_req,0.00352,1,measured,"module counters, median of runs"
+get,counters,ibtc_miss_conflict,per_req,0.000255,1,measured,"module counters, median of runs"
+get,counters,syscalls_in_kernel,per_req,1.998785,1,measured,"module counters, median of runs"
+get,counters,hook_calls,per_req,2.042995,1,measured,"module counters, median of runs"
+get,windows,simd,insitu_ns_per_window,11.402379897395969,ns,measured(sampled),
+get,windows,simd,count_per_req,10.03584,1,counted,
+get,windows,atomic,insitu_ns_per_window,24.132671761007053,ns,measured(sampled),
+get,windows,atomic,count_per_req,12.03038,1,counted,
+get,attribution,PAN windows (SIMD&FP 10.0 + LSE atomics 12.0),insitu_ns_per_unit,18.342863978047276,ns,derived,
+get,attribution,PAN windows (SIMD&FP 10.0 + LSE atomics 12.0),count_per_req,22.06622,1,counted,
+get,attribution,PAN windows (SIMD&FP 10.0 + LSE atomics 12.0),model_ns_per_req,198.38137239999998,ns,modelled,"7.66 ns/SIMD&FP window, 10.1 ns/atomic window (ldadd microbenchmark)"
+get,attribution,PAN windows (SIMD&FP 10.0 + LSE atomics 12.0),insitu_ns_per_req,404.7576719696664,ns,measured(sampled),
+get,attribution,PAN windows (SIMD&FP 10.0 + LSE atomics 12.0),share_of_loss_insitu,0.20863794732600183,fraction,derived,
+get,attribution,Dispatch template words (157 BL/BLR/BR + 141 RET sites),insitu_ns_per_unit,1.3051974233850525,ns,derived,
+get,attribution,Dispatch template words (157 BL/BLR/BR + 141 RET sites),count_per_req,298.18946,1,counted,
+get,attribution,Dispatch template words (157 BL/BLR/BR + 141 RET sites),model_ns_per_req,116.2938894,ns,modelled,0.39 ns/transfer (monomorphic loop)
+get,attribution,Dispatch template words (157 BL/BLR/BR + 141 RET sites),insitu_ns_per_req,389.19611487258015,ns,measured(sampled),
+get,attribution,Dispatch template words (157 BL/BLR/BR + 141 RET sites),share_of_loss_insitu,0.20061652721521572,fraction,derived,
+get,attribution,"Dispatch: stall at call/branch targets (function entries), net of native",insitu_ns_per_unit,5.258088864784352,ns,derived,
+get,attribution,"Dispatch: stall at call/branch targets (function entries), net of native",count_per_req,157.15434,1,counted,
+get,attribution,"Dispatch: stall at call/branch targets (function entries), net of native",model_ns_per_req,528.0385824,ns,modelled,"3.36 ns/transfer (sites microbenchmark, distinct sites) minus the template words"
+get,attribution,"Dispatch: stall at call/branch targets (function entries), net of native",insitu_ns_per_req,826.3314852065339,ns,measured(sampled),
+get,attribution,"Dispatch: stall at call/branch targets (function entries), net of native",share_of_loss_insitu,0.4259440075474545,fraction,derived,
+get,attribution,"Dispatch: stall at return targets, net of native",insitu_ns_per_unit,4.925961979593977,ns,derived,
+get,attribution,"Dispatch: stall at return targets, net of native",count_per_req,141.03512,1,counted,
+get,attribution,"Dispatch: stall at return targets, net of native",model_ns_per_req,473.8780032,ns,modelled,3.36 ns/transfer (sites microbenchmark) minus the template words
+get,attribution,"Dispatch: stall at return targets, net of native",insitu_ns_per_req,694.7336389074741,ns,measured(sampled),
+get,attribution,"Dispatch: stall at return targets, net of native",share_of_loss_insitu,0.3581100752324762,fraction,derived,
+get,attribution,Budget checks,insitu_ns_per_unit,0.3248286333641488,ns,derived,
+get,attribution,Budget checks,count_per_req,436.00186,1,counted,
+get,attribution,Budget checks,model_ns_per_req,17.4400744,ns,modelled,0.04 ns/unit
+get,attribution,Budget checks,insitu_ns_per_req,141.62588832802695,ns,measured(sampled),
+get,attribution,Budget checks,share_of_loss_insitu,0.07300302545270976,fraction,derived,
+get,attribution,Reg-virt fills/spills/helpers,insitu_ns_per_unit,0.06697355735313722,ns,derived,
+get,attribution,Reg-virt fills/spills/helpers,count_per_req,2250.78025,1,counted,
+get,attribution,Reg-virt fills/spills/helpers,model_ns_per_req,202.57022249999997,ns,modelled,0.09..1.17 ns/word
+get,attribution,Reg-virt fills/spills/helpers,insitu_ns_per_req,150.7427601626835,ns,measured(sampled),
+get,attribution,Reg-virt fills/spills/helpers,share_of_loss_insitu,0.07770244329539253,fraction,derived,
+get,attribution,Alignment checks away from entries (LDTR/STTR splits: 394 pairs),insitu_ns_per_unit,0.10837187698475201,ns,derived,
+get,attribution,Alignment checks away from entries (LDTR/STTR splits: 394 pairs),count_per_req,465.59284,1,counted,
+get,attribution,Alignment checks away from entries (LDTR/STTR splits: 394 pairs),model_ns_per_req,0.0,ns,modelled,0.00 ns/check
+get,attribution,Alignment checks away from entries (LDTR/STTR splits: 394 pairs),insitu_ns_per_req,50.45716998146133,ns,measured(sampled),
+get,attribution,Alignment checks away from entries (LDTR/STTR splits: 394 pairs),share_of_loss_insitu,0.026008847025882173,fraction,derived,
+get,attribution,Fragment prologue/epilogue/exit groups,insitu_ns_per_unit,10.341228278486332,ns,derived,
+get,attribution,Fragment prologue/epilogue/exit groups,count_per_req,3.040015,1,counted,
+get,attribution,Fragment prologue/epilogue/exit groups,model_ns_per_req,0.0,ns,modelled,measured with runtime entries
+get,attribution,Fragment prologue/epilogue/exit groups,insitu_ns_per_req,31.437489085022627,ns,measured(sampled),
+get,attribution,Fragment prologue/epilogue/exit groups,share_of_loss_insitu,0.01620488911269917,fraction,derived,
+get,attribution,"Native-equivalent instructions mid-block, beyond native",insitu_ns_per_unit,0.12836944874306996,ns,derived,
+get,attribution,"Native-equivalent instructions mid-block, beyond native",count_per_req,4250.60859,1,counted,
+get,attribution,"Native-equivalent instructions mid-block, beyond native",model_ns_per_req,0.0,ns,modelled,no model
+get,attribution,"Native-equivalent instructions mid-block, beyond native",insitu_ns_per_req,545.6482815208578,ns,measured(sampled),
+get,attribution,"Native-equivalent instructions mid-block, beyond native",share_of_loss_insitu,0.2812619631506425,fraction,derived,
+get,attribution,"Runtime entries: hook logic (can_run, lookup, link) per entry",insitu_ns_per_unit,78.66141285487093,ns,derived,
+get,attribution,"Runtime entries: hook logic (can_run, lookup, link) per entry",count_per_req,3.040015,1,counted,
+get,attribution,"Runtime entries: hook logic (can_run, lookup, link) per entry",model_ns_per_req,309.0954084964514,ns,modelled,"101.7 ns/entry (nopub ablation, incl. fragment call)"
+get,attribution,"Runtime entries: hook logic (can_run, lookup, link) per entry",insitu_ns_per_req,239.13187500000043,ns,measured,
+get,attribution,"Runtime entries: hook logic (can_run, lookup, link) per entry",share_of_loss_insitu,0.12326383659988335,fraction,derived,
+get,attribution,FP/SIMD bracket,insitu_ns_per_unit,104.63301850157431,ns,derived,
+get,attribution,FP/SIMD bracket,count_per_req,1.000005,1,counted,
+get,attribution,FP/SIMD bracket,model_ns_per_req,104.63354166666683,ns,modelled,"measured, kernel_neon_begin/end + load/save"
+get,attribution,FP/SIMD bracket,insitu_ns_per_req,104.63354166666683,ns,measured,
+get,attribution,FP/SIMD bracket,share_of_loss_insitu,0.053934808075531894,fraction,derived,
+get,attribution,"Syscall path (exception round trips saved, batching, hook srcu), net",insitu_ns_per_unit,-127.3695411800873,ns,derived,
+get,attribution,"Syscall path (exception round trips saved, batching, hook srcu), net",count_per_req,1.998785,1,counted,
+get,attribution,"Syscall path (exception round trips saved, batching, hook srcu), net",model_ns_per_req,-254.58432836764078,ns,modelled,measured
+get,attribution,"Syscall path (exception round trips saved, batching, hook srcu), net",insitu_ns_per_req,-254.58432836764078,ns,measured,
+get,attribution,"Syscall path (exception round trips saved, batching, hook srcu), net",share_of_loss_insitu,-0.13122901768239748,fraction,derived,
+get,attribution,Instrumentation of these timings (A/B),count_per_req,0,1,counted,
+get,attribution,Instrumentation of these timings (A/B),model_ns_per_req,-354.99957653,ns,modelled,measured
+get,attribution,Instrumentation of these timings (A/B),insitu_ns_per_req,-354.99957653,ns,measured,
+get,attribution,Instrumentation of these timings (A/B),share_of_loss_insitu,-0.1829894479538607,fraction,derived,
+get,attribution,Native server idle time (not CPU-bound at native: slack the loop absorbs),count_per_req,0,1,counted,
+get,attribution,Native server idle time (not CPU-bound at native: slack the loop absorbs),model_ns_per_req,-1020.9725716228756,ns,modelled,measured
+get,attribution,Native server idle time (not CPU-bound at native: slack the loop absorbs),insitu_ns_per_req,-1020.9725716228756,ns,measured,
+get,attribution,Native server idle time (not CPU-bound at native: slack the loop absorbs),share_of_loss_insitu,-0.5262744510387192,fraction,derived,
+get,summary,Tn,us_per_req,3.7449999416228756,us,measured,
+get,summary,Tk,us_per_req,5.685000201198008,us,measured,
+get,summary,L,us_per_req,1.9400002595751324,us,measured,
+get,summary,Bn,us_per_req,2.72402737,us,measured,
+get,summary,Bk,us_per_req,6.036326229999999,us,measured,
+get,summary,slack,us_per_req,1.0209725716228757,us,measured,
+get,summary,instrumentation,us_per_req,0.35499957653,us,measured,
+get,summary,F,us_per_req,3.9002920833333325,us,measured,
+get,summary,F_nofp,us_per_req,0.7957654166666666,us,measured,
+get,summary,F_fp,us_per_req,3.104526666666666,us,measured,
+get,summary,bracket,us_per_req,0.10463354166666683,us,measured,
+get,summary,R,us_per_req,0.23913187500000044,us,measured,
+get,summary,GSYS,us_per_req,1.480241875,us,measured,
+get,summary,GUSR,us_per_req,0.32383958333333335,us,measured,
+get,summary,U0,us_per_req,0.6653615832990258,us,derived,
+get,summary,S0,us_per_req,2.058665786700974,us,derived,
+get,summary,syspath,us_per_req,-0.2545843283676408,us,derived,
+get,summary,per_entry_ns,per_entry_ns,101.67561952702583,ns,measured,
+get,summary,entries,entries,3.040015,1,measured,
+get,summary,residual_model,us_per_req,1.620225641632531,us,derived,
+set,top_functions,redis-server:__aarch64_ldadd8_relax,rank,1,1,derived,
+set,top_functions,redis-server:__aarch64_ldadd8_relax,model_calibrated_ns_per_req,439.63372761359676,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:__aarch64_ldadd8_relax,dominant_category,PAN windows (LSE atomic),,derived,
+set,top_functions,redis-server:__aarch64_ldadd8_relax,micro_model_ns_per_req,180.3081558,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:__aarch64_ldadd8_relax,sampled_fragment_ns_per_req,463.59091563665066,ns,measured(sampled),
+set,top_functions,redis-server:__aarch64_ldadd8_relax,sampled_native_ns_per_req,8.150346592823897,ns,measured(sampled),
+set,top_functions,redis-server:__aarch64_ldadd8_relax,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:__aarch64_ldadd8_relax,count_PAN windows (LSE atomic),13.98822,1/req,counted,
+set,top_functions,redis-server:__aarch64_ldadd8_relax,count_dispatch (calls/returns),13.98822,1/req,counted,
+set,top_functions,redis-server:__aarch64_ldadd8_relax,count_budget checks,13.98822,1/req,counted,
+set,top_functions,redis-server:__aarch64_ldadd8_relax,count_reg-virt fills/spills,223.81152000000003,1/req,counted,
+set,top_functions,redis-server:__aarch64_ldadd8_relax,count_alignment checks,27.97644,1/req,counted,
+set,top_functions,redis-server:__aarch64_ldadd8_relax,count_other instructions,83.92932,1/req,counted,
+set,top_functions,redis-server:call,rank,2,1,derived,
+set,top_functions,redis-server:call,model_calibrated_ns_per_req,173.45003257346158,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:call,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:call,micro_model_ns_per_req,83.8975663,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:call,sampled_fragment_ns_per_req,282.31300610032577,ns,measured(sampled),
+set,top_functions,redis-server:call,sampled_native_ns_per_req,16.979888735049787,ns,measured(sampled),
+set,top_functions,redis-server:call,count_PAN windows (SIMD&FP),2.99634,1/req,counted,
+set,top_functions,redis-server:call,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:call,count_dispatch (calls/returns),13.98292,1/req,counted,
+set,top_functions,redis-server:call,count_budget checks,23.97073,1/req,counted,
+set,top_functions,redis-server:call,count_reg-virt fills/spills,83.89802999999995,1/req,counted,
+set,top_functions,redis-server:call,count_alignment checks,16.97926,1/req,counted,
+set,top_functions,redis-server:call,count_other instructions,265.67595000000085,1/req,counted,
+set,top_functions,redis-server:zmalloc,rank,3,1,derived,
+set,top_functions,redis-server:zmalloc,model_calibrated_ns_per_req,157.34617753984372,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:zmalloc,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:zmalloc,micro_model_ns_per_req,82.89840799999999,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:zmalloc,sampled_fragment_ns_per_req,134.7648010571659,ns,measured(sampled),
+set,top_functions,redis-server:zmalloc,sampled_native_ns_per_req,6.452357719318919,ns,measured(sampled),
+set,top_functions,redis-server:zmalloc,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:zmalloc,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:zmalloc,count_dispatch (calls/returns),19.97552,1/req,counted,
+set,top_functions,redis-server:zmalloc,count_budget checks,19.97552,1/req,counted,
+set,top_functions,redis-server:zmalloc,count_reg-virt fills/spills,79.90208,1/req,counted,
+set,top_functions,redis-server:zmalloc,count_alignment checks,19.97552,1/req,counted,
+set,top_functions,redis-server:zmalloc,count_other instructions,104.87148000000002,1/req,counted,
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),rank,4,1,derived,
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),model_calibrated_ns_per_req,151.39198811010132,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),micro_model_ns_per_req,94.4991616,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),sampled_fragment_ns_per_req,140.46342693044033,ns,measured(sampled),
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),sampled_native_ns_per_req,9.50873769162788,ns,measured(sampled),
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),count_dispatch (calls/returns),18.06934,1/req,counted,
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),count_budget checks,18.06934,1/req,counted,
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),count_reg-virt fills/spills,289.07069999999993,1/req,counted,
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),count_alignment checks,3e-05,1/req,counted,
+set,top_functions,redis-server:.plt stubs (nearest symbol _init),count_other instructions,72.27739000000008,1/req,counted,
+set,top_functions,redis-server:processCommand,rank,5,1,derived,
+set,top_functions,redis-server:processCommand,model_calibrated_ns_per_req,139.77653532300462,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:processCommand,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:processCommand,micro_model_ns_per_req,67.9769264,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:processCommand,sampled_fragment_ns_per_req,250.5855215085816,ns,measured(sampled),
+set,top_functions,redis-server:processCommand,sampled_native_ns_per_req,17.48928539710128,ns,measured(sampled),
+set,top_functions,redis-server:processCommand,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:processCommand,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:processCommand,count_dispatch (calls/returns),15.98047,1/req,counted,
+set,top_functions,redis-server:processCommand,count_budget checks,25.968230000000002,1/req,counted,
+set,top_functions,redis-server:processCommand,count_reg-virt fills/spills,77.90482999999996,1/req,counted,
+set,top_functions,redis-server:processCommand,count_alignment checks,13.98292,1/req,counted,
+set,top_functions,redis-server:processCommand,count_other instructions,167.79516000000012,1/req,counted,
+set,top_functions,redis-server:processMultibulkBuffer,rank,6,1,derived,
+set,top_functions,redis-server:processMultibulkBuffer,model_calibrated_ns_per_req,138.77344774099583,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:processMultibulkBuffer,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:processMultibulkBuffer,micro_model_ns_per_req,55.382093399999995,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:processMultibulkBuffer,sampled_fragment_ns_per_req,132.91659807123904,ns,measured(sampled),
+set,top_functions,redis-server:processMultibulkBuffer,sampled_native_ns_per_req,17.31948650975078,ns,measured(sampled),
+set,top_functions,redis-server:processMultibulkBuffer,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:processMultibulkBuffer,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:processMultibulkBuffer,count_dispatch (calls/returns),12.984079999999999,1/req,counted,
+set,top_functions,redis-server:processMultibulkBuffer,count_budget checks,27.965700000000005,1/req,counted,
+set,top_functions,redis-server:processMultibulkBuffer,count_reg-virt fills/spills,61.92406,1/req,counted,
+set,top_functions,redis-server:processMultibulkBuffer,count_alignment checks,13.9829,1/req,counted,
+set,top_functions,redis-server:processMultibulkBuffer,count_other instructions,329.59572000000037,1/req,counted,
+set,top_functions,redis-server:je_malloc_usable_size,rank,7,1,derived,
+set,top_functions,redis-server:je_malloc_usable_size,model_calibrated_ns_per_req,130.17321780629183,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:je_malloc_usable_size,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:je_malloc_usable_size,micro_model_ns_per_req,61.2323861,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:je_malloc_usable_size,sampled_fragment_ns_per_req,129.83625976136096,ns,measured(sampled),
+set,top_functions,redis-server:je_malloc_usable_size,sampled_native_ns_per_req,27.84701752548165,ns,measured(sampled),
+set,top_functions,redis-server:je_malloc_usable_size,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:je_malloc_usable_size,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:je_malloc_usable_size,count_dispatch (calls/returns),9.98897,1/req,counted,
+set,top_functions,redis-server:je_malloc_usable_size,count_budget checks,9.98897,1/req,counted,
+set,top_functions,redis-server:je_malloc_usable_size,count_reg-virt fills/spills,259.71322,1/req,counted,
+set,top_functions,redis-server:je_malloc_usable_size,count_alignment checks,39.95588,1/req,counted,
+set,top_functions,redis-server:je_malloc_usable_size,count_other instructions,339.6249799999999,1/req,counted,
+set,top_functions,redis-server:dictFind,rank,8,1,derived,
+set,top_functions,redis-server:dictFind,model_calibrated_ns_per_req,115.12094812820548,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:dictFind,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:dictFind,micro_model_ns_per_req,50.9773484,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:dictFind,sampled_fragment_ns_per_req,75.00623784553119,ns,measured(sampled),
+set,top_functions,redis-server:dictFind,sampled_native_ns_per_req,10.35773212838037,ns,measured(sampled),
+set,top_functions,redis-server:dictFind,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:dictFind,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:dictFind,count_dispatch (calls/returns),11.98527,1/req,counted,
+set,top_functions,redis-server:dictFind,count_budget checks,15.98036,1/req,counted,
+set,top_functions,redis-server:dictFind,count_reg-virt fills/spills,59.92635,1/req,counted,
+set,top_functions,redis-server:dictFind,count_alignment checks,39.9509,1/req,counted,
+set,top_functions,redis-server:dictFind,count_other instructions,191.7643200000001,1/req,counted,
+set,top_functions,redis-server:createEmbeddedStringObject,rank,9,1,derived,
+set,top_functions,redis-server:createEmbeddedStringObject,model_calibrated_ns_per_req,108.0297416254586,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:createEmbeddedStringObject,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:createEmbeddedStringObject,micro_model_ns_per_req,50.667771200000004,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:createEmbeddedStringObject,sampled_fragment_ns_per_req,81.01289754979345,ns,measured(sampled),
+set,top_functions,redis-server:createEmbeddedStringObject,sampled_native_ns_per_req,10.18793324102987,ns,measured(sampled),
+set,top_functions,redis-server:createEmbeddedStringObject,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:createEmbeddedStringObject,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:createEmbeddedStringObject,count_dispatch (calls/returns),11.98528,1/req,counted,
+set,top_functions,redis-server:createEmbeddedStringObject,count_budget checks,14.9816,1/req,counted,
+set,top_functions,redis-server:createEmbeddedStringObject,count_reg-virt fills/spills,56.930080000000004,1/req,counted,
+set,top_functions,redis-server:createEmbeddedStringObject,count_alignment checks,23.970560000000003,1/req,counted,
+set,top_functions,redis-server:createEmbeddedStringObject,count_other instructions,152.81231999999991,1/req,counted,
+set,top_functions,libc.so.6:__GI_strchr,rank,10,1,derived,
+set,top_functions,libc.so.6:__GI_strchr,model_calibrated_ns_per_req,84.59568376867418,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,libc.so.6:__GI_strchr,dominant_category,PAN windows (SIMD&FP),,derived,
+set,top_functions,libc.so.6:__GI_strchr,micro_model_ns_per_req,47.541689999999996,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,libc.so.6:__GI_strchr,sampled_fragment_ns_per_req,79.6267453103483,ns,measured(sampled),
+set,top_functions,libc.so.6:__GI_strchr,sampled_native_ns_per_req,22.922849792317212,ns,measured(sampled),
+set,top_functions,libc.so.6:__GI_strchr,count_PAN windows (SIMD&FP),3.9951,1/req,counted,
+set,top_functions,libc.so.6:__GI_strchr,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,libc.so.6:__GI_strchr,count_dispatch (calls/returns),3.9951,1/req,counted,
+set,top_functions,libc.so.6:__GI_strchr,count_budget checks,3.9951,1/req,counted,
+set,top_functions,libc.so.6:__GI_strchr,count_reg-virt fills/spills,19.9755,1/req,counted,
+set,top_functions,libc.so.6:__GI_strchr,count_alignment checks,0.0,1/req,counted,
+set,top_functions,libc.so.6:__GI_strchr,count_other instructions,75.9069,1/req,counted,
+set,top_functions,libc.so.6:__GI_memcpy,rank,11,1,derived,
+set,top_functions,libc.so.6:__GI_memcpy,model_calibrated_ns_per_req,84.57164597907015,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,libc.so.6:__GI_memcpy,dominant_category,PAN windows (SIMD&FP),,derived,
+set,top_functions,libc.so.6:__GI_memcpy,micro_model_ns_per_req,48.46081129999998,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,libc.so.6:__GI_memcpy,sampled_fragment_ns_per_req,88.55972640899472,ns,measured(sampled),
+set,top_functions,libc.so.6:__GI_memcpy,sampled_native_ns_per_req,25.130235327873685,ns,measured(sampled),
+set,top_functions,libc.so.6:__GI_memcpy,count_PAN windows (SIMD&FP),3.997039999999998,1/req,counted,
+set,top_functions,libc.so.6:__GI_memcpy,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,libc.so.6:__GI_memcpy,count_dispatch (calls/returns),3.9962899999999992,1/req,counted,
+set,top_functions,libc.so.6:__GI_memcpy,count_budget checks,3.9965399999999995,1/req,counted,
+set,top_functions,libc.so.6:__GI_memcpy,count_reg-virt fills/spills,29.97261999999999,1/req,counted,
+set,top_functions,libc.so.6:__GI_memcpy,count_alignment checks,0.0,1/req,counted,
+set,top_functions,libc.so.6:__GI_memcpy,count_other instructions,69.93065999999993,1/req,counted,
+set,top_functions,redis-server:zfree,rank,12,1,derived,
+set,top_functions,redis-server:zfree,model_calibrated_ns_per_req,81.97769901637815,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:zfree,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:zfree,micro_model_ns_per_req,41.454765,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:zfree,sampled_fragment_ns_per_req,65.45718908490915,ns,measured(sampled),
+set,top_functions,redis-server:zfree,sampled_native_ns_per_req,2.207385535556472,ns,measured(sampled),
+set,top_functions,redis-server:zfree,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:zfree,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:zfree,count_dispatch (calls/returns),9.9891,1/req,counted,
+set,top_functions,redis-server:zfree,count_budget checks,9.9891,1/req,counted,
+set,top_functions,redis-server:zfree,count_reg-virt fills/spills,39.9564,1/req,counted,
+set,top_functions,redis-server:zfree,count_alignment checks,19.9782,1/req,counted,
+set,top_functions,redis-server:zfree,count_other instructions,69.92370000000003,1/req,counted,
+set,top_functions,redis-server:readQueryFromClient,rank,13,1,derived,
+set,top_functions,redis-server:readQueryFromClient,model_calibrated_ns_per_req,81.03757081397748,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:readQueryFromClient,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:readQueryFromClient,micro_model_ns_per_req,38.0573952,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:readQueryFromClient,sampled_fragment_ns_per_req,118.43900801481206,ns,measured(sampled),
+set,top_functions,redis-server:readQueryFromClient,sampled_native_ns_per_req,9.848335466328875,ns,measured(sampled),
+set,top_functions,redis-server:readQueryFromClient,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:readQueryFromClient,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:readQueryFromClient,count_dispatch (calls/returns),8.994720000000001,1/req,counted,
+set,top_functions,redis-server:readQueryFromClient,count_budget checks,15.98856,1/req,counted,
+set,top_functions,redis-server:readQueryFromClient,count_reg-virt fills/spills,40.97392,1/req,counted,
+set,top_functions,redis-server:readQueryFromClient,count_alignment checks,9.99236,1/req,counted,
+set,top_functions,redis-server:readQueryFromClient,count_other instructions,109.92949999999968,1/req,counted,
+set,top_functions,redis-server:je_free,rank,14,1,derived,
+set,top_functions,redis-server:je_free,model_calibrated_ns_per_req,74.87829197525417,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:je_free,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:je_free,micro_model_ns_per_req,36.26072250000001,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:je_free,sampled_fragment_ns_per_req,13.861522394451347,ns,measured(sampled),
+set,top_functions,redis-server:je_free,sampled_native_ns_per_req,13.583910988039829,ns,measured(sampled),
+set,top_functions,redis-server:je_free,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:je_free,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:je_free,count_dispatch (calls/returns),4.97085,1/req,counted,
+set,top_functions,redis-server:je_free,count_budget checks,14.959950000000001,1/req,counted,
+set,top_functions,redis-server:je_free,count_reg-virt fills/spills,189.12930000000003,1/req,counted,
+set,top_functions,redis-server:je_free,count_alignment checks,0.0,1/req,counted,
+set,top_functions,redis-server:je_free,count_other instructions,214.26795000000027,1/req,counted,
+set,top_functions,redis-server:processInputBuffer,rank,15,1,derived,
+set,top_functions,redis-server:processInputBuffer,model_calibrated_ns_per_req,72.63631791405994,ns,modelled,counts x in-situ unit costs of this run
+set,top_functions,redis-server:processInputBuffer,dominant_category,dispatch (calls/returns),,derived,
+set,top_functions,redis-server:processInputBuffer,micro_model_ns_per_req,34.2381784,ns,modelled,counts x microbenchmark unit costs
+set,top_functions,redis-server:processInputBuffer,sampled_fragment_ns_per_req,153.55486474742216,ns,measured(sampled),
+set,top_functions,redis-server:processInputBuffer,sampled_native_ns_per_req,7.810748818122901,ns,measured(sampled),
+set,top_functions,redis-server:processInputBuffer,count_PAN windows (SIMD&FP),0,1/req,counted,
+set,top_functions,redis-server:processInputBuffer,count_PAN windows (LSE atomic),0,1/req,counted,
+set,top_functions,redis-server:processInputBuffer,count_dispatch (calls/returns),7.99024,1/req,counted,
+set,top_functions,redis-server:processInputBuffer,count_budget checks,16.97926,1/req,counted,
+set,top_functions,redis-server:processInputBuffer,count_reg-virt fills/spills,39.9512,1/req,counted,
+set,top_functions,redis-server:processInputBuffer,count_alignment checks,9.9878,1/req,counted,
+set,top_functions,redis-server:processInputBuffer,count_other instructions,91.88775999999979,1/req,counted,
+set,server_time_groups,fragments,native_us_per_req,0.0,us,measured(sampled),
+set,server_time_groups,fragments,kjit_us_per_req,4.505088355330631,us,measured(sampled),
+set,server_time_groups,k:other kernel,native_us_per_req,0.826750782509574,us,measured(sampled),
+set,server_time_groups,k:other kernel,kjit_us_per_req,0.7851712449471214,us,measured(sampled),
+set,server_time_groups,k:net (tcp/ip/sock),native_us_per_req,0.8313353524680375,us,measured(sampled),
+set,server_time_groups,k:net (tcp/ip/sock),kjit_us_per_req,0.7580859389448985,us,measured(sampled),
+set,server_time_groups,el0,native_us_per_req,0.790923217278619,us,measured(sampled),
+set,server_time_groups,el0,kjit_us_per_req,0.020881409096685826,us,measured(sampled),
+set,server_time_groups,k:sched/wakeup/idle,native_us_per_req,0.06129739833352973,us,measured(sampled),
+set,server_time_groups,k:sched/wakeup/idle,kjit_us_per_req,0.248458505338827,us,measured(sampled),
+set,server_time_groups,k:vfs/copy,native_us_per_req,0.11953841669475049,us,measured(sampled),
+set,server_time_groups,k:vfs/copy,kjit_us_per_req,0.08791375858822076,us,measured(sampled),
+set,server_time_groups,kjit.ko,native_us_per_req,0.024111442003770696,us,measured(sampled),
+set,server_time_groups,kjit.ko,kjit_us_per_req,0.1254397691387866,us,measured(sampled),
+set,server_time_groups,k:irq/timer (sampler included),native_us_per_req,0.0867672314361044,us,measured(sampled),
+set,server_time_groups,k:irq/timer (sampler included),kjit_us_per_req,0.06082845258599784,us,measured(sampled),
+set,server_time_groups,k:locks/rcu/srcu,native_us_per_req,0.04822288400754139,us,measured(sampled),
+set,server_time_groups,k:locks/rcu/srcu,kjit_us_per_req,0.0556837575911622,us,measured(sampled),
+set,server_time_groups,k:entry/exit+syscall dispatch,native_us_per_req,0.0633349849817357,us,measured(sampled),
+set,server_time_groups,k:entry/exit+syscall dispatch,kjit_us_per_req,0.022999812918088735,us,measured(sampled),
+set,server_time_groups,k:epoll,native_us_per_req,0.02971480528633712,us,measured(sampled),
+set,server_time_groups,k:epoll,kjit_us_per_req,0.023907700270118553,us,measured(sampled),
+set,server_time_groups,k:fpsimd,native_us_per_req,0.0,us,measured(sampled),
+set,server_time_groups,k:fpsimd,kjit_us_per_req,0.044486480249461106,us,measured(sampled),
+get,top_functions,redis-server:__aarch64_ldadd8_relax,rank,1,1,derived,
+get,top_functions,redis-server:__aarch64_ldadd8_relax,model_calibrated_ns_per_req,395.73154987037594,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:__aarch64_ldadd8_relax,dominant_category,PAN windows (LSE atomic),,derived,
+get,top_functions,redis-server:__aarch64_ldadd8_relax,micro_model_ns_per_req,154.9402491,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:__aarch64_ldadd8_relax,sampled_fragment_ns_per_req,408.8445455507193,ns,measured(sampled),
+get,top_functions,redis-server:__aarch64_ldadd8_relax,sampled_native_ns_per_req,6.675310592415609,ns,measured(sampled),
+get,top_functions,redis-server:__aarch64_ldadd8_relax,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:__aarch64_ldadd8_relax,count_PAN windows (LSE atomic),12.02019,1/req,counted,
+get,top_functions,redis-server:__aarch64_ldadd8_relax,count_dispatch (calls/returns),12.02019,1/req,counted,
+get,top_functions,redis-server:__aarch64_ldadd8_relax,count_budget checks,12.02019,1/req,counted,
+get,top_functions,redis-server:__aarch64_ldadd8_relax,count_reg-virt fills/spills,192.32304,1/req,counted,
+get,top_functions,redis-server:__aarch64_ldadd8_relax,count_alignment checks,24.04038,1/req,counted,
+get,top_functions,redis-server:__aarch64_ldadd8_relax,count_other instructions,72.12114,1/req,counted,
+get,top_functions,redis-server:call,rank,2,1,derived,
+get,top_functions,redis-server:call,model_calibrated_ns_per_req,168.02516120211442,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:call,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:call,micro_model_ns_per_req,80.24231879999999,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:call,sampled_fragment_ns_per_req,262.6602213053641,ns,measured(sampled),
+get,top_functions,redis-server:call,sampled_native_ns_per_req,17.35580754028058,ns,measured(sampled),
+get,top_functions,redis-server:call,count_PAN windows (SIMD&FP),3.00279,1/req,counted,
+get,top_functions,redis-server:call,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:call,count_dispatch (calls/returns),13.014100000000001,1/req,counted,
+get,top_functions,redis-server:call,count_budget checks,24.022350000000003,1/req,counted,
+get,top_functions,redis-server:call,count_reg-virt fills/spills,83.07975999999996,1/req,counted,
+get,top_functions,redis-server:call,count_alignment checks,17.015810000000002,1/req,counted,
+get,top_functions,redis-server:call,count_other instructions,274.23936000000043,1/req,counted,
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),rank,3,1,derived,
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),model_calibrated_ns_per_req,134.04422264403416,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),micro_model_ns_per_req,84.2985857,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),sampled_fragment_ns_per_req,145.39838701822967,ns,measured(sampled),
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),sampled_native_ns_per_req,9.011669299761072,ns,measured(sampled),
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),count_dispatch (calls/returns),16.119020000000003,1/req,counted,
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),count_budget checks,16.119020000000003,1/req,counted,
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),count_reg-virt fills/spills,257.86111,1/req,counted,
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),count_alignment checks,3e-05,1/req,counted,
+get,top_functions,redis-server:.plt stubs (nearest symbol _init),count_other instructions,64.47610999999998,1/req,counted,
+get,top_functions,redis-server:processCommand,rank,4,1,derived,
+get,top_functions,redis-server:processCommand,model_calibrated_ns_per_req,131.67074734874717,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:processCommand,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:processCommand,micro_model_ns_per_req,63.957717300000006,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:processCommand,sampled_fragment_ns_per_req,212.517426214753,ns,measured(sampled),
+get,top_functions,redis-server:processCommand,sampled_native_ns_per_req,13.85126947926239,ns,measured(sampled),
+get,top_functions,redis-server:processCommand,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:processCommand,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:processCommand,count_dispatch (calls/returns),15.015940000000002,1/req,counted,
+get,top_functions,redis-server:processCommand,count_budget checks,20.03055,1/req,counted,
+get,top_functions,redis-server:processCommand,count_reg-virt fills/spills,76.07466999999997,1/req,counted,
+get,top_functions,redis-server:processCommand,count_alignment checks,14.013020000000003,1/req,counted,
+get,top_functions,redis-server:processCommand,count_other instructions,174.14994000000038,1/req,counted,
+get,top_functions,redis-server:zmalloc,rank,5,1,derived,
+get,top_functions,redis-server:zmalloc,model_calibrated_ns_per_req,124.6774686423341,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:zmalloc,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:zmalloc,micro_model_ns_per_req,66.49478599999999,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:zmalloc,sampled_fragment_ns_per_req,113.17496070608146,ns,measured(sampled),
+get,top_functions,redis-server:zmalloc,sampled_native_ns_per_req,5.507131238742877,ns,measured(sampled),
+get,top_functions,redis-server:zmalloc,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:zmalloc,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:zmalloc,count_dispatch (calls/returns),16.02284,1/req,counted,
+get,top_functions,redis-server:zmalloc,count_budget checks,16.02284,1/req,counted,
+get,top_functions,redis-server:zmalloc,count_reg-virt fills/spills,64.09136,1/req,counted,
+get,top_functions,redis-server:zmalloc,count_alignment checks,16.02284,1/req,counted,
+get,top_functions,redis-server:zmalloc,count_other instructions,84.11990999999996,1/req,counted,
+get,top_functions,redis-server:processMultibulkBuffer,rank,6,1,derived,
+get,top_functions,redis-server:processMultibulkBuffer,model_calibrated_ns_per_req,107.18451121855342,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:processMultibulkBuffer,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:processMultibulkBuffer,micro_model_ns_per_req,42.6350925,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:processMultibulkBuffer,sampled_fragment_ns_per_req,104.68683865312536,ns,measured(sampled),
+get,top_functions,redis-server:processMultibulkBuffer,sampled_native_ns_per_req,14.185035008883169,ns,measured(sampled),
+get,top_functions,redis-server:processMultibulkBuffer,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:processMultibulkBuffer,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:processMultibulkBuffer,count_dispatch (calls/returns),10.01524,1/req,counted,
+get,top_functions,redis-server:processMultibulkBuffer,count_budget checks,21.03339,1/req,counted,
+get,top_functions,redis-server:processMultibulkBuffer,count_reg-virt fills/spills,47.07341,1/req,counted,
+get,top_functions,redis-server:processMultibulkBuffer,count_alignment checks,13.014070000000002,1/req,counted,
+get,top_functions,redis-server:processMultibulkBuffer,count_other instructions,246.39509999999973,1/req,counted,
+get,top_functions,redis-server:je_malloc_usable_size,rank,7,1,derived,
+get,top_functions,redis-server:je_malloc_usable_size,model_calibrated_ns_per_req,106.33032388992747,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:je_malloc_usable_size,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:je_malloc_usable_size,micro_model_ns_per_req,49.11723800000001,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:je_malloc_usable_size,sampled_fragment_ns_per_req,107.35902522535228,ns,measured(sampled),
+get,top_functions,redis-server:je_malloc_usable_size,sampled_native_ns_per_req,18.357104129142925,ns,measured(sampled),
+get,top_functions,redis-server:je_malloc_usable_size,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:je_malloc_usable_size,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:je_malloc_usable_size,count_dispatch (calls/returns),8.0126,1/req,counted,
+get,top_functions,redis-server:je_malloc_usable_size,count_budget checks,8.0126,1/req,counted,
+get,top_functions,redis-server:je_malloc_usable_size,count_reg-virt fills/spills,208.32760000000002,1/req,counted,
+get,top_functions,redis-server:je_malloc_usable_size,count_alignment checks,32.0504,1/req,counted,
+get,top_functions,redis-server:je_malloc_usable_size,count_other instructions,272.42839999999995,1/req,counted,
+get,top_functions,libc.so.6:__GI_memcpy,rank,8,1,derived,
+get,top_functions,libc.so.6:__GI_memcpy,model_calibrated_ns_per_req,93.5187633244098,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,libc.so.6:__GI_memcpy,dominant_category,PAN windows (SIMD&FP),,derived,
+get,top_functions,libc.so.6:__GI_memcpy,micro_model_ns_per_req,53.15307289999999,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,libc.so.6:__GI_memcpy,sampled_fragment_ns_per_req,83.78090841158532,ns,measured(sampled),
+get,top_functions,libc.so.6:__GI_memcpy,sampled_native_ns_per_req,22.696056014213067,ns,measured(sampled),
+get,top_functions,libc.so.6:__GI_memcpy,count_PAN windows (SIMD&FP),4.004719999999998,1/req,counted,
+get,top_functions,libc.so.6:__GI_memcpy,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,libc.so.6:__GI_memcpy,count_dispatch (calls/returns),5.00383,1/req,counted,
+get,top_functions,libc.so.6:__GI_memcpy,count_budget checks,5.00385,1/req,counted,
+get,top_functions,libc.so.6:__GI_memcpy,count_reg-virt fills/spills,39.02668000000003,1/req,counted,
+get,top_functions,libc.so.6:__GI_memcpy,count_alignment checks,0.0,1/req,counted,
+get,top_functions,libc.so.6:__GI_memcpy,count_other instructions,90.05834999999998,1/req,counted,
+get,top_functions,redis-server:readQueryFromClient,rank,9,1,derived,
+get,top_functions,redis-server:readQueryFromClient,model_calibrated_ns_per_req,80.92513954781379,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:readQueryFromClient,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:readQueryFromClient,micro_model_ns_per_req,38.138008000000006,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:readQueryFromClient,sampled_fragment_ns_per_req,121.19152042276224,ns,measured(sampled),
+get,top_functions,redis-server:readQueryFromClient,sampled_native_ns_per_req,9.679200359002634,ns,measured(sampled),
+get,top_functions,redis-server:readQueryFromClient,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:readQueryFromClient,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:readQueryFromClient,count_dispatch (calls/returns),9.013770000000001,1/req,counted,
+get,top_functions,redis-server:readQueryFromClient,count_budget checks,16.02244,1/req,counted,
+get,top_functions,redis-server:readQueryFromClient,count_reg-virt fills/spills,41.060810000000004,1/req,counted,
+get,top_functions,redis-server:readQueryFromClient,count_alignment checks,10.013620000000001,1/req,counted,
+get,top_functions,redis-server:readQueryFromClient,count_other instructions,110.16170999999976,1/req,counted,
+get,top_functions,redis-server:processInputBuffer,rank,10,1,derived,
+get,top_functions,redis-server:processInputBuffer,model_calibrated_ns_per_req,72.41161520974576,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:processInputBuffer,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:processInputBuffer,micro_model_ns_per_req,34.3118804,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:processInputBuffer,sampled_fragment_ns_per_req,126.06433123094074,ns,measured(sampled),
+get,top_functions,redis-server:processInputBuffer,sampled_native_ns_per_req,8.01037271089873,ns,measured(sampled),
+get,top_functions,redis-server:processInputBuffer,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:processInputBuffer,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:processInputBuffer,count_dispatch (calls/returns),8.00744,1/req,counted,
+get,top_functions,redis-server:processInputBuffer,count_budget checks,17.015810000000002,1/req,counted,
+get,top_functions,redis-server:processInputBuffer,count_reg-virt fills/spills,40.037200000000006,1/req,counted,
+get,top_functions,redis-server:processInputBuffer,count_alignment checks,10.009300000000001,1/req,counted,
+get,top_functions,redis-server:processInputBuffer,count_other instructions,92.08555999999982,1/req,counted,
+get,top_functions,redis-server:createEmbeddedStringObject,rank,11,1,derived,
+get,top_functions,redis-server:createEmbeddedStringObject,model_calibrated_ns_per_req,72.00850456460417,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:createEmbeddedStringObject,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:createEmbeddedStringObject,micro_model_ns_per_req,33.8849344,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:createEmbeddedStringObject,sampled_fragment_ns_per_req,65.54716474227219,ns,measured(sampled),
+get,top_functions,redis-server:createEmbeddedStringObject,sampled_native_ns_per_req,5.507131238742877,ns,measured(sampled),
+get,top_functions,redis-server:createEmbeddedStringObject,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:createEmbeddedStringObject,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:createEmbeddedStringObject,count_dispatch (calls/returns),8.01536,1/req,counted,
+get,top_functions,redis-server:createEmbeddedStringObject,count_budget checks,10.0192,1/req,counted,
+get,top_functions,redis-server:createEmbeddedStringObject,count_reg-virt fills/spills,38.07296,1/req,counted,
+get,top_functions,redis-server:createEmbeddedStringObject,count_alignment checks,16.03072,1/req,counted,
+get,top_functions,redis-server:createEmbeddedStringObject,count_other instructions,102.19583999999989,1/req,counted,
+get,top_functions,redis-server:writeToClient,rank,12,1,derived,
+get,top_functions,redis-server:writeToClient,model_calibrated_ns_per_req,68.5186223636546,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:writeToClient,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:writeToClient,micro_model_ns_per_req,33.8148546,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:writeToClient,sampled_fragment_ns_per_req,104.05808887142491,ns,measured(sampled),
+get,top_functions,redis-server:writeToClient,sampled_native_ns_per_req,12.516207360779267,ns,measured(sampled),
+get,top_functions,redis-server:writeToClient,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:writeToClient,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:writeToClient,count_dispatch (calls/returns),8.01297,1/req,counted,
+get,top_functions,redis-server:writeToClient,count_budget checks,13.022970000000003,1/req,counted,
+get,top_functions,redis-server:writeToClient,count_reg-virt fills/spills,36.05887,1/req,counted,
+get,top_functions,redis-server:writeToClient,count_alignment checks,13.020950000000003,1/req,counted,
+get,top_functions,redis-server:writeToClient,count_other instructions,71.11978000000005,1/req,counted,
+get,top_functions,redis-server:zfree,rank,13,1,derived,
+get,top_functions,redis-server:zfree,model_calibrated_ns_per_req,65.01609722260565,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:zfree,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:zfree,micro_model_ns_per_req,33.252207,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:zfree,sampled_fragment_ns_per_req,50.45716998146133,ns,measured(sampled),
+get,top_functions,redis-server:zfree,sampled_native_ns_per_req,1.501944883293512,ns,measured(sampled),
+get,top_functions,redis-server:zfree,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:zfree,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:zfree,count_dispatch (calls/returns),8.01258,1/req,counted,
+get,top_functions,redis-server:zfree,count_budget checks,8.01258,1/req,counted,
+get,top_functions,redis-server:zfree,count_reg-virt fills/spills,32.05032,1/req,counted,
+get,top_functions,redis-server:zfree,count_alignment checks,16.02516,1/req,counted,
+get,top_functions,redis-server:zfree,count_other instructions,56.08806,1/req,counted,
+get,top_functions,redis-server:prepareClientToWrite,rank,14,1,derived,
+get,top_functions,redis-server:prepareClientToWrite,model_calibrated_ns_per_req,63.58769107157923,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,redis-server:prepareClientToWrite,dominant_category,dispatch (calls/returns),,derived,
+get,top_functions,redis-server:prepareClientToWrite,micro_model_ns_per_req,29.5739494,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,redis-server:prepareClientToWrite,sampled_fragment_ns_per_req,55.48716823506494,ns,measured(sampled),
+get,top_functions,redis-server:prepareClientToWrite,sampled_native_ns_per_req,7.676607181277951,ns,measured(sampled),
+get,top_functions,redis-server:prepareClientToWrite,count_PAN windows (SIMD&FP),0,1/req,counted,
+get,top_functions,redis-server:prepareClientToWrite,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,redis-server:prepareClientToWrite,count_dispatch (calls/returns),6.99851,1/req,counted,
+get,top_functions,redis-server:prepareClientToWrite,count_budget checks,9.00037,1/req,counted,
+get,top_functions,redis-server:prepareClientToWrite,count_reg-virt fills/spills,32.99469,1/req,counted,
+get,top_functions,redis-server:prepareClientToWrite,count_alignment checks,11.99516,1/req,counted,
+get,top_functions,redis-server:prepareClientToWrite,count_other instructions,95.97727999999996,1/req,counted,
+get,top_functions,libc.so.6:__GI_strchr,rank,15,1,derived,
+get,top_functions,libc.so.6:__GI_strchr,model_calibrated_ns_per_req,62.821614529340984,ns,modelled,counts x in-situ unit costs of this run
+get,top_functions,libc.so.6:__GI_strchr,dominant_category,PAN windows (SIMD&FP),,derived,
+get,top_functions,libc.so.6:__GI_strchr,micro_model_ns_per_req,35.75676300000001,ns,modelled,counts x microbenchmark unit costs
+get,top_functions,libc.so.6:__GI_strchr,sampled_fragment_ns_per_req,70.10560065960046,ns,measured(sampled),
+get,top_functions,libc.so.6:__GI_strchr,sampled_native_ns_per_req,20.025931777246825,ns,measured(sampled),
+get,top_functions,libc.so.6:__GI_strchr,count_PAN windows (SIMD&FP),3.00477,1/req,counted,
+get,top_functions,libc.so.6:__GI_strchr,count_PAN windows (LSE atomic),0,1/req,counted,
+get,top_functions,libc.so.6:__GI_strchr,count_dispatch (calls/returns),3.00477,1/req,counted,
+get,top_functions,libc.so.6:__GI_strchr,count_budget checks,3.00477,1/req,counted,
+get,top_functions,libc.so.6:__GI_strchr,count_reg-virt fills/spills,15.023850000000001,1/req,counted,
+get,top_functions,libc.so.6:__GI_strchr,count_alignment checks,0.0,1/req,counted,
+get,top_functions,libc.so.6:__GI_strchr,count_other instructions,57.090630000000004,1/req,counted,
+get,server_time_groups,fragments,native_us_per_req,0.0,us,measured(sampled),
+get,server_time_groups,fragments,kjit_us_per_req,3.7898677347483614,us,measured(sampled),
+get,server_time_groups,k:other kernel,native_us_per_req,0.8447605554701955,us,measured(sampled),
+get,server_time_groups,k:other kernel,kjit_us_per_req,0.819587726782723,us,measured(sampled),
+get,server_time_groups,k:net (tcp/ip/sock),native_us_per_req,0.8060437540341849,us,measured(sampled),
+get,server_time_groups,k:net (tcp/ip/sock),kjit_us_per_req,0.778043212864553,us,measured(sampled),
+get,server_time_groups,el0,native_us_per_req,0.6653615832990258,us,measured(sampled),
+get,server_time_groups,el0,kjit_us_per_req,0.019397622307380884,us,measured(sampled),
+get,server_time_groups,k:sched/wakeup/idle,native_us_per_req,0.05774143662439503,us,measured(sampled),
+get,server_time_groups,k:sched/wakeup/idle,kjit_us_per_req,0.20390414000278329,us,measured(sampled),
+get,server_time_groups,k:vfs/copy,native_us_per_req,0.10129783823990689,us,measured(sampled),
+get,server_time_groups,k:vfs/copy,kjit_us_per_req,0.08308902783634016,us,measured(sampled),
+get,server_time_groups,k:irq/timer (sampler included),native_us_per_req,0.08944916193836917,us,measured(sampled),
+get,server_time_groups,k:irq/timer (sampler included),kjit_us_per_req,0.06491330299714075,us,measured(sampled),
+get,server_time_groups,kjit.ko,native_us_per_req,0.025533063015989708,us,measured(sampled),
+get,server_time_groups,kjit.ko,kjit_us_per_req,0.12768828542496394,us,measured(sampled),
+get,server_time_groups,k:locks/rcu/srcu,native_us_per_req,0.046059643087667704,us,measured(sampled),
+get,server_time_groups,k:locks/rcu/srcu,kjit_us_per_req,0.06323319397839124,us,measured(sampled),
+get,server_time_groups,k:entry/exit+syscall dispatch,native_us_per_req,0.06141285745022361,us,measured(sampled),
+get,server_time_groups,k:entry/exit+syscall dispatch,kjit_us_per_req,0.022757840344879935,us,measured(sampled),
+get,server_time_groups,k:epoll,native_us_per_req,0.02636747684004166,us,measured(sampled),
+get,server_time_groups,k:epoll,kjit_us_per_req,0.02627079556590167,us,measured(sampled),
+get,server_time_groups,k:fpsimd,native_us_per_req,0.0,us,measured(sampled),
+get,server_time_groups,k:fpsimd,kjit_us_per_req,0.037573347146580297,us,measured(sampled),
+set,ablation,full/off,wall_us_per_req,3.855000181956009,us,measured,native (timers on); runs=15
+set,ablation,full/off,server_cpu_us_per_req,2.881996515,us,measured,native (timers on); runs=15
+set,ablation,full/off,entries_per_req,0.0,1,measured,native (timers on); runs=15
+set,ablation,full/off,hook_calls_per_req,nan,1,measured,native (timers on); runs=15
+set,ablation,full/off,fragments_us_per_req,nan,us,measured,native (timers on); runs=15
+set,ablation,full/off,gsys_us_per_req,0.0,us,measured,native (timers on); runs=15
+set,ablation,full/off,gusr_us_per_req,3.774958958333333,us,measured,native (timers on); runs=15
+get,ablation,full/off,wall_us_per_req,3.750000093750003,us,measured,native (timers on); runs=15
+get,ablation,full/off,server_cpu_us_per_req,2.72402737,us,measured,native (timers on); runs=15
+get,ablation,full/off,entries_per_req,0.0,1,measured,native (timers on); runs=15
+get,ablation,full/off,hook_calls_per_req,nan,1,measured,native (timers on); runs=15
+get,ablation,full/off,fragments_us_per_req,nan,us,measured,native (timers on); runs=15
+get,ablation,full/off,gsys_us_per_req,0.0,us,measured,native (timers on); runs=15
+get,ablation,full/off,gusr_us_per_req,3.663216666666666,us,measured,native (timers on); runs=15
+set,ablation,full/on,wall_us_per_req,6.735000430029777,us,measured,KJIT on (timers on); runs=15
+set,ablation,full/on,server_cpu_us_per_req,6.7389451849999995,us,measured,KJIT on (timers on); runs=15
+set,ablation,full/on,entries_per_req,3.03987,1,measured,KJIT on (timers on); runs=15
+set,ablation,full/on,hook_calls_per_req,2.042875,1,measured,KJIT on (timers on); runs=15
+set,ablation,full/on,fragments_us_per_req,4.585545625,us,measured,KJIT on (timers on); runs=15
+set,ablation,full/on,gsys_us_per_req,1.4532514583333331,us,measured,KJIT on (timers on); runs=15
+set,ablation,full/on,gusr_us_per_req,0.346991875,us,measured,KJIT on (timers on); runs=15
+get,ablation,full/on,wall_us_per_req,6.039999777728008,us,measured,KJIT on (timers on); runs=15
+get,ablation,full/on,server_cpu_us_per_req,6.036326229999999,us,measured,KJIT on (timers on); runs=15
+get,ablation,full/on,entries_per_req,3.040015,1,measured,KJIT on (timers on); runs=15
+get,ablation,full/on,hook_calls_per_req,2.042995,1,measured,KJIT on (timers on); runs=15
+get,ablation,full/on,fragments_us_per_req,3.9002920833333325,us,measured,KJIT on (timers on); runs=15
+get,ablation,full/on,gsys_us_per_req,1.480241875,us,measured,KJIT on (timers on); runs=15
+get,ablation,full/on,gusr_us_per_req,0.32383958333333335,us,measured,KJIT on (timers on); runs=15
+set,ablation,full/onq,wall_us_per_req,6.830000202168006,us,measured,"KJIT on, auto=0; runs=15"
+set,ablation,full/onq,server_cpu_us_per_req,6.8338764350000005,us,measured,"KJIT on, auto=0; runs=15"
+set,ablation,full/onq,entries_per_req,3.039885,1,measured,"KJIT on, auto=0; runs=15"
+set,ablation,full/onq,hook_calls_per_req,2.042855,1,measured,"KJIT on, auto=0; runs=15"
+set,ablation,full/onq,fragments_us_per_req,4.61490625,us,measured,"KJIT on, auto=0; runs=15"
+set,ablation,full/onq,gsys_us_per_req,1.4863870833333332,us,measured,"KJIT on, auto=0; runs=15"
+set,ablation,full/onq,gusr_us_per_req,0.359576875,us,measured,"KJIT on, auto=0; runs=15"
+get,ablation,full/onq,wall_us_per_req,5.9699999146290015,us,measured,"KJIT on, auto=0; runs=15"
+get,ablation,full/onq,server_cpu_us_per_req,5.940355179999999,us,measured,"KJIT on, auto=0; runs=15"
+get,ablation,full/onq,entries_per_req,3.04001,1,measured,"KJIT on, auto=0; runs=15"
+get,ablation,full/onq,hook_calls_per_req,2.04297,1,measured,"KJIT on, auto=0; runs=15"
+get,ablation,full/onq,fragments_us_per_req,3.8534002083333334,us,measured,"KJIT on, auto=0; runs=15"
+get,ablation,full/onq,gsys_us_per_req,1.4489758333333331,us,measured,"KJIT on, auto=0; runs=15"
+get,ablation,full/onq,gusr_us_per_req,0.31605625,us,measured,"KJIT on, auto=0; runs=15"
+set,ablation,full/nofp,wall_us_per_req,3.5399999461920006,us,measured,ablation: FP/SIMD fragments refused; runs=15
+set,ablation,full/nofp,server_cpu_us_per_req,3.41730798,us,measured,ablation: FP/SIMD fragments refused; runs=15
+set,ablation,full/nofp,entries_per_req,2.272465,1,measured,ablation: FP/SIMD fragments refused; runs=15
+set,ablation,full/nofp,hook_calls_per_req,2.275395,1,measured,ablation: FP/SIMD fragments refused; runs=15
+set,ablation,full/nofp,fragments_us_per_req,0.8225283333333333,us,measured,ablation: FP/SIMD fragments refused; runs=15
+set,ablation,full/nofp,gsys_us_per_req,1.23857875,us,measured,ablation: FP/SIMD fragments refused; runs=15
+set,ablation,full/nofp,gusr_us_per_req,1.2764345833333333,us,measured,ablation: FP/SIMD fragments refused; runs=15
+get,ablation,full/nofp,wall_us_per_req,3.5450000893340023,us,measured,ablation: FP/SIMD fragments refused; runs=15
+get,ablation,full/nofp,server_cpu_us_per_req,3.3954568650000003,us,measured,ablation: FP/SIMD fragments refused; runs=15
+get,ablation,full/nofp,entries_per_req,2.31846,1,measured,ablation: FP/SIMD fragments refused; runs=15
+get,ablation,full/nofp,hook_calls_per_req,2.321355,1,measured,ablation: FP/SIMD fragments refused; runs=15
+get,ablation,full/nofp,fragments_us_per_req,0.8436322916666665,us,measured,ablation: FP/SIMD fragments refused; runs=15
+get,ablation,full/nofp,gsys_us_per_req,1.2410666666666665,us,measured,ablation: FP/SIMD fragments refused; runs=15
+get,ablation,full/nofp,gusr_us_per_req,1.248588125,us,measured,ablation: FP/SIMD fragments refused; runs=15
+set,ablation,full/nopub,wall_us_per_req,41.89999727650018,us,measured,ablation: no dispatch publishing; runs=15
+set,ablation,full/nopub,server_cpu_us_per_req,41.30841461,us,measured,ablation: no dispatch publishing; runs=15
+set,ablation,full/nopub,entries_per_req,351.923245,1,measured,ablation: no dispatch publishing; runs=15
+set,ablation,full/nopub,hook_calls_per_req,2.02772,1,measured,ablation: no dispatch publishing; runs=15
+set,ablation,full/nopub,fragments_us_per_req,15.97597125,us,measured,ablation: no dispatch publishing; runs=15
+set,ablation,full/nopub,gsys_us_per_req,2.6339597916666664,us,measured,ablation: no dispatch publishing; runs=15
+set,ablation,full/nopub,gusr_us_per_req,0.26636979166666663,us,measured,ablation: no dispatch publishing; runs=15
+get,ablation,full/nopub,wall_us_per_req,36.12500117406254,us,measured,ablation: no dispatch publishing; runs=15
+get,ablation,full/nopub,server_cpu_us_per_req,35.532765930000004,us,measured,ablation: no dispatch publishing; runs=15
+get,ablation,full/nopub,entries_per_req,298.932005,1,measured,ablation: no dispatch publishing; runs=15
+get,ablation,full/nopub,hook_calls_per_req,2.02757,1,measured,ablation: no dispatch publishing; runs=15
+get,ablation,full/nopub,fragments_us_per_req,13.548696875000001,us,measured,ablation: no dispatch publishing; runs=15
+get,ablation,full/nopub,gsys_us_per_req,2.361826875,us,measured,ablation: no dispatch publishing; runs=15
+get,ablation,full/nopub,gusr_us_per_req,0.2557564583333333,us,measured,ablation: no dispatch publishing; runs=15
+set,ablation,full/offprof,wall_us_per_req,4.129999669187026,us,measured,native + sampler 2 kHz; runs=15
+set,ablation,full/offprof,server_cpu_us_per_req,2.9874506999999997,us,measured,native + sampler 2 kHz; runs=15
+set,ablation,full/offprof,entries_per_req,0.0,1,measured,native + sampler 2 kHz; runs=15
+set,ablation,full/offprof,hook_calls_per_req,nan,1,measured,native + sampler 2 kHz; runs=15
+set,ablation,full/offprof,fragments_us_per_req,nan,us,measured,native + sampler 2 kHz; runs=15
+set,ablation,full/offprof,gsys_us_per_req,0.0,us,measured,native + sampler 2 kHz; runs=15
+set,ablation,full/offprof,gusr_us_per_req,4.039946041666666,us,measured,native + sampler 2 kHz; runs=15
+get,ablation,full/offprof,wall_us_per_req,4.160000093184002,us,measured,native + sampler 2 kHz; runs=15
+get,ablation,full/offprof,server_cpu_us_per_req,2.9253543100000003,us,measured,native + sampler 2 kHz; runs=15
+get,ablation,full/offprof,entries_per_req,0.0,1,measured,native + sampler 2 kHz; runs=15
+get,ablation,full/offprof,hook_calls_per_req,nan,1,measured,native + sampler 2 kHz; runs=15
+get,ablation,full/offprof,fragments_us_per_req,nan,us,measured,native + sampler 2 kHz; runs=15
+get,ablation,full/offprof,gsys_us_per_req,0.0,us,measured,native + sampler 2 kHz; runs=15
+get,ablation,full/offprof,gusr_us_per_req,4.071848958333333,us,measured,native + sampler 2 kHz; runs=15
+set,ablation,full/onprof,wall_us_per_req,7.414999817961755,us,measured,KJIT on + sampler 2 kHz; runs=15
+set,ablation,full/onprof,server_cpu_us_per_req,7.380948955,us,measured,KJIT on + sampler 2 kHz; runs=15
+set,ablation,full/onprof,entries_per_req,3.044175,1,measured,KJIT on + sampler 2 kHz; runs=15
+set,ablation,full/onprof,hook_calls_per_req,2.04583,1,measured,KJIT on + sampler 2 kHz; runs=15
+set,ablation,full/onprof,fragments_us_per_req,4.9988456249999995,us,measured,KJIT on + sampler 2 kHz; runs=15
+set,ablation,full/onprof,gsys_us_per_req,1.6365639583333331,us,measured,KJIT on + sampler 2 kHz; runs=15
+set,ablation,full/onprof,gusr_us_per_req,0.41148770833333326,us,measured,KJIT on + sampler 2 kHz; runs=15
+get,ablation,full/onprof,wall_us_per_req,6.625000273281261,us,measured,KJIT on + sampler 2 kHz; runs=15
+get,ablation,full/onprof,server_cpu_us_per_req,6.5276854,us,measured,KJIT on + sampler 2 kHz; runs=15
+get,ablation,full/onprof,entries_per_req,3.04387,1,measured,KJIT on + sampler 2 kHz; runs=15
+get,ablation,full/onprof,hook_calls_per_req,2.04678,1,measured,KJIT on + sampler 2 kHz; runs=15
+get,ablation,full/onprof,fragments_us_per_req,4.218567083333333,us,measured,KJIT on + sampler 2 kHz; runs=15
+get,ablation,full/onprof,gsys_us_per_req,1.659395625,us,measured,KJIT on + sampler 2 kHz; runs=15
+get,ablation,full/onprof,gusr_us_per_req,0.3783654166666666,us,measured,KJIT on + sampler 2 kHz; runs=15
+set,ablation,ssbs0/off,wall_us_per_req,3.8150001150222534,us,measured,"native, server with SSBS=0; runs=9"
+set,ablation,ssbs0/off,server_cpu_us_per_req,2.86886924,us,measured,"native, server with SSBS=0; runs=9"
+set,ablation,ssbs0/off,entries_per_req,0.0,1,measured,"native, server with SSBS=0; runs=9"
+set,ablation,ssbs0/off,hook_calls_per_req,nan,1,measured,"native, server with SSBS=0; runs=9"
+set,ablation,ssbs0/off,fragments_us_per_req,nan,us,measured,"native, server with SSBS=0; runs=9"
+set,ablation,ssbs0/off,gsys_us_per_req,0.0,us,measured,"native, server with SSBS=0; runs=9"
+set,ablation,ssbs0/off,gusr_us_per_req,3.7318772916666663,us,measured,"native, server with SSBS=0; runs=9"
+get,ablation,ssbs0/off,wall_us_per_req,3.789999895775003,us,measured,"native, server with SSBS=0; runs=9"
+get,ablation,ssbs0/off,server_cpu_us_per_req,2.7509967499999997,us,measured,"native, server with SSBS=0; runs=9"
+get,ablation,ssbs0/off,entries_per_req,0.0,1,measured,"native, server with SSBS=0; runs=9"
+get,ablation,ssbs0/off,hook_calls_per_req,nan,1,measured,"native, server with SSBS=0; runs=9"
+get,ablation,ssbs0/off,fragments_us_per_req,nan,us,measured,"native, server with SSBS=0; runs=9"
+get,ablation,ssbs0/off,gsys_us_per_req,0.0,us,measured,"native, server with SSBS=0; runs=9"
+get,ablation,ssbs0/off,gusr_us_per_req,3.707424375,us,measured,"native, server with SSBS=0; runs=9"
+set,ablation,ssbs0/on,wall_us_per_req,6.685000503380538,us,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+set,ablation,ssbs0/on,server_cpu_us_per_req,6.688720615,us,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+set,ablation,ssbs0/on,entries_per_req,3.03978,1,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+set,ablation,ssbs0/on,hook_calls_per_req,2.042785,1,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+set,ablation,ssbs0/on,fragments_us_per_req,4.55007875,us,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+set,ablation,ssbs0/on,gsys_us_per_req,1.446905,us,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+set,ablation,ssbs0/on,gusr_us_per_req,0.3491333333333333,us,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+get,ablation,ssbs0/on,wall_us_per_req,6.0600000606,us,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+get,ablation,ssbs0/on,server_cpu_us_per_req,6.06896913,us,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+get,ablation,ssbs0/on,entries_per_req,3.03983,1,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+get,ablation,ssbs0/on,hook_calls_per_req,2.042805,1,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+get,ablation,ssbs0/on,fragments_us_per_req,3.904146041666666,us,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+get,ablation,ssbs0/on,gsys_us_per_req,1.46164375,us,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+get,ablation,ssbs0/on,gusr_us_per_req,0.33003270833333326,us,measured,"KJIT on, server SSBS=0 (native tails only); runs=9"
+set,ablation,ssbs0/offprof,wall_us_per_req,4.19999979000001,us,measured,native SSBS=0 + sampler; runs=9
+set,ablation,ssbs0/offprof,server_cpu_us_per_req,3.032188365,us,measured,native SSBS=0 + sampler; runs=9
+set,ablation,ssbs0/offprof,entries_per_req,0.0,1,measured,native SSBS=0 + sampler; runs=9
+set,ablation,ssbs0/offprof,hook_calls_per_req,nan,1,measured,native SSBS=0 + sampler; runs=9
+set,ablation,ssbs0/offprof,fragments_us_per_req,nan,us,measured,native SSBS=0 + sampler; runs=9
+set,ablation,ssbs0/offprof,gsys_us_per_req,0.0,us,measured,native SSBS=0 + sampler; runs=9
+set,ablation,ssbs0/offprof,gusr_us_per_req,4.1135641666666665,us,measured,native SSBS=0 + sampler; runs=9
+get,ablation,ssbs0/offprof,wall_us_per_req,4.1100000411,us,measured,native SSBS=0 + sampler; runs=9
+get,ablation,ssbs0/offprof,server_cpu_us_per_req,2.88717861,us,measured,native SSBS=0 + sampler; runs=9
+get,ablation,ssbs0/offprof,entries_per_req,0.0,1,measured,native SSBS=0 + sampler; runs=9
+get,ablation,ssbs0/offprof,hook_calls_per_req,nan,1,measured,native SSBS=0 + sampler; runs=9
+get,ablation,ssbs0/offprof,fragments_us_per_req,nan,us,measured,native SSBS=0 + sampler; runs=9
+get,ablation,ssbs0/offprof,gsys_us_per_req,0.0,us,measured,native SSBS=0 + sampler; runs=9
+get,ablation,ssbs0/offprof,gusr_us_per_req,4.026586458333333,us,measured,native SSBS=0 + sampler; runs=9
+set,ablation,thr2/off,wall_us_per_req,3.754999923210251,us,measured,"native, redis-benchmark --threads 2; runs=6"
+set,ablation,thr2/off,server_cpu_us_per_req,2.665433225,us,measured,"native, redis-benchmark --threads 2; runs=6"
+set,ablation,thr2/off,entries_per_req,0.0,1,measured,"native, redis-benchmark --threads 2; runs=6"
+set,ablation,thr2/off,hook_calls_per_req,nan,1,measured,"native, redis-benchmark --threads 2; runs=6"
+set,ablation,thr2/off,fragments_us_per_req,nan,us,measured,"native, redis-benchmark --threads 2; runs=6"
+set,ablation,thr2/off,gsys_us_per_req,0.0,us,measured,"native, redis-benchmark --threads 2; runs=6"
+set,ablation,thr2/off,gusr_us_per_req,2.6576234375,us,measured,"native, redis-benchmark --threads 2; runs=6"
+get,ablation,thr2/off,wall_us_per_req,3.754999923210251,us,measured,"native, redis-benchmark --threads 2; runs=6"
+get,ablation,thr2/off,server_cpu_us_per_req,2.4996287049999997,us,measured,"native, redis-benchmark --threads 2; runs=6"
+get,ablation,thr2/off,entries_per_req,0.0,1,measured,"native, redis-benchmark --threads 2; runs=6"
+get,ablation,thr2/off,hook_calls_per_req,nan,1,measured,"native, redis-benchmark --threads 2; runs=6"
+get,ablation,thr2/off,fragments_us_per_req,nan,us,measured,"native, redis-benchmark --threads 2; runs=6"
+get,ablation,thr2/off,gsys_us_per_req,0.0,us,measured,"native, redis-benchmark --threads 2; runs=6"
+get,ablation,thr2/off,gusr_us_per_req,2.5012709375,us,measured,"native, redis-benchmark --threads 2; runs=6"
+set,ablation,thr2/on,wall_us_per_req,7.509999564420026,us,measured,"KJIT on, --threads 2; runs=6"
+set,ablation,thr2/on,server_cpu_us_per_req,7.239527355,us,measured,"KJIT on, --threads 2; runs=6"
+set,ablation,thr2/on,entries_per_req,3.040165,1,measured,"KJIT on, --threads 2; runs=6"
+set,ablation,thr2/on,hook_calls_per_req,2.0431675,1,measured,"KJIT on, --threads 2; runs=6"
+set,ablation,thr2/on,fragments_us_per_req,4.757386145833333,us,measured,"KJIT on, --threads 2; runs=6"
+set,ablation,thr2/on,gsys_us_per_req,1.7102151041666667,us,measured,"KJIT on, --threads 2; runs=6"
+set,ablation,thr2/on,gusr_us_per_req,0.37799395833333327,us,measured,"KJIT on, --threads 2; runs=6"
+get,ablation,thr2/on,wall_us_per_req,7.505000206387506,us,measured,"KJIT on, --threads 2; runs=6"
+get,ablation,thr2/on,server_cpu_us_per_req,6.500560612499999,us,measured,"KJIT on, --threads 2; runs=6"
+get,ablation,thr2/on,entries_per_req,3.0401350000000003,1,measured,"KJIT on, --threads 2; runs=6"
+get,ablation,thr2/on,hook_calls_per_req,2.0431274999999998,1,measured,"KJIT on, --threads 2; runs=6"
+get,ablation,thr2/on,fragments_us_per_req,4.0568684374999995,us,measured,"KJIT on, --threads 2; runs=6"
+get,ablation,thr2/on,gsys_us_per_req,1.7094779166666667,us,measured,"KJIT on, --threads 2; runs=6"
+get,ablation,thr2/on,gusr_us_per_req,0.37660343749999997,us,measured,"KJIT on, --threads 2; runs=6"
+set,ablation,pipe16/off,wall_us_per_req,0.5074999922098752,us,measured,"native, -P 16; runs=9"
+set,ablation,pipe16/off,server_cpu_us_per_req,0.48807020999999995,us,measured,"native, -P 16; runs=9"
+set,ablation,pipe16/off,entries_per_req,0.0,1,measured,"native, -P 16; runs=9"
+set,ablation,pipe16/off,hook_calls_per_req,nan,1,measured,"native, -P 16; runs=9"
+set,ablation,pipe16/off,fragments_us_per_req,nan,us,measured,"native, -P 16; runs=9"
+set,ablation,pipe16/off,gsys_us_per_req,0.0,us,measured,"native, -P 16; runs=9"
+set,ablation,pipe16/off,gusr_us_per_req,0.5055839583333332,us,measured,"native, -P 16; runs=9"
+get,ablation,pipe16/off,wall_us_per_req,0.4,us,measured,"native, -P 16; runs=9"
+get,ablation,pipe16/off,server_cpu_us_per_req,0.400783745,us,measured,"native, -P 16; runs=9"
+get,ablation,pipe16/off,entries_per_req,0.0,1,measured,"native, -P 16; runs=9"
+get,ablation,pipe16/off,hook_calls_per_req,nan,1,measured,"native, -P 16; runs=9"
+get,ablation,pipe16/off,fragments_us_per_req,nan,us,measured,"native, -P 16; runs=9"
+get,ablation,pipe16/off,gsys_us_per_req,0.0,us,measured,"native, -P 16; runs=9"
+get,ablation,pipe16/off,gusr_us_per_req,0.396660625,us,measured,"native, -P 16; runs=9"
+set,ablation,pipe16/on,wall_us_per_req,2.247500055119939,us,measured,"KJIT on, -P 16; runs=9"
+set,ablation,pipe16/on,server_cpu_us_per_req,2.2482990525,us,measured,"KJIT on, -P 16; runs=9"
+set,ablation,pipe16/on,entries_per_req,0.19109,1,measured,"KJIT on, -P 16; runs=9"
+set,ablation,pipe16/on,hook_calls_per_req,0.13008,1,measured,"KJIT on, -P 16; runs=9"
+set,ablation,pipe16/on,fragments_us_per_req,1.9160954166666666,us,measured,"KJIT on, -P 16; runs=9"
+set,ablation,pipe16/on,gsys_us_per_req,0.07928979166666666,us,measured,"KJIT on, -P 16; runs=9"
+set,ablation,pipe16/on,gusr_us_per_req,0.2366040625,us,measured,"KJIT on, -P 16; runs=9"
+get,ablation,pipe16/on,wall_us_per_req,2.2175000312667503,us,measured,"KJIT on, -P 16; runs=9"
+get,ablation,pipe16/on,server_cpu_us_per_req,2.2117692625,us,measured,"KJIT on, -P 16; runs=9"
+get,ablation,pipe16/on,entries_per_req,0.1910575,1,measured,"KJIT on, -P 16; runs=9"
+get,ablation,pipe16/on,hook_calls_per_req,0.130015,1,measured,"KJIT on, -P 16; runs=9"
+get,ablation,pipe16/on,fragments_us_per_req,1.9520907291666665,us,measured,"KJIT on, -P 16; runs=9"
+get,ablation,pipe16/on,gsys_us_per_req,0.08584239583333332,us,measured,"KJIT on, -P 16; runs=9"
+get,ablation,pipe16/on,gusr_us_per_req,0.1532675,us,measured,"KJIT on, -P 16; runs=9"
+set,ablation,pipe16/offprof,wall_us_per_req,0.5675000120593753,us,measured,native -P 16 + sampler; runs=9
+set,ablation,pipe16/offprof,server_cpu_us_per_req,0.5663723975,us,measured,native -P 16 + sampler; runs=9
+set,ablation,pipe16/offprof,entries_per_req,0.0,1,measured,native -P 16 + sampler; runs=9
+set,ablation,pipe16/offprof,hook_calls_per_req,nan,1,measured,native -P 16 + sampler; runs=9
+set,ablation,pipe16/offprof,fragments_us_per_req,nan,us,measured,native -P 16 + sampler; runs=9
+set,ablation,pipe16/offprof,gsys_us_per_req,0.0,us,measured,native -P 16 + sampler; runs=9
+set,ablation,pipe16/offprof,gusr_us_per_req,0.5658402083333333,us,measured,native -P 16 + sampler; runs=9
+get,ablation,pipe16/offprof,wall_us_per_req,0.45499998919375023,us,measured,native -P 16 + sampler; runs=9
+get,ablation,pipe16/offprof,server_cpu_us_per_req,0.44625665249999996,us,measured,native -P 16 + sampler; runs=9
+get,ablation,pipe16/offprof,entries_per_req,0.0,1,measured,native -P 16 + sampler; runs=9
+get,ablation,pipe16/offprof,hook_calls_per_req,nan,1,measured,native -P 16 + sampler; runs=9
+get,ablation,pipe16/offprof,fragments_us_per_req,nan,us,measured,native -P 16 + sampler; runs=9
+get,ablation,pipe16/offprof,gsys_us_per_req,0.0,us,measured,native -P 16 + sampler; runs=9
+get,ablation,pipe16/offprof,gusr_us_per_req,0.45346520833333326,us,measured,native -P 16 + sampler; runs=9
+set,ablation,pipe16/onprof,wall_us_per_req,2.4824999270765646,us,measured,KJIT on -P 16 + sampler; runs=9
+set,ablation,pipe16/onprof,server_cpu_us_per_req,2.4847854075,us,measured,KJIT on -P 16 + sampler; runs=9
+set,ablation,pipe16/onprof,entries_per_req,0.19107,1,measured,KJIT on -P 16 + sampler; runs=9
+set,ablation,pipe16/onprof,hook_calls_per_req,0.13006,1,measured,KJIT on -P 16 + sampler; runs=9
+set,ablation,pipe16/onprof,fragments_us_per_req,2.0998329166666663,us,measured,KJIT on -P 16 + sampler; runs=9
+set,ablation,pipe16/onprof,gsys_us_per_req,0.09299927083333333,us,measured,KJIT on -P 16 + sampler; runs=9
+set,ablation,pipe16/onprof,gusr_us_per_req,0.27415541666666665,us,measured,KJIT on -P 16 + sampler; runs=9
+get,ablation,pipe16/onprof,wall_us_per_req,2.405000033549751,us,measured,KJIT on -P 16 + sampler; runs=9
+get,ablation,pipe16/onprof,server_cpu_us_per_req,2.40851801,us,measured,KJIT on -P 16 + sampler; runs=9
+get,ablation,pipe16/onprof,entries_per_req,0.19107,1,measured,KJIT on -P 16 + sampler; runs=9
+get,ablation,pipe16/onprof,hook_calls_per_req,0.130055,1,measured,KJIT on -P 16 + sampler; runs=9
+get,ablation,pipe16/onprof,fragments_us_per_req,2.0955633333333332,us,measured,KJIT on -P 16 + sampler; runs=9
+get,ablation,pipe16/onprof,gsys_us_per_req,0.09754875,us,measured,KJIT on -P 16 + sampler; runs=9
+get,ablation,pipe16/onprof,gusr_us_per_req,0.1850623958333333,us,measured,KJIT on -P 16 + sampler; runs=9

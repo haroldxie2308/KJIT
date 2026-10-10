@@ -1,0 +1,37 @@
+== off: 2773 samples of the program
+   EL0 2119, kernel 654
+   by function: {'cs_leaf': 1335, 'cs_calls': 784}
+     1033  0x401154 cs_leaf      ldp	x29, x30, [sp], #0x20
+      310  0x40119c cs_calls     mov	x0, x5
+      241  0x401198 cs_calls     mov	x4, x10
+      192  0x401140 cs_leaf      str	x19, [sp, #0x10]
+      147  0x4011a4 cs_calls     mov	x5, x0
+       99  0x401158 cs_leaf      ret
+       37  0x4011ac cs_calls     b.ne	0x40119c <cs_calls+0x1c>
+       24  0x4011a8 cs_calls     subs	x4, x4, #0x1
+       21  0x4011b0 cs_calls     subs	x9, x9, #0x1
+       11  0x401150 cs_leaf      ldr	x19, [sp, #0x10]
+        4  0x4011a0 cs_calls     bl	0x401138 <cs_leaf>
+== on: 2871 samples of the program
+   attrib-frags: 3 fragments mapped, 0 failed
+   by class: {'frag:user_access': 685, 'frag:dispatch_hit2': 542, 'frag:dispatch_hit7': 469, 'frag:user_op': 442, 'frag:align': 258, 'frag:dispatch_hit4': 198, 'kernel': 167, 'frag:dispatch_hit6': 84, 'frag:epilogue': 14, 'frag:prologue': 11, 'frag:dispatch_target': 1}
+      284  ori 0x401158 cs_leaf      dispatch_hit7    ret
+      274  ori 0x4011ac cs_calls     user_op          b.ne	0x40119c <cs_calls+0x1c>
+      274  ori 0x401158 cs_leaf      dispatch_hit2    ret
+      268  ori 0x4011a0 cs_calls     dispatch_hit2    bl	0x401138 <cs_leaf>
+      212  ori 0x401154 cs_leaf      user_access      ldp	x29, x30, [sp], #0x20
+      197  ori 0x401150 cs_leaf      user_access      ldr	x19, [sp, #0x10]
+      187  ori 0x401138 cs_leaf      align            stp	x29, x30, [sp, #-0x20]!
+      185  ori 0x401140 cs_leaf      user_access      str	x19, [sp, #0x10]
+      185  ori 0x4011a0 cs_calls     dispatch_hit7    bl	0x401138 <cs_leaf>
+      103  ori 0x401158 cs_leaf      dispatch_hit4    ret
+       95  ori 0x4011a0 cs_calls     dispatch_hit4    bl	0x401138 <cs_leaf>
+       91  ori 0x401138 cs_leaf      user_access      stp	x29, x30, [sp, #-0x20]!
+       84  ori 0x4011a0 cs_calls     dispatch_hit6    bl	0x401138 <cs_leaf>
+       77  ori 0x4011a4 cs_calls     user_op          mov	x5, x0
+       74  ori 0x40119c cs_calls     user_op          mov	x0, x5
+       71  ori 0x401140 cs_leaf      align            str	x19, [sp, #0x10]
+       17  ori 0x4011b0 cs_calls     user_op          subs	x9, x9, #0x1
+       14  ori 0x0 ?            epilogue         ?
+       11  ori 0x0 ?            prologue         ?
+        1  ori 0x401158 cs_leaf      dispatch_target  ret

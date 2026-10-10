@@ -1,0 +1,179 @@
+
+====================================================================================================
+SET
+====================================================================================================
+wall native 3.855  kjit 6.485  loss L = 2.630 us/req   (clean boots: 18 + 18 runs)
+server cpu native 2.882 (slack 0.973)  kjit(timers on) 6.739   timers-on wall 6.735 -> instrumentation 0.250
+F (fragments) 4.586 = nofp 0.801 + fp 3.784 ; bracket overhead 0.109 ; runtime logic R 0.242 ; gsys 1.453 gusr 0.347
+U0 native EL0 0.791 (transfer targets 0.216, other 0.574)  S0 native kernel 2.091
+cross-check on the sampler runs: fragment time by CNTVCT 4.999 us vs sampler share x server cpu 4.934 us
+spread over boots: wall native 3.800..3.930 (6 boots) ; wall kjit 6.315..6.640 (6 boots)
+                   cpu native 2.840..2.901 (5 boots) ; cpu kjit(timers) 6.634..6.801 (5 boots) ; F 4.459..4.701 (5 boots)
+counted exits per request: {'exit_svc': 1.9985, 'exit_br': 1.0, 'exit_bl': 0.0022, 'exit_blr': 0.0001, 'exit_ret': 0.0019, 'exit_unsupported': 0.0372, 'ibtc_fpsimd_boundary': 1.0, 'ibtc_miss_cold': 0.004, 'ibtc_miss_conflict': 0.0003, 'syscalls_in_kernel': 1.9985, 'hook_calls': 2.0429}
+unsupported exits: 0.0372 per request counted; native EL0 time under KJIT (their tails) 0.023 us/request sampled (inside the syscall-path row)
+fragment sample groups: {'transfer_stalls': '44.4%', 'midblock': '25.7%', 'stall_entry': '25.4%', 'stall_afterret': '19.0%', 'dispatch_words': '10.2%', 'windows': '9.7%', 'budget': '4.0%', 'regvirt': '3.7%', 'align_other': '1.6%', 'entry_exit': '0.7%'}
+PAN windows in situ: SIMD&FP 129 ns/request = 11.8 ns per window (11.0 windows); LSE atomics 316 ns/request = 22.6 ns per window (14.0 windows); micro-benchmark 7.66 ns
+sum of in-fragment rows 3795 ns  =?  F - U0 = 3795 ns
+counts per request: native insns 5165 ; emitted words total 15857 ; windows 25.0 (simd 11.0 + atomic 14.0) ; dispatch sites 350 {'ret': 166, 'bl': 153, 'br': 19, 'blr': 13} ; budget units 530 ; align checks 581 ; fills 743 spills 351 helpers 1523 ; user accesses 2100 (ldp/stp pairs 509) ; indirect last-target changes 50.7 ; unsupported dyn 0.0395
+runtime entries per request 3.040 ; measured cost per chain entry in the nopub ablation 100.8 ns
+modelled: {'windows': 226, 'dispatch': 1313, 'budget': 21, 'regvirt_lo': 235, 'regvirt_hi': 1038, 'align_other': 0, 'entries': 306, 'bracket': 109, 'unsupported': 4}
+in-situ  : {'windows': 445, 'dispatch_words': 468, 'stall_entry': 997, 'stall_afterret': 824, 'budget': 182, 'regvirt': 168, 'align_other': 73, 'entry_exit': 33, 'midblock': 604, 'dispatch': 2289}
+
+category                                                                 count/req  unit cost (model source)                           model ns in-situ ns   ns/unit  % of L
+PAN windows (SIMD&FP 11.0 + LSE atomics 14.0)                                 25.0  7.66 ns/SIMD&FP window, 10.1 ns/atomic window (ldadd microbenchmark)        226        445    17.804   16.9%
+Dispatch template words (185 BL/BLR/BR + 166 RET sites)                      350.2  0.39 ns/transfer (monomorphic loop)                     137        468     1.336   17.8%
+Dispatch: stall at call/branch targets (function entries), net of native     184.7  3.36 ns/transfer (sites microbenchmark, distinct sites) minus the template words        620        997     5.399   37.9%
+Dispatch: stall at return targets, net of native                             165.6  3.36 ns/transfer (sites microbenchmark) minus the template words        556        824     4.977   31.3%
+Budget checks                                                                529.6  0.04 ns/unit                                             21        182     0.344    6.9%
+Reg-virt fills/spills/helpers                                               2616.2  0.09..1.17 ns/word                                235..1038        168     0.064    6.4%
+Alignment checks away from entries (LDTR/STTR splits: 509 pairs)             581.2  0.00 ns/check                                             0         73     0.125    2.8%
+Fragment prologue/epilogue/exit groups                                         3.0  measured with runtime entries                             0         33    10.741    1.2%
+Native-equivalent instructions mid-block, beyond native                     5165.1  no model                                                  0        604     0.117   23.0%
+Runtime entries: hook logic (can_run, lookup, link) per entry                  3.0  100.8 ns/entry (nopub ablation, incl. fragment call)        306        242    79.456    9.2%
+FP/SIMD bracket                                                                1.0  measured, kernel_neon_begin/end + load/save             109        109   108.570    4.1%
+Syscall path (exception round trips saved, batching, hook srcu), net           2.0  measured                                               -291       -291  -145.524  -11.1%
+Instrumentation of these timings (A/B)                                         0.0  measured                                               -250       -250             -9.5%
+Native server idle time (not CPU-bound at native: slack the loop absorbs)       0.0  measured                                               -973       -973            -37.0%
+Sum of rows                                                                                                                                 697       2631
+Measured loss L (wall) / residual (model) / residual (in-situ)                                                                             1933         -1   73.5%
+
+====================================================================================================
+GET
+====================================================================================================
+wall native 3.745  kjit 5.685  loss L = 1.940 us/req   (clean boots: 18 + 18 runs)
+server cpu native 2.724 (slack 1.021)  kjit(timers on) 6.036   timers-on wall 6.040 -> instrumentation 0.355
+F (fragments) 3.900 = nofp 0.796 + fp 3.105 ; bracket overhead 0.105 ; runtime logic R 0.239 ; gsys 1.480 gusr 0.324
+U0 native EL0 0.665 (transfer targets 0.193, other 0.473)  S0 native kernel 2.059
+cross-check on the sampler runs: fragment time by CNTVCT 4.219 us vs sampler share x server cpu 4.098 us
+spread over boots: wall native 3.700..3.775 (6 boots) ; wall kjit 5.620..5.765 (6 boots)
+                   cpu native 2.704..2.752 (5 boots) ; cpu kjit(timers) 5.977..6.047 (5 boots) ; F 3.812..3.935 (5 boots)
+counted exits per request: {'exit_svc': 1.9988, 'exit_br': 1.0, 'exit_bl': 0.0018, 'exit_blr': 0.0001, 'exit_ret': 0.0019, 'exit_unsupported': 0.0374, 'ibtc_fpsimd_boundary': 1.0, 'ibtc_miss_cold': 0.0035, 'ibtc_miss_conflict': 0.0003, 'syscalls_in_kernel': 1.9988, 'hook_calls': 2.043}
+unsupported exits: 0.0374 per request counted; native EL0 time under KJIT (their tails) 0.021 us/request sampled (inside the syscall-path row)
+fragment sample groups: {'transfer_stalls': '43.9%', 'midblock': '26.1%', 'stall_entry': '25.0%', 'stall_afterret': '18.9%', 'windows': '10.4%', 'dispatch_words': '10.0%', 'regvirt': '3.9%', 'budget': '3.6%', 'align_other': '1.3%', 'entry_exit': '0.8%'}
+PAN windows in situ: SIMD&FP 114 ns/request = 11.4 ns per window (10.0 windows); LSE atomics 290 ns/request = 24.1 ns per window (12.0 windows); micro-benchmark 7.66 ns
+sum of in-fragment rows 3235 ns  =?  F - U0 = 3235 ns
+counts per request: native insns 4251 ; emitted words total 13247 ; windows 22.1 (simd 10.0 + atomic 12.0) ; dispatch sites 298 {'ret': 141, 'bl': 132, 'br': 16, 'blr': 9} ; budget units 436 ; align checks 466 ; fills 634 spills 296 helpers 1321 ; user accesses 1728 (ldp/stp pairs 394) ; indirect last-target changes 51.8 ; unsupported dyn 0.0447
+runtime entries per request 3.040 ; measured cost per chain entry in the nopub ablation 101.7 ns
+modelled: {'windows': 198, 'dispatch': 1118, 'budget': 17, 'regvirt_lo': 203, 'regvirt_hi': 887, 'align_other': 0, 'entries': 309, 'bracket': 105, 'unsupported': 4}
+in-situ  : {'windows': 405, 'dispatch_words': 389, 'stall_entry': 826, 'stall_afterret': 695, 'budget': 142, 'regvirt': 151, 'align_other': 50, 'entry_exit': 31, 'midblock': 546, 'dispatch': 1910}
+
+category                                                                 count/req  unit cost (model source)                           model ns in-situ ns   ns/unit  % of L
+PAN windows (SIMD&FP 10.0 + LSE atomics 12.0)                                 22.1  7.66 ns/SIMD&FP window, 10.1 ns/atomic window (ldadd microbenchmark)        198        405    18.343   20.9%
+Dispatch template words (157 BL/BLR/BR + 141 RET sites)                      298.2  0.39 ns/transfer (monomorphic loop)                     116        389     1.305   20.1%
+Dispatch: stall at call/branch targets (function entries), net of native     157.2  3.36 ns/transfer (sites microbenchmark, distinct sites) minus the template words        528        826     5.258   42.6%
+Dispatch: stall at return targets, net of native                             141.0  3.36 ns/transfer (sites microbenchmark) minus the template words        474        695     4.926   35.8%
+Budget checks                                                                436.0  0.04 ns/unit                                             17        142     0.325    7.3%
+Reg-virt fills/spills/helpers                                               2250.8  0.09..1.17 ns/word                                 203..887        151     0.067    7.8%
+Alignment checks away from entries (LDTR/STTR splits: 394 pairs)             465.6  0.00 ns/check                                             0         50     0.108    2.6%
+Fragment prologue/epilogue/exit groups                                         3.0  measured with runtime entries                             0         31    10.341    1.6%
+Native-equivalent instructions mid-block, beyond native                     4250.6  no model                                                  0        546     0.128   28.1%
+Runtime entries: hook logic (can_run, lookup, link) per entry                  3.0  101.7 ns/entry (nopub ablation, incl. fragment call)        309        239    78.661   12.3%
+FP/SIMD bracket                                                                1.0  measured, kernel_neon_begin/end + load/save             105        105   104.633    5.4%
+Syscall path (exception round trips saved, batching, hook srcu), net           2.0  measured                                               -255       -255  -127.370  -13.1%
+Instrumentation of these timings (A/B)                                         0.0  measured                                               -355       -355            -18.3%
+Native server idle time (not CPU-bound at native: slack the loop absorbs)       0.0  measured                                              -1021      -1021            -52.6%
+Sum of rows                                                                                                                                 320       1948
+Measured loss L (wall) / residual (model) / residual (in-situ)                                                                             1620         -8   83.5%
+
+Top functions, SET: calibrated modelled loss (ns/request), dominant category, micro-unit model, sampled fragment time and native time
+#   image        function                            model ns  dominant category           micro ns   frag ns native ns
+1   redis-server __aarch64_ldadd8_relax                   440  PAN windows (LSE atomic)         180       464         8
+2   redis-server call                                     173  dispatch (calls/returns)          84       282        17
+3   redis-server zmalloc                                  157  dispatch (calls/returns)          83       135         6
+4   redis-server .plt stubs (nearest symbol _init)        151  dispatch (calls/returns)          94       140        10
+5   redis-server processCommand                           140  dispatch (calls/returns)          68       251        17
+6   redis-server processMultibulkBuffer                   139  dispatch (calls/returns)          55       133        17
+7   redis-server je_malloc_usable_size                    130  dispatch (calls/returns)          61       130        28
+8   redis-server dictFind                                 115  dispatch (calls/returns)          51        75        10
+9   redis-server createEmbeddedStringObject               108  dispatch (calls/returns)          51        81        10
+10  libc.so.6    __GI_strchr                               85  PAN windows (SIMD&FP)             48        80        23
+11  libc.so.6    __GI_memcpy                               85  PAN windows (SIMD&FP)             48        89        25
+12  redis-server zfree                                     82  dispatch (calls/returns)          41        65         2
+13  redis-server readQueryFromClient                       81  dispatch (calls/returns)          38       118        10
+14  redis-server je_free                                   75  dispatch (calls/returns)          36        14        14
+15  redis-server processInputBuffer                        73  dispatch (calls/returns)          34       154         8
+
+Server time by group, SET (us per request = sampler share x server cpu; sampler runs, so shares carry IRQ noise)
+group                                  native       kjit      delta
+fragments                               0.000      4.505      4.505
+k:other kernel                          0.827      0.785     -0.042
+k:net (tcp/ip/sock)                     0.831      0.758     -0.073
+el0                                     0.791      0.021     -0.770
+k:sched/wakeup/idle                     0.061      0.248      0.187
+k:vfs/copy                              0.120      0.088     -0.032
+kjit.ko                                 0.024      0.125      0.101
+k:irq/timer (sampler included)          0.087      0.061     -0.026
+k:locks/rcu/srcu                        0.048      0.056      0.007
+k:entry/exit+syscall dispatch           0.063      0.023     -0.040
+k:epoll                                 0.030      0.024     -0.006
+k:fpsimd                                0.000      0.044      0.044
+
+Top functions, GET: calibrated modelled loss (ns/request), dominant category, micro-unit model, sampled fragment time and native time
+#   image        function                            model ns  dominant category           micro ns   frag ns native ns
+1   redis-server __aarch64_ldadd8_relax                   396  PAN windows (LSE atomic)         155       409         7
+2   redis-server call                                     168  dispatch (calls/returns)          80       263        17
+3   redis-server .plt stubs (nearest symbol _init)        134  dispatch (calls/returns)          84       145         9
+4   redis-server processCommand                           132  dispatch (calls/returns)          64       213        14
+5   redis-server zmalloc                                  125  dispatch (calls/returns)          66       113         6
+6   redis-server processMultibulkBuffer                   107  dispatch (calls/returns)          43       105        14
+7   redis-server je_malloc_usable_size                    106  dispatch (calls/returns)          49       107        18
+8   libc.so.6    __GI_memcpy                               94  PAN windows (SIMD&FP)             53        84        23
+9   redis-server readQueryFromClient                       81  dispatch (calls/returns)          38       121        10
+10  redis-server processInputBuffer                        72  dispatch (calls/returns)          34       126         8
+11  redis-server createEmbeddedStringObject                72  dispatch (calls/returns)          34        66         6
+12  redis-server writeToClient                             69  dispatch (calls/returns)          34       104        13
+13  redis-server zfree                                     65  dispatch (calls/returns)          33        50         2
+14  redis-server prepareClientToWrite                      64  dispatch (calls/returns)          30        55         8
+15  libc.so.6    __GI_strchr                               63  PAN windows (SIMD&FP)             36        70        20
+
+Server time by group, GET (us per request = sampler share x server cpu; sampler runs, so shares carry IRQ noise)
+group                                  native       kjit      delta
+fragments                               0.000      3.790      3.790
+k:other kernel                          0.845      0.820     -0.025
+k:net (tcp/ip/sock)                     0.806      0.778     -0.028
+el0                                     0.665      0.019     -0.646
+k:sched/wakeup/idle                     0.058      0.204      0.146
+k:vfs/copy                              0.101      0.083     -0.018
+k:irq/timer (sampler included)          0.089      0.065     -0.025
+kjit.ko                                 0.026      0.128      0.102
+k:locks/rcu/srcu                        0.046      0.063      0.017
+k:entry/exit+syscall dispatch           0.061      0.023     -0.039
+k:epoll                                 0.026      0.026     -0.000
+k:fpsimd                                0.000      0.038      0.038
+
+====================================================================================================
+ABLATIONS (medians over passes and boots; us per request)
+====================================================================================================
+configuration                      test     runs     wall  srv cpu  entries hook/req        F  syscall   native
+native (timers on)                 set        15    3.855    2.882    0.000      nan      nan    0.000    3.775
+native (timers on)                 get        15    3.750    2.724    0.000      nan      nan    0.000    3.663
+KJIT on (timers on)                set        15    6.735    6.739    3.040    2.043    4.586    1.453    0.347
+KJIT on (timers on)                get        15    6.040    6.036    3.040    2.043    3.900    1.480    0.324
+KJIT on, auto=0                    set        15    6.830    6.834    3.040    2.043    4.615    1.486    0.360
+KJIT on, auto=0                    get        15    5.970    5.940    3.040    2.043    3.853    1.449    0.316
+ablation: FP/SIMD fragments refused set        15    3.540    3.417    2.272    2.275    0.823    1.239    1.276
+ablation: FP/SIMD fragments refused get        15    3.545    3.395    2.318    2.321    0.844    1.241    1.249
+ablation: no dispatch publishing   set        15   41.900   41.308  351.923    2.028   15.976    2.634    0.266
+ablation: no dispatch publishing   get        15   36.125   35.533  298.932    2.028   13.549    2.362    0.256
+native + sampler 2 kHz             set        15    4.130    2.987    0.000      nan      nan    0.000    4.040
+native + sampler 2 kHz             get        15    4.160    2.925    0.000      nan      nan    0.000    4.072
+KJIT on + sampler 2 kHz            set        15    7.415    7.381    3.044    2.046    4.999    1.637    0.411
+KJIT on + sampler 2 kHz            get        15    6.625    6.528    3.044    2.047    4.219    1.659    0.378
+native, server with SSBS=0         set         9    3.815    2.869    0.000      nan      nan    0.000    3.732
+native, server with SSBS=0         get         9    3.790    2.751    0.000      nan      nan    0.000    3.707
+KJIT on, server SSBS=0 (native tails only) set         9    6.685    6.689    3.040    2.043    4.550    1.447    0.349
+KJIT on, server SSBS=0 (native tails only) get         9    6.060    6.069    3.040    2.043    3.904    1.462    0.330
+native SSBS=0 + sampler            set         9    4.200    3.032    0.000      nan      nan    0.000    4.114
+native SSBS=0 + sampler            get         9    4.110    2.887    0.000      nan      nan    0.000    4.027
+native, redis-benchmark --threads 2 set         6    3.755    2.665    0.000      nan      nan    0.000    2.658
+native, redis-benchmark --threads 2 get         6    3.755    2.500    0.000      nan      nan    0.000    2.501
+KJIT on, --threads 2               set         6    7.510    7.240    3.040    2.043    4.757    1.710    0.378
+KJIT on, --threads 2               get         6    7.505    6.501    3.040    2.043    4.057    1.709    0.377
+native, -P 16                      set         9    0.507    0.488    0.000      nan      nan    0.000    0.506
+native, -P 16                      get         9    0.400    0.401    0.000      nan      nan    0.000    0.397
+KJIT on, -P 16                     set         9    2.248    2.248    0.191    0.130    1.916    0.079    0.237
+KJIT on, -P 16                     get         9    2.218    2.212    0.191    0.130    1.952    0.086    0.153
+native -P 16 + sampler             set         9    0.568    0.566    0.000      nan      nan    0.000    0.566
+native -P 16 + sampler             get         9    0.455    0.446    0.000      nan      nan    0.000    0.453
+KJIT on -P 16 + sampler            set         9    2.482    2.485    0.191    0.130    2.100    0.093    0.274
+KJIT on -P 16 + sampler            get         9    2.405    2.409    0.191    0.130    2.096    0.098    0.185

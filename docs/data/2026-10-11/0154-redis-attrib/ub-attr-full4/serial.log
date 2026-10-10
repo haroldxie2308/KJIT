@@ -1,0 +1,1183 @@
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1 (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #3 SMP PREEMPT Sat Oct 10 04:02:05 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013ac00000-0x000000013b000000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000094] Console: colour dummy device 80x25
+[    0.000101] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000104] pid_max: default: 32768 minimum: 301
+[    0.000222] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000229] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000300] VFS: Finished mounting rootfs on nullfs
+[    0.000435] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000540] rcu: Hierarchical SRCU implementation.
+[    0.000540] rcu: 	Max phase no-delay instances is 1000.
+[    0.000558] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000590] smp: Bringing up secondary CPUs ...
+[    0.000801] Detected PIPT I-cache on CPU1
+[    0.000902] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001216] Detected PIPT I-cache on CPU2
+[    0.001310] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001524] Detected PIPT I-cache on CPU3
+[    0.001629] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.001698] smp: Brought up 1 node, 4 CPUs
+[    0.001699] SMP: Total of 4 processors activated.
+[    0.001699] CPU: All CPU(s) started at EL1
+[    0.001700] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.001700] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.001701] CPU features: detected: CRC32 instructions
+[    0.001701] CPU features: detected: Data independent timing control (DIT)
+[    0.001701] CPU features: detected: E0PD
+[    0.001702] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.001702] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.001703] CPU features: detected: LSE atomic instructions
+[    0.001703] CPU features: detected: Privileged Access Never
+[    0.001703] CPU features: detected: Speculation barrier (SB)
+[    0.001704] CPU features: detected: TLB range maintenance instructions
+[    0.001704] CPU features: detected: XNX
+[    0.001858] alternatives: applying system-wide alternatives
+[    0.002718] Memory: 3909752K/4194304K available (5248K kernel code, 754K rwdata, 2356K rodata, 576K init, 405K bss, 281372K reserved, 0K cma-reserved)
+[    0.002964] devtmpfs: initialized
+[    0.003225] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003229] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003245] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003251] 30384 pages in range for non-PLT usage
+[    0.003251] 521904 pages in range for PLT usage
+[    0.003307] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.003697] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.003738] ASID allocator initialised with 256 entries
+[    0.003746] Serial: AMBA PL011 UART driver
+[    0.004119] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.004250] printk: console [ttyAMA0] enabled
+[    0.010324] vgaarb: loaded
+[    0.010606] clocksource: Switched to clocksource arch_sys_counter
+[    0.020001] NET: Registered PF_INET protocol family
+[    0.020073] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.020539] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.020548] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.020551] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.020602] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.020760] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.020785] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.020820] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.020827] PCI: CLS 0 bytes, default 64
+[    0.021014] Unpacking initramfs...
+[    0.021542] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.021698] 9p: Installing v9fs 9p2000 file system support
+[    0.026991] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.026997] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.027000] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.027001] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.027007] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.027017] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.027034] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.027035] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.027036] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.027037] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.027038] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.027065] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.027375] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.027488] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.027491] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.027505] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.027507] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.027810] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.027905] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.027908] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.027917] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.028472] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.028677] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.028679] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.028690] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.029022] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.029023] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.029039] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.029055] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.029070] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.029076] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.029081] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.029084] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.029087] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.029090] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.029095] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.029096] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.029097] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.029754] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.030492] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.031213] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.082295] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.082330] rtc-pl031 9010000.pl031: setting system clock to 2026-10-10T17:24:35 UTC (1791653075)
+[    0.082525] NET: Registered PF_INET6 protocol family
+[    0.083003] Segment Routing with IPv6
+[    0.083006] In-situ OAM (IOAM) with IPv6
+[    0.083014] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.083062] NET: Registered PF_PACKET protocol family
+[    0.083067] 9pnet: Installing 9P2000 support
+[    0.087602] clk: Disabling unused clocks
+[    0.132739] Freeing initrd memory: 186352K
+[    0.133276] Freeing unused kernel memory: 576K
+[    0.133340] Run /init as init process
+[    0.149815] kjit: loading out-of-tree module taints kernel.
+[    0.150807] rust_kjit: ######## Rust KJIT inits ########
+[    0.150861] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+attr: server pid 74, warm-up
+attr cfg=off pass=1 test=set requests=200000 rps=265604.25 server_cpu_ns=560260453 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=off pass=1 test=set cntfrq 24000000
+attrdata cfg=off pass=1 test=set server_exec_ns 3220317073
+attrdata cfg=off pass=1 test=set gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=off pass=1 test=set gusr_by_nr epoll_pwait 6459050 63361 read 3520708 200059 write 7665411 200001 other 14876 537
+attrdata cfg=off pass=1 test=set hook_t 0
+attrdata cfg=off pass=1 test=set hook_n 0
+attrdata cfg=off pass=1 test=set fnofp_t 0
+attrdata cfg=off pass=1 test=set fnofp_n 0
+attrdata cfg=off pass=1 test=set ffp_t 0
+attrdata cfg=off pass=1 test=set ffp_n 0
+attrdata cfg=off pass=1 test=set brk_t 0
+attrdata cfg=off pass=1 test=set brk_n 0
+attrdata cfg=off pass=1 test=set gsys_t 0
+attrdata cfg=off pass=1 test=set gsys_n 0
+attrdata cfg=off pass=1 test=set gusr_t 17660045
+attrdata cfg=off pass=1 test=set gusr_n 463958
+attrdata cfg=off pass=1 test=set idle_t 0
+attrdata cfg=off pass=1 test=set idle_n 0
+attrdata cfg=off pass=1 test=set hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=1 test=set hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=1 test=set hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=1 test=set hist_gusr 0 0 0 5121 99859 247599 88778 12961 811 5648 1664 1390 122 5 0 0 0 0 0 0 0 0 0 0
+attr cfg=off pass=1 test=get requests=200000 rps=262812.09 server_cpu_ns=550442168 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=off pass=1 test=get cntfrq 24000000
+attrdata cfg=off pass=1 test=get server_exec_ns 3770759241
+attrdata cfg=off pass=1 test=get gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=off pass=1 test=get gusr_by_nr epoll_pwait 6909526 59962 read 3281317 200060 write 7646984 200001 other 14672 538
+attrdata cfg=off pass=1 test=get hook_t 0
+attrdata cfg=off pass=1 test=get hook_n 0
+attrdata cfg=off pass=1 test=get fnofp_t 0
+attrdata cfg=off pass=1 test=get fnofp_n 0
+attrdata cfg=off pass=1 test=get ffp_t 0
+attrdata cfg=off pass=1 test=get ffp_n 0
+attrdata cfg=off pass=1 test=get brk_t 0
+attrdata cfg=off pass=1 test=get brk_n 0
+attrdata cfg=off pass=1 test=get gsys_t 0
+attrdata cfg=off pass=1 test=get gsys_n 0
+attrdata cfg=off pass=1 test=get gusr_t 17852499
+attrdata cfg=off pass=1 test=get gusr_n 460561
+attrdata cfg=off pass=1 test=get idle_t 0
+attrdata cfg=off pass=1 test=get idle_n 0
+attrdata cfg=off pass=1 test=get hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=1 test=get hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=1 test=get hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=1 test=get hist_gusr 0 0 0 10247 98943 245251 83714 12206 900 5810 1741 1609 134 6 0 0 0 0 0 0 0 0 0 0
+attr cfg=on pass=1 test=set requests=200000 rps=149031.30 server_cpu_ns=1341982706 hook_calls=408595 syscalls_in_kernel=399683 fragment_entries=607993 fpsimd_entries=200000 fpsimd_preempted=2 chains=200000 chain_cap=0 exit_svc=399683 exit_bl=468 exit_blr=24 exit_br=200000 exit_ret=374 exit_mem=1 exit_unsupported=7443 exit_budget=0 run_declined=27 ibtc_fpsimd_boundary=200000 ibtc_miss_cold=815 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=on pass=1 test=set cntfrq 24000000
+attrdata cfg=on pass=1 test=set server_exec_ns 5112791905
+attrdata cfg=on pass=1 test=set gsys_by_nr epoll_pwait 304148 7553 read 1141867 199695 write 5359581 192435 other 0 0
+attrdata cfg=on pass=1 test=set gusr_by_nr epoll_pwait 3772 13 read 23916 372 write 1620681 7566 other 17192 550
+attrdata cfg=on pass=1 test=set hook_t 23750047
+attrdata cfg=on pass=1 test=set hook_n 408187
+attrdata cfg=on pass=1 test=set fnofp_t 3676852
+attrdata cfg=on pass=1 test=set fnofp_n 407993
+attrdata cfg=on pass=1 test=set ffp_t 18361296
+attrdata cfg=on pass=1 test=set ffp_n 200000
+attrdata cfg=on pass=1 test=set brk_t 18877439
+attrdata cfg=on pass=1 test=set brk_n 200000
+attrdata cfg=on pass=1 test=set gsys_t 6805596
+attrdata cfg=on pass=1 test=set gsys_n 399683
+attrdata cfg=on pass=1 test=set gusr_t 1665561
+attrdata cfg=on pass=1 test=set gusr_n 8501
+attrdata cfg=on pass=1 test=set idle_t 1452608
+attrdata cfg=on pass=1 test=set idle_n 2
+attrdata cfg=on pass=1 test=set hist_fnofp 67 291 60 190799 207935 8197 343 88 80 78 29 25 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=1 test=set hist_ffp 0 0 0 11 116 162 17 197083 1771 537 199 97 7 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=1 test=set hist_gsys 0 0 64 177560 20889 174156 23552 2927 337 93 58 45 2 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=1 test=set hist_gusr 0 0 0 157 202 230 481 397 5632 1264 94 41 3 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=on pass=1 test=get requests=200000 rps=165700.08 server_cpu_ns=1195330041 hook_calls=408610 syscalls_in_kernel=399779 fragment_entries=608003 fpsimd_entries=200001 fpsimd_preempted=0 chains=200001 chain_cap=0 exit_svc=399779 exit_bl=335 exit_blr=31 exit_br=200001 exit_ret=373 exit_mem=0 exit_unsupported=7484 exit_budget=0 run_declined=36 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=688 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=on pass=1 test=get cntfrq 24000000
+attrdata cfg=on pass=1 test=get server_exec_ns 6311529778
+attrdata cfg=on pass=1 test=get gsys_by_nr epoll_pwait 480354 7555 read 1076215 199791 write 5548592 192433 other 0 0
+attrdata cfg=on pass=1 test=get gusr_by_nr epoll_pwait 19937 20 read 20499 275 write 1469948 7568 other 30693 556
+attrdata cfg=on pass=1 test=get hook_t 20338521
+attrdata cfg=on pass=1 test=get hook_n 408202
+attrdata cfg=on pass=1 test=get fnofp_t 3647380
+attrdata cfg=on pass=1 test=get fnofp_n 408002
+attrdata cfg=on pass=1 test=get ffp_t 14986463
+attrdata cfg=on pass=1 test=get ffp_n 200001
+attrdata cfg=on pass=1 test=get brk_t 15501669
+attrdata cfg=on pass=1 test=get brk_n 200001
+attrdata cfg=on pass=1 test=get gsys_t 7105161
+attrdata cfg=on pass=1 test=get gsys_n 399779
+attrdata cfg=on pass=1 test=get gusr_t 1541077
+attrdata cfg=on pass=1 test=get gusr_n 8419
+attrdata cfg=on pass=1 test=get idle_t 2286439
+attrdata cfg=on pass=1 test=get idle_n 3
+attrdata cfg=on pass=1 test=get hist_fnofp 5 130 251 189446 208430 9056 402 97 67 66 42 9 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=1 test=get hist_ffp 0 0 0 18 23 0 149 197096 2149 352 148 62 4 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=1 test=get hist_gsys 0 0 361 179606 18821 173236 23542 2889 875 314 65 42 5 15 8 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=1 test=get hist_gusr 0 0 0 0 184 208 1212 743 4840 1095 72 62 3 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=onq pass=1 test=set requests=200000 rps=143988.47 server_cpu_ns=1388373494 hook_calls=408488 syscalls_in_kernel=399693 fragment_entries=607897 fpsimd_entries=200001 fpsimd_preempted=1 chains=200001 chain_cap=0 exit_svc=399693 exit_bl=452 exit_blr=19 exit_br=200001 exit_ret=371 exit_mem=6 exit_unsupported=7355 exit_budget=0 run_declined=20 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=791 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onq pass=1 test=set cntfrq 24000000
+attrdata cfg=onq pass=1 test=set server_exec_ns 7703412021
+attrdata cfg=onq pass=1 test=set gsys_by_nr epoll_pwait 347789 7461 read 1208415 199709 write 5695924 192522 other 0 0
+attrdata cfg=onq pass=1 test=set gusr_by_nr epoll_pwait 4365 9 read 35660 357 write 1693496 7479 other 28730 542
+attrdata cfg=onq pass=1 test=set hook_t 24324082
+attrdata cfg=onq pass=1 test=set hook_n 408081
+attrdata cfg=onq pass=1 test=set fnofp_t 3758462
+attrdata cfg=onq pass=1 test=set fnofp_n 407896
+attrdata cfg=onq pass=1 test=set ffp_t 18818317
+attrdata cfg=onq pass=1 test=set ffp_n 200001
+attrdata cfg=onq pass=1 test=set brk_t 19352417
+attrdata cfg=onq pass=1 test=set brk_n 200001
+attrdata cfg=onq pass=1 test=set gsys_t 7252128
+attrdata cfg=onq pass=1 test=set gsys_n 399692
+attrdata cfg=onq pass=1 test=set gusr_t 1762251
+attrdata cfg=onq pass=1 test=set gusr_n 8387
+attrdata cfg=onq pass=1 test=set idle_t 34155
+attrdata cfg=onq pass=1 test=set idle_n 1
+attrdata cfg=onq pass=1 test=set hist_fnofp 3 237 162 183202 212871 10445 601 205 76 45 36 12 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=1 test=set hist_ffp 0 0 0 12 113 146 14 195103 3822 416 264 97 13 0 0 0 1 0 0 0 0 0 0 0
+attrdata cfg=onq pass=1 test=set hist_gsys 0 0 34 169615 28700 162790 34058 3869 428 84 67 38 8 1 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=1 test=set hist_gusr 0 0 0 0 231 215 392 376 5527 1467 129 45 5 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=onq pass=1 test=get requests=200000 rps=166666.66 server_cpu_ns=1197788370 hook_calls=408564 syscalls_in_kernel=399738 fragment_entries=607973 fpsimd_entries=200001 fpsimd_preempted=1 chains=200001 chain_cap=0 exit_svc=399738 exit_bl=375 exit_blr=20 exit_br=200001 exit_ret=369 exit_mem=4 exit_unsupported=7466 exit_budget=0 run_declined=24 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=713 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onq pass=1 test=get cntfrq 24000000
+attrdata cfg=onq pass=1 test=get server_exec_ns 8901200391
+attrdata cfg=onq pass=1 test=get gsys_by_nr epoll_pwait 324617 7537 read 1117470 199748 write 5652247 192452 other 0 0
+attrdata cfg=onq pass=1 test=get gusr_by_nr epoll_pwait 4686 11 read 20327 316 write 1486082 7549 other 16591 541
+attrdata cfg=onq pass=1 test=get hook_t 20134853
+attrdata cfg=onq pass=1 test=get hook_n 408156
+attrdata cfg=onq pass=1 test=get fnofp_t 3601443
+attrdata cfg=onq pass=1 test=get fnofp_n 407972
+attrdata cfg=onq pass=1 test=get ffp_t 14835809
+attrdata cfg=onq pass=1 test=get ffp_n 200001
+attrdata cfg=onq pass=1 test=get brk_t 15348161
+attrdata cfg=onq pass=1 test=get brk_n 200001
+attrdata cfg=onq pass=1 test=get gsys_t 7094334
+attrdata cfg=onq pass=1 test=get gsys_n 399737
+attrdata cfg=onq pass=1 test=get gusr_t 1527686
+attrdata cfg=onq pass=1 test=get gusr_n 8417
+attrdata cfg=onq pass=1 test=get idle_t 63205
+attrdata cfg=onq pass=1 test=get idle_n 1
+attrdata cfg=onq pass=1 test=get hist_fnofp 80 286 50 193826 205598 7434 420 150 50 36 28 14 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=1 test=get hist_ffp 0 0 0 9 33 8 184 197870 1411 231 170 83 2 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=1 test=get hist_gsys 0 0 311 171585 26800 165349 30969 4222 295 93 68 43 2 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=1 test=get hist_gusr 0 0 0 196 182 236 1035 590 4818 1247 67 46 0 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nofp pass=1 test=set requests=200000 rps=277392.50 server_cpu_ns=694285273 hook_calls=455079 syscalls_in_kernel=254052 fragment_entries=454493 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=254052 exit_bl=66 exit_blr=9 exit_br=200001 exit_ret=365 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=26 ibtc_fpsimd_boundary=0 ibtc_miss_cold=200390 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nofp pass=1 test=set cntfrq 24000000
+attrdata cfg=nofp pass=1 test=set server_exec_ns 9595485664
+attrdata cfg=nofp pass=1 test=set gsys_by_nr epoll_pwait 1375714 54060 read 294854 54062 write 4423446 145930 other 0 0
+attrdata cfg=nofp pass=1 test=set gusr_by_nr epoll_pwait 3656 14 read 3198201 145998 write 3096851 54071 other 13774 536
+attrdata cfg=nofp pass=1 test=set hook_t 4913373
+attrdata cfg=nofp pass=1 test=set hook_n 454672
+attrdata cfg=nofp pass=1 test=set fnofp_t 3857715
+attrdata cfg=nofp pass=1 test=set fnofp_n 454493
+attrdata cfg=nofp pass=1 test=set ffp_t 0
+attrdata cfg=nofp pass=1 test=set ffp_n 0
+attrdata cfg=nofp pass=1 test=set brk_t 0
+attrdata cfg=nofp pass=1 test=set brk_n 0
+attrdata cfg=nofp pass=1 test=set gsys_t 6094014
+attrdata cfg=nofp pass=1 test=set gsys_n 254052
+attrdata cfg=nofp pass=1 test=set gusr_t 6312482
+attrdata cfg=nofp pass=1 test=set gusr_n 200619
+attrdata cfg=nofp pass=1 test=set idle_t 0
+attrdata cfg=nofp pass=1 test=set idle_n 0
+attrdata cfg=nofp pass=1 test=set hist_fnofp 113 258 67 246300 204526 2473 487 90 75 58 39 6 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=1 test=set hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=1 test=set hist_gsys 0 0 63 51057 49207 134890 14654 3216 186 270 196 212 96 5 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=1 test=set hist_gusr 0 0 0 199 185 143478 48345 7670 476 154 71 39 2 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nofp pass=1 test=get requests=200000 rps=289017.34 server_cpu_ns=667865405 hook_calls=461012 syscalls_in_kernel=259976 fragment_entries=460422 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=259976 exit_bl=66 exit_blr=15 exit_br=200001 exit_ret=364 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=31 ibtc_fpsimd_boundary=0 ibtc_miss_cold=200395 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nofp pass=1 test=get cntfrq 24000000
+attrdata cfg=nofp pass=1 test=get server_exec_ns 10263351069
+attrdata cfg=nofp pass=1 test=get gsys_by_nr epoll_pwait 1297420 59984 read 293606 59984 write 4142767 140008 other 0 0
+attrdata cfg=nofp pass=1 test=get gusr_by_nr epoll_pwait 4580 20 read 2790112 140075 write 3127340 59993 other 13303 539
+attrdata cfg=nofp pass=1 test=get hook_t 4954108
+attrdata cfg=nofp pass=1 test=get hook_n 460604
+attrdata cfg=nofp pass=1 test=get fnofp_t 3888230
+attrdata cfg=nofp pass=1 test=get fnofp_n 460422
+attrdata cfg=nofp pass=1 test=get ffp_t 0
+attrdata cfg=nofp pass=1 test=get ffp_n 0
+attrdata cfg=nofp pass=1 test=get brk_t 0
+attrdata cfg=nofp pass=1 test=get brk_n 0
+attrdata cfg=nofp pass=1 test=get gsys_t 5733793
+attrdata cfg=nofp pass=1 test=get gsys_n 259976
+attrdata cfg=nofp pass=1 test=get gusr_t 5935335
+attrdata cfg=nofp pass=1 test=get gusr_n 200627
+attrdata cfg=nofp pass=1 test=get idle_t 0
+attrdata cfg=nofp pass=1 test=get idle_n 0
+attrdata cfg=nofp pass=1 test=get hist_fnofp 95 278 90 252360 204834 2078 397 90 102 61 29 7 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=1 test=get hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=1 test=get hist_gsys 0 0 459 61052 53547 131179 10489 2365 173 215 214 201 79 3 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=1 test=get hist_gusr 0 0 0 199 1709 136905 56672 4462 447 140 58 32 3 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nopub pass=1 test=set requests=200000 rps=23866.35 server_cpu_ns=8380603304 hook_calls=405520 syscalls_in_kernel=399896 fragment_entries=70384649 fpsimd_entries=3203700 fpsimd_preempted=0 chains=69979872 chain_cap=0 exit_svc=399896 exit_bl=30454908 exit_blr=2620644 exit_br=3812082 exit_ret=33092931 exit_mem=0 exit_unsupported=4188 exit_budget=0 run_declined=21 ibtc_fpsimd_boundary=3203700 ibtc_miss_cold=66776865 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nopub pass=1 test=set cntfrq 24000000
+attrdata cfg=nopub pass=1 test=set server_exec_ns 18643954373
+attrdata cfg=nopub pass=1 test=set gsys_by_nr epoll_pwait 232713 4275 read 1610124 199902 write 8696654 195719 other 0 0
+attrdata cfg=nopub pass=1 test=set gusr_by_nr epoll_pwait 1390 8 read 22221 233 write 1157139 4282 other 41293 681
+attrdata cfg=nopub pass=1 test=set hook_t 189378971
+attrdata cfg=nopub pass=1 test=set hook_n 405101
+attrdata cfg=nopub pass=1 test=set fnofp_t 73362503
+attrdata cfg=nopub pass=1 test=set fnofp_n 67180949
+attrdata cfg=nopub pass=1 test=set ffp_t 3200737
+attrdata cfg=nopub pass=1 test=set ffp_n 3203700
+attrdata cfg=nopub pass=1 test=set brk_t 12363646
+attrdata cfg=nopub pass=1 test=set brk_n 3203700
+attrdata cfg=nopub pass=1 test=set gsys_t 10539491
+attrdata cfg=nopub pass=1 test=set gsys_n 399896
+attrdata cfg=nopub pass=1 test=set gusr_t 1222043
+attrdata cfg=nopub pass=1 test=set gusr_n 5204
+attrdata cfg=nopub pass=1 test=set idle_t 0
+attrdata cfg=nopub pass=1 test=set idle_n 0
+attrdata cfg=nopub pass=1 test=set hist_fnofp 4415954 54776886 7885677 76532 9676 1066 1013 10340 1502 1691 513 95 4 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=1 test=set hist_ffp 433562 2428294 339066 2084 348 68 21 94 62 68 31 2 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=1 test=set hist_gsys 0 0 4 165654 25275 145393 36110 17676 6124 3102 282 268 8 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=1 test=set hist_gusr 0 0 0 199 187 193 84 113 2598 1641 173 16 0 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nopub pass=1 test=get requests=200000 rps=27674.00 server_cpu_ns=7223660763 hook_calls=405511 syscalls_in_kernel=399901 fragment_entries=59785057 fpsimd_entries=3203595 fpsimd_preempted=0 chains=59380280 chain_cap=0 exit_svc=399901 exit_bl=26254816 exit_blr=1820895 exit_br=3212213 exit_ret=28093001 exit_mem=27 exit_unsupported=4204 exit_budget=0 run_declined=28 ibtc_fpsimd_boundary=3203595 ibtc_miss_cold=56177330 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nopub pass=1 test=get cntfrq 24000000
+attrdata cfg=nopub pass=1 test=get server_exec_ns 25867615136
+attrdata cfg=nopub pass=1 test=get gsys_by_nr epoll_pwait 229520 4279 read 1572840 199904 write 8809595 195716 other 0 0
+attrdata cfg=nopub pass=1 test=get gusr_by_nr epoll_pwait 3146 13 read 20617 220 write 1175671 4285 other 39635 665
+attrdata cfg=nopub pass=1 test=get hook_t 161523870
+attrdata cfg=nopub pass=1 test=get hook_n 405085
+attrdata cfg=nopub pass=1 test=get fnofp_t 61944668
+attrdata cfg=nopub pass=1 test=get fnofp_n 56581462
+attrdata cfg=nopub pass=1 test=get ffp_t 3320741
+attrdata cfg=nopub pass=1 test=get ffp_n 3203595
+attrdata cfg=nopub pass=1 test=get brk_t 11851086
+attrdata cfg=nopub pass=1 test=get brk_n 3203595
+attrdata cfg=nopub pass=1 test=get gsys_t 10611955
+attrdata cfg=nopub pass=1 test=get gsys_n 399899
+attrdata cfg=nopub pass=1 test=get gusr_t 1239069
+attrdata cfg=nopub pass=1 test=get gusr_n 5183
+attrdata cfg=nopub pass=1 test=get idle_t 110202
+attrdata cfg=nopub pass=1 test=get idle_n 2
+attrdata cfg=nopub pass=1 test=get hist_fnofp 3343721 46773826 6359071 81417 10057 1174 1375 7684 1229 1355 437 113 3 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=1 test=get hist_ffp 304888 2570232 324476 2925 702 88 38 91 64 63 22 5 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=1 test=get hist_gsys 0 0 24 165014 26322 140394 38252 20315 6075 2911 317 269 6 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=1 test=get hist_gusr 0 0 0 198 139 205 92 121 2579 1642 185 21 1 0 0 0 0 0 0 0 0 0 0 0
+attrprof cfg=offprof pass=1 test=set cpu0 n 1762 dropped 0
+attrprof cfg=offprof pass=1 test=set cpu1 n 1766 dropped 0
+attrprof cfg=offprof pass=1 test=set cpu2 n 1760 dropped 0
+attrprof cfg=offprof pass=1 test=set cpu3 n 1761 dropped 0
+attr cfg=offprof pass=1 test=set requests=200000 rps=227014.77 server_cpu_ns=639095748 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=offprof pass=1 test=set cntfrq 24000000
+attrdata cfg=offprof pass=1 test=set server_exec_ns 26506710884
+attrdata cfg=offprof pass=1 test=set gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=offprof pass=1 test=set gusr_by_nr epoll_pwait 7683653 30216 read 4510275 200061 write 8508200 200001 other 18360 534
+attrdata cfg=offprof pass=1 test=set hook_t 0
+attrdata cfg=offprof pass=1 test=set hook_n 0
+attrdata cfg=offprof pass=1 test=set fnofp_t 0
+attrdata cfg=offprof pass=1 test=set fnofp_n 0
+attrdata cfg=offprof pass=1 test=set ffp_t 0
+attrdata cfg=offprof pass=1 test=set ffp_n 0
+attrdata cfg=offprof pass=1 test=set brk_t 0
+attrdata cfg=offprof pass=1 test=set brk_n 0
+attrdata cfg=offprof pass=1 test=set gsys_t 0
+attrdata cfg=offprof pass=1 test=set gsys_n 0
+attrdata cfg=offprof pass=1 test=set gusr_t 20720488
+attrdata cfg=offprof pass=1 test=set gusr_n 430812
+attrdata cfg=offprof pass=1 test=set idle_t 0
+attrdata cfg=offprof pass=1 test=set idle_n 0
+attrdata cfg=offprof pass=1 test=set hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=1 test=set hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=1 test=set hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=1 test=set hist_gusr 0 0 0 307 35624 285241 85080 15995 2359 1745 1462 1718 1174 107 0 0 0 0 0 0 0 0 0 0
+attrprof cfg=offprof pass=1 test=get cpu0 n 1608 dropped 0
+attrprof cfg=offprof pass=1 test=get cpu1 n 1617 dropped 0
+attrprof cfg=offprof pass=1 test=get cpu2 n 1611 dropped 0
+attrprof cfg=offprof pass=1 test=get cpu3 n 1609 dropped 0
+attr cfg=offprof pass=1 test=get requests=200000 rps=248756.22 server_cpu_ns=572668846 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=offprof pass=1 test=get cntfrq 24000000
+attrdata cfg=offprof pass=1 test=get server_exec_ns 27079379730
+attrdata cfg=offprof pass=1 test=get gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=offprof pass=1 test=get gusr_by_nr epoll_pwait 7210941 31005 read 3913384 200060 write 7727813 200001 other 14154 534
+attrdata cfg=offprof pass=1 test=get hook_t 0
+attrdata cfg=offprof pass=1 test=get hook_n 0
+attrdata cfg=offprof pass=1 test=get fnofp_t 0
+attrdata cfg=offprof pass=1 test=get fnofp_n 0
+attrdata cfg=offprof pass=1 test=get ffp_t 0
+attrdata cfg=offprof pass=1 test=get ffp_n 0
+attrdata cfg=offprof pass=1 test=get brk_t 0
+attrdata cfg=offprof pass=1 test=get brk_n 0
+attrdata cfg=offprof pass=1 test=get gsys_t 0
+attrdata cfg=offprof pass=1 test=get gsys_n 0
+attrdata cfg=offprof pass=1 test=get gusr_t 18866292
+attrdata cfg=offprof pass=1 test=get gusr_n 431600
+attrdata cfg=offprof pass=1 test=get idle_t 0
+attrdata cfg=offprof pass=1 test=get idle_n 0
+attrdata cfg=offprof pass=1 test=get hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=1 test=get hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=1 test=get hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=1 test=get hist_gusr 0 0 0 735 42213 300794 69847 10645 1572 1520 1469 1664 1080 59 2 0 0 0 0 0 0 0 0 0
+attrprof cfg=onprof pass=1 test=set cpu0 n 3035 dropped 0
+attrprof cfg=onprof pass=1 test=set cpu1 n 3040 dropped 0
+attrprof cfg=onprof pass=1 test=set cpu2 n 3032 dropped 0
+attrprof cfg=onprof pass=1 test=set cpu3 n 3023 dropped 0
+attr cfg=onprof pass=1 test=set requests=200000 rps=133067.20 server_cpu_ns=1490171539 hook_calls=409155 syscalls_in_kernel=399662 fragment_entries=608829 fpsimd_entries=200014 fpsimd_preempted=1 chains=200278 chain_cap=0 exit_svc=399663 exit_bl=574 exit_blr=30 exit_br=200015 exit_ret=524 exit_mem=6 exit_unsupported=8017 exit_budget=0 run_declined=19 ibtc_fpsimd_boundary=200014 ibtc_miss_cold=1112 ibtc_miss_conflict=17 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onprof pass=1 test=set cntfrq 24000000
+attrdata cfg=onprof pass=1 test=set server_exec_ns 28569598478
+attrdata cfg=onprof pass=1 test=set gsys_by_nr epoll_pwait 568947 8117 read 1321520 199680 write 6045295 191863 other 0 0
+attrdata cfg=onprof pass=1 test=set gusr_by_nr epoll_pwait 2197 4 read 31207 388 write 2001258 8138 other 17204 544
+attrdata cfg=onprof pass=1 test=set hook_t 25947533
+attrdata cfg=onprof pass=1 test=set hook_n 408738
+attrdata cfg=onprof pass=1 test=set fnofp_t 3997807
+attrdata cfg=onprof pass=1 test=set fnofp_n 408815
+attrdata cfg=onprof pass=1 test=set ffp_t 20032810
+attrdata cfg=onprof pass=1 test=set ffp_n 200014
+attrdata cfg=onprof pass=1 test=set brk_t 20616604
+attrdata cfg=onprof pass=1 test=set brk_n 200014
+attrdata cfg=onprof pass=1 test=set gsys_t 7935762
+attrdata cfg=onprof pass=1 test=set gsys_n 399660
+attrdata cfg=onprof pass=1 test=set gusr_t 2051866
+attrdata cfg=onprof pass=1 test=set gusr_n 9074
+attrdata cfg=onprof pass=1 test=set idle_t 612138
+attrdata cfg=onprof pass=1 test=set idle_n 3
+attrdata cfg=onprof pass=1 test=set hist_fnofp 123 251 36 178963 217127 10528 1105 176 91 249 100 58 8 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=1 test=set hist_ffp 0 3 0 11 99 189 19 194134 3024 1420 746 290 75 4 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=1 test=set hist_gsys 0 0 18 169381 28115 163303 33484 3791 550 547 248 145 69 9 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=1 test=set hist_gusr 0 0 0 197 177 217 536 1738 3960 1815 309 102 21 2 0 0 0 0 0 0 0 0 0 0
+attrprof cfg=onprof pass=1 test=get cpu0 n 2692 dropped 0
+attrprof cfg=onprof pass=1 test=get cpu1 n 2697 dropped 0
+attrprof cfg=onprof pass=1 test=get cpu2 n 2694 dropped 0
+attrprof cfg=onprof pass=1 test=get cpu3 n 2686 dropped 0
+attr cfg=onprof pass=1 test=get requests=200000 rps=150943.39 server_cpu_ns=1315997870 hook_calls=409337 syscalls_in_kernel=399686 fragment_entries=608755 fpsimd_entries=200006 fpsimd_preempted=0 chains=200021 chain_cap=0 exit_svc=399686 exit_bl=443 exit_blr=21 exit_br=200002 exit_ret=383 exit_mem=7 exit_unsupported=8213 exit_budget=0 run_declined=23 ibtc_fpsimd_boundary=200006 ibtc_miss_cold=791 ibtc_miss_conflict=52 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onprof pass=1 test=get cntfrq 24000000
+attrdata cfg=onprof pass=1 test=get server_exec_ns 29893311764
+attrdata cfg=onprof pass=1 test=get gsys_by_nr epoll_pwait 647848 8297 read 1192226 199704 write 6023617 191685 other 0 0
+attrdata cfg=onprof pass=1 test=get gusr_by_nr epoll_pwait 8737 11 read 21317 363 write 1804810 8316 other 23126 546
+attrdata cfg=onprof pass=1 test=get hook_t 22124632
+attrdata cfg=onprof pass=1 test=get hook_n 408925
+attrdata cfg=onprof pass=1 test=get fnofp_t 3943114
+attrdata cfg=onprof pass=1 test=get fnofp_n 408751
+attrdata cfg=onprof pass=1 test=get ffp_t 16294838
+attrdata cfg=onprof pass=1 test=get ffp_n 200006
+attrdata cfg=onprof pass=1 test=get brk_t 16871106
+attrdata cfg=onprof pass=1 test=get brk_n 200006
+attrdata cfg=onprof pass=1 test=get gsys_t 7863691
+attrdata cfg=onprof pass=1 test=get gsys_n 399686
+attrdata cfg=onprof pass=1 test=get gusr_t 1857990
+attrdata cfg=onprof pass=1 test=get gusr_n 9236
+attrdata cfg=onprof pass=1 test=get idle_t 1830525
+attrdata cfg=onprof pass=1 test=get idle_n 2
+attrdata cfg=onprof pass=1 test=get hist_fnofp 51 291 65 185046 211354 10330 1032 103 81 249 89 48 12 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=1 test=get hist_ffp 0 0 0 10 15 12 237 195148 2699 1067 551 187 76 4 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=1 test=get hist_gsys 0 0 110 177350 20504 166545 29752 3800 587 526 267 143 91 11 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=1 test=get hist_gusr 0 0 0 137 147 277 1051 2117 3695 1433 252 107 19 1 0 0 0 0 0 0 0 0 0 0
+attr cfg=off pass=2 test=set requests=200000 rps=262812.09 server_cpu_ns=567922489 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=off pass=2 test=set cntfrq 24000000
+attrdata cfg=off pass=2 test=set server_exec_ns 30467908587
+attrdata cfg=off pass=2 test=set gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=off pass=2 test=set gusr_by_nr epoll_pwait 6498286 63046 read 3543149 200060 write 7803660 200001 other 15368 538
+attrdata cfg=off pass=2 test=set hook_t 0
+attrdata cfg=off pass=2 test=set hook_n 0
+attrdata cfg=off pass=2 test=set fnofp_t 0
+attrdata cfg=off pass=2 test=set fnofp_n 0
+attrdata cfg=off pass=2 test=set ffp_t 0
+attrdata cfg=off pass=2 test=set ffp_n 0
+attrdata cfg=off pass=2 test=set brk_t 0
+attrdata cfg=off pass=2 test=set brk_n 0
+attrdata cfg=off pass=2 test=set gsys_t 0
+attrdata cfg=off pass=2 test=set gsys_n 0
+attrdata cfg=off pass=2 test=set gusr_t 17860463
+attrdata cfg=off pass=2 test=set gusr_n 463645
+attrdata cfg=off pass=2 test=set idle_t 0
+attrdata cfg=off pass=2 test=set idle_n 0
+attrdata cfg=off pass=2 test=set hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=2 test=set hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=2 test=set hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=2 test=set hist_gusr 0 0 0 4591 99128 245398 90572 14017 1019 5705 1653 1425 132 5 0 0 0 0 0 0 0 0 0 0
+attr cfg=off pass=2 test=get requests=200000 rps=261437.91 server_cpu_ns=555802805 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=off pass=2 test=get cntfrq 24000000
+attrdata cfg=off pass=2 test=get server_exec_ns 31023711392
+attrdata cfg=off pass=2 test=get gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=off pass=2 test=get gusr_by_nr epoll_pwait 6890305 60386 read 3322696 200060 write 7718261 200001 other 13724 530
+attrdata cfg=off pass=2 test=get hook_t 0
+attrdata cfg=off pass=2 test=get hook_n 0
+attrdata cfg=off pass=2 test=get fnofp_t 0
+attrdata cfg=off pass=2 test=get fnofp_n 0
+attrdata cfg=off pass=2 test=get ffp_t 0
+attrdata cfg=off pass=2 test=get ffp_n 0
+attrdata cfg=off pass=2 test=get brk_t 0
+attrdata cfg=off pass=2 test=get brk_n 0
+attrdata cfg=off pass=2 test=get gsys_t 0
+attrdata cfg=off pass=2 test=get gsys_n 0
+attrdata cfg=off pass=2 test=get gusr_t 17944986
+attrdata cfg=off pass=2 test=get gusr_n 460977
+attrdata cfg=off pass=2 test=get idle_t 0
+attrdata cfg=off pass=2 test=get idle_n 0
+attrdata cfg=off pass=2 test=get hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=2 test=get hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=2 test=get hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=2 test=get hist_gusr 0 0 0 9154 98373 247310 83073 12706 1054 5858 1684 1603 156 6 0 0 0 0 0 0 0 0 0 0
+attr cfg=on pass=2 test=set requests=200000 rps=147492.62 server_cpu_ns=1354633621 hook_calls=408611 syscalls_in_kernel=399668 fragment_entries=608008 fpsimd_entries=200001 fpsimd_preempted=2 chains=200001 chain_cap=0 exit_svc=399670 exit_bl=479 exit_blr=29 exit_br=200001 exit_ret=373 exit_mem=0 exit_unsupported=7456 exit_budget=0 run_declined=30 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=830 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=on pass=2 test=set cntfrq 24000000
+attrdata cfg=on pass=2 test=set server_exec_ns 32378407805
+attrdata cfg=on pass=2 test=set gsys_by_nr epoll_pwait 348939 7561 read 1169762 199679 write 5488968 192427 other 0 0
+attrdata cfg=on pass=2 test=set gusr_by_nr epoll_pwait 4633 18 read 29041 388 write 1665680 7574 other 16984 554
+attrdata cfg=on pass=2 test=set hook_t 23807380
+attrdata cfg=on pass=2 test=set hook_n 408204
+attrdata cfg=on pass=2 test=set fnofp_t 3612446
+attrdata cfg=on pass=2 test=set fnofp_n 408007
+attrdata cfg=on pass=2 test=set ffp_t 18474906
+attrdata cfg=on pass=2 test=set ffp_n 200001
+attrdata cfg=on pass=2 test=set brk_t 18999686
+attrdata cfg=on pass=2 test=set brk_n 200001
+attrdata cfg=on pass=2 test=set gsys_t 7007669
+attrdata cfg=on pass=2 test=set gsys_n 399667
+attrdata cfg=on pass=2 test=set gusr_t 1716338
+attrdata cfg=on pass=2 test=set gusr_n 8534
+attrdata cfg=on pass=2 test=set idle_t 1730604
+attrdata cfg=on pass=2 test=set idle_n 2
+attrdata cfg=on pass=2 test=set hist_fnofp 48 301 73 189257 210085 7545 407 118 81 57 21 14 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=2 test=set hist_ffp 0 0 0 10 122 165 24 196718 2114 511 222 110 5 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=2 test=set hist_gsys 0 0 81 174977 23268 170081 26828 3395 785 138 65 45 3 1 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=2 test=set hist_gusr 0 0 0 150 197 271 506 398 5473 1382 90 66 1 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=on pass=2 test=get requests=200000 rps=165152.77 server_cpu_ns=1211023744 hook_calls=408617 syscalls_in_kernel=399757 fragment_entries=608029 fpsimd_entries=200001 fpsimd_preempted=1 chains=200001 chain_cap=0 exit_svc=399757 exit_bl=358 exit_blr=14 exit_br=200001 exit_ret=371 exit_mem=1 exit_unsupported=7527 exit_budget=0 run_declined=19 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=692 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=on pass=2 test=get cntfrq 24000000
+attrdata cfg=on pass=2 test=get server_exec_ns 33593985176
+attrdata cfg=on pass=2 test=get gsys_by_nr epoll_pwait 351497 7598 read 1109802 199771 write 5656455 192387 other 0 0
+attrdata cfg=on pass=2 test=get gusr_by_nr epoll_pwait 3116 4 read 26374 295 write 1496752 7614 other 30575 540
+attrdata cfg=on pass=2 test=get hook_t 20400523
+attrdata cfg=on pass=2 test=get hook_n 408213
+attrdata cfg=on pass=2 test=get fnofp_t 3604952
+attrdata cfg=on pass=2 test=get fnofp_n 408030
+attrdata cfg=on pass=2 test=get ffp_t 15066876
+attrdata cfg=on pass=2 test=get ffp_n 200001
+attrdata cfg=on pass=2 test=get brk_t 15587514
+attrdata cfg=on pass=2 test=get brk_n 200001
+attrdata cfg=on pass=2 test=get gsys_t 7117754
+attrdata cfg=on pass=2 test=get gsys_n 399756
+attrdata cfg=on pass=2 test=get gusr_t 1556817
+attrdata cfg=on pass=2 test=get gusr_n 8453
+attrdata cfg=on pass=2 test=get idle_t 2300411
+attrdata cfg=on pass=2 test=get idle_n 3
+attrdata cfg=on pass=2 test=get hist_fnofp 8 162 236 188804 209472 8600 465 107 70 53 34 18 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=2 test=get hist_ffp 0 0 0 12 27 2 173 196610 2581 325 191 71 9 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=2 test=get hist_gsys 0 0 212 174590 23483 168640 26979 4600 1023 115 61 51 2 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=2 test=get hist_gusr 0 0 0 1 157 239 1275 749 4706 1171 108 44 3 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=onq pass=2 test=set requests=200000 rps=143061.52 server_cpu_ns=1399166161 hook_calls=408623 syscalls_in_kernel=399728 fragment_entries=608028 fpsimd_entries=200001 fpsimd_preempted=1 chains=200001 chain_cap=0 exit_svc=399728 exit_bl=410 exit_blr=22 exit_br=200001 exit_ret=371 exit_mem=1 exit_unsupported=7495 exit_budget=0 run_declined=23 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=752 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onq pass=2 test=set cntfrq 24000000
+attrdata cfg=onq pass=2 test=set server_exec_ns 34997548006
+attrdata cfg=onq pass=2 test=set gsys_by_nr epoll_pwait 394522 7591 read 1228191 199745 write 5718733 192392 other 0 0
+attrdata cfg=onq pass=2 test=set gusr_by_nr epoll_pwait 11357 11 read 35001 321 write 1729244 7609 other 29866 545
+attrdata cfg=onq pass=2 test=set hook_t 24452222
+attrdata cfg=onq pass=2 test=set hook_n 408215
+attrdata cfg=onq pass=2 test=set fnofp_t 3740517
+attrdata cfg=onq pass=2 test=set fnofp_n 408027
+attrdata cfg=onq pass=2 test=set ffp_t 18944427
+attrdata cfg=onq pass=2 test=set ffp_n 200001
+attrdata cfg=onq pass=2 test=set brk_t 19482395
+attrdata cfg=onq pass=2 test=set brk_n 200001
+attrdata cfg=onq pass=2 test=set gsys_t 7341446
+attrdata cfg=onq pass=2 test=set gsys_n 399728
+attrdata cfg=onq pass=2 test=set gusr_t 1805468
+attrdata cfg=onq pass=2 test=set gusr_n 8486
+attrdata cfg=onq pass=2 test=set idle_t 0
+attrdata cfg=onq pass=2 test=set idle_n 0
+attrdata cfg=onq pass=2 test=set hist_fnofp 3 159 236 181602 214909 9933 706 272 106 47 42 11 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=2 test=set hist_ffp 0 0 0 11 66 141 19 195341 3467 570 256 106 24 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=2 test=set hist_gsys 0 0 41 169315 28529 162243 34021 4282 1070 109 79 35 4 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=2 test=set hist_gusr 0 0 0 0 179 185 437 620 5333 1506 157 67 2 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=onq pass=2 test=get requests=200000 rps=167504.19 server_cpu_ns=1188071036 hook_calls=408597 syscalls_in_kernel=399747 fragment_entries=608002 fpsimd_entries=200001 fpsimd_preempted=1 chains=200001 chain_cap=0 exit_svc=399747 exit_bl=357 exit_blr=21 exit_br=200001 exit_ret=369 exit_mem=0 exit_unsupported=7507 exit_budget=0 run_declined=25 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=696 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onq pass=2 test=get cntfrq 24000000
+attrdata cfg=onq pass=2 test=get server_exec_ns 36185619042
+attrdata cfg=onq pass=2 test=get gsys_by_nr epoll_pwait 327005 7565 read 1086011 199759 write 5486218 192421 other 0 0
+attrdata cfg=onq pass=2 test=get gusr_by_nr epoll_pwait 3920 11 read 18079 305 write 1479922 7580 other 15149 543
+attrdata cfg=onq pass=2 test=get hook_t 20114216
+attrdata cfg=onq pass=2 test=get hook_n 408187
+attrdata cfg=onq pass=2 test=get fnofp_t 3556268
+attrdata cfg=onq pass=2 test=get fnofp_n 408001
+attrdata cfg=onq pass=2 test=get ffp_t 14869416
+attrdata cfg=onq pass=2 test=get ffp_n 200001
+attrdata cfg=onq pass=2 test=get brk_t 15384692
+attrdata cfg=onq pass=2 test=get brk_n 200001
+attrdata cfg=onq pass=2 test=get gsys_t 6899234
+attrdata cfg=onq pass=2 test=get gsys_n 399745
+attrdata cfg=onq pass=2 test=get gusr_t 1517070
+attrdata cfg=onq pass=2 test=get gusr_n 8439
+attrdata cfg=onq pass=2 test=get idle_t 139272
+attrdata cfg=onq pass=2 test=get idle_n 2
+attrdata cfg=onq pass=2 test=get hist_fnofp 114 253 51 193816 206784 6316 376 130 77 36 28 19 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=2 test=get hist_ffp 0 0 0 9 27 6 168 197921 1282 356 161 65 6 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=2 test=get hist_gsys 0 0 196 178742 19889 173226 23632 3271 583 96 60 46 4 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=2 test=get hist_gusr 0 0 1 200 200 214 1103 653 4857 1084 78 48 1 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nofp pass=2 test=set requests=200000 rps=284090.91 server_cpu_ns=678599051 hook_calls=458557 syscalls_in_kernel=257542 fragment_entries=457979 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=257542 exit_bl=69 exit_blr=3 exit_br=200001 exit_ret=364 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=20 ibtc_fpsimd_boundary=0 ibtc_miss_cold=200386 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nofp pass=2 test=set cntfrq 24000000
+attrdata cfg=nofp pass=2 test=set server_exec_ns 36864218093
+attrdata cfg=nofp pass=2 test=set gsys_by_nr epoll_pwait 1337955 57552 read 296037 57554 write 4180907 142436 other 0 0
+attrdata cfg=nofp pass=2 test=set gusr_by_nr epoll_pwait 3782 9 read 3077542 142505 write 3129227 57565 other 13904 528
+attrdata cfg=nofp pass=2 test=set hook_t 4883269
+attrdata cfg=nofp pass=2 test=set hook_n 458150
+attrdata cfg=nofp pass=2 test=set fnofp_t 3824705
+attrdata cfg=nofp pass=2 test=set fnofp_n 457979
+attrdata cfg=nofp pass=2 test=set ffp_t 0
+attrdata cfg=nofp pass=2 test=set ffp_n 0
+attrdata cfg=nofp pass=2 test=set brk_t 0
+attrdata cfg=nofp pass=2 test=set brk_n 0
+attrdata cfg=nofp pass=2 test=set gsys_t 5814899
+attrdata cfg=nofp pass=2 test=set gsys_n 257542
+attrdata cfg=nofp pass=2 test=set gusr_t 6224455
+attrdata cfg=nofp pass=2 test=set gusr_n 200607
+attrdata cfg=nofp pass=2 test=set idle_t 0
+attrdata cfg=nofp pass=2 test=set idle_n 0
+attrdata cfg=nofp pass=2 test=set hist_fnofp 116 243 68 253603 201595 1877 251 59 69 52 38 8 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=2 test=set hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=2 test=set hist_gsys 0 0 71 57386 52194 133772 10618 2543 160 275 254 190 77 2 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=2 test=set hist_gusr 0 0 0 199 169 140538 53911 5181 384 128 73 24 0 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nofp pass=2 test=get requests=200000 rps=284495.03 server_cpu_ns=673745787 hook_calls=461674 syscalls_in_kernel=260664 fragment_entries=461095 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=260664 exit_bl=62 exit_blr=4 exit_br=200001 exit_ret=364 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=20 ibtc_fpsimd_boundary=0 ibtc_miss_cold=200380 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nofp pass=2 test=get cntfrq 24000000
+attrdata cfg=nofp pass=2 test=get server_exec_ns 37537963880
+attrdata cfg=nofp pass=2 test=get gsys_by_nr epoll_pwait 1447224 60668 read 311481 60671 write 4201033 139325 other 0 0
+attrdata cfg=nofp pass=2 test=get gusr_by_nr epoll_pwait 3774 9 read 2772075 139388 write 3198645 60676 other 13367 528
+attrdata cfg=nofp pass=2 test=get hook_t 4935437
+attrdata cfg=nofp pass=2 test=get hook_n 461266
+attrdata cfg=nofp pass=2 test=get fnofp_t 3865023
+attrdata cfg=nofp pass=2 test=get fnofp_n 461095
+attrdata cfg=nofp pass=2 test=get ffp_t 0
+attrdata cfg=nofp pass=2 test=get ffp_n 0
+attrdata cfg=nofp pass=2 test=get brk_t 0
+attrdata cfg=nofp pass=2 test=get brk_n 0
+attrdata cfg=nofp pass=2 test=get gsys_t 5959738
+attrdata cfg=nofp pass=2 test=get gsys_n 260664
+attrdata cfg=nofp pass=2 test=get gusr_t 5987861
+attrdata cfg=nofp pass=2 test=get gusr_n 200601
+attrdata cfg=nofp pass=2 test=get idle_t 0
+attrdata cfg=nofp pass=2 test=get idle_n 0
+attrdata cfg=nofp pass=2 test=get hist_fnofp 101 272 90 254942 202872 2116 409 97 84 60 43 8 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=2 test=get hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=2 test=get hist_gsys 0 0 413 61875 52719 128550 12758 3258 215 300 266 219 85 6 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=2 test=get hist_gusr 0 0 0 198 3039 134747 55780 6135 472 131 63 36 0 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nopub pass=2 test=set requests=200000 rps=23532.18 server_cpu_ns=8315286738 hook_calls=405532 syscalls_in_kernel=399893 fragment_entries=70384596 fpsimd_entries=3203719 fpsimd_preempted=0 chains=69979813 chain_cap=0 exit_svc=399893 exit_bl=30454877 exit_blr=2620638 exit_br=3812086 exit_ret=33092916 exit_mem=0 exit_unsupported=4186 exit_budget=0 run_declined=31 ibtc_fpsimd_boundary=3203719 ibtc_miss_cold=66776798 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nopub pass=2 test=set cntfrq 24000000
+attrdata cfg=nopub pass=2 test=set server_exec_ns 45853295368
+attrdata cfg=nopub pass=2 test=set gsys_by_nr epoll_pwait 483350 4279 read 1506526 199899 write 12146591 195715 other 0 0
+attrdata cfg=nopub pass=2 test=set gusr_by_nr epoll_pwait 3312 11 read 25674 237 write 1130933 4286 other 39448 687
+attrdata cfg=nopub pass=2 test=set hook_t 188676065
+attrdata cfg=nopub pass=2 test=set hook_n 405115
+attrdata cfg=nopub pass=2 test=set fnofp_t 73041440
+attrdata cfg=nopub pass=2 test=set fnofp_n 67180877
+attrdata cfg=nopub pass=2 test=set ffp_t 3194754
+attrdata cfg=nopub pass=2 test=set ffp_n 3203719
+attrdata cfg=nopub pass=2 test=set brk_t 12235248
+attrdata cfg=nopub pass=2 test=set brk_n 3203719
+attrdata cfg=nopub pass=2 test=set gsys_t 14136467
+attrdata cfg=nopub pass=2 test=set gsys_n 399893
+attrdata cfg=nopub pass=2 test=set gusr_t 1199367
+attrdata cfg=nopub pass=2 test=set gusr_n 5221
+attrdata cfg=nopub pass=2 test=set idle_t 0
+attrdata cfg=nopub pass=2 test=set idle_n 0
+attrdata cfg=nopub pass=2 test=set hist_fnofp 4450037 54904739 7736765 65105 9028 1168 916 9269 1511 1763 469 104 3 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=2 test=set hist_ffp 428956 2431813 340536 1780 329 69 17 48 70 82 14 5 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=2 test=set hist_gsys 0 0 7 168787 22970 123201 27003 13246 41226 2852 334 196 52 19 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=2 test=set hist_gusr 0 0 0 197 189 201 114 153 2702 1486 156 17 6 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nopub pass=2 test=get requests=200000 rps=27140.72 server_cpu_ns=7218445175 hook_calls=405517 syscalls_in_kernel=399884 fragment_entries=59786039 fpsimd_entries=3203620 fpsimd_preempted=4 chains=59381246 chain_cap=0 exit_svc=399884 exit_bl=26255125 exit_blr=1821007 exit_br=3212275 exit_ret=28093499 exit_mem=24 exit_unsupported=4225 exit_budget=0 run_declined=38 ibtc_fpsimd_boundary=3203620 ibtc_miss_cold=56178286 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nopub pass=2 test=get cntfrq 24000000
+attrdata cfg=nopub pass=2 test=get server_exec_ns 53071740543
+attrdata cfg=nopub pass=2 test=get gsys_by_nr epoll_pwait 571122 4301 read 1459889 199897 write 11603978 195683 other 0 0
+attrdata cfg=nopub pass=2 test=get gusr_by_nr epoll_pwait 5298 12 read 26419 228 write 1195318 4318 other 40687 666
+attrdata cfg=nopub pass=2 test=get hook_t 161828688
+attrdata cfg=nopub pass=2 test=get hook_n 405109
+attrdata cfg=nopub pass=2 test=get fnofp_t 62026060
+attrdata cfg=nopub pass=2 test=get fnofp_n 56582419
+attrdata cfg=nopub pass=2 test=get ffp_t 3344759
+attrdata cfg=nopub pass=2 test=get ffp_n 3203620
+attrdata cfg=nopub pass=2 test=get brk_t 11797638
+attrdata cfg=nopub pass=2 test=get brk_n 3203620
+attrdata cfg=nopub pass=2 test=get gsys_t 13634989
+attrdata cfg=nopub pass=2 test=get gsys_n 399881
+attrdata cfg=nopub pass=2 test=get gusr_t 1267722
+attrdata cfg=nopub pass=2 test=get gusr_n 5224
+attrdata cfg=nopub pass=2 test=get idle_t 158387
+attrdata cfg=nopub pass=2 test=get idle_n 3
+attrdata cfg=nopub pass=2 test=get hist_fnofp 3291685 46748923 6422521 94866 12090 1345 1347 6646 1165 1313 421 94 2 0 0 1 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=2 test=get hist_ffp 298283 2569480 330713 3812 929 105 35 92 67 71 27 6 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=2 test=get hist_gsys 0 0 27 166487 26003 119709 34879 24398 24745 2992 349 209 49 34 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=2 test=get hist_gusr 0 0 0 196 172 173 149 127 2649 1499 232 21 6 0 0 0 0 0 0 0 0 0 0 0
+attrprof cfg=offprof pass=2 test=set cpu0 n 1654 dropped 0
+attrprof cfg=offprof pass=2 test=set cpu1 n 1652 dropped 0
+attrprof cfg=offprof pass=2 test=set cpu2 n 1652 dropped 0
+attrprof cfg=offprof pass=2 test=set cpu3 n 1651 dropped 0
+attr cfg=offprof pass=2 test=set requests=200000 rps=242718.45 server_cpu_ns=594886275 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=offprof pass=2 test=set cntfrq 24000000
+attrdata cfg=offprof pass=2 test=set server_exec_ns 53666626818
+attrdata cfg=offprof pass=2 test=set gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=offprof pass=2 test=set gusr_by_nr epoll_pwait 7191613 31260 read 4304793 200061 write 7838172 200001 other 15872 540
+attrdata cfg=offprof pass=2 test=set hook_t 0
+attrdata cfg=offprof pass=2 test=set hook_n 0
+attrdata cfg=offprof pass=2 test=set fnofp_t 0
+attrdata cfg=offprof pass=2 test=set fnofp_n 0
+attrdata cfg=offprof pass=2 test=set ffp_t 0
+attrdata cfg=offprof pass=2 test=set ffp_n 0
+attrdata cfg=offprof pass=2 test=set brk_t 0
+attrdata cfg=offprof pass=2 test=set brk_n 0
+attrdata cfg=offprof pass=2 test=set gsys_t 0
+attrdata cfg=offprof pass=2 test=set gsys_n 0
+attrdata cfg=offprof pass=2 test=set gusr_t 19350450
+attrdata cfg=offprof pass=2 test=set gusr_n 431862
+attrdata cfg=offprof pass=2 test=set idle_t 0
+attrdata cfg=offprof pass=2 test=set idle_n 0
+attrdata cfg=offprof pass=2 test=set hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=2 test=set hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=2 test=set hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=2 test=set hist_gusr 0 0 0 318 39052 304296 68650 11782 1873 1636 1500 1632 1041 82 0 0 0 0 0 0 0 0 0 0
+attrprof cfg=offprof pass=2 test=get cpu0 n 1637 dropped 0
+attrprof cfg=offprof pass=2 test=get cpu1 n 1636 dropped 0
+attrprof cfg=offprof pass=2 test=get cpu2 n 1634 dropped 0
+attrprof cfg=offprof pass=2 test=get cpu3 n 1635 dropped 0
+attr cfg=offprof pass=2 test=get requests=200000 rps=245098.05 server_cpu_ns=580262058 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=offprof pass=2 test=get cntfrq 24000000
+attrdata cfg=offprof pass=2 test=get server_exec_ns 54246888876
+attrdata cfg=offprof pass=2 test=get gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=offprof pass=2 test=get gusr_by_nr epoll_pwait 7416468 30823 read 3957382 200060 write 7776789 200001 other 17061 529
+attrdata cfg=offprof pass=2 test=get hook_t 0
+attrdata cfg=offprof pass=2 test=get hook_n 0
+attrdata cfg=offprof pass=2 test=get fnofp_t 0
+attrdata cfg=offprof pass=2 test=get fnofp_n 0
+attrdata cfg=offprof pass=2 test=get ffp_t 0
+attrdata cfg=offprof pass=2 test=get ffp_n 0
+attrdata cfg=offprof pass=2 test=get brk_t 0
+attrdata cfg=offprof pass=2 test=get brk_n 0
+attrdata cfg=offprof pass=2 test=get gsys_t 0
+attrdata cfg=offprof pass=2 test=get gsys_n 0
+attrdata cfg=offprof pass=2 test=get gusr_t 19167700
+attrdata cfg=offprof pass=2 test=get gusr_n 431413
+attrdata cfg=offprof pass=2 test=get idle_t 0
+attrdata cfg=offprof pass=2 test=get idle_n 0
+attrdata cfg=offprof pass=2 test=get hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=2 test=get hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=2 test=get hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=2 test=get hist_gusr 0 0 0 719 39925 303655 67714 11817 1678 1595 1499 1605 1114 91 1 0 0 0 0 0 0 0 0 0
+attrprof cfg=onprof pass=2 test=set cpu0 n 3000 dropped 0
+attrprof cfg=onprof pass=2 test=set cpu1 n 3004 dropped 0
+attrprof cfg=onprof pass=2 test=set cpu2 n 2993 dropped 0
+attrprof cfg=onprof pass=2 test=set cpu3 n 2995 dropped 0
+attr cfg=onprof pass=2 test=set requests=200000 rps=134770.89 server_cpu_ns=1476189791 hook_calls=409240 syscalls_in_kernel=399554 fragment_entries=608912 fpsimd_entries=200014 fpsimd_preempted=0 chains=200278 chain_cap=0 exit_svc=399554 exit_bl=682 exit_blr=29 exit_br=200014 exit_ret=525 exit_mem=15 exit_unsupported=8093 exit_budget=0 run_declined=20 ibtc_fpsimd_boundary=200014 ibtc_miss_cold=1219 ibtc_miss_conflict=17 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onprof pass=2 test=set cntfrq 24000000
+attrdata cfg=onprof pass=2 test=set server_exec_ns 55723217001
+attrdata cfg=onprof pass=2 test=set gsys_by_nr epoll_pwait 652693 8200 read 1296712 199566 write 5900902 191788 other 0 0
+attrdata cfg=onprof pass=2 test=set gusr_by_nr epoll_pwait 1659 7 read 31388 503 write 1912787 8213 other 16353 546
+attrdata cfg=onprof pass=2 test=set hook_t 25820146
+attrdata cfg=onprof pass=2 test=set hook_n 408826
+attrdata cfg=onprof pass=2 test=set fnofp_t 3986737
+attrdata cfg=onprof pass=2 test=set fnofp_n 408900
+attrdata cfg=onprof pass=2 test=set ffp_t 19927742
+attrdata cfg=onprof pass=2 test=set ffp_n 200014
+attrdata cfg=onprof pass=2 test=set brk_t 20498017
+attrdata cfg=onprof pass=2 test=set brk_n 200014
+attrdata cfg=onprof pass=2 test=set gsys_t 7850307
+attrdata cfg=onprof pass=2 test=set gsys_n 399554
+attrdata cfg=onprof pass=2 test=set gusr_t 1962187
+attrdata cfg=onprof pass=2 test=set gusr_n 9269
+attrdata cfg=onprof pass=2 test=set idle_t 3060488
+attrdata cfg=onprof pass=2 test=set idle_n 2
+attrdata cfg=onprof pass=2 test=set hist_fnofp 117 252 42 179935 216623 10432 883 111 76 261 108 44 15 1 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=2 test=set hist_ffp 0 3 0 16 177 218 19 194227 2968 1344 706 249 85 2 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=2 test=set hist_gsys 0 0 18 173104 24371 168334 28650 3077 1009 539 239 124 76 13 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=2 test=set hist_gusr 0 0 0 198 176 320 602 1911 4070 1609 266 100 17 0 0 0 0 0 0 0 0 0 0 0
+attrprof cfg=onprof pass=2 test=get cpu0 n 2712 dropped 0
+attrprof cfg=onprof pass=2 test=get cpu1 n 2713 dropped 0
+attrprof cfg=onprof pass=2 test=get cpu2 n 2714 dropped 0
+attrprof cfg=onprof pass=2 test=get cpu3 n 2712 dropped 0
+attr cfg=onprof pass=2 test=get requests=200000 rps=150262.97 server_cpu_ns=1299923318 hook_calls=409277 syscalls_in_kernel=399743 fragment_entries=608699 fpsimd_entries=200006 fpsimd_preempted=1 chains=200021 chain_cap=0 exit_svc=399743 exit_bl=379 exit_blr=15 exit_br=200002 exit_ret=383 exit_mem=0 exit_unsupported=8177 exit_budget=0 run_declined=19 ibtc_fpsimd_boundary=200006 ibtc_miss_cold=721 ibtc_miss_conflict=52 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onprof pass=2 test=get cntfrq 24000000
+attrdata cfg=onprof pass=2 test=get server_exec_ns 57026315737
+attrdata cfg=onprof pass=2 test=get gsys_by_nr epoll_pwait 930068 8246 read 1193844 199760 write 6057712 191737 other 0 0
+attrdata cfg=onprof pass=2 test=get gusr_by_nr epoll_pwait 2181 6 read 20324 306 write 1740320 8264 other 17950 540
+attrdata cfg=onprof pass=2 test=get hook_t 22016860
+attrdata cfg=onprof pass=2 test=get hook_n 408861
+attrdata cfg=onprof pass=2 test=get fnofp_t 3922096
+attrdata cfg=onprof pass=2 test=get fnofp_n 408693
+attrdata cfg=onprof pass=2 test=get ffp_t 16219320
+attrdata cfg=onprof pass=2 test=get ffp_n 200006
+attrdata cfg=onprof pass=2 test=get brk_t 16786004
+attrdata cfg=onprof pass=2 test=get brk_n 200006
+attrdata cfg=onprof pass=2 test=get gsys_t 8181624
+attrdata cfg=onprof pass=2 test=get gsys_n 399743
+attrdata cfg=onprof pass=2 test=get gusr_t 1780775
+attrdata cfg=onprof pass=2 test=get gusr_n 9116
+attrdata cfg=onprof pass=2 test=get idle_t 50845
+attrdata cfg=onprof pass=2 test=get idle_n 1
+attrdata cfg=onprof pass=2 test=get hist_fnofp 45 290 75 186764 210385 9721 853 100 81 226 91 46 16 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=2 test=get hist_ffp 0 0 0 11 15 15 171 195542 2269 1184 541 190 64 4 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=2 test=get hist_gsys 0 0 85 180073 17847 171091 24606 2860 2106 540 231 144 106 50 4 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=2 test=get hist_gusr 0 0 0 108 200 257 1084 2091 3771 1289 213 88 14 0 0 1 0 0 0 0 0 0 0 0
+attr cfg=off pass=3 test=set requests=200000 rps=256410.27 server_cpu_ns=585889313 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=off pass=3 test=set cntfrq 24000000
+attrdata cfg=off pass=3 test=set server_exec_ns 57617126472
+attrdata cfg=off pass=3 test=set gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=off pass=3 test=set gusr_by_nr epoll_pwait 6556433 62390 read 3670979 200060 write 8057157 200001 other 23863 537
+attrdata cfg=off pass=3 test=set hook_t 0
+attrdata cfg=off pass=3 test=set hook_n 0
+attrdata cfg=off pass=3 test=set fnofp_t 0
+attrdata cfg=off pass=3 test=set fnofp_n 0
+attrdata cfg=off pass=3 test=set ffp_t 0
+attrdata cfg=off pass=3 test=set ffp_n 0
+attrdata cfg=off pass=3 test=set brk_t 0
+attrdata cfg=off pass=3 test=set brk_n 0
+attrdata cfg=off pass=3 test=set gsys_t 0
+attrdata cfg=off pass=3 test=set gsys_n 0
+attrdata cfg=off pass=3 test=set gusr_t 18308432
+attrdata cfg=off pass=3 test=set gusr_n 462988
+attrdata cfg=off pass=3 test=set idle_t 0
+attrdata cfg=off pass=3 test=set idle_n 0
+attrdata cfg=off pass=3 test=set hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=3 test=set hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=3 test=set hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=3 test=set hist_gusr 0 0 0 3716 96039 242917 93395 16742 1498 5143 1903 1489 139 6 1 0 0 0 0 0 0 0 0 0
+attr cfg=off pass=3 test=get requests=200000 rps=270636.00 server_cpu_ns=544040038 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=off pass=3 test=get cntfrq 24000000
+attrdata cfg=off pass=3 test=get server_exec_ns 58161166510
+attrdata cfg=off pass=3 test=get gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=off pass=3 test=get gusr_by_nr epoll_pwait 6494421 61855 read 3251098 200059 write 7538948 200001 other 13227 536
+attrdata cfg=off pass=3 test=get hook_t 0
+attrdata cfg=off pass=3 test=get hook_n 0
+attrdata cfg=off pass=3 test=get fnofp_t 0
+attrdata cfg=off pass=3 test=get fnofp_n 0
+attrdata cfg=off pass=3 test=get ffp_t 0
+attrdata cfg=off pass=3 test=get ffp_n 0
+attrdata cfg=off pass=3 test=get brk_t 0
+attrdata cfg=off pass=3 test=get brk_n 0
+attrdata cfg=off pass=3 test=get gsys_t 0
+attrdata cfg=off pass=3 test=get gsys_n 0
+attrdata cfg=off pass=3 test=get gusr_t 17297694
+attrdata cfg=off pass=3 test=get gusr_n 462451
+attrdata cfg=off pass=3 test=get idle_t 0
+attrdata cfg=off pass=3 test=get idle_n 0
+attrdata cfg=off pass=3 test=get hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=3 test=get hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=3 test=get hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=off pass=3 test=get hist_gusr 0 0 1 9911 103310 245928 82934 10477 932 5780 1600 1444 130 4 0 0 0 0 0 0 0 0 0 0
+attr cfg=on pass=3 test=set requests=200000 rps=147710.48 server_cpu_ns=1354490376 hook_calls=408624 syscalls_in_kernel=399714 fragment_entries=608026 fpsimd_entries=200001 fpsimd_preempted=2 chains=200001 chain_cap=0 exit_svc=399714 exit_bl=426 exit_blr=25 exit_br=200001 exit_ret=371 exit_mem=0 exit_unsupported=7489 exit_budget=0 run_declined=26 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=771 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=on pass=3 test=set cntfrq 24000000
+attrdata cfg=on pass=3 test=set server_exec_ns 59515759595
+attrdata cfg=on pass=3 test=set gsys_by_nr epoll_pwait 343242 7585 read 1172447 199726 write 5510933 192403 other 0 0
+attrdata cfg=on pass=3 test=set gusr_by_nr epoll_pwait 3182 15 read 25462 341 write 1655639 7598 other 17944 550
+attrdata cfg=on pass=3 test=set hook_t 23791487
+attrdata cfg=on pass=3 test=set hook_n 408220
+attrdata cfg=on pass=3 test=set fnofp_t 3632656
+attrdata cfg=on pass=3 test=set fnofp_n 408027
+attrdata cfg=on pass=3 test=set ffp_t 18447035
+attrdata cfg=on pass=3 test=set ffp_n 200001
+attrdata cfg=on pass=3 test=set brk_t 18968021
+attrdata cfg=on pass=3 test=set brk_n 200001
+attrdata cfg=on pass=3 test=set gsys_t 7026622
+attrdata cfg=on pass=3 test=set gsys_n 399714
+attrdata cfg=on pass=3 test=set gusr_t 1702227
+attrdata cfg=on pass=3 test=set gusr_n 8504
+attrdata cfg=on pass=3 test=set idle_t 1253678
+attrdata cfg=on pass=3 test=set idle_n 1
+attrdata cfg=on pass=3 test=set hist_fnofp 60 292 64 189017 210272 7563 439 104 94 81 27 14 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=3 test=set hist_ffp 0 0 0 9 89 149 23 197025 1886 482 232 97 9 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=3 test=set hist_gsys 0 0 59 175735 22430 171237 25752 3537 728 121 62 48 5 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=3 test=set hist_gusr 0 0 0 146 177 236 566 511 5337 1367 95 66 3 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=on pass=3 test=get requests=200000 rps=168776.38 server_cpu_ns=1181837620 hook_calls=408599 syscalls_in_kernel=399750 fragment_entries=608008 fpsimd_entries=200001 fpsimd_preempted=6 chains=200001 chain_cap=0 exit_svc=399750 exit_bl=372 exit_blr=14 exit_br=200001 exit_ret=373 exit_mem=0 exit_unsupported=7498 exit_budget=0 run_declined=19 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=708 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=on pass=3 test=get cntfrq 24000000
+attrdata cfg=on pass=3 test=get server_exec_ns 60701454756
+attrdata cfg=on pass=3 test=get gsys_by_nr epoll_pwait 355610 7577 read 1059838 199763 write 5435128 192410 other 0 0
+attrdata cfg=on pass=3 test=get gusr_by_nr epoll_pwait 2267 4 read 17156 303 write 1460155 7591 other 17488 540
+attrdata cfg=on pass=3 test=get hook_t 20123792
+attrdata cfg=on pass=3 test=get hook_n 408191
+attrdata cfg=on pass=3 test=get fnofp_t 3574521
+attrdata cfg=on pass=3 test=get fnofp_n 408007
+attrdata cfg=on pass=3 test=get ffp_t 14849531
+attrdata cfg=on pass=3 test=get ffp_n 200001
+attrdata cfg=on pass=3 test=get brk_t 15362574
+attrdata cfg=on pass=3 test=get brk_n 200001
+attrdata cfg=on pass=3 test=get gsys_t 6850576
+attrdata cfg=on pass=3 test=get gsys_n 399750
+attrdata cfg=on pass=3 test=get gusr_t 1497066
+attrdata cfg=on pass=3 test=get gusr_n 8438
+attrdata cfg=on pass=3 test=get idle_t 2797142
+attrdata cfg=on pass=3 test=get idle_n 2
+attrdata cfg=on pass=3 test=get hist_fnofp 26 311 75 190922 209631 6444 307 94 71 66 34 26 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=3 test=get hist_ffp 0 0 0 9 23 5 183 197956 1268 324 172 59 2 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=3 test=get hist_gsys 0 0 287 181102 17549 174450 22414 3147 576 112 61 41 3 8 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=on pass=3 test=get hist_gusr 0 0 0 113 215 240 1326 644 4777 993 89 37 2 1 0 1 0 0 0 0 0 0 0 0
+attr cfg=onq pass=3 test=set requests=200000 rps=146305.78 server_cpu_ns=1367703949 hook_calls=408612 syscalls_in_kernel=399733 fragment_entries=608013 fpsimd_entries=200001 fpsimd_preempted=3 chains=200001 chain_cap=0 exit_svc=399733 exit_bl=410 exit_blr=25 exit_br=200001 exit_ret=372 exit_mem=0 exit_unsupported=7472 exit_budget=0 run_declined=27 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=756 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onq pass=3 test=set cntfrq 24000000
+attrdata cfg=onq pass=3 test=set server_exec_ns 62073100039
+attrdata cfg=onq pass=3 test=set gsys_by_nr epoll_pwait 348867 7570 read 1193528 199740 write 5621331 192423 other 0 0
+attrdata cfg=onq pass=3 test=set gusr_by_nr epoll_pwait 18298 17 read 25256 326 write 1696820 7578 other 24430 549
+attrdata cfg=onq pass=3 test=set hook_t 23919572
+attrdata cfg=onq pass=3 test=set hook_n 408204
+attrdata cfg=onq pass=3 test=set fnofp_t 3646015
+attrdata cfg=onq pass=3 test=set fnofp_n 408012
+attrdata cfg=onq pass=3 test=set ffp_t 18550077
+attrdata cfg=onq pass=3 test=set ffp_n 200001
+attrdata cfg=onq pass=3 test=set brk_t 19076653
+attrdata cfg=onq pass=3 test=set brk_n 200001
+attrdata cfg=onq pass=3 test=set gsys_t 7163726
+attrdata cfg=onq pass=3 test=set gsys_n 399733
+attrdata cfg=onq pass=3 test=set gusr_t 1764804
+attrdata cfg=onq pass=3 test=set gusr_n 8470
+attrdata cfg=onq pass=3 test=set idle_t 0
+attrdata cfg=onq pass=3 test=set idle_n 0
+attrdata cfg=onq pass=3 test=set hist_fnofp 6 248 156 187555 210157 9159 434 103 97 55 28 14 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=3 test=set hist_ffp 0 0 0 7 83 143 29 195067 3899 448 235 80 10 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=3 test=set hist_gsys 0 0 74 172078 25974 165964 29772 4855 760 131 88 35 2 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=3 test=set hist_gusr 0 0 0 0 233 201 621 434 5278 1522 112 67 1 0 1 0 0 0 0 0 0 0 0 0
+attr cfg=onq pass=3 test=get requests=200000 rps=170357.75 server_cpu_ns=1174245954 hook_calls=408599 syscalls_in_kernel=399780 fragment_entries=608008 fpsimd_entries=200001 fpsimd_preempted=0 chains=200001 chain_cap=0 exit_svc=399780 exit_bl=345 exit_blr=21 exit_br=200001 exit_ret=369 exit_mem=2 exit_unsupported=7490 exit_budget=0 run_declined=25 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=684 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onq pass=3 test=get cntfrq 24000000
+attrdata cfg=onq pass=3 test=get server_exec_ns 63247345993
+attrdata cfg=onq pass=3 test=get gsys_by_nr epoll_pwait 309159 7571 read 1053750 199791 write 5374242 192418 other 0 0
+attrdata cfg=onq pass=3 test=get gusr_by_nr epoll_pwait 5414 13 read 15071 273 write 1433030 7583 other 15409 542
+attrdata cfg=onq pass=3 test=get hook_t 19995672
+attrdata cfg=onq pass=3 test=get hook_n 408192
+attrdata cfg=onq pass=3 test=get fnofp_t 3523562
+attrdata cfg=onq pass=3 test=get fnofp_n 408007
+attrdata cfg=onq pass=3 test=get ffp_t 14781161
+attrdata cfg=onq pass=3 test=get ffp_n 200001
+attrdata cfg=onq pass=3 test=get brk_t 15296870
+attrdata cfg=onq pass=3 test=get brk_n 200001
+attrdata cfg=onq pass=3 test=get gsys_t 6737151
+attrdata cfg=onq pass=3 test=get gsys_n 399780
+attrdata cfg=onq pass=3 test=get gusr_t 1468924
+attrdata cfg=onq pass=3 test=get gusr_n 8411
+attrdata cfg=onq pass=3 test=get idle_t 0
+attrdata cfg=onq pass=3 test=get idle_n 0
+attrdata cfg=onq pass=3 test=get hist_fnofp 119 248 48 194466 206378 6201 298 98 62 49 32 8 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=3 test=get hist_ffp 0 0 0 17 19 3 163 198091 1163 299 173 71 2 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=3 test=get hist_gsys 0 0 239 182095 16559 177193 19871 3238 397 86 58 41 3 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onq pass=3 test=get hist_gusr 0 0 0 199 186 210 1077 740 4906 993 65 35 0 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nofp pass=3 test=set requests=200000 rps=288184.44 server_cpu_ns=671009641 hook_calls=456141 syscalls_in_kernel=255118 fragment_entries=455558 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=255118 exit_bl=68 exit_blr=7 exit_br=200001 exit_ret=364 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=24 ibtc_fpsimd_boundary=0 ibtc_miss_cold=200389 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nofp pass=3 test=set cntfrq 24000000
+attrdata cfg=nofp pass=3 test=set server_exec_ns 63918355634
+attrdata cfg=nofp pass=3 test=set gsys_by_nr epoll_pwait 1227428 55128 read 277647 55131 write 4224120 144859 other 0 0
+attrdata cfg=nofp pass=3 test=set gusr_by_nr epoll_pwait 4278 12 read 3107290 144928 write 2976489 55142 other 12907 532
+attrdata cfg=nofp pass=3 test=set hook_t 4843859
+attrdata cfg=nofp pass=3 test=set hook_n 455733
+attrdata cfg=nofp pass=3 test=set fnofp_t 3791947
+attrdata cfg=nofp pass=3 test=set fnofp_n 455558
+attrdata cfg=nofp pass=3 test=set ffp_t 0
+attrdata cfg=nofp pass=3 test=set ffp_n 0
+attrdata cfg=nofp pass=3 test=set brk_t 0
+attrdata cfg=nofp pass=3 test=set brk_n 0
+attrdata cfg=nofp pass=3 test=set gsys_t 5729195
+attrdata cfg=nofp pass=3 test=set gsys_n 255118
+attrdata cfg=nofp pass=3 test=set gusr_t 6100964
+attrdata cfg=nofp pass=3 test=set gusr_n 200614
+attrdata cfg=nofp pass=3 test=set idle_t 0
+attrdata cfg=nofp pass=3 test=set idle_n 0
+attrdata cfg=nofp pass=3 test=set hist_fnofp 105 274 58 250883 202009 1717 283 82 72 37 29 9 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=3 test=set hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=3 test=set hist_gsys 0 0 94 55091 50621 136236 9648 2553 158 264 218 159 72 3 1 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=3 test=set hist_gusr 0 0 0 200 175 143043 52389 4233 361 109 79 25 0 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nofp pass=3 test=get requests=200000 rps=281690.16 server_cpu_ns=680466453 hook_calls=470732 syscalls_in_kernel=269696 fragment_entries=470139 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=269696 exit_bl=60 exit_blr=18 exit_br=200001 exit_ret=364 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=34 ibtc_fpsimd_boundary=0 ibtc_miss_cold=200392 ibtc_miss_conflict=51 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nofp pass=3 test=get cntfrq 24000000
+attrdata cfg=nofp pass=3 test=get server_exec_ns 64598870754
+attrdata cfg=nofp pass=3 test=get gsys_by_nr epoll_pwait 1540097 69700 read 340836 69699 write 3921253 130297 other 0 0
+attrdata cfg=nofp pass=3 test=get gusr_by_nr epoll_pwait 5170 21 read 2642273 130360 write 3561549 69704 other 13665 542
+attrdata cfg=nofp pass=3 test=get hook_t 5059385
+attrdata cfg=nofp pass=3 test=get hook_n 470324
+attrdata cfg=nofp pass=3 test=get fnofp_t 3972000
+attrdata cfg=nofp pass=3 test=get fnofp_n 470139
+attrdata cfg=nofp pass=3 test=get ffp_t 0
+attrdata cfg=nofp pass=3 test=get ffp_n 0
+attrdata cfg=nofp pass=3 test=get brk_t 0
+attrdata cfg=nofp pass=3 test=get brk_n 0
+attrdata cfg=nofp pass=3 test=get gsys_t 5802186
+attrdata cfg=nofp pass=3 test=get gsys_n 269696
+attrdata cfg=nofp pass=3 test=get gusr_t 6222657
+attrdata cfg=nofp pass=3 test=get gusr_n 200627
+attrdata cfg=nofp pass=3 test=get idle_t 0
+attrdata cfg=nofp pass=3 test=get idle_n 0
+attrdata cfg=nofp pass=3 test=get hist_fnofp 101 259 102 264628 202193 2244 328 72 87 70 42 13 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=3 test=get hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=3 test=get hist_gsys 0 0 287 82277 51356 120500 11307 2793 199 343 298 265 70 1 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nofp pass=3 test=get hist_gusr 0 0 0 195 1744 127061 66013 4929 447 136 78 23 1 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nopub pass=3 test=set requests=200000 rps=23367.21 server_cpu_ns=8557004051 hook_calls=405591 syscalls_in_kernel=399894 fragment_entries=70386914 fpsimd_entries=3203751 fpsimd_preempted=0 chains=69982072 chain_cap=0 exit_svc=399894 exit_bl=30455503 exit_blr=2620938 exit_br=3812249 exit_ret=33094085 exit_mem=0 exit_unsupported=4245 exit_budget=0 run_declined=24 ibtc_fpsimd_boundary=3203751 ibtc_miss_cold=66779024 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nopub pass=3 test=set cntfrq 24000000
+attrdata cfg=nopub pass=3 test=set server_exec_ns 73155874805
+attrdata cfg=nopub pass=3 test=set gsys_by_nr epoll_pwait 350981 4337 read 1773214 199904 write 9227114 195651 other 0 0
+attrdata cfg=nopub pass=3 test=set gusr_by_nr epoll_pwait 2613 9 read 21652 233 write 1341209 4349 other 45209 686
+attrdata cfg=nopub pass=3 test=set hook_t 192583779
+attrdata cfg=nopub pass=3 test=set hook_n 405172
+attrdata cfg=nopub pass=3 test=set fnofp_t 74903462
+attrdata cfg=nopub pass=3 test=set fnofp_n 67183163
+attrdata cfg=nopub pass=3 test=set ffp_t 3251995
+attrdata cfg=nopub pass=3 test=set ffp_n 3203751
+attrdata cfg=nopub pass=3 test=set brk_t 12524793
+attrdata cfg=nopub pass=3 test=set brk_n 3203751
+attrdata cfg=nopub pass=3 test=set gsys_t 11351309
+attrdata cfg=nopub pass=3 test=set gsys_n 399892
+attrdata cfg=nopub pass=3 test=set gusr_t 1410683
+attrdata cfg=nopub pass=3 test=set gusr_n 5277
+attrdata cfg=nopub pass=3 test=set idle_t 107227
+attrdata cfg=nopub pass=3 test=set idle_n 2
+attrdata cfg=nopub pass=3 test=set hist_fnofp 4225314 54413607 8342283 160938 22016 2144 1462 11594 1444 1578 621 142 15 2 0 1 2 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=3 test=set hist_ffp 417120 2434497 345405 5015 1231 187 33 115 56 51 33 7 1 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=3 test=set hist_gsys 0 0 7 144803 42820 127328 50447 24773 5993 3096 350 259 11 2 2 1 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=3 test=set hist_gusr 0 0 0 201 185 185 91 110 2256 1846 362 39 2 0 0 0 0 0 0 0 0 0 0 0
+attr cfg=nopub pass=3 test=get requests=200000 rps=27337.34 server_cpu_ns=7312696180 hook_calls=405544 syscalls_in_kernel=399903 fragment_entries=59789298 fpsimd_entries=3203804 fpsimd_preempted=0 chains=59384474 chain_cap=0 exit_svc=399903 exit_bl=26256343 exit_blr=1821211 exit_br=3212434 exit_ret=28095150 exit_mem=5 exit_unsupported=4252 exit_budget=0 run_declined=25 ibtc_fpsimd_boundary=3203804 ibtc_miss_cold=56181334 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=nopub pass=3 test=get cntfrq 24000000
+attrdata cfg=nopub pass=3 test=get server_exec_ns 80468570985
+attrdata cfg=nopub pass=3 test=get gsys_by_nr epoll_pwait 373694 4327 read 1583569 199909 write 9073780 195666 other 0 0
+attrdata cfg=nopub pass=3 test=get gusr_by_nr epoll_pwait 3093 12 read 18021 216 write 1252918 4335 other 38504 665
+attrdata cfg=nopub pass=3 test=get hook_t 163221889
+attrdata cfg=nopub pass=3 test=get hook_n 405132
+attrdata cfg=nopub pass=3 test=get fnofp_t 62554298
+attrdata cfg=nopub pass=3 test=get fnofp_n 56585494
+attrdata cfg=nopub pass=3 test=get ffp_t 3386061
+attrdata cfg=nopub pass=3 test=get ffp_n 3203804
+attrdata cfg=nopub pass=3 test=get brk_t 11943753
+attrdata cfg=nopub pass=3 test=get brk_n 3203804
+attrdata cfg=nopub pass=3 test=get gsys_t 11031043
+attrdata cfg=nopub pass=3 test=get gsys_n 399902
+attrdata cfg=nopub pass=3 test=get gusr_t 1312536
+attrdata cfg=nopub pass=3 test=get gusr_n 5228
+attrdata cfg=nopub pass=3 test=get idle_t 45608
+attrdata cfg=nopub pass=3 test=get idle_n 1
+attrdata cfg=nopub pass=3 test=get hist_fnofp 3281628 46757888 6399331 112470 19292 2003 1473 8092 1202 1406 550 135 15 5 3 1 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=3 test=get hist_ffp 300271 2565855 331440 4282 1446 150 47 117 96 63 29 6 1 0 0 1 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=3 test=get hist_gsys 0 0 22 160232 30151 137556 40712 20817 6566 3228 348 251 12 2 2 3 0 0 0 0 0 0 0 0
+attrdata cfg=nopub pass=3 test=get hist_gusr 0 0 0 199 147 221 78 128 2570 1575 271 34 5 0 0 0 0 0 0 0 0 0 0 0
+attrprof cfg=offprof pass=3 test=set cpu0 n 2082 dropped 0
+attrprof cfg=offprof pass=3 test=set cpu1 n 2090 dropped 0
+attrprof cfg=offprof pass=3 test=set cpu2 n 2099 dropped 0
+attrprof cfg=offprof pass=3 test=set cpu3 n 2095 dropped 0
+attr cfg=offprof pass=3 test=set requests=200000 rps=188501.42 server_cpu_ns=752102476 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=offprof pass=3 test=set cntfrq 24000000
+attrdata cfg=offprof pass=3 test=set server_exec_ns 81220673461
+attrdata cfg=offprof pass=3 test=set gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=offprof pass=3 test=set gusr_by_nr epoll_pwait 9341096 29294 read 5301466 200061 write 9782263 200000 other 20986 542
+attrdata cfg=offprof pass=3 test=set hook_t 0
+attrdata cfg=offprof pass=3 test=set hook_n 0
+attrdata cfg=offprof pass=3 test=set fnofp_t 0
+attrdata cfg=offprof pass=3 test=set fnofp_n 0
+attrdata cfg=offprof pass=3 test=set ffp_t 0
+attrdata cfg=offprof pass=3 test=set ffp_n 0
+attrdata cfg=offprof pass=3 test=set brk_t 0
+attrdata cfg=offprof pass=3 test=set brk_n 0
+attrdata cfg=offprof pass=3 test=set gsys_t 0
+attrdata cfg=offprof pass=3 test=set gsys_n 0
+attrdata cfg=offprof pass=3 test=set gusr_t 24445811
+attrdata cfg=offprof pass=3 test=set gusr_n 429897
+attrdata cfg=offprof pass=3 test=set idle_t 557400
+attrdata cfg=offprof pass=3 test=set idle_n 11
+attrdata cfg=offprof pass=3 test=set hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=3 test=set hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=3 test=set hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=3 test=set hist_gusr 0 0 0 246 32052 264904 97837 23677 3947 1996 1758 1916 1244 236 67 17 0 0 0 0 0 0 0 0
+attrprof cfg=offprof pass=3 test=get cpu0 n 1632 dropped 0
+attrprof cfg=offprof pass=3 test=get cpu1 n 1642 dropped 0
+attrprof cfg=offprof pass=3 test=get cpu2 n 1633 dropped 0
+attrprof cfg=offprof pass=3 test=get cpu3 n 1630 dropped 0
+attr cfg=offprof pass=3 test=get requests=200000 rps=245098.05 server_cpu_ns=587183106 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=offprof pass=3 test=get cntfrq 24000000
+attrdata cfg=offprof pass=3 test=get server_exec_ns 81807856567
+attrdata cfg=offprof pass=3 test=get gsys_by_nr epoll_pwait 0 0 read 0 0 write 0 0 other 0 0
+attrdata cfg=offprof pass=3 test=get gusr_by_nr epoll_pwait 7245820 31658 read 3982927 200060 write 7915855 200001 other 18146 532
+attrdata cfg=offprof pass=3 test=get hook_t 0
+attrdata cfg=offprof pass=3 test=get hook_n 0
+attrdata cfg=offprof pass=3 test=get fnofp_t 0
+attrdata cfg=offprof pass=3 test=get fnofp_n 0
+attrdata cfg=offprof pass=3 test=get ffp_t 0
+attrdata cfg=offprof pass=3 test=get ffp_n 0
+attrdata cfg=offprof pass=3 test=get brk_t 0
+attrdata cfg=offprof pass=3 test=get brk_n 0
+attrdata cfg=offprof pass=3 test=get gsys_t 0
+attrdata cfg=offprof pass=3 test=get gsys_n 0
+attrdata cfg=offprof pass=3 test=get gusr_t 19162748
+attrdata cfg=offprof pass=3 test=get gusr_n 432251
+attrdata cfg=offprof pass=3 test=get idle_t 0
+attrdata cfg=offprof pass=3 test=get idle_n 0
+attrdata cfg=offprof pass=3 test=get hist_fnofp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=3 test=get hist_ffp 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=3 test=get hist_gsys 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=offprof pass=3 test=get hist_gusr 0 0 0 724 41104 298922 71419 12367 1712 1618 1557 1691 1073 63 1 0 0 0 0 0 0 0 0 0
+attrprof cfg=onprof pass=3 test=set cpu0 n 3039 dropped 0
+attrprof cfg=onprof pass=3 test=set cpu1 n 3051 dropped 0
+attrprof cfg=onprof pass=3 test=set cpu2 n 3045 dropped 0
+attrprof cfg=onprof pass=3 test=set cpu3 n 3047 dropped 0
+attr cfg=onprof pass=3 test=set requests=200000 rps=133511.34 server_cpu_ns=1491341625 hook_calls=409204 syscalls_in_kernel=399624 fragment_entries=608871 fpsimd_entries=200014 fpsimd_preempted=2 chains=200278 chain_cap=0 exit_svc=399624 exit_bl=614 exit_blr=35 exit_br=200015 exit_ret=526 exit_mem=0 exit_unsupported=8057 exit_budget=0 run_declined=26 ibtc_fpsimd_boundary=200014 ibtc_miss_cold=1159 ibtc_miss_conflict=17 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onprof pass=3 test=set cntfrq 24000000
+attrdata cfg=onprof pass=3 test=set server_exec_ns 83299347192
+attrdata cfg=onprof pass=3 test=set gsys_by_nr epoll_pwait 660036 8153 read 1332741 199636 write 6029453 191835 other 0 0
+attrdata cfg=onprof pass=3 test=set gusr_by_nr epoll_pwait 2303 11 read 39241 433 write 1985677 8166 other 20603 550
+attrdata cfg=onprof pass=3 test=set hook_t 25920659
+attrdata cfg=onprof pass=3 test=set hook_n 408787
+attrdata cfg=onprof pass=3 test=set fnofp_t 4015416
+attrdata cfg=onprof pass=3 test=set fnofp_n 408857
+attrdata cfg=onprof pass=3 test=set ffp_t 19999548
+attrdata cfg=onprof pass=3 test=set ffp_n 200014
+attrdata cfg=onprof pass=3 test=set brk_t 20577832
+attrdata cfg=onprof pass=3 test=set brk_n 200014
+attrdata cfg=onprof pass=3 test=set gsys_t 8022230
+attrdata cfg=onprof pass=3 test=set gsys_n 399624
+attrdata cfg=onprof pass=3 test=set gusr_t 2047824
+attrdata cfg=onprof pass=3 test=set gusr_n 9160
+attrdata cfg=onprof pass=3 test=set idle_t 2486450
+attrdata cfg=onprof pass=3 test=set idle_n 2
+attrdata cfg=onprof pass=3 test=set hist_fnofp 127 247 37 178597 217249 10490 1338 245 86 282 102 47 9 1 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=3 test=set hist_ffp 0 2 1 10 114 210 18 194646 2476 1425 755 270 84 3 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=3 test=set hist_gsys 0 0 15 166432 31010 161196 35992 2980 1024 499 246 150 73 7 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=3 test=set hist_gusr 0 0 0 194 160 282 448 1745 4145 1705 379 91 11 0 0 0 0 0 0 0 0 0 0 0
+attrprof cfg=onprof pass=3 test=get cpu0 n 2771 dropped 0
+attrprof cfg=onprof pass=3 test=get cpu1 n 2766 dropped 0
+attrprof cfg=onprof pass=3 test=get cpu2 n 2759 dropped 0
+attrprof cfg=onprof pass=3 test=get cpu3 n 2771 dropped 0
+attr cfg=onprof pass=3 test=get requests=200000 rps=146735.14 server_cpu_ns=1348048450 hook_calls=409365 syscalls_in_kernel=399724 fragment_entries=608776 fpsimd_entries=200006 fpsimd_preempted=0 chains=200021 chain_cap=0 exit_svc=399724 exit_bl=401 exit_blr=24 exit_br=200002 exit_ret=385 exit_mem=5 exit_unsupported=8235 exit_budget=0 run_declined=29 ibtc_fpsimd_boundary=200006 ibtc_miss_cold=754 ibtc_miss_conflict=52 ibtc_miss_other=0 translate_ok=0
+attrdata cfg=onprof pass=3 test=get cntfrq 24000000
+attrdata cfg=onprof pass=3 test=get server_exec_ns 84652463518
+attrdata cfg=onprof pass=3 test=get gsys_by_nr epoll_pwait 761838 8310 read 1327481 199738 write 6472548 191674 other 0 0
+attrdata cfg=onprof pass=3 test=get gusr_by_nr epoll_pwait 4366 16 read 25425 329 write 1970291 8327 other 21694 549
+attrdata cfg=onprof pass=3 test=get hook_t 21991453
+attrdata cfg=onprof pass=3 test=get hook_n 408948
+attrdata cfg=onprof pass=3 test=get fnofp_t 3948032
+attrdata cfg=onprof pass=3 test=get fnofp_n 408770
+attrdata cfg=onprof pass=3 test=get ffp_t 16136298
+attrdata cfg=onprof pass=3 test=get ffp_n 200006
+attrdata cfg=onprof pass=3 test=get brk_t 16712777
+attrdata cfg=onprof pass=3 test=get brk_n 200006
+attrdata cfg=onprof pass=3 test=get gsys_t 8561867
+attrdata cfg=onprof pass=3 test=get gsys_n 399722
+attrdata cfg=onprof pass=3 test=get gusr_t 2021776
+attrdata cfg=onprof pass=3 test=get gusr_n 9221
+attrdata cfg=onprof pass=3 test=get idle_t 1069081
+attrdata cfg=onprof pass=3 test=get idle_n 4
+attrdata cfg=onprof pass=3 test=get hist_fnofp 54 284 72 186846 210568 9120 1088 231 74 249 126 52 6 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=3 test=get hist_ffp 0 0 0 18 21 10 200 196190 1597 1105 618 191 56 0 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=3 test=get hist_gsys 0 0 79 158193 39854 143147 51245 4931 1226 479 312 166 84 6 0 0 0 0 0 0 0 0 0 0
+attrdata cfg=onprof pass=3 test=get hist_gusr 0 0 0 107 176 276 826 1819 3659 1924 319 99 14 2 0 0 0 0 0 0 0 0 0 0
+attr: done
+[  115.644261] kjit: 0 of 296 translation requests still queued at unload (freed by the kernel)
+[  115.675997] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[  115.688723] reboot: Power down
