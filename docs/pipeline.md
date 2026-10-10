@@ -925,59 +925,90 @@ Translator:
   FEAT_FP/FEAT_AdvSIMD.
 - Verifier: the `WindowAccess` list and `uses_fpsimd` (section 6, rule 8).
 
-Kernel (A9b):
+Kernel (A9b, bracket revised by A13):
 
 - A fragment with `uses_fpsimd` runs only inside the bracket
-  `kjit_call_fragment_fpsimd()`: `local_bh_disable()` (on non-RT; this also
-  makes the task non-preemptible) -> if `TIF_FOREIGN_FPSTATE`,
-  `fpsimd_restore_current_state()` (kernel patch 0005 exports it; it already
-  does the whole reload: FP/SIMD absent, SVE/SME, `get_cpu_fpsimd_context()`
-  nesting inside our `local_bh_disable()`, binding to the CPU) ->
-  `pagefault_disable()` -> the ordinary trampoline -> `pagefault_enable()` ->
-  `local_bh_enable()`. The flag test is not racy: inside the bracket nothing
-  can set it (no context switch, no softirq; hardirqs never touch FP/SIMD
-  state). `kernel_neon_begin/end` are the wrong tool: they save the user state
-  and take the registers away from it. A chained or dispatched entry into
-  another fragment uses that fragment's own mode: the runtime picks the
-  bracket from `uses_fpsimd` at every runtime entry, and a bracketed run
-  dispatching through `table_all` continues across fragments inside the one
-  bracket (section 8, Dispatch tables (A11, kernel side)).
+  `kjit_call_fragment_fpsimd()`, which is preemptible and built on the kernel's
+  task-level kernel-mode NEON (TIF_KERNEL_FPSTATE), in this order:
+
+  ```text
+  kernel_neon_begin(&kbuf)    // live user regs -> thread.uw (unless TIF_FOREIGN_FPSTATE);
+                              // TIF_KERNEL_FPSTATE set; CPU binding flushed
+  fpsimd_load_state(&current->thread.uw.fpsimd_state)    // user V/FPCR/FPSR -> regs
+  pagefault_disable(); kjit_call_fragment(...); pagefault_enable();
+  fpsimd_save_state(&current->thread.uw.fpsimd_state)    // regs -> thread.uw
+  current->thread.fpsimd_cpu = NR_CPUS                   // before kernel_neon_end
+  kernel_neon_end(&kbuf)      // TIF_KERNEL_FPSTATE clear; TIF_FOREIGN_FPSTATE stays set
+  ```
+
+  `kbuf` is a `struct user_fpsimd_state` on the bracket's kernel stack (528
+  bytes); it holds the registers (the user's values mid-run) only while the task
+  is switched out inside the bracket. `fpsimd_load_state`/`fpsimd_save_state` are
+  exported by kernel patch 0005. The bracket is per run: it closes at the run's
+  runtime exit, so in-kernel syscalls, lookups and publishes run outside it.
+  `kernel_neon_begin` BUGs unless `may_use_simd()`; the hook runs in task
+  context of a syscall with no NEON section open, and no bracket is entered from
+  inside a run (a fragment cannot call out; its faults never reach
+  `handle_mm_fault`), so it holds by construction.
+- Why A13 (decided 2026-10-10): the A9b bracket (`local_bh_disable`) made a
+  run non-preemptible and softirq-masked; since A11 a bracketed run continues
+  across fragments, so any user process with an FP/SIMD loop could hold a CPU
+  that way for up to a whole run (15-42 ms measured in the redis suite):
+  a kernel privilege handed to userspace. The prototype (variant A of
+  [2026-10-09 02:31](journal/2026-10-09.md)) passed every gate at ~35-50 ns per
+  bracket and unchanged throughput. Bracketing non-FP/SIMD runs too (variants
+  B/B2, which remove the FP/SIMD boundary misses) stays deferred (section 11).
+- Why the invalidation: the module writes `thread.uw.fpsimd_state`, so no CPU's
+  registers hold a current copy of it whatever `fpsimd_last_state` says. If the
+  task last loaded its state on CPU X (`thread.fpsimd_cpu == X`), migrated, ran a
+  bracket elsewhere and is switched back in on X with X still bound to it,
+  `fpsimd_thread_switch()` computes `wrong_task = wrong_cpu = false`, clears
+  TIF_FOREIGN_FPSTATE and the task returns to EL0 with the pre-run registers.
+  `fpsimd_cpu = NR_CPUS` forces `wrong_cpu`; it is what the kernel does after its
+  own edits of a user state (`fpsimd_flush_task_state`: sigreturn, ptrace). It
+  is written while TIF_KERNEL_FPSTATE is still set, so no switch-in evaluates
+  the binding between the save and the invalidation.
+- A chained or dispatched entry into another fragment uses that fragment's own
+  mode: the runtime picks the bracket from `uses_fpsimd` at every runtime entry,
+  and a bracketed run dispatching through `table_all` continues across fragments
+  inside the one bracket (section 8, Dispatch tables (A11, kernel side)).
 - `VerifyOk.uses_fpsimd` (the verifier's verdict on the installed bytes, never
   the translator's) is stored in `struct kjit_frag`; the kernel uses it, not
   the translator's view, to decide how to run.
-- With pagefaults disabled, any user-access fault in such a fragment
-  (LDTR*/STTR* or a window access) takes the fixup path -> `Mem` exit ->
-  userspace re-executes natively and handles the fault; the next run finds the
-  page present. Correct, occasionally slower. `do_page_fault()` sees
-  `faulthandler_disabled()` -> `no_context` -> `fixup_exception()` -> the
-  fragment's extable (patch 0002) -> the access's PAN or Mem stub; nothing on
-  this path sleeps and `handle_mm_fault` is never reached.
+- With pagefaults disabled, any user-access fault in a bracketed run
+  (LDTR*/STTR* or a window access, in any fragment the run reaches) takes the
+  fixup path -> `Mem` exit -> userspace re-executes natively and handles the
+  fault; the next run finds the page present. Correct, occasionally slower.
+  `do_page_fault()` sees `faulthandler_disabled()` -> `no_context` ->
+  `fixup_exception()` -> the fragment's extable (patch 0002) -> the access's PAN
+  or Mem stub; nothing on this path sleeps and `handle_mm_fault` is never
+  reached. Why still disabled: a fault path that sleeps or uses kernel-mode NEON
+  (e.g. a NEON-accelerated filesystem read) would nest a second task-level
+  `kernel_neon_begin`, which the kernel does not allow.
 - Refuse to install `uses_fpsimd` fragments when the system supports SVE or SME
-  (streaming mode and ZA state change the rules; not modelled):
+  (`thread.uw.fpsimd_state` is not authoritative with SVE state, and
+  `kernel_neon_begin` stops streaming mode; not modelled):
   `kjit_fpsimd_supported()` = FP/SIMD present, no SVE, no SME
   (`system_supports_*`, final CPU caps); otherwise `fpsimd_refused_sve_sme`,
   `-ENODEV` after verification (final: the auto mode negative-caches the PC).
-  `CONFIG_PREEMPT_RT` is a build error: there `local_bh_disable()` neither
-  disables preemption nor excludes softirq NEON the way the bracket needs.
+  `CONFIG_PREEMPT_RT` is a build error: a softirq kernel-mode NEON section
+  nesting into a task-level one BUGs on RT.
 - Why the bracket is enough:
-  - Preemption: none inside the bracket (`local_bh_disable()` raises
-    `preempt_count` on !RT). The non-preemptible stretch is one run, bounded by
-    the budget (section 11, Open decisions: a run now spans fragments).
-  - Softirq kernel-mode NEON cannot run inside the bracket (softirqs are masked,
-    also at irq exit). Pending softirqs run in `local_bh_enable()` after the
-    run; one that uses NEON calls `fpsimd_save_user_state()`, which saves the
-    registers as current's state (`TIF_FOREIGN_FPSTATE` is clear and the state
-    bound) and sets the flag, so the exit path or the next bracket reloads
-    exactly what the fragment wrote.
+  - Preemption and migration: with TIF_KERNEL_FPSTATE set,
+    `fpsimd_thread_switch()` saves the live registers into `kbuf` and reloads
+    them on switch-in, on any CPU. The registers hold the user's values while
+    the fragment runs, so the run continues with exactly them.
+  - Softirq kernel-mode NEON inside the bracket (at irq exit or after a
+    preemption) takes the nested path: it saves the live registers into its own
+    buffer and restores them at its `kernel_neon_end`.
   - Hardirqs: `may_use_simd()` is false in hardirq/NMI.
-  - Context switch after the bracket (or during a later in-kernel syscall):
-    `fpsimd_thread_switch()` saves the bound live state; the next bracket or the
-    exit path reloads it. Kernel-mode NEON inside an in-kernel syscall between
-    two runs saves the user state and sets the flag: the next bracket reloads it.
+  - After the bracket the user state is in `thread.uw` with TIF_FOREIGN_FPSTATE
+    set and no CPU bound to it: the next bracket loads it from memory, a context
+    switch has nothing live to save, and the exit to EL0 reloads it
+    (`fpsimd_restore_current_state`).
   - Signals are delivered only by the normal exit path after the hook returned
-    (`kjit_can_run` declines with a signal pending): the user state is either
-    live and bound or saved with the flag set, so `setup_sigframe`'s
-    `fpsimd_context` holds exactly what the fragments produced, and sigreturn
+    (`kjit_can_run` declines with a signal pending): `setup_sigframe` reads
+    `thread.uw`, which holds exactly what the fragments produced, and sigreturn
     restores it.
   - ptrace: a traced task never runs fragments, so a tracer's FP regset access
     never races a run. exec: `flush_thread()` sets the flag, and the new mm has
@@ -1722,8 +1753,10 @@ and one module shape is simpler than a K0-only build.
    task_work callback is kernel code that calls `ops->task_work` under the hook
    SRCU, and only if the registration generation recorded at queue time is
    current; otherwise it `kfree`s the request.
-5. **0005**: `EXPORT_SYMBOL_GPL(fpsimd_restore_current_state)` for the FP/SIMD
-   bracket.
+5. **0005**: `EXPORT_SYMBOL_GPL(fpsimd_load_state)` and
+   `EXPORT_SYMBOL_GPL(fpsimd_save_state)` (both in `entry-fpsimd.S`) for the
+   FP/SIMD bracket (A13; it replaced the export of
+   `fpsimd_restore_current_state`, which nothing uses any more).
 6. **0006, keep fragment fixups until unregister has drained its calls**: see
    "Hook lifetime and unload (patch 0006)" below.
 7. **0007**: `kjit_hook_call_srcu(head, cb)` (`call_srcu()` on `kjit_hook_srcu`)
@@ -1774,9 +1807,9 @@ and one module shape is simpler than a K0-only build.
   path of one fragment plus a template. So the per-hook-call worst case is
   `chain_budget` x 4096 x the longest acyclic path, and typical runs are much
   longer than before dispatch. Signal / `need_resched` / `enable` latency is one
-  run, not one call. Under full `PREEMPT` a non-FP/SIMD run is still preempted
-  directly; an FP/SIMD run is non-preemptible for its whole length, across
-  fragments (section 11). A thread that loaded a table slot before retirement may
+  run, not one call. Under full `PREEMPT` every run is preempted directly,
+  FP/SIMD runs included (A13); a bracketed run keeps page faults disabled for
+  its whole length, across fragments. A thread that loaded a table slot before retirement may
   enter a retired fragment and run it until its next dispatch or exit: the same
   class as a run that continues in a fragment removed from its table, which is
   equivalent to the old code having executed just before the unmap, bounded by
@@ -1796,11 +1829,14 @@ and one module shape is simpler than a K0-only build.
 - FP/SIMD fragments are called through `kjit_call_fragment_fpsimd()` (the bracket
   of section 4, FP/SIMD in fragments), chosen from the entered fragment's
   `uses_fpsimd` at every runtime entry.
-- Stats for the bracket: `fpsimd_entries`, `fpsimd_restores`, `fpsimd_exit_mem`
-  (Mem exits of FP/SIMD runs, all taken with page faults disabled),
-  `fpsimd_refused_sve_sme`, `fpsimd_run_max_ns` (the longest bracket on any CPU
-  since load, per-CPU maximum of CNTVCT deltas converted with CNTFRQ; not reset by
-  debugfs).
+- Stats for the bracket: `fpsimd_entries` (brackets), `fpsimd_preempted`
+  (brackets during which the task was switched out: `nvcsw + nivcsw` changed),
+  `fpsimd_exit_mem` (Mem exits of FP/SIMD runs, all taken with page faults
+  disabled), `fpsimd_refused_sve_sme`, `fpsimd_run_max_ns` (the longest bracket
+  since load, wall clock including time switched out: per-CPU maximum of CNTVCT
+  deltas converted with CNTFRQ, recorded on the CPU the bracket ends on; not
+  reset by debugfs). `fpsimd_restores` was removed with A13: every bracket
+  loads the user state from memory.
 
 ### Code cache and lifetimes
 
@@ -1930,7 +1966,8 @@ and one module shape is simpler than a K0-only build.
 - Preemption does not depend on the budget: the guest profiles are `PREEMPT`
   (full; `PREEMPT_LAZY` and `PREEMPT_DYNAMIC` off), where the tick's
   `resched_curr_lazy()` sets `TIF_NEED_RESCHED`, and the IRQ return to EL1
-  preempts a running non-FP/SIMD fragment directly (`preempt_count` 0). The
+  preempts a running fragment directly (`preempt_count` 0; FP/SIMD runs too
+  since A13). The
   per-entry `need_resched` check matters for `PREEMPT_NONE`/`VOLUNTARY`/`LAZY`.
 
 ### Hook lifetime and unload (patch 0006)
@@ -2157,24 +2194,21 @@ the reasoning, the numbers and the full list of what was not verified there.
   stores) and rule 9 does not model speculation. Needs a security argument
   first. [2026-10-10 09:41](journal/2026-10-10.md).
 
-- **FP/SIMD bracket length is a whole run.** A bracketed run dispatches through
-  `table_all` and continues into non-FP/SIMD code, so once a run enters an
-  FP/SIMD fragment everything after it until the next runtime exit runs with
-  preemption and page faults disabled: up to `KJIT_BACKEDGE_BUDGET` units, each an
-  acyclic path of any fragment (before A11 the bracket ended at the FP/SIMD
-  fragment's first branch exit). Correct, but a preemption-latency regression the
-  contract allowed without bounding. Options: (a) FP/SIMD runs dispatch only into
-  FP/SIMD fragments (a third table), so the bracket covers FP/SIMD code only and
-  every return into integer code is a runtime entry; (b) a smaller budget for
-  bracketed runs; (c) accept and document the bound. Decision pending.
-  [2026-10-05 11:47, A11 integration](journal/2026-10-05.md).
+- **FP/SIMD bracket length: decided (A13, section 4, FP/SIMD in fragments).**
+  A bracketed run still spans fragments, but the bracket is preemptible and
+  leaves softirqs enabled; what remains for the whole run is
+  `pagefault_disable` (faults become `Mem` exits). A third table (FP/SIMD runs
+  dispatch only into FP/SIMD code) and a smaller budget for bracketed runs were
+  not needed. [2026-10-05 11:47](journal/2026-10-05.md),
+  [2026-10-09 02:31](journal/2026-10-09.md).
 - **A11 deferred items**, each safe to defer because it is pure speed or policy
   on top of the same records and lifetimes: patched direct `b` for `BL` sites and
   a return-address stack for `RET` (revisit if a profile shows the ~20-word
   dispatch sequence dominating fragment time); a bracket that spans non-FP/SIMD
   runs so that non-FP/SIMD -> FP/SIMD transfers stop missing (decide from
-  `ibtc_fpsimd_boundary`; it trades page faults handled in place for `Mem` exits
-  and longer non-preemptible stretches); re-entering after a Budget exit instead
+  `ibtc_fpsimd_boundary`, about 1 per redis request after A11c; it trades page
+  faults handled in place for `Mem` exits and ~35-50 ns per bracket, variants
+  B/B2 of [2026-10-09 02:31](journal/2026-10-09.md)); re-entering after a Budget exit instead
   of resuming in userspace (needs Budget resume PCs to be entry labels; decide
   from `exit_budget`); in-fragment code quality (stack-backed x12..x18
   fills/spills, `LDTR` imm9-only splits; the budget counter's memory chain is
@@ -2282,10 +2316,10 @@ Recorded in full in the entries named; none is known to be wrong.
   the spinlock for a fragment with very many labels is not measured; memory held between
   retirement and the end of the hook-SRCU grace period is not measured.
   [2026-10-02 17:10](journal/2026-10-02.md).
-- `fpsimd_run_max_ns` tails after A11 are far above the A9b figure in redis
-  benchmark and suite runs, on a host running other work; host vCPU stalls versus
-  whole-run brackets were not separated.
-  [2026-10-05 11:47](journal/2026-10-05.md).
+- A13 bracket: the stale-binding case that the `fpsimd_cpu` invalidation
+  closes was found by reading `fpsimd.c`; the prototype's stress test did not
+  catch its omission. Preemption latency was not resolvable on the HVF host.
+  [2026-10-09 02:31](journal/2026-10-09.md).
 - The two failures of the debug redis campaign on the A11 tree are attributed to
   flaky redis tests from the KJIT-off runs, not excluded as KJIT-induced.
   [2026-10-05 11:47](journal/2026-10-05.md).
