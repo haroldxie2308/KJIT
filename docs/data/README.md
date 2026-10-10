@@ -1,9 +1,7 @@
 # Measurement data
 
-Machine-readable numbers of the measurement entries in `docs/journal/`, next to the raw logs
-they came from. No extraction script is kept: the data file is the record of the numbers and
-the raw logs are the evidence; a later reader re-parses the logs if needed.
-`AGENTS.md`, "Documentation Rules", is the rule; this file is the layout and the recipes.
+Structured numbers of the measurement entries in `docs/journal/`, next to the raw logs they
+came from. `AGENTS.md`, "Documentation Rules", is the rule; this file is the layout.
 
 ## Layout
 

@@ -15,17 +15,18 @@ The high-level translation model is:
 raw userspace bytes -> generated typed A64Insn -> raw kernel-safe bytes
 ```
 
-The current development strategy is to validate as much as possible in
-userspace before doing kernel-specific execution work. Kernel debugging was the
-main historical pain point, so the harness is not a side project: it is the
-primary userspace proving ground for translation correctness.
+Translation correctness is proven in userspace first: the harness runs the same
+`shared/` code as the kernel module and is the primary proving ground. Kernel
+debugging was the main historical pain point; the kernel runtime consumes only
+bytes that the independent verifier accepted.
 
 Current non-goals:
 
 - No x86 support.
 - No generic JIT framework.
 - No full Arm decoder beyond the selected A64 subset.
-- No performance optimization before semantic equivalence.
+- No performance change that gives up semantic equivalence with native
+  execution.
 - No kernel-first debugging for translator bugs.
 
 ## Read First
@@ -37,12 +38,16 @@ Current non-goals:
   experiments, measurements, implementation records, defect analyses and
   discussion results, newest last. Read the latest entries for the state of the
   work.
-- `README.md`: user-facing architecture and workflow overview. Keep it current.
-- The old implementation (`old-version/`) was removed; see "Old Version Policy".
+- `docs/data/`: structured measurement data and raw logs of journal entries.
+- `README.md`: short overview, architecture figure, build/run, repo layout.
 - `spec/arm64/subset.toml`: canonical supported Arm XML subset.
 - `specgen/`: Rust generator for instruction metadata/code derived from Arm XML.
-- `shared/`: code intended to be usable from both userspace and kernel space.
+- `shared/`: translator, ABI and verifier, used in userspace and kernel space.
 - `harness/`: userspace validation harness for translated fragments.
+- `runtime/`, `kjit_glue.c`, `rust_kjit.rs`: the kernel module `kjit.ko`.
+- `kernel-patches/`: the patch series on the pinned `dep/linux`.
+- `tests/arm64/` (harness fixtures), `tests/guest/` (guest tests, redis
+  campaign, benchmarks).
 
 ## Working Style
 
@@ -87,20 +92,22 @@ The harness may use `std`, files, fixtures, CLI helpers, and deterministic
 mocking. It should consume `shared/` as the compiler/runtime core and should not
 own duplicate translation logic.
 
-The harness mental model is the future kernel executor:
+The harness models the kernel runtime (`URuntime`, the code cache and cached
+runs):
 
 - It mocks machine state.
 - It executes the translated `ExecutionFragment` through the same function-call
-  style boundary the kernel will eventually use.
-- It models prologue, epilogue, runtime exits, register writeback, and syscall
-  stubs before kernel deployment.
+  boundary the kernel uses.
+- It models prologue, epilogue, runtime exits, dispatch, register writeback and
+  syscall stubs, and mirrors the kernel's dispatch-table slot planning through
+  the same `shared/abi` functions.
 
 ### Kernel Work
 
-Do not jump to kernel execution first. Kernel integration should come after the
-instruction encoding and userspace translation/runtime layers pass for the
-relevant subset. Kernel work should consume already-validated executable bytes
-and still revalidate minimally at the boundary.
+Kernel work consumes executable bytes that the harness already validated, and
+the module re-runs the verifier at install. Debug translator bugs in the
+harness, never first in the kernel. Kernel-side changes (runtime, glue, patches)
+are validated by the guest tests and the redis campaign on both guest profiles.
 
 ## Translation Pipeline
 
@@ -110,7 +117,7 @@ IR unless there is a proven need.
 Current conceptual passes:
 
 1. Decode raw bytes into generated `A64Insn` values with original PC/provenance.
-2. Validate the supported subset and operand restrictions.
+2. Admit the supported subset; anything else becomes an `Unsupported` exit.
 3. Build a reachable CFG from `TranslationRequest.entry_pc` using a
    `CodeProvider`.
 4. Rephrase semantic boundary instructions while preserving typed A64
@@ -119,22 +126,23 @@ Current conceptual passes:
 6. Resolve layout into one executable fragment with prologue, body, runtime
    exits, epilogue, and virtual labels.
 7. Emit bytes using generated `A64Insn::encode()`.
-8. Decode/validate emitted bytes again.
+8. Verify the emitted bytes with the independent verifier (`shared/verify`).
 
-Runtime exits such as `BL`, `BLR`, `BR`, `RET`, and `SVC` must be represented
-explicitly. Unknown dynamic targets must return to runtime; never branch to a
-raw user-controlled target in kernel space.
+Runtime exits are explicit exit groups. `BL`, `BLR`, `BR` and `RET` go through
+the byte-exact dispatch template and exit to the runtime on a miss; `SVC`
+always exits. Never branch to a raw user-controlled target in kernel space.
 
 ## ABI Contract
 
-`shared/abi.rs` is the canonical ABI contract. It owns the shared function
-boundary constants, return-status registers, prologue, epilogue, instruction
-size, and wrapper offsets. Keep the harness and future kernel executor
-aligned with that file instead of duplicating ABI facts elsewhere.
+`shared/abi/` is the canonical ABI contract: function-boundary constants,
+registers, frame layout, prologue, epilogue, dispatch template and table slot
+planning. The harness and the kernel runtime consume it instead of duplicating
+ABI facts; the C side mirrors the constants it needs, pinned by compile-time
+assertions in `runtime/ffi.rs`.
 
 Function-boundary behavior is part of correctness. Translation tests must model
 entry arguments, runtime-exit status/params, link-register policy, prologue,
-epilogue, and register writeback consistently with `shared/abi.rs`.
+epilogue, and register writeback consistently with `shared/abi/`.
 
 ## Instruction Generation
 
@@ -160,18 +168,9 @@ generated subset unless there is a deliberate build-layout change.
 
 ## Old Version Policy
 
-The old implementation (`old-version/`) was removed from the tree. It is in git
-history; the last commit that contains it is `5a8437b`. Recover it with
-`git show 5a8437b:old-version/<path>` or `git checkout 5a8437b -- old-version`
-(and do not commit it back).
-
-The same policy applies to anything recovered: reference only. Read it to
-recover algorithms, contracts, and cautionary examples. Do not bulk-move old
-code into `shared/`. Audit helpers one at a time for purity, kernel
-suitability, and fit with the new typed A64 pipeline. Treat old
-conflict-resolution/register-allocation logic as a prototype, not as the new
-design base. Prefer deterministic, inspectable mappings first, even if they are
-slower.
+The old implementation (`old-version/`) is only in git history (last in
+`5a8437b`; `git show 5a8437b:old-version/<path>`). Reference only: never commit
+it back or bulk-move it into `shared/`.
 
 ## Testing And Verification
 
@@ -199,13 +198,14 @@ inspect a single case.
 and is marked ignored inside the Rust test suite. Use it when touching encoding
 or generated instruction forms.
 
-Build/kernel commands are intended for the Linux dev container:
+Kernel and guest commands (builds in the dev container via
+`scripts/docker-dev.sh`, QEMU on the host; see `README.md`):
 
 ```sh
-make prepare
-make rust-analyzer
-make module-build
-make qemu-run
+make guest-kernel guest-kernel-debug
+make guest-tests GUEST_PROFILE=kjit-guest
+make guest-tests-k3 GUEST_PROFILE=kjit-guest
+make redis-campaign GUEST_PROFILE=kjit-guest
 ```
 
 Do not claim kernel safety from harness-only tests. Do not use QEMU/kernel tests
@@ -218,6 +218,8 @@ Definition of done by change type:
   `make harness-test-asm`, whichever matches the touched path.
 - Generated instruction or encoding changes: run `make spec-gen` and
   `make spec-test-encoding`.
+- Kernel runtime, glue or patch changes: `guest-tests`, `guest-tests-k3` and
+  the redis campaign on `kjit-guest` and `kjit-guest-debug`.
 - Architecture or workflow changes: update `docs/pipeline.md` and, when
   user-facing, `README.md`.
 
@@ -231,15 +233,12 @@ Definition of done by change type:
   heading `## HH:MM +ZZZZ — <title>` (time from `date '+%H:%M %z'`), a line
   `Commit: <short hash>`, then, as applicable: the question, method/commands,
   raw-data location, results, conclusion.
-- Every measurement entry also commits its numbers in machine-readable form
-  under `docs/data/<date>/<HHMM>-<slug>.csv` (or `.json` when the data is
-  nested), and the entry links it on a `Data:` line. CSV is tidy: a header
-  row, one row per observation (every run/repeat, not only the mean), units in
-  the column names (`ns_per_unit`, `req_per_s`), and the varying conditions
-  (variant, profile, kernel cmdline, commit) as columns. The raw logs it came
-  from are committed next to it in `docs/data/<date>/<HHMM>-<slug>/` (text
-  only: no binaries, no redis server data). No extraction script is kept.
-  Layout details: `docs/data/README.md`.
+- Keep the structured data of every measurement entry in
+  `docs/data/<date>/<HHMM>-<slug>.csv` (or `.json`), with its raw logs in
+  `docs/data/<date>/<HHMM>-<slug>/`, and link it from the entry on a `Data:`
+  line. Tidy format: one row per observation (every run, not only the mean),
+  units in the column names, varying conditions as columns. Layout:
+  `docs/data/README.md`.
 - Keep `README.md` aligned with the actual architecture and workflow.
 - Prefer concrete contracts over aspirational prose.
 - If a design is deferred, state the invariant that lets it remain deferred.
