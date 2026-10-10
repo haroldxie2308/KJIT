@@ -231,6 +231,14 @@ Definition of done by change type:
   heading `## HH:MM +ZZZZ — <title>` (time from `date '+%H:%M %z'`), a line
   `Commit: <short hash>`, then, as applicable: the question, method/commands,
   raw-data location, results, conclusion.
+- Every measurement entry also commits its numbers in machine-readable form
+  under `docs/data/<date>/<HHMM>-<slug>.csv` (or `.json` when the data is
+  nested), and the entry links it on a `Data:` line. CSV is tidy: a header
+  row, one row per observation (every run/repeat, not only the mean), units in
+  the column names (`ns_per_unit`, `req_per_s`), and the varying conditions
+  (variant, profile, kernel cmdline, commit) as columns. Raw logs stay
+  uncommitted; the data file is extracted from them by a script under
+  `tests/` or `scripts/`, so it can be regenerated.
 - Keep `README.md` aligned with the actual architecture and workflow.
 - Prefer concrete contracts over aspirational prose.
 - If a design is deferred, state the invariant that lets it remain deferred.
