@@ -58,7 +58,7 @@ for f in enable auto chain_budget stats unsupported_top ibtc_slots; do
     [ -f "$K/$f" ] || k4_fail "$K/$f missing (kjit.ko too old for chain_budget?)"
 done
 
-counters="hook_calls syscalls_in_kernel fragment_entries fpsimd_entries fpsimd_restores chains chain_cap
+counters="hook_calls syscalls_in_kernel fragment_entries fpsimd_entries fpsimd_preempted chains chain_cap
 exit_svc exit_bl exit_blr exit_br exit_ret exit_mem exit_unsupported exit_budget run_declined
 ibtc_insert ibtc_replace ibtc_clear ibtc_fpsimd_boundary ibtc_miss_cold ibtc_miss_conflict ibtc_miss_other"
 

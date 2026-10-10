@@ -61,6 +61,7 @@
 #include <linux/hash.h>
 #include <linux/hashtable.h>
 #include <linux/highmem.h>
+#include <linux/hrtimer.h>
 #include <linux/kjit.h>
 #include <linux/math64.h>
 #include <linux/mm.h>
@@ -85,7 +86,10 @@
 #include <asm/asm-extable.h>
 #include <asm/cpufeature.h>
 #include <asm/fpsimd.h>
+#include <asm/neon.h>
+#include <asm/processor.h>
 #include <asm/ptrace.h>
+#include <asm/simd.h>
 #include <asm/sysreg.h>
 
 #include <clocksource/arm_arch_timer.h>
@@ -100,10 +104,11 @@ static_assert(offsetof(struct pt_regs, pstate) == 264);
 static_assert(sizeof(struct exception_table_entry) == 12);
 
 /*
- * The FP/SIMD bracket (kjit_call_fragment_fpsimd) relies on local_bh_disable()
- * also disabling preemption and on softirqs running only in task/irq-exit
- * context, which is what the arm64 FP/SIMD code itself relies on outside
- * PREEMPT_RT (get_cpu_fpsimd_context()). On RT it would need another design.
+ * The FP/SIMD bracket (kjit_call_fragment_fpsimd) is a task-level
+ * kernel_neon_begin() section that is preempted and migrated like any task.
+ * A softirq kernel-mode NEON section that interrupts it nests into the task's
+ * with a buffer of its own; on PREEMPT_RT kernel_neon_begin() BUGs on that
+ * (the nested path asserts !PREEMPT_RT).
  */
 #ifdef CONFIG_PREEMPT_RT
 #error "kjit: the FP/SIMD fragment bracket assumes !PREEMPT_RT"
@@ -152,7 +157,7 @@ enum kjit_note {
 	KJIT_NOTE_NEG_ADDED = 13,	/* PC added to the negative cache */
 	KJIT_NOTE_NEG_EVICTED = 14,	/* ... evicting an older one */
 	KJIT_NOTE_TRANSLATE_NS = 15,	/* time spent in auto-mode translations */
-	KJIT_NOTE_FPSIMD_RESTORES = 16,	/* FP/SIMD runs that reloaded the user state */
+	KJIT_NOTE_FPSIMD_PREEMPTED = 16,	/* FP/SIMD brackets the task was switched out in */
 	KJIT_NOTE_IBTC_INSERT = 17,	/* dispatch-table slot stores */
 	KJIT_NOTE_IBTC_REPLACE = 18,	/* ... that replaced another record */
 	KJIT_NOTE_IBTC_CLEAR = 19,	/* slots cleared by a fragment's retirement */
@@ -1055,8 +1060,8 @@ out_tables:
  * audit, seccomp, syscall tracepoints) and single-step all need the normal
  * return to userspace. TIF_FOREIGN_FPSTATE only asks for an FP register reload
  * before userspace runs: a fragment without FP/SIMD never touches those
- * registers, and one with FP/SIMD does that reload itself inside its bracket
- * (kjit_call_fragment_fpsimd()).
+ * registers, and one with FP/SIMD loads the user state from memory itself inside
+ * its bracket (kjit_call_fragment_fpsimd()).
  */
 #define KJIT_BAIL_FLAGS \
 	((EXIT_TO_USER_MODE_WORK & ~_TIF_FOREIGN_FPSTATE) | _TIF_SYSCALL_WORK | _TIF_SINGLESTEP)
@@ -1176,63 +1181,90 @@ asm(
 
 /*
  * Longest FP/SIMD bracket per CPU, in arch counter ticks (stats:
- * fpsimd_run_max_ns). Written only on its own CPU inside the bracket, where
- * preemption is off; the stats file reads it racily.
+ * fpsimd_run_max_ns). Written with preemption off, on the CPU the bracket ends
+ * on; the stats file reads it racily.
  */
 static DEFINE_PER_CPU(u64, kjit_fpsimd_max_ticks);
 
 /*
  * kjit_call_fragment() for a fragment that uses FP/SIMD: its code reads and
- * writes V0-V31, FPCR and FPSR as the user's own registers, live in hardware
- * (docs/pipeline.md, "FP/SIMD in fragments (A9)", Kernel). Called
- * for every entry of such a fragment, chained entries included, from task
- * context on the syscall return path with interrupts enabled.
+ * writes V0-V31, FPCR and FPSR as the user's own registers (docs/pipeline.md,
+ * "FP/SIMD in fragments (A9)", Kernel). One bracket per runtime entry (chained
+ * entries included; a bracketed run continues across fragments inside it),
+ * from task context on the syscall return path with interrupts enabled. It is
+ * preemptible and migratable: a task-level kernel-mode NEON section
+ * (TIF_KERNEL_FPSTATE) makes the context switch save the registers into @kbuf
+ * and reload them on whichever CPU the task resumes on.
  *
- * - local_bh_disable(): no softirq runs on this CPU until local_bh_enable(),
- *   so no softirq kernel-mode NEON can save and take the registers in the
- *   middle of the fragment; outside PREEMPT_RT (#error above) it also
- *   disables preemption, so no context switch either. Hardirq handlers never
- *   use FP/SIMD (may_use_simd()).
- * - TIF_FOREIGN_FPSTATE: the registers are not current's user state (the task
- *   was scheduled out, or kernel-mode NEON ran during the syscall).
- *   fpsimd_restore_current_state() (kernel-patches/0005) loads it and binds it
- *   to this CPU, which is the reload the exit path would otherwise do. From
- *   then on the registers are current's state: a context switch or softirq
- *   NEON after the bracket saves what the fragment wrote, and the exit path
- *   has nothing left to reload. Nothing inside the bracket can set the flag
- *   again (no context switch, no softirq).
- * - pagefault_disable(): the fragment runs in atomic context, so a user access
- *   fault must not sleep. With page faults disabled, do_page_fault() goes
- *   straight to no_context, the fragment's exception table (kernel-patches/
- *   0002) sends it to the access's Mem or PAN stub, and the Mem exit makes
- *   userspace re-execute the instruction natively, where the fault is handled
- *   as usual (demand paging, CoW, SIGSEGV). Correct, occasionally slower.
+ * - kernel_neon_begin(): saves the user state to thread.uw if it is live in
+ *   the registers, takes the registers, flushes this CPU's binding.
+ * - fpsimd_load_state(): the user state (thread.uw, authoritative now: no SVE
+ *   or SME, kjit_fpsimd_supported()) into the registers.
+ * - pagefault_disable(): a user-access fault must not sleep or run a
+ *   filesystem's NEON-accelerated read path, which would nest a second
+ *   task-level kernel_neon_begin() (a BUG). With page faults disabled,
+ *   do_page_fault() goes straight to no_context, the fragment's exception table
+ *   (kernel-patches/0002) sends the access to its Mem or PAN stub, and the Mem
+ *   exit makes userspace re-execute the instruction natively, where the fault is
+ *   handled as usual (demand paging, CoW, SIGSEGV). Correct, occasionally slower.
+ * - fpsimd_save_state(): the registers back into thread.uw.
+ * - thread.fpsimd_cpu = NR_CPUS: thread.uw was written behind the kernel's
+ *   back, so no CPU's registers hold a current copy of it, whatever its
+ *   binding (fpsimd_last_state) says. Without this a CPU this task last loaded
+ *   its state on (thread.fpsimd_cpu) could still be bound to it, and the next
+ *   fpsimd_thread_switch() there would take the stale registers for current
+ *   and clear TIF_FOREIGN_FPSTATE. Same as fpsimd_flush_task_state() after the
+ *   kernel edits a user state (sigreturn, ptrace). Written while
+ *   TIF_KERNEL_FPSTATE is still set, so no switch-in evaluates the binding in
+ *   between (that path reloads from @kbuf and does not look at it).
+ * - kernel_neon_end(): TIF_FOREIGN_FPSTATE stays set, so the exit to userspace
+ *   (or the next bracket) loads thread.uw.
  *
- * Pending softirqs run in local_bh_enable() after the fragment returned; one
- * that uses NEON then saves the registers as current's live state, which they
- * are.
+ * A softirq that uses kernel-mode NEON while the bracket is open (at irq exit,
+ * or when it is switched in) takes the nested path: it saves the registers in
+ * its own buffer and restores them at its kernel_neon_end(). Hardirqs never use
+ * NEON (may_use_simd()). kernel_neon_begin() BUGs unless may_use_simd(): this
+ * is called from the syscall hook, in task context with no NEON section open,
+ * and no bracket is entered from inside another run.
+ *
+ * Bracket length stats: the bracket is measured from the return of
+ * kernel_neon_begin() to just before kernel_neon_end(), in wall clock, so time
+ * switched out counts. The tail runs with preemption off, so the end time and
+ * the per-CPU maximum are on the CPU the bracket ends on. A bracket is
+ * "preempted" when the task's context-switch counters changed inside it.
  */
 u64 kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 base)
 {
+	struct user_fpsimd_state kbuf;
+	struct user_fpsimd_state *uw = &current->thread.uw.fpsimd_state;
+	unsigned long switches;
 	u64 t0, ticks, status;
 
-	local_bh_disable();
+	kernel_neon_begin(&kbuf);
+	switches = current->nvcsw + current->nivcsw;
 	t0 = arch_timer_read_counter();
-	if (test_thread_flag(TIF_FOREIGN_FPSTATE)) {
-		fpsimd_restore_current_state();
-		kjit_rs_note(KJIT_NOTE_FPSIMD_RESTORES, 1);
-	}
+	fpsimd_load_state(uw);
 	pagefault_disable();
 	status = kjit_call_fragment(regs, extra, entry, base);
 	pagefault_enable();
+
+	preempt_disable();
+	fpsimd_save_state(uw);
+	current->thread.fpsimd_cpu = NR_CPUS;
+	barrier();
 	ticks = arch_timer_read_counter() - t0;
 	if (ticks > __this_cpu_read(kjit_fpsimd_max_ticks))
 		__this_cpu_write(kjit_fpsimd_max_ticks, ticks);
-	local_bh_enable();
+	switches = current->nvcsw + current->nivcsw - switches;
+	kernel_neon_end(&kbuf);
+	preempt_enable();
+
+	if (switches)
+		kjit_rs_note(KJIT_NOTE_FPSIMD_PREEMPTED, 1);
 	return status;
 }
 
-/* The longest non-preemptible FP/SIMD bracket on any CPU so far, in ns. */
+/* The longest FP/SIMD bracket on any CPU so far, in ns. */
 u64 kjit_fpsimd_run_max_ns(void)
 {
 	u64 max = 0;
@@ -1254,6 +1286,99 @@ u64 kjit_fpsimd_run_max_ns(void)
 bool kjit_fpsimd_supported(void)
 {
 	return system_supports_fpsimd() && !system_supports_sve() && !system_supports_sme();
+}
+
+/*
+ * Softirq kernel-mode NEON noise (debugfs neon_noise_us), for the FP/SIMD
+ * bracket's stress test (tests/guest/fp_preempt.c, fp_stress.sh). The guest
+ * kernel has no NEON user on any path a test reaches, so nothing would
+ * otherwise exercise "a softirq takes the registers while a bracket is open".
+ * A pinned soft hrtimer per CPU fires every N microseconds and, in softirq
+ * context, does a kernel_neon_begin() / clobber V0-V31 / kernel_neon_end()
+ * round: exactly what a crypto softirq does, and the kernel's own protocol for
+ * it, so it is correct whatever the interrupted task is doing. Rounds are
+ * counted by what they interrupted: a task inside a task-level kernel-mode NEON
+ * section (the bracket), a task whose user state is live in the registers, or
+ * a task with no live state.
+ */
+static DEFINE_PER_CPU(struct hrtimer, kjit_neon_timer);
+static u32 kjit_neon_period_us;
+static atomic64_t kjit_neon_hits_kernel = ATOMIC64_INIT(0);
+static atomic64_t kjit_neon_hits_live = ATOMIC64_INIT(0);
+static atomic64_t kjit_neon_hits_other = ATOMIC64_INIT(0);
+
+static enum hrtimer_restart kjit_neon_timer_fn(struct hrtimer *t)
+{
+	u32 period = READ_ONCE(kjit_neon_period_us);
+	struct user_fpsimd_state st;
+
+	if (!period)
+		return HRTIMER_NORESTART;
+	if (may_use_simd()) {
+		if (test_thread_flag(TIF_KERNEL_FPSTATE))
+			atomic64_inc(&kjit_neon_hits_kernel);
+		else if (!test_thread_flag(TIF_FOREIGN_FPSTATE))
+			atomic64_inc(&kjit_neon_hits_live);
+		else
+			atomic64_inc(&kjit_neon_hits_other);
+		kernel_neon_begin(&st);
+		asm volatile(".arch_extension simd\n"
+			     ".irp n, 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31\n"
+			     "movi v\\n\\().16b, #0xa5\n"
+			     ".endr\n");
+		kernel_neon_end(&st);
+	}
+	hrtimer_forward_now(t, ns_to_ktime((u64)period * NSEC_PER_USEC));
+	return HRTIMER_RESTART;
+}
+
+static void kjit_neon_start_cpu(void *unused)
+{
+	hrtimer_start(this_cpu_ptr(&kjit_neon_timer),
+		      ns_to_ktime((u64)READ_ONCE(kjit_neon_period_us) * NSEC_PER_USEC),
+		      HRTIMER_MODE_REL_PINNED_SOFT);
+}
+
+static int kjit_neon_noise_get(void *data, u64 *val)
+{
+	*val = READ_ONCE(kjit_neon_period_us);
+	return 0;
+}
+
+/* 0 = off; else the period in microseconds, 5..1000000. */
+static int kjit_neon_noise_set(void *data, u64 val)
+{
+	if (val > 1000000 || (val && val < 5) || !kjit_fpsimd_supported())
+		return -EINVAL;
+	WRITE_ONCE(kjit_neon_period_us, val);
+	if (val)
+		on_each_cpu(kjit_neon_start_cpu, NULL, 1);
+	return 0;
+}
+DEFINE_DEBUGFS_ATTRIBUTE(kjit_neon_noise_fops, kjit_neon_noise_get, kjit_neon_noise_set, "%llu\n");
+
+static ssize_t kjit_neon_hits_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
+{
+	char buf[128];
+	int n = scnprintf(buf, sizeof(buf), "kernel_section %lld live_user %lld other %lld\n",
+			  atomic64_read(&kjit_neon_hits_kernel), atomic64_read(&kjit_neon_hits_live),
+			  atomic64_read(&kjit_neon_hits_other));
+
+	return simple_read_from_buffer(ubuf, count, ppos, buf, n);
+}
+
+static const struct file_operations kjit_neon_hits_fops = {
+	.read = kjit_neon_hits_read,
+	.llseek = default_llseek,
+};
+
+static void kjit_neon_noise_stop(void)
+{
+	int cpu;
+
+	WRITE_ONCE(kjit_neon_period_us, 0);
+	for_each_possible_cpu(cpu)
+		hrtimer_cancel(per_cpu_ptr(&kjit_neon_timer, cpu));
 }
 
 static long kjit_after_syscall(struct pt_regs *regs)
@@ -1986,7 +2111,7 @@ static int kjit_counter_cpu_online(unsigned int cpu)
 
 int kjit_glue_init(void)
 {
-	int ret;
+	int ret, cpu;
 
 	ret = kjit_check_cpu();
 	if (ret)
@@ -1999,6 +2124,9 @@ int kjit_glue_init(void)
 		return ret;
 	kjit_counter_cpuhp = ret;
 
+	for_each_possible_cpu(cpu)
+		hrtimer_setup(per_cpu_ptr(&kjit_neon_timer, cpu), kjit_neon_timer_fn,
+			      CLOCK_MONOTONIC, HRTIMER_MODE_REL_PINNED_SOFT);
 	kjit_wq = alloc_workqueue("kjit", WQ_UNBOUND, 0);
 	if (!kjit_wq) {
 		cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
@@ -2015,6 +2143,8 @@ int kjit_glue_init(void)
 	debugfs_create_file_unsafe("chain_budget", 0600, kjit_debugfs, NULL, &kjit_chain_budget_fops);
 	debugfs_create_file("unsupported_top", 0400, kjit_debugfs, NULL, &kjit_unsupported_fops);
 	debugfs_create_file("ibtc_slots", 0600, kjit_debugfs, NULL, &kjit_ibtc_slots_fops);
+	debugfs_create_file_unsafe("neon_noise_us", 0600, kjit_debugfs, NULL, &kjit_neon_noise_fops);
+	debugfs_create_file("neon_noise_hits", 0400, kjit_debugfs, NULL, &kjit_neon_hits_fops);
 
 	ret = kjit_register_hook(&kjit_hook_ops);
 	if (ret) {
@@ -2032,6 +2162,7 @@ void kjit_glue_exit(void)
 
 	/* No new translations (waits for writers in flight). */
 	debugfs_remove(kjit_debugfs);
+	kjit_neon_noise_stop();
 	/*
 	 * No hook calls, extable lookups or task_work requests in here after
 	 * this; requests still queued are freed by the kernel (0004). Fragments

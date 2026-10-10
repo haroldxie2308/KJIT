@@ -53,8 +53,8 @@ report() {
             printf "k4:   %s: exits svc=%d bl=%d blr=%d br=%d ret=%d mem=%d unsupported=%d budget=%d invalid=%d svc_declined=%d\n",
                 name, d["exit_svc"], d["exit_bl"], d["exit_blr"], d["exit_br"], d["exit_ret"], d["exit_mem"],
                 d["exit_unsupported"], d["exit_budget"], d["exit_invalid"], d["svc_declined"]
-            printf "k4:   %s: fpsimd entries=%d restores=%d exit_mem=%d refused_sve_sme=%d run_max_ns(since load)=%d\n",
-                name, d["fpsimd_entries"], d["fpsimd_restores"], d["fpsimd_exit_mem"],
+            printf "k4:   %s: fpsimd entries=%d preempted=%d exit_mem=%d refused_sve_sme=%d run_max_ns(since load)=%d\n",
+                name, d["fpsimd_entries"], d["fpsimd_preempted"], d["fpsimd_exit_mem"],
                 d["fpsimd_refused_sve_sme"], v["fpsimd_run_max_ns"]
             # A11 dispatch tables: slot stores (per table), replacements,
             # slots cleared by retirement, runtime resolutions of a transfer

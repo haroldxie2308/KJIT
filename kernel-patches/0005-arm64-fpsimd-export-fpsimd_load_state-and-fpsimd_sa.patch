@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Sat, 10 Oct 2026 10:30:00 +0800
+Subject: [PATCH] arm64: fpsimd: export fpsimd_load_state() and
+ fpsimd_save_state() for the KJIT runtime
+
+The KJIT runtime runs verified translations of a task's user code at EL1
+on the syscall return path, before the task goes back to userspace. Some
+of that code (glibc memcpy, memset, strlen) uses FP/SIMD registers, and
+the translation keeps V0-V31, FPCR and FPSR as the user's registers.
+
+The runtime runs such code in a preemptible task-level kernel-mode NEON
+section. kernel_neon_begin(&buf) saves the user state to thread.uw and
+takes the registers, the context switch path then saves and restores the
+registers in buf (TIF_KERNEL_FPSTATE) on any CPU, and the runtime copies
+the user state in and out with the raw helpers:
+
+	kernel_neon_begin(&buf);
+	fpsimd_load_state(&current->thread.uw.fpsimd_state);
+	/* run the translated user code, preemptible */
+	fpsimd_save_state(&current->thread.uw.fpsimd_state);
+	current->thread.fpsimd_cpu = NR_CPUS;
+	kernel_neon_end(&buf);
+
+The return to userspace then reloads the updated state (the section
+leaves TIF_FOREIGN_FPSTATE set). Both helpers are plain register <->
+memory copies in entry-fpsimd.S and need none of the surrounding
+bookkeeping, so export them GPL-only. Nothing else changes.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/kernel/fpsimd.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm64/kernel/fpsimd.c b/arch/arm64/kernel/fpsimd.c
+--- a/arch/arm64/kernel/fpsimd.c
++++ b/arch/arm64/kernel/fpsimd.c
+@@ -1983,6 +1983,14 @@
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(kernel_neon_end);
++
++/*
++ * Raw copies between memory and V0-V31, FPSR and FPCR, for a task-level
++ * kernel_neon_begin() section that runs on a given user_fpsimd_state. Only
++ * valid between kernel_neon_begin() and kernel_neon_end().
++ */
++EXPORT_SYMBOL_GPL(fpsimd_load_state);
++EXPORT_SYMBOL_GPL(fpsimd_save_state);
+ 
+ #ifdef CONFIG_EFI
+ 
