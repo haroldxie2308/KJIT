@@ -59,7 +59,7 @@ enum Value {
 /// calling it): it only says what the written registers hold.
 ///
 /// - A load from the runtime frame (SP base) is user state in the user-state
-///   slots, a counter in the budget slot, the pt_regs pointer for
+///   slots (stack-backed x18's included, A12), the pt_regs pointer for
 ///   `rules::pt_regs_pointer_load`, and a kernel value in every other slot.
 /// - Any other load reads user state: `LDTR*` and window atomics read user memory,
 ///   and a runtime access with a non-SP base reads `pt_regs` (the body: rule 3's
@@ -114,12 +114,8 @@ fn frame_load_value(insn: &A64Insn, mem: A64Mem, bytes: u32) -> Value {
     let A64Mem::Offset { offset, .. } = mem else {
         return Value::Kernel;
     };
-    let start = offset.value();
-    let user_slots = start >= rules::FRAME_USER_START as i64
-        && start + bytes as i64 <= rules::FRAME_USER_END as i64;
-    // The back-edge counter is not secret: the user can count its own back-edges.
-    let budget = start == rules::BUDGET_SLOT_OFFSET as i64 && bytes == 8;
-    if user_slots || budget {
+    // The user-state slots hold user values, stack-backed x18 included (A12).
+    if rules::is_user_state_slot(offset.value(), bytes) {
         Value::User
     } else {
         Value::Kernel

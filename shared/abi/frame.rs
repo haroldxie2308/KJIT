@@ -1,4 +1,6 @@
-use super::{REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START};
+use super::{
+    REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START, REG_VIRT_STACK_BACKED_X18_REG,
+};
 
 // Runtime frame, sp-relative after the prologue's `stp x29, x30, [sp, #-208]!`:
 //   0..16    caller x29, x30
@@ -8,13 +10,17 @@ use super::{REG_VIRT_STACK_BACKED_REG_END, REG_VIRT_STACK_BACKED_REG_START};
 //   88..96   caller x18
 //   96..176  caller x19..x28
 //   176..192 pt_regs pointer, extra-params pointer
-//   192..200 back-edge/dispatch budget counter (KJIT_BACKEDGE_BUDGET at every entry)
+//   192..200 stack-backed user x18 (A12; was the budget counter, which now lives in
+//            physical x18)
 //   200..208 dispatch table pointer (extra params [2], stored by the prologue);
 //            also keeps sp 16-byte aligned
 pub const RUNTIME_FRAME_SIZE_BYTES: u32 = 208;
 pub const RUNTIME_FRAME_ENTRY_ADDR_OFFSET: u32 = 80;
 pub const RUNTIME_FRAME_PT_REGS_PTR_OFFSET: u32 = 176;
-pub const RUNTIME_FRAME_BUDGET_OFFSET: u32 = 192;
+/// Slot of stack-backed user x18 (A12). Physical x18 is the budget counter
+/// (`BUDGET_COUNTER_REG`) for the whole run; the prologue stores the user's x18 here
+/// and the epilogue writes it back to `pt_regs`.
+pub const RUNTIME_FRAME_USER_X18_OFFSET: u32 = 192;
 /// The run's dispatch table (IBTC, docs/pipeline.md "In-fragment branch dispatch
 /// (A11)"). The prologue
 /// stores `extra params[EXTRA_PARAM_IBTC_TABLE_INDEX]` here; only a dispatch
@@ -66,8 +72,8 @@ pub const fn ibtc_victim_index(pc: u64) -> usize {
             as usize
 }
 
-/// Back-edge executions a fragment may perform per entry. The prologue stores it in
-/// `RUNTIME_FRAME_BUDGET_OFFSET`; every back-edge first decrements the counter and
+/// Budget units a fragment may perform per entry. The prologue sets it in physical
+/// `BUDGET_COUNTER_REG` (x18); every back-edge first decrements the counter and
 /// leaves with `RetStatus::Budget` when it reaches zero, so the N-th back-edge
 /// execution of one entry exits (before the branch runs).
 ///
@@ -84,8 +90,9 @@ pub const KJIT_BACKEDGE_BUDGET: u64 = 4096;
 // first back-edge after wrapping, which is never intended.
 const _: () = assert!(KJIT_BACKEDGE_BUDGET > 0 && KJIT_BACKEDGE_BUDGET <= 0xFFFF);
 const _: () = assert!(RUNTIME_FRAME_SIZE_BYTES % 16 == 0);
-const _: () = assert!(RUNTIME_FRAME_BUDGET_OFFSET + 8 <= RUNTIME_FRAME_SIZE_BYTES);
-const _: () = assert!(RUNTIME_FRAME_BUDGET_OFFSET + 8 <= RUNTIME_FRAME_IBTC_OFFSET);
+const _: () = assert!(RUNTIME_FRAME_USER_X18_OFFSET + 8 <= RUNTIME_FRAME_IBTC_OFFSET);
+// The slot sits above the pt_regs / extra-params pointers and after the user x29/sp slots.
+const _: () = assert!(RUNTIME_FRAME_USER_X18_OFFSET >= RUNTIME_FRAME_PT_REGS_PTR_OFFSET + 16);
 const _: () = assert!(RUNTIME_FRAME_IBTC_OFFSET + 8 == RUNTIME_FRAME_SIZE_BYTES);
 // `ldr x12, [sp, #200]` and `ldr x12, [x1, #16]` take a scaled 12-bit offset.
 const _: () = assert!(RUNTIME_FRAME_IBTC_OFFSET % 8 == 0 && RUNTIME_FRAME_IBTC_OFFSET / 8 < 4096);
@@ -100,6 +107,9 @@ const REG_VIRT_STACK_BACKED_FRAME_SLOT_SIZE: u32 = 8;
 const PT_REGS_GPR_SLOT_SIZE: u32 = 8;
 
 pub const fn reg_virt_stack_backed_slot_offset(reg: u8) -> Option<u32> {
+    if reg == REG_VIRT_STACK_BACKED_X18_REG {
+        return Some(RUNTIME_FRAME_USER_X18_OFFSET);
+    }
     if reg < REG_VIRT_STACK_BACKED_REG_START || reg > REG_VIRT_STACK_BACKED_REG_END {
         return None;
     }

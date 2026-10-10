@@ -466,10 +466,17 @@ fn check_fragment_fault_injection(
     let mut site_executions: BTreeMap<usize, usize> = BTreeMap::new();
     let mut user_index = 0u64;
     // A9a: one window SIMD&FP instruction makes several accesses (LD1/ST1: one per
-    // element). They are consecutive log entries at one offset; an instruction
-    // executes again only after other logged work (a budget check's runtime
-    // accesses, a re-entry's prologue), so a repeated offset right after itself
-    // continues the same execution.
+    // element). They are consecutive log entries at one offset. A repeated offset
+    // right after itself continues the same execution only while that execution has
+    // not made all its accesses; otherwise it is the next execution (a tight loop
+    // around one access has no other logged work between two executions since A12:
+    // the budget check touches no memory). An execution's accesses per site is the
+    // original's accesses of that pc per instance, split over the pc's sites.
+    let mut accesses_per_pc: BTreeMap<u64, usize> = BTreeMap::new();
+    for &(pc, _, sub) in &original_keys {
+        let count = accesses_per_pc.entry(pc).or_default();
+        *count = (*count).max(sub + 1);
+    }
     let mut previous_offset = None;
     let mut within = 0usize;
     for logged in &fragment_log {
@@ -514,7 +521,20 @@ fn check_fragment_fault_injection(
                     .position(|other| other.access_offset == offset)
                     .expect("the site is among its own pc's sites");
                 let executions = site_executions.entry(offset).or_default();
-                if continues {
+                let sites_at_pc = runtime
+                    .fragment()
+                    .fault_sites
+                    .iter()
+                    .filter(|other| other.ori_pc == site.ori_pc)
+                    .count();
+                // Fallback: a pc absent from the original's log is an access that
+                // faults in the original (the fault stops it before it is logged,
+                // e.g. barriers_acqrel.s ldar_unmapped_mark), while the fragment logs
+                // its attempt once; that attempt is one execution, so one access.
+                let per_site = (accesses_per_pc.get(&site.ori_pc).copied().unwrap_or(1)
+                    / sites_at_pc)
+                    .max(1);
+                if continues && within + 1 < per_site {
                     within += 1;
                 } else {
                     within = 0;

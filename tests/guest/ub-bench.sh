@@ -4,6 +4,7 @@
 #   ub-bench.sh sys [REPS]    null syscall and small read/write loops (svc_bench), KJIT off then on
 #   ub-bench.sh code [REPS]   translated-code speed (code_speed), KJIT off then on
 #   ub-bench.sh foot [REPS]   the same for a growing code footprint (code_speed foot)
+#   ub-bench.sh entry [REPS]  cost of one dispatched call+return (entry_cost, calls per syscall 16/128/256)
 #
 # Per configuration the program runs with KJIT disabled (debugfs enable=0 auto=0)
 # and enabled (enable=1 auto=1, chain_budget 1024, KJIT_AUTO=1), alternating, so
@@ -83,8 +84,13 @@ foot)
     for n in 16 32 64 96 128; do both $T/code_speed foot "$n" 40 "$reps"; done
     for n in 16 32 64 96 128; do both $T/code_speed footl "$n" 40 "$reps"; done
     ;;
+entry)
+    for c in 16 128 256; do
+        for v in gpr fp; do both $T/entry_cost $v 20000 $c "$reps"; done
+    done
+    ;;
 *)
-    echo "usage: ub-bench.sh sys|code|foot [REPS]" >&2
+    echo "usage: ub-bench.sh sys|code|foot|entry [REPS]" >&2
     exit 2
     ;;
 esac

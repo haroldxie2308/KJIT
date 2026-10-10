@@ -64,7 +64,8 @@ def fit(xs, ys):
 
 
 def code_table(paths):
-    rows = [r for r in load_ub(paths) if r["kind"] == "result"]
+    # Only code_speed results (entry_cost results, from "ub-bench.sh entry", have no insn_per_outer).
+    rows = [r for r in load_ub(paths) if r["kind"] == "result" and "insn_per_outer" in r]
     data = {}
     for r in rows:
         ipo = float(r["insn_per_outer"])
