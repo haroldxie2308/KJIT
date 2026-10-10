@@ -136,12 +136,15 @@ dispatch template). The harness and the kernel executor consume those names.
 - The prologue stores `x2` in frame slot `RUNTIME_FRAME_ENTRY_ADDR_OFFSET` (80)
   before its `pt_regs` loads overwrite it, stores the dispatch table pointer
   (`ldr x12, [x1, #16]; str x12, [sp, #200]`, after the pt_regs/extra pointer
-  store and before the `ldp x0, x1` that overwrites x1), puts user x18 into its
-  frame slot 192 instead of physical x18, sets the budget counter in physical
-  x18 (`movz x18, #4096`, A12), and ends with
+  store and before the `ldp x0, x1` that overwrites x1), spills user x18
+  (loaded with x19 from `pt_regs`) to its frame slot 192
+  (`str x18, [sp, #192]`), then sets the budget counter in physical x18
+  (`movz x18, #4096`, A12), and ends with
   `ldr x12, [sp, #80]; br x12`. x12 is reg-virt scratch, dead at body entry;
   user x12 is already in its frame slot. `PROLOGUE_LEN_BYTES` =
-  `EPILOGUE_OFFSET` = 0xa8.
+  `EPILOGUE_OFFSET` = 0xa8. The epilogue reloads user x18 from slot 192
+  (`ldr x18, [sp, #192]`) before it stores x18/x19 to `pt_regs`;
+  `EPILOGUE_LEN_BYTES` = 0x8c.
 - Invariant: that `br x12` is the only indirect branch in a fragment other than
   a dispatch template's (section 4, In-fragment branch dispatch), and its target is never user-controlled:
   the runtime (harness and kernel) only passes known entry offsets. V3 checks
@@ -1327,7 +1330,8 @@ region; rule 3's pt_regs fact is its refinement.
   `join_state_is_derived_from_the_prologue`.
 - Sources: SP read as data; x29 (in the join state, and the body never writes
   it); the entry scratch until overwritten; `ldr xS, [sp, #176]` (-> `pt_regs`
-  fact); any other frame slot outside the user-state slots `[16, 80)` (rule 3
+  fact); any other frame slot outside the user-state slots `[16, 80)` and
+  `[192, 200)` (rule 3
   already rejects every such load, rule 9 classifies it anyway); inside a
   dispatch template every `ldr x12` and the `add x12` result.
 - Not sources: user-state frame slots; `pt_regs` contents (loaded through the
