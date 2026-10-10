@@ -240,6 +240,20 @@ static_assert(offsetof(struct kjit_label, host) == 8);
 #define KJIT_IBTC_VICTIM_BITS 8
 #define KJIT_IBTC_TABLE_SLOTS ((1U << KJIT_IBTC_BITS) + (1U << KJIT_IBTC_VICTIM_BITS))
 
+/*
+ * Fragment image placement (docs/pipeline.md, "Image placement (A14)"): the
+ * image starts KJIT_IMAGE_COLOR_STEP * ((n * STRIDE) % COLORS) bytes into its
+ * allocation, n counting installs, so the hot first instructions of different
+ * fragments do not all sit at the same page offset (and L1I sets). STRIDE is odd,
+ * so consecutive installs cycle through all COLORS.
+ */
+#define KJIT_IMAGE_COLOR_STEP 16
+#define KJIT_IMAGE_COLOR_STRIDE 11
+#define KJIT_IMAGE_COLORS 256
+static_assert(KJIT_IMAGE_COLOR_STEP % 16 == 0);
+static_assert(KJIT_IMAGE_COLOR_STEP * (KJIT_IMAGE_COLORS - 1) < PAGE_SIZE);
+static atomic_t kjit_image_installs = ATOMIC_INIT(0);
+
 struct kjit_frag {
 	struct hlist_node table_node;	/* kjit_mm.table, under kjit_mm.lock */
 	struct list_head all_node;	/* kjit_all_frags, under kjit_frags_lock */
@@ -250,8 +264,8 @@ struct kjit_frag {
 	bool retired;
 	u64 entry_pc;
 	u64 src_start, src_end;		/* user text the translation read */
-	void *image;			/* execmem: code, then the extable */
-	size_t image_size;
+	void *alloc;			/* the execmem allocation (ROX, freed as a whole) */
+	void *image;			/* alloc + the colour offset: code, then the extable */
 	u32 code_len;
 	struct kjit_label *entry_label;	/* the label of entry_pc, in labels[] */
 	/*
@@ -432,7 +446,7 @@ static void kjit_frag_free_work(struct work_struct *work)
 	struct kjit_frag *f = container_of(to_rcu_work(work), struct kjit_frag, free_work);
 
 	/* VM_FLUSH_RESET_PERMS (execmem) restores the linear map on vfree. */
-	execmem_free(f->image);
+	execmem_free(f->alloc);
 	kfree(f);
 }
 
@@ -660,7 +674,9 @@ static u64 kjit_mm_flush_locked(struct kjit_mm *kmm, unsigned long start, unsign
 /*
  * Whether @kmm may install @code_len more bytes of code. The per-mm limits are
  * exact under kmm->lock; the global ones are checked racily against other
- * mms, so concurrent installs can overshoot them by one fragment each.
+ * mms, so concurrent installs can overshoot them by one fragment each. The
+ * colour padding (A14) is not code: it is bounded by the fragment caps, at
+ * most one page per fragment.
  */
 static bool kjit_caps_allow(const struct kjit_mm *kmm, unsigned long code_len)
 {
@@ -897,11 +913,13 @@ out:
 
 /*
  * Installs a verified fragment for @entry_pc in @kmm: one execmem allocation
- * holding @code and, after it, one exception_table_entry per fault site
- * (self-relative, so it must be the same allocation), made ROX. Installs only
- * if no invalidation started since @seq (kjit_mm_seq() before the text was
- * read) and none is in progress, so a translation of text that changed while
- * it was read never becomes visible.
+ * holding the colour offset (KJIT_IMAGE_COLOR_STEP), @code and, after it, one
+ * exception_table_entry per fault site (self-relative, so it must be the same
+ * allocation), made ROX. The image starts at the colour offset; labels and
+ * extable entries are relative to its start; the caps count @code_len.
+ * Installs only if no invalidation started since @seq
+ * (kjit_mm_seq() before the text was read) and none is in progress, so a
+ * translation of text that changed while it was read never becomes visible.
  *
  * @uses_fpsimd is verify_fragment's verdict on @code: every run of the fragment
  * then goes through the FP/SIMD bracket (kjit_call_fragment_fpsimd()).
@@ -924,7 +942,7 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	struct exception_table_entry *ex;
 	struct kjit_frag *f, *old;
 	bool has_entry = false;
-	size_t ex_off, size;
+	size_t color, ex_off, size;
 	int ret;
 	u32 i;
 
@@ -965,21 +983,24 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	f->kmm = kmm;
 	f->n_labels = n_entries;
 
+	color = KJIT_IMAGE_COLOR_STEP *
+		(((unsigned int)atomic_inc_return(&kjit_image_installs) * KJIT_IMAGE_COLOR_STRIDE) %
+		 KJIT_IMAGE_COLORS);
 	ex_off = ALIGN(code_len, 4);
-	size = ex_off + (size_t)n_sites * sizeof(*ex);
-	f->image = execmem_alloc(EXECMEM_BPF, size);
-	if (!f->image) {
+	size = color + ex_off + (size_t)n_sites * sizeof(*ex);
+	f->alloc = execmem_alloc(EXECMEM_BPF, size);
+	if (!f->alloc) {
 		kfree(f);
 		ret = -ENOMEM;
 		goto out_tables;
 	}
+	f->image = f->alloc + color;
 	for (i = 0; i < n_entries; i++) {
 		f->labels[i].pc = entries[i].pc;
 		f->labels[i].host = (u64)f->image + entries[i].offset;
 		if (entries[i].pc == entry_pc)
 			f->entry_label = &f->labels[i];
 	}
-	f->image_size = PAGE_ALIGN(size);
 	f->code_len = code_len;
 	f->entry_pc = entry_pc;
 	f->src_start = src_start;
@@ -999,9 +1020,9 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	f->extable = ex;
 
 	flush_icache_range((unsigned long)f->image, (unsigned long)f->image + code_len);
-	ret = set_memory_rox((unsigned long)f->image, f->image_size >> PAGE_SHIFT);
+	ret = set_memory_rox((unsigned long)f->alloc, PAGE_ALIGN(size) >> PAGE_SHIFT);
 	if (ret) {
-		execmem_free(f->image);
+		execmem_free(f->alloc);
 		kfree(f);
 		goto out_tables;
 	}

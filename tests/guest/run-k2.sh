@@ -72,6 +72,30 @@ onoff() {
     sed "s/^/k2:   /" "$name.1.err"
 }
 
+# A14 guard (docs/pipeline.md, "Image placement (A14)"): code_speed sites64 is
+# 64 call sites of one leaf per syscall; fragment images that all start at the
+# same page offset conflict in the L1I and made it 4.6x slower with KJIT on
+# than off. KJIT on must stay within 2x of off per outer iteration.
+GUARD_MAX_RATIO=2
+placement_guard() {
+    local off on ratio
+    echo 0 > "$K/enable"
+    echo 0 > "$K/auto"
+    KJIT_AUTO=0 "$T/code_speed" sites64 1 40 7 > guard.0.out 2> guard.0.err \
+        || fail "placement guard: code_speed sites64 failed with KJIT off"
+    echo 1 > "$K/enable"
+    echo 1 > "$K/auto"
+    KJIT_AUTO=1 "$T/code_speed" sites64 1 40 7 > guard.1.out 2> guard.1.err \
+        || fail "placement guard: code_speed sites64 failed with KJIT on"
+    off=$(sed -n 's/^result .*median_ns_per_outer=\([0-9.]*\).*/\1/p' guard.0.out)
+    on=$(sed -n 's/^result .*median_ns_per_outer=\([0-9.]*\).*/\1/p' guard.1.out)
+    [ -n "$off" ] && [ -n "$on" ] || fail "placement guard: no result line from code_speed"
+    ratio=$(awk -v a="$on" -v b="$off" 'BEGIN { printf "%.2f", a / b }')
+    echo "k2:   placement guard: sites64 off $off ns, on $on ns per outer iteration, ratio $ratio (max $GUARD_MAX_RATIO)"
+    awk -v r="$ratio" -v m="$GUARD_MAX_RATIO" 'BEGIN { exit !(r <= m) }' \
+        || fail "placement guard: sites64 KJIT on is ${ratio}x KJIT off, over ${GUARD_MAX_RATIO}x"
+}
+
 kill_hot() {
     local name=$1 before pid hot status
     shift
@@ -184,6 +208,8 @@ while [ "$i" -le "$iterations" ]; do
 
     onoff seccomp_loop declined 0 "$T/seccomp_loop" 20000
     onoff ptrace_loop declined 0 "$T/ptrace_loop" 20000
+
+    placement_guard
 
     kill_hot toy_loop_kill "$T/toy_loop" 0
     kill_hot tight_loop_kill "$T/tight_loop" 0
