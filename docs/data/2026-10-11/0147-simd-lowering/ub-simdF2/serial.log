@@ -1,0 +1,993 @@
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1 (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #3 SMP PREEMPT Sat Oct 10 04:02:05 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013ac00000-0x000000013b000000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000142] Console: colour dummy device 80x25
+[    0.000158] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000162] pid_max: default: 32768 minimum: 301
+[    0.000307] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000315] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000402] VFS: Finished mounting rootfs on nullfs
+[    0.000578] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000699] rcu: Hierarchical SRCU implementation.
+[    0.000699] rcu: 	Max phase no-delay instances is 1000.
+[    0.000723] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000760] smp: Bringing up secondary CPUs ...
+[    0.000971] Detected PIPT I-cache on CPU1
+[    0.001052] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001303] Detected PIPT I-cache on CPU2
+[    0.001389] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001620] Detected PIPT I-cache on CPU3
+[    0.001729] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.001814] smp: Brought up 1 node, 4 CPUs
+[    0.001818] SMP: Total of 4 processors activated.
+[    0.001818] CPU: All CPU(s) started at EL1
+[    0.001819] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.001819] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.001820] CPU features: detected: CRC32 instructions
+[    0.001820] CPU features: detected: Data independent timing control (DIT)
+[    0.001820] CPU features: detected: E0PD
+[    0.001821] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.001822] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.001822] CPU features: detected: LSE atomic instructions
+[    0.001823] CPU features: detected: Privileged Access Never
+[    0.001823] CPU features: detected: Speculation barrier (SB)
+[    0.001823] CPU features: detected: TLB range maintenance instructions
+[    0.001824] CPU features: detected: XNX
+[    0.001960] alternatives: applying system-wide alternatives
+[    0.002875] Memory: 3906884K/4194304K available (5248K kernel code, 754K rwdata, 2356K rodata, 576K init, 405K bss, 284240K reserved, 0K cma-reserved)
+[    0.003201] devtmpfs: initialized
+[    0.003629] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003633] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003652] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003658] 30384 pages in range for non-PLT usage
+[    0.003659] 521904 pages in range for PLT usage
+[    0.003726] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.004143] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.004177] ASID allocator initialised with 256 entries
+[    0.004188] Serial: AMBA PL011 UART driver
+[    0.004554] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.004705] printk: console [ttyAMA0] enabled
+[    0.010490] vgaarb: loaded
+[    0.010637] clocksource: Switched to clocksource arch_sys_counter
+[    0.020376] NET: Registered PF_INET protocol family
+[    0.020448] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.020864] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.020870] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.020872] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.020929] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.021094] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.021117] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.021150] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.021156] PCI: CLS 0 bytes, default 64
+[    0.021320] Unpacking initramfs...
+[    0.027320] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.027425] 9p: Installing v9fs 9p2000 file system support
+[    0.027669] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.027676] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.027679] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.027680] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.027684] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.027694] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.027706] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.027707] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.027708] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.027709] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.027709] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.027788] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.028120] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.028248] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.028252] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.028265] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.028267] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.028538] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.028668] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.028671] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.028683] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.028919] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.029015] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.029017] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.029028] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.029355] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.029357] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.029368] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.029404] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.029420] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.029430] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.029433] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.029437] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.029441] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.029445] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.029449] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.029449] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.029450] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.030454] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.031197] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.031810] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.047101] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.047109] rtc-pl031 9010000.pl031: setting system clock to 2026-10-10T17:41:50 UTC (1791654110)
+[    0.047215] NET: Registered PF_INET6 protocol family
+[    0.047535] Segment Routing with IPv6
+[    0.047538] In-situ OAM (IOAM) with IPv6
+[    0.047545] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.047597] NET: Registered PF_PACKET protocol family
+[    0.047602] 9pnet: Installing 9P2000 support
+[    0.052118] clk: Disabling unused clocks
+[    0.117065] Freeing initrd memory: 189220K
+[    0.117532] Freeing unused kernel memory: 576K
+[    0.117587] Run /init as init process
+[    0.133593] kjit: loading out-of-tree module taints kernel.
+[    0.134544] rust_kjit: ######## Rust KJIT inits ########
+[    0.134603] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+exp2ids midr=0x610f0000 pfr0=0x1101000010110011 pfr1=0x0 pfr2=0x0 dfr0=0x10305006 isar0=0x221100110212120 isar1=0x11110211202 isar2=0x0 isar3=0x0 mmfr0=0x10000f100002 mmfr1=0x11212000 mmfr2=0x1001001100001011 mmfr3=0x0 mmfr4=0x0 sctlr_el1=0xfc74799d tcr_el1=0x1000022b5503510 ctr_el0=0x8444c004 dczid_el0=0x4
+exp2cfg srcoff=0 dstoff=0
+exp2e1 exp2_acc_ldd_c0 n=1 ps_per_outer median=61040 min=60907 outer=336196 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_c0r n=1 ps_per_outer median=36406 min=36189 outer=549337 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_c1g1 n=1 ps_per_outer median=36250 min=36122 outer=541619 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_c1g2 n=1 ps_per_outer median=19953 min=19739 outer=1024534 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_c1g4 n=1 ps_per_outer median=11756 min=11629 outer=1744816 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_c1g8 n=1 ps_per_outer median=7912 min=7877 outer=2566893 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_c2 n=1 ps_per_outer median=845 min=838 outer=23177150 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_c2r n=1 ps_per_outer median=1567 min=1562 outer=12910858 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_c2run n=1 ps_per_outer median=1577 min=1571 outer=12212852 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_c3 n=1 ps_per_outer median=1675 min=1670 outer=12096646 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_c3f n=1 ps_per_outer median=1690 min=1678 outer=12096618 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldd_nat n=1 ps_per_outer median=835 min=833 outer=22953107 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c0 n=1 ps_per_outer median=30150 min=30116 outer=613107 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c0r n=1 ps_per_outer median=19947 min=19812 outer=1024666 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c1g1 n=1 ps_per_outer median=19875 min=19782 outer=1020279 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c1g2 n=1 ps_per_outer median=11654 min=11610 outer=1744816 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c1g4 n=1 ps_per_outer median=7939 min=7873 outer=2568991 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c1g8 n=1 ps_per_outer median=7871 min=7859 outer=2473640 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c2 n=1 ps_per_outer median=835 min=834 outer=24211950 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c2r n=1 ps_per_outer median=936 min=933 outer=21520287 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c2run n=1 ps_per_outer median=936 min=935 outer=21516577 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c3 n=1 ps_per_outer median=3345 min=3330 outer=6051813 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_c3f n=1 ps_per_outer median=3340 min=3334 outer=6050640 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldpq_nat n=1 ps_per_outer median=835 min=832 outer=24207143 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c0 n=1 ps_per_outer median=61606 min=60985 outer=336138 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c0r n=1 ps_per_outer median=36853 min=36534 outer=544356 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c1g1 n=1 ps_per_outer median=36763 min=36447 outer=543191 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c1g2 n=1 ps_per_outer median=20242 min=20013 outer=994226 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c1g4 n=1 ps_per_outer median=11804 min=11673 outer=1686809 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c1g8 n=1 ps_per_outer median=7980 min=7865 outer=2582277 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c1pg1 n=1 ps_per_outer median=61493 min=60385 outer=332613 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c1pg2 n=1 ps_per_outer median=30825 min=30257 outer=672336 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c1pg4 n=1 ps_per_outer median=15312 min=15188 outer=1231685 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c1pg8 n=1 ps_per_outer median=8289 min=8195 outer=2482819 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c2 n=1 ps_per_outer median=846 min=835 outer=23379620 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c2r n=1 ps_per_outer median=1564 min=1558 outer=12908188 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c2run n=1 ps_per_outer median=1568 min=1562 outer=12516574 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c3 n=1 ps_per_outer median=3344 min=3329 outer=5869981 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_c3f n=1 ps_per_outer median=3444 min=3352 outer=6048323 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_ldq_nat n=1 ps_per_outer median=840 min=833 outer=22040483 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_acc_std_c0 n=1 ps_per_outer median=60370 min=60239 outer=336254 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_c0r n=1 ps_per_outer median=36239 min=36163 outer=561376 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_c1g1 n=1 ps_per_outer median=36468 min=36281 outer=561376 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_c1g2 n=1 ps_per_outer median=19905 min=19692 outer=1024800 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_c1g4 n=1 ps_per_outer median=11661 min=11604 outer=1728137 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_c1g8 n=1 ps_per_outer median=7881 min=7825 outer=2495421 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_c2 n=1 ps_per_outer median=1254 min=1250 outer=16138145 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_c2r n=1 ps_per_outer median=1572 min=1561 outer=12744770 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_c2run n=1 ps_per_outer median=1571 min=1562 outer=12909522 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_c3 n=1 ps_per_outer median=1704 min=1700 outer=11376938 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_c3f n=1 ps_per_outer median=1699 min=1687 outer=11314550 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_std_nat n=1 ps_per_outer median=1255 min=1253 outer=16140182 rc=0 chk=ae077c933ff14da3
+exp2e1 exp2_acc_stpq_c0 n=1 ps_per_outer median=30393 min=30191 outer=664103 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_c0r n=1 ps_per_outer median=19890 min=19763 outer=1024666 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_c1g1 n=1 ps_per_outer median=20405 min=19761 outer=1024666 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_c1g2 n=1 ps_per_outer median=11836 min=11738 outer=1637716 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_c1g4 n=1 ps_per_outer median=7886 min=7870 outer=2460674 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_c1g8 n=1 ps_per_outer median=7929 min=7900 outer=2582277 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_c2 n=1 ps_per_outer median=1258 min=1256 outer=16142269 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_c2r n=1 ps_per_outer median=1264 min=1256 outer=15540214 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_c2run n=1 ps_per_outer median=1258 min=1251 outer=16014906 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_c3 n=1 ps_per_outer median=3403 min=3375 outer=5814645 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_c3f n=1 ps_per_outer median=3389 min=3374 outer=5934216 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stpq_nat n=1 ps_per_outer median=1261 min=1253 outer=15994533 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c0 n=1 ps_per_outer median=60666 min=60369 outer=336254 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c0r n=1 ps_per_outer median=36389 min=36201 outer=552347 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c1g1 n=1 ps_per_outer median=36419 min=36201 outer=561375 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c1g2 n=1 ps_per_outer median=19963 min=19696 outer=961524 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c1g4 n=1 ps_per_outer median=11714 min=11606 outer=1738932 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c1g8 n=1 ps_per_outer median=7904 min=7880 outer=2582063 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c2 n=1 ps_per_outer median=1259 min=1253 outer=16131938 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c2r n=1 ps_per_outer median=1571 min=1559 outer=12912193 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c2run n=1 ps_per_outer median=1564 min=1563 outer=12912161 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c3 n=1 ps_per_outer median=3401 min=3370 outer=5868904 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_c3f n=1 ps_per_outer median=3476 min=3431 outer=5934216 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_acc_stq_nat n=1 ps_per_outer median=1280 min=1273 outer=14566954 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_alu n=1 ps_per_outer median=1301 min=1278 outer=15171072 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_fcheck_c0 n=1 ps_per_outer median=0 min=0 outer=1605475215311 rc=0 chk=547fb9e6eb8d335e
+exp2e1 exp2_fcheck_c0r n=1 ps_per_outer median=0 min=0 outer=2684354560000 rc=0 chk=547fb9e6eb8d335e
+exp2e1 exp2_fcheck_c1 n=1 ps_per_outer median=0 min=0 outer=335544320000000 rc=0 chk=547fb9e6eb8d335e
+exp2e1 exp2_fcheck_c2 n=1 ps_per_outer median=0 min=0 outer=335544320000000 rc=0 chk=547fb9e6eb8d335e
+exp2e1 exp2_fcheck_c2r n=1 ps_per_outer median=0 min=0 outer=7989150476190 rc=0 chk=547fb9e6eb8d335e
+exp2e1 exp2_fcheck_c2run n=1 ps_per_outer median=0 min=0 outer=335544320000000 rc=0 chk=547fb9e6eb8d335e
+exp2e1 exp2_fcheck_c3 n=1 ps_per_outer median=0 min=0 outer=8184007804878 rc=0 chk=547fb9e6eb8d335e
+exp2e1 exp2_fcheck_c3f n=1 ps_per_outer median=0 min=0 outer=335544320000000 rc=0 chk=547fb9e6eb8d335e
+exp2e1 exp2_fcheck_c3s n=1 ps_per_outer median=0 min=0 outer=7989150476190 rc=0 chk=547fb9e6eb8d335e
+exp2e1 exp2_fcheck_nat n=1 ps_per_outer median=0 min=0 outer=335544320000000 rc=0 chk=547fb9e6eb8d335e
+exp2e1 exp2_loop n=1 ps_per_outer median=321 min=315 outer=63654415 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c0 n=64 ps_per_outer median=47225 min=45578 outer=418225 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c0 n=256 ps_per_outer median=141208 min=138887 outer=142862 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c0 n=1024 ps_per_outer median=514199 min=508908 outer=38289 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c0 n=4096 ps_per_outer median=1994337 min=1988678 outer=9808 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c0r n=64 ps_per_outer median=46199 min=45697 outer=422994 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c0r n=256 ps_per_outer median=138514 min=137693 outer=136923 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c0r n=1024 ps_per_outer median=505453 min=498673 outer=39543 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c0r n=4096 ps_per_outer median=1958960 min=1941003 outer=10360 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c1 n=64 ps_per_outer median=45736 min=45184 outer=370748 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c1 n=256 ps_per_outer median=136492 min=135452 outer=147592 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c1 n=1024 ps_per_outer median=498944 min=494474 outer=40537 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c1 n=4096 ps_per_outer median=1995109 min=1944641 outer=10411 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2 n=64 ps_per_outer median=8257 min=8144 outer=2470921 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2 n=256 ps_per_outer median=9760 min=9697 outer=2065345 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2 n=1024 ps_per_outer median=21006 min=20877 outer=965659 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2 n=4096 ps_per_outer median=88153 min=88066 outer=200211 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2r n=64 ps_per_outer median=8179 min=8159 outer=2296153 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2r n=256 ps_per_outer median=10319 min=10286 outer=1810386 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2r n=1024 ps_per_outer median=31557 min=31163 outer=647748 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2r n=4096 ps_per_outer median=125148 min=124911 outer=161286 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2run n=64 ps_per_outer median=2658 min=2654 outer=7535125 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2run n=256 ps_per_outer median=8271 min=8254 outer=2435906 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2run n=1024 ps_per_outer median=30777 min=30694 outer=655468 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c2run n=4096 ps_per_outer median=125390 min=125228 outer=160850 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c3 n=64 ps_per_outer median=2837 min=2812 outer=7149794 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c3 n=256 ps_per_outer median=8184 min=8037 outer=2496414 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c3 n=1024 ps_per_outer median=29690 min=29547 outer=681305 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c3 n=4096 ps_per_outer median=120222 min=119614 outer=167411 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c3f n=64 ps_per_outer median=2822 min=2806 outer=6989723 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c3f n=256 ps_per_outer median=8050 min=8027 outer=2308284 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c3f n=1024 ps_per_outer median=29700 min=29595 outer=666579 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_c3f n=4096 ps_per_outer median=120096 min=119486 outer=168502 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_nat n=64 ps_per_outer median=1875 min=1870 outer=10759216 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_nat n=256 ps_per_outer median=4272 min=4247 outer=4580934 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_nat n=1024 ps_per_outer median=15578 min=15518 outer=1295818 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memchr_loop_nat n=4096 ps_per_outer median=79341 min=78826 outer=255800 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_memcpy_loop_c0 n=64 ps_per_outer median=30481 min=30101 outer=633707 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_c0 n=256 ps_per_outer median=121212 min=120284 outer=168141 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_c0 n=1024 ps_per_outer median=484421 min=482616 outer=41799 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c0 n=4096 ps_per_outer median=1940829 min=1929190 outer=10507 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_loop_c0r n=64 ps_per_outer median=19881 min=19764 outer=1024669 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_c0r n=256 ps_per_outer median=79404 min=79140 outer=256166 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_c0r n=1024 ps_per_outer median=320354 min=317191 outer=60450 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c0r n=4096 ps_per_outer median=1271509 min=1267434 outer=15929 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_loop_c1 n=64 ps_per_outer median=7872 min=7826 outer=2582063 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_c1 n=256 ps_per_outer median=31680 min=31405 outer=645621 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_c1 n=1024 ps_per_outer median=125848 min=125122 outer=161392 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c1 n=4096 ps_per_outer median=503500 min=501504 outer=40348 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_loop_c1p n=64 ps_per_outer median=7960 min=7941 outer=2318664 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_c1p n=256 ps_per_outer median=31611 min=31474 outer=613058 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_c1p n=1024 ps_per_outer median=126292 min=125669 outer=161233 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c1p n=4096 ps_per_outer median=505362 min=503199 outer=38763 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_loop_c2 n=64 ps_per_outer median=7880 min=7851 outer=2361478 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_c2 n=256 ps_per_outer median=8807 min=8773 outer=2252742 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_c2 n=1024 ps_per_outer median=14456 min=14377 outer=1393392 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c2 n=4096 ps_per_outer median=56012 min=55001 outer=351211 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_loop_c2r n=64 ps_per_outer median=7868 min=7831 outer=2492455 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_c2r n=256 ps_per_outer median=9118 min=9057 outer=2226117 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_c2r n=1024 ps_per_outer median=16608 min=16522 outer=1197367 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c2r n=4096 ps_per_outer median=72198 min=70727 outer=133583 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_loop_c2run n=64 ps_per_outer median=1214 min=1207 outer=16508640 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_c2run n=256 ps_per_outer median=4259 min=4242 outer=4737553 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_c2run n=1024 ps_per_outer median=16522 min=16404 outer=1206182 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c2run n=4096 ps_per_outer median=65164 min=65010 outer=309423 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_loop_c3 n=64 ps_per_outer median=2103 min=2096 outer=9607482 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_c3 n=256 ps_per_outer median=8278 min=8254 outer=2436282 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_c3 n=1024 ps_per_outer median=33006 min=32983 outer=610394 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c3 n=4096 ps_per_outer median=132510 min=131807 outer=152043 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_loop_c3f n=64 ps_per_outer median=2105 min=2092 outer=9606003 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_c3f n=256 ps_per_outer median=8273 min=8260 outer=2272761 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_c3f n=1024 ps_per_outer median=33548 min=32997 outer=583319 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c3f n=4096 ps_per_outer median=132746 min=131896 outer=152669 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_loop_c3s n=64 ps_per_outer median=2147 min=2146 outer=9393031 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_c3s n=256 ps_per_outer median=8525 min=8503 outer=2357766 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_c3s n=1024 ps_per_outer median=33976 min=33896 outer=590680 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c3s n=4096 ps_per_outer median=136394 min=135563 outer=148405 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_loop_nat n=64 ps_per_outer median=668 min=663 outer=26098847 rc=0 chk=191fb44a626e4923
+exp2e1 exp2_memcpy_loop_nat n=256 ps_per_outer median=3540 min=3528 outer=5479415 rc=0 chk=3c3e2fafb1476125
+exp2e1 exp2_memcpy_loop_nat n=1024 ps_per_outer median=14073 min=14012 outer=1432743 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_nat n=4096 ps_per_outer median=56985 min=54338 outer=344201 rc=0 chk=ca711bca833e9222
+exp2e1 exp2_memcpy_s128_c0 n=112 ps_per_outer median=60351 min=60288 outer=312076 rc=0 chk=9167027f06283213
+exp2e1 exp2_memcpy_s128_c0r n=112 ps_per_outer median=43331 min=43115 outer=374705 rc=0 chk=9167027f06283213
+exp2e1 exp2_memcpy_s128_c1 n=112 ps_per_outer median=23127 min=22954 outer=849647 rc=0 chk=9167027f06283213
+exp2e1 exp2_memcpy_s128_c2 n=112 ps_per_outer median=1572 min=1570 outer=12667786 rc=0 chk=9167027f06283213
+exp2e1 exp2_memcpy_s128_c2r n=112 ps_per_outer median=2198 min=2184 outer=9179916 rc=0 chk=9167027f06283213
+exp2e1 exp2_memcpy_s128_c2run n=112 ps_per_outer median=2205 min=2181 outer=9222304 rc=0 chk=9167027f06283213
+exp2e1 exp2_memcpy_s128_c3 n=112 ps_per_outer median=4219 min=4105 outer=4919806 rc=0 chk=9167027f06283213
+exp2e1 exp2_memcpy_s128_c3f n=112 ps_per_outer median=4196 min=4165 outer=4801910 rc=0 chk=9167027f06283213
+exp2e1 exp2_memcpy_s128_nat n=112 ps_per_outer median=1609 min=1576 outer=12396947 rc=0 chk=9167027f06283213
+exp2e1 exp2_memcpy_s32_c0 n=24 ps_per_outer median=30517 min=30227 outer=671819 rc=0 chk=3dc73233970a4b8b
+exp2e1 exp2_memcpy_s32_c0r n=24 ps_per_outer median=20340 min=20059 outer=994226 rc=0 chk=3dc73233970a4b8b
+exp2e1 exp2_memcpy_s32_c1 n=24 ps_per_outer median=7733 min=7655 outer=2576566 rc=0 chk=3dc73233970a4b8b
+exp2e1 exp2_memcpy_s32_c2 n=24 ps_per_outer median=804 min=787 outer=25050551 rc=0 chk=3dc73233970a4b8b
+exp2e1 exp2_memcpy_s32_c2r n=24 ps_per_outer median=1438 min=1423 outer=13610516 rc=0 chk=3dc73233970a4b8b
+exp2e1 exp2_memcpy_s32_c2run n=24 ps_per_outer median=1438 min=1417 outer=12888355 rc=0 chk=3dc73233970a4b8b
+exp2e1 exp2_memcpy_s32_c3 n=24 ps_per_outer median=1204 min=1193 outer=16271674 rc=0 chk=3dc73233970a4b8b
+exp2e1 exp2_memcpy_s32_c3f n=24 ps_per_outer median=1199 min=1185 outer=16822056 rc=0 chk=3dc73233970a4b8b
+exp2e1 exp2_memcpy_s32_nat n=24 ps_per_outer median=638 min=632 outer=30505892 rc=0 chk=3dc73233970a4b8b
+exp2e1 exp2_memcpy_s64_c0 n=48 ps_per_outer median=30537 min=30275 outer=652369 rc=0 chk=b5347d8ba2bb853f
+exp2e1 exp2_memcpy_s64_c0r n=48 ps_per_outer median=23866 min=23412 outer=822454 rc=0 chk=b5347d8ba2bb853f
+exp2e1 exp2_memcpy_s64_c1 n=48 ps_per_outer median=15359 min=15133 outer=1260506 rc=0 chk=b5347d8ba2bb853f
+exp2e1 exp2_memcpy_s64_c2 n=48 ps_per_outer median=803 min=795 outer=23024575 rc=0 chk=b5347d8ba2bb853f
+exp2e1 exp2_memcpy_s64_c2r n=48 ps_per_outer median=1434 min=1424 outer=13920690 rc=0 chk=b5347d8ba2bb853f
+exp2e1 exp2_memcpy_s64_c2run n=48 ps_per_outer median=1430 min=1421 outer=13492304 rc=0 chk=b5347d8ba2bb853f
+exp2e1 exp2_memcpy_s64_c3 n=48 ps_per_outer median=2162 min=2138 outer=9294518 rc=0 chk=b5347d8ba2bb853f
+exp2e1 exp2_memcpy_s64_c3f n=48 ps_per_outer median=2162 min=2156 outer=9291767 rc=0 chk=b5347d8ba2bb853f
+exp2e1 exp2_memcpy_s64_nat n=48 ps_per_outer median=720 min=711 outer=25980317 rc=0 chk=b5347d8ba2bb853f
+exp2e1 exp2_memmove_back_c0 n=256 ps_per_outer median=184630 min=182379 outer=110896 rc=0 chk=7f642005ab6d650e
+exp2e1 exp2_memmove_back_c0 n=1024 ps_per_outer median=737733 min=729515 outer=27381 rc=0 chk=4ccd795d682463af
+exp2e1 exp2_memmove_back_c0 n=4096 ps_per_outer median=2950759 min=2895675 outer=6723 rc=0 chk=f1f77c9adeb72d43
+exp2e1 exp2_memmove_back_c0r n=256 ps_per_outer median=127030 min=125302 outer=161392 rc=0 chk=7f642005ab6d650e
+exp2e1 exp2_memmove_back_c0r n=1024 ps_per_outer median=505146 min=501324 outer=40348 rc=0 chk=4ccd795d682463af
+exp2e1 exp2_memmove_back_c0r n=4096 ps_per_outer median=2024513 min=2009426 outer=9959 rc=0 chk=f1f77c9adeb72d43
+exp2e1 exp2_memmove_back_c1 n=256 ps_per_outer median=31701 min=31297 outer=636992 rc=0 chk=7f642005ab6d650e
+exp2e1 exp2_memmove_back_c1 n=1024 ps_per_outer median=125691 min=125131 outer=161378 rc=0 chk=4ccd795d682463af
+exp2e1 exp2_memmove_back_c1 n=4096 ps_per_outer median=506359 min=502947 outer=38611 rc=0 chk=f1f77c9adeb72d43
+exp2e1 exp2_memmove_back_c2 n=256 ps_per_outer median=8897 min=8761 outer=2295815 rc=0 chk=7f642005ab6d650e
+exp2e1 exp2_memmove_back_c2 n=1024 ps_per_outer median=14590 min=14530 outer=1393884 rc=0 chk=4ccd795d682463af
+exp2e1 exp2_memmove_back_c2 n=4096 ps_per_outer median=52803 min=52464 outer=385431 rc=0 chk=f1f77c9adeb72d43
+exp2e1 exp2_memmove_back_c2r n=256 ps_per_outer median=9103 min=9087 outer=2225958 rc=0 chk=7f642005ab6d650e
+exp2e1 exp2_memmove_back_c2r n=1024 ps_per_outer median=21516 min=21434 outer=941609 rc=0 chk=4ccd795d682463af
+exp2e1 exp2_memmove_back_c2r n=4096 ps_per_outer median=90223 min=88993 outer=227792 rc=0 chk=f1f77c9adeb72d43
+exp2e1 exp2_memmove_back_c2run n=256 ps_per_outer median=5457 min=5436 outer=3617435 rc=0 chk=7f642005ab6d650e
+exp2e1 exp2_memmove_back_c2run n=1024 ps_per_outer median=21027 min=20977 outer=953830 rc=0 chk=4ccd795d682463af
+exp2e1 exp2_memmove_back_c2run n=4096 ps_per_outer median=83406 min=83081 outer=237220 rc=0 chk=f1f77c9adeb72d43
+exp2e1 exp2_memmove_back_c3 n=256 ps_per_outer median=8294 min=8272 outer=2286802 rc=0 chk=7f642005ab6d650e
+exp2e1 exp2_memmove_back_c3 n=1024 ps_per_outer median=33238 min=32962 outer=598092 rc=0 chk=4ccd795d682463af
+exp2e1 exp2_memmove_back_c3 n=4096 ps_per_outer median=133281 min=132544 outer=152610 rc=0 chk=f1f77c9adeb72d43
+exp2e1 exp2_memmove_back_c3f n=256 ps_per_outer median=8325 min=8292 outer=2431388 rc=0 chk=7f642005ab6d650e
+exp2e1 exp2_memmove_back_c3f n=1024 ps_per_outer median=33074 min=33029 outer=555037 rc=0 chk=4ccd795d682463af
+exp2e1 exp2_memmove_back_c3f n=4096 ps_per_outer median=134876 min=132817 outer=151985 rc=0 chk=f1f77c9adeb72d43
+exp2e1 exp2_memmove_back_nat n=256 ps_per_outer median=3138 min=3128 outer=5867800 rc=0 chk=7f642005ab6d650e
+exp2e1 exp2_memmove_back_nat n=1024 ps_per_outer median=12506 min=12493 outer=1614521 rc=0 chk=4ccd795d682463af
+exp2e1 exp2_memmove_back_nat n=4096 ps_per_outer median=50155 min=50064 outer=402969 rc=0 chk=f1f77c9adeb72d43
+exp2e1 exp2_memset_loop_c0 n=64 ps_per_outer median=15149 min=15082 outer=1304417 rc=0 chk=2e0acb161e688f43
+exp2e1 exp2_memset_loop_c0 n=256 ps_per_outer median=61026 min=60589 outer=336254 rc=0 chk=37f155703b527c83
+exp2e1 exp2_memset_loop_c0 n=1024 ps_per_outer median=244562 min=241983 outer=70106 rc=0 chk=95c49d5f58425f83
+exp2e1 exp2_memset_loop_c0 n=4096 ps_per_outer median=976586 min=963771 outer=21015 rc=0 chk=8d8f730e2f99eb83
+exp2e1 exp2_memset_loop_c0r n=64 ps_per_outer median=11792 min=11709 outer=1665904 rc=0 chk=2e0acb161e688f43
+exp2e1 exp2_memset_loop_c0r n=256 ps_per_outer median=46647 min=46501 outer=435817 rc=0 chk=37f155703b527c83
+exp2e1 exp2_memset_loop_c0r n=1024 ps_per_outer median=188120 min=186478 outer=107125 rc=0 chk=95c49d5f58425f83
+exp2e1 exp2_memset_loop_c0r n=4096 ps_per_outer median=749822 min=744288 outer=24700 rc=0 chk=8d8f730e2f99eb83
+exp2e1 exp2_memset_loop_c1 n=64 ps_per_outer median=7610 min=7541 outer=2689804 rc=0 chk=2e0acb161e688f43
+exp2e1 exp2_memset_loop_c1 n=256 ps_per_outer median=30174 min=29953 outer=672451 rc=0 chk=37f155703b527c83
+exp2e1 exp2_memset_loop_c1 n=1024 ps_per_outer median=122097 min=120672 outer=168127 rc=0 chk=95c49d5f58425f83
+exp2e1 exp2_memset_loop_c1 n=4096 ps_per_outer median=485217 min=483103 outer=42035 rc=0 chk=8d8f730e2f99eb83
+exp2e1 exp2_memset_loop_c2 n=64 ps_per_outer median=7544 min=7518 outer=2689804 rc=0 chk=2e0acb161e688f43
+exp2e1 exp2_memset_loop_c2 n=256 ps_per_outer median=8191 min=8173 outer=2482814 rc=0 chk=37f155703b527c83
+exp2e1 exp2_memset_loop_c2 n=1024 ps_per_outer median=14380 min=14247 outer=1387739 rc=0 chk=95c49d5f58425f83
+exp2e1 exp2_memset_loop_c2 n=4096 ps_per_outer median=45889 min=45240 outer=144288 rc=0 chk=8d8f730e2f99eb83
+exp2e1 exp2_memset_loop_c2r n=64 ps_per_outer median=7560 min=7530 outer=2662036 rc=0 chk=2e0acb161e688f43
+exp2e1 exp2_memset_loop_c2r n=256 ps_per_outer median=8538 min=8474 outer=2391279 rc=0 chk=37f155703b527c83
+exp2e1 exp2_memset_loop_c2r n=1024 ps_per_outer median=14484 min=14349 outer=1403340 rc=0 chk=95c49d5f58425f83
+exp2e1 exp2_memset_loop_c2r n=4096 ps_per_outer median=45063 min=44598 outer=432771 rc=0 chk=8d8f730e2f99eb83
+exp2e1 exp2_memset_loop_c2run n=64 ps_per_outer median=780 min=778 outer=25826995 rc=0 chk=2e0acb161e688f43
+exp2e1 exp2_memset_loop_c2run n=256 ps_per_outer median=2680 min=2649 outer=7595162 rc=0 chk=37f155703b527c83
+exp2e1 exp2_memset_loop_c2run n=1024 ps_per_outer median=10180 min=10136 outer=1979317 rc=0 chk=95c49d5f58425f83
+exp2e1 exp2_memset_loop_c2run n=4096 ps_per_outer median=46244 min=45561 outer=446734 rc=0 chk=8d8f730e2f99eb83
+exp2e1 exp2_memset_loop_c3 n=64 ps_per_outer median=1727 min=1722 outer=11842749 rc=0 chk=2e0acb161e688f43
+exp2e1 exp2_memset_loop_c3 n=256 ps_per_outer median=6817 min=6808 outer=2986545 rc=0 chk=37f155703b527c83
+exp2e1 exp2_memset_loop_c3 n=1024 ps_per_outer median=27310 min=27281 outer=742757 rc=0 chk=95c49d5f58425f83
+exp2e1 exp2_memset_loop_c3 n=4096 ps_per_outer median=119947 min=119647 outer=170547 rc=0 chk=8d8f730e2f99eb83
+exp2e1 exp2_memset_loop_c3f n=64 ps_per_outer median=1725 min=1723 outer=11872893 rc=0 chk=2e0acb161e688f43
+exp2e1 exp2_memset_loop_c3f n=256 ps_per_outer median=6834 min=6795 outer=2965711 rc=0 chk=37f155703b527c83
+exp2e1 exp2_memset_loop_c3f n=1024 ps_per_outer median=27231 min=27171 outer=742057 rc=0 chk=95c49d5f58425f83
+exp2e1 exp2_memset_loop_c3f n=4096 ps_per_outer median=108481 min=107908 outer=188304 rc=0 chk=8d8f730e2f99eb83
+exp2e1 exp2_memset_loop_c3s n=64 ps_per_outer median=1732 min=1719 outer=11872920 rc=0 chk=2e0acb161e688f43
+exp2e1 exp2_memset_loop_c3s n=256 ps_per_outer median=6829 min=6798 outer=2986545 rc=0 chk=37f155703b527c83
+exp2e1 exp2_memset_loop_c3s n=1024 ps_per_outer median=27295 min=27157 outer=742757 rc=0 chk=95c49d5f58425f83
+exp2e1 exp2_memset_loop_c3s n=4096 ps_per_outer median=119623 min=118991 outer=168328 rc=0 chk=8d8f730e2f99eb83
+exp2e1 exp2_memset_loop_nat n=64 ps_per_outer median=628 min=626 outer=32278327 rc=0 chk=2e0acb161e688f43
+exp2e1 exp2_memset_loop_nat n=256 ps_per_outer median=2577 min=2521 outer=7574588 rc=0 chk=37f155703b527c83
+exp2e1 exp2_memset_loop_nat n=1024 ps_per_outer median=10225 min=10025 outer=1955811 rc=0 chk=95c49d5f58425f83
+exp2e1 exp2_memset_loop_nat n=4096 ps_per_outer median=41729 min=41153 outer=434997 rc=0 chk=8d8f730e2f99eb83
+exp2e1 exp2_memset_s128_c0 n=100 ps_per_outer median=30641 min=30251 outer=668792 rc=0 chk=642ccc8f691fe147
+exp2e1 exp2_memset_s128_c0r n=100 ps_per_outer median=20162 min=20051 outer=994099 rc=0 chk=642ccc8f691fe147
+exp2e1 exp2_memset_s128_c1 n=100 ps_per_outer median=7982 min=7912 outer=2505557 rc=0 chk=642ccc8f691fe147
+exp2e1 exp2_memset_s128_c2 n=100 ps_per_outer median=1654 min=1630 outer=12387194 rc=0 chk=642ccc8f691fe147
+exp2e1 exp2_memset_s128_c2r n=100 ps_per_outer median=1694 min=1668 outer=11008671 rc=0 chk=642ccc8f691fe147
+exp2e1 exp2_memset_s128_c2run n=100 ps_per_outer median=1693 min=1638 outer=11269969 rc=0 chk=642ccc8f691fe147
+exp2e1 exp2_memset_s128_c3 n=100 ps_per_outer median=3399 min=3342 outer=6077545 rc=0 chk=642ccc8f691fe147
+exp2e1 exp2_memset_s128_c3f n=100 ps_per_outer median=3362 min=3351 outer=5899732 rc=0 chk=642ccc8f691fe147
+exp2e1 exp2_memset_s128_nat n=100 ps_per_outer median=1684 min=1676 outer=12910826 rc=0 chk=642ccc8f691fe147
+exp2e1 exp2_pan_pair_imm n=1 ps_per_outer median=4102 min=4082 outer=4966409 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_pan_pair_reg n=1 ps_per_outer median=19960 min=19802 outer=1024666 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_place_ld_p0 n=1 ps_per_outer median=36243 min=36077 outer=561376 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_place_ld_p1 n=1 ps_per_outer median=36228 min=36033 outer=523798 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_place_ld_p2 n=1 ps_per_outer median=36415 min=36049 outer=561375 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_place_ld_p3 n=1 ps_per_outer median=60682 min=60359 outer=324757 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_place_ld_p4 n=1 ps_per_outer median=36289 min=36079 outer=561416 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_place_ld_p5 n=1 ps_per_outer median=36209 min=36135 outer=556057 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_place_ld_p6 n=1 ps_per_outer median=36340 min=36262 outer=549568 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_place_st_p0 n=1 ps_per_outer median=36442 min=36138 outer=556371 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_place_st_p1 n=1 ps_per_outer median=36177 min=36059 outer=561376 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_place_st_p3 n=1 ps_per_outer median=61031 min=60461 outer=336196 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_place_st_p4 n=1 ps_per_outer median=36401 min=36156 outer=555821 rc=0 chk=1fe70750e2400dc3
+exp2e1 exp2_qcopy_c0 n=64 ps_per_outer median=30256 min=30060 outer=672508 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_c0 n=256 ps_per_outer median=121953 min=121258 outer=168127 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_c0 n=1024 ps_per_outer median=485671 min=485360 outer=39460 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c0 n=4096 ps_per_outer median=1948704 min=1943108 outer=9658 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_qcopy_c0r n=64 ps_per_outer median=30502 min=30215 outer=563427 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_c0r n=256 ps_per_outer median=121744 min=121172 outer=157173 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_c0r n=1024 ps_per_outer median=486081 min=482371 outer=40847 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c0r n=4096 ps_per_outer median=1944528 min=1930357 outer=10238 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_qcopy_c1 n=64 ps_per_outer median=15156 min=15007 outer=1344786 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_c1 n=256 ps_per_outer median=60604 min=60262 outer=336138 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_c1 n=1024 ps_per_outer median=242564 min=241405 outer=84020 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c1 n=4096 ps_per_outer median=967242 min=964473 outer=20798 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_qcopy_c1p n=64 ps_per_outer median=15143 min=15064 outer=1345017 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_c1p n=256 ps_per_outer median=60828 min=60508 outer=336254 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_c1p n=1024 ps_per_outer median=242607 min=241369 outer=83013 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c1p n=4096 ps_per_outer median=972328 min=964493 outer=20582 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_qcopy_c2 n=64 ps_per_outer median=7937 min=7869 outer=2352476 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_c2 n=256 ps_per_outer median=9441 min=9429 outer=2152104 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_c2 n=1024 ps_per_outer median=15356 min=15078 outer=1288810 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c2 n=4096 ps_per_outer median=52808 min=52643 outer=373708 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_qcopy_c2r n=64 ps_per_outer median=7871 min=7840 outer=2538310 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_c2r n=256 ps_per_outer median=9429 min=9354 outer=2142283 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_c2r n=1024 ps_per_outer median=20669 min=20616 outer=978149 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c2r n=4096 ps_per_outer median=87859 min=84982 outer=233141 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_qcopy_c2run n=64 ps_per_outer median=1448 min=1441 outer=13421772 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_c2run n=256 ps_per_outer median=5199 min=5182 outer=3883131 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_c2run n=1024 ps_per_outer median=20195 min=20130 outer=980954 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c2run n=4096 ps_per_outer median=85377 min=85135 outer=236336 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_qcopy_c3 n=64 ps_per_outer median=2183 min=2176 outer=9272606 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_c3 n=256 ps_per_outer median=8699 min=8688 outer=2230853 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_c3 n=1024 ps_per_outer median=34872 min=34691 outer=569135 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c3 n=4096 ps_per_outer median=144854 min=143019 outer=129774 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_qcopy_c3f n=64 ps_per_outer median=2241 min=2178 outer=8834458 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_c3f n=256 ps_per_outer median=8719 min=8676 outer=2319345 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_c3f n=1024 ps_per_outer median=34882 min=34696 outer=579836 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c3f n=4096 ps_per_outer median=144214 min=143266 outer=127791 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_qcopy_c3s n=64 ps_per_outer median=2235 min=2226 outer=9006450 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_c3s n=256 ps_per_outer median=8914 min=8908 outer=2217173 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_c3s n=1024 ps_per_outer median=35913 min=35585 outer=564802 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c3s n=4096 ps_per_outer median=148514 min=147599 outer=136523 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_qcopy_nat n=64 ps_per_outer median=666 min=663 outer=30052304 rc=0 chk=2ae28d075c43aa0f
+exp2e1 exp2_qcopy_nat n=256 ps_per_outer median=3133 min=3119 outer=6454109 rc=0 chk=25551f4b47245dda
+exp2e1 exp2_qcopy_nat n=1024 ps_per_outer median=12550 min=12519 outer=1614847 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_nat n=4096 ps_per_outer median=52140 min=51948 outer=371940 rc=0 chk=78041e1f3041458f
+exp2e1 exp2_strlen_loop_c0 n=64 ps_per_outer median=15073 min=15033 outer=1344786 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c0 n=256 ps_per_outer median=60444 min=60110 outer=336196 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c0 n=1024 ps_per_outer median=241464 min=240543 outer=84034 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c0 n=4096 ps_per_outer median=973639 min=964840 outer=21015 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c0r n=64 ps_per_outer median=15139 min=15097 outer=1345017 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c0r n=256 ps_per_outer median=60796 min=60417 outer=332951 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c0r n=1024 ps_per_outer median=242785 min=241959 outer=78807 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c0r n=4096 ps_per_outer median=975616 min=964928 outer=21008 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c1 n=64 ps_per_outer median=15165 min=15077 outer=1336106 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c1 n=256 ps_per_outer median=60577 min=60254 outer=336197 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c1 n=1024 ps_per_outer median=242256 min=241187 outer=84049 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c1 n=4096 ps_per_outer median=973514 min=965088 outer=21015 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2 n=64 ps_per_outer median=7947 min=7868 outer=2569832 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2 n=256 ps_per_outer median=9134 min=9089 outer=2057780 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2 n=1024 ps_per_outer median=13811 min=13769 outer=1421864 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2 n=4096 ps_per_outer median=58736 min=58493 outer=344382 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2r n=64 ps_per_outer median=7859 min=7833 outer=2570039 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2r n=256 ps_per_outer median=9130 min=9095 outer=2114490 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2r n=1024 ps_per_outer median=16497 min=16435 outer=1061456 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2r n=4096 ps_per_outer median=74877 min=74723 outer=269621 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2run n=64 ps_per_outer median=1144 min=1142 outer=17605904 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2run n=256 ps_per_outer median=4188 min=4184 outer=4704244 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2run n=1024 ps_per_outer median=16445 min=16288 outer=1196095 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c2run n=4096 ps_per_outer median=74638 min=74463 outer=268296 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c3 n=64 ps_per_outer median=1677 min=1667 outer=11048294 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c3 n=256 ps_per_outer median=6697 min=6682 outer=3007100 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c3 n=1024 ps_per_outer median=26923 min=26735 outer=756256 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c3 n=4096 ps_per_outer median=118319 min=117837 outer=169811 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c3f n=64 ps_per_outer median=1871 min=1868 outer=10721635 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c3f n=256 ps_per_outer median=6721 min=6682 outer=2985694 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c3f n=1024 ps_per_outer median=26900 min=26849 outer=747061 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_c3f n=4096 ps_per_outer median=118528 min=117761 outer=167840 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_nat n=64 ps_per_outer median=663 min=662 outer=30376998 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_nat n=256 ps_per_outer median=3147 min=3132 outer=6454078 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_nat n=1024 ps_per_outer median=10671 min=10618 outer=1890459 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_strlen_loop_nat n=4096 ps_per_outer median=52223 min=51890 outer=388937 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_win_alu n=1 ps_per_outer median=8082 min=7872 outer=2484975 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_win_ldq_imm n=1 ps_per_outer median=7973 min=7668 outer=2430819 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_win_ldq_reg n=1 ps_per_outer median=26470 min=25920 outer=789510 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_win_ldx_imm n=1 ps_per_outer median=7624 min=7496 outer=2528517 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c0 n=64 ps_per_outer median=79590 min=63563 outer=2686364 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c0 n=256 ps_per_outer median=157431 min=111374 outer=668905 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c0 n=1024 ps_per_outer median=122387 min=120568 outer=168113 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c0 n=4096 ps_per_outer median=486309 min=483365 outer=42028 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c0r n=64 ps_per_outer median=79498 min=74429 outer=2473836 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c0r n=256 ps_per_outer median=160794 min=156082 outer=159461 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c0r n=1024 ps_per_outer median=148485 min=135224 outer=122397 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c0r n=4096 ps_per_outer median=487124 min=482544 outer=38409 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c1 n=64 ps_per_outer median=74525 min=30790 outer=2558960 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c1 n=256 ps_per_outer median=108166 min=30225 outer=668905 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c1 n=1024 ps_per_outer median=155905 min=129120 outer=167169 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c1 n=4096 ps_per_outer median=482151 min=481759 outer=41200 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2 n=64 ps_per_outer median=71828 min=7873 outer=2275393 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2 n=256 ps_per_outer median=153982 min=146713 outer=929588 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2 n=1024 ps_per_outer median=131759 min=19763 outer=1142406 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2 n=4096 ps_per_outer median=166028 min=112699 outer=402719 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2r n=64 ps_per_outer median=81228 min=75778 outer=244598 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2r n=256 ps_per_outer median=153430 min=95217 outer=2344410 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2r n=1024 ps_per_outer median=158006 min=118534 outer=1886606 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2r n=4096 ps_per_outer median=163608 min=132772 outer=639167 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2run n=64 ps_per_outer median=71263 min=63163 outer=30311140 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2run n=256 ps_per_outer median=152910 min=124758 outer=2391458 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2run n=1024 ps_per_outer median=147634 min=126040 outer=124735 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c2run n=4096 ps_per_outer median=165685 min=136569 outer=442238 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c3 n=64 ps_per_outer median=1260 min=1253 outer=16006789 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c3 n=256 ps_per_outer median=5036 min=5011 outer=4018037 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c3 n=1024 ps_per_outer median=20139 min=20015 outer=971862 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c3 n=4096 ps_per_outer median=80716 min=80069 outer=250999 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c3f n=64 ps_per_outer median=1256 min=1252 outer=16136059 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c3f n=256 ps_per_outer median=5025 min=4995 outer=4035058 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c3f n=1024 ps_per_outer median=20277 min=20065 outer=999533 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_c3f n=4096 ps_per_outer median=80987 min=80211 outer=252191 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_nat n=64 ps_per_outer median=60052 min=58773 outer=402227 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_nat n=256 ps_per_outer median=125568 min=29107 outer=2391096 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_nat n=1024 ps_per_outer median=160107 min=106779 outer=1307670 rc=0 chk=4e1e41c5f54fdb83
+exp2e1 exp2_zva_loop_nat n=4096 ps_per_outer median=170426 min=169135 outer=148824 rc=0 chk=4e1e41c5f54fdb83
+exp2cfg srcoff=0 dstoff=0
+exp2e0 exp2_acc_ldd_c3 n=1 ps_per_outer median=1709 min=1700 outer=11737782 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_acc_ldd_c3f n=1 ps_per_outer median=1718 min=1711 outer=11070667 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_acc_ldd_nat n=1 ps_per_outer median=844 min=838 outer=23488763 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_acc_ldpq_c3 n=1 ps_per_outer median=3418 min=3353 outer=5673081 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_acc_ldpq_c3f n=1 ps_per_outer median=3402 min=3340 outer=5251639 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_acc_ldpq_nat n=1 ps_per_outer median=852 min=834 outer=24211950 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_acc_ldq_c3 n=1 ps_per_outer median=3374 min=3350 outer=6045979 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_acc_ldq_c3f n=1 ps_per_outer median=3372 min=3362 outer=6049467 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_acc_ldq_nat n=1 ps_per_outer median=855 min=842 outer=23488658 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_acc_std_c3 n=1 ps_per_outer median=1711 min=1706 outer=11994006 rc=0 chk=ae077c933ff14da3
+exp2e0 exp2_acc_std_c3f n=1 ps_per_outer median=1706 min=1696 outer=11994006 rc=0 chk=ae077c933ff14da3
+exp2e0 exp2_acc_std_nat n=1 ps_per_outer median=1262 min=1259 outer=16138145 rc=0 chk=ae077c933ff14da3
+exp2e0 exp2_acc_stpq_c3 n=1 ps_per_outer median=3451 min=3424 outer=5392977 rc=0 chk=1fe70750e2400dc3
+exp2e0 exp2_acc_stpq_c3f n=1 ps_per_outer median=3420 min=3388 outer=5682328 rc=0 chk=1fe70750e2400dc3
+exp2e0 exp2_acc_stpq_nat n=1 ps_per_outer median=1281 min=1256 outer=16140232 rc=0 chk=1fe70750e2400dc3
+exp2e0 exp2_acc_stq_c3 n=1 ps_per_outer median=3431 min=3333 outer=5758242 rc=0 chk=1fe70750e2400dc3
+exp2e0 exp2_acc_stq_c3f n=1 ps_per_outer median=3394 min=3356 outer=5936473 rc=0 chk=1fe70750e2400dc3
+exp2e0 exp2_acc_stq_nat n=1 ps_per_outer median=1263 min=1258 outer=16138145 rc=0 chk=1fe70750e2400dc3
+exp2e0 exp2_alu n=1 ps_per_outer median=1259 min=1254 outer=15693345 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_fcheck_c3 n=1 ps_per_outer median=0 min=0 outer=7989150476190 rc=0 chk=547fb9e6eb8d335e
+exp2e0 exp2_fcheck_c3f n=1 ps_per_outer median=0 min=0 outer=8184007804878 rc=0 chk=547fb9e6eb8d335e
+exp2e0 exp2_fcheck_c3s n=1 ps_per_outer median=0 min=0 outer=8184007804878 rc=0 chk=547fb9e6eb8d335e
+exp2e0 exp2_fcheck_nat n=1 ps_per_outer median=0 min=0 outer=18446744073709551615 rc=0 chk=547fb9e6eb8d335e
+exp2e0 exp2_loop n=1 ps_per_outer median=315 min=313 outer=64569276 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_c3 n=64 ps_per_outer median=2844 min=2822 outer=7069448 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_c3 n=256 ps_per_outer median=8117 min=8100 outer=2506957 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_c3 n=1024 ps_per_outer median=29908 min=29845 outer=681306 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_c3 n=4096 ps_per_outer median=121013 min=120555 outer=164154 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_c3f n=64 ps_per_outer median=2839 min=2829 outer=7026030 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_c3f n=256 ps_per_outer median=8159 min=8116 outer=2432516 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_c3f n=1024 ps_per_outer median=29920 min=29815 outer=602076 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_c3f n=4096 ps_per_outer median=120956 min=120548 outer=168487 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_nat n=64 ps_per_outer median=1894 min=1887 outer=10760143 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_nat n=256 ps_per_outer median=4305 min=4276 outer=4446253 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_nat n=1024 ps_per_outer median=15775 min=15637 outer=1223828 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memchr_loop_nat n=4096 ps_per_outer median=79357 min=79089 outer=255800 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_memcpy_loop_c3 n=64 ps_per_outer median=2124 min=2111 outer=9606743 rc=0 chk=191fb44a626e4923
+exp2e0 exp2_memcpy_loop_c3 n=256 ps_per_outer median=8352 min=8340 outer=2434775 rc=0 chk=3c3e2fafb1476125
+exp2e0 exp2_memcpy_loop_c3 n=1024 ps_per_outer median=33802 min=33270 outer=563911 rc=0 chk=e5adb823280ee792
+exp2e0 exp2_memcpy_loop_c3 n=4096 ps_per_outer median=133392 min=133044 outer=152657 rc=0 chk=ca711bca833e9222
+exp2e0 exp2_memcpy_loop_c3f n=64 ps_per_outer median=2127 min=2122 outer=9249426 rc=0 chk=191fb44a626e4923
+exp2e0 exp2_memcpy_loop_c3f n=256 ps_per_outer median=8400 min=8356 outer=2436468 rc=0 chk=3c3e2fafb1476125
+exp2e0 exp2_memcpy_loop_c3f n=1024 ps_per_outer median=33386 min=33264 outer=567329 rc=0 chk=e5adb823280ee792
+exp2e0 exp2_memcpy_loop_c3f n=4096 ps_per_outer median=133652 min=133197 outer=151926 rc=0 chk=ca711bca833e9222
+exp2e0 exp2_memcpy_loop_c3s n=64 ps_per_outer median=2168 min=2163 outer=8607811 rc=0 chk=191fb44a626e4923
+exp2e0 exp2_memcpy_loop_c3s n=256 ps_per_outer median=8636 min=8573 outer=2368952 rc=0 chk=3c3e2fafb1476125
+exp2e0 exp2_memcpy_loop_c3s n=1024 ps_per_outer median=34390 min=34245 outer=591970 rc=0 chk=e5adb823280ee792
+exp2e0 exp2_memcpy_loop_c3s n=4096 ps_per_outer median=137558 min=137153 outer=148294 rc=0 chk=ca711bca833e9222
+exp2e0 exp2_memcpy_loop_nat n=64 ps_per_outer median=671 min=667 outer=24720887 rc=0 chk=191fb44a626e4923
+exp2e0 exp2_memcpy_loop_nat n=256 ps_per_outer median=3557 min=3536 outer=5376408 rc=0 chk=3c3e2fafb1476125
+exp2e0 exp2_memcpy_loop_nat n=1024 ps_per_outer median=14217 min=14163 outer=1432480 rc=0 chk=e5adb823280ee792
+exp2e0 exp2_memcpy_loop_nat n=4096 ps_per_outer median=59645 min=56678 outer=381172 rc=0 chk=ca711bca833e9222
+exp2e0 exp2_memcpy_s128_c3 n=112 ps_per_outer median=4243 min=4194 outer=4695110 rc=0 chk=9167027f06283213
+exp2e0 exp2_memcpy_s128_c3f n=112 ps_per_outer median=4248 min=4197 outer=4568289 rc=0 chk=9167027f06283213
+exp2e0 exp2_memcpy_s128_nat n=112 ps_per_outer median=1619 min=1611 outer=12912193 rc=0 chk=9167027f06283213
+exp2e0 exp2_memcpy_s32_c3 n=24 ps_per_outer median=1218 min=1196 outer=17215622 rc=0 chk=3dc73233970a4b8b
+exp2e0 exp2_memcpy_s32_c3f n=24 ps_per_outer median=1210 min=1207 outer=15078399 rc=0 chk=3dc73233970a4b8b
+exp2e0 exp2_memcpy_s32_nat n=24 ps_per_outer median=637 min=625 outer=31168982 rc=0 chk=3dc73233970a4b8b
+exp2e0 exp2_memcpy_s64_c3 n=48 ps_per_outer median=2148 min=2111 outer=9560042 rc=0 chk=b5347d8ba2bb853f
+exp2e0 exp2_memcpy_s64_c3f n=48 ps_per_outer median=2174 min=2113 outer=9278760 rc=0 chk=b5347d8ba2bb853f
+exp2e0 exp2_memcpy_s64_nat n=48 ps_per_outer median=705 min=703 outer=25529600 rc=0 chk=b5347d8ba2bb853f
+exp2e0 exp2_memmove_back_c3 n=256 ps_per_outer median=8519 min=8449 outer=2359001 rc=0 chk=7f642005ab6d650e
+exp2e0 exp2_memmove_back_c3 n=1024 ps_per_outer median=33919 min=33403 outer=547768 rc=0 chk=4ccd795d682463af
+exp2e0 exp2_memmove_back_c3 n=4096 ps_per_outer median=133658 min=133326 outer=125958 rc=0 chk=f1f77c9adeb72d43
+exp2e0 exp2_memmove_back_c3f n=256 ps_per_outer median=8401 min=8335 outer=2430824 rc=0 chk=7f642005ab6d650e
+exp2e0 exp2_memmove_back_c3f n=1024 ps_per_outer median=33538 min=33407 outer=586014 rc=0 chk=4ccd795d682463af
+exp2e0 exp2_memmove_back_c3f n=4096 ps_per_outer median=133522 min=132802 outer=150923 rc=0 chk=f1f77c9adeb72d43
+exp2e0 exp2_memmove_back_nat n=256 ps_per_outer median=3161 min=3144 outer=6306601 rc=0 chk=7f642005ab6d650e
+exp2e0 exp2_memmove_back_nat n=1024 ps_per_outer median=12705 min=12621 outer=1614855 rc=0 chk=4ccd795d682463af
+exp2e0 exp2_memmove_back_nat n=4096 ps_per_outer median=51414 min=51049 outer=393452 rc=0 chk=f1f77c9adeb72d43
+exp2e0 exp2_memset_loop_c3 n=64 ps_per_outer median=1735 min=1723 outer=11736704 rc=0 chk=2e0acb161e688f43
+exp2e0 exp2_memset_loop_c3 n=256 ps_per_outer median=6841 min=6827 outer=2819255 rc=0 chk=37f155703b527c83
+exp2e0 exp2_memset_loop_c3 n=1024 ps_per_outer median=27428 min=27355 outer=703680 rc=0 chk=95c49d5f58425f83
+exp2e0 exp2_memset_loop_c3 n=4096 ps_per_outer median=124842 min=121296 outer=170120 rc=0 chk=8d8f730e2f99eb83
+exp2e0 exp2_memset_loop_c3f n=64 ps_per_outer median=1773 min=1736 outer=11187794 rc=0 chk=2e0acb161e688f43
+exp2e0 exp2_memset_loop_c3f n=256 ps_per_outer median=6953 min=6932 outer=2890760 rc=0 chk=37f155703b527c83
+exp2e0 exp2_memset_loop_c3f n=1024 ps_per_outer median=28058 min=27603 outer=710930 rc=0 chk=95c49d5f58425f83
+exp2e0 exp2_memset_loop_c3f n=4096 ps_per_outer median=123790 min=121374 outer=167926 rc=0 chk=8d8f730e2f99eb83
+exp2e0 exp2_memset_loop_c3s n=64 ps_per_outer median=1756 min=1749 outer=11382100 rc=0 chk=2e0acb161e688f43
+exp2e0 exp2_memset_loop_c3s n=256 ps_per_outer median=6971 min=6929 outer=2867312 rc=0 chk=37f155703b527c83
+exp2e0 exp2_memset_loop_c3s n=1024 ps_per_outer median=28088 min=27733 outer=670616 rc=0 chk=95c49d5f58425f83
+exp2e0 exp2_memset_loop_c3s n=4096 ps_per_outer median=126795 min=123866 outer=162943 rc=0 chk=8d8f730e2f99eb83
+exp2e0 exp2_memset_loop_nat n=64 ps_per_outer median=641 min=633 outer=30609771 rc=0 chk=2e0acb161e688f43
+exp2e0 exp2_memset_loop_nat n=256 ps_per_outer median=2574 min=2552 outer=7821306 rc=0 chk=37f155703b527c83
+exp2e0 exp2_memset_loop_nat n=1024 ps_per_outer median=10290 min=10211 outer=2009795 rc=0 chk=95c49d5f58425f83
+exp2e0 exp2_memset_loop_nat n=4096 ps_per_outer median=41840 min=41342 outer=471256 rc=0 chk=8d8f730e2f99eb83
+exp2e0 exp2_memset_s128_c3 n=100 ps_per_outer median=3366 min=3348 outer=6075179 rc=0 chk=642ccc8f691fe147
+exp2e0 exp2_memset_s128_c3f n=100 ps_per_outer median=3349 min=3345 outer=6074025 rc=0 chk=642ccc8f691fe147
+exp2e0 exp2_memset_s128_nat n=100 ps_per_outer median=1660 min=1630 outer=11302355 rc=0 chk=642ccc8f691fe147
+exp2e0 exp2_qcopy_c3 n=64 ps_per_outer median=2196 min=2190 outer=9272606 rc=0 chk=2ae28d075c43aa0f
+exp2e0 exp2_qcopy_c3 n=256 ps_per_outer median=8800 min=8778 outer=2222342 rc=0 chk=25551f4b47245dda
+exp2e0 exp2_qcopy_c3 n=1024 ps_per_outer median=35336 min=35123 outer=575255 rc=0 chk=8a16001ffe140e2b
+exp2e0 exp2_qcopy_c3 n=4096 ps_per_outer median=145057 min=144746 outer=140584 rc=0 chk=78041e1f3041458f
+exp2e0 exp2_qcopy_c3f n=64 ps_per_outer median=2223 min=2206 outer=9273278 rc=0 chk=2ae28d075c43aa0f
+exp2e0 exp2_qcopy_c3f n=256 ps_per_outer median=8795 min=8739 outer=2256621 rc=0 chk=25551f4b47245dda
+exp2e0 exp2_qcopy_c3f n=1024 ps_per_outer median=35297 min=34944 outer=579921 rc=0 chk=8a16001ffe140e2b
+exp2e0 exp2_qcopy_c3f n=4096 ps_per_outer median=145225 min=144509 outer=137902 rc=0 chk=78041e1f3041458f
+exp2e0 exp2_qcopy_c3s n=64 ps_per_outer median=2253 min=2250 outer=8793694 rc=0 chk=2ae28d075c43aa0f
+exp2e0 exp2_qcopy_c3s n=256 ps_per_outer median=9047 min=9003 outer=2196736 rc=0 chk=25551f4b47245dda
+exp2e0 exp2_qcopy_c3s n=1024 ps_per_outer median=36275 min=35944 outer=491121 rc=0 chk=8a16001ffe140e2b
+exp2e0 exp2_qcopy_c3s n=4096 ps_per_outer median=149114 min=148144 outer=130871 rc=0 chk=78041e1f3041458f
+exp2e0 exp2_qcopy_nat n=64 ps_per_outer median=674 min=670 outer=30099059 rc=0 chk=2ae28d075c43aa0f
+exp2e0 exp2_qcopy_nat n=256 ps_per_outer median=3197 min=3175 outer=6455413 rc=0 chk=25551f4b47245dda
+exp2e0 exp2_qcopy_nat n=1024 ps_per_outer median=12871 min=12705 outer=1617501 rc=0 chk=8a16001ffe140e2b
+exp2e0 exp2_qcopy_nat n=4096 ps_per_outer median=57401 min=54097 outer=383549 rc=0 chk=78041e1f3041458f
+exp2e0 exp2_strlen_loop_c3 n=64 ps_per_outer median=1732 min=1714 outer=11742172 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_c3 n=256 ps_per_outer median=6925 min=6818 outer=2469561 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_c3 n=1024 ps_per_outer median=27655 min=27448 outer=733749 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_c3 n=4096 ps_per_outer median=122131 min=120538 outer=165466 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_c3f n=64 ps_per_outer median=1951 min=1923 outer=9877484 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_c3f n=256 ps_per_outer median=6781 min=6706 outer=3019806 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_c3f n=1024 ps_per_outer median=27360 min=26728 outer=756185 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_c3f n=4096 ps_per_outer median=120558 min=119087 outer=170800 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_nat n=64 ps_per_outer median=674 min=672 outer=29598174 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_nat n=256 ps_per_outer median=3153 min=3135 outer=6370449 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_nat n=1024 ps_per_outer median=10762 min=10707 outer=1806332 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_strlen_loop_nat n=4096 ps_per_outer median=52514 min=52270 outer=367973 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_c3 n=64 ps_per_outer median=1262 min=1258 outer=16136109 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_c3 n=256 ps_per_outer median=5073 min=5033 outer=4034027 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_c3 n=1024 ps_per_outer median=20190 min=20156 outer=1008761 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_c3 n=4096 ps_per_outer median=81642 min=80765 outer=230869 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_c3f n=64 ps_per_outer median=1268 min=1258 outer=16121571 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_c3f n=256 ps_per_outer median=5050 min=5008 outer=4035058 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_c3f n=1024 ps_per_outer median=20278 min=20154 outer=968513 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_c3f n=4096 ps_per_outer median=81785 min=80652 outer=248086 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_nat n=64 ps_per_outer median=9929 min=7660 outer=2473443 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_nat n=256 ps_per_outer median=133365 min=131160 outer=6455413 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_nat n=1024 ps_per_outer median=155867 min=48843 outer=910222 rc=0 chk=4e1e41c5f54fdb83
+exp2e0 exp2_zva_loop_nat n=4096 ps_per_outer median=166351 min=70053 outer=812009 rc=0 chk=4e1e41c5f54fdb83
+exp2ids midr=0x610f0000 pfr0=0x1101000010110011 pfr1=0x0 pfr2=0x0 dfr0=0x10305006 isar0=0x221100110212120 isar1=0x11110211202 isar2=0x0 isar3=0x0 mmfr0=0x10000f100002 mmfr1=0x11212000 mmfr2=0x1001001100001011 mmfr3=0x0 mmfr4=0x0 sctlr_el1=0xfc74799d tcr_el1=0x1000022b5503510 ctr_el0=0x8444c004 dczid_el0=0x4
+exp2cfg srcoff=0 dstoff=5
+exp2e1 exp2_memcpy_loop_c0 n=1024 ps_per_outer median=489531 min=483116 outer=42031 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c0r n=1024 ps_per_outer median=319096 min=317343 outer=62894 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c1 n=1024 ps_per_outer median=125643 min=125177 outer=160588 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c2 n=1024 ps_per_outer median=18737 min=18620 outer=1086234 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c2run n=1024 ps_per_outer median=18692 min=18460 outer=1045508 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c3 n=1024 ps_per_outer median=33299 min=32991 outer=607329 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c3f n=1024 ps_per_outer median=33084 min=33021 outer=610299 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_nat n=1024 ps_per_outer median=18570 min=18535 outer=1085184 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_qcopy_c0 n=1024 ps_per_outer median=484328 min=483585 outer=37575 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c0r n=1024 ps_per_outer median=484948 min=482454 outer=42035 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c1 n=1024 ps_per_outer median=243537 min=239515 outer=80815 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c2 n=1024 ps_per_outer median=18604 min=18557 outer=1069102 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c2run n=1024 ps_per_outer median=20207 min=20162 outer=964238 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c3 n=1024 ps_per_outer median=34775 min=34695 outer=578046 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c3f n=1024 ps_per_outer median=34740 min=34696 outer=579921 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_nat n=1024 ps_per_outer median=18577 min=18453 outer=1086681 rc=0 chk=8a16001ffe140e2b
+exp2ids midr=0x610f0000 pfr0=0x1101000010110011 pfr1=0x0 pfr2=0x0 dfr0=0x10305006 isar0=0x221100110212120 isar1=0x11110211202 isar2=0x0 isar3=0x0 mmfr0=0x10000f100002 mmfr1=0x11212000 mmfr2=0x1001001100001011 mmfr3=0x0 mmfr4=0x0 sctlr_el1=0xfc74799d tcr_el1=0x1000022b5503510 ctr_el0=0x8444c004 dczid_el0=0x4
+exp2cfg srcoff=0 dstoff=8
+exp2e1 exp2_memcpy_loop_c0 n=1024 ps_per_outer median=489239 min=486395 outer=38286 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c0r n=1024 ps_per_outer median=317267 min=316665 outer=64050 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c1 n=1024 ps_per_outer median=127085 min=125391 outer=161392 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c2 n=1024 ps_per_outer median=18625 min=18536 outer=1091658 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c2run n=1024 ps_per_outer median=18567 min=18481 outer=1085780 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c3 n=1024 ps_per_outer median=33118 min=32929 outer=610346 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_c3f n=1024 ps_per_outer median=33189 min=32978 outer=610299 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_memcpy_loop_nat n=1024 ps_per_outer median=18559 min=18535 outer=1065771 rc=0 chk=e5adb823280ee792
+exp2e1 exp2_qcopy_c0 n=1024 ps_per_outer median=482692 min=481355 outer=42031 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c0r n=1024 ps_per_outer median=486362 min=481669 outer=42021 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c1 n=1024 ps_per_outer median=243341 min=240798 outer=84078 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c2 n=1024 ps_per_outer median=18597 min=18514 outer=1087434 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c2run n=1024 ps_per_outer median=20197 min=20159 outer=998899 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c3 n=1024 ps_per_outer median=35006 min=34855 outer=579921 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_c3f n=1024 ps_per_outer median=34922 min=34838 outer=579879 rc=0 chk=8a16001ffe140e2b
+exp2e1 exp2_qcopy_nat n=1024 ps_per_outer median=18513 min=18453 outer=1092875 rc=0 chk=8a16001ffe140e2b
+exp2cfg srcoff=0 dstoff=5
+exp2e0 exp2_memcpy_loop_c3 n=1024 ps_per_outer median=33602 min=33335 outer=609306 rc=0 chk=e5adb823280ee792
+exp2e0 exp2_memcpy_loop_c3f n=1024 ps_per_outer median=33603 min=33258 outer=610299 rc=0 chk=e5adb823280ee792
+exp2e0 exp2_memcpy_loop_nat n=1024 ps_per_outer median=18764 min=18621 outer=1019618 rc=0 chk=e5adb823280ee792
+exp2e0 exp2_qcopy_c3 n=1024 ps_per_outer median=35213 min=35021 outer=579878 rc=0 chk=8a16001ffe140e2b
+exp2e0 exp2_qcopy_c3f n=1024 ps_per_outer median=35347 min=35141 outer=579836 rc=0 chk=8a16001ffe140e2b
+exp2e0 exp2_qcopy_nat n=1024 ps_per_outer median=18786 min=18673 outer=1082495 rc=0 chk=8a16001ffe140e2b
+exp2cfg srcoff=0 dstoff=8
+exp2e0 exp2_memcpy_loop_c3 n=1024 ps_per_outer median=33396 min=33220 outer=572491 rc=0 chk=e5adb823280ee792
+exp2e0 exp2_memcpy_loop_c3f n=1024 ps_per_outer median=33894 min=33453 outer=596504 rc=0 chk=e5adb823280ee792
+exp2e0 exp2_memcpy_loop_nat n=1024 ps_per_outer median=18809 min=18717 outer=1091204 rc=0 chk=e5adb823280ee792
+exp2e0 exp2_qcopy_c3 n=1024 ps_per_outer median=35140 min=35063 outer=569878 rc=0 chk=8a16001ffe140e2b
+exp2e0 exp2_qcopy_c3f n=1024 ps_per_outer median=35430 min=35085 outer=579879 rc=0 chk=8a16001ffe140e2b
+exp2e0 exp2_qcopy_nat n=1024 ps_per_outer median=18710 min=18640 outer=1093024 rc=0 chk=8a16001ffe140e2b
+fault nat_ldr_q k=1 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_q k=2 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_q k=3 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_q k=4 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_q k=5 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_q k=6 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_q k=7 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_q k=8 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_q k=12 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_q k=16 sig=0 (access completed)
+fault nat_ldr_q k=20 sig=0 (access completed)
+fault nat_ldr_q k=24 sig=0 (access completed)
+fault c3_ldr_q k=1 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_q k=2 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_q k=3 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_q k=4 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_q k=5 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_q k=6 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_q k=7 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_q k=8 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_q k=12 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_q k=16 sig=0 (access completed)
+fault c3_ldr_q k=20 sig=0 (access completed)
+fault c3_ldr_q k=24 sig=0 (access completed)
+fault c3s_ldr_q k=1 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldr_q k=2 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldr_q k=3 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldr_q k=4 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldr_q k=5 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldr_q k=6 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldr_q k=7 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldr_q k=8 sig=11 vchg=16,0,0,0 memw=-1
+fault c3s_ldr_q k=12 sig=11 vchg=16,0,0,0 memw=-1
+fault c3s_ldr_q k=16 sig=0 (access completed)
+fault c3s_ldr_q k=20 sig=0 (access completed)
+fault c3s_ldr_q k=24 sig=0 (access completed)
+fault nat_ldr_d k=1 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_d k=2 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_d k=3 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_d k=4 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_d k=5 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_d k=6 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_d k=7 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldr_d k=8 sig=0 (access completed)
+fault nat_ldr_d k=12 sig=0 (access completed)
+fault nat_ldr_d k=16 sig=0 (access completed)
+fault c3_ldr_d k=1 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_d k=2 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_d k=3 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_d k=4 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_d k=5 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_d k=6 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_d k=7 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldr_d k=8 sig=0 (access completed)
+fault c3_ldr_d k=12 sig=0 (access completed)
+fault c3_ldr_d k=16 sig=0 (access completed)
+fault nat_ldp_q k=1 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldp_q k=2 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldp_q k=3 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldp_q k=4 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldp_q k=5 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldp_q k=6 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldp_q k=7 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldp_q k=8 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldp_q k=12 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ldp_q k=16 sig=11 vchg=16,0,0,0 memw=-1
+fault nat_ldp_q k=20 sig=11 vchg=16,0,0,0 memw=-1
+fault nat_ldp_q k=24 sig=11 vchg=16,0,0,0 memw=-1
+fault nat_ldp_q k=32 sig=0 (access completed)
+fault nat_ldp_q k=40 sig=0 (access completed)
+fault c3_ldp_q k=1 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=2 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=3 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=4 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=5 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=6 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=7 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=8 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=12 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=16 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=20 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=24 sig=11 vchg=0,0,0,0 memw=-1
+fault c3_ldp_q k=32 sig=0 (access completed)
+fault c3_ldp_q k=40 sig=0 (access completed)
+fault c3s_ldp_q k=1 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldp_q k=2 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldp_q k=3 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldp_q k=4 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldp_q k=5 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldp_q k=6 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldp_q k=7 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ldp_q k=8 sig=11 vchg=16,0,0,0 memw=-1
+fault c3s_ldp_q k=12 sig=11 vchg=16,0,0,0 memw=-1
+fault c3s_ldp_q k=16 sig=11 vchg=16,0,0,0 memw=-1
+fault c3s_ldp_q k=20 sig=11 vchg=16,0,0,0 memw=-1
+fault c3s_ldp_q k=24 sig=11 vchg=16,16,0,0 memw=-1
+fault c3s_ldp_q k=32 sig=0 (access completed)
+fault c3s_ldp_q k=40 sig=0 (access completed)
+fault nat_ld1_4 k=1 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ld1_4 k=2 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ld1_4 k=3 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ld1_4 k=4 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ld1_4 k=5 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ld1_4 k=6 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ld1_4 k=7 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ld1_4 k=8 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ld1_4 k=12 sig=11 vchg=0,0,0,0 memw=-1
+fault nat_ld1_4 k=16 sig=11 vchg=16,0,0,0 memw=-1
+fault nat_ld1_4 k=20 sig=11 vchg=16,0,0,0 memw=-1
+fault nat_ld1_4 k=24 sig=11 vchg=16,0,0,0 memw=-1
+fault nat_ld1_4 k=32 sig=11 vchg=16,16,0,0 memw=-1
+fault nat_ld1_4 k=40 sig=11 vchg=16,16,0,0 memw=-1
+fault nat_ld1_4 k=48 sig=11 vchg=16,16,16,0 memw=-1
+fault nat_ld1_4 k=56 sig=11 vchg=16,16,16,0 memw=-1
+fault nat_ld1_4 k=64 sig=0 (access completed)
+fault nat_ld1_4 k=72 sig=0 (access completed)
+fault c3s_ld1_4 k=1 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ld1_4 k=2 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ld1_4 k=3 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ld1_4 k=4 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ld1_4 k=5 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ld1_4 k=6 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ld1_4 k=7 sig=11 vchg=0,0,0,0 memw=-1
+fault c3s_ld1_4 k=8 sig=11 vchg=16,0,0,0 memw=-1
+fault c3s_ld1_4 k=12 sig=11 vchg=16,0,0,0 memw=-1
+fault c3s_ld1_4 k=16 sig=11 vchg=16,0,0,0 memw=-1
+fault c3s_ld1_4 k=20 sig=11 vchg=16,0,0,0 memw=-1
+fault c3s_ld1_4 k=24 sig=11 vchg=16,16,0,0 memw=-1
+fault c3s_ld1_4 k=32 sig=11 vchg=16,16,0,0 memw=-1
+fault c3s_ld1_4 k=40 sig=11 vchg=16,16,16,0 memw=-1
+fault c3s_ld1_4 k=48 sig=11 vchg=16,16,16,0 memw=-1
+fault c3s_ld1_4 k=56 sig=11 vchg=16,16,16,16 memw=-1
+fault c3s_ld1_4 k=64 sig=0 (access completed)
+fault c3s_ld1_4 k=72 sig=0 (access completed)
+fault nat_str_q k=1 sig=11 vchg=0,0,0,0 memw=0
+fault nat_str_q k=2 sig=11 vchg=0,0,0,0 memw=0
+fault nat_str_q k=3 sig=11 vchg=0,0,0,0 memw=0
+fault nat_str_q k=4 sig=11 vchg=0,0,0,0 memw=0
+fault nat_str_q k=5 sig=11 vchg=0,0,0,0 memw=0
+fault nat_str_q k=6 sig=11 vchg=0,0,0,0 memw=0
+fault nat_str_q k=7 sig=11 vchg=0,0,0,0 memw=0
+fault nat_str_q k=8 sig=11 vchg=0,0,0,0 memw=0
+fault nat_str_q k=12 sig=11 vchg=0,0,0,0 memw=0
+fault nat_str_q k=16 sig=0 (access completed)
+fault nat_str_q k=20 sig=0 (access completed)
+fault nat_str_q k=24 sig=0 (access completed)
+fault c3_str_q k=1 sig=11 vchg=0,0,0,0 memw=0
+fault c3_str_q k=2 sig=11 vchg=0,0,0,0 memw=0
+fault c3_str_q k=3 sig=11 vchg=0,0,0,0 memw=0
+fault c3_str_q k=4 sig=11 vchg=0,0,0,0 memw=0
+fault c3_str_q k=5 sig=11 vchg=0,0,0,0 memw=0
+fault c3_str_q k=6 sig=11 vchg=0,0,0,0 memw=0
+fault c3_str_q k=7 sig=11 vchg=0,0,0,0 memw=0
+fault c3_str_q k=8 sig=11 vchg=0,0,0,0 memw=8
+fault c3_str_q k=12 sig=11 vchg=0,0,0,0 memw=8
+fault c3_str_q k=16 sig=0 (access completed)
+fault c3_str_q k=20 sig=0 (access completed)
+fault c3_str_q k=24 sig=0 (access completed)
+fault nat_stp_q k=1 sig=11 vchg=0,0,0,0 memw=0
+fault nat_stp_q k=2 sig=11 vchg=0,0,0,0 memw=0
+fault nat_stp_q k=3 sig=11 vchg=0,0,0,0 memw=0
+fault nat_stp_q k=4 sig=11 vchg=0,0,0,0 memw=0
+fault nat_stp_q k=5 sig=11 vchg=0,0,0,0 memw=0
+fault nat_stp_q k=6 sig=11 vchg=0,0,0,0 memw=0
+fault nat_stp_q k=7 sig=11 vchg=0,0,0,0 memw=0
+fault nat_stp_q k=8 sig=11 vchg=0,0,0,0 memw=0
+fault nat_stp_q k=12 sig=11 vchg=0,0,0,0 memw=0
+fault nat_stp_q k=16 sig=11 vchg=0,0,0,0 memw=16
+fault nat_stp_q k=20 sig=11 vchg=0,0,0,0 memw=16
+fault nat_stp_q k=24 sig=11 vchg=0,0,0,0 memw=16
+fault nat_stp_q k=32 sig=0 (access completed)
+fault nat_stp_q k=40 sig=0 (access completed)
+fault c3_stp_q k=1 sig=11 vchg=0,0,0,0 memw=0
+fault c3_stp_q k=2 sig=11 vchg=0,0,0,0 memw=0
+fault c3_stp_q k=3 sig=11 vchg=0,0,0,0 memw=0
+fault c3_stp_q k=4 sig=11 vchg=0,0,0,0 memw=0
+fault c3_stp_q k=5 sig=11 vchg=0,0,0,0 memw=0
+fault c3_stp_q k=6 sig=11 vchg=0,0,0,0 memw=0
+fault c3_stp_q k=7 sig=11 vchg=0,0,0,0 memw=0
+fault c3_stp_q k=8 sig=11 vchg=0,0,0,0 memw=8
+fault c3_stp_q k=12 sig=11 vchg=0,0,0,0 memw=8
+fault c3_stp_q k=16 sig=11 vchg=0,0,0,0 memw=16
+fault c3_stp_q k=20 sig=11 vchg=0,0,0,0 memw=16
+fault c3_stp_q k=24 sig=11 vchg=0,0,0,0 memw=24
+fault c3_stp_q k=32 sig=0 (access completed)
+fault c3_stp_q k=40 sig=0 (access completed)
+fault nat_st1_4 k=1 sig=11 vchg=0,0,0,0 memw=0
+fault nat_st1_4 k=2 sig=11 vchg=0,0,0,0 memw=0
+fault nat_st1_4 k=3 sig=11 vchg=0,0,0,0 memw=0
+fault nat_st1_4 k=4 sig=11 vchg=0,0,0,0 memw=0
+fault nat_st1_4 k=5 sig=11 vchg=0,0,0,0 memw=0
+fault nat_st1_4 k=6 sig=11 vchg=0,0,0,0 memw=0
+fault nat_st1_4 k=7 sig=11 vchg=0,0,0,0 memw=0
+fault nat_st1_4 k=8 sig=11 vchg=0,0,0,0 memw=0
+fault nat_st1_4 k=12 sig=11 vchg=0,0,0,0 memw=0
+fault nat_st1_4 k=16 sig=11 vchg=0,0,0,0 memw=16
+fault nat_st1_4 k=20 sig=11 vchg=0,0,0,0 memw=16
+fault nat_st1_4 k=24 sig=11 vchg=0,0,0,0 memw=16
+fault nat_st1_4 k=32 sig=11 vchg=0,0,0,0 memw=32
+fault nat_st1_4 k=40 sig=11 vchg=0,0,0,0 memw=32
+fault nat_st1_4 k=48 sig=11 vchg=0,0,0,0 memw=48
+fault nat_st1_4 k=56 sig=11 vchg=0,0,0,0 memw=48
+fault nat_st1_4 k=64 sig=0 (access completed)
+fault nat_st1_4 k=72 sig=0 (access completed)
+fault c3_st1_4 k=1 sig=11 vchg=0,0,0,0 memw=0
+fault c3_st1_4 k=2 sig=11 vchg=0,0,0,0 memw=0
+fault c3_st1_4 k=3 sig=11 vchg=0,0,0,0 memw=0
+fault c3_st1_4 k=4 sig=11 vchg=0,0,0,0 memw=0
+fault c3_st1_4 k=5 sig=11 vchg=0,0,0,0 memw=0
+fault c3_st1_4 k=6 sig=11 vchg=0,0,0,0 memw=0
+fault c3_st1_4 k=7 sig=11 vchg=0,0,0,0 memw=0
+fault c3_st1_4 k=8 sig=11 vchg=0,0,0,0 memw=8
+fault c3_st1_4 k=12 sig=11 vchg=0,0,0,0 memw=8
+fault c3_st1_4 k=16 sig=11 vchg=0,0,0,0 memw=16
+fault c3_st1_4 k=20 sig=11 vchg=0,0,0,0 memw=16
+fault c3_st1_4 k=24 sig=11 vchg=0,0,0,0 memw=24
+fault c3_st1_4 k=32 sig=11 vchg=0,0,0,0 memw=32
+fault c3_st1_4 k=40 sig=11 vchg=0,0,0,0 memw=40
+fault c3_st1_4 k=48 sig=11 vchg=0,0,0,0 memw=48
+fault c3_st1_4 k=56 sig=11 vchg=0,0,0,0 memw=56
+fault c3_st1_4 k=64 sig=0 (access completed)
+fault c3_st1_4 k=72 sig=0 (access completed)
+ifunc libc_base=0xffff81210000
+ifunc memcpy offset=0x9d100
+ifunc memmove offset=0x9d240
+ifunc memset offset=0x9e580
+ifunc strlen offset=0x9e6c0
+ifunc memchr offset=0x9cb80
+ifunc strchr offset=0x97740
+ifunc strcmp offset=0x978c0
+ifunc memcmp offset=0x95ec0
+ifunc strnlen offset=0x99840
+ifunc strrchr offset=0x99940
+ifunc strcpy offset=0x98880
+ifunc stpcpy offset=0x96b80
+ifunc strncmp offset=0x995a4
+ifunc rawmemchr offset=0x96b00
+exp2panirq ms=300 reads=233715149 loop_saw_pan_set=0 timer_irqs=300 irqs_in_pan0_context=300 of_which_handler_pan_set=300 on_our_task=148 involuntary_switches=38 voluntary_switches=0 cpu=1->1
+exp2panirq ms=300 reads=235750699 loop_saw_pan_set=0 timer_irqs=303 irqs_in_pan0_context=303 of_which_handler_pan_set=303 on_our_task=151 involuntary_switches=38 voluntary_switches=0 cpu=2->2
+Features	: fp asimd aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma lrcpc dcpop sha3 asimddp sha512 asimdfhm dit uscat ilrcpc flagm sb paca pacg dcpodp flagm2 frint
+[  120.736116] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[  120.780450] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[  120.805794] reboot: Power down

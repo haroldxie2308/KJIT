@@ -1,0 +1,325 @@
+# glibc 2.36 (Debian bookworm) libc.so.6 from the guest rootfs (base.cpio), sha256 e4ac8ae1d81e4865e3aadedb962879cf9415903b3f2ba81ec75e9962b86ab8b0
+# llvm-objdump -d --no-show-raw-insn. Offsets are file/vaddr offsets in libc.so.6.
+# Variant choice is derived from reading the ifunc resolvers (memcpy 0x96090, memset 0x969c0, strlen 0x99410, memchr 0x95e80) with the guest MIDR (implementer 0x61, no special case)
+# and DCZID_EL0 = 4 (64-byte ZVA block, exp2ids line); it was not observed at run time.
+#   memcpy -> 0x9d100 (advsimd: ldp/stp q), memset -> 0x9e580 (zva_64 variant), strlen -> 0x9e6c0 (asimd), memchr -> 0x9cb80
+
+## memcpy [0x9d100, 0x9d300)
+000000000009cac0 <__xpg_strerror_r>:
+   9d100:      	nop
+   9d104:      	add	x4, x1, x2
+   9d108:      	add	x5, x0, x2
+   9d10c:      	cmp	x2, #0x80
+   9d110:      	b.hi	0x9d1d8 <__xpg_strerror_r+0x718>
+   9d114:      	cmp	x2, #0x20
+   9d118:      	b.hi	0x9d190 <__xpg_strerror_r+0x6d0>
+   9d11c:      	cmp	x2, #0x10
+   9d120:      	b.lo	0x9d138 <__xpg_strerror_r+0x678>
+   9d124:      	ldr	q0, [x1]
+   9d128:      	ldur	q1, [x4, #-0x10]
+   9d12c:      	str	q0, [x0]
+   9d130:      	stur	q1, [x5, #-0x10]
+   9d134:      	ret
+   9d138:      	tbz	w2, #0x3, 0x9d150 <__xpg_strerror_r+0x690>
+   9d13c:      	ldr	x6, [x1]
+   9d140:      	ldur	x7, [x4, #-0x8]
+   9d144:      	str	x6, [x0]
+   9d148:      	stur	x7, [x5, #-0x8]
+   9d14c:      	ret
+   9d150:      	tbz	w2, #0x2, 0x9d168 <__xpg_strerror_r+0x6a8>
+   9d154:      	ldr	w6, [x1]
+   9d158:      	ldur	w8, [x4, #-0x4]
+   9d15c:      	str	w6, [x0]
+   9d160:      	stur	w8, [x5, #-0x4]
+   9d164:      	ret
+   9d168:      	cbz	x2, 0x9d188 <__xpg_strerror_r+0x6c8>
+   9d16c:      	lsr	x14, x2, #1
+   9d170:      	ldrb	w6, [x1]
+   9d174:      	ldurb	w10, [x4, #-0x1]
+   9d178:      	ldrb	w8, [x1, x14]
+   9d17c:      	strb	w6, [x0]
+   9d180:      	strb	w8, [x0, x14]
+   9d184:      	sturb	w10, [x5, #-0x1]
+   9d188:      	ret
+   9d18c:      	nop
+   9d190:      	ldp	q0, q1, [x1]
+   9d194:      	ldp	q2, q3, [x4, #-0x20]
+   9d198:      	cmp	x2, #0x40
+   9d19c:      	b.hi	0x9d1b0 <__xpg_strerror_r+0x6f0>
+   9d1a0:      	stp	q0, q1, [x0]
+   9d1a4:      	stp	q2, q3, [x5, #-0x20]
+   9d1a8:      	ret
+   9d1ac:      	nop
+   9d1b0:      	ldp	q4, q5, [x1, #0x20]
+   9d1b4:      	cmp	x2, #0x60
+   9d1b8:      	b.ls	0x9d1c4 <__xpg_strerror_r+0x704>
+   9d1bc:      	ldp	q6, q7, [x4, #-0x40]
+   9d1c0:      	stp	q6, q7, [x5, #-0x40]
+   9d1c4:      	stp	q0, q1, [x0]
+   9d1c8:      	stp	q4, q5, [x0, #0x20]
+   9d1cc:      	stp	q2, q3, [x5, #-0x20]
+   9d1d0:      	ret
+   9d1d4:      	nop
+   9d1d8:      	ldr	q3, [x1]
+   9d1dc:      	and	x14, x1, #0xf
+   9d1e0:      	and	x1, x1, #0xfffffffffffffff0
+   9d1e4:      	sub	x3, x0, x14
+   9d1e8:      	add	x2, x2, x14
+   9d1ec:      	ldp	q0, q1, [x1, #0x10]
+   9d1f0:      	str	q3, [x0]
+   9d1f4:      	ldp	q2, q3, [x1, #0x30]
+   9d1f8:      	subs	x2, x2, #0x90
+   9d1fc:      	b.ls	0x9d220 <__xpg_strerror_r+0x760>
+   9d200:      	stp	q0, q1, [x3, #0x10]
+   9d204:      	ldp	q0, q1, [x1, #0x50]
+   9d208:      	stp	q2, q3, [x3, #0x30]
+   9d20c:      	ldp	q2, q3, [x1, #0x70]
+   9d210:      	add	x1, x1, #0x40
+   9d214:      	add	x3, x3, #0x40
+   9d218:      	subs	x2, x2, #0x40
+   9d21c:      	b.hi	0x9d200 <__xpg_strerror_r+0x740>
+   9d220:      	ldp	q4, q5, [x4, #-0x40]
+   9d224:      	stp	q0, q1, [x3, #0x10]
+   9d228:      	ldp	q0, q1, [x4, #-0x20]
+   9d22c:      	stp	q2, q3, [x3, #0x30]
+   9d230:      	stp	q4, q5, [x5, #-0x40]
+   9d234:      	stp	q0, q1, [x5, #-0x20]
+   9d238:      	ret
+   9d23c:      	nop
+   9d240:      	nop
+   9d244:      	add	x4, x1, x2
+   9d248:      	add	x5, x0, x2
+   9d24c:      	cmp	x2, #0x80
+   9d250:      	b.hi	0x9d278 <__xpg_strerror_r+0x7b8>
+   9d254:      	cmp	x2, #0x20
+   9d258:      	b.hi	0x9d190 <__xpg_strerror_r+0x6d0>
+   9d25c:      	cmp	x2, #0x10
+   9d260:      	b.lo	0x9d138 <__xpg_strerror_r+0x678>
+   9d264:      	ldr	q0, [x1]
+   9d268:      	ldur	q1, [x4, #-0x10]
+   9d26c:      	str	q0, [x0]
+   9d270:      	stur	q1, [x5, #-0x10]
+   9d274:      	ret
+   9d278:      	sub	x14, x0, x1
+   9d27c:      	cbz	x14, 0x9d2ec <__xpg_strerror_r+0x82c>
+   9d280:      	cmp	x14, x2
+   9d284:      	b.hs	0x9d1d8 <__xpg_strerror_r+0x718>
+   9d288:      	ldur	q3, [x4, #-0x10]
+   9d28c:      	and	x14, x4, #0xf
+   9d290:      	and	x4, x4, #0xfffffffffffffff0
+   9d294:      	sub	x2, x2, x14
+   9d298:      	ldp	q0, q1, [x4, #-0x20]
+   9d29c:      	stur	q3, [x5, #-0x10]
+   9d2a0:      	ldp	q2, q3, [x4, #-0x40]
+   9d2a4:      	sub	x5, x5, x14
+   9d2a8:      	subs	x2, x2, #0x80
+   9d2ac:      	b.ls	0x9d2d4 <__xpg_strerror_r+0x814>
+   9d2b0:      	stur	q1, [x5, #-0x10]
+   9d2b4:      	stur	q0, [x5, #-0x20]
+   9d2b8:      	ldp	q0, q1, [x4, #-0x60]
+   9d2bc:      	stur	q3, [x5, #-0x30]
+   9d2c0:      	str	q2, [x5, #-0x40]!
+   9d2c4:      	ldp	q2, q3, [x4, #-0x80]
+   9d2c8:      	sub	x4, x4, #0x40
+   9d2cc:      	subs	x2, x2, #0x40
+   9d2d0:      	b.hi	0x9d2b0 <__xpg_strerror_r+0x7f0>
+   9d2d4:      	ldp	q4, q5, [x1, #0x20]
+   9d2d8:      	stp	q0, q1, [x5, #-0x20]
+   9d2dc:      	ldp	q0, q1, [x1]
+   9d2e0:      	stp	q2, q3, [x5, #-0x40]
+   9d2e4:      	stp	q4, q5, [x0, #0x20]
+   9d2e8:      	stp	q0, q1, [x0]
+   9d2ec:      	ret
+   9d2f0:      	nop
+   9d2f4:      	nop
+   9d2f8:      	nop
+   9d2fc:      	nop
+
+## memset_zva64 [0x9e580, 0x9e690)
+000000000009cac0 <__xpg_strerror_r>:
+   9e580:      	nop
+   9e584:      	dup	v0.16b, w1
+   9e588:      	cmp	x2, #0x10
+   9e58c:      	b.lo	0x9e5c0 <__xpg_strerror_r+0x1b00>
+   9e590:      	add	x4, x0, x2
+   9e594:      	cmp	x2, #0x40
+   9e598:      	b.hs	0x9e600 <__xpg_strerror_r+0x1b40>
+   9e59c:      	mov	x3, #0x10               // =16
+   9e5a0:      	and	x3, x3, x2, lsr #1
+   9e5a4:      	sub	x5, x4, x3
+   9e5a8:      	str	q0, [x0]
+   9e5ac:      	str	q0, [x0, x3]
+   9e5b0:      	stur	q0, [x5, #-0x10]
+   9e5b4:      	stur	q0, [x4, #-0x10]
+   9e5b8:      	ret
+   9e5bc:      	nop
+   9e5c0:      	add	x4, x0, x2
+   9e5c4:      	cmp	x2, #0x4
+   9e5c8:      	b.lo	0x9e5e8 <__xpg_strerror_r+0x1b28>
+   9e5cc:      	lsr	x3, x2, #3
+   9e5d0:      	sub	x5, x4, x3, lsl #2
+   9e5d4:      	str	s0, [x0]
+   9e5d8:      	str	s0, [x0, x3, lsl #2]
+   9e5dc:      	stur	s0, [x5, #-0x4]
+   9e5e0:      	stur	s0, [x4, #-0x4]
+   9e5e4:      	ret
+   9e5e8:      	cbz	x2, 0x9e5fc <__xpg_strerror_r+0x1b3c>
+   9e5ec:      	lsr	x3, x2, #1
+   9e5f0:      	strb	w1, [x0]
+   9e5f4:      	strb	w1, [x0, x3]
+   9e5f8:      	sturb	w1, [x4, #-0x1]
+   9e5fc:      	ret
+   9e600:      	and	x3, x0, #0xfffffffffffffff0
+   9e604:      	cmp	x2, #0x80
+   9e608:      	b.hi	0x9e620 <__xpg_strerror_r+0x1b60>
+   9e60c:      	stp	q0, q0, [x0]
+   9e610:      	stp	q0, q0, [x0, #0x20]
+   9e614:      	stp	q0, q0, [x4, #-0x40]
+   9e618:      	stp	q0, q0, [x4, #-0x20]
+   9e61c:      	ret
+   9e620:      	str	q0, [x0]
+   9e624:      	str	q0, [x3, #0x10]
+   9e628:      	tst	w1, #0xff
+   9e62c:      	b.ne	0x9e668 <__xpg_strerror_r+0x1ba8>
+   9e630:      	stp	q0, q0, [x3, #0x20]
+   9e634:      	and	x3, x0, #0xffffffffffffffc0
+   9e638:      	sub	x2, x4, x3
+   9e63c:      	sub	x2, x2, #0x80
+   9e640:      	stp	q0, q0, [x4, #-0x40]
+   9e644:      	stp	q0, q0, [x4, #-0x20]
+   9e648:      	nop
+   9e64c:      	nop
+   9e650:      	add	x3, x3, #0x40
+   9e654:      	dc	zva, x3
+   9e658:      	subs	x2, x2, #0x40
+   9e65c:      	b.hi	0x9e650 <__xpg_strerror_r+0x1b90>
+   9e660:      	ret
+   9e664:      	nop
+   9e668:      	sub	x2, x4, x3
+   9e66c:      	sub	x2, x2, #0x60
+   9e670:      	stp	q0, q0, [x3, #0x20]
+   9e674:      	stp	q0, q0, [x3, #0x40]
+   9e678:      	add	x3, x3, #0x40
+   9e67c:      	subs	x2, x2, #0x40
+   9e680:      	b.hi	0x9e670 <__xpg_strerror_r+0x1bb0>
+   9e684:      	stp	q0, q0, [x4, #-0x40]
+   9e688:      	stp	q0, q0, [x4, #-0x20]
+   9e68c:      	ret
+
+## strlen_asimd [0x9e6c0, 0x9e7c0)
+000000000009cac0 <__xpg_strerror_r>:
+   9e6c0:      	nop
+   9e6c4:      	and	x4, x0, #0xfff
+   9e6c8:      	cmp	x4, #0xfe0
+   9e6cc:      	b.hi	0x9e7a4 <__xpg_strerror_r+0x1ce4>
+   9e6d0:      	ldp	x2, x3, [x0]
+   9e6d4:      	mov	x8, #0x101010101010101  // =72340172838076673
+   9e6d8:      	sub	x4, x2, x8
+   9e6dc:      	orr	x5, x2, #0x7f7f7f7f7f7f7f7f
+   9e6e0:      	sub	x6, x3, x8
+   9e6e4:      	orr	x7, x3, #0x7f7f7f7f7f7f7f7f
+   9e6e8:      	bics	x4, x4, x5
+   9e6ec:      	bic	x5, x6, x7
+   9e6f0:      	ccmp	x5, #0x0, #0x0, eq
+   9e6f4:      	b.eq	0x9e714 <__xpg_strerror_r+0x1c54>
+   9e6f8:      	csel	x4, x4, x5, lo
+   9e6fc:      	mov	x0, #0x8                // =8
+   9e700:      	rev	x4, x4
+   9e704:      	csel	x0, xzr, x0, lo
+   9e708:      	clz	x4, x4
+   9e70c:      	add	x0, x0, x4, lsr #3
+   9e710:      	ret
+   9e714:      	ldp	x2, x3, [x0, #0x10]
+   9e718:      	sub	x4, x2, x8
+   9e71c:      	orr	x5, x2, #0x7f7f7f7f7f7f7f7f
+   9e720:      	sub	x6, x3, x8
+   9e724:      	orr	x7, x3, #0x7f7f7f7f7f7f7f7f
+   9e728:      	bics	x4, x4, x5
+   9e72c:      	bic	x5, x6, x7
+   9e730:      	ccmp	x5, #0x0, #0x0, eq
+   9e734:      	b.eq	0x9e75c <__xpg_strerror_r+0x1c9c>
+   9e738:      	csel	x4, x4, x5, lo
+   9e73c:      	mov	x0, #0x18               // =24
+   9e740:      	rev	x4, x4
+   9e744:      	mov	x6, #0x10               // =16
+   9e748:      	clz	x4, x4
+   9e74c:      	csel	x0, x6, x0, lo
+   9e750:      	add	x0, x0, x4, lsr #3
+   9e754:      	ret
+   9e758:      	nop
+   9e75c:      	and	x1, x0, #0xffffffffffffffe0
+   9e760:      	ldp	q1, q2, [x1, #0x20]!
+   9e764:      	uminp	v0.16b, v1.16b, v2.16b
+   9e768:      	uminp	v0.16b, v0.16b, v0.16b
+   9e76c:      	cmeq	v0.8b, v0.8b, #0
+   9e770:      	fmov	x3, d0
+   9e774:      	cbz	x3, 0x9e760 <__xpg_strerror_r+0x1ca0>
+   9e778:      	cmeq	v0.16b, v1.16b, #0
+   9e77c:      	sub	x0, x1, x0
+   9e780:      	cbnz	w3, 0x9e78c <__xpg_strerror_r+0x1ccc>
+   9e784:      	cmeq	v0.16b, v2.16b, #0
+   9e788:      	add	x0, x0, #0x10
+   9e78c:      	shrn	v0.8b, v0.8h, #0x4
+   9e790:      	fmov	x3, d0
+   9e794:      	rbit	x3, x3
+   9e798:      	clz	x2, x3
+   9e79c:      	add	x0, x0, x2, lsr #2
+   9e7a0:      	ret
+   9e7a4:      	and	x1, x0, #0xffffffffffffffe0
+   9e7a8:      	mov	w2, #0xc03              // =3075
+   9e7ac:      	movk	w2, #0xc030, lsl #16
+   9e7b0:      	ld1	{ v1.16b, v2.16b }, [x1]
+   9e7b4:      	dup	v0.4s, w2
+   9e7b8:      	cmeq	v1.16b, v1.16b, #0
+   9e7bc:      	cmeq	v2.16b, v2.16b, #0
+
+## memchr [0x9cb80, 0x9cc40)
+000000000009cac0 <__xpg_strerror_r>:
+   9cb80:      	nop
+   9cb84:      	and	x3, x0, #0xfffffffffffffff0
+   9cb88:      	cbz	x2, 0x9cc3c <__xpg_strerror_r+0x17c>
+   9cb8c:      	ld1	{ v1.16b }, [x3]
+   9cb90:      	dup	v0.16b, w1
+   9cb94:      	cmeq	v2.16b, v1.16b, v0.16b
+   9cb98:      	lsl	x6, x0, #2
+   9cb9c:      	shrn	v3.8b, v2.8h, #0x4
+   9cba0:      	fmov	x5, d3
+   9cba4:      	lsr	x5, x5, x6
+   9cba8:      	cbz	x5, 0x9cbc8 <__xpg_strerror_r+0x108>
+   9cbac:      	rbit	x5, x5
+   9cbb0:      	clz	x5, x5
+   9cbb4:      	cmp	x2, x5, lsr #2
+   9cbb8:      	add	x0, x0, x5, lsr #2
+   9cbbc:      	csel	x0, x0, xzr, hi
+   9cbc0:      	ret
+   9cbc4:      	nop
+   9cbc8:      	sub	x7, x3, x0
+   9cbcc:      	add	x7, x7, #0x11
+   9cbd0:      	subs	x4, x2, x7
+   9cbd4:      	b.lo	0x9cc3c <__xpg_strerror_r+0x17c>
+   9cbd8:      	tbz	w4, #0x4, 0x9cbf4 <__xpg_strerror_r+0x134>
+   9cbdc:      	sub	x3, x3, #0x10
+   9cbe0:      	ldr	q1, [x3, #0x20]!
+   9cbe4:      	cmeq	v2.16b, v1.16b, v0.16b
+   9cbe8:      	umaxp	v3.16b, v2.16b, v2.16b
+   9cbec:      	fmov	x5, d3
+   9cbf0:      	cbnz	x5, 0x9cc14 <__xpg_strerror_r+0x154>
+   9cbf4:      	ldr	q1, [x3, #0x10]
+   9cbf8:      	cmeq	v2.16b, v1.16b, v0.16b
+   9cbfc:      	subs	x4, x4, #0x20
+   9cc00:      	b.lo	0x9cc10 <__xpg_strerror_r+0x150>
+   9cc04:      	umaxp	v3.16b, v2.16b, v2.16b
+   9cc08:      	fmov	x5, d3
+   9cc0c:      	cbz	x5, 0x9cbe0 <__xpg_strerror_r+0x120>
+   9cc10:      	add	x3, x3, #0x10
+   9cc14:      	shrn	v3.8b, v2.8h, #0x4
+   9cc18:      	sub	x4, x3, x0
+   9cc1c:      	fmov	x5, d3
+   9cc20:      	sub	x4, x2, x4
+   9cc24:      	rbit	x5, x5
+   9cc28:      	clz	x5, x5
+   9cc2c:      	cmp	x4, x5, lsr #2
+   9cc30:      	add	x0, x3, x5, lsr #2
+   9cc34:      	csel	x0, x0, xzr, hi
+   9cc38:      	ret
+   9cc3c:      	mov	x0, #0x0                // =0
