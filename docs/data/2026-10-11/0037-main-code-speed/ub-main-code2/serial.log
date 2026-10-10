@@ -1,0 +1,896 @@
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1 (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #3 SMP PREEMPT Sat Oct 10 04:02:05 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013ac00000-0x000000013b000000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000102] Console: colour dummy device 80x25
+[    0.000109] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000113] pid_max: default: 32768 minimum: 301
+[    0.000270] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000278] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.001003] VFS: Finished mounting rootfs on nullfs
+[    0.001488] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.001603] rcu: Hierarchical SRCU implementation.
+[    0.001603] rcu: 	Max phase no-delay instances is 1000.
+[    0.001746] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.001893] smp: Bringing up secondary CPUs ...
+[    0.002394] Detected PIPT I-cache on CPU1
+[    0.002633] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.007915] Detected PIPT I-cache on CPU2
+[    0.008059] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.008674] Detected PIPT I-cache on CPU3
+[    0.008843] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.009073] smp: Brought up 1 node, 4 CPUs
+[    0.009074] SMP: Total of 4 processors activated.
+[    0.009075] CPU: All CPU(s) started at EL1
+[    0.009076] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.009077] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.009077] CPU features: detected: CRC32 instructions
+[    0.009077] CPU features: detected: Data independent timing control (DIT)
+[    0.009078] CPU features: detected: E0PD
+[    0.009078] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.009079] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.009093] CPU features: detected: LSE atomic instructions
+[    0.009095] CPU features: detected: Privileged Access Never
+[    0.009095] CPU features: detected: Speculation barrier (SB)
+[    0.009096] CPU features: detected: TLB range maintenance instructions
+[    0.009096] CPU features: detected: XNX
+[    0.009253] alternatives: applying system-wide alternatives
+[    0.010478] Memory: 3909752K/4194304K available (5248K kernel code, 754K rwdata, 2356K rodata, 576K init, 405K bss, 281372K reserved, 0K cma-reserved)
+[    0.010828] devtmpfs: initialized
+[    0.011137] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.011142] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.011159] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.011165] 30384 pages in range for non-PLT usage
+[    0.011166] 521904 pages in range for PLT usage
+[    0.011231] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.011743] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.011782] ASID allocator initialised with 256 entries
+[    0.011789] Serial: AMBA PL011 UART driver
+[    0.012264] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.012385] printk: console [ttyAMA0] enabled
+[    0.017380] vgaarb: loaded
+[    0.017660] clocksource: Switched to clocksource arch_sys_counter
+[    0.030800] NET: Registered PF_INET protocol family
+[    0.030888] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.031413] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.031422] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.031425] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.031476] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.031634] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.031661] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.031693] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.031701] PCI: CLS 0 bytes, default 64
+[    0.032020] Unpacking initramfs...
+[    0.034161] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.034246] 9p: Installing v9fs 9p2000 file system support
+[    0.037951] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.037960] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.037962] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.037963] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.037968] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.037979] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.037993] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.037994] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.037994] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.037995] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.037996] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.038018] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.038274] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.038470] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.038473] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.038499] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.038505] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.038741] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.038836] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.038839] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.038848] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.039171] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.039298] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.039301] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.039358] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.039768] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.039769] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.039792] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.039838] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.039860] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.039865] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.039870] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.039875] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.039880] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.039885] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.039906] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.039907] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.039908] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.041105] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.041952] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.042801] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.105583] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.105611] rtc-pl031 9010000.pl031: setting system clock to 2026-10-10T16:34:55 UTC (1791650095)
+[    0.105793] NET: Registered PF_INET6 protocol family
+[    0.106348] Segment Routing with IPv6
+[    0.106355] In-situ OAM (IOAM) with IPv6
+[    0.106420] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.106531] NET: Registered PF_PACKET protocol family
+[    0.106538] 9pnet: Installing 9P2000 support
+[    0.111355] clk: Disabling unused clocks
+[    0.125861] Freeing initrd memory: 186352K
+[    0.126221] Freeing unused kernel memory: 576K
+[    0.126260] Run /init as init process
+[    0.142458] kjit: loading out-of-tree module taints kernel.
+[    0.143452] rust_kjit: ######## Rust KJIT inits ########
+[    0.143510] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+ub: cmdline: console=ttyAMA0 panic=-1 nokaslr
+ub: meltdown: Not affected
+ub: spectre_v2: Mitigation: CSV2, but not BHB
+ub: kpti dmesg: none
+ub: kernel: 7.1.0-rc1 cpus: 4
+ub: chain_budget: 1024 hot_threshold: 64
+ub off rep 0 variant=hash n=128 enabled=0 outer=165717 ns_per_outer=245.44
+ub off rep 1 variant=hash n=128 enabled=0 outer=165717 ns_per_outer=243.67
+ub off rep 2 variant=hash n=128 enabled=0 outer=165717 ns_per_outer=245.05
+ub off rep 3 variant=hash n=128 enabled=0 outer=165717 ns_per_outer=246.27
+ub off rep 4 variant=hash n=128 enabled=0 outer=165717 ns_per_outer=244.99
+ub off rep 5 variant=hash n=128 enabled=0 outer=165717 ns_per_outer=244.18
+ub off rep 6 variant=hash n=128 enabled=0 outer=165717 ns_per_outer=245.07
+ub off result variant=hash n=128 enabled=0 outer=165717 reps=7 insn_per_outer=646 median_ns_per_outer=245.05 min_ns_per_outer=243.67
+ub off counters hash hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=hash n=128 enabled=1 outer=230880 ns_per_outer=167.61
+ub on rep 1 variant=hash n=128 enabled=1 outer=230880 ns_per_outer=164.00
+ub on rep 2 variant=hash n=128 enabled=1 outer=230880 ns_per_outer=163.66
+ub on rep 3 variant=hash n=128 enabled=1 outer=230880 ns_per_outer=164.43
+ub on rep 4 variant=hash n=128 enabled=1 outer=230880 ns_per_outer=164.49
+ub on rep 5 variant=hash n=128 enabled=1 outer=230880 ns_per_outer=163.97
+ub on rep 6 variant=hash n=128 enabled=1 outer=230880 ns_per_outer=164.97
+ub on result variant=hash n=128 enabled=1 outer=230880 reps=7 insn_per_outer=646 median_ns_per_outer=164.43 min_ns_per_outer=163.66
+ub on counters hash hook_calls=1615833 syscalls_in_kernel=1615760 fragment_entries=1615767 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1615760 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=1
+ub on kjit variant=hash n=128 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=hash n=256 enabled=0 outer=98400 ns_per_outer=381.39
+ub off rep 1 variant=hash n=256 enabled=0 outer=98400 ns_per_outer=369.25
+ub off rep 2 variant=hash n=256 enabled=0 outer=98400 ns_per_outer=367.48
+ub off rep 3 variant=hash n=256 enabled=0 outer=98400 ns_per_outer=367.63
+ub off rep 4 variant=hash n=256 enabled=0 outer=98400 ns_per_outer=367.70
+ub off rep 5 variant=hash n=256 enabled=0 outer=98400 ns_per_outer=369.13
+ub off rep 6 variant=hash n=256 enabled=0 outer=98400 ns_per_outer=368.38
+ub off result variant=hash n=256 enabled=0 outer=98400 reps=7 insn_per_outer=1286 median_ns_per_outer=368.38 min_ns_per_outer=367.48
+ub off counters hash hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=hash n=256 enabled=1 outer=126984 ns_per_outer=289.57
+ub on rep 1 variant=hash n=256 enabled=1 outer=126984 ns_per_outer=288.53
+ub on rep 2 variant=hash n=256 enabled=1 outer=126984 ns_per_outer=288.02
+ub on rep 3 variant=hash n=256 enabled=1 outer=126984 ns_per_outer=287.42
+ub on rep 4 variant=hash n=256 enabled=1 outer=126984 ns_per_outer=286.92
+ub on rep 5 variant=hash n=256 enabled=1 outer=126984 ns_per_outer=287.16
+ub on rep 6 variant=hash n=256 enabled=1 outer=126984 ns_per_outer=288.51
+ub on result variant=hash n=256 enabled=1 outer=126984 reps=7 insn_per_outer=1286 median_ns_per_outer=288.02 min_ns_per_outer=286.92
+ub on counters hash hook_calls=888743 syscalls_in_kernel=888671 fragment_entries=888678 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=888671 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=hash n=256 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=hash n=512 enabled=0 outer=59468 ns_per_outer=635.54
+ub off rep 1 variant=hash n=512 enabled=0 outer=59468 ns_per_outer=614.75
+ub off rep 2 variant=hash n=512 enabled=0 outer=59468 ns_per_outer=627.36
+ub off rep 3 variant=hash n=512 enabled=0 outer=59468 ns_per_outer=637.75
+ub off rep 4 variant=hash n=512 enabled=0 outer=59468 ns_per_outer=621.86
+ub off rep 5 variant=hash n=512 enabled=0 outer=59468 ns_per_outer=629.11
+ub off rep 6 variant=hash n=512 enabled=0 outer=59468 ns_per_outer=616.09
+ub off result variant=hash n=512 enabled=0 outer=59468 reps=7 insn_per_outer=2566 median_ns_per_outer=627.36 min_ns_per_outer=614.75
+ub off counters hash hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=hash n=512 enabled=1 outer=69595 ns_per_outer=544.60
+ub on rep 1 variant=hash n=512 enabled=1 outer=69595 ns_per_outer=543.62
+ub on rep 2 variant=hash n=512 enabled=1 outer=69595 ns_per_outer=543.51
+ub on rep 3 variant=hash n=512 enabled=1 outer=69595 ns_per_outer=545.10
+ub on rep 4 variant=hash n=512 enabled=1 outer=69595 ns_per_outer=544.47
+ub on rep 5 variant=hash n=512 enabled=1 outer=69595 ns_per_outer=543.42
+ub on rep 6 variant=hash n=512 enabled=1 outer=69595 ns_per_outer=529.95
+ub on result variant=hash n=512 enabled=1 outer=69595 reps=7 insn_per_outer=2566 median_ns_per_outer=543.62 min_ns_per_outer=529.95
+ub on counters hash hook_calls=487118 syscalls_in_kernel=487046 fragment_entries=487053 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=487046 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=hash n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=hash n=1024 enabled=0 outer=34516 ns_per_outer=1133.79
+ub off rep 1 variant=hash n=1024 enabled=0 outer=34516 ns_per_outer=1147.91
+ub off rep 2 variant=hash n=1024 enabled=0 outer=34516 ns_per_outer=1111.76
+ub off rep 3 variant=hash n=1024 enabled=0 outer=34516 ns_per_outer=1126.41
+ub off rep 4 variant=hash n=1024 enabled=0 outer=34516 ns_per_outer=1138.41
+ub off rep 5 variant=hash n=1024 enabled=0 outer=34516 ns_per_outer=1120.18
+ub off rep 6 variant=hash n=1024 enabled=0 outer=34516 ns_per_outer=1110.58
+ub off result variant=hash n=1024 enabled=0 outer=34516 reps=7 insn_per_outer=5126 median_ns_per_outer=1126.41 min_ns_per_outer=1110.58
+ub off counters hash hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=hash n=1024 enabled=1 outer=38976 ns_per_outer=1032.76
+ub on rep 1 variant=hash n=1024 enabled=1 outer=38976 ns_per_outer=1017.21
+ub on rep 2 variant=hash n=1024 enabled=1 outer=38976 ns_per_outer=1026.05
+ub on rep 3 variant=hash n=1024 enabled=1 outer=38976 ns_per_outer=1077.84
+ub on rep 4 variant=hash n=1024 enabled=1 outer=38976 ns_per_outer=1034.04
+ub on rep 5 variant=hash n=1024 enabled=1 outer=38976 ns_per_outer=1018.19
+ub on rep 6 variant=hash n=1024 enabled=1 outer=38976 ns_per_outer=1019.21
+ub on result variant=hash n=1024 enabled=1 outer=38976 reps=7 insn_per_outer=5126 median_ns_per_outer=1026.05 min_ns_per_outer=1017.21
+ub on counters hash hook_calls=272834 syscalls_in_kernel=272762 fragment_entries=272769 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=272762 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=hash n=1024 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=hash n=2048 enabled=0 outer=18674 ns_per_outer=2106.05
+ub off rep 1 variant=hash n=2048 enabled=0 outer=18674 ns_per_outer=2102.71
+ub off rep 2 variant=hash n=2048 enabled=0 outer=18674 ns_per_outer=2096.00
+ub off rep 3 variant=hash n=2048 enabled=0 outer=18674 ns_per_outer=2098.17
+ub off rep 4 variant=hash n=2048 enabled=0 outer=18674 ns_per_outer=2119.22
+ub off rep 5 variant=hash n=2048 enabled=0 outer=18674 ns_per_outer=2101.32
+ub off rep 6 variant=hash n=2048 enabled=0 outer=18674 ns_per_outer=2099.73
+ub off result variant=hash n=2048 enabled=0 outer=18674 reps=7 insn_per_outer=10246 median_ns_per_outer=2101.32 min_ns_per_outer=2096.00
+ub off counters hash hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=hash n=2048 enabled=1 outer=19837 ns_per_outer=2025.95
+ub on rep 1 variant=hash n=2048 enabled=1 outer=19837 ns_per_outer=2009.70
+ub on rep 2 variant=hash n=2048 enabled=1 outer=19837 ns_per_outer=2000.74
+ub on rep 3 variant=hash n=2048 enabled=1 outer=19837 ns_per_outer=1996.22
+ub on rep 4 variant=hash n=2048 enabled=1 outer=19837 ns_per_outer=2022.10
+ub on rep 5 variant=hash n=2048 enabled=1 outer=19837 ns_per_outer=2021.28
+ub on rep 6 variant=hash n=2048 enabled=1 outer=19837 ns_per_outer=2007.74
+ub on result variant=hash n=2048 enabled=1 outer=19837 reps=7 insn_per_outer=10246 median_ns_per_outer=2009.70 min_ns_per_outer=1996.22
+ub on counters hash hook_calls=138896 syscalls_in_kernel=138824 fragment_entries=138831 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=138824 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=hash n=2048 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=strlen n=256 enabled=0 outer=177514 ns_per_outer=224.00
+ub off rep 1 variant=strlen n=256 enabled=0 outer=177514 ns_per_outer=223.11
+ub off rep 2 variant=strlen n=256 enabled=0 outer=177514 ns_per_outer=223.21
+ub off rep 3 variant=strlen n=256 enabled=0 outer=177514 ns_per_outer=225.96
+ub off rep 4 variant=strlen n=256 enabled=0 outer=177514 ns_per_outer=224.66
+ub off rep 5 variant=strlen n=256 enabled=0 outer=177514 ns_per_outer=221.28
+ub off rep 6 variant=strlen n=256 enabled=0 outer=177514 ns_per_outer=225.98
+ub off result variant=strlen n=256 enabled=0 outer=177514 reps=7 insn_per_outer=518 median_ns_per_outer=224.00 min_ns_per_outer=221.28
+ub off counters strlen hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=strlen n=256 enabled=1 outer=282935 ns_per_outer=145.36
+ub on rep 1 variant=strlen n=256 enabled=1 outer=282935 ns_per_outer=146.97
+ub on rep 2 variant=strlen n=256 enabled=1 outer=282935 ns_per_outer=148.09
+ub on rep 3 variant=strlen n=256 enabled=1 outer=282935 ns_per_outer=144.74
+ub on rep 4 variant=strlen n=256 enabled=1 outer=282935 ns_per_outer=146.84
+ub on rep 5 variant=strlen n=256 enabled=1 outer=282935 ns_per_outer=145.76
+ub on rep 6 variant=strlen n=256 enabled=1 outer=282935 ns_per_outer=146.80
+ub on result variant=strlen n=256 enabled=1 outer=282935 reps=7 insn_per_outer=518 median_ns_per_outer=146.80 min_ns_per_outer=144.74
+ub on counters strlen hook_calls=1980127 syscalls_in_kernel=1980055 fragment_entries=1980062 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1980055 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=strlen n=256 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=strlen n=512 enabled=0 outer=124175 ns_per_outer=306.30
+ub off rep 1 variant=strlen n=512 enabled=0 outer=124175 ns_per_outer=308.39
+ub off rep 2 variant=strlen n=512 enabled=0 outer=124175 ns_per_outer=305.09
+ub off rep 3 variant=strlen n=512 enabled=0 outer=124175 ns_per_outer=308.05
+ub off rep 4 variant=strlen n=512 enabled=0 outer=124175 ns_per_outer=305.02
+ub off rep 5 variant=strlen n=512 enabled=0 outer=124175 ns_per_outer=306.16
+ub off rep 6 variant=strlen n=512 enabled=0 outer=124175 ns_per_outer=308.41
+ub off result variant=strlen n=512 enabled=0 outer=124175 reps=7 insn_per_outer=1030 median_ns_per_outer=306.30 min_ns_per_outer=305.02
+ub off counters strlen hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=strlen n=512 enabled=1 outer=170848 ns_per_outer=232.84
+ub on rep 1 variant=strlen n=512 enabled=1 outer=170848 ns_per_outer=230.72
+ub on rep 2 variant=strlen n=512 enabled=1 outer=170848 ns_per_outer=228.37
+ub on rep 3 variant=strlen n=512 enabled=1 outer=170848 ns_per_outer=230.19
+ub on rep 4 variant=strlen n=512 enabled=1 outer=170848 ns_per_outer=230.29
+ub on rep 5 variant=strlen n=512 enabled=1 outer=170848 ns_per_outer=227.75
+ub on rep 6 variant=strlen n=512 enabled=1 outer=170848 ns_per_outer=228.02
+ub on result variant=strlen n=512 enabled=1 outer=170848 reps=7 insn_per_outer=1030 median_ns_per_outer=230.19 min_ns_per_outer=227.75
+ub on counters strlen hook_calls=1195714 syscalls_in_kernel=1195642 fragment_entries=1195649 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1195642 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=strlen n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=strlen n=1024 enabled=0 outer=82973 ns_per_outer=482.13
+ub off rep 1 variant=strlen n=1024 enabled=0 outer=82973 ns_per_outer=478.11
+ub off rep 2 variant=strlen n=1024 enabled=0 outer=82973 ns_per_outer=477.09
+ub off rep 3 variant=strlen n=1024 enabled=0 outer=82973 ns_per_outer=473.67
+ub off rep 4 variant=strlen n=1024 enabled=0 outer=82973 ns_per_outer=474.70
+ub off rep 5 variant=strlen n=1024 enabled=0 outer=82973 ns_per_outer=474.18
+ub off rep 6 variant=strlen n=1024 enabled=0 outer=82973 ns_per_outer=471.11
+ub off result variant=strlen n=1024 enabled=0 outer=82973 reps=7 insn_per_outer=2054 median_ns_per_outer=474.70 min_ns_per_outer=471.11
+ub off counters strlen hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=strlen n=1024 enabled=1 outer=105529 ns_per_outer=390.73
+ub on rep 1 variant=strlen n=1024 enabled=1 outer=105529 ns_per_outer=394.13
+ub on rep 2 variant=strlen n=1024 enabled=1 outer=105529 ns_per_outer=389.79
+ub on rep 3 variant=strlen n=1024 enabled=1 outer=105529 ns_per_outer=394.43
+ub on rep 4 variant=strlen n=1024 enabled=1 outer=105529 ns_per_outer=389.37
+ub on rep 5 variant=strlen n=1024 enabled=1 outer=105529 ns_per_outer=388.84
+ub on rep 6 variant=strlen n=1024 enabled=1 outer=105529 ns_per_outer=389.56
+ub on result variant=strlen n=1024 enabled=1 outer=105529 reps=7 insn_per_outer=2054 median_ns_per_outer=389.79 min_ns_per_outer=388.84
+ub on counters strlen hook_calls=738593 syscalls_in_kernel=738521 fragment_entries=738528 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=738521 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=strlen n=1024 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=strlen n=2048 enabled=0 outer=46538 ns_per_outer=810.16
+ub off rep 1 variant=strlen n=2048 enabled=0 outer=46538 ns_per_outer=797.90
+ub off rep 2 variant=strlen n=2048 enabled=0 outer=46538 ns_per_outer=793.18
+ub off rep 3 variant=strlen n=2048 enabled=0 outer=46538 ns_per_outer=804.39
+ub off rep 4 variant=strlen n=2048 enabled=0 outer=46538 ns_per_outer=794.01
+ub off rep 5 variant=strlen n=2048 enabled=0 outer=46538 ns_per_outer=789.23
+ub off rep 6 variant=strlen n=2048 enabled=0 outer=46538 ns_per_outer=792.81
+ub off result variant=strlen n=2048 enabled=0 outer=46538 reps=7 insn_per_outer=4102 median_ns_per_outer=794.01 min_ns_per_outer=789.23
+ub off counters strlen hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=strlen n=2048 enabled=1 outer=53197 ns_per_outer=725.09
+ub on rep 1 variant=strlen n=2048 enabled=1 outer=53197 ns_per_outer=726.03
+ub on rep 2 variant=strlen n=2048 enabled=1 outer=53197 ns_per_outer=723.25
+ub on rep 3 variant=strlen n=2048 enabled=1 outer=53197 ns_per_outer=720.44
+ub on rep 4 variant=strlen n=2048 enabled=1 outer=53197 ns_per_outer=726.86
+ub on rep 5 variant=strlen n=2048 enabled=1 outer=53197 ns_per_outer=719.26
+ub on rep 6 variant=strlen n=2048 enabled=1 outer=53197 ns_per_outer=722.78
+ub on result variant=strlen n=2048 enabled=1 outer=53197 reps=7 insn_per_outer=4102 median_ns_per_outer=723.25 min_ns_per_outer=719.26
+ub on counters strlen hook_calls=372360 syscalls_in_kernel=372288 fragment_entries=372295 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=372288 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=strlen n=2048 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=strlen n=3072 enabled=0 outer=34069 ns_per_outer=1153.70
+ub off rep 1 variant=strlen n=3072 enabled=0 outer=34069 ns_per_outer=1127.89
+ub off rep 2 variant=strlen n=3072 enabled=0 outer=34069 ns_per_outer=1128.14
+ub off rep 3 variant=strlen n=3072 enabled=0 outer=34069 ns_per_outer=1131.51
+ub off rep 4 variant=strlen n=3072 enabled=0 outer=34069 ns_per_outer=1135.14
+ub off rep 5 variant=strlen n=3072 enabled=0 outer=34069 ns_per_outer=1132.57
+ub off rep 6 variant=strlen n=3072 enabled=0 outer=34069 ns_per_outer=1131.09
+ub off result variant=strlen n=3072 enabled=0 outer=34069 reps=7 insn_per_outer=6150 median_ns_per_outer=1131.51 min_ns_per_outer=1127.89
+ub off counters strlen hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=strlen n=3072 enabled=1 outer=37624 ns_per_outer=1051.23
+ub on rep 1 variant=strlen n=3072 enabled=1 outer=37624 ns_per_outer=1058.57
+ub on rep 2 variant=strlen n=3072 enabled=1 outer=37624 ns_per_outer=1051.76
+ub on rep 3 variant=strlen n=3072 enabled=1 outer=37624 ns_per_outer=1048.14
+ub on rep 4 variant=strlen n=3072 enabled=1 outer=37624 ns_per_outer=1055.92
+ub on rep 5 variant=strlen n=3072 enabled=1 outer=37624 ns_per_outer=1054.04
+ub on rep 6 variant=strlen n=3072 enabled=1 outer=37624 ns_per_outer=1043.71
+ub on result variant=strlen n=3072 enabled=1 outer=37624 reps=7 insn_per_outer=6150 median_ns_per_outer=1051.76 min_ns_per_outer=1043.71
+ub on counters strlen hook_calls=263370 syscalls_in_kernel=263298 fragment_entries=263305 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=263298 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=strlen n=3072 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=copy n=128 enabled=0 outer=213903 ns_per_outer=177.54
+ub off rep 1 variant=copy n=128 enabled=0 outer=213903 ns_per_outer=175.15
+ub off rep 2 variant=copy n=128 enabled=0 outer=213903 ns_per_outer=175.77
+ub off rep 3 variant=copy n=128 enabled=0 outer=213903 ns_per_outer=173.37
+ub off rep 4 variant=copy n=128 enabled=0 outer=213903 ns_per_outer=172.94
+ub off rep 5 variant=copy n=128 enabled=0 outer=213903 ns_per_outer=172.18
+ub off rep 6 variant=copy n=128 enabled=0 outer=213903 ns_per_outer=174.21
+ub off result variant=copy n=128 enabled=0 outer=213903 reps=7 insn_per_outer=518 median_ns_per_outer=174.21 min_ns_per_outer=172.18
+ub off counters copy hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=copy n=128 enabled=1 outer=415226 ns_per_outer=96.00
+ub on rep 1 variant=copy n=128 enabled=1 outer=415226 ns_per_outer=96.54
+ub on rep 2 variant=copy n=128 enabled=1 outer=415226 ns_per_outer=96.16
+ub on rep 3 variant=copy n=128 enabled=1 outer=415226 ns_per_outer=95.46
+ub on rep 4 variant=copy n=128 enabled=1 outer=415226 ns_per_outer=95.85
+ub on rep 5 variant=copy n=128 enabled=1 outer=415226 ns_per_outer=97.25
+ub on rep 6 variant=copy n=128 enabled=1 outer=415226 ns_per_outer=95.87
+ub on result variant=copy n=128 enabled=1 outer=415226 reps=7 insn_per_outer=518 median_ns_per_outer=96.00 min_ns_per_outer=95.46
+ub on counters copy hook_calls=2905940 syscalls_in_kernel=2905868 fragment_entries=2905875 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2905868 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=copy n=128 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=copy n=256 enabled=0 outer=186299 ns_per_outer=221.08
+ub off rep 1 variant=copy n=256 enabled=0 outer=186299 ns_per_outer=221.15
+ub off rep 2 variant=copy n=256 enabled=0 outer=186299 ns_per_outer=223.44
+ub off rep 3 variant=copy n=256 enabled=0 outer=186299 ns_per_outer=225.42
+ub off rep 4 variant=copy n=256 enabled=0 outer=186299 ns_per_outer=222.47
+ub off rep 5 variant=copy n=256 enabled=0 outer=186299 ns_per_outer=224.80
+ub off rep 6 variant=copy n=256 enabled=0 outer=186299 ns_per_outer=219.91
+ub off result variant=copy n=256 enabled=0 outer=186299 reps=7 insn_per_outer=1030 median_ns_per_outer=222.47 min_ns_per_outer=219.91
+ub off counters copy hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=copy n=256 enabled=1 outer=266148 ns_per_outer=143.16
+ub on rep 1 variant=copy n=256 enabled=1 outer=266148 ns_per_outer=144.34
+ub on rep 2 variant=copy n=256 enabled=1 outer=266148 ns_per_outer=147.22
+ub on rep 3 variant=copy n=256 enabled=1 outer=266148 ns_per_outer=143.63
+ub on rep 4 variant=copy n=256 enabled=1 outer=266148 ns_per_outer=143.53
+ub on rep 5 variant=copy n=256 enabled=1 outer=266148 ns_per_outer=145.00
+ub on rep 6 variant=copy n=256 enabled=1 outer=266148 ns_per_outer=143.61
+ub on result variant=copy n=256 enabled=1 outer=266148 reps=7 insn_per_outer=1030 median_ns_per_outer=143.63 min_ns_per_outer=143.16
+ub on counters copy hook_calls=1862653 syscalls_in_kernel=1862581 fragment_entries=1862588 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1862581 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=copy n=256 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=copy n=512 enabled=0 outer=136383 ns_per_outer=307.31
+ub off rep 1 variant=copy n=512 enabled=0 outer=136383 ns_per_outer=304.23
+ub off rep 2 variant=copy n=512 enabled=0 outer=136383 ns_per_outer=304.93
+ub off rep 3 variant=copy n=512 enabled=0 outer=136383 ns_per_outer=303.47
+ub off rep 4 variant=copy n=512 enabled=0 outer=136383 ns_per_outer=306.31
+ub off rep 5 variant=copy n=512 enabled=0 outer=136383 ns_per_outer=303.42
+ub off rep 6 variant=copy n=512 enabled=0 outer=136383 ns_per_outer=300.18
+ub off result variant=copy n=512 enabled=0 outer=136383 reps=7 insn_per_outer=2054 median_ns_per_outer=304.23 min_ns_per_outer=300.18
+ub off counters copy hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=copy n=512 enabled=1 outer=179539 ns_per_outer=225.11
+ub on rep 1 variant=copy n=512 enabled=1 outer=179539 ns_per_outer=223.67
+ub on rep 2 variant=copy n=512 enabled=1 outer=179539 ns_per_outer=227.06
+ub on rep 3 variant=copy n=512 enabled=1 outer=179539 ns_per_outer=227.65
+ub on rep 4 variant=copy n=512 enabled=1 outer=179539 ns_per_outer=224.06
+ub on rep 5 variant=copy n=512 enabled=1 outer=179539 ns_per_outer=223.38
+ub on rep 6 variant=copy n=512 enabled=1 outer=179539 ns_per_outer=223.56
+ub on result variant=copy n=512 enabled=1 outer=179539 reps=7 insn_per_outer=2054 median_ns_per_outer=224.06 min_ns_per_outer=223.38
+ub on counters copy hook_calls=1256537 syscalls_in_kernel=1256465 fragment_entries=1256472 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1256465 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=copy n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=copy n=1024 enabled=0 outer=80862 ns_per_outer=478.48
+ub off rep 1 variant=copy n=1024 enabled=0 outer=80862 ns_per_outer=467.37
+ub off rep 2 variant=copy n=1024 enabled=0 outer=80862 ns_per_outer=467.72
+ub off rep 3 variant=copy n=1024 enabled=0 outer=80862 ns_per_outer=467.22
+ub off rep 4 variant=copy n=1024 enabled=0 outer=80862 ns_per_outer=468.10
+ub off rep 5 variant=copy n=1024 enabled=0 outer=80862 ns_per_outer=462.72
+ub off rep 6 variant=copy n=1024 enabled=0 outer=80862 ns_per_outer=466.10
+ub off result variant=copy n=1024 enabled=0 outer=80862 reps=7 insn_per_outer=4102 median_ns_per_outer=467.37 min_ns_per_outer=462.72
+ub off counters copy hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=copy n=1024 enabled=1 outer=102662 ns_per_outer=391.00
+ub on rep 1 variant=copy n=1024 enabled=1 outer=102662 ns_per_outer=385.24
+ub on rep 2 variant=copy n=1024 enabled=1 outer=102662 ns_per_outer=385.99
+ub on rep 3 variant=copy n=1024 enabled=1 outer=102662 ns_per_outer=385.47
+ub on rep 4 variant=copy n=1024 enabled=1 outer=102662 ns_per_outer=393.11
+ub on rep 5 variant=copy n=1024 enabled=1 outer=102662 ns_per_outer=394.44
+ub on rep 6 variant=copy n=1024 enabled=1 outer=102662 ns_per_outer=391.25
+ub on result variant=copy n=1024 enabled=1 outer=102662 reps=7 insn_per_outer=4102 median_ns_per_outer=391.00 min_ns_per_outer=385.24
+ub on counters copy hook_calls=718524 syscalls_in_kernel=718452 fragment_entries=718459 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=718452 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=copy n=1024 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=copy n=2048 enabled=0 outer=44549 ns_per_outer=814.89
+ub off rep 1 variant=copy n=2048 enabled=0 outer=44549 ns_per_outer=798.34
+ub off rep 2 variant=copy n=2048 enabled=0 outer=44549 ns_per_outer=795.84
+ub off rep 3 variant=copy n=2048 enabled=0 outer=44549 ns_per_outer=794.24
+ub off rep 4 variant=copy n=2048 enabled=0 outer=44549 ns_per_outer=805.46
+ub off rep 5 variant=copy n=2048 enabled=0 outer=44549 ns_per_outer=800.77
+ub off rep 6 variant=copy n=2048 enabled=0 outer=44549 ns_per_outer=820.79
+ub off result variant=copy n=2048 enabled=0 outer=44549 reps=7 insn_per_outer=8198 median_ns_per_outer=800.77 min_ns_per_outer=794.24
+ub off counters copy hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=copy n=2048 enabled=1 outer=53097 ns_per_outer=716.41
+ub on rep 1 variant=copy n=2048 enabled=1 outer=53097 ns_per_outer=728.53
+ub on rep 2 variant=copy n=2048 enabled=1 outer=53097 ns_per_outer=715.93
+ub on rep 3 variant=copy n=2048 enabled=1 outer=53097 ns_per_outer=724.29
+ub on rep 4 variant=copy n=2048 enabled=1 outer=53097 ns_per_outer=719.34
+ub on rep 5 variant=copy n=2048 enabled=1 outer=53097 ns_per_outer=724.10
+ub on rep 6 variant=copy n=2048 enabled=1 outer=53097 ns_per_outer=727.87
+ub on result variant=copy n=2048 enabled=1 outer=53097 reps=7 insn_per_outer=8198 median_ns_per_outer=724.10 min_ns_per_outer=715.93
+ub on counters copy hook_calls=371660 syscalls_in_kernel=371588 fragment_entries=371595 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=371588 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=copy n=2048 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=copy16 n=512 enabled=0 outer=268907 ns_per_outer=142.12
+ub off rep 1 variant=copy16 n=512 enabled=0 outer=268907 ns_per_outer=138.64
+ub off rep 2 variant=copy16 n=512 enabled=0 outer=268907 ns_per_outer=138.27
+ub off rep 3 variant=copy16 n=512 enabled=0 outer=268907 ns_per_outer=138.64
+ub off rep 4 variant=copy16 n=512 enabled=0 outer=268907 ns_per_outer=137.74
+ub off rep 5 variant=copy16 n=512 enabled=0 outer=268907 ns_per_outer=138.58
+ub off rep 6 variant=copy16 n=512 enabled=0 outer=268907 ns_per_outer=138.78
+ub off result variant=copy16 n=512 enabled=0 outer=268907 reps=7 insn_per_outer=134 median_ns_per_outer=138.64 min_ns_per_outer=137.74
+ub off counters copy16 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=copy16 n=512 enabled=1 outer=585360 ns_per_outer=68.55
+ub on rep 1 variant=copy16 n=512 enabled=1 outer=585360 ns_per_outer=69.11
+ub on rep 2 variant=copy16 n=512 enabled=1 outer=585360 ns_per_outer=68.79
+ub on rep 3 variant=copy16 n=512 enabled=1 outer=585360 ns_per_outer=68.12
+ub on rep 4 variant=copy16 n=512 enabled=1 outer=585360 ns_per_outer=68.47
+ub on rep 5 variant=copy16 n=512 enabled=1 outer=585360 ns_per_outer=69.08
+ub on rep 6 variant=copy16 n=512 enabled=1 outer=585360 ns_per_outer=67.56
+ub on result variant=copy16 n=512 enabled=1 outer=585360 reps=7 insn_per_outer=134 median_ns_per_outer=68.55 min_ns_per_outer=67.56
+ub on counters copy16 hook_calls=4096591 syscalls_in_kernel=4096519 fragment_entries=4096526 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=4096519 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=copy16 n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=copy16 n=1024 enabled=0 outer=250326 ns_per_outer=150.75
+ub off rep 1 variant=copy16 n=1024 enabled=0 outer=250326 ns_per_outer=151.59
+ub off rep 2 variant=copy16 n=1024 enabled=0 outer=250326 ns_per_outer=148.66
+ub off rep 3 variant=copy16 n=1024 enabled=0 outer=250326 ns_per_outer=148.86
+ub off rep 4 variant=copy16 n=1024 enabled=0 outer=250326 ns_per_outer=150.23
+ub off rep 5 variant=copy16 n=1024 enabled=0 outer=250326 ns_per_outer=147.72
+ub off rep 6 variant=copy16 n=1024 enabled=0 outer=250326 ns_per_outer=148.48
+ub off result variant=copy16 n=1024 enabled=0 outer=250326 reps=7 insn_per_outer=262 median_ns_per_outer=148.86 min_ns_per_outer=147.72
+ub off counters copy16 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=copy16 n=1024 enabled=1 outer=472204 ns_per_outer=85.29
+ub on rep 1 variant=copy16 n=1024 enabled=1 outer=472204 ns_per_outer=85.38
+ub on rep 2 variant=copy16 n=1024 enabled=1 outer=472204 ns_per_outer=85.01
+ub on rep 3 variant=copy16 n=1024 enabled=1 outer=472204 ns_per_outer=84.21
+ub on rep 4 variant=copy16 n=1024 enabled=1 outer=472204 ns_per_outer=84.98
+ub on rep 5 variant=copy16 n=1024 enabled=1 outer=472204 ns_per_outer=86.27
+ub on rep 6 variant=copy16 n=1024 enabled=1 outer=472204 ns_per_outer=85.55
+ub on result variant=copy16 n=1024 enabled=1 outer=472204 reps=7 insn_per_outer=262 median_ns_per_outer=85.29 min_ns_per_outer=84.21
+ub on counters copy16 hook_calls=3304688 syscalls_in_kernel=3304616 fragment_entries=3304623 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=3304616 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=copy16 n=1024 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=copy16 n=2048 enabled=0 outer=223619 ns_per_outer=176.36
+ub off rep 1 variant=copy16 n=2048 enabled=0 outer=223619 ns_per_outer=176.89
+ub off rep 2 variant=copy16 n=2048 enabled=0 outer=223619 ns_per_outer=175.36
+ub off rep 3 variant=copy16 n=2048 enabled=0 outer=223619 ns_per_outer=173.83
+ub off rep 4 variant=copy16 n=2048 enabled=0 outer=223619 ns_per_outer=173.73
+ub off rep 5 variant=copy16 n=2048 enabled=0 outer=223619 ns_per_outer=174.61
+ub off rep 6 variant=copy16 n=2048 enabled=0 outer=223619 ns_per_outer=172.83
+ub off result variant=copy16 n=2048 enabled=0 outer=223619 reps=7 insn_per_outer=518 median_ns_per_outer=174.61 min_ns_per_outer=172.83
+ub off counters copy16 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=copy16 n=2048 enabled=1 outer=320962 ns_per_outer=121.16
+ub on rep 1 variant=copy16 n=2048 enabled=1 outer=320962 ns_per_outer=120.16
+ub on rep 2 variant=copy16 n=2048 enabled=1 outer=320962 ns_per_outer=120.10
+ub on rep 3 variant=copy16 n=2048 enabled=1 outer=320962 ns_per_outer=119.90
+ub on rep 4 variant=copy16 n=2048 enabled=1 outer=320962 ns_per_outer=120.32
+ub on rep 5 variant=copy16 n=2048 enabled=1 outer=320962 ns_per_outer=121.50
+ub on rep 6 variant=copy16 n=2048 enabled=1 outer=320962 ns_per_outer=121.50
+ub on result variant=copy16 n=2048 enabled=1 outer=320962 reps=7 insn_per_outer=518 median_ns_per_outer=120.32 min_ns_per_outer=119.90
+ub on counters copy16 hook_calls=2246253 syscalls_in_kernel=2246181 fragment_entries=2246188 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2246181 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=copy16 n=2048 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=copy16 n=4096 enabled=0 outer=176503 ns_per_outer=226.91
+ub off rep 1 variant=copy16 n=4096 enabled=0 outer=176503 ns_per_outer=223.67
+ub off rep 2 variant=copy16 n=4096 enabled=0 outer=176503 ns_per_outer=224.85
+ub off rep 3 variant=copy16 n=4096 enabled=0 outer=176503 ns_per_outer=234.54
+ub off rep 4 variant=copy16 n=4096 enabled=0 outer=176503 ns_per_outer=227.47
+ub off rep 5 variant=copy16 n=4096 enabled=0 outer=176503 ns_per_outer=227.62
+ub off rep 6 variant=copy16 n=4096 enabled=0 outer=176503 ns_per_outer=226.07
+ub off result variant=copy16 n=4096 enabled=0 outer=176503 reps=7 insn_per_outer=1030 median_ns_per_outer=226.91 min_ns_per_outer=223.67
+ub off counters copy16 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=copy16 n=4096 enabled=1 outer=216362 ns_per_outer=195.53
+ub on rep 1 variant=copy16 n=4096 enabled=1 outer=216362 ns_per_outer=191.95
+ub on rep 2 variant=copy16 n=4096 enabled=1 outer=216362 ns_per_outer=198.79
+ub on rep 3 variant=copy16 n=4096 enabled=1 outer=216362 ns_per_outer=189.51
+ub on rep 4 variant=copy16 n=4096 enabled=1 outer=216362 ns_per_outer=201.82
+ub on rep 5 variant=copy16 n=4096 enabled=1 outer=216362 ns_per_outer=193.68
+ub on rep 6 variant=copy16 n=4096 enabled=1 outer=216362 ns_per_outer=201.18
+ub on result variant=copy16 n=4096 enabled=1 outer=216362 reps=7 insn_per_outer=1030 median_ns_per_outer=195.53 min_ns_per_outer=189.51
+ub on counters copy16 hook_calls=1514235 syscalls_in_kernel=1514163 fragment_entries=1514170 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1514163 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=copy16 n=4096 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=simd32 n=512 enabled=0 outer=291086 ns_per_outer=135.06
+ub off rep 1 variant=simd32 n=512 enabled=0 outer=291086 ns_per_outer=135.14
+ub off rep 2 variant=simd32 n=512 enabled=0 outer=291086 ns_per_outer=130.99
+ub off rep 3 variant=simd32 n=512 enabled=0 outer=291086 ns_per_outer=133.80
+ub off rep 4 variant=simd32 n=512 enabled=0 outer=291086 ns_per_outer=132.97
+ub off rep 5 variant=simd32 n=512 enabled=0 outer=291086 ns_per_outer=132.99
+ub off rep 6 variant=simd32 n=512 enabled=0 outer=291086 ns_per_outer=133.72
+ub off result variant=simd32 n=512 enabled=0 outer=291086 reps=7 insn_per_outer=70 median_ns_per_outer=133.72 min_ns_per_outer=130.99
+ub off counters simd32 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=simd32 n=512 enabled=1 outer=114081 ns_per_outer=357.90
+ub on rep 1 variant=simd32 n=512 enabled=1 outer=114081 ns_per_outer=358.36
+ub on rep 2 variant=simd32 n=512 enabled=1 outer=114081 ns_per_outer=358.31
+ub on rep 3 variant=simd32 n=512 enabled=1 outer=114081 ns_per_outer=358.23
+ub on rep 4 variant=simd32 n=512 enabled=1 outer=114081 ns_per_outer=357.54
+ub on rep 5 variant=simd32 n=512 enabled=1 outer=114081 ns_per_outer=357.83
+ub on rep 6 variant=simd32 n=512 enabled=1 outer=114081 ns_per_outer=355.57
+ub on result variant=simd32 n=512 enabled=1 outer=114081 reps=7 insn_per_outer=70 median_ns_per_outer=357.90 min_ns_per_outer=355.57
+ub on counters simd32 hook_calls=798443 syscalls_in_kernel=798371 fragment_entries=798378 fpsimd_entries=798378 fpsimd_preempted=1 chains=0 chain_cap=0 exit_svc=798371 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=simd32 n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=simd32 n=1024 enabled=0 outer=267633 ns_per_outer=142.96
+ub off rep 1 variant=simd32 n=1024 enabled=0 outer=267633 ns_per_outer=138.95
+ub off rep 2 variant=simd32 n=1024 enabled=0 outer=267633 ns_per_outer=138.36
+ub off rep 3 variant=simd32 n=1024 enabled=0 outer=267633 ns_per_outer=139.47
+ub off rep 4 variant=simd32 n=1024 enabled=0 outer=267633 ns_per_outer=138.05
+ub off rep 5 variant=simd32 n=1024 enabled=0 outer=267633 ns_per_outer=138.46
+ub off rep 6 variant=simd32 n=1024 enabled=0 outer=267633 ns_per_outer=138.03
+ub off result variant=simd32 n=1024 enabled=0 outer=267633 reps=7 insn_per_outer=134 median_ns_per_outer=138.46 min_ns_per_outer=138.03
+ub off counters simd32 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=simd32 n=1024 enabled=1 outer=66390 ns_per_outer=604.23
+ub on rep 1 variant=simd32 n=1024 enabled=1 outer=66390 ns_per_outer=608.56
+ub on rep 2 variant=simd32 n=1024 enabled=1 outer=66390 ns_per_outer=605.14
+ub on rep 3 variant=simd32 n=1024 enabled=1 outer=66390 ns_per_outer=608.25
+ub on rep 4 variant=simd32 n=1024 enabled=1 outer=66390 ns_per_outer=606.27
+ub on rep 5 variant=simd32 n=1024 enabled=1 outer=66390 ns_per_outer=606.79
+ub on rep 6 variant=simd32 n=1024 enabled=1 outer=66390 ns_per_outer=606.89
+ub on result variant=simd32 n=1024 enabled=1 outer=66390 reps=7 insn_per_outer=134 median_ns_per_outer=606.79 min_ns_per_outer=604.23
+ub on counters simd32 hook_calls=464683 syscalls_in_kernel=464611 fragment_entries=464618 fpsimd_entries=464618 fpsimd_preempted=1 chains=0 chain_cap=0 exit_svc=464611 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=simd32 n=1024 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=simd32 n=2048 enabled=0 outer=249739 ns_per_outer=154.93
+ub off rep 1 variant=simd32 n=2048 enabled=0 outer=249739 ns_per_outer=148.89
+ub off rep 2 variant=simd32 n=2048 enabled=0 outer=249739 ns_per_outer=150.25
+ub off rep 3 variant=simd32 n=2048 enabled=0 outer=249739 ns_per_outer=148.32
+ub off rep 4 variant=simd32 n=2048 enabled=0 outer=249739 ns_per_outer=149.39
+ub off rep 5 variant=simd32 n=2048 enabled=0 outer=249739 ns_per_outer=148.39
+ub off rep 6 variant=simd32 n=2048 enabled=0 outer=249739 ns_per_outer=149.74
+ub off result variant=simd32 n=2048 enabled=0 outer=249739 reps=7 insn_per_outer=262 median_ns_per_outer=149.39 min_ns_per_outer=148.32
+ub off counters simd32 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=simd32 n=2048 enabled=1 outer=35772 ns_per_outer=1097.76
+ub on rep 1 variant=simd32 n=2048 enabled=1 outer=35772 ns_per_outer=1095.24
+ub on rep 2 variant=simd32 n=2048 enabled=1 outer=35772 ns_per_outer=1110.93
+ub on rep 3 variant=simd32 n=2048 enabled=1 outer=35772 ns_per_outer=1093.57
+ub on rep 4 variant=simd32 n=2048 enabled=1 outer=35772 ns_per_outer=1096.28
+ub on rep 5 variant=simd32 n=2048 enabled=1 outer=35772 ns_per_outer=1086.70
+ub on rep 6 variant=simd32 n=2048 enabled=1 outer=35772 ns_per_outer=1096.51
+ub on result variant=simd32 n=2048 enabled=1 outer=35772 reps=7 insn_per_outer=262 median_ns_per_outer=1096.28 min_ns_per_outer=1086.70
+ub on counters simd32 hook_calls=250413 syscalls_in_kernel=250341 fragment_entries=250348 fpsimd_entries=250348 fpsimd_preempted=2 chains=0 chain_cap=0 exit_svc=250341 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=simd32 n=2048 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=simd32 n=4096 enabled=0 outer=212154 ns_per_outer=185.03
+ub off rep 1 variant=simd32 n=4096 enabled=0 outer=212154 ns_per_outer=181.08
+ub off rep 2 variant=simd32 n=4096 enabled=0 outer=212154 ns_per_outer=187.83
+ub off rep 3 variant=simd32 n=4096 enabled=0 outer=212154 ns_per_outer=183.50
+ub off rep 4 variant=simd32 n=4096 enabled=0 outer=212154 ns_per_outer=179.96
+ub off rep 5 variant=simd32 n=4096 enabled=0 outer=212154 ns_per_outer=179.37
+ub off rep 6 variant=simd32 n=4096 enabled=0 outer=212154 ns_per_outer=180.63
+ub off result variant=simd32 n=4096 enabled=0 outer=212154 reps=7 insn_per_outer=518 median_ns_per_outer=181.08 min_ns_per_outer=179.37
+ub off counters simd32 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=simd32 n=4096 enabled=1 outer=19614 ns_per_outer=2130.34
+ub on rep 1 variant=simd32 n=4096 enabled=1 outer=19614 ns_per_outer=2102.48
+ub on rep 2 variant=simd32 n=4096 enabled=1 outer=19614 ns_per_outer=2095.21
+ub on rep 3 variant=simd32 n=4096 enabled=1 outer=19614 ns_per_outer=2065.77
+ub on rep 4 variant=simd32 n=4096 enabled=1 outer=19614 ns_per_outer=2077.25
+ub on rep 5 variant=simd32 n=4096 enabled=1 outer=19614 ns_per_outer=2096.87
+ub on rep 6 variant=simd32 n=4096 enabled=1 outer=19614 ns_per_outer=2086.60
+ub on result variant=simd32 n=4096 enabled=1 outer=19614 reps=7 insn_per_outer=518 median_ns_per_outer=2095.21 min_ns_per_outer=2065.77
+ub on counters simd32 hook_calls=137335 syscalls_in_kernel=137263 fragment_entries=137270 fpsimd_entries=137270 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=137263 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=simd32 n=4096 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=calls n=64 enabled=0 outer=168480 ns_per_outer=228.16
+ub off rep 1 variant=calls n=64 enabled=0 outer=168480 ns_per_outer=220.12
+ub off rep 2 variant=calls n=64 enabled=0 outer=168480 ns_per_outer=219.16
+ub off rep 3 variant=calls n=64 enabled=0 outer=168480 ns_per_outer=219.72
+ub off rep 4 variant=calls n=64 enabled=0 outer=168480 ns_per_outer=219.85
+ub off rep 5 variant=calls n=64 enabled=0 outer=168480 ns_per_outer=218.81
+ub off rep 6 variant=calls n=64 enabled=0 outer=168480 ns_per_outer=217.77
+ub off result variant=calls n=64 enabled=0 outer=168480 reps=7 insn_per_outer=902 median_ns_per_outer=219.72 min_ns_per_outer=217.77
+ub off counters calls hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=calls n=64 enabled=1 outer=192192 ns_per_outer=227.25
+ub on rep 1 variant=calls n=64 enabled=1 outer=192192 ns_per_outer=202.88
+ub on rep 2 variant=calls n=64 enabled=1 outer=192192 ns_per_outer=201.34
+ub on rep 3 variant=calls n=64 enabled=1 outer=192192 ns_per_outer=202.89
+ub on rep 4 variant=calls n=64 enabled=1 outer=192192 ns_per_outer=203.63
+ub on rep 5 variant=calls n=64 enabled=1 outer=192192 ns_per_outer=202.39
+ub on rep 6 variant=calls n=64 enabled=1 outer=192192 ns_per_outer=202.17
+ub on result variant=calls n=64 enabled=1 outer=192192 reps=7 insn_per_outer=902 median_ns_per_outer=202.88 min_ns_per_outer=201.34
+ub on counters calls hook_calls=1345087 syscalls_in_kernel=1345015 fragment_entries=1345022 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1345015 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=calls n=64 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=calls n=128 enabled=0 outer=117531 ns_per_outer=306.89
+ub off rep 1 variant=calls n=128 enabled=0 outer=117531 ns_per_outer=297.86
+ub off rep 2 variant=calls n=128 enabled=0 outer=117531 ns_per_outer=299.30
+ub off rep 3 variant=calls n=128 enabled=0 outer=117531 ns_per_outer=301.69
+ub off rep 4 variant=calls n=128 enabled=0 outer=117531 ns_per_outer=298.55
+ub off rep 5 variant=calls n=128 enabled=0 outer=117531 ns_per_outer=297.09
+ub off rep 6 variant=calls n=128 enabled=0 outer=117531 ns_per_outer=299.81
+ub off result variant=calls n=128 enabled=0 outer=117531 reps=7 insn_per_outer=1798 median_ns_per_outer=299.30 min_ns_per_outer=297.09
+ub off counters calls hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=calls n=128 enabled=1 outer=108732 ns_per_outer=354.95
+ub on rep 1 variant=calls n=128 enabled=1 outer=108732 ns_per_outer=351.00
+ub on rep 2 variant=calls n=128 enabled=1 outer=108732 ns_per_outer=351.55
+ub on rep 3 variant=calls n=128 enabled=1 outer=108732 ns_per_outer=354.37
+ub on rep 4 variant=calls n=128 enabled=1 outer=108732 ns_per_outer=349.88
+ub on rep 5 variant=calls n=128 enabled=1 outer=108732 ns_per_outer=352.30
+ub on rep 6 variant=calls n=128 enabled=1 outer=108732 ns_per_outer=351.55
+ub on result variant=calls n=128 enabled=1 outer=108732 reps=7 insn_per_outer=1798 median_ns_per_outer=351.55 min_ns_per_outer=349.88
+ub on counters calls hook_calls=761007 syscalls_in_kernel=760935 fragment_entries=760942 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=760935 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=calls n=128 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=calls n=256 enabled=0 outer=81722 ns_per_outer=497.61
+ub off rep 1 variant=calls n=256 enabled=0 outer=81722 ns_per_outer=499.97
+ub off rep 2 variant=calls n=256 enabled=0 outer=81722 ns_per_outer=495.50
+ub off rep 3 variant=calls n=256 enabled=0 outer=81722 ns_per_outer=501.79
+ub off rep 4 variant=calls n=256 enabled=0 outer=81722 ns_per_outer=496.36
+ub off rep 5 variant=calls n=256 enabled=0 outer=81722 ns_per_outer=498.54
+ub off rep 6 variant=calls n=256 enabled=0 outer=81722 ns_per_outer=493.85
+ub off result variant=calls n=256 enabled=0 outer=81722 reps=7 insn_per_outer=3590 median_ns_per_outer=497.61 min_ns_per_outer=493.85
+ub off counters calls hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=calls n=256 enabled=1 outer=61879 ns_per_outer=655.28
+ub on rep 1 variant=calls n=256 enabled=1 outer=61879 ns_per_outer=655.79
+ub on rep 2 variant=calls n=256 enabled=1 outer=61879 ns_per_outer=645.70
+ub on rep 3 variant=calls n=256 enabled=1 outer=61879 ns_per_outer=649.71
+ub on rep 4 variant=calls n=256 enabled=1 outer=61879 ns_per_outer=655.08
+ub on rep 5 variant=calls n=256 enabled=1 outer=61879 ns_per_outer=654.10
+ub on rep 6 variant=calls n=256 enabled=1 outer=61879 ns_per_outer=649.89
+ub on result variant=calls n=256 enabled=1 outer=61879 reps=7 insn_per_outer=3590 median_ns_per_outer=654.10 min_ns_per_outer=645.70
+ub on counters calls hook_calls=433113 syscalls_in_kernel=433041 fragment_entries=433048 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=433041 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=calls n=256 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=calls n=512 enabled=0 outer=43590 ns_per_outer=903.34
+ub off rep 1 variant=calls n=512 enabled=0 outer=43590 ns_per_outer=893.70
+ub off rep 2 variant=calls n=512 enabled=0 outer=43590 ns_per_outer=896.07
+ub off rep 3 variant=calls n=512 enabled=0 outer=43590 ns_per_outer=895.88
+ub off rep 4 variant=calls n=512 enabled=0 outer=43590 ns_per_outer=903.82
+ub off rep 5 variant=calls n=512 enabled=0 outer=43590 ns_per_outer=897.06
+ub off rep 6 variant=calls n=512 enabled=0 outer=43590 ns_per_outer=897.30
+ub off result variant=calls n=512 enabled=0 outer=43590 reps=7 insn_per_outer=7174 median_ns_per_outer=897.06 min_ns_per_outer=893.70
+ub off counters calls hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=calls n=512 enabled=1 outer=31621 ns_per_outer=1248.10
+ub on rep 1 variant=calls n=512 enabled=1 outer=31621 ns_per_outer=1255.50
+ub on rep 2 variant=calls n=512 enabled=1 outer=31621 ns_per_outer=1244.09
+ub on rep 3 variant=calls n=512 enabled=1 outer=31621 ns_per_outer=1242.97
+ub on rep 4 variant=calls n=512 enabled=1 outer=31621 ns_per_outer=1248.57
+ub on rep 5 variant=calls n=512 enabled=1 outer=31621 ns_per_outer=1236.41
+ub on rep 6 variant=calls n=512 enabled=1 outer=31621 ns_per_outer=1250.17
+ub on result variant=calls n=512 enabled=1 outer=31621 reps=7 insn_per_outer=7174 median_ns_per_outer=1248.10 min_ns_per_outer=1236.41
+ub on counters calls hook_calls=221363 syscalls_in_kernel=221291 fragment_entries=221298 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=221291 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=calls n=512 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=calls n=1000 enabled=0 outer=22791 ns_per_outer=1661.97
+ub off rep 1 variant=calls n=1000 enabled=0 outer=22791 ns_per_outer=1650.59
+ub off rep 2 variant=calls n=1000 enabled=0 outer=22791 ns_per_outer=1649.37
+ub off rep 3 variant=calls n=1000 enabled=0 outer=22791 ns_per_outer=1645.64
+ub off rep 4 variant=calls n=1000 enabled=0 outer=22791 ns_per_outer=1635.02
+ub off rep 5 variant=calls n=1000 enabled=0 outer=22791 ns_per_outer=1629.80
+ub off rep 6 variant=calls n=1000 enabled=0 outer=22791 ns_per_outer=1623.40
+ub off result variant=calls n=1000 enabled=0 outer=22791 reps=7 insn_per_outer=14006 median_ns_per_outer=1645.64 min_ns_per_outer=1623.40
+ub off counters calls hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=calls n=1000 enabled=1 outer=16988 ns_per_outer=2350.70
+ub on rep 1 variant=calls n=1000 enabled=1 outer=16988 ns_per_outer=2349.85
+ub on rep 2 variant=calls n=1000 enabled=1 outer=16988 ns_per_outer=2372.15
+ub on rep 3 variant=calls n=1000 enabled=1 outer=16988 ns_per_outer=2412.69
+ub on rep 4 variant=calls n=1000 enabled=1 outer=16988 ns_per_outer=2404.23
+ub on rep 5 variant=calls n=1000 enabled=1 outer=16988 ns_per_outer=2360.60
+ub on rep 6 variant=calls n=1000 enabled=1 outer=16988 ns_per_outer=2372.70
+ub on result variant=calls n=1000 enabled=1 outer=16988 reps=7 insn_per_outer=14006 median_ns_per_outer=2372.15 min_ns_per_outer=2349.85
+ub on counters calls hook_calls=118953 syscalls_in_kernel=118881 fragment_entries=118888 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=118881 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=calls n=1000 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=callsi n=64 enabled=0 outer=167890 ns_per_outer=226.48
+ub off rep 1 variant=callsi n=64 enabled=0 outer=167890 ns_per_outer=219.43
+ub off rep 2 variant=callsi n=64 enabled=0 outer=167890 ns_per_outer=220.02
+ub off rep 3 variant=callsi n=64 enabled=0 outer=167890 ns_per_outer=219.16
+ub off rep 4 variant=callsi n=64 enabled=0 outer=167890 ns_per_outer=219.94
+ub off rep 5 variant=callsi n=64 enabled=0 outer=167890 ns_per_outer=219.52
+ub off rep 6 variant=callsi n=64 enabled=0 outer=167890 ns_per_outer=219.47
+ub off result variant=callsi n=64 enabled=0 outer=167890 reps=7 insn_per_outer=902 median_ns_per_outer=219.52 min_ns_per_outer=219.16
+ub off counters callsi hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=callsi n=64 enabled=1 outer=201934 ns_per_outer=202.90
+ub on rep 1 variant=callsi n=64 enabled=1 outer=201934 ns_per_outer=200.38
+ub on rep 2 variant=callsi n=64 enabled=1 outer=201934 ns_per_outer=200.38
+ub on rep 3 variant=callsi n=64 enabled=1 outer=201934 ns_per_outer=198.43
+ub on rep 4 variant=callsi n=64 enabled=1 outer=201934 ns_per_outer=199.68
+ub on rep 5 variant=callsi n=64 enabled=1 outer=201934 ns_per_outer=200.70
+ub on rep 6 variant=callsi n=64 enabled=1 outer=201934 ns_per_outer=198.85
+ub on result variant=callsi n=64 enabled=1 outer=201934 reps=7 insn_per_outer=902 median_ns_per_outer=200.38 min_ns_per_outer=198.43
+ub on counters callsi hook_calls=1413260 syscalls_in_kernel=1413188 fragment_entries=1413195 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1413188 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=callsi n=64 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=callsi n=128 enabled=0 outer=119955 ns_per_outer=302.87
+ub off rep 1 variant=callsi n=128 enabled=0 outer=119955 ns_per_outer=298.86
+ub off rep 2 variant=callsi n=128 enabled=0 outer=119955 ns_per_outer=299.86
+ub off rep 3 variant=callsi n=128 enabled=0 outer=119955 ns_per_outer=300.50
+ub off rep 4 variant=callsi n=128 enabled=0 outer=119955 ns_per_outer=337.37
+ub off rep 5 variant=callsi n=128 enabled=0 outer=119955 ns_per_outer=300.66
+ub off rep 6 variant=callsi n=128 enabled=0 outer=119955 ns_per_outer=300.52
+ub off result variant=callsi n=128 enabled=0 outer=119955 reps=7 insn_per_outer=1798 median_ns_per_outer=300.52 min_ns_per_outer=298.86
+ub off counters callsi hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=callsi n=128 enabled=1 outer=112623 ns_per_outer=353.38
+ub on rep 1 variant=callsi n=128 enabled=1 outer=112623 ns_per_outer=349.00
+ub on rep 2 variant=callsi n=128 enabled=1 outer=112623 ns_per_outer=345.58
+ub on rep 3 variant=callsi n=128 enabled=1 outer=112623 ns_per_outer=348.55
+ub on rep 4 variant=callsi n=128 enabled=1 outer=112623 ns_per_outer=345.03
+ub on rep 5 variant=callsi n=128 enabled=1 outer=112623 ns_per_outer=346.40
+ub on rep 6 variant=callsi n=128 enabled=1 outer=112623 ns_per_outer=342.22
+ub on result variant=callsi n=128 enabled=1 outer=112623 reps=7 insn_per_outer=1798 median_ns_per_outer=346.40 min_ns_per_outer=342.22
+ub on counters callsi hook_calls=788237 syscalls_in_kernel=788165 fragment_entries=788172 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=788165 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=callsi n=128 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=callsi n=256 enabled=0 outer=72710 ns_per_outer=513.14
+ub off rep 1 variant=callsi n=256 enabled=0 outer=72710 ns_per_outer=500.73
+ub off rep 2 variant=callsi n=256 enabled=0 outer=72710 ns_per_outer=495.26
+ub off rep 3 variant=callsi n=256 enabled=0 outer=72710 ns_per_outer=499.73
+ub off rep 4 variant=callsi n=256 enabled=0 outer=72710 ns_per_outer=496.46
+ub off rep 5 variant=callsi n=256 enabled=0 outer=72710 ns_per_outer=500.19
+ub off rep 6 variant=callsi n=256 enabled=0 outer=72710 ns_per_outer=497.55
+ub off result variant=callsi n=256 enabled=0 outer=72710 reps=7 insn_per_outer=3590 median_ns_per_outer=499.73 min_ns_per_outer=495.26
+ub off counters callsi hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=callsi n=256 enabled=1 outer=61443 ns_per_outer=635.55
+ub on rep 1 variant=callsi n=256 enabled=1 outer=61443 ns_per_outer=633.94
+ub on rep 2 variant=callsi n=256 enabled=1 outer=61443 ns_per_outer=638.16
+ub on rep 3 variant=callsi n=256 enabled=1 outer=61443 ns_per_outer=625.56
+ub on rep 4 variant=callsi n=256 enabled=1 outer=61443 ns_per_outer=630.31
+ub on rep 5 variant=callsi n=256 enabled=1 outer=61443 ns_per_outer=640.99
+ub on rep 6 variant=callsi n=256 enabled=1 outer=61443 ns_per_outer=636.46
+ub on result variant=callsi n=256 enabled=1 outer=61443 reps=7 insn_per_outer=3590 median_ns_per_outer=635.55 min_ns_per_outer=625.56
+ub on counters callsi hook_calls=430068 syscalls_in_kernel=429996 fragment_entries=430003 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=429996 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=callsi n=256 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=callsi n=512 enabled=0 outer=45504 ns_per_outer=897.36
+ub off rep 1 variant=callsi n=512 enabled=0 outer=45504 ns_per_outer=891.81
+ub off rep 2 variant=callsi n=512 enabled=0 outer=45504 ns_per_outer=911.43
+ub off rep 3 variant=callsi n=512 enabled=0 outer=45504 ns_per_outer=898.82
+ub off rep 4 variant=callsi n=512 enabled=0 outer=45504 ns_per_outer=894.01
+ub off rep 5 variant=callsi n=512 enabled=0 outer=45504 ns_per_outer=891.04
+ub off rep 6 variant=callsi n=512 enabled=0 outer=45504 ns_per_outer=890.43
+ub off result variant=callsi n=512 enabled=0 outer=45504 reps=7 insn_per_outer=7174 median_ns_per_outer=894.01 min_ns_per_outer=890.43
+ub off counters callsi hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=callsi n=512 enabled=1 outer=32959 ns_per_outer=1202.23
+ub on rep 1 variant=callsi n=512 enabled=1 outer=32959 ns_per_outer=1201.18
+ub on rep 2 variant=callsi n=512 enabled=1 outer=32959 ns_per_outer=1199.20
+ub on rep 3 variant=callsi n=512 enabled=1 outer=32959 ns_per_outer=1223.28
+ub on rep 4 variant=callsi n=512 enabled=1 outer=32959 ns_per_outer=1216.46
+ub on rep 5 variant=callsi n=512 enabled=1 outer=32959 ns_per_outer=1210.98
+ub on rep 6 variant=callsi n=512 enabled=1 outer=32959 ns_per_outer=1215.23
+ub on result variant=callsi n=512 enabled=1 outer=32959 reps=7 insn_per_outer=7174 median_ns_per_outer=1210.98 min_ns_per_outer=1199.20
+ub on counters callsi hook_calls=230722 syscalls_in_kernel=230650 fragment_entries=230657 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=230650 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=callsi n=512 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=callsi n=1000 enabled=0 outer=22703 ns_per_outer=1641.86
+ub off rep 1 variant=callsi n=1000 enabled=0 outer=22703 ns_per_outer=1653.66
+ub off rep 2 variant=callsi n=1000 enabled=0 outer=22703 ns_per_outer=1702.02
+ub off rep 3 variant=callsi n=1000 enabled=0 outer=22703 ns_per_outer=1658.93
+ub off rep 4 variant=callsi n=1000 enabled=0 outer=22703 ns_per_outer=1660.95
+ub off rep 5 variant=callsi n=1000 enabled=0 outer=22703 ns_per_outer=1647.06
+ub off rep 6 variant=callsi n=1000 enabled=0 outer=22703 ns_per_outer=1673.53
+ub off result variant=callsi n=1000 enabled=0 outer=22703 reps=7 insn_per_outer=14006 median_ns_per_outer=1658.93 min_ns_per_outer=1641.86
+ub off counters callsi hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=callsi n=1000 enabled=1 outer=17661 ns_per_outer=2313.86
+ub on rep 1 variant=callsi n=1000 enabled=1 outer=17661 ns_per_outer=2320.39
+ub on rep 2 variant=callsi n=1000 enabled=1 outer=17661 ns_per_outer=2319.33
+ub on rep 3 variant=callsi n=1000 enabled=1 outer=17661 ns_per_outer=2333.96
+ub on rep 4 variant=callsi n=1000 enabled=1 outer=17661 ns_per_outer=2295.38
+ub on rep 5 variant=callsi n=1000 enabled=1 outer=17661 ns_per_outer=3493.18
+ub on rep 6 variant=callsi n=1000 enabled=1 outer=17661 ns_per_outer=3299.64
+ub on result variant=callsi n=1000 enabled=1 outer=17661 reps=7 insn_per_outer=14006 median_ns_per_outer=2320.39 min_ns_per_outer=2295.38
+ub on counters callsi hook_calls=123664 syscalls_in_kernel=123592 fragment_entries=123599 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=123592 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=callsi n=1000 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=calls2 n=40 enabled=0 outer=183591 ns_per_outer=219.65
+ub off rep 1 variant=calls2 n=40 enabled=0 outer=183591 ns_per_outer=209.92
+ub off rep 2 variant=calls2 n=40 enabled=0 outer=183591 ns_per_outer=211.87
+ub off rep 3 variant=calls2 n=40 enabled=0 outer=183591 ns_per_outer=210.04
+ub off rep 4 variant=calls2 n=40 enabled=0 outer=183591 ns_per_outer=212.20
+ub off rep 5 variant=calls2 n=40 enabled=0 outer=183591 ns_per_outer=211.61
+ub off rep 6 variant=calls2 n=40 enabled=0 outer=183591 ns_per_outer=213.22
+ub off result variant=calls2 n=40 enabled=0 outer=183591 reps=7 insn_per_outer=926 median_ns_per_outer=211.87 min_ns_per_outer=209.92
+ub off counters calls2 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=calls2 n=40 enabled=1 outer=158914 ns_per_outer=231.94
+ub on rep 1 variant=calls2 n=40 enabled=1 outer=158914 ns_per_outer=230.86
+ub on rep 2 variant=calls2 n=40 enabled=1 outer=158914 ns_per_outer=231.97
+ub on rep 3 variant=calls2 n=40 enabled=1 outer=158914 ns_per_outer=231.45
+ub on rep 4 variant=calls2 n=40 enabled=1 outer=158914 ns_per_outer=230.19
+ub on rep 5 variant=calls2 n=40 enabled=1 outer=158914 ns_per_outer=230.04
+ub on rep 6 variant=calls2 n=40 enabled=1 outer=158914 ns_per_outer=230.81
+ub on result variant=calls2 n=40 enabled=1 outer=158914 reps=7 insn_per_outer=926 median_ns_per_outer=230.86 min_ns_per_outer=230.04
+ub on counters calls2 hook_calls=1112197 syscalls_in_kernel=1112125 fragment_entries=1112132 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1112125 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=calls2 n=40 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=calls2 n=80 enabled=0 outer=120694 ns_per_outer=308.47
+ub off rep 1 variant=calls2 n=80 enabled=0 outer=120694 ns_per_outer=301.26
+ub off rep 2 variant=calls2 n=80 enabled=0 outer=120694 ns_per_outer=300.96
+ub off rep 3 variant=calls2 n=80 enabled=0 outer=120694 ns_per_outer=303.17
+ub off rep 4 variant=calls2 n=80 enabled=0 outer=120694 ns_per_outer=307.61
+ub off rep 5 variant=calls2 n=80 enabled=0 outer=120694 ns_per_outer=303.24
+ub off rep 6 variant=calls2 n=80 enabled=0 outer=120694 ns_per_outer=301.42
+ub off result variant=calls2 n=80 enabled=0 outer=120694 reps=7 insn_per_outer=1846 median_ns_per_outer=303.17 min_ns_per_outer=300.96
+ub off counters calls2 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=calls2 n=80 enabled=1 outer=94618 ns_per_outer=403.57
+ub on rep 1 variant=calls2 n=80 enabled=1 outer=94618 ns_per_outer=400.13
+ub on rep 2 variant=calls2 n=80 enabled=1 outer=94618 ns_per_outer=406.97
+ub on rep 3 variant=calls2 n=80 enabled=1 outer=94618 ns_per_outer=409.07
+ub on rep 4 variant=calls2 n=80 enabled=1 outer=94618 ns_per_outer=405.13
+ub on rep 5 variant=calls2 n=80 enabled=1 outer=94618 ns_per_outer=405.19
+ub on rep 6 variant=calls2 n=80 enabled=1 outer=94618 ns_per_outer=410.56
+ub on result variant=calls2 n=80 enabled=1 outer=94618 reps=7 insn_per_outer=1846 median_ns_per_outer=405.19 min_ns_per_outer=400.13
+ub on counters calls2 hook_calls=662230 syscalls_in_kernel=662158 fragment_entries=662165 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=662158 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=calls2 n=80 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=calls2 n=160 enabled=0 outer=77613 ns_per_outer=507.94
+ub off rep 1 variant=calls2 n=160 enabled=0 outer=77613 ns_per_outer=506.34
+ub off rep 2 variant=calls2 n=160 enabled=0 outer=77613 ns_per_outer=501.83
+ub off rep 3 variant=calls2 n=160 enabled=0 outer=77613 ns_per_outer=497.42
+ub off rep 4 variant=calls2 n=160 enabled=0 outer=77613 ns_per_outer=503.74
+ub off rep 5 variant=calls2 n=160 enabled=0 outer=77613 ns_per_outer=501.90
+ub off rep 6 variant=calls2 n=160 enabled=0 outer=77613 ns_per_outer=503.84
+ub off result variant=calls2 n=160 enabled=0 outer=77613 reps=7 insn_per_outer=3686 median_ns_per_outer=503.74 min_ns_per_outer=497.42
+ub off counters calls2 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=calls2 n=160 enabled=1 outer=53631 ns_per_outer=760.19
+ub on rep 1 variant=calls2 n=160 enabled=1 outer=53631 ns_per_outer=748.34
+ub on rep 2 variant=calls2 n=160 enabled=1 outer=53631 ns_per_outer=767.74
+ub on rep 3 variant=calls2 n=160 enabled=1 outer=53631 ns_per_outer=764.00
+ub on rep 4 variant=calls2 n=160 enabled=1 outer=53631 ns_per_outer=754.57
+ub on rep 5 variant=calls2 n=160 enabled=1 outer=53631 ns_per_outer=750.63
+ub on rep 6 variant=calls2 n=160 enabled=1 outer=53631 ns_per_outer=758.02
+ub on result variant=calls2 n=160 enabled=1 outer=53631 reps=7 insn_per_outer=3686 median_ns_per_outer=758.02 min_ns_per_outer=748.34
+ub on counters calls2 hook_calls=375391 syscalls_in_kernel=375319 fragment_entries=375326 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=375319 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=calls2 n=160 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=calls2 n=320 enabled=0 outer=42958 ns_per_outer=898.37
+ub off rep 1 variant=calls2 n=320 enabled=0 outer=42958 ns_per_outer=901.92
+ub off rep 2 variant=calls2 n=320 enabled=0 outer=42958 ns_per_outer=902.93
+ub off rep 3 variant=calls2 n=320 enabled=0 outer=42958 ns_per_outer=900.92
+ub off rep 4 variant=calls2 n=320 enabled=0 outer=42958 ns_per_outer=905.25
+ub off rep 5 variant=calls2 n=320 enabled=0 outer=42958 ns_per_outer=890.56
+ub off rep 6 variant=calls2 n=320 enabled=0 outer=42958 ns_per_outer=899.44
+ub off result variant=calls2 n=320 enabled=0 outer=42958 reps=7 insn_per_outer=7366 median_ns_per_outer=900.92 min_ns_per_outer=890.56
+ub off counters calls2 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=calls2 n=320 enabled=1 outer=26043 ns_per_outer=1465.34
+ub on rep 1 variant=calls2 n=320 enabled=1 outer=26043 ns_per_outer=1443.79
+ub on rep 2 variant=calls2 n=320 enabled=1 outer=26043 ns_per_outer=1464.30
+ub on rep 3 variant=calls2 n=320 enabled=1 outer=26043 ns_per_outer=1455.70
+ub on rep 4 variant=calls2 n=320 enabled=1 outer=26043 ns_per_outer=1454.73
+ub on rep 5 variant=calls2 n=320 enabled=1 outer=26043 ns_per_outer=1474.06
+ub on rep 6 variant=calls2 n=320 enabled=1 outer=26043 ns_per_outer=1461.65
+ub on result variant=calls2 n=320 enabled=1 outer=26043 reps=7 insn_per_outer=7366 median_ns_per_outer=1461.65 min_ns_per_outer=1443.79
+ub on counters calls2 hook_calls=182324 syscalls_in_kernel=182252 fragment_entries=182259 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=182252 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=calls2 n=320 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub off rep 0 variant=calls2 n=600 enabled=0 outer=22756 ns_per_outer=1597.08
+ub off rep 1 variant=calls2 n=600 enabled=0 outer=22756 ns_per_outer=1588.78
+ub off rep 2 variant=calls2 n=600 enabled=0 outer=22756 ns_per_outer=1587.41
+ub off rep 3 variant=calls2 n=600 enabled=0 outer=22756 ns_per_outer=1571.62
+ub off rep 4 variant=calls2 n=600 enabled=0 outer=22756 ns_per_outer=1588.33
+ub off rep 5 variant=calls2 n=600 enabled=0 outer=22756 ns_per_outer=1565.12
+ub off rep 6 variant=calls2 n=600 enabled=0 outer=22756 ns_per_outer=1579.78
+ub off result variant=calls2 n=600 enabled=0 outer=22756 reps=7 insn_per_outer=13806 median_ns_per_outer=1587.41 min_ns_per_outer=1565.12
+ub off counters calls2 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 variant=calls2 n=600 enabled=1 outer=15192 ns_per_outer=2694.36
+ub on rep 1 variant=calls2 n=600 enabled=1 outer=15192 ns_per_outer=2676.21
+ub on rep 2 variant=calls2 n=600 enabled=1 outer=15192 ns_per_outer=2689.43
+ub on rep 3 variant=calls2 n=600 enabled=1 outer=15192 ns_per_outer=2709.22
+ub on rep 4 variant=calls2 n=600 enabled=1 outer=15192 ns_per_outer=2659.42
+ub on rep 5 variant=calls2 n=600 enabled=1 outer=15192 ns_per_outer=2662.43
+ub on rep 6 variant=calls2 n=600 enabled=1 outer=15192 ns_per_outer=2667.50
+ub on result variant=calls2 n=600 enabled=1 outer=15192 reps=7 insn_per_outer=13806 median_ns_per_outer=2676.21 min_ns_per_outer=2659.42
+ub on counters calls2 hook_calls=106388 syscalls_in_kernel=106316 fragment_entries=106323 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=106316 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit variant=calls2 n=600 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+ub: done
+[   23.516428] kjit: 0 of 78 translation requests still queued at unload (freed by the kernel)
+[   23.558140] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[   23.575415] reboot: Power down
