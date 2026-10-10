@@ -33,6 +33,12 @@
  *            through blr: n * 384 bytes native, 49 KB at n = 128. Function entries
  *            are 96 words apart, which never collide in the dispatch table for
  *            n <= 128. 76 per function.
+ *   sites64  (n is ignored, use 1) straight-line `bl cs_mini` x 64: 64 distinct call
+ *            sites of one two-instruction leaf (64 dispatch sites with one target, 64
+ *            return targets for one ret) per outer iteration. Fragment code with many
+ *            hot entry blocks: the A14 guard (run-k2.sh) runs it. Fragment images that
+ *            all start at the same page offset conflict in the L1I and made it 4.6x
+ *            slower than native.
  *
  * The auto mode's profiler has 256 slots per mm (docs/pipeline.md, section 9): with
  * more than about 200 distinct hot targets (foot, n > 128) not every function
@@ -62,6 +68,7 @@ DECL(callsi);
 DECL(calls2);
 DECL(foot);
 DECL(footl);
+DECL(sites64);
 
 asm(".text\n"
     ".global cs_hash\n.type cs_hash, %function\n"
@@ -350,6 +357,26 @@ asm(".text\n"
     "	b.ne	1b\n"
     "	mov	x0, x5\n"
     "	mov	x30, x15\n"
+    "	ret\n"
+
+    ".balign 16\n"
+    "cs_mini:\n"
+    "	add	x0, x0, #1\n"
+    "	ret\n"
+
+    ".global cs_sites64\n.type cs_sites64, %function\n"
+    "cs_sites64:\n"
+    "	mov	x15, x30\n"
+    "	mov	x9, x0\n"
+    "	mov	x0, #1\n"
+    "1:	mov	x8, #173\n"
+    "	svc	#0\n"
+    ".rept 64\n"
+    "	bl	cs_mini\n"
+    ".endr\n"
+    "	subs	x9, x9, #1\n"
+    "	b.ne	1b\n"
+    "	mov	x30, x15\n"
     "	ret\n");
 
 struct variant {
@@ -376,6 +403,7 @@ static const struct variant variants[] = {
 	{ "calls2", cs_calls2, 23, 5, 1 },
 	{ "foot", cs_foot, 29, 3, 1 },
 	{ "footl", cs_footl, 76, 3, 1 },
+	{ "sites64", cs_sites64, 2 * 64 + 4, 2 * 64, 1 },
 };
 
 static char src[8192], dst[8192];
@@ -392,7 +420,7 @@ int main(int argc, char **argv)
 	int enabled = 0, have = bench_have_kjit();
 
 	if (argc < 3)
-		die("usage: code_speed <hash|strlen|copy|copy16|simd32|calls|callsi|calls2|foot|footl> <n> [target_ms] [reps]");
+		die("usage: code_speed <hash|strlen|copy|copy16|simd32|calls|callsi|calls2|foot|footl|sites64> <n> [target_ms] [reps]");
 	for (size_t i = 0; i < sizeof(variants) / sizeof(variants[0]); i++)
 		if (!strcmp(variants[i].name, argv[1]))
 			v = &variants[i];

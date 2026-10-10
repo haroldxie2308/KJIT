@@ -1880,9 +1880,13 @@ and one module shape is simpler than a K0-only build.
   The constants are 16 B, 11 and 256, so the offset is a 16-byte multiple below
   `PAGE_SIZE`. `n` is a global install counter (atomic). The allocation is the
   colour offset plus code plus extable, so at most one extra page per fragment.
-  `set_memory_rox` and the free cover the whole allocation, labels and extable
-  entries are relative to the image start, and `max_code_*` (section 9, Caps)
-  count the allocated bytes.
+  `set_memory_rox` and the free cover the whole allocation, and labels and
+  extable entries are relative to the image start. `max_code_*` (section 9,
+  Caps) keep counting code bytes. The colour padding is bounded by the fragment
+  caps instead: at most one page per fragment, so 2 MiB per mm and 32 MiB in
+  total at the defaults. Counting the padding made the 2 MiB code cap bind at
+  about 480 redis fragments, and K4 then translated and refused about 15k hot
+  PCs per run.
   - Invariant: the hot first instructions of different fragments (prologue,
     epilogue, early body and entry labels) do not share L1I sets by
     construction.
