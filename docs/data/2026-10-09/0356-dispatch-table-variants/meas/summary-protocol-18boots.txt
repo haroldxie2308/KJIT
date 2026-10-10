@@ -1,0 +1,120 @@
+== boots (waits)
+  boot=01 variant=0 waited_s=821 polls=41 load1_at_start=5.64 qemu_others=0 date=20261009T023459 | boot=01 variant=0 rc=0 load1_at_end=5.41 duration_s=40
+  boot=02 variant=1 waited_s=0 polls=0 load1_at_start=5.41 qemu_others=0 date=20261009T023539 | boot=02 variant=1 rc=0 load1_at_end=5.41 duration_s=36
+  boot=03 variant=2 waited_s=0 polls=0 load1_at_start=5.41 qemu_others=0 date=20261009T023615 | boot=03 variant=2 rc=0 load1_at_end=5.44 duration_s=37
+  boot=04 variant=3 waited_s=0 polls=0 load1_at_start=5.44 qemu_others=0 date=20261009T023652 | boot=04 variant=3 rc=0 load1_at_end=5.64 duration_s=35
+  boot=05 variant=4 waited_s=0 polls=0 load1_at_start=5.64 qemu_others=0 date=20261009T023727 | boot=05 variant=4 rc=0 load1_at_end=6.27 duration_s=36
+  boot=06 variant=5 waited_s=20 polls=1 load1_at_start=5.42 qemu_others=0 date=20261009T023823 | boot=06 variant=5 rc=0 load1_at_end=5.52 duration_s=35
+  boot=07 variant=5 waited_s=0 polls=0 load1_at_start=5.52 qemu_others=0 date=20261009T023858 | boot=07 variant=5 rc=0 load1_at_end=5.22 duration_s=35
+  boot=08 variant=4 waited_s=0 polls=0 load1_at_start=5.22 qemu_others=0 date=20261009T023933 | boot=08 variant=4 rc=0 load1_at_end=4.97 duration_s=36
+  boot=09 variant=3 waited_s=0 polls=0 load1_at_start=4.97 qemu_others=0 date=20261009T024009 | boot=09 variant=3 rc=0 load1_at_end=5.70 duration_s=35
+  boot=10 variant=2 waited_s=0 polls=0 load1_at_start=5.70 qemu_others=0 date=20261009T024044 | boot=10 variant=2 rc=0 load1_at_end=5.33 duration_s=37
+  boot=11 variant=1 waited_s=0 polls=0 load1_at_start=5.33 qemu_others=0 date=20261009T024121 | boot=11 variant=1 rc=0 load1_at_end=5.24 duration_s=36
+  boot=12 variant=0 waited_s=0 polls=0 load1_at_start=5.24 qemu_others=0 date=20261009T024157 | boot=12 variant=0 rc=0 load1_at_end=5.43 duration_s=37
+  boot=13 variant=3 waited_s=0 polls=0 load1_at_start=5.43 qemu_others=0 date=20261009T024234 | boot=13 variant=3 rc=0 load1_at_end=6.67 duration_s=35
+  boot=14 variant=4 waited_s=60 polls=3 load1_at_start=5.39 qemu_others=0 date=20261009T024409 | boot=14 variant=4 rc=0 load1_at_end=4.98 duration_s=35
+  boot=15 variant=5 waited_s=0 polls=0 load1_at_start=4.98 qemu_others=0 date=20261009T024444 | boot=15 variant=5 rc=0 load1_at_end=4.52 duration_s=35
+  boot=16 variant=0 waited_s=0 polls=0 load1_at_start=4.52 qemu_others=0 date=20261009T024519 | boot=16 variant=0 rc=0 load1_at_end=4.99 duration_s=37
+  boot=17 variant=1 waited_s=0 polls=0 load1_at_start=4.99 qemu_others=0 date=20261009T024556 | boot=17 variant=1 rc=0 load1_at_end=4.58 duration_s=37
+  boot=18 variant=2 waited_s=0 polls=0 load1_at_start=4.58 qemu_others=0 date=20261009T024633 | boot=18 variant=2 rc=0 load1_at_end=4.78 duration_s=36
+
+== redis req/s (mean, min..max over runs), ratio to KJIT off (same variant's boots / all boots pooled)
+  pooled KJIT off SET: 223615 (161290..251256, n=54)
+  pooled KJIT off GET: 230078 (198807..248756, n=54)
+  V0 direct          SET: off    218066 (202224..233918, n=9)  on    105894 (101215..108578, sd 2889, n=9)  ratio 0.486 / 0.474
+  V0 direct          GET: off    221619 (198807..236407, n=9)  on    133729 (128783..138122, sd 2800, n=9)  ratio 0.603 / 0.581
+  V1 hash            SET: off    217932 (161290..235571, n=9)  on    121519 (115075..126103, sd 3640, n=9)  ratio 0.558 / 0.543
+  V1 hash            GET: off    233051 (219058..248756, n=9)  on    141966 (132013..150716, sd 7179, n=9)  ratio 0.609 / 0.617
+  V2a 2-way 2048x2   SET: off    225936 (210305..235018, n=9)  on    126982 (122175..129366, sd 2317, n=9)  ratio 0.562 / 0.568
+  V2a 2-way 2048x2   GET: off    231098 (225734..238379, n=9)  on    139692 (129199..142959, sd 4059, n=9)  ratio 0.604 / 0.607
+  V2b 2-way 4096x2   SET: off    227491 (218818..240674, n=9)  on    141190 (137363..144928, sd 2563, n=9)  ratio 0.621 / 0.631
+  V2b 2-way 4096x2   GET: off    228692 (203666..237812, n=9)  on    158869 (154321..164069, sd 3316, n=9)  ratio 0.695 / 0.691
+  V3a victim 256     SET: off    222974 (206186..236407, n=9)  on    135054 (109349..141243, sd 9342, n=9)  ratio 0.606 / 0.604
+  V3a victim 256     GET: off    232421 (224719..239234, n=9)  on    157180 (142349..164474, sd 6090, n=9)  ratio 0.676 / 0.683
+  V3b victim 512     SET: off    229288 (220507..251256, n=9)  on    138689 (127226..143575, sd 4797, n=9)  ratio 0.605 / 0.620
+  V3b victim 512     GET: off    233588 (224467..241546, n=9)  on    157904 (148810..162206, sd 3754, n=9)  ratio 0.676 / 0.686
+
+== per boot: SET conflict misses/req and runtime entries/req (mean of the 3 passes), SET req/s (mean)
+  V0 direct          b1: 18.41/28.38/101.9k  b12: 18.33/28.30/108.1k  b16: 18.40/28.37/107.7k
+  V1 hash            b2: 11.88/17.95/117.2k  b11: 8.14/14.19/124.3k  b17: 5.99/12.06/123.1k
+  V2a 2-way 2048x2   b3: 3.97/9.97/126.8k  b10: 3.96/9.97/127.9k  b18: 3.97/9.97/126.2k
+  V2b 2-way 4096x2   b4: 0.00/3.04/140.0k  b9: 0.00/3.04/144.2k  b13: 0.00/3.04/139.4k
+  V3a victim 256     b5: 0.00/3.04/129.1k  b8: 0.00/3.04/137.1k  b14: 0.00/3.04/138.9k
+  V3b victim 512     b6: 0.00/3.04/137.2k  b7: 0.00/3.04/135.8k  b15: 0.00/3.04/143.0k
+
+== per request counters at chain_budget 1024 (mean over runs)
+  -- SET
+  variant            fragment_en fpsimd_entr        x_bl       x_blr        x_br       x_ret       x_svc   miss_cold miss_confli  miss_other fpsimd_boun      insert     replace syscalls_in  hook_calls    x_budget   chain_cap
+  V0 direct               28.351       7.929      10.088       1.045       4.989      10.222       1.973       0.031      18.382       0.000       7.929      36.761      36.760       1.973       2.044       0.000       0.000
+  V1 hash                 14.732       4.023       1.082       1.966       3.661       6.015       1.973       0.032       8.669       0.000       4.023      17.337      17.336       1.973       2.044       0.000       0.000
+  V2a 2-way 2048x2         9.969       3.963       2.986       0.002       2.981       1.992       1.973       0.033       3.965       0.000       3.963      15.861      15.860       1.973       2.044       0.000       0.000
+  V2b 2-way 4096x2         3.040       0.998       0.013       0.002       0.999       0.017       1.973       0.033       0.000       0.000       0.998       0.001       0.000       1.973       2.044       0.000       0.000
+  V3a victim 256           3.040       0.998       0.013       0.002       0.999       0.017       1.973       0.031       0.002       0.000       0.998       0.001       0.000       1.973       2.044       0.000       0.000
+  V3b victim 512           3.040       0.998       0.013       0.002       0.999       0.017       1.973       0.031       0.002       0.000       0.998       0.001       0.000       1.973       2.044       0.000       0.000
+     V0 direct          miss_residual max abs 0; fpsimd_run_max_ns max 8515875
+     V1 hash            miss_residual max abs 0; fpsimd_run_max_ns max 2241166
+     V2a 2-way 2048x2   miss_residual max abs 0; fpsimd_run_max_ns max 5839666
+     V2b 2-way 4096x2   miss_residual max abs 0; fpsimd_run_max_ns max 3022083
+     V3a victim 256     miss_residual max abs 0; fpsimd_run_max_ns max 7614000
+     V3b victim 512     miss_residual max abs 0; fpsimd_run_max_ns max 1341333
+  -- GET
+  variant            fragment_en fpsimd_entr        x_bl       x_blr        x_br       x_ret       x_svc   miss_cold miss_confli  miss_other fpsimd_boun      insert     replace syscalls_in  hook_calls    x_budget   chain_cap
+  V0 direct               15.743       5.033       5.298       1.023       3.039       4.347       1.997       0.005       8.670       0.000       5.033      17.339      17.338       1.997       2.044       0.000       0.000
+  V1 hash                  9.406       3.095       0.797       0.333       2.019       4.221       1.997       0.005       4.270       0.000       3.095       8.539       8.539       1.997       2.044       0.000       0.000
+  V2a 2-way 2048x2        10.155       3.997       3.120       0.000       2.999       2.000       1.997       0.005       4.117       0.000       3.997      16.469      16.469       1.997       2.044       0.000       0.000
+  V2b 2-way 4096x2         3.042       1.000       0.003       0.000       1.000       0.002       1.997       0.005       0.000       0.000       1.000       0.000       0.000       1.997       2.045       0.000       0.000
+  V3a victim 256           3.042       1.000       0.003       0.000       1.000       0.002       1.997       0.005       0.000       0.000       1.000       0.000       0.000       1.997       2.045       0.000       0.000
+  V3b victim 512           3.042       1.000       0.003       0.000       1.000       0.002       1.997       0.005       0.000       0.000       1.000       0.000       0.000       1.997       2.045       0.000       0.000
+     V0 direct          miss_residual max abs 0; fpsimd_run_max_ns max 8515875
+     V1 hash            miss_residual max abs 0; fpsimd_run_max_ns max 2241166
+     V2a 2-way 2048x2   miss_residual max abs 0; fpsimd_run_max_ns max 5839666
+     V2b 2-way 4096x2   miss_residual max abs 0; fpsimd_run_max_ns max 3022083
+     V3a victim 256     miss_residual max abs 0; fpsimd_run_max_ns max 7614000
+     V3b victim 512     miss_residual max abs 0; fpsimd_run_max_ns max 1341333
+
+== entry_cost (ns per outer iteration, median over boots of the per-boot median of 7)
+  variant            kind  calls  transfers   off      on   (on-off)/transfers
+  V0 direct          gpr     16        33    141.4    149.2     0.24 ns  (n=3)
+  V0 direct          gpr    128       257    256.1    844.3     2.29 ns  (n=3)
+  V0 direct          gpr    256       513    378.8   1647.7     2.47 ns  (n=3)
+  V0 direct          fp      16        33    177.7    216.7     1.18 ns  (n=3)
+  V0 direct          fp     128       257    536.4    929.3     1.53 ns  (n=3)
+  V0 direct          fp     256       513    950.6   1728.2     1.52 ns  (n=3)
+  V1 hash            gpr     16        33    142.8    148.0     0.16 ns  (n=3)
+  V1 hash            gpr    128       257    255.0    850.2     2.32 ns  (n=3)
+  V1 hash            gpr    256       513    381.0   1672.3     2.52 ns  (n=3)
+  V1 hash            fp      16        33    176.4    218.4     1.27 ns  (n=3)
+  V1 hash            fp     128       257    537.3    925.2     1.51 ns  (n=3)
+  V1 hash            fp     256       513    946.9   1720.3     1.51 ns  (n=3)
+  V2a 2-way 2048x2   gpr     16        33    142.9    149.9     0.21 ns  (n=3)
+  V2a 2-way 2048x2   gpr    128       257    261.2    851.9     2.30 ns  (n=3)
+  V2a 2-way 2048x2   gpr    256       513    383.0   1648.7     2.47 ns  (n=3)
+  V2a 2-way 2048x2   fp      16        33    180.4    223.8     1.32 ns  (n=3)
+  V2a 2-way 2048x2   fp     128       257    545.1    926.9     1.49 ns  (n=3)
+  V2a 2-way 2048x2   fp     256       513    950.2   1722.0     1.50 ns  (n=3)
+  V2b 2-way 4096x2   gpr     16        33    141.4    148.0     0.20 ns  (n=3)
+  V2b 2-way 4096x2   gpr    128       257    256.9    844.7     2.29 ns  (n=3)
+  V2b 2-way 4096x2   gpr    256       513    380.1   1646.2     2.47 ns  (n=3)
+  V2b 2-way 4096x2   fp      16        33    179.0    217.8     1.18 ns  (n=3)
+  V2b 2-way 4096x2   fp     128       257    534.8    919.1     1.50 ns  (n=3)
+  V2b 2-way 4096x2   fp     256       513    947.3   1725.8     1.52 ns  (n=3)
+  V3a victim 256     gpr     16        33    141.8    148.2     0.19 ns  (n=3)
+  V3a victim 256     gpr    128       257    256.4    846.0     2.29 ns  (n=3)
+  V3a victim 256     gpr    256       513    382.5   1651.6     2.47 ns  (n=3)
+  V3a victim 256     fp      16        33    177.0    219.2     1.28 ns  (n=3)
+  V3a victim 256     fp     128       257    538.2    935.4     1.55 ns  (n=3)
+  V3a victim 256     fp     256       513    947.9   1721.9     1.51 ns  (n=3)
+  V3b victim 512     gpr     16        33    141.9    151.3     0.28 ns  (n=3)
+  V3b victim 512     gpr    128       257    256.1    845.7     2.29 ns  (n=3)
+  V3b victim 512     gpr    256       513    379.7   1640.3     2.46 ns  (n=3)
+  V3b victim 512     fp      16        33    177.8    220.0     1.28 ns  (n=3)
+  V3b victim 512     fp     128       257    537.4    927.0     1.52 ns  (n=3)
+  V3b victim 512     fp     256       513    948.2   1728.1     1.52 ns  (n=3)
+
+== table memory per mm (two tables)
+  V0 direct          template  9 words, table  32768 B, per mm  65536 B
+  V1 hash            template 10 words, table  32768 B, per mm  65536 B
+  V2a 2-way 2048x2   template 18 words, table  32768 B, per mm  65536 B
+  V2b 2-way 4096x2   template 18 words, table  65536 B, per mm 131072 B
+  V3a victim 256     template 20 words, table  34816 B, per mm  69632 B
+  V3b victim 512     template 20 words, table  36864 B, per mm  73728 B

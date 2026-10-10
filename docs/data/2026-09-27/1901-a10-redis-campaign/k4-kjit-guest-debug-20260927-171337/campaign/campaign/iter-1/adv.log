@@ -1,0 +1,69 @@
+k4-adv: kill9 PASS: kill9 #1: server status 137;kill9 #2: server status 137;kill9 #3: server status 137;
+k4:   kill9#1: hot: 3918866 fragment entries, 19052 syscalls in kernel before the event
+k4:   kill9#2: hot: 3927064 fragment entries, 19071 syscalls in kernel before the event
+k4:   kill9#3: hot: 3998575 fragment entries, 19461 syscalls in kernel before the event
+k4:   kill9: in_kernel=105338/172647 syscalls (61.0%) entries=16540841 chains=16375365 chain_cap=0 translated=928 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=928
+k4:   kill9: exits svc=105338 bl=7004823 blr=687041 br=1088170 ret=7655469 mem=0 unsupported=0 budget=0 invalid=0 svc_declined=0
+k4:   kill9: fpsimd entries=762068 restores=27 exit_mem=0 refused_sve_sme=0
+k4:   kill9: entries per hook call: 1-1:507 2-3:1616 4-7:3064 8-15:5764 16-31:14006 32-63:89095 64-127:6623 128-255:17419 256-511:27382 (chain_max since load 1024)
+k4:   kill9: unsupported_top (word(exits/entry_stops)): 
+k4-adv: sigterm PASS: TERM: server status 0;sigterm: shutdown and clean exit logged;
+k4:   TERM: hot: 3935474 fragment entries, 19107 syscalls in kernel before the event
+k4:   sigterm: in_kernel=37092/59886 syscalls (61.9%) entries=5865085 chains=5807856 chain_cap=0 translated=311 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=311
+k4:   sigterm: exits svc=37092 bl=2486626 blr=242327 br=381828 ret=2717212 mem=0 unsupported=0 budget=0 invalid=0 svc_declined=0
+k4:   sigterm: fpsimd entries=269966 restores=3 exit_mem=0 refused_sve_sme=0
+k4:   sigterm: entries per hook call: 1-1:169 2-3:548 4-7:1022 8-15:1922 16-31:4725 32-63:30706 64-127:2200 128-255:5814 256-511:10123 (chain_max since load 1024)
+k4:   sigterm: unsupported_top (word(exits/entry_stops)): 
+k4-adv: sigusr1 PASS: USR1: server status 138;
+k4:   USR1: hot: 3980006 fragment entries, 19410 syscalls in kernel before the event
+k4:   sigusr1: in_kernel=35072/57662 syscalls (60.8%) entries=5499624 chains=5444509 chain_cap=0 translated=309 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=309
+k4:   sigusr1: exits svc=35072 bl=2328935 blr=228543 br=361954 ret=2545120 mem=0 unsupported=0 budget=0 invalid=0 svc_declined=0
+k4:   sigusr1: fpsimd entries=253340 restores=0 exit_mem=0 refused_sve_sme=0
+k4:   sigusr1: entries per hook call: 1-1:169 2-3:537 4-7:1024 8-15:1921 16-31:4679 32-63:29686 64-127:2205 128-255:5812 256-511:9082 (chain_max since load 1024)
+k4:   sigusr1: unsupported_top (word(exits/entry_stops)): 
+k4-adv: stopcont PASS: stopcont: load status 0;dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   stopcont: hot: 3887788 fragment entries, 18849 syscalls in kernel before the event
+k4:   stopcont: in_kernel=4128492/4392095 syscalls (94.0%) entries=693636576 chains=689251664 chain_cap=0 translated=445 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=445
+k4:   stopcont: exits svc=4128493 bl=304206682 blr=21359391 br=37898393 ret=325886056 mem=1 unsupported=157560 budget=0 invalid=0 svc_declined=1
+k4:   stopcont: fpsimd entries=33556350 restores=1919 exit_mem=1 refused_sve_sme=0
+k4:   stopcont: entries per hook call: 1-1:784 2-3:1996 4-7:1165 8-15:1962 16-31:182228 32-63:2128583 64-127:11185 128-255:36797 256-511:2020212 (chain_max since load 1024)
+k4:   stopcont: unsupported_top (word(exits/entry_stops)): 0x9e630160(157550/0) 0xd503203f(10/0) 
+k4-adv: segfault PASS: segfault: server status 139;crashed by signal: 11, si_code: 2;Accessing address: <page-aligned>;segfault: stack trace names debugCommand: yes;segfault: core files 1;
+k4:   segfault: hot: 3883908 fragment entries, 18819 syscalls in kernel before the event
+k4:   segfault: in_kernel=34356/58181 syscalls (59.1%) entries=5383243 chains=5328791 chain_cap=0 translated=309 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=309
+k4:   segfault: exits svc=34356 bl=2278429 blr=224211 br=355639 ret=2490608 mem=0 unsupported=0 budget=0 invalid=0 svc_declined=0
+k4:   segfault: fpsimd entries=248058 restores=0 exit_mem=0 refused_sve_sme=0
+k4:   segfault: entries per hook call: 1-1:174 2-3:644 4-7:1021 8-15:1922 16-31:4642 32-63:29286 64-127:2183 128-255:5818 256-511:8762 (chain_max since load 1024)
+k4:   segfault: unsupported_top (word(exits/entry_stops)): 
+k4-adv: bgsave PASS: bgsave: load status 0;bgsave: before restart dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;bgsave: redis-check-rdb ok;bgsave: after restart dbsize 10045 digest a595c3aec0dfe15c636c10750
+k4:   bgsave: hot: 3832959 fragment entries, 18521 syscalls in kernel before the event
+k4:   bgsave: in_kernel=4128582/4399142 syscalls (93.8%) entries=698040859 chains=693655619 chain_cap=0 translated=445 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=445
+k4:   bgsave: exits svc=4128582 bl=305081779 blr=22243818 br=38782039 ret=327646855 mem=24 unsupported=157762 budget=0 invalid=0 svc_declined=0
+k4:   bgsave: fpsimd entries=33555717 restores=1430 exit_mem=24 refused_sve_sme=0
+k4:   bgsave: entries per hook call: 1-1:904 2-3:2030 4-7:1193 8-15:1959 16-31:182359 32-63:2128773 64-127:11142 128-255:36742 256-511:2020138 (chain_max since load 1024)
+k4:   bgsave: unsupported_top (word(exits/entry_stops)): 0x9e630160(157758/0) 0xd503203f(4/0) 
+k4-adv: aofrw PASS: aofrw: load status 0;aofrw: before restart dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;aofrw: after restart from the AOF dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   aofrw: hot: 4001131 fragment entries, 19484 syscalls in kernel before the event
+k4:   aofrw: in_kernel=2940037/4531534 syscalls (64.9%) entries=714221843 chains=709707705 chain_cap=0 translated=592 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=592
+k4:   aofrw: exits svc=2940037 bl=325509113 blr=17002776 br=37819932 ret=329490001 mem=4 unsupported=1459980 budget=0 invalid=0 svc_declined=0
+k4:   aofrw: fpsimd entries=36546537 restores=1161 exit_mem=4 refused_sve_sme=0
+k4:   aofrw: entries per hook call: 1-1:873 2-3:2586 4-7:1951 8-15:4775 16-31:184408 32-63:2248554 64-127:11827 128-255:44211 256-511:2014953 (chain_max since load 1024)
+k4:   aofrw: unsupported_top (word(exits/entry_stops)): 0xfc6c79c0(1415022/0) 0x9e630160(44938/0) 0xd503203f(20/0) 
+k4-adv: config PASS: config: 5 module load/unload and config set rounds ok;config: load status 0; misc module still loaded: 0;dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   config: hot: 3704378 fragment entries, 17784 syscalls in kernel before the event
+k4:   config: in_kernel=4279076/4665862 syscalls (91.7%) entries=713640709 chains=708991255 chain_cap=0 translated=496 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=13 released=483
+k4:   config: exits svc=4279081 bl=313081965 blr=21996320 br=39108464 ret=334910681 mem=1 unsupported=264197 budget=0 invalid=0 svc_declined=5
+k4:   config: fpsimd entries=34085727 restores=103367 exit_mem=1 refused_sve_sme=0
+k4:   config: entries per hook call: 1-1:1172 2-3:2203 4-7:1319 8-15:2328 16-31:170751 32-63:2266981 64-127:146467 128-255:37370 256-511:2020863 (chain_max since load 1024)
+k4:   config: unsupported_top (word(exits/entry_stops)): 0x9e630160(132462/0) 0xbc237800(131723/0) 0xd503203f(12/0) 
+k4-adv: reload PASS: reload: 5 unloads under load; load status 0; ping PONG;dbsize 10045 digest 8630698fcae208583f0c9e6fe598b8d0226d4767;
+k4:   reload: hot: 3812478 fragment entries, 18409 syscalls in kernel before the event
+k4:   reload: counters of the last load: syscalls_in_kernel 5253762 fragment_entries 887782065 exit_invalid 0 translate_verify_rejected 0 
+k4-adv: maxmemory PASS: maxmemory: evicted yes;maxmemory: used within 32mb+1mb yes;maxmemory: noeviction write: OOM command not allowed when used memory;maxmemory: after lifting the limit: OK;
+k4:   maxmemory: hot: 3659314 fragment entries, 16274 syscalls in kernel before the event
+k4:   maxmemory: in_kernel=758931/837358 syscalls (90.6%) entries=181500094 chains=180666906 chain_cap=0 translated=358 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=358
+k4:   maxmemory: exits svc=758931 bl=77691254 blr=7663855 br=9994182 ret=85360262 mem=4895 unsupported=26715 budget=0 invalid=0 svc_declined=0
+k4:   maxmemory: fpsimd entries=9094130 restores=96 exit_mem=4895 refused_sve_sme=0
+k4:   maxmemory: entries per hook call: 1-1:150 2-3:762 4-7:801 8-15:1289 16-31:34385 32-63:398750 64-127:9402 128-255:23118 256-511:333766 512-1023:30765 (chain_max since load 726)
+k4:   maxmemory: unsupported_top (word(exits/entry_stops)): 0x9e630160(26710/0) 0x9e630061(3/0) 0xd503203f(2/0) 
+k4-adv: ALL PASS

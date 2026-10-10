@@ -1,0 +1,80 @@
+k4-bench: default (redis-benchmark -q -n 100000 ):
+k4:     PING_INLINE: 37425.15 requests per second, p50=0.639 msec
+k4:     PING_MBULK: 37936.27 requests per second, p50=0.631 msec
+k4:     SET: 37551.63 requests per second, p50=0.639 msec
+k4:     GET: 37411.15 requests per second, p50=0.639 msec
+k4:     INCR: 37650.61 requests per second, p50=0.631 msec
+k4:     LPUSH: 37593.98 requests per second, p50=0.639 msec
+k4:     RPUSH: 37467.22 requests per second, p50=0.631 msec
+k4:     LPOP: 37693.18 requests per second, p50=0.631 msec
+k4:     RPOP: 37495.31 requests per second, p50=0.639 msec
+k4:     SADD: 37023.32 requests per second, p50=0.647 msec
+k4:     HSET: 38270.19 requests per second, p50=0.623 msec
+k4:     SPOP: 37037.04 requests per second, p50=0.639 msec
+k4:     ZADD: 38211.69 requests per second, p50=0.623 msec
+k4:     ZPOPMIN: 38372.98 requests per second, p50=0.623 msec
+k4:     LPUSH (needed to benchmark LRANGE): 38022.81 requests per second, p50=0.623 msec
+k4:     LRANGE_100 (first 100 elements): 28776.98 requests per second, p50=0.839 msec
+k4:     LRANGE_300 (first 300 elements): 17752.53 requests per second, p50=1.391 msec
+k4:     LRANGE_500 (first 500 elements): 13687.38 requests per second, p50=1.807 msec
+k4:     LRANGE_600 (first 600 elements): 12265.42 requests per second, p50=2.023 msec
+k4:     MSET (10 keys): 38639.88 requests per second, p50=0.615 msec
+k4:   default: in_kernel=0/5478124 syscalls (0.0%) entries=92879132 chains=87406492 chain_cap=5461017 translated=48 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   default: exits svc=0 bl=38776267 blr=4391608 br=1998939 ret=47712318 mem=0 unsupported=0 budget=0 invalid=0 svc_declined=0
+k4:   default: fpsimd entries=1998875 restores=0 exit_mem=0 refused_sve_sme=0
+k4:   default: unsupported_top (word(exits/entry_stops)): 
+k4:   default: hot: 92879152 fragment entries, 0 syscalls in kernel before the event
+k4-bench: pipelined (redis-benchmark -q -n 100000 -P 16):
+k4:     PING_INLINE: 555555.56 requests per second, p50=0.679 msec
+k4:     PING_MBULK: 591716.00 requests per second, p50=0.647 msec
+k4:     SET: 588235.31 requests per second, p50=0.671 msec
+k4:     GET: 595238.12 requests per second, p50=0.655 msec
+k4:     INCR: 571428.56 requests per second, p50=0.687 msec
+k4:     LPUSH: 602409.69 requests per second, p50=0.695 msec
+k4:     RPUSH: 598802.44 requests per second, p50=0.679 msec
+k4:     LPOP: 584795.31 requests per second, p50=0.719 msec
+k4:     RPOP: 595238.12 requests per second, p50=0.671 msec
+k4:     SADD: 609756.06 requests per second, p50=0.639 msec
+k4:     HSET: 606060.56 requests per second, p50=0.671 msec
+k4:     SPOP: 595238.12 requests per second, p50=0.647 msec
+k4:     ZADD: 606060.56 requests per second, p50=0.703 msec
+k4:     ZPOPMIN: 602409.69 requests per second, p50=0.639 msec
+k4:     LPUSH (needed to benchmark LRANGE): 602409.69 requests per second, p50=0.687 msec
+k4:     LRANGE_100 (first 100 elements): 112485.94 requests per second, p50=3.559 msec
+k4:     LRANGE_300 (first 300 elements): 35701.54 requests per second, p50=8.335 msec
+k4:     LRANGE_500 (first 500 elements): 22421.53 requests per second, p50=9.823 msec
+k4:     LRANGE_600 (first 600 elements): 18615.04 requests per second, p50=10.991 msec
+k4:     MSET (10 keys): 398406.41 requests per second, p50=1.759 msec
+k4:   pipelined: in_kernel=0/331971 syscalls (0.0%) entries=5407993 chains=5080068 chain_cap=314448 translated=33 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   pipelined: exits svc=0 bl=2311910 blr=188486 br=125001 ret=2782596 mem=0 unsupported=0 budget=0 invalid=0 svc_declined=0
+k4:   pipelined: fpsimd entries=125001 restores=0 exit_mem=0 refused_sve_sme=0
+k4:   pipelined: unsupported_top (word(exits/entry_stops)): 
+k4:   pipelined: hot: 5408013 fragment entries, 0 syscalls in kernel before the event
+k4-bench: clients256 (redis-benchmark -q -n 100000 -c 256):
+k4:     PING_INLINE: 36179.45 requests per second, p50=3.479 msec
+k4:     PING_MBULK: 35701.54 requests per second, p50=3.567 msec
+k4:     SET: 36245.02 requests per second, p50=3.503 msec
+k4:     GET: 36114.12 requests per second, p50=3.503 msec
+k4:     INCR: 35880.88 requests per second, p50=3.543 msec
+k4:     LPUSH: 35688.79 requests per second, p50=3.559 msec
+k4:     RPUSH: 35574.53 requests per second, p50=3.567 msec
+k4:     LPOP: 35637.92 requests per second, p50=3.567 msec
+k4:     RPOP: 35855.14 requests per second, p50=3.543 msec
+k4:     SADD: 35198.87 requests per second, p50=3.623 msec
+k4:     HSET: 35599.86 requests per second, p50=3.575 msec
+k4:     SPOP: 35803.80 requests per second, p50=3.551 msec
+k4:     ZADD: 36271.31 requests per second, p50=3.503 msec
+k4:     ZPOPMIN: 35688.79 requests per second, p50=3.551 msec
+k4:     LPUSH (needed to benchmark LRANGE): 35765.38 requests per second, p50=3.551 msec
+k4:     LRANGE_100 (first 100 elements): 27631.94 requests per second, p50=4.607 msec
+k4:     LRANGE_300 (first 300 elements): 16758.84 requests per second, p50=7.583 msec
+k4:     LRANGE_500 (first 500 elements): 12390.04 requests per second, p50=10.255 msec
+k4:     LRANGE_600 (first 600 elements): 10617.97 requests per second, p50=12.439 msec
+k4:     MSET (10 keys): 35248.50 requests per second, p50=3.599 msec
+k4:   clients256: in_kernel=29927/5340439 syscalls (0.6%) entries=90277475 chains=84942202 chain_cap=5297518 translated=80 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   clients256: exits svc=29927 bl=37912675 blr=3840951 br=2045012 ret=46448910 mem=0 unsupported=0 budget=0 invalid=0 svc_declined=0
+k4:   clients256: fpsimd entries=2051459 restores=113 exit_mem=0 refused_sve_sme=0
+k4:   clients256: unsupported_top (word(exits/entry_stops)): 
+k4:   clients256: hot: 90279322 fragment entries, 29971 syscalls in kernel before the event
+k4-bench: consistency PASS: dbsize 10044 digest 603e069a26083ceb1309ded3186769f0b0809e09 readback sha256 362731776718583235c4f1394cb708151a5c09052efd2c0ace0f6f0f7392fb50 
+k4-bench: ALL PASS

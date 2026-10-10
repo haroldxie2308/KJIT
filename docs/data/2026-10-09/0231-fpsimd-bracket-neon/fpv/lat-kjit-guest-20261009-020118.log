@@ -1,0 +1,209 @@
+fpv-run: step=lat args=3 B2 B A v0 off profile=kjit-guest host_load_before=6.28, 7.78, 9.66
+guest-run: profile=kjit-guest run-dir=/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/agent-a3568d87c4d834b78/.kjit/build/runs/kjit-guest-20261009-020118
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1+ (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #1 SMP PREEMPT Thu Oct  8 16:26:18 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013ac00000-0x000000013b000000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000110] Console: colour dummy device 80x25
+[    0.000116] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000120] pid_max: default: 32768 minimum: 301
+[    0.000248] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000257] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000332] VFS: Finished mounting rootfs on nullfs
+[    0.000492] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000600] rcu: Hierarchical SRCU implementation.
+[    0.000600] rcu: 	Max phase no-delay instances is 1000.
+[    0.000619] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000656] smp: Bringing up secondary CPUs ...
+[    0.000826] Detected PIPT I-cache on CPU1
+[    0.000898] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001289] Detected PIPT I-cache on CPU2
+[    0.001473] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001775] Detected PIPT I-cache on CPU3
+[    0.001903] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.002022] smp: Brought up 1 node, 4 CPUs
+[    0.002024] SMP: Total of 4 processors activated.
+[    0.002024] CPU: All CPU(s) started at EL1
+[    0.002025] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.002026] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.002026] CPU features: detected: CRC32 instructions
+[    0.002026] CPU features: detected: Data independent timing control (DIT)
+[    0.002027] CPU features: detected: E0PD
+[    0.002027] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.002028] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.002028] CPU features: detected: LSE atomic instructions
+[    0.002028] CPU features: detected: Privileged Access Never
+[    0.002029] CPU features: detected: Speculation barrier (SB)
+[    0.002029] CPU features: detected: TLB range maintenance instructions
+[    0.002029] CPU features: detected: XNX
+[    0.002224] alternatives: applying system-wide alternatives
+[    0.003280] Memory: 3932668K/4194304K available (5248K kernel code, 754K rwdata, 2356K rodata, 576K init, 405K bss, 258456K reserved, 0K cma-reserved)
+[    0.003583] devtmpfs: initialized
+[    0.003921] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003925] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003943] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003949] 30384 pages in range for non-PLT usage
+[    0.003949] 521904 pages in range for PLT usage
+[    0.004063] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.004421] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.004529] ASID allocator initialised with 256 entries
+[    0.004538] Serial: AMBA PL011 UART driver
+[    0.005018] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.005127] printk: console [ttyAMA0] enabled
+[    0.011293] vgaarb: loaded
+[    0.011666] clocksource: Switched to clocksource arch_sys_counter
+[    0.013456] NET: Registered PF_INET protocol family
+[    0.013542] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.013985] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.013992] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.013995] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.014049] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.014215] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.014242] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.014272] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.014275] PCI: CLS 0 bytes, default 64
+[    0.014361] Unpacking initramfs...
+[    0.024696] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.024960] 9p: Installing v9fs 9p2000 file system support
+[    0.025720] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.025728] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.025730] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.025731] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.025741] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.025753] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.025773] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.025774] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.025775] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.025776] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.025776] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.025796] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.026130] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.026373] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.026396] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.026439] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.026443] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.026915] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.027098] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.027134] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.027212] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.027634] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.027956] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.027976] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.028011] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.028638] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.028640] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.028713] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.028860] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.028961] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.028974] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.028985] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.028989] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.028993] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.028999] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.029004] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.029005] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.029005] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.030380] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.031383] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.032298] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.078780] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.078788] rtc-pl031 9010000.pl031: setting system clock to 2026-10-08T18:01:18 UTC (1791482478)
+[    0.078903] NET: Registered PF_INET6 protocol family
+[    0.079539] Segment Routing with IPv6
+[    0.079543] In-situ OAM (IOAM) with IPv6
+[    0.079551] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.079609] NET: Registered PF_PACKET protocol family
+[    0.079615] 9pnet: Installing 9P2000 support
+[    0.085289] clk: Disabling unused clocks
+[    0.123699] Freeing initrd memory: 163436K
+[    0.124134] Freeing unused kernel memory: 576K
+[    0.124184] Run /init as init process
+[    0.143111] kjit: loading out-of-tree module taints kernel.
+[    0.144615] rust_kjit: ######## Rust KJIT inits ########
+[    0.144681] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 800 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+fpv: warm-up at v0
+fpv point=B2 pass=1 test=set requests=200000 rps=102145.05 hook_calls=409405 syscalls_in_kernel=399615 fragment_entries=4550190 fpsimd_entries=199590 fpsimd_restores=399734 fpsimd_brackets=408750 fpsimd_bracket_preempted=1333 chains=4141440 chain_cap=0 exit_svc=399615 exit_bl=2046705 exit_blr=415663 exit_br=8256 exit_ret=1671752 exit_mem=2 fpsimd_exit_mem=2 exit_unsupported=8197 exit_budget=0 run_declined=20 ibtc_insert=7883698 ibtc_replace=7883698 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=118083 lat_p50_us=48.8 lat_p99_us=376.0 lat_p999_us=1811.5 lat_max_us=6767.5 lat_gt100us=1456 lat_gt1ms=26 lat_gt5ms=3
+fpv point=B2 pass=1 test=get requests=200000 rps=128534.70 hook_calls=409806 syscalls_in_kernel=399643 fragment_entries=2580370 fpsimd_entries=208345 fpsimd_restores=399718 fpsimd_brackets=409154 fpsimd_bracket_preempted=938 chains=2171216 chain_cap=0 exit_svc=399643 exit_bl=1069068 exit_blr=407959 exit_br=8653 exit_ret=686415 exit_mem=1 fpsimd_exit_mem=1 exit_unsupported=8631 exit_budget=0 run_declined=22 ibtc_insert=3925742 ibtc_replace=3925742 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=118083 lat_p50_us=25.6 lat_p99_us=130.4 lat_p999_us=277.8 lat_max_us=500.7 lat_gt100us=160 lat_gt1ms=0 lat_gt5ms=0
+fpv point=B pass=1 test=set requests=200000 rps=98231.83 hook_calls=409148 syscalls_in_kernel=399605 fragment_entries=4545243 fpsimd_entries=199581 fpsimd_restores=4536510 fpsimd_brackets=4545243 fpsimd_bracket_preempted=1212 chains=4136756 chain_cap=0 exit_svc=399605 exit_bl=2045129 exit_blr=415118 exit_br=8028 exit_ret=1669419 exit_mem=6 fpsimd_exit_mem=6 exit_unsupported=7938 exit_budget=0 run_declined=23 ibtc_insert=7874350 ibtc_replace=7874350 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=118083 lat_p50_us=27.2 lat_p99_us=140.1 lat_p999_us=736.3 lat_max_us=9418.0 lat_gt100us=261 lat_gt1ms=10 lat_gt5ms=3
+fpv point=B pass=1 test=get requests=200000 rps=90950.44 hook_calls=409886 syscalls_in_kernel=399655 fragment_entries=2581312 fpsimd_entries=208415 fpsimd_restores=2571880 fpsimd_brackets=2581312 fpsimd_bracket_preempted=1178 chains=2172094 chain_cap=0 exit_svc=399655 exit_bl=1069373 exit_blr=408047 exit_br=8668 exit_ret=686890 exit_mem=1 fpsimd_exit_mem=1 exit_unsupported=8678 exit_budget=0 run_declined=24 ibtc_insert=3927358 ibtc_replace=3927358 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=118083 lat_p50_us=38.0 lat_p99_us=1866.1 lat_p999_us=6432.1 lat_max_us=23393.8 lat_gt100us=1536 lat_gt1ms=196 lat_gt5ms=20
+fpv point=A pass=1 test=set requests=200000 rps=101471.34 hook_calls=409324 syscalls_in_kernel=399579 fragment_entries=5754594 fpsimd_entries=1605451 fpsimd_restores=1597506 fpsimd_brackets=1605451 fpsimd_bracket_preempted=381 chains=5345927 chain_cap=0 exit_svc=399579 exit_bl=2045993 exit_blr=215888 exit_br=1006746 exit_ret=2078236 exit_mem=21 fpsimd_exit_mem=21 exit_unsupported=8131 exit_budget=0 run_declined=20 ibtc_insert=7480953 ibtc_replace=7480953 ibtc_clear=0 ibtc_fpsimd_boundary=1605450 fpsimd_run_max_ns=118083 lat_p50_us=26.3 lat_p99_us=138.2 lat_p999_us=450.2 lat_max_us=3512.4 lat_gt100us=217 lat_gt1ms=3 lat_gt5ms=0
+fpv point=A pass=1 test=get requests=200000 rps=121728.55 hook_calls=409849 syscalls_in_kernel=399707 fragment_entries=3172649 fpsimd_entries=1008033 fpsimd_restores=999636 fpsimd_brackets=1008033 fpsimd_bracket_preempted=297 chains=2763455 chain_cap=0 exit_svc=399707 exit_bl=1069398 exit_blr=208422 exit_br=608579 exit_ret=877861 exit_mem=13 fpsimd_exit_mem=13 exit_unsupported=8669 exit_budget=0 run_declined=23 ibtc_insert=3510845 ibtc_replace=3510845 ibtc_clear=0 ibtc_fpsimd_boundary=1008032 fpsimd_run_max_ns=118083 lat_p50_us=28.7 lat_p99_us=161.3 lat_p999_us=1413.1 lat_max_us=4708.5 lat_gt100us=278 lat_gt1ms=11 lat_gt5ms=0
+fpv point=v0 pass=1 test=set requests=200000 rps=90212.00 hook_calls=409692 syscalls_in_kernel=399460 fragment_entries=5757891 fpsimd_entries=1604884 fpsimd_restores=2200 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=5348866 chain_cap=0 exit_svc=399460 exit_bl=2046794 exit_blr=216443 exit_br=1006512 exit_ret=2080200 exit_mem=12 fpsimd_exit_mem=12 exit_unsupported=8470 exit_budget=0 run_declined=23 ibtc_insert=7487964 ibtc_replace=7487964 ibtc_clear=0 ibtc_fpsimd_boundary=1604884 fpsimd_run_max_ns=719083 lat_p50_us=44.2 lat_p99_us=432.1 lat_p999_us=1049.4 lat_max_us=3426.6 lat_gt100us=1712 lat_gt1ms=12 lat_gt5ms=0
+fpv-hist point=v0 pass=1 test=set 41:303309 83:709178 166:377248 333:10312 666:196864 1333:4822 2666:1694 5333:424 10666:413 21333:320 42666:176 85333:100 170666:19 341333:4 682666:1 
+fpv point=v0 pass=1 test=get requests=200000 rps=105540.90 hook_calls=410202 syscalls_in_kernel=399598 fragment_entries=3178337 fpsimd_entries=1008179 fpsimd_restores=1856 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=2768791 chain_cap=0 exit_svc=399598 exit_bl=1071775 exit_blr=208667 exit_br=608844 exit_ret=880434 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=9019 exit_budget=0 run_declined=19 ibtc_insert=3521224 ibtc_replace=3521224 ibtc_clear=0 ibtc_fpsimd_boundary=1008179 fpsimd_run_max_ns=719083 lat_p50_us=34.9 lat_p99_us=498.7 lat_p999_us=2343.5 lat_max_us=11838.8 lat_gt100us=1177 lat_gt1ms=29 lat_gt5ms=4
+fpv-hist point=v0 pass=1 test=get 41:112852 83:474407 166:204945 333:11273 666:198221 1333:3824 2666:1244 5333:454 10666:434 21333:313 42666:131 85333:64 170666:17 
+fpv point=off pass=1 test=set requests=200000 rps=162866.44 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=719083 lat_p50_us=34.2 lat_p99_us=398.5 lat_p999_us=785.7 lat_max_us=1411.0 lat_gt100us=726 lat_gt1ms=3 lat_gt5ms=0
+fpv point=off pass=1 test=get requests=200000 rps=150489.09 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=719083 lat_p50_us=38.3 lat_p99_us=468.4 lat_p999_us=1108.8 lat_max_us=1848.1 lat_gt100us=1013 lat_gt1ms=10 lat_gt5ms=0
+fpv point=B2 pass=2 test=set requests=200000 rps=100553.05 hook_calls=409675 syscalls_in_kernel=399561 fragment_entries=4554058 fpsimd_entries=199526 fpsimd_restores=399704 fpsimd_brackets=409016 fpsimd_bracket_preempted=1271 chains=4145042 chain_cap=0 exit_svc=399561 exit_bl=2047772 exit_blr=416083 exit_br=8499 exit_ret=1673653 exit_mem=17 fpsimd_exit_mem=17 exit_unsupported=8473 exit_budget=0 run_declined=21 ibtc_insert=7891030 ibtc_replace=7891030 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=719083 lat_p50_us=31.4 lat_p99_us=367.7 lat_p999_us=965.9 lat_max_us=6104.0 lat_gt100us=902 lat_gt1ms=9 lat_gt5ms=2
+fpv point=B2 pass=2 test=get requests=200000 rps=110132.16 hook_calls=410073 syscalls_in_kernel=399618 fragment_entries=2585260 fpsimd_entries=208580 fpsimd_restores=399730 fpsimd_brackets=409416 fpsimd_bracket_preempted=1093 chains=2175844 chain_cap=0 exit_svc=399618 exit_bl=1070928 exit_blr=408169 exit_br=8854 exit_ret=688800 exit_mem=1 fpsimd_exit_mem=1 exit_unsupported=8890 exit_budget=0 run_declined=19 ibtc_insert=3934528 ibtc_replace=3934528 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=719083 lat_p50_us=36.0 lat_p99_us=501.4 lat_p999_us=1686.3 lat_max_us=3968.5 lat_gt100us=1034 lat_gt1ms=27 lat_gt5ms=0
+fpv point=B pass=2 test=set requests=200000 rps=67204.30 hook_calls=409804 syscalls_in_kernel=399554 fragment_entries=4555981 fpsimd_entries=199541 fpsimd_restores=4546627 fpsimd_brackets=4555981 fpsimd_bracket_preempted=1496 chains=4146858 chain_cap=0 exit_svc=399554 exit_bl=2048402 exit_blr=416343 exit_br=8555 exit_ret=1674549 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=8578 exit_budget=0 run_declined=23 ibtc_insert=7894634 ibtc_replace=7894634 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=719083 lat_p50_us=44.0 lat_p99_us=1523.9 lat_p999_us=5483.9 lat_max_us=8368.4 lat_gt100us=2928 lat_gt1ms=227 lat_gt5ms=17
+fpv point=B pass=2 test=get requests=200000 rps=82372.32 hook_calls=410296 syscalls_in_kernel=399622 fragment_entries=2588746 fpsimd_entries=208770 fpsimd_restores=2578887 fpsimd_brackets=2588746 fpsimd_bracket_preempted=1171 chains=2179130 chain_cap=0 exit_svc=399622 exit_bl=1072194 exit_blr=408366 exit_br=8981 exit_ret=690513 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=9070 exit_budget=0 run_declined=22 ibtc_insert=3940720 ibtc_replace=3940720 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=719083 lat_p50_us=48.7 lat_p99_us=1379.4 lat_p999_us=3847.2 lat_max_us=9081.6 lat_gt100us=2639 lat_gt1ms=182 lat_gt5ms=6
+fpv point=A pass=2 test=set requests=200000 rps=103252.45 hook_calls=409321 syscalls_in_kernel=399592 fragment_entries=5754520 fpsimd_entries=1605517 fpsimd_restores=1597561 fpsimd_brackets=1605517 fpsimd_bracket_preempted=396 chains=5345859 chain_cap=0 exit_svc=399592 exit_bl=2045983 exit_blr=215874 exit_br=1006764 exit_ret=2078161 exit_mem=26 fpsimd_exit_mem=26 exit_unsupported=8120 exit_budget=0 run_declined=22 ibtc_insert=7480685 ibtc_replace=7480685 ibtc_clear=0 ibtc_fpsimd_boundary=1605516 fpsimd_run_max_ns=719083 lat_p50_us=44.2 lat_p99_us=219.3 lat_p999_us=558.4 lat_max_us=1081.1 lat_gt100us=1159 lat_gt1ms=1 lat_gt5ms=0
+fpv point=A pass=2 test=get requests=200000 rps=131406.05 hook_calls=409554 syscalls_in_kernel=399657 fragment_entries=3166457 fpsimd_entries=1007629 fpsimd_restores=999436 fpsimd_brackets=1007629 fpsimd_bracket_preempted=310 chains=2757569 chain_cap=0 exit_svc=399657 exit_bl=1067031 exit_blr=208070 exit_br=608296 exit_ret=875041 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=8362 exit_budget=0 run_declined=23 ibtc_insert=3499881 ibtc_replace=3499881 ibtc_clear=0 ibtc_fpsimd_boundary=1007628 fpsimd_run_max_ns=719083 lat_p50_us=26.0 lat_p99_us=155.9 lat_p999_us=250.8 lat_max_us=1094.8 lat_gt100us=313 lat_gt1ms=1 lat_gt5ms=0
+fpv point=v0 pass=2 test=set requests=200000 rps=99058.94 hook_calls=409390 syscalls_in_kernel=399606 fragment_entries=5756301 fpsimd_entries=1605736 fpsimd_restores=1995 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=5347574 chain_cap=0 exit_svc=399606 exit_bl=2046562 exit_blr=216037 exit_br=1006897 exit_ret=2079007 exit_mem=8 fpsimd_exit_mem=8 exit_unsupported=8184 exit_budget=0 run_declined=25 ibtc_insert=7483676 ibtc_replace=7483676 ibtc_clear=0 ibtc_fpsimd_boundary=1605736 fpsimd_run_max_ns=1584541 lat_p50_us=29.4 lat_p99_us=212.8 lat_p999_us=1068.2 lat_max_us=4456.0 lat_gt100us=612 lat_gt1ms=13 lat_gt5ms=0
+fpv-hist point=v0 pass=2 test=set 41:305567 83:713580 166:374555 333:8465 666:197431 1333:3595 2666:1106 5333:438 10666:457 21333:323 42666:157 85333:53 170666:6 341333:1 682666:1 1365333:1 
+fpv point=v0 pass=2 test=get requests=200000 rps=109709.27 hook_calls=409758 syscalls_in_kernel=399601 fragment_entries=3170258 fpsimd_entries=1007776 fpsimd_restores=1735 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=2761158 chain_cap=0 exit_svc=399601 exit_bl=1068589 exit_blr=208250 exit_br=608483 exit_ret=876758 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=8577 exit_budget=0 run_declined=22 ibtc_insert=3506764 ibtc_replace=3506764 ibtc_clear=0 ibtc_fpsimd_boundary=1007776 fpsimd_run_max_ns=1584541 lat_p50_us=35.5 lat_p99_us=881.7 lat_p999_us=7883.2 lat_max_us=13179.6 lat_gt100us=1069 lat_gt1ms=75 lat_gt5ms=22
+fpv-hist point=v0 pass=2 test=get 41:116407 83:472392 166:204294 333:10401 666:198815 1333:2997 2666:1109 5333:410 10666:437 21333:273 42666:148 85333:76 170666:14 341333:1 682666:2 
+fpv point=off pass=2 test=set requests=200000 rps=203045.69 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=1584541 lat_p50_us=30.0 lat_p99_us=153.7 lat_p999_us=190.5 lat_max_us=233.0 lat_gt100us=311 lat_gt1ms=0 lat_gt5ms=0
+fpv point=off pass=2 test=get requests=200000 rps=195694.72 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=1584541 lat_p50_us=49.7 lat_p99_us=170.2 lat_p999_us=221.7 lat_max_us=382.0 lat_gt100us=724 lat_gt1ms=0 lat_gt5ms=0
+fpv point=B2 pass=3 test=set requests=200000 rps=113895.21 hook_calls=409287 syscalls_in_kernel=399652 fragment_entries=4548699 fpsimd_entries=199618 fpsimd_restores=399769 fpsimd_brackets=408629 fpsimd_bracket_preempted=1237 chains=4140070 chain_cap=0 exit_svc=399652 exit_bl=2046294 exit_blr=415484 exit_br=8172 exit_ret=1671010 exit_mem=6 fpsimd_exit_mem=6 exit_unsupported=8081 exit_budget=0 run_declined=22 ibtc_insert=7880902 ibtc_replace=7880902 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=1584541 lat_p50_us=35.9 lat_p99_us=164.0 lat_p999_us=222.2 lat_max_us=397.3 lat_gt100us=776 lat_gt1ms=0 lat_gt5ms=0
+fpv point=B2 pass=3 test=get requests=200000 rps=134228.19 hook_calls=409633 syscalls_in_kernel=399680 fragment_entries=2576319 fpsimd_entries=208163 fpsimd_restores=399802 fpsimd_brackets=408963 fpsimd_bracket_preempted=978 chains=2167356 chain_cap=0 exit_svc=399680 exit_bl=1067491 exit_blr=407814 exit_br=8465 exit_ret=684444 exit_mem=4 fpsimd_exit_mem=4 exit_unsupported=8421 exit_budget=0 run_declined=40 ibtc_insert=3918386 ibtc_replace=3918386 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=1584541 lat_p50_us=48.5 lat_p99_us=179.2 lat_p999_us=256.3 lat_max_us=367.3 lat_gt100us=1014 lat_gt1ms=0 lat_gt5ms=0
+fpv point=B pass=3 test=set requests=200000 rps=101677.68 hook_calls=409165 syscalls_in_kernel=399570 fragment_entries=4544969 fpsimd_entries=199549 fpsimd_restores=4536152 fpsimd_brackets=4544969 fpsimd_bracket_preempted=1169 chains=4136464 chain_cap=0 exit_svc=399570 exit_bl=2044968 exit_blr=415099 exit_br=8044 exit_ret=1669327 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=7961 exit_budget=0 run_declined=21 ibtc_insert=7873830 ibtc_replace=7873830 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=1584541 lat_p50_us=25.8 lat_p99_us=145.8 lat_p999_us=274.5 lat_max_us=1152.6 lat_gt100us=397 lat_gt1ms=3 lat_gt5ms=0
+fpv point=B pass=3 test=get requests=200000 rps=123839.01 hook_calls=409453 syscalls_in_kernel=399732 fragment_entries=2573709 fpsimd_entries=208093 fpsimd_restores=2564756 fpsimd_brackets=2573709 fpsimd_bracket_preempted=1006 chains=2164916 chain_cap=0 exit_svc=399732 exit_bl=1066395 exit_blr=407822 exit_br=8328 exit_ret=683144 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=8288 exit_budget=0 run_declined=21 ibtc_insert=3913646 ibtc_replace=3913646 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=1584541 lat_p50_us=33.8 lat_p99_us=178.2 lat_p999_us=258.3 lat_max_us=365.9 lat_gt100us=734 lat_gt1ms=0 lat_gt5ms=0
+fpv point=A pass=3 test=set requests=200000 rps=101214.58 hook_calls=409468 syscalls_in_kernel=399609 fragment_entries=5757601 fpsimd_entries=1605712 fpsimd_restores=1597608 fpsimd_brackets=1605712 fpsimd_bracket_preempted=396 chains=5348794 chain_cap=0 exit_svc=399609 exit_bl=2046942 exit_blr=216156 exit_br=1006921 exit_ret=2079719 exit_mem=5 fpsimd_exit_mem=5 exit_unsupported=8249 exit_budget=0 run_declined=21 ibtc_insert=7486165 ibtc_replace=7486165 ibtc_clear=0 ibtc_fpsimd_boundary=1605711 fpsimd_run_max_ns=1584541 lat_p50_us=25.1 lat_p99_us=525.8 lat_p999_us=5899.3 lat_max_us=14965.5 lat_gt100us=566 lat_gt1ms=52 lat_gt5ms=12
+fpv point=A pass=3 test=get requests=200000 rps=129617.63 hook_calls=409635 syscalls_in_kernel=399680 fragment_entries=3168649 fpsimd_entries=1007790 fpsimd_restores=999510 fpsimd_brackets=1007790 fpsimd_bracket_preempted=329 chains=2759666 chain_cap=0 exit_svc=399680 exit_bl=1067850 exit_blr=208211 exit_br=608384 exit_ret=876052 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=8472 exit_budget=0 run_declined=22 ibtc_insert=3503753 ibtc_replace=3503753 ibtc_clear=0 ibtc_fpsimd_boundary=1007789 fpsimd_run_max_ns=1584541 lat_p50_us=26.8 lat_p99_us=148.5 lat_p999_us=2089.4 lat_max_us=5289.6 lat_gt100us=340 lat_gt1ms=12 lat_gt5ms=2
+fpv point=v0 pass=3 test=set requests=200000 rps=103305.79 hook_calls=409239 syscalls_in_kernel=399552 fragment_entries=5751624 fpsimd_entries=1605081 fpsimd_restores=1915 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=5343047 chain_cap=0 exit_svc=399552 exit_bl=2045093 exit_blr=215625 exit_br=1006504 exit_ret=2076827 exit_mem=7 fpsimd_exit_mem=7 exit_unsupported=8016 exit_budget=0 run_declined=22 ibtc_insert=7475932 ibtc_replace=7475932 ibtc_clear=0 ibtc_fpsimd_boundary=1605081 fpsimd_run_max_ns=1584541 lat_p50_us=37.1 lat_p99_us=173.4 lat_p999_us=1421.0 lat_max_us=8962.8 lat_gt100us=736 lat_gt1ms=12 lat_gt5ms=3
+fpv-hist point=v0 pass=3 test=set 41:314575 83:715854 166:363621 333:8552 666:197340 1333:3035 2666:921 5333:328 10666:381 21333:236 42666:166 85333:65 170666:7 
+fpv point=v0 pass=3 test=get requests=200000 rps=127713.92 hook_calls=409658 syscalls_in_kernel=399680 fragment_entries=3168946 fpsimd_entries=1007815 fpsimd_restores=1560 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=2759944 chain_cap=0 exit_svc=399680 exit_bl=1067975 exit_blr=208224 exit_br=608417 exit_ret=876169 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=8481 exit_budget=0 run_declined=26 ibtc_insert=3504258 ibtc_replace=3504258 ibtc_clear=0 ibtc_fpsimd_boundary=1007815 fpsimd_run_max_ns=1584541 lat_p50_us=34.0 lat_p99_us=162.2 lat_p999_us=252.6 lat_max_us=564.5 lat_gt100us=511 lat_gt1ms=0 lat_gt5ms=0
+fpv-hist point=v0 pass=3 test=get 41:119434 83:473258 166:203567 333:8885 666:199136 1333:1869 2666:708 5333:249 10666:333 21333:205 42666:121 85333:49 170666:1 
+fpv point=off pass=3 test=set requests=200000 rps=198019.80 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=1584541 lat_p50_us=38.1 lat_p99_us=179.8 lat_p999_us=337.5 lat_max_us=592.1 lat_gt100us=467 lat_gt1ms=0 lat_gt5ms=0
+fpv point=off pass=3 test=get requests=200000 rps=196656.84 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 fpsimd_exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 fpsimd_run_max_ns=1584541 lat_p50_us=43.8 lat_p99_us=174.9 lat_p999_us=260.7 lat_max_us=362.1 lat_gt100us=605 lat_gt1ms=0 lat_gt5ms=0
+fpv: done
+[  123.756197] kjit: 0 of 295 translation requests still queued at unload (freed by the kernel)
+[  123.792968] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[  123.812252] reboot: Power down
+guest-run: PASS (/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/agent-a3568d87c4d834b78/.kjit/build/runs/kjit-guest-20261009-020118/serial.log)
+fpv-run: step=lat done host_load_after=7.75, 7.98, 9.48

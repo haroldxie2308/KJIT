@@ -1,0 +1,375 @@
+fpv-run: step=entry args=3 off v0 A B B2 profile=kjit-guest host_load_before=12.86, 18.77, 14.63
+guest-run: profile=kjit-guest run-dir=/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/agent-a3568d87c4d834b78/.kjit/build/runs/kjit-guest-20261009-013655
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1+ (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #1 SMP PREEMPT Thu Oct  8 16:26:18 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013ac00000-0x000000013b000000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000128] Console: colour dummy device 80x25
+[    0.000136] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000140] pid_max: default: 32768 minimum: 301
+[    0.000485] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000493] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000580] VFS: Finished mounting rootfs on nullfs
+[    0.000743] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000853] rcu: Hierarchical SRCU implementation.
+[    0.000853] rcu: 	Max phase no-delay instances is 1000.
+[    0.000873] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000908] smp: Bringing up secondary CPUs ...
+[    0.001119] Detected PIPT I-cache on CPU1
+[    0.001210] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001533] Detected PIPT I-cache on CPU2
+[    0.001626] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001874] Detected PIPT I-cache on CPU3
+[    0.001984] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.002095] smp: Brought up 1 node, 4 CPUs
+[    0.002097] SMP: Total of 4 processors activated.
+[    0.002097] CPU: All CPU(s) started at EL1
+[    0.002098] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.002099] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.002099] CPU features: detected: CRC32 instructions
+[    0.002099] CPU features: detected: Data independent timing control (DIT)
+[    0.002100] CPU features: detected: E0PD
+[    0.002100] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.002101] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.002101] CPU features: detected: LSE atomic instructions
+[    0.002101] CPU features: detected: Privileged Access Never
+[    0.002102] CPU features: detected: Speculation barrier (SB)
+[    0.002102] CPU features: detected: TLB range maintenance instructions
+[    0.002102] CPU features: detected: XNX
+[    0.002182] alternatives: applying system-wide alternatives
+[    0.003054] Memory: 3932668K/4194304K available (5248K kernel code, 754K rwdata, 2356K rodata, 576K init, 405K bss, 258456K reserved, 0K cma-reserved)
+[    0.003316] devtmpfs: initialized
+[    0.003590] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003594] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003609] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003614] 30384 pages in range for non-PLT usage
+[    0.003614] 521904 pages in range for PLT usage
+[    0.003674] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.004121] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.004164] ASID allocator initialised with 256 entries
+[    0.004185] Serial: AMBA PL011 UART driver
+[    0.004578] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.004706] printk: console [ttyAMA0] enabled
+[    0.010148] vgaarb: loaded
+[    0.010302] clocksource: Switched to clocksource arch_sys_counter
+[    0.021427] NET: Registered PF_INET protocol family
+[    0.021516] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.021940] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.021945] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.021948] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.021997] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.022149] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.022174] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.022203] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.022210] PCI: CLS 0 bytes, default 64
+[    0.022517] Unpacking initramfs...
+[    0.023054] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.023266] 9p: Installing v9fs 9p2000 file system support
+[    0.026938] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.026945] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.026948] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.026949] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.026959] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.026971] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.026986] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.026987] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.026988] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.026988] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.026989] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.027015] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.027258] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.027451] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.027454] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.027466] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.027477] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.027763] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.027915] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.027918] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.027934] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.028419] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.028597] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.028600] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.028613] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.029024] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.029027] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.029059] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.029074] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.029092] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.029097] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.029104] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.029108] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.029112] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.029115] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.029122] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.029123] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.029123] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.030655] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.031326] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.032144] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.111316] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.111335] rtc-pl031 9010000.pl031: setting system clock to 2026-10-08T17:36:55 UTC (1791481015)
+[    0.111517] NET: Registered PF_INET6 protocol family
+[    0.112118] Segment Routing with IPv6
+[    0.112124] In-situ OAM (IOAM) with IPv6
+[    0.112133] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.112188] NET: Registered PF_PACKET protocol family
+[    0.112194] 9pnet: Installing 9P2000 support
+[    0.115099] Freeing initrd memory: 163436K
+[    0.117261] clk: Disabling unused clocks
+[    0.117613] Freeing unused kernel memory: 576K
+[    0.117748] Run /init as init process
+[    0.138107] kjit: loading out-of-tree module taints kernel.
+[    0.139292] rust_kjit: ######## Rust KJIT inits ########
+[    0.139360] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 800 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+fpv-entry point=off kind=gpr calls=16 round=1 ns_per_outer=150.4 
+[    0.170601] kjit: translate_svc_sites pid 75: 2 text ranges, 111 svc sites
+[    0.170988] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    0.171094] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=v0 kind=gpr calls=16 round=1 ns_per_outer=165.3 variant=gpr fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    0.212595] kjit: translate_svc_sites pid 82: 2 text ranges, 111 svc sites
+[    0.213326] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    0.214543] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=A kind=gpr calls=16 round=1 ns_per_outer=165.1 variant=gpr fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    0.256590] kjit: translate_svc_sites pid 90: 2 text ranges, 111 svc sites
+[    0.257419] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    0.258896] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B kind=gpr calls=16 round=1 ns_per_outer=194.9 variant=gpr fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=1
+[    0.307808] kjit: translate_svc_sites pid 99: 2 text ranges, 111 svc sites
+[    0.308630] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    0.310781] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B2 kind=gpr calls=16 round=1 ns_per_outer=193.1 variant=gpr fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=gpr calls=128 round=1 ns_per_outer=268.5 
+[    0.369741] kjit: translate_svc_sites pid 113: 2 text ranges, 111 svc sites
+[    0.370521] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    0.371088] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=v0 kind=gpr calls=128 round=1 ns_per_outer=944.7 variant=gpr fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    0.450091] kjit: translate_svc_sites pid 120: 2 text ranges, 111 svc sites
+[    0.450702] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    0.451327] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=A kind=gpr calls=128 round=1 ns_per_outer=942.2 variant=gpr fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    0.520811] kjit: translate_svc_sites pid 128: 2 text ranges, 111 svc sites
+[    0.521692] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    0.522787] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B kind=gpr calls=128 round=1 ns_per_outer=940.1 variant=gpr fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    0.599313] kjit: translate_svc_sites pid 136: 2 text ranges, 111 svc sites
+[    0.599709] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    0.600805] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B2 kind=gpr calls=128 round=1 ns_per_outer=1011.6 variant=gpr fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=fp calls=16 round=1 ns_per_outer=181.8 
+[    0.679652] kjit: translate_svc_sites pid 150: 2 text ranges, 111 svc sites
+[    0.680051] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    0.680681] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=v0 kind=fp calls=16 round=1 ns_per_outer=241.2 variant=fp fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=0 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    0.736959] kjit: translate_svc_sites pid 157: 2 text ranges, 111 svc sites
+[    0.737751] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    0.737959] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=A kind=fp calls=16 round=1 ns_per_outer=230.7 variant=fp fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=27993 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28000 fpsimd_bracket_preempted=0
+[    0.788012] kjit: translate_svc_sites pid 164: 2 text ranges, 111 svc sites
+[    0.788451] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    0.789901] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B kind=fp calls=16 round=1 ns_per_outer=215.3 variant=fp fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=1
+[    0.848228] kjit: translate_svc_sites pid 171: 2 text ranges, 111 svc sites
+[    0.849130] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    0.851018] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B2 kind=fp calls=16 round=1 ns_per_outer=201.0 variant=fp fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=fp calls=128 round=1 ns_per_outer=552.6 
+[    0.913033] kjit: translate_svc_sites pid 185: 2 text ranges, 111 svc sites
+[    0.913950] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    0.914918] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=v0 kind=fp calls=128 round=1 ns_per_outer=973.0 variant=fp fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=0 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    0.984245] kjit: translate_svc_sites pid 192: 2 text ranges, 111 svc sites
+[    0.984951] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    0.986022] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=A kind=fp calls=128 round=1 ns_per_outer=978.4 variant=fp fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=27993 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28000 fpsimd_bracket_preempted=1
+[    1.053349] kjit: translate_svc_sites pid 199: 2 text ranges, 111 svc sites
+[    1.053995] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    1.054774] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B kind=fp calls=128 round=1 ns_per_outer=936.6 variant=fp fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    1.121073] kjit: translate_svc_sites pid 206: 2 text ranges, 111 svc sites
+[    1.121854] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    1.122832] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B2 kind=fp calls=128 round=1 ns_per_outer=994.1 variant=fp fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=gpr calls=16 round=2 ns_per_outer=141.7 
+[    1.201987] kjit: translate_svc_sites pid 220: 2 text ranges, 111 svc sites
+[    1.202653] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    1.203190] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=v0 kind=gpr calls=16 round=2 ns_per_outer=177.0 variant=gpr fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    1.243350] kjit: translate_svc_sites pid 227: 2 text ranges, 111 svc sites
+[    1.243774] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    1.244338] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=A kind=gpr calls=16 round=2 ns_per_outer=166.6 variant=gpr fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    1.288491] kjit: translate_svc_sites pid 234: 2 text ranges, 111 svc sites
+[    1.288672] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    1.289264] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B kind=gpr calls=16 round=2 ns_per_outer=201.1 variant=gpr fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    1.343514] kjit: translate_svc_sites pid 241: 2 text ranges, 111 svc sites
+[    1.343899] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    1.344485] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B2 kind=gpr calls=16 round=2 ns_per_outer=193.9 variant=gpr fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=gpr calls=128 round=2 ns_per_outer=257.1 
+[    1.404526] kjit: translate_svc_sites pid 255: 2 text ranges, 111 svc sites
+[    1.404722] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    1.405477] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=v0 kind=gpr calls=128 round=2 ns_per_outer=864.7 variant=gpr fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    1.468882] kjit: translate_svc_sites pid 262: 2 text ranges, 111 svc sites
+[    1.469776] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    1.470703] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=A kind=gpr calls=128 round=2 ns_per_outer=904.3 variant=gpr fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    1.537284] kjit: translate_svc_sites pid 269: 2 text ranges, 111 svc sites
+[    1.537556] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    1.538137] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B kind=gpr calls=128 round=2 ns_per_outer=913.9 variant=gpr fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    1.604797] kjit: translate_svc_sites pid 276: 2 text ranges, 111 svc sites
+[    1.605395] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    1.606642] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B2 kind=gpr calls=128 round=2 ns_per_outer=903.8 variant=gpr fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=fp calls=16 round=2 ns_per_outer=182.4 
+[    1.681838] kjit: translate_svc_sites pid 290: 2 text ranges, 111 svc sites
+[    1.682674] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    1.683153] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=v0 kind=fp calls=16 round=2 ns_per_outer=229.0 variant=fp fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=0 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    1.735112] kjit: translate_svc_sites pid 297: 2 text ranges, 111 svc sites
+[    1.735560] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    1.736225] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=A kind=fp calls=16 round=2 ns_per_outer=225.1 variant=fp fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=27993 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28000 fpsimd_bracket_preempted=0
+[    1.781730] kjit: translate_svc_sites pid 304: 2 text ranges, 111 svc sites
+[    1.782682] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    1.783169] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B kind=fp calls=16 round=2 ns_per_outer=202.5 variant=fp fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    1.829540] kjit: translate_svc_sites pid 311: 2 text ranges, 111 svc sites
+[    1.829984] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    1.830473] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B2 kind=fp calls=16 round=2 ns_per_outer=193.5 variant=fp fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=fp calls=128 round=2 ns_per_outer=547.1 
+[    1.895496] kjit: translate_svc_sites pid 325: 2 text ranges, 111 svc sites
+[    1.895942] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    1.896453] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=v0 kind=fp calls=128 round=2 ns_per_outer=962.0 variant=fp fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=0 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    1.965669] kjit: translate_svc_sites pid 332: 2 text ranges, 111 svc sites
+[    1.965816] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    1.966575] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=A kind=fp calls=128 round=2 ns_per_outer=962.7 variant=fp fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=27993 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28000 fpsimd_bracket_preempted=1
+[    2.042858] kjit: translate_svc_sites pid 339: 2 text ranges, 111 svc sites
+[    2.043396] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    2.044072] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B kind=fp calls=128 round=2 ns_per_outer=973.4 variant=fp fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    2.115277] kjit: translate_svc_sites pid 347: 2 text ranges, 111 svc sites
+[    2.115713] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    2.116275] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B2 kind=fp calls=128 round=2 ns_per_outer=943.2 variant=fp fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=gpr calls=16 round=3 ns_per_outer=141.5 
+[    2.193736] kjit: translate_svc_sites pid 361: 2 text ranges, 111 svc sites
+[    2.194212] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    2.194879] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=v0 kind=gpr calls=16 round=3 ns_per_outer=164.0 variant=gpr fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    2.240362] kjit: translate_svc_sites pid 368: 2 text ranges, 111 svc sites
+[    2.240560] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    2.241476] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=A kind=gpr calls=16 round=3 ns_per_outer=161.8 variant=gpr fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    2.285743] kjit: translate_svc_sites pid 375: 2 text ranges, 111 svc sites
+[    2.286565] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    2.287131] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B kind=gpr calls=16 round=3 ns_per_outer=202.2 variant=gpr fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    2.339071] kjit: translate_svc_sites pid 382: 2 text ranges, 111 svc sites
+[    2.339534] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    2.340092] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B2 kind=gpr calls=16 round=3 ns_per_outer=199.4 variant=gpr fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=gpr calls=128 round=3 ns_per_outer=261.4 
+[    2.397241] kjit: translate_svc_sites pid 396: 2 text ranges, 111 svc sites
+[    2.398163] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    2.398842] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=v0 kind=gpr calls=128 round=3 ns_per_outer=889.6 variant=gpr fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    2.469419] kjit: translate_svc_sites pid 403: 2 text ranges, 111 svc sites
+[    2.470297] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    2.471059] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=A kind=gpr calls=128 round=3 ns_per_outer=958.6 variant=gpr fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    2.540252] kjit: translate_svc_sites pid 410: 2 text ranges, 111 svc sites
+[    2.541256] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    2.542658] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B kind=gpr calls=128 round=3 ns_per_outer=989.1 variant=gpr fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    2.626822] kjit: translate_svc_sites pid 417: 2 text ranges, 111 svc sites
+[    2.627409] rust_kjit: kjit: pc 0x401128: installed 488 bytes, 0 fault sites, 2 entries, text 0x401128..0x401130, fpsimd false
+[    2.627988] rust_kjit: kjit: pc 0x40110c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x4010fc..0x401128, fpsimd false
+fpv-entry point=B2 kind=gpr calls=128 round=3 ns_per_outer=982.9 variant=gpr fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=fp calls=16 round=3 ns_per_outer=181.8 
+[    2.705688] kjit: translate_svc_sites pid 431: 2 text ranges, 111 svc sites
+[    2.706701] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    2.707337] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=v0 kind=fp calls=16 round=3 ns_per_outer=236.2 variant=fp fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=0 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    2.753572] kjit: translate_svc_sites pid 438: 2 text ranges, 111 svc sites
+[    2.753776] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    2.754546] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=A kind=fp calls=16 round=3 ns_per_outer=230.3 variant=fp fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=27993 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28000 fpsimd_bracket_preempted=0
+[    2.802225] kjit: translate_svc_sites pid 445: 2 text ranges, 111 svc sites
+[    2.802529] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    2.802841] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B kind=fp calls=16 round=3 ns_per_outer=207.0 variant=fp fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    2.844918] kjit: translate_svc_sites pid 452: 2 text ranges, 111 svc sites
+[    2.845902] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    2.847141] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B2 kind=fp calls=16 round=3 ns_per_outer=197.5 variant=fp fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+fpv-entry point=off kind=fp calls=128 round=3 ns_per_outer=554.5 
+[    2.915845] kjit: translate_svc_sites pid 466: 2 text ranges, 111 svc sites
+[    2.916338] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    2.917933] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=v0 kind=fp calls=128 round=3 ns_per_outer=998.9 variant=fp fpvariant=0 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=0 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=0 fpsimd_bracket_preempted=0
+[    2.993125] kjit: translate_svc_sites pid 473: 2 text ranges, 111 svc sites
+[    2.994031] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    2.994933] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=A kind=fp calls=128 round=3 ns_per_outer=983.1 variant=fp fpvariant=1 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=56073 fpsimd_entries=28000 fpsimd_restores=27993 chains=28000 chain_cap=0 exit_svc=27993 exit_bl=28000 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28000 fpsimd_bracket_preempted=0
+[    3.065589] kjit: translate_svc_sites pid 480: 2 text ranges, 111 svc sites
+[    3.067230] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    3.068350] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B kind=fp calls=128 round=3 ns_per_outer=970.1 variant=fp fpvariant=2 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    3.137456] kjit: translate_svc_sites pid 487: 2 text ranges, 111 svc sites
+[    3.138570] rust_kjit: kjit: pc 0x401168: installed 496 bytes, 0 fault sites, 4 entries, text 0x401168..0x401178, fpsimd true
+[    3.139276] rust_kjit: kjit: pc 0x40114c: installed 1016 bytes, 1 fault sites, 11 entries, text 0x40113c..0x401168, fpsimd false
+fpv-entry point=B2 kind=fp calls=128 round=3 ns_per_outer=932.3 variant=fp fpvariant=3 timed_outer=28000 hook_calls=28073 syscalls_in_kernel=27993 fragment_entries=28073 fpsimd_entries=0 fpsimd_restores=27993 chains=0 chain_cap=0 exit_svc=27993 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 fpsimd_brackets=28073 fpsimd_bracket_preempted=0
+[    3.202796] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[    3.247237] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[    3.276893] reboot: Power down
+guest-run: PASS (/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/agent-a3568d87c4d834b78/.kjit/build/runs/kjit-guest-20261009-013655/serial.log)
+fpv-run: step=entry done host_load_after=12.47, 18.59, 14.60

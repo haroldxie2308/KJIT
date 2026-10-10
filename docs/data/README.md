@@ -1,14 +1,17 @@
 # Measurement data
 
-Machine-readable numbers of the measurement entries in `docs/journal/`. Raw logs are not
-committed; every file here is produced by a checked-in script (`tests/guest/host/extract_*.py`)
-from the raw logs, or, where the logs are gone, from the entry's own markdown table.
+Machine-readable numbers of the measurement entries in `docs/journal/`, next to the raw logs
+they came from. No extraction script is kept: the data file is the record of the numbers and
+the raw logs are the evidence; a later reader re-parses the logs if needed.
 `AGENTS.md`, "Documentation Rules", is the rule; this file is the layout and the recipes.
 
 ## Layout
 
 `docs/data/<date>/<HHMM>-<slug>.csv` or `.json`: date and `HHMM` are those of the journal
-entry (`## HH:MM +ZZZZ`), and the entry links the file on a `Data:` line.
+entry (`## HH:MM +ZZZZ`), and the entry links the file on a `Data:` line. The raw logs are in
+`docs/data/<date>/<HHMM>-<slug>/`, one subdirectory per run directory under its original name
+(text files only: serial logs, host.txt, counters, redis-benchmark/suite output; no binaries,
+no redis server data `srv/`, `*.aof`, `*.rdb`). A JSON file's `meta.raw` names that directory.
 
 - **CSV** when the entry has one kind of observation: header row, one row per observation.
 - **JSON** when it has several kinds with different columns (a redis run, a timed repeat, a
@@ -35,88 +38,38 @@ entry (`## HH:MM +ZZZZ`), and the entry links the file on a `Data:` line.
   `lat_*` in a run without the latency probe, `req_per_s_min` of a reference row). Nothing is
   filled with a default.
 - `source=journal-table` marks a row transcribed from a markdown table of the journal entry
-  (raw logs gone). The script copies cells; it computes, estimates and corrects nothing. A
+  (raw logs gone). Cells are copied; nothing is computed, estimated or corrected. A
   composite cell is split into its parts; a cell with one value in a "SET / GET" column is
   stored for both; a `105.9k` cell is stored as 105900 (the journal's rounding); a cell
   that follows no single pattern (`2.19-2.22`) is kept as a `*_text` column.
-- A malformed line, a missing expected line or an unexpected table header makes the script
-  fail with `<file>:<line>: <what>`; it never skips or defaults.
 
 ## Files
 
-Class: `logs` = generated from the raw logs; `table` = transcribed from the entry's own markdown
-table because the logs are gone (`source=journal-table`).
+Class: `logs` = taken from the raw logs (in the sibling directory); `table` = transcribed from
+the entry's own markdown table because the logs are gone (`source=journal-table`, no raw
+directory).
 
-| Entry (journal) | File | Class | Script |
-|---|---|---|---|
-| 2026-09-27 10:20 K4: redis under KJIT (debug, 10 iterations) | `2026-09-27/1020-k4-redis-under-kjit.json` | logs | `extract_k4_campaign.py` |
-| 2026-09-27 12:07 A8 implementation (campaigns) | `2026-09-27/1207-a8-redis-campaign.json` | logs | `extract_k4_campaign.py` |
-| 2026-09-27 16:16 A9b implementation (campaigns) | `2026-09-27/1616-a9b-redis-campaign.json` | logs | `extract_k4_campaign.py` |
-| 2026-09-27 19:01 A10: chain budget and counter reads (campaigns) | `2026-09-27/1901-a10-redis-campaign.json` | logs | `extract_k4_campaign.py` |
-| 2026-10-02 17:14 A11 Step 0: baseline | `2026-10-02/1714-a11-step0-baseline.json` | table | `extract_journal_tables.py --entry a11-step0` |
-| 2026-10-05 11:47 A11 integration | `2026-10-05/1147-a11-integration-remeasure.json` | table | `--entry a11-integration` |
-| 2026-10-09 00:47 Dispatch-table miss classification | `2026-10-09/0047-dispatch-miss-classification.csv` | table | `--entry miss-class` |
-| 2026-10-09 02:31 FP/SIMD bracket: preemptible NEON | `2026-10-09/0231-fpsimd-bracket-neon.json` | logs | `extract_fpv.py` |
-| 2026-10-09 03:56 Dispatch-table conflict variants | `2026-10-09/0356-dispatch-table-variants.json` | logs | `extract_ibtc_variants.py` |
-| 2026-10-09 19:59 Userspace Bypass design evaluation (E1 gap table) | `2026-10-09/1959-ub-eval-e1-gaps.csv` | table | `--entry ub-eval-e1` |
-| 2026-10-09 21:41 Why KJIT does not reach UB's speedups | `2026-10-09/2141-ub-speedups-measure.json` | table | `--entry ub-measure` |
-| 2026-10-09 22:11 A11c implemented | `2026-10-09/2211-a11c-victim-table.csv` | table | `--entry a11c` |
-| 2026-10-10 09:05 Fragment-code slowdown: root cause | `2026-10-10/0905-fragment-code-slowdown.json` | logs | `extract_frag_speed.py` |
-| 2026-10-10 09:41 EL1 RMW chain = PSTATE.SSBS | `2026-10-10/0941-ssbs-rmw-chain.json` | logs | `extract_frag_speed.py` |
+| Entry (journal) | File | Class |
+|---|---|---|
+| 2026-09-27 10:20 K4: redis under KJIT (debug, 10 iterations) | `2026-09-27/1020-k4-redis-under-kjit.json` | logs |
+| 2026-09-27 12:07 A8 implementation (campaigns) | `2026-09-27/1207-a8-redis-campaign.json` | logs |
+| 2026-09-27 16:16 A9b implementation (campaigns) | `2026-09-27/1616-a9b-redis-campaign.json` | logs |
+| 2026-09-27 19:01 A10: chain budget and counter reads (campaigns; `kjit-guest-20260927-163604` is the `chain_budget=65536` k4-bench) | `2026-09-27/1901-a10-redis-campaign.json` | logs |
+| 2026-10-02 17:14 A11 Step 0: baseline | `2026-10-02/1714-a11-step0-baseline.json` | table |
+| 2026-10-05 11:47 A11 integration | `2026-10-05/1147-a11-integration-remeasure.json` | table |
+| 2026-10-09 00:47 Dispatch-table miss classification | `2026-10-09/0047-dispatch-miss-classification.csv` | table |
+| 2026-10-09 02:31 FP/SIMD bracket: preemptible NEON (`fpv/` logs; `runs/` the guest run directories they name; the entry_cost runs have none left) | `2026-10-09/0231-fpsimd-bracket-neon.json` | logs |
+| 2026-10-09 03:56 Dispatch-table conflict variants (`meas`, `meas-alias`, `meas-nc` boots) | `2026-10-09/0356-dispatch-table-variants.json` | logs |
+| 2026-10-09 19:59 Userspace Bypass design evaluation (E1 gap table) | `2026-10-09/1959-ub-eval-e1-gaps.csv` | table |
+| 2026-10-09 21:41 Why KJIT does not reach UB's speedups | `2026-10-09/2141-ub-speedups-measure.json` | table |
+| 2026-10-09 22:11 A11c implemented | `2026-10-09/2211-a11c-victim-table.csv` | table |
+| 2026-10-10 09:05 Fragment-code slowdown: root cause | `2026-10-10/0905-fragment-code-slowdown.json` | logs |
+| 2026-10-10 09:41 EL1 RMW chain = PSTATE.SSBS | `2026-10-10/0941-ssbs-rmw-chain.json` | logs |
 
-The scripts share `tests/guest/host/kjit_data.py` (strict parsing, deterministic writers);
-`extract_frag_speed.py` reuses `load_ub` of `ub-summarize.py` for the `ub off|on` lines.
-Each script's docstring (`<script> --help`) lists its tables.
-
-## Regenerate
-
-Common shape: `<script> <logs...> --out <file>`. The raw logs were at these places on
-2026-10-10 (worktrees and scratch directories are removed over time; the data files are
-the record then):
-
-```sh
-H=tests/guest/host
-WT=/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees
-FS=$WT/frag-speed/.kjit/build/runs                       # ub-run.sh run directories
-FPV=$WT/agent-a3568d87c4d834b78/.kjit/build/fpv          # fpv-run.sh logs (branch exp/fp-bracket-neon)
-IB=/Volumes/Local/kjit-a4b2                              # measurement boots of exp/ibtc-variants
-K4=/Volumes/CaseSentitiveLocal/kjit-build/runs           # redis-campaign.sh output of 2026-09-27 (main build root)
-
-# 2026-09-27 campaigns: the run directory whose figures the entry quotes
-python3 $H/extract_k4_campaign.py $K4/k4-kjit-guest-debug-20260927-061921 --out docs/data/2026-09-27/1020-k4-redis-under-kjit.json
-python3 $H/extract_k4_campaign.py $K4/k4-kjit-guest-20260927-104253 $K4/k4-kjit-guest-debug-20260927-105719 \
-    --out docs/data/2026-09-27/1207-a8-redis-campaign.json
-python3 $H/extract_k4_campaign.py $K4/k4-kjit-guest-20260927-145443 $K4/k4-kjit-guest-debug-20260927-150848 \
-    --out docs/data/2026-09-27/1616-a9b-redis-campaign.json
-python3 $H/extract_k4_campaign.py $K4/k4-kjit-guest-20260927-165035 $K4/k4-kjit-guest-debug-20260927-171337 \
-    $K4/kjit-guest-20260927-163604 --out docs/data/2026-09-27/1901-a10-redis-campaign.json   # 163604: chain_budget=65536 k4-bench
-
-# 2026-10-10 09:05 (exp/frag-speed: exp_el1/exp_el0 microbenchmarks and ub-bench.sh code runs)
-python3 $H/extract_frag_speed.py $FS/ub-expA1 $FS/ub-expA2 $FS/ub-expA3 $FS/ub-codeB1 $FS/ub-codeB2 \
-    $FS/ub-codeB3 $FS/ub-code-base1 --out docs/data/2026-10-10/0905-fragment-code-slowdown.json
-# 2026-10-10 09:41 (SSBS facts, default / force-off / DSSBS=1 / msr ssbs runs)
-python3 $H/extract_frag_speed.py $FS/ub-facts1 $FS/ub-facts2 $FS/ub-ssbDef1 $FS/ub-ssbDef2 $FS/ub-ssbOff1 \
-    $FS/ub-ssbOff2 $FS/ub-dssbs1 $FS/ub-dssbs2 $FS/ub-ssbsp1 $FS/ub-ssbsp2 --out docs/data/2026-10-10/0941-ssbs-rmw-chain.json
-# 2026-10-09 03:56 (36 meas boots, 12 meas-alias, 8 meas-nc)
-python3 $H/extract_ibtc_variants.py $IB/meas/boot-*.serial.log $IB/meas-alias/boot-*.serial.log \
-    $IB/meas-nc/boot-*.serial.log --out docs/data/2026-10-09/0356-dispatch-table-variants.json
-# 2026-10-09 02:31 (bench = the 3 five-pass throughput boots, entry = entry_cost, lat = latency probe boots)
-python3 $H/extract_fpv.py $FPV/bench-kjit-guest-20261009-0{15035,15328,15623}.log $FPV/entry-kjit-guest-20261009-0136{46,51,55}.log \
-    $FPV/lat-kjit-guest-20261009-0{15915,20118,20322,20521}.log --out docs/data/2026-10-09/0231-fpsimd-bracket-neon.json
-# journal tables (raw logs gone)
-python3 $H/extract_journal_tables.py docs/journal/2026-10-02.md --entry a11-step0 --out docs/data/2026-10-02/1714-a11-step0-baseline.json
-python3 $H/extract_journal_tables.py docs/journal/2026-10-05.md --entry a11-integration --out docs/data/2026-10-05/1147-a11-integration-remeasure.json
-python3 $H/extract_journal_tables.py docs/journal/2026-10-09.md --entry miss-class --out docs/data/2026-10-09/0047-dispatch-miss-classification.csv
-python3 $H/extract_journal_tables.py docs/journal/2026-10-09.md --entry ub-eval-e1 --out docs/data/2026-10-09/1959-ub-eval-e1-gaps.csv
-python3 $H/extract_journal_tables.py docs/journal/2026-10-09.md --entry ub-measure --out docs/data/2026-10-09/2141-ub-speedups-measure.json
-python3 $H/extract_journal_tables.py docs/journal/2026-10-09.md --entry a11c --out docs/data/2026-10-09/2211-a11c-victim-table.csv
-```
-
-A new measurement entry adds its own `extract_*.py` (or a spec to `extract_journal_tables.py`
-if only the table survives), the file under `docs/data/`, a row in the table above, and the
+A new measurement entry adds the data file, the raw-log directory, a row in this table and the
 `Data:` line in the entry.
 
-## What is not in the files
+## What is not in the data files
 
 - 2026-09-27 campaign files: matched to the entries by their figures (suite counts, in-kernel
   syscalls of N, fragment entries, translations, chain histogram all agree with the entry).

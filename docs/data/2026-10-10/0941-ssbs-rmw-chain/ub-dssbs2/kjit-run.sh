@@ -1,0 +1,3 @@
+#!/bin/sh
+set -e
+mount -t debugfs debugfs /sys/kernel/debug 2>/dev/null; echo 0 > /sys/kernel/debug/kjit/enable; echo 0 > /sys/kernel/debug/kjit/auto; /opt/kjit-tests/exp_el1 7 20 exp_strlen_rmw exp_strlen_rmw_s0 exp_strlen_rmw_s1; echo "dssbs 1 1 0 0" > /sys/kernel/debug/kjit/exp_bench; cat /sys/kernel/debug/kjit/exp_bench; /opt/kjit-tests/exp_el1 7 20; sh /opt/kjit-tests/ub-bench.sh code 7

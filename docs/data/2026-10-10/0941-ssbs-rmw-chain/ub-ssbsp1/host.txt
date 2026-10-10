@@ -1,0 +1,5 @@
+label=ssbsp1 kpti=0 profile=kjit-guest
+append=console=ttyAMA0 panic=-1 nokaslr
+waited_s=0 load1_before=5.56
+cmd=mount -t debugfs debugfs /sys/kernel/debug; echo 0 > /sys/kernel/debug/kjit/enable; echo 0 > /sys/kernel/debug/kjit/auto; /opt/kjit-tests/exp_el1 7 20 exp_ssbs_pair exp_loop exp_pan_pair
+load1_after=5.56 guest_run_status=0

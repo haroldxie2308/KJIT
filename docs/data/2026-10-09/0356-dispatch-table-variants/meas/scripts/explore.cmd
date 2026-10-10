@@ -1,0 +1,1 @@
+mount -t debugfs debugfs /sys/kernel/debug 2>/dev/null || true; K=/sys/kernel/debug/kjit; T=/opt/kjit-tests; echo "meas: variant=$(cat /sys/module/kjit/parameters/ibtc_variant)"; sh $T/a11-baseline.sh /tmp/a11 1 200000 1024

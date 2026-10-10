@@ -1,0 +1,782 @@
+guest-run: profile=kjit-guest-debug run-dir=/Volumes/CaseSentitiveLocal/kjit-build/runs/k4-kjit-guest-debug-20260927-105719/campaign
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1+ (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #9 SMP PREEMPT Sun Sep 27 02:41:53 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] KernelAddressSanitizer initialized (generic)
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 29 pages/cpu s79952 r8192 d30640 u118784
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000011a600000-0x000000011aa00000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] stackdepot: allocating hash table via alloc_large_system_hash
+[    0.000000] stackdepot hash table entries: 1048576 (order: 12, 16777216 bytes, linear)
+[    0.000000] stackdepot: allocating space for 8192 stack pools via memblock
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] Running RCU self tests
+[    0.000000] Running RCU synchronous self tests
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU lockdep checking is enabled.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] 	Trampoline variant of Tasks RCU enabled.
+[    0.000000] 	Tracing variant of Tasks RCU enabled.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] Running RCU synchronous self tests
+[    0.000000] RCU Tasks: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000001] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000145] Console: colour dummy device 80x25
+[    0.000150] Lock dependency validator: Copyright (c) 2006 Red Hat, Inc., Ingo Molnar
+[    0.000151] ... MAX_LOCKDEP_SUBCLASSES:  8
+[    0.000152] ... MAX_LOCK_DEPTH:          48
+[    0.000153] ... MAX_LOCKDEP_KEYS:        8192
+[    0.000153] ... CLASSHASH_SIZE:          4096
+[    0.000154] ... MAX_LOCKDEP_ENTRIES:     32768
+[    0.000155] ... MAX_LOCKDEP_CHAINS:      65536
+[    0.000156] ... CHAINHASH_SIZE:          32768
+[    0.000156]  memory used by lock dependency info: 6429 kB
+[    0.000159]  memory used for stack traces: 16896 kB
+[    0.000161]  per task-struct memory footprint: 1920 bytes
+[    0.000174] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000177] pid_max: default: 32768 minimum: 301
+[    0.000438] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000446] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000747] VFS: Finished mounting rootfs on nullfs
+[    0.001106] Running RCU synchronous self tests
+[    0.001108] Running RCU synchronous self tests
+[    0.001381] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.010987] rcu: Hierarchical SRCU implementation.
+[    0.010990] rcu: 	Max phase no-delay instances is 1000.
+[    0.011128] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.021970] smp: Bringing up secondary CPUs ...
+[    0.050383] Detected PIPT I-cache on CPU1
+[    0.050488] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.078696] Detected PIPT I-cache on CPU2
+[    0.078827] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.106695] Detected PIPT I-cache on CPU3
+[    0.106867] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.107055] smp: Brought up 1 node, 4 CPUs
+[    0.107058] SMP: Total of 4 processors activated.
+[    0.107059] CPU: All CPU(s) started at EL1
+[    0.107061] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.107062] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.107063] CPU features: detected: CRC32 instructions
+[    0.107064] CPU features: detected: Data independent timing control (DIT)
+[    0.107065] CPU features: detected: E0PD
+[    0.107067] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.107068] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.107069] CPU features: detected: LSE atomic instructions
+[    0.107070] CPU features: detected: Privileged Access Never
+[    0.107071] CPU features: detected: Speculation barrier (SB)
+[    0.107072] CPU features: detected: TLB range maintenance instructions
+[    0.107073] CPU features: detected: XNX
+[    0.107233] alternatives: applying system-wide alternatives
+[    0.109373] Memory: 3354440K/4194304K available (14720K kernel code, 3344K rwdata, 4420K rodata, 832K init, 23997K bss, 834216K reserved, 0K cma-reserved)
+[    0.110317] devtmpfs: initialized
+[    0.113800] Running RCU synchronous self tests
+[    0.113818] Running RCU synchronous self tests
+[    0.113925] Running RCU Tasks wait API self tests
+[    0.263698] Running RCU Tasks Trace wait API self tests
+[    0.266792] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.267011] posixtimers hash table entries: 2048 (order: 6, 147456 bytes, linear)
+[    0.267185] futex hash table entries: 1024 (131072 bytes on 1 NUMA nodes, total 128 KiB, linear).
+[    0.267391] 20896 pages in range for non-PLT usage
+[    0.267394] 512416 pages in range for PLT usage
+[    0.268813] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.268945] Callback from call_rcu_tasks() invoked.
+[    0.270070] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.270586] ASID allocator initialised with 256 entries
+[    0.270692] Serial: AMBA PL011 UART driver
+[    0.275135] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.275380] printk: console [ttyAMA0] enabled
+[    0.279687] Callback from call_rcu_tasks_trace() invoked.
+[    0.287814] vgaarb: loaded
+[    0.288469] clocksource: Switched to clocksource arch_sys_counter
+[    0.307899] NET: Registered PF_INET protocol family
+[    0.308079] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.309102] tcp_listen_portaddr_hash hash table entries: 2048 (order: 6, 147456 bytes, linear)
+[    0.309154] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.309183] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.309529] TCP bind hash table entries: 32768 (order: 11, 4718592 bytes, vmalloc hugepage)
+[    0.310891] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.310965] UDP hash table entries: 2048 (order: 7, 524288 bytes, linear)
+[    0.311206] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.311242] PCI: CLS 0 bytes, default 64
+[    0.311452] Unpacking initramfs...
+[    0.321543] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.322274] 9p: Installing v9fs 9p2000 file system support
+[    0.323242] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.323291] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.323391] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.323399] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.323420] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.330789] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.331027] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.331034] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.331041] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.331044] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.331046] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.331112] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.331662] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.331779] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.331788] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.331799] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.331803] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.332293] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.332600] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.332606] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.332666] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.333211] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.333358] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.333372] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.333382] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.333833] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.333837] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.333879] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.333900] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.333959] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.333969] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.333992] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.334002] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.334007] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.334013] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.334041] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.334043] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.334045] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.336294] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.337362] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.338114] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.365203] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.365240] rtc-pl031 9010000.pl031: setting system clock to 2026-09-27T03:07:20 UTC (1790478440)
+[    0.365660] NET: Registered PF_INET6 protocol family
+[    0.366502] Segment Routing with IPv6
+[    0.366601] In-situ OAM (IOAM) with IPv6
+[    0.366634] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.367079] NET: Registered PF_PACKET protocol family
+[    0.367097] 9pnet: Installing 9P2000 support
+[    0.388369] clk: Disabling unused clocks
+[    0.546242] Freeing initrd memory: 153360K
+[    0.546722] Freeing unused kernel memory: 832K
+[    0.546786] Run /init as init process
+[    0.576209] kjit: loading out-of-tree module taints kernel.
+[    0.578196] rust_kjit: ######## Rust KJIT inits ########
+[    0.578426] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+k4: iteration 1
+k2:   toy_loop: in_kernel=199823 entries=199824 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   mem_loop: in_kernel=39872 entries=59808 exit_mem=0 exit_budget=0 exit_unsupported=19935
+k2:   tight_loop: in_kernel=0 entries=1936 exit_mem=0 exit_budget=1936 exit_unsupported=0
+k2:   signal_loop: in_kernel=399833 entries=399869 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   munmap_race: in_kernel=733651 entries=733763 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   seccomp_loop: in_kernel=0 entries=0 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   ptrace_loop: in_kernel=0 entries=0 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2: iteration 1 PASS
+k2: ALL PASS (1 iterations, auto=1)
+k4-bench: default (redis-benchmark -q -n 100000 ):
+k4:     PING_INLINE: 39698.29 requests per second, p50=0.607 msec
+k4:     PING_MBULK: 40064.10 requests per second, p50=0.599 msec
+k4:     SET: 40000.00 requests per second, p50=0.599 msec
+k4:     GET: 39077.77 requests per second, p50=0.599 msec
+k4:     INCR: 40290.09 requests per second, p50=0.599 msec
+k4:     LPUSH: 40355.12 requests per second, p50=0.599 msec
+k4:     RPUSH: 40290.09 requests per second, p50=0.599 msec
+k4:     LPOP: 40128.41 requests per second, p50=0.599 msec
+k4:     RPOP: 39541.32 requests per second, p50=0.599 msec
+k4:     SADD: 39385.59 requests per second, p50=0.607 msec
+k4:     HSET: 39370.08 requests per second, p50=0.607 msec
+k4:     SPOP: 39682.54 requests per second, p50=0.607 msec
+k4:     ZADD: 39047.25 requests per second, p50=0.615 msec
+k4:     ZPOPMIN: 39016.78 requests per second, p50=0.615 msec
+k4:     LPUSH (needed to benchmark LRANGE): 39308.18 requests per second, p50=0.607 msec
+k4:     LRANGE_100 (first 100 elements): 30175.02 requests per second, p50=0.799 msec
+k4:     LRANGE_300 (first 300 elements): 17937.22 requests per second, p50=1.383 msec
+k4:     LRANGE_500 (first 500 elements): 13777.90 requests per second, p50=1.799 msec
+k4:     LRANGE_600 (first 600 elements): 12592.87 requests per second, p50=1.991 msec
+k4:     MSET (10 keys): 38955.98 requests per second, p50=0.615 msec
+k4:   default: in_kernel=0/5482679 syscalls (0.0%) entries=92958952 chains=87481629 chain_cap=3466835 translated=48 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   default: exits svc=0 bl=38804425 blr=4405715 br=1998946 ret=45750984 mem=0 unsupported=1998882 budget=0 invalid=0 svc_declined=0
+k4:   default: unsupported_top (word(exits/entry_stops)): 0x4e010c20(1998882/0) 
+k4:   default: hot: 92958972 fragment entries, 0 syscalls in kernel before the event
+k4-bench: pipelined (redis-benchmark -q -n 100000 -P 16):
+k4:     PING_INLINE: 568181.81 requests per second, p50=0.663 msec
+k4:     PING_MBULK: 606060.56 requests per second, p50=0.631 msec
+k4:     SET: 602409.69 requests per second, p50=0.647 msec
+k4:     GET: 621118.00 requests per second, p50=0.623 msec
+k4:     INCR: 609756.06 requests per second, p50=0.639 msec
+k4:     LPUSH: 613496.94 requests per second, p50=0.679 msec
+k4:     RPUSH: 632911.38 requests per second, p50=0.639 msec
+k4:     LPOP: 613496.94 requests per second, p50=0.703 msec
+k4:     RPOP: 617283.94 requests per second, p50=0.663 msec
+k4:     SADD: 625000.00 requests per second, p50=0.623 msec
+k4:     HSET: 613496.94 requests per second, p50=0.655 msec
+k4:     SPOP: 625000.00 requests per second, p50=0.615 msec
+k4:     ZADD: 621118.00 requests per second, p50=0.663 msec
+k4:     ZPOPMIN: 617283.94 requests per second, p50=0.623 msec
+k4:     LPUSH (needed to benchmark LRANGE): 617283.94 requests per second, p50=0.671 msec
+k4:     LRANGE_100 (first 100 elements): 114678.90 requests per second, p50=3.487 msec
+k4:     LRANGE_300 (first 300 elements): 36643.46 requests per second, p50=8.375 msec
+k4:     LRANGE_500 (first 500 elements): 22862.37 requests per second, p50=9.735 msec
+k4:     LRANGE_600 (first 600 elements): 18946.57 requests per second, p50=10.599 msec
+k4:     MSET (10 keys): 420168.06 requests per second, p50=1.663 msec
+k4:   pipelined: in_kernel=0/333506 syscalls (0.0%) entries=5434638 chains=5105145 chain_cap=191015 translated=33 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   pipelined: exits svc=0 bl=2321328 blr=193186 br=125001 ret=2670122 mem=0 unsupported=125001 budget=0 invalid=0 svc_declined=0
+k4:   pipelined: unsupported_top (word(exits/entry_stops)): 0x4e010c20(125001/0) 
+k4:   pipelined: hot: 5434668 fragment entries, 0 syscalls in kernel before the event
+k4-bench: clients256 (redis-benchmark -q -n 100000 -c 256):
+k4:     PING_INLINE: 37439.16 requests per second, p50=3.343 msec
+k4:     PING_MBULK: 36737.70 requests per second, p50=3.447 msec
+k4:     SET: 35149.38 requests per second, p50=3.671 msec
+k4:     GET: 36563.07 requests per second, p50=3.431 msec
+k4:     INCR: 36616.62 requests per second, p50=3.471 msec
+k4:     LPUSH: 36153.29 requests per second, p50=3.503 msec
+k4:     RPUSH: 36101.08 requests per second, p50=3.511 msec
+k4:     LPOP: 37091.99 requests per second, p50=3.399 msec
+k4:     RPOP: 36710.72 requests per second, p50=3.455 msec
+k4:     SADD: 36724.20 requests per second, p50=3.439 msec
+k4:     HSET: 36483.04 requests per second, p50=3.487 msec
+k4:     SPOP: 36376.86 requests per second, p50=3.463 msec
+k4:     ZADD: 35075.41 requests per second, p50=3.631 msec
+k4:     ZPOPMIN: 36337.21 requests per second, p50=3.487 msec
+k4:     LPUSH (needed to benchmark LRANGE): 35829.45 requests per second, p50=3.599 msec
+k4:     LRANGE_100 (first 100 elements): 27480.08 requests per second, p50=4.639 msec
+k4:     LRANGE_300 (first 300 elements): 16431.15 requests per second, p50=7.735 msec
+k4:     LRANGE_500 (first 500 elements): 12259.41 requests per second, p50=10.303 msec
+k4:     LRANGE_600 (first 600 elements): 11842.73 requests per second, p50=10.783 msec
+k4:     MSET (10 keys): 36751.20 requests per second, p50=3.447 msec
+k4:   clients256: in_kernel=30737/5285372 syscalls (0.6%) entries=89236313 chains=83956417 chain_cap=3233089 translated=68 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   clients256: exits svc=30737 bl=37515577 blr=3669938 br=2045823 ret=43964508 mem=0 unsupported=2009730 budget=0 invalid=0 svc_declined=0
+k4:   clients256: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2000000/0) 0x3d801be0(9730/0) 
+k4:   clients256: hot: 89236352 fragment entries, 30737 syscalls in kernel before the event
+k4-bench: consistency PASS: dbsize 10044 digest 603e069a26083ceb1309ded3186769f0b0809e09 readback sha256 362731776718583235c4f1394cb708151a5c09052efd2c0ace0f6f0f7392fb50 
+k4-bench: ALL PASS
+[  677.700770] kjit: 0 of 967 translation requests still queued at unload (freed by the kernel)
+[  677.748634] rust_kjit: ######## Rust KJIT exits ########
+[  678.010281] rust_kjit: ######## Rust KJIT inits ########
+[  678.010519] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  678.417618] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[  678.452617] rust_kjit: ######## Rust KJIT exits ########
+[  678.728578] rust_kjit: ######## Rust KJIT inits ########
+[  678.728806] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  679.141577] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[  679.184720] rust_kjit: ######## Rust KJIT exits ########
+[  679.491916] rust_kjit: ######## Rust KJIT inits ########
+[  679.493199] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  679.904617] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[  679.928757] rust_kjit: ######## Rust KJIT exits ########
+[  680.222266] rust_kjit: ######## Rust KJIT inits ########
+[  680.222719] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  680.636859] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[  680.668664] rust_kjit: ######## Rust KJIT exits ########
+[  680.965924] rust_kjit: ######## Rust KJIT inits ########
+[  680.966348] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  752.980427] kjit: 0 of 61 translation requests still queued at unload (freed by the kernel)
+[  753.028802] rust_kjit: ######## Rust KJIT exits ########
+[  753.321923] rust_kjit: ######## Rust KJIT inits ########
+[  753.322395] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  753.780384] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[  753.812716] rust_kjit: ######## Rust KJIT exits ########
+[  754.098637] rust_kjit: ######## Rust KJIT inits ########
+[  754.098818] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  754.560573] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[  754.596612] rust_kjit: ######## Rust KJIT exits ########
+[  754.879422] rust_kjit: ######## Rust KJIT inits ########
+[  754.879631] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  755.332357] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[  755.361722] rust_kjit: ######## Rust KJIT exits ########
+[  755.627289] rust_kjit: ######## Rust KJIT inits ########
+[  755.627483] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  756.084279] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[  756.120565] rust_kjit: ######## Rust KJIT exits ########
+[  756.425961] rust_kjit: ######## Rust KJIT inits ########
+[  756.426164] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+k4-adv: kill9 PASS: kill9 #1: server status 137;kill9 #2: server status 137;kill9 #3: server status 137;
+k4:   kill9#1: hot: 1817261 fragment entries, 0 syscalls in kernel before the event
+k4:   kill9#2: hot: 1803355 fragment entries, 0 syscalls in kernel before the event
+k4:   kill9#3: hot: 1816275 fragment entries, 0 syscalls in kernel before the event
+k4:   kill9: in_kernel=0/432251 syscalls (0.0%) entries=7011252 chains=6586188 chain_cap=238692 translated=183 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=183
+k4:   kill9: exits svc=0 bl=2928281 blr=310530 br=257217 ret=3339813 mem=0 unsupported=175411 budget=0 invalid=0 svc_declined=0
+k4:   kill9: unsupported_top (word(exits/entry_stops)): 0x4e010c20(136334/0) 0x4c407061(39077/0) 
+k4-adv: sigterm PASS: TERM: server status 0;sigterm: shutdown and clean exit logged;
+k4:   TERM: hot: 1829654 fragment entries, 0 syscalls in kernel before the event
+k4:   sigterm: in_kernel=0/153866 syscalls (0.0%) entries=2497883 chains=2346729 chain_cap=85687 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   sigterm: exits svc=0 bl=1042847 blr=111882 br=89073 ret=1192276 mem=0 unsupported=61805 budget=0 invalid=0 svc_declined=0
+k4:   sigterm: unsupported_top (word(exits/entry_stops)): 0x4e010c20(48779/0) 0x4c407061(13026/0) 
+k4-adv: sigusr1 PASS: USR1: server status 138;
+k4:   USR1: hot: 1821494 fragment entries, 0 syscalls in kernel before the event
+k4:   sigusr1: in_kernel=0/145041 syscalls (0.0%) entries=2351629 chains=2209086 chain_cap=79974 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   sigusr1: exits svc=0 bl=982561 blr=103410 br=86188 ret=1120554 mem=0 unsupported=58916 budget=0 invalid=0 svc_declined=0
+k4:   sigusr1: unsupported_top (word(exits/entry_stops)): 0x4e010c20(45889/0) 0x4c407061(13027/0) 
+k4-adv: stopcont PASS: stopcont: load status 0;dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   stopcont: hot: 1771514 fragment entries, 0 syscalls in kernel before the event
+k4:   stopcont: in_kernel=0/5809822 syscalls (0.0%) entries=98588613 chains=92783924 chain_cap=3687692 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   stopcont: exits svc=0 bl=41107483 blr=4767580 br=2139231 ret=48462350 mem=0 unsupported=2111969 budget=0 invalid=0 svc_declined=0
+k4:   stopcont: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2098948/0) 0x4c407061(13021/0) 
+k4-adv: segfault PASS: segfault: server status 139;crashed by signal: 11, si_code: 2;Accessing address: <page-aligned>;segfault: stack trace names debugCommand: yes;segfault: core files 1;
+k4:   segfault: hot: 1805072 fragment entries, 0 syscalls in kernel before the event
+k4:   segfault: in_kernel=0/145689 syscalls (0.0%) entries=2339863 chains=2197920 chain_cap=79337 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   segfault: exits svc=0 bl=978180 blr=101717 br=86110 ret=1115014 mem=0 unsupported=58842 budget=0 invalid=0 svc_declined=0
+k4:   segfault: unsupported_top (word(exits/entry_stops)): 0x4e010c20(45816/0) 0x4c407061(13026/0) 
+k4-adv: bgsave PASS: bgsave: load status 0;bgsave: before restart dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;bgsave: redis-check-rdb ok;bgsave: after restart dbsize 10045 digest a595c3aec0dfe15c636c10750
+k4:   bgsave: hot: 1710025 fragment entries, 0 syscalls in kernel before the event
+k4:   bgsave: in_kernel=0/5819090 syscalls (0.0%) entries=98628438 chains=92821257 chain_cap=3689985 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   bgsave: exits svc=0 bl=41121582 blr=4774394 br=2139271 ret=48481191 mem=0 unsupported=2112000 budget=0 invalid=0 svc_declined=0
+k4:   bgsave: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2098973/0) 0x4c407061(13027/0) 
+k4-adv: aofrw PASS: aofrw: load status 0;aofrw: before restart dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;aofrw: after restart from the AOF dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   aofrw: hot: 1891908 fragment entries, 0 syscalls in kernel before the event
+k4:   aofrw: in_kernel=0/4998515 syscalls (0.0%) entries=82847064 chains=77862517 chain_cap=2727870 translated=84 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=84
+k4:   aofrw: exits svc=0 bl=35499672 blr=1879958 br=2139248 ret=41079924 mem=0 unsupported=2248262 budget=0 invalid=0 svc_declined=0
+k4:   aofrw: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2098953/0) 0x4e080ec0(134222/0) 0x4c407061(14665/0) 0x3dc00020(422/0) 
+k4-adv: config PASS: config: 5 module load/unload and config set rounds ok;config: load status 0; misc module still loaded: 0;dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   config: hot: 1809633 fragment entries, 0 syscalls in kernel before the event
+k4:   config: in_kernel=0/5942274 syscalls (0.0%) entries=100683621 chains=94755000 chain_cap=3388495 translated=69 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=69
+k4:   config: exits svc=0 bl=43113304 blr=2604080 br=2617570 ret=49814581 mem=0 unsupported=2534086 budget=0 invalid=0 svc_declined=0
+k4:   config: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2521062/0) 0x4c407061(13024/0) 
+k4-adv: reload PASS: reload: 5 unloads under load; load status 0; ping PONG;dbsize 10045 digest 8630698fcae208583f0c9e6fe598b8d0226d4767;
+k4:   reload: hot: 1766312 fragment entries, 0 syscalls in kernel before the event
+k4:   reload: counters of the last load: syscalls_in_kernel 0 fragment_entries 122360480 exit_invalid 0 translate_verify_rejected 0 
+k4-adv: maxmemory PASS: maxmemory: evicted yes;maxmemory: used within 32mb+1mb yes;maxmemory: noeviction write: OOM command not allowed when used memory;maxmemory: after lifting the limit: OK;
+k4:   maxmemory: hot: 1770050 fragment entries, 0 syscalls in kernel before the event
+k4:   maxmemory: in_kernel=0/1110212 syscalls (0.0%) entries=18786436 chains=17679820 chain_cap=704733 translated=46 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=46
+k4:   maxmemory: exits svc=0 bl=7828248 blr=918537 br=399018 ret=9241679 mem=0 unsupported=398954 budget=0 invalid=0 svc_declined=0
+k4:   maxmemory: unsupported_top (word(exits/entry_stops)): 0x4e010c20(398954/0) 
+k4-adv: ALL PASS
+k4: iteration 1 PASS
+k4: iteration 2
+k2:   toy_loop: in_kernel=199823 entries=199824 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   mem_loop: in_kernel=39872 entries=59808 exit_mem=0 exit_budget=0 exit_unsupported=19935
+k2:   tight_loop: in_kernel=0 entries=1936 exit_mem=0 exit_budget=1936 exit_unsupported=0
+k2:   signal_loop: in_kernel=399829 entries=399872 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   munmap_race: in_kernel=704063 entries=704166 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   seccomp_loop: in_kernel=0 entries=0 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   ptrace_loop: in_kernel=0 entries=0 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2: iteration 1 PASS
+k2: ALL PASS (1 iterations, auto=1)
+k4-bench: default (redis-benchmark -q -n 100000 ):
+k4:     PING_INLINE: 39619.65 requests per second, p50=0.599 msec
+k4:     PING_MBULK: 39745.63 requests per second, p50=0.599 msec
+k4:     SET: 39138.94 requests per second, p50=0.607 msec
+k4:     GET: 39215.69 requests per second, p50=0.615 msec
+k4:     INCR: 39777.25 requests per second, p50=0.599 msec
+k4:     LPUSH: 39856.52 requests per second, p50=0.599 msec
+k4:     RPUSH: 39323.63 requests per second, p50=0.607 msec
+k4:     LPOP: 39714.06 requests per second, p50=0.599 msec
+k4:     RPOP: 37105.75 requests per second, p50=0.647 msec
+k4:     SADD: 37495.31 requests per second, p50=0.631 msec
+k4:     HSET: 35958.29 requests per second, p50=0.671 msec
+k4:     SPOP: 35435.86 requests per second, p50=0.679 msec
+k4:     ZADD: 31250.00 requests per second, p50=0.711 msec
+k4:     ZPOPMIN: 36805.30 requests per second, p50=0.647 msec
+k4:     LPUSH (needed to benchmark LRANGE): 37565.74 requests per second, p50=0.631 msec
+k4:     LRANGE_100 (first 100 elements): 28224.67 requests per second, p50=0.839 msec
+k4:     LRANGE_300 (first 300 elements): 15974.44 requests per second, p50=1.503 msec
+k4:     LRANGE_500 (first 500 elements): 13724.95 requests per second, p50=1.799 msec
+k4:     LRANGE_600 (first 600 elements): 9563.89 requests per second, p50=2.215 msec
+k4:     MSET (10 keys): 35932.45 requests per second, p50=0.671 msec
+k4:   default: in_kernel=0/5395161 syscalls (0.0%) entries=91466365 chains=86076787 chain_cap=3378986 translated=48 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   default: exits svc=0 bl=38277623 blr=4142303 br=1998940 ret=45048623 mem=0 unsupported=1998876 budget=0 invalid=0 svc_declined=0
+k4:   default: unsupported_top (word(exits/entry_stops)): 0x4e010c20(1998876/0) 
+k4:   default: hot: 91466385 fragment entries, 0 syscalls in kernel before the event
+k4-bench: pipelined (redis-benchmark -q -n 100000 -P 16):
+k4:     PING_INLINE: 537634.38 requests per second, p50=0.751 msec
+k4:     PING_MBULK: 520833.34 requests per second, p50=0.751 msec
+k4:     SET: 529100.56 requests per second, p50=0.783 msec
+k4:     GET: 512820.53 requests per second, p50=0.783 msec
+k4:     INCR: 546448.06 requests per second, p50=0.743 msec
+k4:     LPUSH: 452488.69 requests per second, p50=0.887 msec
+k4:     RPUSH: 540540.56 requests per second, p50=0.711 msec
+k4:     LPOP: 564971.75 requests per second, p50=0.767 msec
+k4:     RPOP: 571428.56 requests per second, p50=0.711 msec
+k4:     SADD: 574712.69 requests per second, p50=0.695 msec
+k4:     HSET: 571428.56 requests per second, p50=0.711 msec
+k4:     SPOP: 564971.75 requests per second, p50=0.679 msec
+k4:     ZADD: 578034.69 requests per second, p50=0.735 msec
+k4:     ZPOPMIN: 574712.69 requests per second, p50=0.679 msec
+k4:     LPUSH (needed to benchmark LRANGE): 578034.69 requests per second, p50=0.711 msec
+k4:     LRANGE_100 (first 100 elements): 104712.05 requests per second, p50=3.719 msec
+k4:     LRANGE_300 (first 300 elements): 34459.00 requests per second, p50=8.855 msec
+k4:     LRANGE_500 (first 500 elements): 21584.29 requests per second, p50=10.311 msec
+k4:     LRANGE_600 (first 600 elements): 19033.12 requests per second, p50=10.399 msec
+k4:     MSET (10 keys): 381679.41 requests per second, p50=1.807 msec
+k4:   pipelined: in_kernel=0/325513 syscalls (0.0%) entries=5301541 chains=4979992 chain_cap=183270 translated=33 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   pipelined: exits svc=0 bl=2274679 blr=169458 br=125001 ret=2607402 mem=0 unsupported=125001 budget=0 invalid=0 svc_declined=0
+k4:   pipelined: unsupported_top (word(exits/entry_stops)): 0x4e010c20(125001/0) 
+k4:   pipelined: hot: 5301561 fragment entries, 0 syscalls in kernel before the event
+k4-bench: clients256 (redis-benchmark -q -n 100000 -c 256):
+k4:     PING_INLINE: 32733.22 requests per second, p50=3.855 msec
+k4:     PING_MBULK: 32647.73 requests per second, p50=3.903 msec
+k4:     SET: 35549.23 requests per second, p50=3.615 msec
+k4:     GET: 34447.12 requests per second, p50=3.743 msec
+k4:     INCR: 36062.03 requests per second, p50=3.455 msec
+k4:     LPUSH: 35625.22 requests per second, p50=3.583 msec
+k4:     RPUSH: 36324.01 requests per second, p50=3.503 msec
+k4:     LPOP: 36791.76 requests per second, p50=3.455 msec
+k4:     RPOP: 32981.53 requests per second, p50=3.887 msec
+k4:     SADD: 36697.25 requests per second, p50=3.495 msec
+k4:     HSET: 36982.25 requests per second, p50=3.455 msec
+k4:     SPOP: 34387.89 requests per second, p50=3.639 msec
+k4:     ZADD: 36549.71 requests per second, p50=3.471 msec
+k4:     ZPOPMIN: 35026.27 requests per second, p50=3.655 msec
+k4:     LPUSH (needed to benchmark LRANGE): 35739.81 requests per second, p50=3.575 msec
+k4:     LRANGE_100 (first 100 elements): 26343.52 requests per second, p50=4.703 msec
+k4:     LRANGE_300 (first 300 elements): 17553.10 requests per second, p50=7.255 msec
+k4:     LRANGE_500 (first 500 elements): 13458.95 requests per second, p50=9.511 msec
+k4:     LRANGE_600 (first 600 elements): 11325.03 requests per second, p50=11.343 msec
+k4:     MSET (10 keys): 36496.35 requests per second, p50=3.463 msec
+k4:   clients256: in_kernel=30764/5259056 syscalls (0.6%) entries=88795773 chains=83541694 chain_cap=3207165 translated=68 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   clients256: exits svc=30764 bl=37359842 blr=3592556 br=2045788 ret=43757095 mem=0 unsupported=2009731 budget=0 invalid=0 svc_declined=0
+k4:   clients256: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2000001/0) 0x3d801be0(9730/0) 
+k4:   clients256: hot: 88796904 fragment entries, 30791 syscalls in kernel before the event
+k4-bench: consistency PASS: dbsize 10044 digest 603e069a26083ceb1309ded3186769f0b0809e09 readback sha256 362731776718583235c4f1394cb708151a5c09052efd2c0ace0f6f0f7392fb50 
+k4-bench: ALL PASS
+[ 1537.440635] kjit: 0 of 1060 translation requests still queued at unload (freed by the kernel)
+[ 1537.480593] rust_kjit: ######## Rust KJIT exits ########
+[ 1537.761565] rust_kjit: ######## Rust KJIT inits ########
+[ 1537.762063] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1538.172613] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 1538.188836] rust_kjit: ######## Rust KJIT exits ########
+[ 1538.493818] rust_kjit: ######## Rust KJIT inits ########
+[ 1538.494274] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1538.900881] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 1538.933796] rust_kjit: ######## Rust KJIT exits ########
+[ 1539.186476] rust_kjit: ######## Rust KJIT inits ########
+[ 1539.186959] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1539.594429] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 1539.616720] rust_kjit: ######## Rust KJIT exits ########
+[ 1539.878639] rust_kjit: ######## Rust KJIT inits ########
+[ 1539.879112] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1540.284960] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 1540.308714] rust_kjit: ######## Rust KJIT exits ########
+[ 1540.587004] rust_kjit: ######## Rust KJIT inits ########
+[ 1540.587596] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1613.856957] kjit: 0 of 61 translation requests still queued at unload (freed by the kernel)
+[ 1613.892618] rust_kjit: ######## Rust KJIT exits ########
+[ 1614.161385] rust_kjit: ######## Rust KJIT inits ########
+[ 1614.161645] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1614.624596] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[ 1614.664599] rust_kjit: ######## Rust KJIT exits ########
+[ 1614.924680] rust_kjit: ######## Rust KJIT inits ########
+[ 1614.925141] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1615.391595] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[ 1615.428752] rust_kjit: ######## Rust KJIT exits ########
+[ 1615.713092] rust_kjit: ######## Rust KJIT inits ########
+[ 1615.713559] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1616.168273] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[ 1616.216724] rust_kjit: ######## Rust KJIT exits ########
+[ 1616.477430] rust_kjit: ######## Rust KJIT inits ########
+[ 1616.477816] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1616.936661] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[ 1616.968870] rust_kjit: ######## Rust KJIT exits ########
+[ 1617.273174] rust_kjit: ######## Rust KJIT inits ########
+[ 1617.273361] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+k4-adv: kill9 PASS: kill9 #1: server status 137;kill9 #2: server status 137;kill9 #3: server status 137;
+k4:   kill9#1: hot: 1820305 fragment entries, 0 syscalls in kernel before the event
+k4:   kill9#2: hot: 1836148 fragment entries, 0 syscalls in kernel before the event
+k4:   kill9#3: hot: 1730442 fragment entries, 0 syscalls in kernel before the event
+k4:   kill9: in_kernel=0/430079 syscalls (0.0%) entries=6972836 chains=6550034 chain_cap=235880 translated=183 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=183
+k4:   kill9: exits svc=0 bl=2916375 blr=300450 br=257773 ret=3322274 mem=0 unsupported=175964 budget=0 invalid=0 svc_declined=0
+k4:   kill9: unsupported_top (word(exits/entry_stops)): 0x4e010c20(136885/0) 0x4c407061(39079/0) 
+k4-adv: sigterm PASS: TERM: server status 0;sigterm: shutdown and clean exit logged;
+k4:   TERM: hot: 1800975 fragment entries, 0 syscalls in kernel before the event
+k4:   sigterm: in_kernel=0/154680 syscalls (0.0%) entries=2511636 chains=2359673 chain_cap=85751 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   sigterm: exits svc=0 bl=1049937 blr=109836 br=89818 ret=1199495 mem=0 unsupported=62550 budget=0 invalid=0 svc_declined=0
+k4:   sigterm: unsupported_top (word(exits/entry_stops)): 0x4e010c20(49524/0) 0x4c407061(13026/0) 
+k4-adv: sigusr1 PASS: USR1: server status 138;
+k4:   USR1: hot: 1781187 fragment entries, 0 syscalls in kernel before the event
+k4:   sigusr1: in_kernel=0/142389 syscalls (0.0%) entries=2305225 chains=2165407 chain_cap=77925 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   sigusr1: exits svc=0 bl=964142 blr=99303 br=85492 ret=1098055 mem=0 unsupported=58233 budget=0 invalid=0 svc_declined=0
+k4:   sigusr1: unsupported_top (word(exits/entry_stops)): 0x4e010c20(45212/0) 0x4c407061(13021/0) 
+k4-adv: stopcont PASS: stopcont: load status 0;dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   stopcont: hot: 1801723 fragment entries, 0 syscalls in kernel before the event
+k4:   stopcont: in_kernel=0/5772783 syscalls (0.0%) entries=97958619 chains=92191003 chain_cap=3650631 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   stopcont: exits svc=0 bl=40885141 blr=4656412 br=2139242 ret=48165850 mem=0 unsupported=2111974 budget=0 invalid=0 svc_declined=0
+k4:   stopcont: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2098948/0) 0x4c407061(13026/0) 
+k4-adv: segfault PASS: segfault: server status 139;crashed by signal: 11, si_code: 2;Accessing address: <page-aligned>;segfault: stack trace names debugCommand: yes;segfault: core files 1;
+k4:   segfault: hot: 1802514 fragment entries, 0 syscalls in kernel before the event
+k4:   segfault: in_kernel=0/145546 syscalls (0.0%) entries=2336682 chains=2194923 chain_cap=79148 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   segfault: exits svc=0 bl=977062 blr=101148 br=86104 ret=1113526 mem=0 unsupported=58842 budget=0 invalid=0 svc_declined=0
+k4:   segfault: unsupported_top (word(exits/entry_stops)): 0x4e010c20(45820/0) 0x4c407061(13022/0) 
+k4-adv: bgsave PASS: bgsave: load status 0;bgsave: before restart dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;bgsave: redis-check-rdb ok;bgsave: after restart dbsize 10045 digest a595c3aec0dfe15c636c10750
+k4:   bgsave: hot: 1755789 fragment entries, 0 syscalls in kernel before the event
+k4:   bgsave: in_kernel=0/5766518 syscalls (0.0%) entries=97733836 chains=91979240 chain_cap=3637348 translated=62 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=62
+k4:   bgsave: exits svc=0 bl=40805817 blr=4616529 br=2139269 ret=48060222 mem=0 unsupported=2111999 budget=0 invalid=0 svc_declined=0
+k4:   bgsave: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2098972/0) 0x4c407061(13027/0) 
+k4-adv: aofrw PASS: aofrw: load status 0;aofrw: before restart dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;aofrw: after restart from the AOF dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   aofrw: hot: 1842642 fragment entries, 0 syscalls in kernel before the event
+k4:   aofrw: in_kernel=0/4983197 syscalls (0.0%) entries=82569511 chains=77600488 chain_cap=2711365 translated=84 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=84
+k4:   aofrw: exits svc=0 bl=35402338 blr=1829600 br=2139250 ret=40948139 mem=0 unsupported=2250184 budget=0 invalid=0 svc_declined=0
+k4:   aofrw: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2098951/0) 0x4e080ec0(135483/0) 0x4c407061(15399/0) 0x3dc00020(351/0) 
+k4-adv: config PASS: config: 5 module load/unload and config set rounds ok;config: load status 0; misc module still loaded: 0;dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   config: hot: 1698215 fragment entries, 0 syscalls in kernel before the event
+k4:   config: in_kernel=0/5808084 syscalls (0.0%) entries=98402861 chains=92608430 chain_cap=3261275 translated=69 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=69
+k4:   config: exits svc=0 bl=42287592 blr=2243116 br=2580769 ret=48764213 mem=0 unsupported=2527171 budget=0 invalid=0 svc_declined=0
+k4:   config: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2514145/0) 0x4c407061(13026/0) 
+k4-adv: reload PASS: reload: 5 unloads under load; load status 0; ping PONG;dbsize 10045 digest 8630698fcae208583f0c9e6fe598b8d0226d4767;
+k4:   reload: hot: 1781731 fragment entries, 0 syscalls in kernel before the event
+k4:   reload: counters of the last load: syscalls_in_kernel 0 fragment_entries 121802564 exit_invalid 0 translate_verify_rejected 0 
+k4-adv: maxmemory PASS: maxmemory: evicted yes;maxmemory: used within 32mb+1mb yes;maxmemory: noeviction write: OOM command not allowed when used memory;maxmemory: after lifting the limit: OK;
+k4:   maxmemory: hot: 1729473 fragment entries, 0 syscalls in kernel before the event
+k4:   maxmemory: in_kernel=0/1099140 syscalls (0.0%) entries=18597212 chains=17501724 chain_cap=693600 translated=46 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=46
+k4:   maxmemory: exits svc=0 bl=7761464 blr=885140 br=399019 ret=9152634 mem=0 unsupported=398955 budget=0 invalid=0 svc_declined=0
+k4:   maxmemory: unsupported_top (word(exits/entry_stops)): 0x4e010c20(398955/0) 
+k4-adv: ALL PASS
+k4: iteration 2 PASS
+k4: iteration 3
+k2:   toy_loop: in_kernel=199823 entries=199824 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   mem_loop: in_kernel=39872 entries=59808 exit_mem=0 exit_budget=0 exit_unsupported=19935
+k2:   tight_loop: in_kernel=0 entries=1936 exit_mem=0 exit_budget=1936 exit_unsupported=0
+k2:   signal_loop: in_kernel=399832 entries=399871 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   munmap_race: in_kernel=705663 entries=705790 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   seccomp_loop: in_kernel=0 entries=0 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2:   ptrace_loop: in_kernel=0 entries=0 exit_mem=0 exit_budget=0 exit_unsupported=0
+k2: iteration 1 PASS
+k2: ALL PASS (1 iterations, auto=1)
+k4-bench: default (redis-benchmark -q -n 100000 ):
+k4:     PING_INLINE: 39510.08 requests per second, p50=0.607 msec
+k4:     PING_MBULK: 39808.91 requests per second, p50=0.599 msec
+k4:     SET: 38910.51 requests per second, p50=0.607 msec
+k4:     GET: 38520.80 requests per second, p50=0.623 msec
+k4:     INCR: 38639.88 requests per second, p50=0.615 msec
+k4:     LPUSH: 39138.94 requests per second, p50=0.607 msec
+k4:     RPUSH: 39525.69 requests per second, p50=0.607 msec
+k4:     LPOP: 39556.96 requests per second, p50=0.607 msec
+k4:     RPOP: 38865.14 requests per second, p50=0.615 msec
+k4:     SADD: 39108.33 requests per second, p50=0.607 msec
+k4:     HSET: 39556.96 requests per second, p50=0.599 msec
+k4:     SPOP: 39108.33 requests per second, p50=0.607 msec
+k4:     ZADD: 39169.61 requests per second, p50=0.607 msec
+k4:     ZPOPMIN: 39246.46 requests per second, p50=0.607 msec
+k4:     LPUSH (needed to benchmark LRANGE): 39261.88 requests per second, p50=0.607 msec
+k4:     LRANGE_100 (first 100 elements): 29394.47 requests per second, p50=0.823 msec
+k4:     LRANGE_300 (first 300 elements): 18321.73 requests per second, p50=1.343 msec
+k4:     LRANGE_500 (first 500 elements): 13956.73 requests per second, p50=1.775 msec
+k4:     LRANGE_600 (first 600 elements): 12725.88 requests per second, p50=1.975 msec
+k4:     MSET (10 keys): 40112.31 requests per second, p50=0.591 msec
+k4:   default: in_kernel=0/5447470 syscalls (0.0%) entries=92360449 chains=86918358 chain_cap=3431644 translated=48 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   default: exits svc=0 bl=38593239 blr=4300069 br=1998945 ret=45469315 mem=0 unsupported=1998881 budget=0 invalid=0 svc_declined=0
+k4:   default: unsupported_top (word(exits/entry_stops)): 0x4e010c20(1998881/0) 
+k4:   default: hot: 92360472 fragment entries, 0 syscalls in kernel before the event
+k4-bench: pipelined (redis-benchmark -q -n 100000 -P 16):
+k4:     PING_INLINE: 561797.75 requests per second, p50=0.639 msec
+k4:     PING_MBULK: 613496.94 requests per second, p50=0.623 msec
+k4:     SET: 602409.69 requests per second, p50=0.655 msec
+k4:     GET: 617283.94 requests per second, p50=0.631 msec
+k4:     INCR: 621118.00 requests per second, p50=0.623 msec
+k4:     LPUSH: 591716.00 requests per second, p50=0.703 msec
+k4:     RPUSH: 632911.38 requests per second, p50=0.631 msec
+k4:     LPOP: 625000.00 requests per second, p50=0.711 msec
+k4:     RPOP: 636942.62 requests per second, p50=0.639 msec
+k4:     SADD: 613496.94 requests per second, p50=0.631 msec
+k4:     HSET: 632911.38 requests per second, p50=0.647 msec
+k4:     SPOP: 621118.00 requests per second, p50=0.623 msec
+k4:     ZADD: 628930.81 requests per second, p50=0.679 msec
+k4:     ZPOPMIN: 632911.38 requests per second, p50=0.615 msec
+k4:     LPUSH (needed to benchmark LRANGE): 621118.00 requests per second, p50=0.671 msec
+k4:     LRANGE_100 (first 100 elements): 115740.73 requests per second, p50=3.463 msec
+k4:     LRANGE_300 (first 300 elements): 37064.49 requests per second, p50=8.071 msec
+k4:     LRANGE_500 (first 500 elements): 22758.31 requests per second, p50=10.167 msec
+k4:     LRANGE_600 (first 600 elements): 19157.09 requests per second, p50=9.935 msec
+k4:     MSET (10 keys): 406504.06 requests per second, p50=1.727 msec
+k4:   pipelined: in_kernel=0/330783 syscalls (0.0%) entries=5390533 chains=5063743 chain_cap=188518 translated=33 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   pipelined: exits svc=0 bl=2306059 blr=185195 br=125001 ret=2649277 mem=0 unsupported=125001 budget=0 invalid=0 svc_declined=0
+k4:   pipelined: unsupported_top (word(exits/entry_stops)): 0x4e010c20(125001/0) 
+k4:   pipelined: hot: 5390553 fragment entries, 0 syscalls in kernel before the event
+k4-bench: clients256 (redis-benchmark -q -n 100000 -c 256):
+k4:     PING_INLINE: 37551.63 requests per second, p50=3.343 msec
+k4:     PING_MBULK: 37397.16 requests per second, p50=3.399 msec
+k4:     SET: 38066.23 requests per second, p50=3.319 msec
+k4:     GET: 37593.98 requests per second, p50=3.367 msec
+k4:     INCR: 37622.27 requests per second, p50=3.367 msec
+k4:     LPUSH: 37009.62 requests per second, p50=3.447 msec
+k4:     RPUSH: 37693.18 requests per second, p50=3.367 msec
+k4:     LPOP: 37397.16 requests per second, p50=3.399 msec
+k4:     RPOP: 37439.16 requests per second, p50=3.391 msec
+k4:     SADD: 37271.71 requests per second, p50=3.399 msec
+k4:     HSET: 37257.82 requests per second, p50=3.391 msec
+k4:     SPOP: 37650.61 requests per second, p50=3.359 msec
+k4:     ZADD: 37425.15 requests per second, p50=3.383 msec
+k4:     ZPOPMIN: 37608.12 requests per second, p50=3.367 msec
+k4:     LPUSH (needed to benchmark LRANGE): 36927.62 requests per second, p50=3.423 msec
+k4:     LRANGE_100 (first 100 elements): 28835.06 requests per second, p50=4.391 msec
+k4:     LRANGE_300 (first 300 elements): 17771.46 requests per second, p50=7.183 msec
+k4:     LRANGE_500 (first 500 elements): 13581.42 requests per second, p50=9.423 msec
+k4:     LRANGE_600 (first 600 elements): 12130.03 requests per second, p50=10.575 msec
+k4:     MSET (10 keys): 37735.85 requests per second, p50=3.351 msec
+k4:   clients256: in_kernel=30965/5391674 syscalls (0.6%) entries=91073731 chains=85685796 chain_cap=3341082 translated=68 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   clients256: exits svc=30965 bl=38164057 blr=3994135 br=2045887 ret=44828956 mem=0 unsupported=2009731 budget=0 invalid=0 svc_declined=0
+k4:   clients256: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2000001/0) 0x3d801be0(9730/0) 
+k4:   clients256: hot: 91073757 fragment entries, 30965 syscalls in kernel before the event
+k4-bench: consistency PASS: dbsize 10044 digest 603e069a26083ceb1309ded3186769f0b0809e09 readback sha256 362731776718583235c4f1394cb708151a5c09052efd2c0ace0f6f0f7392fb50 
+k4-bench: ALL PASS
+[ 2382.801819] kjit: 0 of 1060 translation requests still queued at unload (freed by the kernel)
+[ 2382.841779] rust_kjit: ######## Rust KJIT exits ########
+[ 2383.145737] rust_kjit: ######## Rust KJIT inits ########
+[ 2383.146247] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2383.560487] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 2383.585039] rust_kjit: ######## Rust KJIT exits ########
+[ 2383.872444] rust_kjit: ######## Rust KJIT inits ########
+[ 2383.872971] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2384.284490] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 2384.304675] rust_kjit: ######## Rust KJIT exits ########
+[ 2384.591784] rust_kjit: ######## Rust KJIT inits ########
+[ 2384.592286] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2385.004610] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 2385.028634] rust_kjit: ######## Rust KJIT exits ########
+[ 2385.315460] rust_kjit: ######## Rust KJIT inits ########
+[ 2385.315906] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2385.728487] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 2385.756879] rust_kjit: ######## Rust KJIT exits ########
+[ 2386.048639] rust_kjit: ######## Rust KJIT inits ########
+[ 2386.049060] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2457.884852] kjit: 0 of 61 translation requests still queued at unload (freed by the kernel)
+[ 2457.928678] rust_kjit: ######## Rust KJIT exits ########
+[ 2458.209780] rust_kjit: ######## Rust KJIT inits ########
+[ 2458.210218] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2458.676417] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[ 2458.712991] rust_kjit: ######## Rust KJIT exits ########
+[ 2458.966529] rust_kjit: ######## Rust KJIT inits ########
+[ 2458.966949] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2459.428430] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[ 2459.464605] rust_kjit: ######## Rust KJIT exits ########
+[ 2459.736325] rust_kjit: ######## Rust KJIT inits ########
+[ 2459.737129] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2460.204361] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[ 2460.240714] rust_kjit: ######## Rust KJIT exits ########
+[ 2460.554886] rust_kjit: ######## Rust KJIT inits ########
+[ 2460.555336] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2461.027476] kjit: 0 of 45 translation requests still queued at unload (freed by the kernel)
+[ 2461.060625] rust_kjit: ######## Rust KJIT exits ########
+[ 2461.323514] rust_kjit: ######## Rust KJIT inits ########
+[ 2461.324057] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+k4-adv: kill9 PASS: kill9 #1: server status 137;kill9 #2: server status 137;kill9 #3: server status 137;
+k4:   kill9#1: hot: 1758309 fragment entries, 0 syscalls in kernel before the event
+k4:   kill9#2: hot: 1849544 fragment entries, 0 syscalls in kernel before the event
+k4:   kill9#3: hot: 1799363 fragment entries, 0 syscalls in kernel before the event
+k4:   kill9: in_kernel=0/430351 syscalls (0.0%) entries=6978230 chains=6555110 chain_cap=235662 translated=183 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=183
+k4:   kill9: exits svc=0 bl=2919886 blr=298188 br=258308 ret=3325348 mem=0 unsupported=176500 budget=0 invalid=0 svc_declined=0
+k4:   kill9: unsupported_top (word(exits/entry_stops)): 0x4e010c20(137421/0) 0x4c407061(39079/0) 
+k4-adv: sigterm PASS: TERM: server status 0;sigterm: shutdown and clean exit logged;
+k4:   TERM: hot: 1799938 fragment entries, 0 syscalls in kernel before the event
+k4:   sigterm: in_kernel=0/153667 syscalls (0.0%) entries=2494404 chains=2343453 chain_cap=85041 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   sigterm: exits svc=0 bl=1042942 blr=108621 br=89511 ret=1191085 mem=0 unsupported=62245 budget=0 invalid=0 svc_declined=0
+k4:   sigterm: unsupported_top (word(exits/entry_stops)): 0x4e010c20(49220/0) 0x4c407061(13025/0) 
+k4-adv: sigusr1 PASS: USR1: server status 138;
+k4:   USR1: hot: 1751471 fragment entries, 0 syscalls in kernel before the event
+k4:   sigusr1: in_kernel=0/143573 syscalls (0.0%) entries=2325924 chains=2184889 chain_cap=78467 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   sigusr1: exits svc=0 bl=973478 blr=98895 br=86168 ret=1108474 mem=0 unsupported=58909 budget=0 invalid=0 svc_declined=0
+k4:   sigusr1: unsupported_top (word(exits/entry_stops)): 0x4e010c20(45888/0) 0x4c407061(13021/0) 
+k4-adv: stopcont PASS: stopcont: load status 0;dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   stopcont: hot: 1750247 fragment entries, 0 syscalls in kernel before the event
+k4:   stopcont: in_kernel=0/5775320 syscalls (0.0%) entries=98002388 chains=92232201 chain_cap=3653215 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   stopcont: exits svc=0 bl=40900599 blr=4664119 br=2139249 ret=48186445 mem=0 unsupported=2111976 budget=0 invalid=0 svc_declined=0
+k4:   stopcont: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2098948/0) 0x4c407061(13028/0) 
+k4-adv: segfault PASS: segfault: server status 139;crashed by signal: 11, si_code: 2;Accessing address: <page-aligned>;segfault: stack trace names debugCommand: yes;segfault: core files 1;
+k4:   segfault: hot: 1784383 fragment entries, 0 syscalls in kernel before the event
+k4:   segfault: in_kernel=0/143838 syscalls (0.0%) entries=2308931 chains=2168805 chain_cap=77835 translated=61 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=61
+k4:   segfault: exits svc=0 bl=966310 blr=98163 br=85788 ret=1100147 mem=0 unsupported=58523 budget=0 invalid=0 svc_declined=0
+k4:   segfault: unsupported_top (word(exits/entry_stops)): 0x4e010c20(45500/0) 0x4c407061(13023/0) 
+k4-adv: bgsave PASS: bgsave: load status 0;bgsave: before restart dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;bgsave: redis-check-rdb ok;bgsave: after restart dbsize 10045 digest a595c3aec0dfe15c636c10750
+k4:   bgsave: hot: 1766075 fragment entries, 0 syscalls in kernel before the event
+k4:   bgsave: in_kernel=0/5799310 syscalls (0.0%) entries=98292119 chains=92504700 chain_cap=3670201 translated=62 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=62
+k4:   bgsave: exits svc=0 bl=41002849 blr=4715057 br=2139263 ret=48322958 mem=0 unsupported=2111992 budget=0 invalid=0 svc_declined=0
+k4:   bgsave: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2098965/0) 0x4c407061(13027/0) 
+k4-adv: aofrw PASS: aofrw: load status 0;aofrw: before restart dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;aofrw: after restart from the AOF dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   aofrw: hot: 1900374 fragment entries, 0 syscalls in kernel before the event
+k4:   aofrw: in_kernel=0/4991064 syscalls (0.0%) entries=82689653 chains=77712969 chain_cap=2718000 translated=84 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=84
+k4:   aofrw: exits svc=0 bl=35443047 blr=1851237 br=2139246 ret=41005571 mem=0 unsupported=2250552 budget=0 invalid=0 svc_declined=0
+k4:   aofrw: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2098954/0) 0x4e080ec0(135925/0) 0x4c407061(15248/0) 0x3dc00020(425/0) 
+k4-adv: config PASS: config: 5 module load/unload and config set rounds ok;config: load status 0; misc module still loaded: 0;dbsize 10045 digest a595c3aec0dfe15c636c10750e98bb92f179efe8;
+k4:   config: hot: 1808205 fragment entries, 0 syscalls in kernel before the event
+k4:   config: in_kernel=0/5882690 syscalls (0.0%) entries=99671846 chains=93802718 chain_cap=3340552 translated=70 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=70
+k4:   config: exits svc=0 bl=42721472 blr=2494912 br=2604100 ret=49328842 mem=0 unsupported=2522520 budget=0 invalid=0 svc_declined=0
+k4:   config: unsupported_top (word(exits/entry_stops)): 0x4e010c20(2509494/0) 0x4c407061(13026/0) 
+k4-adv: reload PASS: reload: 5 unloads under load; load status 0; ping PONG;dbsize 10045 digest 8630698fcae208583f0c9e6fe598b8d0226d4767;
+k4:   reload: hot: 1777835 fragment entries, 0 syscalls in kernel before the event
+k4:   reload: counters of the last load: syscalls_in_kernel 0 fragment_entries 122666192 exit_invalid 0 translate_verify_rejected 0 
+k4-adv: maxmemory PASS: maxmemory: evicted yes;maxmemory: used within 32mb+1mb yes;maxmemory: noeviction write: OOM command not allowed when used memory;maxmemory: after lifting the limit: OK;
+k4:   maxmemory: hot: 1795622 fragment entries, 0 syscalls in kernel before the event
+k4:   maxmemory: in_kernel=0/1109220 syscalls (0.0%) entries=18769408 chains=17663793 chain_cap=703730 translated=46 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=46
+k4:   maxmemory: exits svc=0 bl=7822240 blr=915528 br=399019 ret=9233666 mem=0 unsupported=398955 budget=0 invalid=0 svc_declined=0
+k4:   maxmemory: unsupported_top (word(exits/entry_stops)): 0x4e010c20(398955/0) 
+k4-adv: ALL PASS
+k4: iteration 3 PASS
+k4: final stats
+k4:   syscalls_in_kernel 0
+k4:   fragment_entries 141435600
+k4:   chains 133111808
+k4:   chain_cap 5296608
+k4:   exit_svc 0
+k4:   exit_bl 58980487
+k4:   exit_blr 6831857
+k4:   exit_br 3020281
+k4:   exit_ret 69582822
+k4:   exit_mem 0
+k4:   exit_unsupported 3020153
+k4:   exit_budget 0
+k4:   exit_invalid 0
+k4:   svc_declined 0
+k4:   translate_ok 92
+k4:   translate_exists 0
+k4:   translate_text_unreadable 0
+k4:   translate_entry_unsupported 0
+k4:   translate_compile_failed 0
+k4:   translate_encode_failed 0
+k4:   translate_verify_rejected 0
+k4:   translate_verify_falls_off_end 0
+k4:   translate_raced 0
+k4:   translate_capped 0
+k4:   translate_install_failed 0
+k4:   invalidated_fragments 0
+k4:   released_fragments 92
+k4:   svc_sites_scanned 0
+k4:   auto_mm_created 73
+k4:   auto_mm_setup_failed 0
+k4:   auto_prof_full 0
+k4:   auto_hot_negative 0
+k4:   auto_hot_capped 0
+k4:   auto_hot_queue_full 0
+k4:   auto_req_svc_resume 8
+k4:   auto_req_exit_target 84
+k4:   auto_req_dropped 0
+k4:   auto_req_stale 0
+k4:   auto_neg_added 0
+k4:   auto_neg_evicted 0
+k4:   auto_translate_ns 61548377
+k4:   unsupported_top_dropped 0
+k4:   unsupported_bad_word 0
+k4:   hook_calls 8330862
+k4: ALL PASS (3 iterations, 100000 requests per benchmark test)
+[ 2549.157528] kjit: 0 of 92 translation requests still queued at unload (freed by the kernel)
+[ 2549.193819] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[ 2549.325123] reboot: Power down
+guest-run: PASS (/Volumes/CaseSentitiveLocal/kjit-build/runs/k4-kjit-guest-debug-20260927-105719/campaign/serial.log)

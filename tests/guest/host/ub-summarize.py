@@ -19,19 +19,14 @@ def kv(line):
 
 
 def load_ub(paths):
-    """Rows of the "ub off|on ..." lines. Besides the key=value pairs each row has
-    state (off|on), kind (result|counters|kjit|rep), log (path) and line (1-based
-    line number); a "rep N" line (one timed repeat) also has rep (N)."""
     rows = []
     for p in paths:
-        for lineno, line in enumerate(open(p, errors="replace"), 1):
-            m = re.search(r"\bub (off|on) (result|counters|kjit|rep (\d+)) (.*)", line)
+        for line in open(p, errors="replace"):
+            m = re.search(r"\bub (off|on) (result|counters|kjit) (.*)", line)
             if m:
-                d = kv(m.group(4))
-                d["state"], d["kind"] = m.group(1), m.group(2).split()[0]
-                if m.group(3) is not None:
-                    d["rep"] = m.group(3)
-                d["log"], d["line"] = p, lineno
+                d = kv(m.group(3))
+                d["state"], d["kind"] = m.group(1), m.group(2)
+                d["log"] = p
                 rows.append(d)
     return rows
 

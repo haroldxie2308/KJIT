@@ -236,9 +236,10 @@ Definition of done by change type:
   nested), and the entry links it on a `Data:` line. CSV is tidy: a header
   row, one row per observation (every run/repeat, not only the mean), units in
   the column names (`ns_per_unit`, `req_per_s`), and the varying conditions
-  (variant, profile, kernel cmdline, commit) as columns. Raw logs stay
-  uncommitted; the data file is extracted from them by a script under
-  `tests/` or `scripts/`, so it can be regenerated.
+  (variant, profile, kernel cmdline, commit) as columns. The raw logs it came
+  from are committed next to it in `docs/data/<date>/<HHMM>-<slug>/` (text
+  only: no binaries, no redis server data). No extraction script is kept.
+  Layout details: `docs/data/README.md`.
 - Keep `README.md` aligned with the actual architecture and workflow.
 - Prefer concrete contracts over aspirational prose.
 - If a design is deferred, state the invariant that lets it remain deferred.

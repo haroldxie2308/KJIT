@@ -1,0 +1,599 @@
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1 (@690401bd78f6) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #8 SMP PREEMPT Sat Sep 26 21:50:48 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] KernelAddressSanitizer initialized (generic)
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 29 pages/cpu s79952 r8192 d30640 u118784
+[    0.000000] pcpu-alloc: s79952 r8192 d30640 u118784 alloc=29*4096
+[    0.000000] pcpu-alloc: [0] 0 [0] 1 [0] 2 [0] 3 
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000011a600000-0x000000011aa00000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] stackdepot: allocating hash table via alloc_large_system_hash
+[    0.000000] stackdepot hash table entries: 1048576 (order: 12, 16777216 bytes, linear)
+[    0.000000] stackdepot: allocating space for 8192 stack pools via memblock
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] Running RCU self tests
+[    0.000000] Running RCU synchronous self tests
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU lockdep checking is enabled.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] 	Trampoline variant of Tasks RCU enabled.
+[    0.000000] 	Tracing variant of Tasks RCU enabled.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] Running RCU synchronous self tests
+[    0.000000] RCU Tasks: Setting shift to 2 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=4.
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000150] Console: colour dummy device 80x25
+[    0.000155] Lock dependency validator: Copyright (c) 2006 Red Hat, Inc., Ingo Molnar
+[    0.000156] ... MAX_LOCKDEP_SUBCLASSES:  8
+[    0.000157] ... MAX_LOCK_DEPTH:          48
+[    0.000157] ... MAX_LOCKDEP_KEYS:        8192
+[    0.000158] ... CLASSHASH_SIZE:          4096
+[    0.000159] ... MAX_LOCKDEP_ENTRIES:     32768
+[    0.000160] ... MAX_LOCKDEP_CHAINS:      65536
+[    0.000160] ... CHAINHASH_SIZE:          32768
+[    0.000161]  memory used by lock dependency info: 6429 kB
+[    0.000163]  memory used for stack traces: 16896 kB
+[    0.000164]  per task-struct memory footprint: 1920 bytes
+[    0.000176] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000179] pid_max: default: 32768 minimum: 301
+[    0.000456] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000464] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000756] VFS: Finished mounting rootfs on nullfs
+[    0.001104] Running RCU synchronous self tests
+[    0.001107] Running RCU synchronous self tests
+[    0.001355] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.040527] rcu: Hierarchical SRCU implementation.
+[    0.040530] rcu: 	Max phase no-delay instances is 1000.
+[    0.046397] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.058040] smp: Bringing up secondary CPUs ...
+[    0.087677] Detected PIPT I-cache on CPU1
+[    0.087780] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.116585] Detected PIPT I-cache on CPU2
+[    0.116699] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.145874] Detected PIPT I-cache on CPU3
+[    0.146006] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.146159] smp: Brought up 1 node, 4 CPUs
+[    0.146162] SMP: Total of 4 processors activated.
+[    0.146163] CPU: All CPU(s) started at EL1
+[    0.146165] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.146166] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.146167] CPU features: detected: CRC32 instructions
+[    0.146168] CPU features: detected: Data independent timing control (DIT)
+[    0.146169] CPU features: detected: E0PD
+[    0.146170] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.146171] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.146172] CPU features: detected: LSE atomic instructions
+[    0.146173] CPU features: detected: Privileged Access Never
+[    0.146174] CPU features: detected: Speculation barrier (SB)
+[    0.146175] CPU features: detected: TLB range maintenance instructions
+[    0.146176] CPU features: detected: XNX
+[    0.146270] alternatives: applying system-wide alternatives
+[    0.147997] Memory: 3354296K/4194304K available (14784K kernel code, 3344K rwdata, 4420K rodata, 832K init, 24005K bss, 834360K reserved, 0K cma-reserved)
+[    0.148794] devtmpfs: initialized
+[    0.151784] Running RCU synchronous self tests
+[    0.151801] Running RCU synchronous self tests
+[    0.151927] Running RCU Tasks wait API self tests
+[    0.292445] Running RCU Tasks Trace wait API self tests
+[    0.292825] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.292924] posixtimers hash table entries: 2048 (order: 6, 147456 bytes, linear)
+[    0.293069] futex hash table entries: 1024 (131072 bytes on 1 NUMA nodes, total 128 KiB, linear).
+[    0.293185] 20864 pages in range for non-PLT usage
+[    0.293188] 512384 pages in range for PLT usage
+[    0.294104] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.296086] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.297408] ASID allocator initialised with 256 entries
+[    0.297505] Serial: AMBA PL011 UART driver
+[    0.301007] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.301223] printk: console [ttyAMA0] enabled
+[    0.308534] Callback from call_rcu_tasks_trace() invoked.
+[    0.310605] vgaarb: loaded
+[    0.310860] clocksource: Switched to clocksource arch_sys_counter
+[    0.322403] NET: Registered PF_INET protocol family
+[    0.322518] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.323390] tcp_listen_portaddr_hash hash table entries: 2048 (order: 6, 147456 bytes, linear)
+[    0.323426] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.323450] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.323711] TCP bind hash table entries: 32768 (order: 11, 4718592 bytes, vmalloc hugepage)
+[    0.324776] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.324851] UDP hash table entries: 2048 (order: 7, 524288 bytes, linear)
+[    0.325032] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.325063] PCI: CLS 0 bytes, default 64
+[    0.325262] Unpacking initramfs...
+[    0.335122] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.335450] 9p: Installing v9fs 9p2000 file system support
+[    0.336133] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.336167] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.336204] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.336211] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.336229] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.343040] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.343246] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.343252] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.343256] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.343258] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.343260] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.343310] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.343746] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.343851] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.343856] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.343904] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.343913] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.344253] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.344369] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.344375] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.344385] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.344695] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.344842] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.344852] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.344861] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.345248] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.345251] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.345288] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.345305] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.345318] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.345326] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.345333] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.345355] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.345372] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.345379] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.345414] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.345417] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.345418] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.347578] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.348387] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.349130] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.403262] Callback from call_rcu_tasks() invoked.
+[    0.403841] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.403883] rtc-pl031 9010000.pl031: setting system clock to 2026-09-26T22:29:14 UTC (1790461754)
+[    0.404430] NET: Registered PF_INET6 protocol family
+[    0.405237] Segment Routing with IPv6
+[    0.405289] In-situ OAM (IOAM) with IPv6
+[    0.405314] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.405757] NET: Registered PF_PACKET protocol family
+[    0.405774] 9pnet: Installing 9P2000 support
+[    0.426413] clk: Disabling unused clocks
+[    0.562146] Freeing initrd memory: 153360K
+[    0.562905] Freeing unused kernel memory: 832K
+[    0.562969] Run /init as init process
+[    0.562982]   with arguments:
+[    0.562995]     /init
+[    0.563014]     nokaslr
+[    0.563025]   with environment:
+[    0.563026]     HOME=/
+[    0.563026]     TERM=linux
+[    0.592696] kjit: loading out-of-tree module taints kernel.
+[    0.594643] rust_kjit: ######## Rust KJIT inits ########
+[    0.594999] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  674.931851] kjit: 0 of 727 translation requests still queued at unload (freed by the kernel)
+[  674.964347] rust_kjit: ######## Rust KJIT exits ########
+[  675.253129] rust_kjit: ######## Rust KJIT inits ########
+[  675.253373] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  675.670907] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[  675.692975] rust_kjit: ######## Rust KJIT exits ########
+[  675.966277] rust_kjit: ######## Rust KJIT inits ########
+[  675.966477] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  676.382931] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[  676.405024] rust_kjit: ######## Rust KJIT exits ########
+[  676.678031] rust_kjit: ######## Rust KJIT inits ########
+[  676.678598] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  677.093226] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[  677.128459] rust_kjit: ######## Rust KJIT exits ########
+[  677.413277] rust_kjit: ######## Rust KJIT inits ########
+[  677.413466] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  677.819357] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[  677.858990] rust_kjit: ######## Rust KJIT exits ########
+[  678.178719] rust_kjit: ######## Rust KJIT inits ########
+[  678.179029] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  750.823254] kjit: 0 of 44 translation requests still queued at unload (freed by the kernel)
+[  750.856171] rust_kjit: ######## Rust KJIT exits ########
+[  751.139203] rust_kjit: ######## Rust KJIT inits ########
+[  751.139392] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  751.594969] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[  751.635136] rust_kjit: ######## Rust KJIT exits ########
+[  751.931861] rust_kjit: ######## Rust KJIT inits ########
+[  751.932073] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  752.385500] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[  752.419358] rust_kjit: ######## Rust KJIT exits ########
+[  752.697796] rust_kjit: ######## Rust KJIT inits ########
+[  752.697997] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  753.166782] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[  753.195100] rust_kjit: ######## Rust KJIT exits ########
+[  753.455890] rust_kjit: ######## Rust KJIT inits ########
+[  753.456341] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[  753.919254] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[  753.959139] rust_kjit: ######## Rust KJIT exits ########
+[  754.223643] rust_kjit: ######## Rust KJIT inits ########
+[  754.224060] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1527.825643] kjit: 0 of 801 translation requests still queued at unload (freed by the kernel)
+[ 1527.859962] rust_kjit: ######## Rust KJIT exits ########
+[ 1528.158006] rust_kjit: ######## Rust KJIT inits ########
+[ 1528.158583] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1528.571035] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 1528.591264] rust_kjit: ######## Rust KJIT exits ########
+[ 1528.883829] rust_kjit: ######## Rust KJIT inits ########
+[ 1528.884300] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1529.295076] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 1529.319076] rust_kjit: ######## Rust KJIT exits ########
+[ 1529.605554] rust_kjit: ######## Rust KJIT inits ########
+[ 1529.606037] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1530.022983] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 1530.044514] rust_kjit: ######## Rust KJIT exits ########
+[ 1530.347561] rust_kjit: ######## Rust KJIT inits ########
+[ 1530.348117] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1530.753475] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 1530.772150] rust_kjit: ######## Rust KJIT exits ########
+[ 1531.065607] rust_kjit: ######## Rust KJIT inits ########
+[ 1531.066110] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1603.408672] kjit: 0 of 44 translation requests still queued at unload (freed by the kernel)
+[ 1603.443635] rust_kjit: ######## Rust KJIT exits ########
+[ 1603.731059] rust_kjit: ######## Rust KJIT inits ########
+[ 1603.731335] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1604.195060] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 1604.240992] rust_kjit: ######## Rust KJIT exits ########
+[ 1604.516140] rust_kjit: ######## Rust KJIT inits ########
+[ 1604.516324] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1604.978689] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 1605.015215] rust_kjit: ######## Rust KJIT exits ########
+[ 1605.303840] rust_kjit: ######## Rust KJIT inits ########
+[ 1605.304026] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1605.771024] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 1605.805005] rust_kjit: ######## Rust KJIT exits ########
+[ 1606.108475] rust_kjit: ######## Rust KJIT inits ########
+[ 1606.108668] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 1606.574745] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 1606.619074] rust_kjit: ######## Rust KJIT exits ########
+[ 1606.902037] rust_kjit: ######## Rust KJIT inits ########
+[ 1606.902229] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2373.839143] kjit: 0 of 786 translation requests still queued at unload (freed by the kernel)
+[ 2373.874993] rust_kjit: ######## Rust KJIT exits ########
+[ 2374.163125] rust_kjit: ######## Rust KJIT inits ########
+[ 2374.163326] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2374.575946] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 2374.592305] rust_kjit: ######## Rust KJIT exits ########
+[ 2374.883242] rust_kjit: ######## Rust KJIT inits ########
+[ 2374.883805] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2375.294255] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 2375.328262] rust_kjit: ######## Rust KJIT exits ########
+[ 2375.630979] rust_kjit: ######## Rust KJIT inits ########
+[ 2375.631414] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2376.042496] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 2376.064341] rust_kjit: ######## Rust KJIT exits ########
+[ 2376.383192] rust_kjit: ######## Rust KJIT inits ########
+[ 2376.383647] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2376.798906] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 2376.823133] rust_kjit: ######## Rust KJIT exits ########
+[ 2377.105051] rust_kjit: ######## Rust KJIT inits ########
+[ 2377.105472] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2449.607222] kjit: 0 of 44 translation requests still queued at unload (freed by the kernel)
+[ 2449.642993] rust_kjit: ######## Rust KJIT exits ########
+[ 2449.971495] rust_kjit: ######## Rust KJIT inits ########
+[ 2449.971732] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2450.427262] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 2450.467221] rust_kjit: ######## Rust KJIT exits ########
+[ 2450.745237] rust_kjit: ######## Rust KJIT inits ########
+[ 2450.745500] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2451.195803] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 2451.250946] rust_kjit: ######## Rust KJIT exits ########
+[ 2451.529047] rust_kjit: ######## Rust KJIT inits ########
+[ 2451.529249] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2451.995339] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 2452.028369] rust_kjit: ######## Rust KJIT exits ########
+[ 2452.300214] rust_kjit: ######## Rust KJIT inits ########
+[ 2452.300409] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 2452.762985] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 2452.800510] rust_kjit: ######## Rust KJIT exits ########
+[ 2453.051823] rust_kjit: ######## Rust KJIT inits ########
+[ 2453.052011] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 3224.774655] kjit: 0 of 783 translation requests still queued at unload (freed by the kernel)
+[ 3224.803616] rust_kjit: ######## Rust KJIT exits ########
+[ 3225.112790] rust_kjit: ######## Rust KJIT inits ########
+[ 3225.113013] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 3225.520764] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 3225.551361] rust_kjit: ######## Rust KJIT exits ########
+[ 3225.864567] rust_kjit: ######## Rust KJIT inits ########
+[ 3225.864760] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 3226.270634] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 3226.299283] rust_kjit: ######## Rust KJIT exits ########
+[ 3226.599274] rust_kjit: ######## Rust KJIT inits ########
+[ 3226.599488] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 3227.006948] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 3227.031674] rust_kjit: ######## Rust KJIT exits ########
+[ 3227.337729] rust_kjit: ######## Rust KJIT inits ########
+[ 3227.338251] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 3227.745276] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 3227.783259] rust_kjit: ######## Rust KJIT exits ########
+[ 3228.083420] rust_kjit: ######## Rust KJIT inits ########
+[ 3228.083633] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 3300.647317] kjit: 0 of 44 translation requests still queued at unload (freed by the kernel)
+[ 3300.686983] rust_kjit: ######## Rust KJIT exits ########
+[ 3300.997521] rust_kjit: ######## Rust KJIT inits ########
+[ 3300.997729] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 3301.461521] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 3301.499955] rust_kjit: ######## Rust KJIT exits ########
+[ 3301.764489] rust_kjit: ######## Rust KJIT inits ########
+[ 3301.764682] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 3302.235227] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 3302.283626] rust_kjit: ######## Rust KJIT exits ########
+[ 3302.541971] rust_kjit: ######## Rust KJIT inits ########
+[ 3302.542535] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 3303.011128] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 3303.067027] rust_kjit: ######## Rust KJIT exits ########
+[ 3303.340001] rust_kjit: ######## Rust KJIT inits ########
+[ 3303.340394] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 3303.798727] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 3303.832719] rust_kjit: ######## Rust KJIT exits ########
+[ 3304.114005] rust_kjit: ######## Rust KJIT inits ########
+[ 3304.115413] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4074.398988] kjit: 0 of 788 translation requests still queued at unload (freed by the kernel)
+[ 4074.435983] rust_kjit: ######## Rust KJIT exits ########
+[ 4074.736088] rust_kjit: ######## Rust KJIT inits ########
+[ 4074.736274] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4075.146382] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 4075.164520] rust_kjit: ######## Rust KJIT exits ########
+[ 4075.423138] rust_kjit: ######## Rust KJIT inits ########
+[ 4075.423336] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4075.829305] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 4075.855069] rust_kjit: ######## Rust KJIT exits ########
+[ 4076.146778] rust_kjit: ######## Rust KJIT inits ########
+[ 4076.147417] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4076.557091] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 4076.580196] rust_kjit: ######## Rust KJIT exits ########
+[ 4076.870674] rust_kjit: ######## Rust KJIT inits ########
+[ 4076.870998] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4077.277159] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 4077.323088] rust_kjit: ######## Rust KJIT exits ########
+[ 4077.617743] rust_kjit: ######## Rust KJIT inits ########
+[ 4077.617924] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4150.507124] kjit: 0 of 44 translation requests still queued at unload (freed by the kernel)
+[ 4150.544452] rust_kjit: ######## Rust KJIT exits ########
+[ 4150.843622] rust_kjit: ######## Rust KJIT inits ########
+[ 4150.844273] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4151.306750] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 4151.335494] rust_kjit: ######## Rust KJIT exits ########
+[ 4151.604586] rust_kjit: ######## Rust KJIT inits ########
+[ 4151.604791] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4152.066540] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 4152.096315] rust_kjit: ######## Rust KJIT exits ########
+[ 4152.389620] rust_kjit: ######## Rust KJIT inits ########
+[ 4152.389809] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4152.850625] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 4152.887126] rust_kjit: ######## Rust KJIT exits ########
+[ 4153.174741] rust_kjit: ######## Rust KJIT inits ########
+[ 4153.175128] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4153.649395] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 4153.684217] rust_kjit: ######## Rust KJIT exits ########
+[ 4153.994413] rust_kjit: ######## Rust KJIT inits ########
+[ 4153.994621] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4932.291018] kjit: 0 of 784 translation requests still queued at unload (freed by the kernel)
+[ 4932.332495] rust_kjit: ######## Rust KJIT exits ########
+[ 4932.613618] rust_kjit: ######## Rust KJIT inits ########
+[ 4932.613842] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4933.030869] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 4933.055213] rust_kjit: ######## Rust KJIT exits ########
+[ 4933.343744] rust_kjit: ######## Rust KJIT inits ########
+[ 4933.344213] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4933.751167] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 4933.799030] rust_kjit: ######## Rust KJIT exits ########
+[ 4934.109823] rust_kjit: ######## Rust KJIT inits ########
+[ 4934.110830] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4934.522911] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 4934.551064] rust_kjit: ######## Rust KJIT exits ########
+[ 4934.849831] rust_kjit: ######## Rust KJIT inits ########
+[ 4934.850385] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 4935.259422] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 4935.279057] rust_kjit: ######## Rust KJIT exits ########
+[ 4935.574384] rust_kjit: ######## Rust KJIT inits ########
+[ 4935.575055] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5008.591268] kjit: 0 of 44 translation requests still queued at unload (freed by the kernel)
+[ 5008.631091] rust_kjit: ######## Rust KJIT exits ########
+[ 5008.923385] rust_kjit: ######## Rust KJIT inits ########
+[ 5008.923587] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5009.390909] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 5009.439335] rust_kjit: ######## Rust KJIT exits ########
+[ 5009.711013] rust_kjit: ######## Rust KJIT inits ########
+[ 5009.711202] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5010.178762] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 5010.214944] rust_kjit: ######## Rust KJIT exits ########
+[ 5010.496145] rust_kjit: ######## Rust KJIT inits ########
+[ 5010.496581] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5010.951816] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 5010.999000] rust_kjit: ######## Rust KJIT exits ########
+[ 5011.305249] rust_kjit: ######## Rust KJIT inits ########
+[ 5011.305469] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5011.770453] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 5011.803931] rust_kjit: ######## Rust KJIT exits ########
+[ 5012.072191] rust_kjit: ######## Rust KJIT inits ########
+[ 5012.072461] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5785.742586] kjit: 0 of 799 translation requests still queued at unload (freed by the kernel)
+[ 5785.771069] rust_kjit: ######## Rust KJIT exits ########
+[ 5786.071252] rust_kjit: ######## Rust KJIT inits ########
+[ 5786.071467] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5786.481416] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 5786.496392] rust_kjit: ######## Rust KJIT exits ########
+[ 5786.776879] rust_kjit: ######## Rust KJIT inits ########
+[ 5786.777063] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5787.186641] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 5787.208292] rust_kjit: ######## Rust KJIT exits ########
+[ 5787.503677] rust_kjit: ######## Rust KJIT inits ########
+[ 5787.504036] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5787.922393] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 5787.935469] rust_kjit: ######## Rust KJIT exits ########
+[ 5788.199837] rust_kjit: ######## Rust KJIT inits ########
+[ 5788.200387] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5788.615079] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 5788.634945] rust_kjit: ######## Rust KJIT exits ########
+[ 5788.911770] rust_kjit: ######## Rust KJIT inits ########
+[ 5788.911980] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5861.306692] kjit: 0 of 44 translation requests still queued at unload (freed by the kernel)
+[ 5861.339061] rust_kjit: ######## Rust KJIT exits ########
+[ 5861.599868] rust_kjit: ######## Rust KJIT inits ########
+[ 5861.600316] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5862.066594] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 5862.102995] rust_kjit: ######## Rust KJIT exits ########
+[ 5862.383889] rust_kjit: ######## Rust KJIT inits ########
+[ 5862.384325] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5862.842808] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 5862.878978] rust_kjit: ######## Rust KJIT exits ########
+[ 5863.154097] rust_kjit: ######## Rust KJIT inits ########
+[ 5863.154690] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5863.622397] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 5863.662967] rust_kjit: ######## Rust KJIT exits ########
+[ 5863.942024] rust_kjit: ######## Rust KJIT inits ########
+[ 5863.942626] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 5864.398697] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 5864.439024] rust_kjit: ######## Rust KJIT exits ########
+[ 5864.718375] rust_kjit: ######## Rust KJIT inits ########
+[ 5864.719496] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 6640.958957] kjit: 0 of 786 translation requests still queued at unload (freed by the kernel)
+[ 6640.999224] rust_kjit: ######## Rust KJIT exits ########
+[ 6641.312752] rust_kjit: ######## Rust KJIT inits ########
+[ 6641.312945] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 6641.719261] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 6641.743420] rust_kjit: ######## Rust KJIT exits ########
+[ 6642.031857] rust_kjit: ######## Rust KJIT inits ########
+[ 6642.032045] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 6642.451005] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 6642.471372] rust_kjit: ######## Rust KJIT exits ########
+[ 6642.765049] rust_kjit: ######## Rust KJIT inits ########
+[ 6642.765232] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 6643.183082] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 6643.207304] rust_kjit: ######## Rust KJIT exits ########
+[ 6643.479661] rust_kjit: ######## Rust KJIT inits ########
+[ 6643.479884] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 6643.894781] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 6643.916269] rust_kjit: ######## Rust KJIT exits ########
+[ 6644.218054] rust_kjit: ######## Rust KJIT inits ########
+[ 6644.218301] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 6716.539481] kjit: 0 of 44 translation requests still queued at unload (freed by the kernel)
+[ 6716.574945] rust_kjit: ######## Rust KJIT exits ########
+[ 6716.863382] rust_kjit: ######## Rust KJIT inits ########
+[ 6716.863608] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 6717.322636] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 6717.359074] rust_kjit: ######## Rust KJIT exits ########
+[ 6717.664914] rust_kjit: ######## Rust KJIT inits ########
+[ 6717.665124] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 6718.123277] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 6718.170971] rust_kjit: ######## Rust KJIT exits ########
+[ 6718.461194] rust_kjit: ######## Rust KJIT inits ########
+[ 6718.461390] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 6718.921676] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 6718.958985] rust_kjit: ######## Rust KJIT exits ########
+[ 6719.265597] rust_kjit: ######## Rust KJIT inits ########
+[ 6719.266054] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 6719.723421] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 6719.756775] rust_kjit: ######## Rust KJIT exits ########
+[ 6720.041461] rust_kjit: ######## Rust KJIT inits ########
+[ 6720.041907] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 7485.679027] kjit: 0 of 786 translation requests still queued at unload (freed by the kernel)
+[ 7485.715758] rust_kjit: ######## Rust KJIT exits ########
+[ 7486.005157] rust_kjit: ######## Rust KJIT inits ########
+[ 7486.005356] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 7486.412193] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 7486.435948] rust_kjit: ######## Rust KJIT exits ########
+[ 7486.717260] rust_kjit: ######## Rust KJIT inits ########
+[ 7486.717482] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 7487.130404] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 7487.151353] rust_kjit: ######## Rust KJIT exits ########
+[ 7487.436827] rust_kjit: ######## Rust KJIT inits ########
+[ 7487.437329] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 7487.843295] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 7487.899057] rust_kjit: ######## Rust KJIT exits ########
+[ 7488.184547] rust_kjit: ######## Rust KJIT inits ########
+[ 7488.184962] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 7488.598891] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 7488.627224] rust_kjit: ######## Rust KJIT exits ########
+[ 7488.928121] rust_kjit: ######## Rust KJIT inits ########
+[ 7488.928605] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 7561.667396] kjit: 0 of 44 translation requests still queued at unload (freed by the kernel)
+[ 7561.724183] rust_kjit: ######## Rust KJIT exits ########
+[ 7562.006794] rust_kjit: ######## Rust KJIT inits ########
+[ 7562.007016] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 7562.469539] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 7562.503256] rust_kjit: ######## Rust KJIT exits ########
+[ 7562.772425] rust_kjit: ######## Rust KJIT inits ########
+[ 7562.772623] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 7563.238846] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 7563.282963] rust_kjit: ######## Rust KJIT exits ########
+[ 7563.591760] rust_kjit: ######## Rust KJIT inits ########
+[ 7563.592178] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 7564.043127] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 7564.086956] rust_kjit: ######## Rust KJIT exits ########
+[ 7564.383465] rust_kjit: ######## Rust KJIT inits ########
+[ 7564.383667] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 7564.854686] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 7564.895040] rust_kjit: ######## Rust KJIT exits ########
+[ 7565.170062] rust_kjit: ######## Rust KJIT inits ########
+[ 7565.170266] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 8335.702969] kjit: 0 of 789 translation requests still queued at unload (freed by the kernel)
+[ 8335.743113] rust_kjit: ######## Rust KJIT exits ########
+[ 8336.025249] rust_kjit: ######## Rust KJIT inits ########
+[ 8336.025684] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 8336.439002] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 8336.463122] rust_kjit: ######## Rust KJIT exits ########
+[ 8336.770164] rust_kjit: ######## Rust KJIT inits ########
+[ 8336.770736] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 8337.183009] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 8337.207138] rust_kjit: ######## Rust KJIT exits ########
+[ 8337.497771] rust_kjit: ######## Rust KJIT inits ########
+[ 8337.498266] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 8337.910967] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 8337.930956] rust_kjit: ######## Rust KJIT exits ########
+[ 8338.234311] rust_kjit: ######## Rust KJIT inits ########
+[ 8338.234954] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 8338.646972] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[ 8338.671007] rust_kjit: ######## Rust KJIT exits ########
+[ 8338.965315] rust_kjit: ######## Rust KJIT inits ########
+[ 8338.965775] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 8411.395461] kjit: 0 of 44 translation requests still queued at unload (freed by the kernel)
+[ 8411.439710] rust_kjit: ######## Rust KJIT exits ########
+[ 8411.752250] rust_kjit: ######## Rust KJIT inits ########
+[ 8411.752781] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 8412.211247] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 8412.256138] rust_kjit: ######## Rust KJIT exits ########
+[ 8412.542047] rust_kjit: ######## Rust KJIT inits ########
+[ 8412.542651] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 8413.006946] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 8413.043150] rust_kjit: ######## Rust KJIT exits ########
+[ 8413.348071] rust_kjit: ######## Rust KJIT inits ########
+[ 8413.348940] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 8413.811493] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 8413.843048] rust_kjit: ######## Rust KJIT exits ########
+[ 8414.118601] rust_kjit: ######## Rust KJIT inits ########
+[ 8414.119481] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness
+[ 8414.590900] kjit: 0 of 28 translation requests still queued at unload (freed by the kernel)
+[ 8414.638937] rust_kjit: ######## Rust KJIT exits ########
+[ 8414.909803] rust_kjit: ######## Rust KJIT inits ########
+[ 8414.910391] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 668 fragment bytes match harness

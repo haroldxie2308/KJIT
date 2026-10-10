@@ -1,0 +1,2875 @@
+ignore BIT pos larger than UINT_MAX: large memory flag not provided
+ignore SADD, SCARD, SISMEMBER - large data: large memory flag not provided
+ignore SETBIT values larger than UINT32_MAX and lzf_compress/lzf_decompress correctly: large memory flag not provided
+ignore Test LINDEX and LINSERT on plain nodes over 4GB: large memory flag not provided
+ignore Test LMOVE on plain nodes over 4GB: large memory flag not provided
+ignore Test LPUSH and LPOP on plain nodes over 4GB: large memory flag not provided
+ignore Test LREM on plain nodes over 4GB: large memory flag not provided
+ignore Test LSET on plain nodes over 4GB: large memory flag not provided
+ignore Test LTRIM on plain nodes over 4GB: large memory flag not provided
+ignore XADD one huge field - 1: large memory flag not provided
+ignore XADD one huge field: large memory flag not provided
+ignore hash with many big fields: large memory flag not provided
+ignore hash with one huge field: large memory flag not provided
+ignore several XADD big fields: large memory flag not provided
+ignore single XADD big fields: large memory flag not provided
+ok 'x' should be '4' for EVALSHA being replicated by effects
+ok 5 keys in, 5 keys out
+ok ACL #5998 regression: memory leaks adding / removing subcommands
+ok ACL CAT category - list all commands/subcommands that belong to category
+ok ACL CAT with illegal arguments
+ok ACL CAT without category - list all categories
+ok ACL GENPASS command failed test
+ok ACL GETUSER is able to translate back command permissions
+ok ACL GETUSER provides reasonable results
+ok ACL GETUSER returns the password hash instead of the actual password
+ok ACL HELP should not have unexpected options
+ok ACL LOG RESET is able to flush the entries in the log
+ok ACL LOG can accept a numerical argument to show less entries
+ok ACL LOG can distinguish the transaction context (1)
+ok ACL LOG can distinguish the transaction context (2)
+ok ACL LOG can log failed auth attempts
+ok ACL LOG entries are limited to a maximum amount
+ok ACL LOG is able to log channel access violations and channel name
+ok ACL LOG is able to log keys access violations and key name
+ok ACL LOG is able to test similar events
+ok ACL LOG shows failed command executions at toplevel
+ok ACL LOG shows failed subcommand executions at toplevel
+ok ACL can log errors in the context of Lua scripting
+ok ACL from config file and config rewrite
+ok ACL load and save
+ok ACL load and save with restricted channels
+ok ACL load non-existing configured ACL file
+ok ACL requires explicit permission for scripting for EVAL_RO, EVALSHA_RO and FCALL_RO
+ok ACLs can block SELECT of all but a specific DB
+ok ACLs can block all DEBUG subcommands except one
+ok ACLs can exclude single commands
+ok ACLs can exclude single subcommands, case 1
+ok ACLs can exclude single subcommands, case 2
+ok ACLs can include or exclude whole classes of commands
+ok ACLs can include single subcommands
+ok ACLs cannot exclude or include a container command with two args
+ok ACLs cannot exclude or include a container commands with a specific arg
+ok ACLs cannot include a subcommand with a specific arg
+ok ACLs including of a type includes also subcommands
+ok ACLs set can exclude subcommands, if already full command exists
+ok ACLs set can include subcommands, if already full command exists
+ok AOF can produce consecutive sequence number after reload
+ok AOF enable during BGSAVE will not write data util AOFRW finish
+ok AOF enable will create manifest file
+ok AOF enable/disable auto gc
+ok AOF fsync always barrier issue
+ok AOF multiple rewrite failures will open multiple INCR AOFs
+ok AOF rewrite doesn't open new aof when AOF turn off
+ok AOF rewrite during write load: RDB preamble=no
+ok AOF rewrite during write load: RDB preamble=yes
+ok AOF rewrite functions
+ok AOF rewrite of hash with hashtable encoding, int data
+ok AOF rewrite of hash with hashtable encoding, string data
+ok AOF rewrite of hash with listpack encoding, int data
+ok AOF rewrite of hash with listpack encoding, string data
+ok AOF rewrite of list with quicklist encoding, int data
+ok AOF rewrite of list with quicklist encoding, string data
+ok AOF rewrite of set with hashtable encoding, int data
+ok AOF rewrite of set with hashtable encoding, string data
+ok AOF rewrite of set with intset encoding, int data
+ok AOF rewrite of set with intset encoding, string data
+ok AOF rewrite of zset with listpack encoding, int data
+ok AOF rewrite of zset with listpack encoding, string data
+ok AOF rewrite of zset with skiplist encoding, int data
+ok AOF rewrite of zset with skiplist encoding, string data
+ok AOF will open a temporary INCR AOF to accumulate data until the first AOFRW success when AOF is dynamically enabled
+ok AOF will trigger limit when AOFRW fails many times
+ok AOF+EXPIRE: List should be empty
+ok AOF+EXPIRE: Server should have been started
+ok AOF+LMPOP/BLMPOP: after pop elements from the list
+ok AOF+LMPOP/BLMPOP: pop elements from the list
+ok AOF+SPOP: Server should have been started
+ok AOF+SPOP: Server should have been started
+ok AOF+SPOP: Set should have 1 member
+ok AOF+SPOP: Set should have 1 member
+ok AOF+ZMPOP/BZMPOP: after pop elements from the zset
+ok AOF+ZMPOP/BZMPOP: pop elements from the zset
+ok APPEND basics
+ok APPEND basics, integer encoded values
+ok APPEND fuzzing
+ok AUTH fails if there is no password configured server side
+ok AUTH fails when a wrong password is given
+ok AUTH fails when binary password is wrong
+ok AUTH succeeds when binary password is correct
+ok AUTH succeeds when the right password is given
+ok Able to redirect to a RESP3 client
+ok Active defrag
+ok Active defrag big keys
+ok Active defrag big list
+ok Active defrag edge case
+ok Active defrag eval scripts
+ok Adding prefixes to BCAST mode works
+ok After CLIENT SETNAME, connection can still be closed
+ok After failed EXEC key is no longer watched
+ok After successful EXEC key is no longer watched
+ok After switching from normal tracking to BCAST mode, no invalidation message is produced for pre-BCAST keys
+ok Alice: can execute all command
+ok All TTL in commands are propagated as absolute timestamp in replication stream
+ok All replicas share one global replication buffer
+ok All time-to-live(TTL) in commands are propagated as absolute timestamp in milliseconds in AOF
+ok Append a new command after loading an incomplete AOF
+ok Approximated cardinality after creation is zero
+ok Arbitrary command gives an error when AUTH is required
+ok Arity check for auth command
+ok BCAST with prefix collisions throw errors
+ok BGREWRITEAOF is delayed if BGSAVE is in progress
+ok BGREWRITEAOF is refused if already in progress
+ok BGSAVE
+ok BITCOUNT against test vector #1
+ok BITCOUNT against test vector #2
+ok BITCOUNT against test vector #3
+ok BITCOUNT against test vector #4
+ok BITCOUNT against test vector #5
+ok BITCOUNT fuzzing with start/end
+ok BITCOUNT fuzzing without start/end
+ok BITCOUNT misaligned prefix
+ok BITCOUNT misaligned prefix + full words + remainder
+ok BITCOUNT regression test for github issue #582
+ok BITCOUNT returns 0 against non existing key
+ok BITCOUNT returns 0 with negative indexes where start > end
+ok BITCOUNT returns 0 with out of range indexes
+ok BITCOUNT syntax error #1
+ok BITCOUNT syntax error #2
+ok BITCOUNT with start, end
+ok BITFIELD #<idx> form
+ok BITFIELD basic INCRBY form
+ok BITFIELD chaining of multiple commands
+ok BITFIELD command will not be marked with movablekeys
+ok BITFIELD overflow detection fuzzing
+ok BITFIELD overflow wrap fuzzing
+ok BITFIELD regression for #3221
+ok BITFIELD regression for #3564
+ok BITFIELD signed SET and GET basics
+ok BITFIELD signed SET and GET together
+ok BITFIELD signed overflow sat
+ok BITFIELD signed overflow wrap
+ok BITFIELD unsigned SET and GET basics
+ok BITFIELD unsigned overflow sat
+ok BITFIELD unsigned overflow wrap
+ok BITFIELD unsigned with SET, GET and INCRBY arguments
+ok BITFIELD with only key as argument
+ok BITFIELD: setup slave
+ok BITFIELD: write on master, read on slave
+ok BITFIELD_RO fails when write option is used
+ok BITFIELD_RO with only key as argument
+ok BITOP AND|OR|XOR don't change the string with single input key
+ok BITOP NOT (empty string)
+ok BITOP NOT (known string)
+ok BITOP NOT fuzzing
+ok BITOP and fuzzing
+ok BITOP missing key is considered a stream of zero
+ok BITOP or fuzzing
+ok BITOP shorter keys are zero-padded to the key with max length
+ok BITOP where dest and target are the same key
+ok BITOP with empty string after non empty string (issue #529)
+ok BITOP with integer encoded source objects
+ok BITOP with non string source key
+ok BITOP xor fuzzing
+ok BITPOS bit=0 changes behavior if end is given
+ok BITPOS bit=0 fuzzy testing using SETBIT
+ok BITPOS bit=0 starting at unaligned address
+ok BITPOS bit=0 unaligned+full word+reminder
+ok BITPOS bit=0 with empty key returns 0
+ok BITPOS bit=0 with string less than 1 word works
+ok BITPOS bit=0 works with intervals
+ok BITPOS bit=1 fuzzy testing using SETBIT
+ok BITPOS bit=1 returns -1 if string is all 0 bits
+ok BITPOS bit=1 starting at unaligned address
+ok BITPOS bit=1 unaligned+full word+reminder
+ok BITPOS bit=1 with empty key returns -1
+ok BITPOS bit=1 with string less than 1 word works
+ok BITPOS bit=1 works with intervals
+ok BITPOS/BITCOUNT fuzzy testing using SETBIT
+ok BLMOVE (left, left) replication, list exists
+ok BLMOVE (left, left) replication, when blocking against empty list
+ok BLMOVE (left, left) with a client BLPOPing the target list
+ok BLMOVE (left, right) replication, list exists
+ok BLMOVE (left, right) replication, when blocking against empty list
+ok BLMOVE (left, right) with a client BLPOPing the target list
+ok BLMOVE (right, left) replication, list exists
+ok BLMOVE (right, left) replication, when blocking against empty list
+ok BLMOVE (right, left) with a client BLPOPing the target list
+ok BLMOVE (right, right) replication, list exists
+ok BLMOVE (right, right) replication, when blocking against empty list
+ok BLMOVE (right, right) with a client BLPOPing the target list
+ok BLMOVE left left - linkedlist
+ok BLMOVE left left - ziplist
+ok BLMOVE left left with zero timeout should block indefinitely
+ok BLMOVE left right - linkedlist
+ok BLMOVE left right - ziplist
+ok BLMOVE left right with zero timeout should block indefinitely
+ok BLMOVE right left - linkedlist
+ok BLMOVE right left - ziplist
+ok BLMOVE right left with zero timeout should block indefinitely
+ok BLMOVE right right - linkedlist
+ok BLMOVE right right - ziplist
+ok BLMOVE right right with zero timeout should block indefinitely
+ok BLMPOP propagate as pop with count command to replica
+ok BLMPOP with multiple blocked clients
+ok BLMPOP_LEFT inside a transaction
+ok BLMPOP_LEFT when new key is moved into place
+ok BLMPOP_LEFT when result key is created by SORT..STORE
+ok BLMPOP_LEFT with variadic LPUSH
+ok BLMPOP_LEFT, LPUSH + DEL + SET should not awake blocked client
+ok BLMPOP_LEFT, LPUSH + DEL should not awake blocked client
+ok BLMPOP_LEFT: arguments are empty
+ok BLMPOP_LEFT: multiple existing lists - linkedlist
+ok BLMPOP_LEFT: multiple existing lists - ziplist
+ok BLMPOP_LEFT: second argument is not a list
+ok BLMPOP_LEFT: second list has an entry - linkedlist
+ok BLMPOP_LEFT: second list has an entry - ziplist
+ok BLMPOP_LEFT: single existing list - linkedlist
+ok BLMPOP_LEFT: single existing list - ziplist
+ok BLMPOP_LEFT: timeout
+ok BLMPOP_LEFT: with 0.001 timeout should not block indefinitely
+ok BLMPOP_LEFT: with negative timeout
+ok BLMPOP_LEFT: with non-integer timeout
+ok BLMPOP_LEFT: with single empty list argument
+ok BLMPOP_LEFT: with zero timeout should block indefinitely
+ok BLMPOP_RIGHT: arguments are empty
+ok BLMPOP_RIGHT: second argument is not a list
+ok BLMPOP_RIGHT: timeout
+ok BLMPOP_RIGHT: with 0.001 timeout should not block indefinitely
+ok BLMPOP_RIGHT: with negative timeout
+ok BLMPOP_RIGHT: with non-integer timeout
+ok BLMPOP_RIGHT: with single empty list argument
+ok BLMPOP_RIGHT: with zero timeout should block indefinitely
+ok BLPOP command will not be marked with movablekeys
+ok BLPOP followed by role change, issue #2473
+ok BLPOP inside a transaction
+ok BLPOP when new key is moved into place
+ok BLPOP when result key is created by SORT..STORE
+ok BLPOP with same key multiple times should work (issue #801)
+ok BLPOP with variadic LPUSH
+ok BLPOP, LPUSH + DEL + SET should not awake blocked client
+ok BLPOP, LPUSH + DEL should not awake blocked client
+ok BLPOP: arguments are empty
+ok BLPOP: multiple existing lists - linkedlist
+ok BLPOP: multiple existing lists - ziplist
+ok BLPOP: second argument is not a list
+ok BLPOP: second list has an entry - linkedlist
+ok BLPOP: second list has an entry - ziplist
+ok BLPOP: single existing list - linkedlist
+ok BLPOP: single existing list - ziplist
+ok BLPOP: timeout
+ok BLPOP: with 0.001 timeout should not block indefinitely
+ok BLPOP: with negative timeout
+ok BLPOP: with non-integer timeout
+ok BLPOP: with single empty list argument
+ok BLPOP: with zero timeout should block indefinitely
+ok BRPOP: arguments are empty
+ok BRPOP: second argument is not a list
+ok BRPOP: timeout
+ok BRPOP: with 0.001 timeout should not block indefinitely
+ok BRPOP: with negative timeout
+ok BRPOP: with non-integer timeout
+ok BRPOP: with single empty list argument
+ok BRPOP: with zero timeout should block indefinitely
+ok BRPOPLPUSH - linkedlist
+ok BRPOPLPUSH - ziplist
+ok BRPOPLPUSH does not affect WATCH while still blocked
+ok BRPOPLPUSH inside a transaction
+ok BRPOPLPUSH maintains order of elements after failure
+ok BRPOPLPUSH replication, list exists
+ok BRPOPLPUSH replication, when blocking against empty list
+ok BRPOPLPUSH timeout
+ok BRPOPLPUSH with multiple blocked clients
+ok BRPOPLPUSH with wrong destination type
+ok BRPOPLPUSH with wrong source type
+ok BRPOPLPUSH with zero timeout should block indefinitely
+ok BZMPOP propagate as pop with count command to replica
+ok BZMPOP readraw in RESP2
+ok BZMPOP readraw in RESP3
+ok BZMPOP should not blocks on non key arguments - #10762
+ok BZMPOP with illegal argument
+ok BZMPOP with multiple blocked clients
+ok BZMPOP_MIN with variadic ZADD
+ok BZMPOP_MIN with variadic ZADD
+ok BZMPOP_MIN with zero timeout should block indefinitely
+ok BZMPOP_MIN with zero timeout should block indefinitely
+ok BZMPOP_MIN, ZADD + DEL + SET should not awake blocked client
+ok BZMPOP_MIN, ZADD + DEL + SET should not awake blocked client
+ok BZMPOP_MIN, ZADD + DEL should not awake blocked client
+ok BZMPOP_MIN, ZADD + DEL should not awake blocked client
+ok BZMPOP_MIN/BZMPOP_MAX - listpack RESP3
+ok BZMPOP_MIN/BZMPOP_MAX - skiplist RESP3
+ok BZMPOP_MIN/BZMPOP_MAX second sorted set has members - listpack
+ok BZMPOP_MIN/BZMPOP_MAX second sorted set has members - skiplist
+ok BZMPOP_MIN/BZMPOP_MAX with a single existing sorted set - listpack
+ok BZMPOP_MIN/BZMPOP_MAX with a single existing sorted set - skiplist
+ok BZMPOP_MIN/BZMPOP_MAX with multiple existing sorted sets - listpack
+ok BZMPOP_MIN/BZMPOP_MAX with multiple existing sorted sets - skiplist
+ok BZPOP/BZMPOP against wrong type
+ok BZPOPMIN with same key multiple times should work
+ok BZPOPMIN with same key multiple times should work
+ok BZPOPMIN with variadic ZADD
+ok BZPOPMIN with variadic ZADD
+ok BZPOPMIN with zero timeout should block indefinitely
+ok BZPOPMIN with zero timeout should block indefinitely
+ok BZPOPMIN, ZADD + DEL + SET should not awake blocked client
+ok BZPOPMIN, ZADD + DEL + SET should not awake blocked client
+ok BZPOPMIN, ZADD + DEL should not awake blocked client
+ok BZPOPMIN, ZADD + DEL should not awake blocked client
+ok BZPOPMIN/BZPOPMAX - listpack RESP3
+ok BZPOPMIN/BZPOPMAX - skiplist RESP3
+ok BZPOPMIN/BZPOPMAX readraw in RESP2
+ok BZPOPMIN/BZPOPMAX readraw in RESP3
+ok BZPOPMIN/BZPOPMAX second sorted set has members - listpack
+ok BZPOPMIN/BZPOPMAX second sorted set has members - skiplist
+ok BZPOPMIN/BZPOPMAX with a single existing sorted set - listpack
+ok BZPOPMIN/BZPOPMAX with a single existing sorted set - skiplist
+ok BZPOPMIN/BZPOPMAX with multiple existing sorted sets - listpack
+ok BZPOPMIN/BZPOPMAX with multiple existing sorted sets - skiplist
+ok Bad format: Server should have logged an error
+ok Basic LPOP/RPOP/LMPOP - linkedlist
+ok Basic LPOP/RPOP/LMPOP - ziplist
+ok Basic ZMPOP_MIN/ZMPOP_MAX - listpack RESP3
+ok Basic ZMPOP_MIN/ZMPOP_MAX - skiplist RESP3
+ok Basic ZMPOP_MIN/ZMPOP_MAX with a single key - listpack
+ok Basic ZMPOP_MIN/ZMPOP_MAX with a single key - skiplist
+ok Basic ZPOPMIN/ZPOPMAX - listpack RESP3
+ok Basic ZPOPMIN/ZPOPMAX - skiplist RESP3
+ok Basic ZPOPMIN/ZPOPMAX with a single key - listpack
+ok Basic ZPOPMIN/ZPOPMAX with a single key - skiplist
+ok Before the replica connects we issue two EVAL commands
+ok Before the replica connects we issue two EVAL commands
+ok Big Hash table: SORT BY hash field
+ok Big Hash table: SORT BY key
+ok Big Hash table: SORT BY key with limit
+ok Binary code loading failed
+ok Binary code loading failed
+ok Blocked commands and configs during async-loading
+ok Blocking XREAD for stream that ran dry (issue #5299)
+ok Blocking XREAD waiting new data
+ok Blocking XREAD waiting old data
+ok Blocking XREAD will not reply with an empty array
+ok Blocking XREAD: key deleted
+ok Blocking XREAD: key type changed with SET
+ok Blocking XREADGROUP for stream that ran dry (issue #5299)
+ok Blocking XREADGROUP will ignore BLOCK if ID is not >
+ok Blocking XREADGROUP will not reply with an empty array
+ok Blocking XREADGROUP: flushed DB
+ok Blocking XREADGROUP: key deleted
+ok Blocking XREADGROUP: key type changed with SET
+ok Blocking XREADGROUP: key type changed with transaction
+ok Blocking XREADGROUP: swapped DB, key doesn't exist
+ok Blocking XREADGROUP: swapped DB, key is not a stream
+ok Blocking commands ignores the timeout
+ok Bob: just execute @set and acl command
+ok Broadcast message across a cluster shard while a cluster link is down
+ok Busy script during async loading
+ok By default users are not able to access any command
+ok By default users are not able to access any key
+ok By default, only default user is able to publish to any channel
+ok By default, only default user is able to subscribe to any channel
+ok By default, only default user is able to subscribe to any pattern
+ok By default, only default user is able to subscribe to any shard channel
+ok By default, only default user is not able to publish to any shard channel
+ok CLIENT GETNAME should return NIL if name is not assigned
+ok CLIENT GETREDIR provides correct client id
+ok CLIENT INFO
+ok CLIENT KILL SKIPME YES/NO will kill all clients
+ok CLIENT KILL with illegal arguments
+ok CLIENT LIST
+ok CLIENT LIST shows empty fields for unassigned names
+ok CLIENT LIST with IDs
+ok CLIENT REPLY OFF/ON: disable all commands reply
+ok CLIENT REPLY ON: unset SKIP flag
+ok CLIENT REPLY SKIP: skip the next command reply
+ok CLIENT SETNAME can assign a name to this connection
+ok CLIENT SETNAME can change the name of an existing connection
+ok CLIENT SETNAME does not accept spaces
+ok CLIENT TRACKINGINFO provides reasonable results when tracking bcast mode
+ok CLIENT TRACKINGINFO provides reasonable results when tracking off
+ok CLIENT TRACKINGINFO provides reasonable results when tracking on
+ok CLIENT TRACKINGINFO provides reasonable results when tracking on with options
+ok CLIENT TRACKINGINFO provides reasonable results when tracking optin
+ok CLIENT TRACKINGINFO provides reasonable results when tracking optout
+ok CLIENT TRACKINGINFO provides reasonable results when tracking redir broken
+ok CLUSTER RESET can not be invoke from within a script
+ok CLUSTER RESET can not be invoke from within a script
+ok COMMAND GETKEYS EVAL with keys
+ok COMMAND GETKEYS EVAL without keys
+ok COMMAND GETKEYS GET
+ok COMMAND GETKEYS LCS
+ok COMMAND GETKEYS MEMORY USAGE
+ok COMMAND GETKEYS MORE THAN 256 KEYS
+ok COMMAND GETKEYS XGROUP
+ok COMMAND GETKEYSANDFLAGS
+ok COMMAND INFO of invalid subcommands
+ok COMMAND LIST FILTERBY ACLCAT - list all commands/subcommands
+ok COMMAND LIST FILTERBY ACLCAT against non existing category
+ok COMMAND LIST FILTERBY MODULE against non existing module
+ok COMMAND LIST FILTERBY PATTERN - list all commands/subcommands
+ok COMMAND LIST WITHOUT FILTERBY
+ok COMMAND LIST syntax error
+ok CONFIG GET hidden configs
+ok CONFIG GET multiple args
+ok CONFIG REWRITE handles alias config properly
+ok CONFIG REWRITE handles rename-command properly
+ok CONFIG REWRITE handles save and shutdown properly
+ok CONFIG REWRITE sanity
+ok CONFIG SET bind address
+ok CONFIG SET bind-source-addr
+ok CONFIG SET client-output-buffer-limit
+ok CONFIG SET duplicate configs
+ok CONFIG SET oom score relative and absolute
+ok CONFIG SET oom score restored on disable
+ok CONFIG SET oom-score-adj works as expected
+ok CONFIG SET oom-score-adj-values doesn't touch proc when disabled
+ok CONFIG SET out-of-range oom score
+ok CONFIG SET port number
+ok CONFIG SET rollback on apply error
+ok CONFIG SET rollback on set error
+ok CONFIG SET set immutable
+ok CONFIG SET with multiple args
+ok CONFIG sanity
+ok CONFIG save params special case handled properly
+ok COPY basic usage for hashtable hash
+ok COPY basic usage for hashtable set
+ok COPY basic usage for intset set
+ok COPY basic usage for list
+ok COPY basic usage for listpack hash
+ok COPY basic usage for listpack sorted set
+ok COPY basic usage for skiplist sorted set
+ok COPY basic usage for stream
+ok COPY basic usage for stream-cgroups
+ok COPY basic usage for string
+ok COPY can copy key expire metadata as well
+ok COPY does not create an expire if it does not exist
+ok COPY for string can replace an existing key with REPLACE option
+ok COPY for string does not copy data to no-integer DB
+ok COPY for string does not replace an existing key without REPLACE option
+ok COPY for string ensures that copied data is independent of copying data
+ok Call Redis command with many args from Lua (issue #1764)
+ok Call Redis command with many args from Lua (issue #1764)
+ok Cardinality commands require some type of permission to execute
+ok Chained replicas disconnect when replica re-connect with the same master
+ok Check compression with recompress
+ok Check consistency of different data types after a reload
+ok Check encoding - listpack
+ok Check encoding - skiplist
+ok Check geoset values
+ok Check if list is still ok after a DEBUG RELOAD - quicklist
+ok Check if list is still ok after a DEBUG RELOAD - quicklist
+ok Check if maxclients works refusing connections
+ok Circular BRPOPLPUSH
+ok Clean up rdb same named folder
+ok Client output buffer hard limit is enforced
+ok Client output buffer soft limit is enforced if time is overreached
+ok Client output buffer soft limit is not enforced too early and is enforced when no traffic
+ok Clients are able to enable tracking and redirect it
+ok Clients can enable the BCAST mode with prefixes
+ok Clients can enable the BCAST mode with the empty prefix
+ok Commands pipelining
+ok Connect a replica to the master instance
+ok Connect a replica to the master instance
+ok Connect a replica to the master instance
+ok Connect a replica to the master instance
+ok Connect a replica to the master instance
+ok Connect multiple replicas at the same time (issue #141), master diskless=no, replica diskless=disabled
+ok Connect multiple replicas at the same time (issue #141), master diskless=no, replica diskless=swapdb
+ok Connect multiple replicas at the same time (issue #141), master diskless=yes, replica diskless=disabled
+ok Connect multiple replicas at the same time (issue #141), master diskless=yes, replica diskless=swapdb
+ok Connecting as a replica
+ok Connections start with the default user
+ok Consistent eval error reporting
+ok Consumer group lag with XDELs
+ok Consumer group last ID propagation to slave (NOACK=0)
+ok Consumer group last ID propagation to slave (NOACK=1)
+ok Consumer group read counter and lag in empty streams
+ok Consumer group read counter and lag sanity
+ok Consumer without PEL is present in AOF after AOFRW
+ok Correct handling of reused argv (issue #1939)
+ok Correct handling of reused argv (issue #1939)
+ok Corrupted dense HyperLogLogs are detected: Wrong length
+ok Corrupted sparse HyperLogLogs are detected: Additional at tail
+ok Corrupted sparse HyperLogLogs are detected: Broken magic
+ok Corrupted sparse HyperLogLogs are detected: Invalid encoding
+ok Crash due to delete entry from a compress quicklist node
+ok Crash due to split quicklist node wrongly
+ok Crash due to wrongly recompress after lrem
+ok Crash report generated on DEBUG SEGFAULT
+ok Crash report generated on SIGABRT
+ok Create 3 node cluster
+ok Cross slot commands are allowed by default for eval scripts and with allow-cross-slot-keys flag
+ok Cross slot commands are also blocked if they disagree with pre-declared keys
+ok DBSIZE
+ok DBSIZE should be 10000 now
+ok DECRBY negation overflow
+ok DECRBY over 32bit value with over 32bit increment, negative res
+ok DEL a list
+ok DEL against a single item
+ok DEL against expired key
+ok DEL all keys
+ok DEL all keys again (DB 0)
+ok DEL all keys again (DB 1)
+ok DISCARD
+ok DISCARD should UNWATCH all the keys
+ok DISCARD should clear the WATCH dirty flag on the client
+ok DISCARD should not fail during OOM
+ok DUMP / RESTORE are able to serialize / unserialize a simple key
+ok DUMP RESTORE with -X option
+ok DUMP RESTORE with -x option
+ok DUMP of non existing key returns nil
+ok Data divergence can happen under default conditions
+ok Data divergence is allowed on writable replicas
+ok Default bind address configuration handling
+ok Default user can not be removed
+ok Default user has access to all channels irrespective of flag
+ok Delete WATCHed stale keys should not fail EXEC
+ok Delete a user that the client doesn't use
+ok Delete a user that the client is using
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Detect write load to master
+ok Different clients can redirect to the same connection
+ok Different clients using different protocols can track the same key
+ok Discard cache master before loading transferred RDB when full sync
+ok Disconnecting the replica from master instance
+ok Diskless load swapdb (async_loading): new database is exposed after swapping
+ok Diskless load swapdb (async_loading): old database is exposed after async replication fails
+ok Diskless load swapdb (async_loading): old database is exposed while async replication is in progress
+ok Diskless load swapdb (async_loading): replica enter async_loading
+ok Diskless load swapdb (different replid): new database is exposed after swapping
+ok Diskless load swapdb (different replid): old database is exposed after replication fails
+ok Diskless load swapdb (different replid): replica enter loading
+ok Don't disconnect with replicas before loading transferred RDB when full sync
+ok Don't rehash if redis has child process
+ok Don't rehash if used memory exceeds maxmemory after rehash
+ok Dumping an RDB - functions only: no
+ok Dumping an RDB - functions only: yes
+ok EVAL - Able to parse trailing comments
+ok EVAL - Able to parse trailing comments
+ok EVAL - Are the KEYS and ARGV arrays populated correctly?
+ok EVAL - Are the KEYS and ARGV arrays populated correctly?
+ok EVAL - Does Lua interpreter replies to our requests?
+ok EVAL - Does Lua interpreter replies to our requests?
+ok EVAL - Is the Lua client using the currently selected DB?
+ok EVAL - Is the Lua client using the currently selected DB?
+ok EVAL - JSON numeric decoding
+ok EVAL - JSON numeric decoding
+ok EVAL - JSON smoke test
+ok EVAL - JSON smoke test
+ok EVAL - JSON string decoding
+ok EVAL - JSON string decoding
+ok EVAL - Lua error reply -> Redis protocol type conversion
+ok EVAL - Lua error reply -> Redis protocol type conversion
+ok EVAL - Lua false boolean -> Redis protocol type conversion
+ok EVAL - Lua false boolean -> Redis protocol type conversion
+ok EVAL - Lua integer -> Redis protocol type conversion
+ok EVAL - Lua integer -> Redis protocol type conversion
+ok EVAL - Lua status code reply -> Redis protocol type conversion
+ok EVAL - Lua status code reply -> Redis protocol type conversion
+ok EVAL - Lua string -> Redis protocol type conversion
+ok EVAL - Lua string -> Redis protocol type conversion
+ok EVAL - Lua table -> Redis protocol type conversion
+ok EVAL - Lua table -> Redis protocol type conversion
+ok EVAL - Lua true boolean -> Redis protocol type conversion
+ok EVAL - Lua true boolean -> Redis protocol type conversion
+ok EVAL - No arguments to redis.call/pcall is considered an error
+ok EVAL - No arguments to redis.call/pcall is considered an error
+ok EVAL - Numerical sanity check from bitop
+ok EVAL - Numerical sanity check from bitop
+ok EVAL - Redis bulk -> Lua type conversion
+ok EVAL - Redis bulk -> Lua type conversion
+ok EVAL - Redis error reply -> Lua type conversion
+ok EVAL - Redis error reply -> Lua type conversion
+ok EVAL - Redis integer -> Lua type conversion
+ok EVAL - Redis integer -> Lua type conversion
+ok EVAL - Redis multi bulk -> Lua type conversion
+ok EVAL - Redis multi bulk -> Lua type conversion
+ok EVAL - Redis nil bulk reply -> Lua type conversion
+ok EVAL - Redis nil bulk reply -> Lua type conversion
+ok EVAL - Redis status reply -> Lua type conversion
+ok EVAL - Redis status reply -> Lua type conversion
+ok EVAL - Return _G
+ok EVAL - Return _G
+ok EVAL - Return table with a metatable that call redis
+ok EVAL - Return table with a metatable that call redis
+ok EVAL - Return table with a metatable that raise error
+ok EVAL - Return table with a metatable that raise error
+ok EVAL - SELECT inside Lua should not affect the caller
+ok EVAL - SELECT inside Lua should not affect the caller
+ok EVAL - Scripts can run non-deterministic commands
+ok EVAL - Scripts can run non-deterministic commands
+ok EVAL - Scripts can't run XREAD and XREADGROUP with BLOCK option
+ok EVAL - Scripts can't run XREAD and XREADGROUP with BLOCK option
+ok EVAL - Scripts can't run blmove command
+ok EVAL - Scripts can't run blmove command
+ok EVAL - Scripts can't run blpop command
+ok EVAL - Scripts can't run blpop command
+ok EVAL - Scripts can't run brpop command
+ok EVAL - Scripts can't run brpop command
+ok EVAL - Scripts can't run brpoplpush command
+ok EVAL - Scripts can't run brpoplpush command
+ok EVAL - Scripts can't run bzpopmax command
+ok EVAL - Scripts can't run bzpopmax command
+ok EVAL - Scripts can't run bzpopmin command
+ok EVAL - Scripts can't run bzpopmin command
+ok EVAL - Verify minimal bitop functionality
+ok EVAL - Verify minimal bitop functionality
+ok EVAL - cmsgpack can pack and unpack circular references?
+ok EVAL - cmsgpack can pack and unpack circular references?
+ok EVAL - cmsgpack can pack double?
+ok EVAL - cmsgpack can pack double?
+ok EVAL - cmsgpack can pack negative int64?
+ok EVAL - cmsgpack can pack negative int64?
+ok EVAL - cmsgpack pack/unpack smoke test
+ok EVAL - cmsgpack pack/unpack smoke test
+ok EVAL - is Lua able to call Redis API?
+ok EVAL - is Lua able to call Redis API?
+ok EVAL - redis.call variant raises a Lua error on Redis cmd error (1)
+ok EVAL - redis.call variant raises a Lua error on Redis cmd error (1)
+ok EVAL - redis.call variant raises a Lua error on Redis cmd error (1)
+ok EVAL - redis.call variant raises a Lua error on Redis cmd error (1)
+ok EVAL - redis.call variant raises a Lua error on Redis cmd error (1)
+ok EVAL - redis.call variant raises a Lua error on Redis cmd error (1)
+ok EVAL can process writes from AOF in read-only replicas
+ok EVAL command is marked with movablekeys
+ok EVAL does not leak in the Lua stack
+ok EVAL does not leak in the Lua stack
+ok EVAL timeout with slow verbatim Lua script from AOF
+ok EVALSHA - Can we call a SHA1 if already defined?
+ok EVALSHA - Can we call a SHA1 in uppercase?
+ok EVALSHA - Do we get an error on invalid SHA1?
+ok EVALSHA - Do we get an error on non defined SHA1?
+ok EVALSHA replication when first call is readonly
+ok EVAL_RO - Cannot run write commands
+ok EVAL_RO - Cannot run write commands
+ok EVAL_RO - Successful case
+ok EVAL_RO - Successful case
+ok EXEC and script timeout
+ok EXEC fail on WATCHed key modified (1 key of 1 watched)
+ok EXEC fail on WATCHed key modified (1 key of 5 watched)
+ok EXEC fail on WATCHed key modified by SORT with STORE even if the result is empty
+ok EXEC fail on lazy expired WATCHed key
+ok EXEC fails if there are errors while queueing commands #1
+ok EXEC fails if there are errors while queueing commands #2
+ok EXEC with at least one use-memory command should fail
+ok EXEC with only read commands should not be rejected when OOM
+ok EXEC works on WATCHed key not modified
+ok EXISTS
+ok EXPIRE - After 2.1 seconds the key should no longer be here
+ok EXPIRE - It should be still possible to read 'x'
+ok EXPIRE - set timeouts multiple times
+ok EXPIRE - write on expire should work
+ok EXPIRE precision is now the millisecond
+ok EXPIRE should not resurrect keys (issue #1026)
+ok EXPIRE with GT option on a key with higher ttl
+ok EXPIRE with GT option on a key with lower ttl
+ok EXPIRE with GT option on a key without ttl
+ok EXPIRE with LT and XX option on a key with ttl
+ok EXPIRE with LT and XX option on a key without ttl
+ok EXPIRE with LT option on a key with higher ttl
+ok EXPIRE with LT option on a key with lower ttl
+ok EXPIRE with LT option on a key without ttl
+ok EXPIRE with NX option on a key with ttl
+ok EXPIRE with NX option on a key without ttl
+ok EXPIRE with XX option on a key with ttl
+ok EXPIRE with XX option on a key without ttl
+ok EXPIRE with big integer overflows when converted to milliseconds
+ok EXPIRE with big negative integer
+ok EXPIRE with conflicting options: LT GT
+ok EXPIRE with conflicting options: NX GT
+ok EXPIRE with conflicting options: NX LT
+ok EXPIRE with conflicting options: NX XX
+ok EXPIRE with empty string as TTL should report an error
+ok EXPIRE with negative expiry
+ok EXPIRE with negative expiry on a non-valitale key
+ok EXPIRE with non-existed key
+ok EXPIRE with unsupported options
+ok EXPIRE with unsupported options
+ok EXPIRE: We can call scripts rewriting client->argv from Lua
+ok EXPIREAT - Check for EXPIRE alike behavior
+ok EXPIRES after AOF reload (without rewrite)
+ok EXPIRES after a reload (snapshot + append only file rewrite)
+ok EXPIRETIME returns absolute expiration time in seconds
+ok Empty stream can be rewrite into AOF correctly
+ok Empty stream with no lastid can be rewrite into AOF correctly
+ok Enabling the user allows the login
+ok Eval scripts with shebangs and functions default to no cross slots
+ok Execute transactions completely even if client output buffer limit is enforced
+ok Existence test commands are not marked as access
+ok Explicit regression for a list bug
+ok Extended SET EX option
+ok Extended SET EXAT option
+ok Extended SET GET option
+ok Extended SET GET option with NX
+ok Extended SET GET option with NX and previous value
+ok Extended SET GET option with XX
+ok Extended SET GET option with XX and no previous value
+ok Extended SET GET option with no previous value
+ok Extended SET GET with incorrect type should result in wrong type error
+ok Extended SET NX option
+ok Extended SET PX option
+ok Extended SET PXAT option
+ok Extended SET XX option
+ok Extended SET can detect syntax errors
+ok Extended SET using multiple options at once
+ok FLUSHALL does not touch non affected keys
+ok FLUSHALL is able to touch the watched keys
+ok FLUSHALL should not reset the dirty counter if we disable save
+ok FLUSHALL should reset the dirty counter to 0 if we enable save
+ok FLUSHDB
+ok FLUSHDB / FLUSHALL should persist in AOF
+ok FLUSHDB / FLUSHALL should replicate
+ok FLUSHDB ASYNC can reclaim memory in background
+ok FLUSHDB does not touch non affected keys
+ok FLUSHDB is able to touch the watched keys
+ok FLUSHDB while watching stale keys should not fail EXEC
+ok FUNCTION - Basic usage
+ok FUNCTION - Create a library with wrong name format
+ok FUNCTION - Create an already exiting library raise error
+ok FUNCTION - Create an already exiting library raise error (case insensitive)
+ok FUNCTION - Create library with unexisting engine
+ok FUNCTION - Load with unknown argument
+ok FUNCTION - Test uncompiled script
+ok FUNCTION - allow stale
+ok FUNCTION - call on replica
+ok FUNCTION - create on read only replica
+ok FUNCTION - creation is replicated to replica
+ok FUNCTION - delete is replicated to replica
+ok FUNCTION - delete on read only replica
+ok FUNCTION - deny oom
+ok FUNCTION - deny oom on no-writes function
+ok FUNCTION - flush is replicated to replica
+ok FUNCTION - function effect is replicated to replica
+ok FUNCTION - function stats
+ok FUNCTION - function stats cleaned after flush
+ok FUNCTION - function stats delete library
+ok FUNCTION - function stats reloaded correctly from rdb
+ok FUNCTION - function test empty engine
+ok FUNCTION - function test multiple names
+ok FUNCTION - function test name with quotes
+ok FUNCTION - function test no name
+ok FUNCTION - function test unknown metadata value
+ok FUNCTION - modify key space of read only replica
+ok FUNCTION - redis version api
+ok FUNCTION - restore is replicated to replica
+ok FUNCTION - test command get keys on fcall
+ok FUNCTION - test command get keys on fcall_ro
+ok FUNCTION - test debug reload different options
+ok FUNCTION - test debug reload with nosave and noflush
+ok FUNCTION - test delete on not exiting library
+ok FUNCTION - test fcall bad arguments
+ok FUNCTION - test fcall bad number of keys arguments
+ok FUNCTION - test fcall negative number of keys
+ok FUNCTION - test fcall_ro with read only commands
+ok FUNCTION - test fcall_ro with write command
+ok FUNCTION - test flushall and flushdb do not clean functions
+ok FUNCTION - test function case insensitive
+ok FUNCTION - test function delete
+ok FUNCTION - test function dump and restore
+ok FUNCTION - test function dump and restore with append argument
+ok FUNCTION - test function dump and restore with flush argument
+ok FUNCTION - test function dump and restore with replace argument
+ok FUNCTION - test function flush
+ok FUNCTION - test function kill
+ok FUNCTION - test function kill not working on eval
+ok FUNCTION - test function kill when function is not running
+ok FUNCTION - test function list libraryname multiple times
+ok FUNCTION - test function list with bad argument to library name
+ok FUNCTION - test function list with code
+ok FUNCTION - test function list with pattern
+ok FUNCTION - test function list withcode multiple times
+ok FUNCTION - test function list wrong argument
+ok FUNCTION - test function restore with bad payload do not drop existing functions
+ok FUNCTION - test function restore with function name collision
+ok FUNCTION - test function restore with wrong number of arguments
+ok FUNCTION - test function stats on loading failure
+ok FUNCTION - test function wrong argument
+ok FUNCTION - test getmetatable on script load
+ok FUNCTION - test keys and argv
+ok FUNCTION - test loading from rdb
+ok FUNCTION - test replace argument
+ok FUNCTION - test replace argument with failure keeps old libraries
+ok FUNCTION - test replication to replica on rdb phase
+ok FUNCTION - test replication to replica on rdb phase info command
+ok FUNCTION - test script kill not working on function
+ok FUNCTION - test wrong subcommand
+ok FUNCTION - trick global protection 1
+ok FUNCTION - unknown flag
+ok FUNCTION - verify OOM on function load and function restore
+ok FUNCTION - verify allow-omm allows running any command
+ok FUNCTION - write script on fcall_ro
+ok FUNCTION - write script with no-writes flag
+ok FUNCTION - wrong flag type
+ok FUNCTION - wrong flags type named arguments
+ok FUNCTION can processes create, delete and flush commands in AOF when doing "debug loadaof" in read-only slaves
+ok FUZZ stresser with data model alpha
+ok FUZZ stresser with data model binary
+ok FUZZ stresser with data model compr
+ok First server should have role slave after REPLICAOF
+ok First server should have role slave after SLAVEOF
+ok First server should have role slave after SLAVEOF
+ok First server should have role slave after SLAVEOF
+ok First server should have role slave after SLAVEOF
+ok First server should have role slave after SLAVEOF
+ok First server should have role slave after SLAVEOF
+ok First server should have role slave after SLAVEOF
+ok First server should have role slave after SLAVEOF
+ok Fixed AOF: Keyspace should contain values that were parseable
+ok Fixed AOF: Server should have been started
+ok Flushall while watching several keys by one client
+ok For all replicated TTL-related commands, absolute expire times are identical on primary and replica
+ok For unauthenticated clients multibulk and bulk length are limited
+ok Functions are added to new node on redis-cli cluster add-node
+ok Functions in the Redis namespace are able to report errors
+ok Functions in the Redis namespace are able to report errors
+ok Fuzzer corrupt restore payloads - sanitize_dump: no
+ok Fuzzer corrupt restore payloads - sanitize_dump: yes
+ok Fuzzing dense/sparse encoding: Redis should always detect errors
+ok GEO BYLONLAT with empty search
+ok GEO BYMEMBER with non existing member
+ok GEO with non existing src key
+ok GEO with wrong type src key
+ok GEOADD create
+ok GEOADD invalid coordinates
+ok GEOADD multi add
+ok GEOADD update
+ok GEOADD update with CH NX option
+ok GEOADD update with CH XX option
+ok GEOADD update with CH option
+ok GEOADD update with NX option
+ok GEOADD update with XX NX option will return syntax error
+ok GEOADD update with XX option
+ok GEOADD update with invalid option
+ok GEODIST missing elements
+ok GEODIST simple & unit
+ok GEOHASH is able to return geohash strings
+ok GEOPOS missing element
+ok GEOPOS simple
+ok GEORADIUS HUGE, issue #2767
+ok GEORADIUS STORE option: syntax error
+ok GEORADIUS command is marked with movablekeys
+ok GEORADIUS simple (sorted)
+ok GEORADIUS with ANY but no COUNT
+ok GEORADIUS with ANY not sorted by default
+ok GEORADIUS with ANY sorted by ASC
+ok GEORADIUS with COUNT
+ok GEORADIUS with COUNT DESC
+ok GEORADIUS with COUNT but missing integer argument
+ok GEORADIUS withdist (sorted)
+ok GEORADIUSBYMEMBER STORE/STOREDIST option: plain usage
+ok GEORADIUSBYMEMBER crossing pole search
+ok GEORADIUSBYMEMBER search areas contain satisfied points in oblique direction
+ok GEORADIUSBYMEMBER simple (sorted)
+ok GEORADIUSBYMEMBER withdist (sorted)
+ok GEORADIUS_RO command will not be marked with movablekeys
+ok GEORANGE STORE option: incompatible options
+ok GEORANGE STORE option: plain usage
+ok GEORANGE STOREDIST option: COUNT ASC and DESC
+ok GEORANGE STOREDIST option: plain usage
+ok GEOSEARCH BYRADIUS and BYBOX cannot exist at the same time
+ok GEOSEARCH BYRADIUS and BYBOX one must exist
+ok GEOSEARCH FROMLONLAT and FROMMEMBER cannot exist at the same time
+ok GEOSEARCH FROMLONLAT and FROMMEMBER one must exist
+ok GEOSEARCH FROMMEMBER simple (sorted)
+ok GEOSEARCH box edges fuzzy test
+ok GEOSEARCH corner point test
+ok GEOSEARCH fuzzy test - bybox
+ok GEOSEARCH fuzzy test - byradius
+ok GEOSEARCH non square, long and narrow
+ok GEOSEARCH simple (sorted)
+ok GEOSEARCH the box spans -180° or 180°
+ok GEOSEARCH vs GEORADIUS
+ok GEOSEARCH with STOREDIST option
+ok GEOSEARCH with small distance
+ok GEOSEARCH withdist (sorted)
+ok GEOSEARCHSTORE STORE option: plain usage
+ok GEOSEARCHSTORE STORE option: syntax error
+ok GEOSEARCHSTORE STOREDIST option: plain usage
+ok GET command will not be marked with movablekeys
+ok GETBIT against integer-encoded key
+ok GETBIT against non-existing key
+ok GETBIT against string-encoded key
+ok GETDEL command
+ok GETDEL propagate as DEL command to replica
+ok GETEX EX option
+ok GETEX EXAT option
+ok GETEX PERSIST option
+ok GETEX PX option
+ok GETEX PXAT option
+ok GETEX no arguments
+ok GETEX no option
+ok GETEX propagate as to replica as PERSIST, DEL, or nothing
+ok GETEX should not append to AOF
+ok GETEX syntax errors
+ok GETEX use of PERSIST option should remove TTL
+ok GETEX use of PERSIST option should remove TTL after loadaof
+ok GETEX with big integer should report an error
+ok GETEX with smallest integer should report an error
+ok GETEX without argument does not propagate to replica
+ok GETRANGE against integer-encoded value
+ok GETRANGE against non-existing key
+ok GETRANGE against string value
+ok GETRANGE fuzzing
+ok GETRANGE with huge ranges, Github issue #1844
+ok GETSET (replace old value)
+ok GETSET (set new value)
+ok GETSET replication
+ok Generate timestamp annotations in AOF
+ok Generated sets must be encoded as hashtable
+ok Generated sets must be encoded as intset
+ok Generic wrong number of args
+ok Globals protection reading an undeclared global variable
+ok Globals protection reading an undeclared global variable
+ok Globals protection setting an undeclared global*
+ok Globals protection setting an undeclared global*
+ok HDEL - hash becomes empty before deleting all specified fields
+ok HDEL - more than a single value
+ok HDEL and return value
+ok HELLO 3 reply is correct
+ok HELLO without protover
+ok HEXISTS
+ok HGET against non existing key
+ok HGET against the big hash
+ok HGET against the small hash
+ok HGETALL - big hash
+ok HGETALL - small hash
+ok HINCRBY against hash key created by hincrby itself
+ok HINCRBY against hash key originally set with HSET
+ok HINCRBY against non existing database key
+ok HINCRBY against non existing hash key
+ok HINCRBY can detect overflows
+ok HINCRBY fails against hash value with spaces (left)
+ok HINCRBY fails against hash value with spaces (right)
+ok HINCRBY over 32bit value
+ok HINCRBY over 32bit value with over 32bit increment
+ok HINCRBYFLOAT against hash key created by hincrby itself
+ok HINCRBYFLOAT against hash key originally set with HSET
+ok HINCRBYFLOAT against non existing database key
+ok HINCRBYFLOAT against non existing hash key
+ok HINCRBYFLOAT does not allow NaN or Infinity
+ok HINCRBYFLOAT fails against hash value that contains a null-terminator in the middle
+ok HINCRBYFLOAT fails against hash value with spaces (left)
+ok HINCRBYFLOAT fails against hash value with spaces (right)
+ok HINCRBYFLOAT over 32bit value
+ok HINCRBYFLOAT over 32bit value with over 32bit increment
+ok HINCRBYFLOAT over hash-max-listpack-value encoded with a listpack
+ok HKEYS - big hash
+ok HKEYS - small hash
+ok HMGET - big hash
+ok HMGET - small hash
+ok HMGET against non existing key and fields
+ok HMGET against wrong type
+ok HMSET - big hash
+ok HMSET - small hash
+ok HRANDFIELD - hashtable
+ok HRANDFIELD - listpack
+ok HRANDFIELD count of 0 is handled correctly
+ok HRANDFIELD count of 0 is handled correctly - emptyarray
+ok HRANDFIELD count overflow
+ok HRANDFIELD with <count> - hashtable
+ok HRANDFIELD with <count> - listpack
+ok HRANDFIELD with <count> against non existing key
+ok HRANDFIELD with <count> against non existing key - emptyarray
+ok HRANDFIELD with RESP3
+ok HSCAN with PATTERN
+ok HSCAN with encoding hashtable
+ok HSCAN with encoding listpack
+ok HSET in update and insert mode
+ok HSET/HLEN - Big hash creation
+ok HSET/HLEN - Small hash creation
+ok HSET/HMSET wrong number of args
+ok HSETNX target key exists - big hash
+ok HSETNX target key exists - small hash
+ok HSETNX target key missing - big hash
+ok HSETNX target key missing - small hash
+ok HSTRLEN against non existing field
+ok HSTRLEN against the big hash
+ok HSTRLEN against the small hash
+ok HSTRLEN corner cases
+ok HVALS - big hash
+ok HVALS - small hash
+ok Handle an empty query
+ok Hash fuzzing #1 - 10 fields
+ok Hash fuzzing #1 - 512 fields
+ok Hash fuzzing #2 - 10 fields
+ok Hash fuzzing #2 - 512 fields
+ok Hash table: SORT BY hash field
+ok Hash table: SORT BY key
+ok Hash table: SORT BY key with limit
+ok Hash ziplist of various encodings
+ok Hash ziplist of various encodings - sanitize dump
+ok Hash ziplist regression test for large keys
+ok HyperLogLog self test passes
+ok HyperLogLog sparse encoding stress test
+ok HyperLogLogs are promote from sparse to dense
+ok INCR against key created by incr itself
+ok INCR against key originally set with SET
+ok INCR against non existing key
+ok INCR can modify objects in-place
+ok INCR fails against a key holding a list
+ok INCR fails against key with spaces (both)
+ok INCR fails against key with spaces (left)
+ok INCR fails against key with spaces (right)
+ok INCR over 32bit value
+ok INCR uses shared objects in the 0-9999 range
+ok INCRBY over 32bit value with over 32bit increment
+ok INCRBYFLOAT against key originally set with SET
+ok INCRBYFLOAT against non existing key
+ok INCRBYFLOAT decrement
+ok INCRBYFLOAT does not allow NaN or Infinity
+ok INCRBYFLOAT fails against a key holding a list
+ok INCRBYFLOAT fails against key with spaces (both)
+ok INCRBYFLOAT fails against key with spaces (left)
+ok INCRBYFLOAT fails against key with spaces (right)
+ok INCRBYFLOAT over 32bit value
+ok INCRBYFLOAT over 32bit value with over 32bit increment
+ok INCRBYFLOAT replication, should not remove expire
+ok INCRBYFLOAT: We can call scripts expanding client->argv from Lua
+ok If EXEC aborts, the client MULTI state is cleared
+ok If min-slaves-to-write is honored, write is accepted
+ok If min-slaves-to-write is honored, write is accepted (again)
+ok In transaction queue publish/subscribe/psubscribe to unauthorized channel will fail
+ok Interactive CLI: Bulk reply
+ok Interactive CLI: INFO response should be printed raw
+ok Interactive CLI: Integer reply
+ok Interactive CLI: Multi-bulk reply
+ok Interactive CLI: Parsing quotes
+ok Interactive CLI: Status reply
+ok Intersection cardinaltiy commands are access commands
+ok Intset: SORT BY hash field
+ok Intset: SORT BY key
+ok Intset: SORT BY key with limit
+ok Invalid keys should not be tracked for scripts in NOLOOP mode
+ok Invalidation message received for flushall
+ok Invalidation message received for flushdb
+ok Invalidation message sent when using OPTIN option with CLIENT CACHING yes
+ok Invalidation message sent when using OPTOUT option
+ok Invalidations of new keys can be redirected after switching to RESP3
+ok Invalidations of previous keys can be redirected after switching to RESP3
+ok Is a ziplist encoded Hash promoted on big payload?
+ok Is the big hash encoded with an hash table?
+ok Is the small hash encoded with a listpack?
+ok It is possible to UNWATCH
+ok It is possible to create new users
+ok It is possible to remove passwords from the set of valid ones
+ok It's possible to allow publishing to a subset of channels
+ok It's possible to allow publishing to a subset of shard channels
+ok It's possible to allow subscribing to a subset of channel patterns
+ok It's possible to allow subscribing to a subset of channels
+ok It's possible to allow subscribing to a subset of shard channels
+ok It's possible to allow the access of a subset of keys
+ok KEYS * two times with long key, Github issue #1208
+ok KEYS to get all keys
+ok KEYS with pattern
+ok Key lazy expires during key migration
+ok Keyspace notifications: evicted events
+ok Keyspace notifications: expired events (background expire)
+ok Keyspace notifications: expired events (triggered expire)
+ok Keyspace notifications: general events test
+ok Keyspace notifications: hash events test
+ok Keyspace notifications: list events test
+ok Keyspace notifications: new key test
+ok Keyspace notifications: set events test
+ok Keyspace notifications: stream events test
+ok Keyspace notifications: test CONFIG GET/SET of event flags
+ok Keyspace notifications: we are able to mask events
+ok Keyspace notifications: we can receive both kind of events
+ok Keyspace notifications: we receive keyevent notifications
+ok Keyspace notifications: we receive keyspace notifications
+ok Keyspace notifications: zset events test
+ok Kill a cluster node and wait for fail state
+ok Kill rdb child process if its dumping RDB is not useful
+ok LATENCY DOCTOR produces some output
+ok LATENCY HELP should not have unexpected options
+ok LATENCY HISTOGRAM all commands
+ok LATENCY HISTOGRAM command
+ok LATENCY HISTOGRAM sub commands
+ok LATENCY HISTOGRAM with a subset of commands
+ok LATENCY HISTOGRAM with empty histogram
+ok LATENCY HISTOGRAM with wrong command name skips the invalid one
+ok LATENCY HISTORY / RESET with wrong event name is fine
+ok LATENCY HISTORY output is ok
+ok LATENCY LATEST output is ok
+ok LATENCY RESET is able to reset events
+ok LATENCY of expire events are correctly collected
+ok LCS basic
+ok LCS indexes
+ok LCS indexes with match len
+ok LCS indexes with match len and minimum match len
+ok LCS len
+ok LIBRARIES - delete removed all functions on library
+ok LIBRARIES - load timeout
+ok LIBRARIES - malicious access test
+ok LIBRARIES - math.random from function load
+ok LIBRARIES - named arguments
+ok LIBRARIES - named arguments, bad callback type
+ok LIBRARIES - named arguments, bad description
+ok LIBRARIES - named arguments, bad function name
+ok LIBRARIES - named arguments, missing callback
+ok LIBRARIES - named arguments, missing function name
+ok LIBRARIES - named arguments, unknown argument
+ok LIBRARIES - redis.call from function load
+ok LIBRARIES - redis.set_repl from function load
+ok LIBRARIES - redis.setresp from function load
+ok LIBRARIES - register function inside a function
+ok LIBRARIES - register library with no functions
+ok LIBRARIES - test registration failure revert the entire load
+ok LIBRARIES - test registration function name collision
+ok LIBRARIES - test registration function name collision on same library
+ok LIBRARIES - test registration with empty name
+ok LIBRARIES - test registration with no argument
+ok LIBRARIES - test registration with no string name
+ok LIBRARIES - test registration with only name
+ok LIBRARIES - test registration with to many arguments
+ok LIBRARIES - test registration with wrong name format
+ok LIBRARIES - test shared function can access default globals
+ok LIBRARIES - usage and code sharing
+ok LIBRARIES - verify global protection on the load run
+ok LINDEX against non existing key
+ok LINDEX against non-list value error
+ok LINDEX consistency test - quicklist
+ok LINDEX consistency test - quicklist
+ok LINDEX random access - quicklist
+ok LINDEX random access - quicklist
+ok LINSERT - linkedlist
+ok LINSERT - ziplist
+ok LINSERT correctly recompress full quicklistNode after inserting a element after it
+ok LINSERT correctly recompress full quicklistNode after inserting a element before it
+ok LINSERT raise error on bad syntax
+ok LLEN against non existing key
+ok LLEN against non-list value error
+ok LMOVE command will not be marked with movablekeys
+ok LMOVE left left base case - linkedlist
+ok LMOVE left left base case - ziplist
+ok LMOVE left left with linkedlist source and existing target linkedlist
+ok LMOVE left left with linkedlist source and existing target ziplist
+ok LMOVE left left with the same list as src and dst - linkedlist
+ok LMOVE left left with the same list as src and dst - ziplist
+ok LMOVE left left with ziplist source and existing target linkedlist
+ok LMOVE left left with ziplist source and existing target ziplist
+ok LMOVE left right base case - linkedlist
+ok LMOVE left right base case - ziplist
+ok LMOVE left right with linkedlist source and existing target linkedlist
+ok LMOVE left right with linkedlist source and existing target ziplist
+ok LMOVE left right with the same list as src and dst - linkedlist
+ok LMOVE left right with the same list as src and dst - ziplist
+ok LMOVE left right with ziplist source and existing target linkedlist
+ok LMOVE left right with ziplist source and existing target ziplist
+ok LMOVE right left base case - linkedlist
+ok LMOVE right left base case - ziplist
+ok LMOVE right left with linkedlist source and existing target linkedlist
+ok LMOVE right left with linkedlist source and existing target ziplist
+ok LMOVE right left with the same list as src and dst - linkedlist
+ok LMOVE right left with the same list as src and dst - ziplist
+ok LMOVE right left with ziplist source and existing target linkedlist
+ok LMOVE right left with ziplist source and existing target ziplist
+ok LMOVE right right base case - linkedlist
+ok LMOVE right right base case - ziplist
+ok LMOVE right right with linkedlist source and existing target linkedlist
+ok LMOVE right right with linkedlist source and existing target ziplist
+ok LMOVE right right with the same list as src and dst - linkedlist
+ok LMOVE right right with the same list as src and dst - ziplist
+ok LMOVE right right with ziplist source and existing target linkedlist
+ok LMOVE right right with ziplist source and existing target ziplist
+ok LMPOP multiple existing lists
+ok LMPOP propagate as pop with count command to replica
+ok LMPOP single existing list
+ok LMPOP with illegal argument
+ok LPOP command will not be marked with movablekeys
+ok LPOP/RPOP against non existing key in RESP2
+ok LPOP/RPOP against non existing key in RESP3
+ok LPOP/RPOP with <count> against non existing key in RESP2
+ok LPOP/RPOP with <count> against non existing key in RESP3
+ok LPOP/RPOP with the count 0 returns an empty array in RESP2
+ok LPOP/RPOP with the count 0 returns an empty array in RESP3
+ok LPOP/RPOP with wrong number of arguments
+ok LPOP/RPOP/LMPOP NON-BLOCK or BLOCK against non list value
+ok LPOP/RPOP/LMPOP against empty list
+ok LPOS COUNT + RANK option
+ok LPOS COUNT option
+ok LPOS MAXLEN
+ok LPOS RANK (positive, negative and zero rank) option
+ok LPOS basic usage
+ok LPOS no match
+ok LPOS non existing key
+ok LPOS when RANK is greater than matches
+ok LPUSH against non-list value error
+ok LPUSH, RPUSH, LLENGTH, LINDEX, LPOP - regular list
+ok LPUSH, RPUSH, LLENGTH, LINDEX, LPOP - ziplist
+ok LPUSHX, RPUSHX - generic
+ok LPUSHX, RPUSHX - linkedlist
+ok LPUSHX, RPUSHX - ziplist
+ok LRANGE against non existing key
+ok LRANGE basics - linkedlist
+ok LRANGE basics - ziplist
+ok LRANGE inverted indexes - linkedlist
+ok LRANGE inverted indexes - ziplist
+ok LRANGE out of range indexes including the full list - linkedlist
+ok LRANGE out of range indexes including the full list - ziplist
+ok LRANGE out of range negative end index - linkedlist
+ok LRANGE out of range negative end index - ziplist
+ok LRANGE with start > end yields an empty array for backward compatibility
+ok LREM deleting objects that may be int encoded - linkedlist
+ok LREM deleting objects that may be int encoded - ziplist
+ok LREM remove all the occurrences - linkedlist
+ok LREM remove all the occurrences - ziplist
+ok LREM remove non existing element - linkedlist
+ok LREM remove non existing element - ziplist
+ok LREM remove the first occurrence - linkedlist
+ok LREM remove the first occurrence - ziplist
+ok LREM starting from tail with negative count (2) - linkedlist
+ok LREM starting from tail with negative count (2) - ziplist
+ok LREM starting from tail with negative count - linkedlist
+ok LREM starting from tail with negative count - ziplist
+ok LSET - linkedlist
+ok LSET - ziplist
+ok LSET against non existing key
+ok LSET against non list value
+ok LSET out of range index - linkedlist
+ok LSET out of range index - ziplist
+ok LTRIM basics - linkedlist
+ok LTRIM basics - ziplist
+ok LTRIM out of range negative end index - linkedlist
+ok LTRIM out of range negative end index - ziplist
+ok LTRIM stress testing - linkedlist
+ok LTRIM stress testing - ziplist
+ok LUA redis.error_reply API
+ok LUA redis.error_reply API with empty string
+ok LUA redis.status_reply API
+ok LUA test pcall
+ok LUA test pcall with error
+ok LUA test pcall with non string/integer arg
+ok Linked LMOVEs
+ok List ziplist of various encodings
+ok List ziplist of various encodings - sanitize dump
+ok Loading from legacy (Redis <= v6.2.x, rdb_ver < 10) persistence
+ok Lua scripts using SELECT are replicated correctly
+ok Lua scripts using SELECT are replicated correctly
+ok MASTER and SLAVE consistency with expire
+ok MASTER and SLAVE dataset should be identical after complex ops
+ok MASTERAUTH test with binary password
+ok MEMORY command will not be marked with movablekeys
+ok MEMORY|USAGE command will not be marked with movablekeys
+ok MGET
+ok MGET against non existing key
+ok MGET against non-string key
+ok MGET: mget shouldn't be propagated in Lua
+ok MIGRATE AUTH: correct and wrong password cases
+ok MIGRATE cached connections are released after some time
+ok MIGRATE can correctly transfer hashes
+ok MIGRATE can correctly transfer large values
+ok MIGRATE can migrate multiple keys at once
+ok MIGRATE command is marked with movablekeys
+ok MIGRATE is able to copy a key between two instances
+ok MIGRATE is able to migrate a key between two instances
+ok MIGRATE is caching connections
+ok MIGRATE propagates TTL correctly
+ok MIGRATE timeout actually works
+ok MIGRATE will not overwrite existing keys, unless REPLACE is used
+ok MIGRATE with multiple keys migrate just existing ones
+ok MIGRATE with multiple keys must have empty key arg
+ok MIGRATE with multiple keys: delete just ack keys
+ok MIGRATE with multiple keys: stress command rewriting
+ok MONITOR can log commands issued by functions
+ok MONITOR can log commands issued by the scripting engine
+ok MONITOR can log executed commands
+ok MONITOR correctly handles multi-exec cases
+ok MONITOR supports redacting command arguments
+ok MOVE against key existing in the target DB
+ok MOVE against non-integer DB (#1428)
+ok MOVE basic usage
+ok MOVE can move key expire metadata as well
+ok MOVE does not create an expire if it does not exist
+ok MSET base case
+ok MSET command will not be marked with movablekeys
+ok MSET/MSETNX wrong number of args
+ok MSETNX with already existent key
+ok MSETNX with already existing keys - same key twice
+ok MSETNX with not existing keys
+ok MSETNX with not existing keys - same key twice
+ok MULTI + LPUSH + EXPIRE + DEBUG SLEEP on blocked client, key already expired
+ok MULTI / EXEC basics
+ok MULTI / EXEC is not propagated (single write command)
+ok MULTI / EXEC is propagated correctly (empty transaction)
+ok MULTI / EXEC is propagated correctly (multiple commands with SELECT)
+ok MULTI / EXEC is propagated correctly (multiple commands)
+ok MULTI / EXEC is propagated correctly (read-only commands)
+ok MULTI / EXEC is propagated correctly (write command, no effect)
+ok MULTI / EXEC with REPLICAOF
+ok MULTI and script timeout
+ok MULTI propagation of EVAL
+ok MULTI propagation of PUBLISH
+ok MULTI propagation of SCRIPT FLUSH
+ok MULTI propagation of SCRIPT LOAD
+ok MULTI propagation of XREADGROUP
+ok MULTI where commands alter argc/argv
+ok MULTI with BGREWRITEAOF
+ok MULTI with FLUSHALL and AOF
+ok MULTI with SAVE
+ok MULTI with SHUTDOWN
+ok MULTI with config error
+ok MULTI with config set appendonly
+ok MULTI-EXEC body and script timeout
+ok MULTI/EXEC is isolated from the point of view of BLMPOP_LEFT
+ok MULTI/EXEC is isolated from the point of view of BLPOP
+ok MULTI/EXEC is isolated from the point of view of BZMPOP_MIN
+ok MULTI/EXEC is isolated from the point of view of BZMPOP_MIN
+ok MULTI/EXEC is isolated from the point of view of BZPOPMIN
+ok MULTI/EXEC is isolated from the point of view of BZPOPMIN
+ok Make sure aof manifest appendonly.aof.manifest not in aof directory
+ok Make the old master a replica of the new one and check conditions
+ok Mass RPOP/LPOP - quicklist
+ok Mass RPOP/LPOP - quicklist
+ok Master can replicate command longer than client-query-buffer-limit on replica
+ok Master stream is correctly processed while the replica has a script in -BUSY state
+ok Maxmimum XDEL ID behaves correctly
+ok Memory efficiency with values in range 1024
+ok Memory efficiency with values in range 128
+ok Memory efficiency with values in range 16384
+ok Memory efficiency with values in range 32
+ok Memory efficiency with values in range 64
+ok Migrate the last slot away from a node using redis-cli
+ok Mix SUBSCRIBE and PSUBSCRIBE
+ok Multi Part AOF can be loaded correctly when both server dir and aof dir contain old AOF
+ok Multi Part AOF can continue the upgrade from the interrupted upgrade state
+ok Multi Part AOF can create BASE (AOF format) when redis starts from empty
+ok Multi Part AOF can create BASE (RDB format) when redis starts from empty
+ok Multi Part AOF can handle appendfilename contains whitespaces
+ok Multi Part AOF can load data discontinuously increasing sequence
+ok Multi Part AOF can load data from old version redis (rdb preamble no)
+ok Multi Part AOF can load data from old version redis (rdb preamble yes)
+ok Multi Part AOF can load data when manifest add new k-v
+ok Multi Part AOF can load data when some AOFs are empty
+ok Multi Part AOF can start when no aof and no manifest
+ok Multi Part AOF can start when we have en empty AOF dir
+ok Multi Part AOF can upgrade when when two redis share the same server dir
+ok Multi Part AOF can upgrade when when two redis share the same server dir (redis1)
+ok Multi Part AOF can upgrade when when two redis share the same server dir (redis2)
+ok Multi Part AOF can't load data when some file missing
+ok Multi Part AOF can't load data when the manifest contains the old AOF file name but the file does not exist in server dir and aof dir
+ok Multi Part AOF can't load data when the manifest file is empty
+ok Multi Part AOF can't load data when the manifest format is wrong (line too long)
+ok Multi Part AOF can't load data when the manifest format is wrong (line too short)
+ok Multi Part AOF can't load data when the manifest format is wrong (missing key)
+ok Multi Part AOF can't load data when the manifest format is wrong (odd parameter)
+ok Multi Part AOF can't load data when the manifest format is wrong (type unknown)
+ok Multi Part AOF can't load data when the sequence not increase monotonically
+ok Multi Part AOF can't load data when there are blank lines in the manifest file
+ok Multi Part AOF can't load data when there is a duplicate base file
+ok Multi bulk request not followed by bulk arguments
+ok NUMPATs returns the number of unique patterns
+ok NUMSUB returns numbers, not strings (#1561)
+ok Negative multibulk length
+ok Negative multibulk payload length
+ok Nested MULTI are not allowed
+ok New users start disabled
+ok No invalidation message when using OPTIN option
+ok No invalidation message when using OPTOUT option with CLIENT CACHING no
+ok No negative zero
+ok No response for multi commands in pipeline if client output buffer limit is enforced
+ok No response for single command if client output buffer hard limit is enforced
+ok No write if min-slaves-max-lag is > of the slave lag
+ok No write if min-slaves-to-write is < attached slaves
+ok Non blocking XREAD with empty streams
+ok Non existing command
+ok Non-interactive TTY CLI: Bulk reply
+ok Non-interactive TTY CLI: Escape character in JSON mode
+ok Non-interactive TTY CLI: Integer reply
+ok Non-interactive TTY CLI: Multi-bulk reply
+ok Non-interactive TTY CLI: Read last argument from file
+ok Non-interactive TTY CLI: Read last argument from pipe
+ok Non-interactive TTY CLI: Status reply
+ok Non-interactive non-TTY CLI: ASK redirect test
+ok Non-interactive non-TTY CLI: Bulk reply
+ok Non-interactive non-TTY CLI: Integer reply
+ok Non-interactive non-TTY CLI: Invalid quoted input arguments
+ok Non-interactive non-TTY CLI: Multi-bulk reply
+ok Non-interactive non-TTY CLI: No accidental unquoting of input arguments
+ok Non-interactive non-TTY CLI: Quoted input arguments
+ok Non-interactive non-TTY CLI: Read last argument from file
+ok Non-interactive non-TTY CLI: Read last argument from pipe
+ok Non-interactive non-TTY CLI: Status reply
+ok Non-number multibulk payload length
+ok Now use EVALSHA against the master, with both SHAs
+ok Number conversion precision test (issue #1118)
+ok Number conversion precision test (issue #1118)
+ok Obuf limit, HRANDFIELD with huge count stopped mid-run
+ok Obuf limit, KEYS stopped mid-run
+ok Old Big Linked list: SORT BY hash field
+ok Old Big Linked list: SORT BY key
+ok Old Big Linked list: SORT BY key with limit
+ok Old Linked list: SORT BY hash field
+ok Old Linked list: SORT BY key
+ok Old Linked list: SORT BY key with limit
+ok Old Ziplist: SORT BY hash field
+ok Old Ziplist: SORT BY key
+ok Old Ziplist: SORT BY key with limit
+ok Once AUTH succeeded we can actually send commands to the server
+ok Only default user has access to all channels irrespective of flag
+ok Only the set of correct passwords work
+ok Options -X with illegal argument
+ok Out of range multibulk length
+ok Out of range multibulk payload length
+ok PEL NACK reassignment after XGROUP SETID event
+ok PERSIST can undo an EXPIRE
+ok PERSIST returns 0 against non existing or non volatile keys
+ok PEXPIRE can set sub-second expires
+ok PEXPIRE with big integer overflow when basetime is added
+ok PEXPIREAT can set sub-second expires
+ok PEXPIREAT with big integer works
+ok PEXPIREAT with big negative integer works
+ok PEXPIRETIME returns absolute expiration time in milliseconds
+ok PFADD / PFCOUNT cache invalidation works
+ok PFADD returns 0 when no reg was modified
+ok PFADD returns 1 when at least 1 reg was modified
+ok PFADD without arguments creates an HLL value
+ok PFADD works with empty string (regression)
+ok PFADD, PFCOUNT, PFMERGE type checking works
+ok PFCOUNT doesn't use expired key on readonly replica
+ok PFCOUNT multiple-keys merge returns cardinality of union #1
+ok PFCOUNT multiple-keys merge returns cardinality of union #2
+ok PFCOUNT returns approximated cardinality of set
+ok PFCOUNT updates cache on readonly replica
+ok PFDEBUG GETREG returns the HyperLogLog raw registers
+ok PFMERGE results on the cardinality of union of sets
+ok PING
+ok PING command will not be marked with movablekeys
+ok PIPELINING stresser (also a regression for the old epoll bug)
+ok PRNG is seeded randomly for command replication
+ok PRNG is seeded randomly for command replication
+ok PSETEX can set sub-second expires
+ok PSYNC with wrong offset should throw error
+ok PSYNC2 #3899 regression: kill chained replica
+ok PSYNC2 #3899 regression: kill chained replica
+ok PSYNC2 #3899 regression: kill chained replica
+ok PSYNC2 #3899 regression: kill chained replica
+ok PSYNC2 #3899 regression: kill chained replica
+ok PSYNC2 #3899 regression: kill first replica
+ok PSYNC2 #3899 regression: kill first replica
+ok PSYNC2 #3899 regression: kill first replica
+ok PSYNC2 #3899 regression: kill first replica
+ok PSYNC2 #3899 regression: kill first replica
+ok PSYNC2 #3899 regression: kill first replica
+ok PSYNC2 #3899 regression: kill first replica
+ok PSYNC2 #3899 regression: kill first replica
+ok PSYNC2 #3899 regression: kill first replica
+ok PSYNC2 #3899 regression: setup
+ok PSYNC2 #3899 regression: verify consistency
+ok PSYNC2 pingoff: pause replica and promote it
+ok PSYNC2 pingoff: setup
+ok PSYNC2 pingoff: write and wait replication
+ok PSYNC2: --- CYCLE 1 ---
+ok PSYNC2: --- CYCLE 2 ---
+ok PSYNC2: --- CYCLE 3 ---
+ok PSYNC2: --- CYCLE 4 ---
+ok PSYNC2: --- CYCLE 5 ---
+ok PSYNC2: --- CYCLE 6 ---
+ok PSYNC2: Bring the master back again for next test
+ok PSYNC2: Full resync after Master restart when too many key expired
+ok PSYNC2: Partial resync after Master restart using RDB aux fields when offset is 0
+ok PSYNC2: Partial resync after Master restart using RDB aux fields with data
+ok PSYNC2: Partial resync after Master restart using RDB aux fields with expire
+ok PSYNC2: Partial resync after restart using RDB aux fields
+ok PSYNC2: Set #0 to replicate from #2
+ok PSYNC2: Set #0 to replicate from #2
+ok PSYNC2: Set #0 to replicate from #3
+ok PSYNC2: Set #0 to replicate from #3
+ok PSYNC2: Set #0 to replicate from #4
+ok PSYNC2: Set #0 to replicate from #4
+ok PSYNC2: Set #1 to replicate from #0
+ok PSYNC2: Set #1 to replicate from #0
+ok PSYNC2: Set #1 to replicate from #0
+ok PSYNC2: Set #1 to replicate from #2
+ok PSYNC2: Set #2 to replicate from #0
+ok PSYNC2: Set #2 to replicate from #1
+ok PSYNC2: Set #2 to replicate from #3
+ok PSYNC2: Set #2 to replicate from #3
+ok PSYNC2: Set #3 to replicate from #0
+ok PSYNC2: Set #3 to replicate from #0
+ok PSYNC2: Set #3 to replicate from #1
+ok PSYNC2: Set #3 to replicate from #1
+ok PSYNC2: Set #3 to replicate from #2
+ok PSYNC2: Set #4 to replicate from #1
+ok PSYNC2: Set #4 to replicate from #2
+ok PSYNC2: Set #4 to replicate from #2
+ok PSYNC2: Set #4 to replicate from #2
+ok PSYNC2: Set #4 to replicate from #3
+ok PSYNC2: [NEW LAYOUT] Set #1 as master
+ok PSYNC2: [NEW LAYOUT] Set #1 as master
+ok PSYNC2: [NEW LAYOUT] Set #2 as master
+ok PSYNC2: [NEW LAYOUT] Set #2 as master
+ok PSYNC2: [NEW LAYOUT] Set #3 as master
+ok PSYNC2: [NEW LAYOUT] Set #4 as master
+ok PSYNC2: cluster is consistent after failover
+ok PSYNC2: cluster is consistent after failover
+ok PSYNC2: cluster is consistent after failover
+ok PSYNC2: cluster is consistent after failover
+ok PSYNC2: cluster is consistent after failover
+ok PSYNC2: cluster is consistent after failover
+ok PSYNC2: cluster is consistent after load (x = 103415)
+ok PSYNC2: cluster is consistent after load (x = 128110)
+ok PSYNC2: cluster is consistent after load (x = 14368)
+ok PSYNC2: cluster is consistent after load (x = 163062)
+ok PSYNC2: cluster is consistent after load (x = 27056)
+ok PSYNC2: cluster is consistent after load (x = 36779)
+ok PSYNC2: generate load while killing replication links
+ok PSYNC2: generate load while killing replication links
+ok PSYNC2: generate load while killing replication links
+ok PSYNC2: generate load while killing replication links
+ok PSYNC2: generate load while killing replication links
+ok PSYNC2: generate load while killing replication links
+ok PSYNC2: total sum of full synchronizations is exactly 4
+ok PSYNC2: total sum of full synchronizations is exactly 4
+ok PSYNC2: total sum of full synchronizations is exactly 4
+ok PSYNC2: total sum of full synchronizations is exactly 4
+ok PSYNC2: total sum of full synchronizations is exactly 4
+ok PSYNC2: total sum of full synchronizations is exactly 4
+ok PTTL returns time to live in milliseconds
+ok PUBLISH/PSUBSCRIBE after PUNSUBSCRIBE without arguments
+ok PUBLISH/PSUBSCRIBE basics
+ok PUBLISH/PSUBSCRIBE with two clients
+ok PUBLISH/SUBSCRIBE after UNSUBSCRIBE without arguments
+ok PUBLISH/SUBSCRIBE basics
+ok PUBLISH/SUBSCRIBE with two clients
+ok PUBSUB command basics
+ok PUNSUBSCRIBE and UNSUBSCRIBE should always reply
+ok PUNSUBSCRIBE from non-subscribed channels
+ok PUSH resulting from BRPOPLPUSH affect WATCH
+ok Partial resynchronization is successful even client-output-buffer-limit is less than repl-backlog-size
+ok Perform a Resharding
+ok Perform a final SAVE to leave a clean DB on disk
+ok Pipelined commands after QUIT must not be executed
+ok Pipelined commands after QUIT that exceed read buffer size
+ok Piping raw protocol
+ok Process title set as expected
+ok Protected mode works as expected
+ok Protocol desync regression test #1
+ok Protocol desync regression test #2
+ok Protocol desync regression test #3
+ok Pub/Sub PING
+ok PubSub messages with CLIENT REPLY OFF
+ok PubSubShard with CLIENT REPLY OFF
+ok QUIT returns OK
+ok RANDOMKEY
+ok RANDOMKEY against empty DB
+ok RANDOMKEY regression 1
+ok RANDOMKEY: Lazy-expire should not be wrapped in MULTI/EXEC
+ok RDB encoding loading test
+ok RDB load ziplist hash: converts to hash table when hash-max-ziplist-entries is exceeded
+ok RDB load ziplist hash: converts to listpack when RDB loading
+ok RDB load ziplist zset: converts to listpack when RDB loading
+ok RDB load ziplist zset: converts to skiplist when zset-max-ziplist-entries is exceeded
+ok RDB load zipmap hash: converts to hash table when hash-max-ziplist-entries is exceeded
+ok RDB load zipmap hash: converts to hash table when hash-max-ziplist-value is exceeded
+ok RDB load zipmap hash: converts to listpack
+ok RDB save will be failed in shutdown
+ok RENAME against already existing key
+ok RENAME against non existing source key
+ok RENAME basic usage
+ok RENAME can unblock XREADGROUP with -NOGROUP
+ok RENAME can unblock XREADGROUP with data
+ok RENAME command will not be marked with movablekeys
+ok RENAME source key should no longer exist
+ok RENAME where source and dest key are the same (existing)
+ok RENAME where source and dest key are the same (non existing)
+ok RENAME with volatile key, should move the TTL as well
+ok RENAME with volatile key, should not inherit TTL of target key
+ok RENAMENX against already existing key
+ok RENAMENX against already existing key (2)
+ok RENAMENX basic usage
+ok RENAMENX where source and dest key are the same (existing)
+ok RESET clears MONITOR state
+ok RESET clears Pub/Sub state
+ok RESET clears and discards MULTI state
+ok RESET clears authenticated state
+ok RESET clears client state
+ok RESP2 based basic invalidation with client reply off
+ok RESP3 Client gets tracking-redir-broken push message after cached key changed when rediretion client is terminated
+ok RESP3 attributes
+ok RESP3 attributes on RESP2
+ok RESP3 attributes readraw
+ok RESP3 based basic invalidation
+ok RESP3 based basic invalidation with client reply off
+ok RESP3 based basic redirect invalidation with client reply off
+ok RESP3 based basic tracking-redir-broken with client reply off
+ok RESP3 tracking redirection
+ok RESTORE can detect a syntax error for unrecongized options
+ok RESTORE can overwrite an existing key with REPLACE
+ok RESTORE can set LFU
+ok RESTORE can set LRU
+ok RESTORE can set an absolute expire
+ok RESTORE can set an arbitrary expire to the materialized key
+ok RESTORE can set an expire that overflows a 32 bit integer
+ok RESTORE returns an error of the key already exists
+ok RESTORE with ABSTTL in the past
+ok ROLE in master reports master with a slave
+ok ROLE in slave reports slave in connected state
+ok RPOP/LPOP with the optional count argument
+ok RPOPLPUSH against non existing key
+ok RPOPLPUSH against non existing src key
+ok RPOPLPUSH against non list dst key
+ok RPOPLPUSH against non list src key
+ok RPOPLPUSH base case - linkedlist
+ok RPOPLPUSH base case - ziplist
+ok RPOPLPUSH with linkedlist source and existing target linkedlist
+ok RPOPLPUSH with linkedlist source and existing target ziplist
+ok RPOPLPUSH with the same list as src and dst - linkedlist
+ok RPOPLPUSH with the same list as src and dst - ziplist
+ok RPOPLPUSH with ziplist source and existing target linkedlist
+ok RPOPLPUSH with ziplist source and existing target ziplist
+ok RPUSH against non-list value error
+ok Redis should actively expire keys incrementally
+ok Redis should lazy expire keys
+ok Redis should not try to convert DEL into EXPIREAT for EXPIRE -1
+ok Redis.replicate_commands() can be issued anywhere now
+ok Redis.replicate_commands() can be issued anywhere now
+ok Redis.set_repl() can be issued before replicate_commands() now
+ok Redis.set_repl() can be issued before replicate_commands() now
+ok Redis.set_repl() don't accept invalid values
+ok Redis.set_repl() don't accept invalid values
+ok Regression for a crash with blocking ops and pipelining
+ok Regression for bug 593 - chaining BRPOPLPUSH with other blocking cmds
+ok Regression for pattern matching long nested loops
+ok Regression for quicklist #3343 bug
+ok Regression test for #11715
+ok Replica client-output-buffer size is limited to backlog_limit/16 when no replication data is pending
+ok Replica could use replication buffer (beyond backlog config) for partial resynchronization
+ok Replication backlog memory will become smaller if disconnecting with replica
+ok Replication backlog size can outgrow the backlog limit config
+ok Replication buffer will become smaller when no replica uses
+ok Replication of SPOP command -- alsoPropagate() API
+ok Replication of an expired key does not delete the expired key
+ok Replication of script multiple pushes to list with BLPOP
+ok Replication of script multiple pushes to list with BLPOP
+ok Replication tests of XCLAIM with deleted entries (autclaim=0)
+ok Replication tests of XCLAIM with deleted entries (autclaim=1)
+ok Replication: commands with many arguments (issue #1221)
+ok Run blocking command again on cluster node1
+ok Run blocking command on cluster node3
+ok SADD a non-integer against an intset
+ok SADD against non set
+ok SADD an integer larger than 64 bits
+ok SADD overflows the maximum allowed integers in an intset
+ok SADD, SCARD, SISMEMBER, SMISMEMBER, SMEMBERS basics - intset
+ok SADD, SCARD, SISMEMBER, SMISMEMBER, SMEMBERS basics - regular set
+ok SAVE - make sure there are all the types as values
+ok SCAN COUNT
+ok SCAN MATCH
+ok SCAN TYPE
+ok SCAN basic
+ok SCAN guarantees check under write load
+ok SCAN regression test for issue #4906
+ok SCAN: Lazy-expire should not be wrapped in MULTI/EXEC
+ok SCRIPT EXISTS - can detect already defined scripts?
+ok SCRIPT LOAD - is able to register scripts in the scripting cache
+ok SCRIPTING FLUSH - is able to clear the scripts cache?
+ok SCRIPTING FLUSH ASYNC
+ok SDIFF against non-set should throw error
+ok SDIFF fuzzing
+ok SDIFF should handle non existing key as empty
+ok SDIFF with first set empty
+ok SDIFF with same set two times
+ok SDIFF with three sets - hashtable
+ok SDIFF with three sets - intset
+ok SDIFF with two sets - hashtable
+ok SDIFF with two sets - intset
+ok SDIFFSTORE against non-set should throw error
+ok SDIFFSTORE should handle non existing key as empty
+ok SDIFFSTORE with three sets - hashtable
+ok SDIFFSTORE with three sets - intset
+ok SELECT an out of range DB
+ok SET - use KEEPTTL option, TTL should not be removed
+ok SET - use KEEPTTL option, TTL should not be removed after loadaof
+ok SET 10000 numeric keys and access all them in reverse order
+ok SET and GET an empty item
+ok SET and GET an item
+ok SET command will not be marked with movablekeys
+ok SET command will remove expire
+ok SET on the master should immediately propagate
+ok SET with EX with big integer should report an error
+ok SET with EX with smallest integer should report an error
+ok SET/GET keys in different DBs
+ok SETBIT against integer-encoded key
+ok SETBIT against key with wrong type
+ok SETBIT against non-existing key
+ok SETBIT against string-encoded key
+ok SETBIT fuzzing
+ok SETBIT with non-bit argument
+ok SETBIT with out of range bit offset
+ok SETBIT/BITFIELD only increase dirty when the value changed
+ok SETEX - Check value
+ok SETEX - Overwrite old key
+ok SETEX - Set + Expire combo operation. Check for TTL
+ok SETEX - Wait for the key to expire
+ok SETEX - Wrong time parameter
+ok SETNX against expired volatile key
+ok SETNX against not-expired volatile key
+ok SETNX target key exists
+ok SETNX target key missing
+ok SETRANGE against integer-encoded key
+ok SETRANGE against key with wrong type
+ok SETRANGE against non-existing key
+ok SETRANGE against string-encoded key
+ok SETRANGE with huge offset
+ok SETRANGE with huge offset
+ok SETRANGE with out of range offset
+ok SHUTDOWN ABORT can cancel SIGTERM
+ok SHUTDOWN NOSAVE can kill a timedout script anyway
+ok SHUTDOWN NOSAVE can kill a timedout script anyway
+ok SHUTDOWN can proceed if shutdown command was with nosave
+ok SHUTDOWN will abort if rdb save failed on shutdown command
+ok SHUTDOWN will abort if rdb save failed on signal
+ok SINTER against non-set should throw error
+ok SINTER against three sets - hashtable
+ok SINTER against three sets - intset
+ok SINTER should handle non existing key as empty
+ok SINTER with same integer elements but different encoding
+ok SINTER with two sets - hashtable
+ok SINTER with two sets - intset
+ok SINTER/SUNION/SDIFF with three same sets - hashtable
+ok SINTER/SUNION/SDIFF with three same sets - intset
+ok SINTERCARD against non-existing key
+ok SINTERCARD against non-set should throw error
+ok SINTERCARD against three sets - hashtable
+ok SINTERCARD against three sets - intset
+ok SINTERCARD with illegal arguments
+ok SINTERCARD with two sets - hashtable
+ok SINTERCARD with two sets - intset
+ok SINTERSTORE against non existing keys should delete dstkey
+ok SINTERSTORE against non-set should throw error
+ok SINTERSTORE with three sets - hashtable
+ok SINTERSTORE with three sets - intset
+ok SINTERSTORE with two sets - hashtable
+ok SINTERSTORE with two sets - intset
+ok SINTERSTORE with two sets, after a DEBUG RELOAD - hashtable
+ok SINTERSTORE with two sets, after a DEBUG RELOAD - intset
+ok SLAVEOF should start with link status "down"
+ok SLOWLOG - Certain commands are omitted that contain sensitive information
+ok SLOWLOG - EXEC is not logged, just executed commands
+ok SLOWLOG - GET optional argument to limit output len works
+ok SLOWLOG - RESET subcommand works
+ok SLOWLOG - Rewritten commands are logged as their original command
+ok SLOWLOG - Some commands can redact sensitive fields
+ok SLOWLOG - can be disabled
+ok SLOWLOG - can clean older entries
+ok SLOWLOG - check that it starts with an empty log
+ok SLOWLOG - commands with too many arguments are trimmed
+ok SLOWLOG - count must be >= -1
+ok SLOWLOG - get all slow logs
+ok SLOWLOG - logged entry sanity check
+ok SLOWLOG - max entries is correctly handled
+ok SLOWLOG - only logs commands taking more time than specified
+ok SLOWLOG - too long arguments are trimmed
+ok SMISMEMBER against non set
+ok SMISMEMBER non existing key
+ok SMISMEMBER requires one or more members
+ok SMOVE basics - from intset to regular set
+ok SMOVE basics - from regular set to intset
+ok SMOVE from intset to non existing destination set
+ok SMOVE from regular set to non existing destination set
+ok SMOVE non existing key
+ok SMOVE non existing src set
+ok SMOVE only notify dstset when the addition is successful
+ok SMOVE with identical source and destination
+ok SMOVE wrong dst key type
+ok SMOVE wrong src key type
+ok SORT ALPHA against integer encoded strings
+ok SORT BY <constant> output gets ordered for scripting
+ok SORT BY <constant> with GET gets ordered for scripting
+ok SORT BY hash field STORE
+ok SORT BY key STORE
+ok SORT BY sub-sorts lexicographically if score is the same
+ok SORT DESC
+ok SORT GET #
+ok SORT GET (key and hash) with sanity check
+ok SORT GET <const>
+ok SORT GET with pattern ending with just -> does not get hash field
+ok SORT adds integer field to list
+ok SORT by nosort plus store retains native order for lists
+ok SORT by nosort retains native order for lists
+ok SORT by nosort with limit returns based on original list order
+ok SORT command is marked with movablekeys
+ok SORT extracts STORE correctly
+ok SORT extracts multiple STORE correctly
+ok SORT is normally not alpha re-ordered for the scripting engine
+ok SORT regression for issue #19, sorting floats
+ok SORT sorted set
+ok SORT sorted set BY nosort + LIMIT
+ok SORT sorted set BY nosort should retain ordering
+ok SORT sorted set BY nosort works as expected from scripts
+ok SORT sorted set: +inf and -inf handling
+ok SORT speed, 100 element list BY <const>, 100 times
+ok SORT speed, 100 element list BY hash field, 100 times
+ok SORT speed, 100 element list BY key, 100 times
+ok SORT speed, 100 element list directly, 100 times
+ok SORT will complain with numerical sorting and bad doubles (1)
+ok SORT will complain with numerical sorting and bad doubles (2)
+ok SORT with BY <constant> and STORE should still order output
+ok SORT with STORE does not create empty lists (github issue 224)
+ok SORT with STORE removes key if result is empty (github issue 227)
+ok SORT with STORE returns zero if result is empty (github issue 224)
+ok SORT_RO - Cannot run with STORE arg
+ok SORT_RO - Successful case
+ok SORT_RO command is marked with movablekeys
+ok SORT_RO get keys
+ok SPOP basics - hashtable
+ok SPOP basics - intset
+ok SPOP new implementation: code path #1
+ok SPOP new implementation: code path #2
+ok SPOP new implementation: code path #3
+ok SPOP using integers with Knuth's algorithm
+ok SPOP using integers, testing Knuth's and Floyd's algorithm
+ok SPOP with <count>
+ok SPOP with <count>
+ok SPOP with <count>=1 - hashtable
+ok SPOP with <count>=1 - intset
+ok SPOP: We can call scripts rewriting client->argv from Lua
+ok SPUBLISH/SSUBSCRIBE after UNSUBSCRIBE without arguments
+ok SPUBLISH/SSUBSCRIBE basics
+ok SPUBLISH/SSUBSCRIBE with PUBLISH/SUBSCRIBE
+ok SPUBLISH/SSUBSCRIBE with two clients
+ok SPUBLISH/SSUBSCRIBE with two clients
+ok SRANDMEMBER - hashtable
+ok SRANDMEMBER - intset
+ok SRANDMEMBER count of 0 is handled correctly
+ok SRANDMEMBER count of 0 is handled correctly - emptyarray
+ok SRANDMEMBER count overflow
+ok SRANDMEMBER histogram distribution - hashtable
+ok SRANDMEMBER histogram distribution - intset
+ok SRANDMEMBER with <count> - hashtable
+ok SRANDMEMBER with <count> - intset
+ok SRANDMEMBER with <count> against non existing key
+ok SRANDMEMBER with <count> against non existing key - emptyarray
+ok SRANDMEMBER with a dict containing long chain
+ok SREM basics - intset
+ok SREM basics - regular set
+ok SREM variadic version with more args needed to destroy the key
+ok SREM with multiple arguments
+ok SSCAN with PATTERN
+ok SSCAN with encoding hashtable
+ok SSCAN with encoding intset
+ok SSCAN with integer encoded object (issue #1345)
+ok SSUBSCRIBE to one channel more than once
+ok STRLEN against integer-encoded value
+ok STRLEN against non-existing key
+ok STRLEN against plain string
+ok SUBSCRIBE to one channel more than once
+ok SUNION against non-set should throw error
+ok SUNION should handle non existing key as empty
+ok SUNION with non existing keys - hashtable
+ok SUNION with non existing keys - intset
+ok SUNION with two sets - hashtable
+ok SUNION with two sets - intset
+ok SUNIONSTORE against non existing keys should delete dstkey
+ok SUNIONSTORE against non-set should throw error
+ok SUNIONSTORE should handle non existing key as empty
+ok SUNIONSTORE with two sets - hashtable
+ok SUNIONSTORE with two sets - intset
+ok SUNSUBSCRIBE from non-subscribed channels
+ok SWAPDB awakes blocked client
+ok SWAPDB does not touch non-existing key replaced with stale key
+ok SWAPDB does not touch stale key replaced with another stale key
+ok SWAPDB does not touch watched stale keys
+ok SWAPDB is able to touch the watched keys that do not exist
+ok SWAPDB is able to touch the watched keys that exist
+ok SWAPDB wants to wake blocked client, but the key already expired
+ok Same dataset digest if saving/reloading as AOF?
+ok Sanity test push cmd after resharding
+ok Scan mode
+ok Script - disallow write on OOM
+ok Script ACL check
+ok Script ACL check
+ok Script block the time during execution
+ok Script block the time during execution
+ok Script check unpack with massive arguments
+ok Script check unpack with massive arguments
+ok Script del key with expiration set
+ok Script del key with expiration set
+ok Script delete the expired key
+ok Script delete the expired key
+ok Script read key with expiration set
+ok Script read key with expiration set
+ok Script return recursive object
+ok Script return recursive object
+ok Script with RESP3 map
+ok Script with RESP3 map
+ok Scripting engine PRNG can be seeded correctly
+ok Scripts can handle commands with incorrect arity
+ok Scripts can handle commands with incorrect arity
+ok Second server should have role master at first
+ok Self-referential BRPOPLPUSH
+ok Server is able to evacuate enough keys when num of keys surpasses limit by more than defined initial effort
+ok Server is able to generate a stack trace on selected systems
+ok Server should not start if RDB is corrupted
+ok Server started empty with empty RDB file
+ok Server started empty with non-existing RDB file
+ok Set encoding after DEBUG RELOAD
+ok Set instance A as slave of B
+ok Setup slave
+ok Shebang support for lua engine
+ok Short read + command: Server should start
+ok Short read: Server should have logged an error
+ok Short read: Server should start if load-truncated is yes
+ok Short read: Utility should be able to fix the AOF
+ok Short read: Utility should confirm the AOF is not valid
+ok Short read: Utility should show the abnormal line num in AOF
+ok Shutting down master waits for replica then aborted
+ok Shutting down master waits for replica then fails
+ok Shutting down master waits for replica timeout
+ok Shutting down master waits for replica to catch up (shutdown)
+ok Shutting down master waits for replica to catch up (sigterm)
+ok Single channel is not valid with allchannels
+ok Single channel is valid
+ok Slave enters handshake
+ok Slave is able to detect timeout during handshake
+ok Slave is able to evict keys created in writable slaves
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Slave should be able to synchronize with the master
+ok Stream can be rewrite into AOF correctly after XDEL lastid
+ok Stress test the hash ziplist -> hashtable encoding conversion
+ok Stress tester for #3343-alike bugs comp: 0
+ok Stress tester for #3343-alike bugs comp: 1
+ok Stress tester for #3343-alike bugs comp: 2
+ok String containing number precision test (regression of issue #1118)
+ok String containing number precision test (regression of issue #1118)
+ok Subcommand syntax error crash (issue #10070)
+ok Subscribers are killed when revoked of allchannels permission
+ok Subscribers are killed when revoked of channel permission
+ok Subscribers are killed when revoked of channel permission
+ok Subscribers are killed when revoked of pattern permission
+ok Subscribers are pardoned if literal permissions are retained and/or gaining allchannels
+ok Successfully load AOF which has timestamp annotations inside
+ok Sync should have transferred keys from master
+ok TOUCH alters the last access time of a key
+ok TOUCH returns the number of existing keys specified
+ok TTL / PTTL / EXPIRETIME / PEXPIRETIME return -1 if key has no expire
+ok TTL / PTTL / EXPIRETIME / PEXPIRETIME return -2 if key does not exit
+ok TTL returns time to live in seconds
+ok TTL, TYPE and EXISTS do not alter the last access time of a key
+ok Temp rdb will be deleted if we use bg_unlink when shutdown
+ok Temp rdb will be deleted in signal handle
+ok Test ACL GETUSER response information
+ok Test ACL list idempotency
+ok Test ACL log correctly identifies the relevant item when selectors are used
+ok Test ACL selectors by default have no permissions
+ok Test ASYNC flushall
+ok Test BITFIELD with read and write permissions
+ok Test BITFIELD with separate read permission
+ok Test BITFIELD with separate write permission
+ok Test DRYRUN with wrong number of arguments
+ok Test FLUSHALL aborts bgsave
+ok Test LINDEX and LINSERT on plain nodes
+ok Test LMOVE on plain nodes
+ok Test LPOS on plain nodes
+ok Test LPUSH and LPOP on plain nodes
+ok Test LREM on plain nodes
+ok Test LSET with packed / plain combinations
+ok Test LSET with packed consist only one item
+ok Test LSET with packed is split in the middle
+ok Test LTRIM on plain nodes
+ok Test R+W is the same as all permissions
+ok Test RDB load info
+ok Test RDB stream encoding
+ok Test RDB stream encoding - sanitize dump
+ok Test RO scripts are not blocked by pause RO
+ok Test SET with read and write permissions
+ok Test SET with separate read permission
+ok Test SET with separate write permission
+ok Test an example script DECR_IF_GT
+ok Test an example script DECR_IF_GT
+ok Test basic dry run functionality
+ok Test basic multiple selectors
+ok Test behavior of loading ACLs
+ok Test both active and passive expires are skipped during client pause
+ok Test child sending info
+ok Test clients with syntax errors will get responses immediately
+ok Test deleting selectors
+ok Test dofile are not available
+ok Test dofile are not available
+ok Test flexible selector definition
+ok Test general keyspace commands require some type of permission to execute
+ok Test hashed passwords removal
+ok Test latency events logging
+ok Test loadfile are not available
+ok Test loadfile are not available
+ok Test loading an ACL file with duplicate default user
+ok Test loading an ACL file with duplicate users
+ok Test loading duplicate users in config on startup
+ok Test may-replicate commands are rejected in RO scripts
+ok Test multiple clients can be queued up and unblocked
+ok Test password hashes can be added
+ok Test password hashes validate input
+ok Test print are not available
+ok Test print are not available
+ok Test read commands are not blocked by client pause
+ok Test read-only scripts in mutli-exec are not blocked by pause RO
+ok Test read/admin mutli-execs are not blocked by pause RO
+ok Test redis-check-aof for Multi Part AOF with rdb-preamble AOF base
+ok Test redis-check-aof for Multi Part AOF with resp AOF base
+ok Test redis-check-aof for old style rdb-preamble AOF
+ok Test redis-check-aof for old style resp AOF
+ok Test redis-check-aof only truncates the last file for Multi Part AOF in fix mode
+ok Test redis-check-aof only truncates the last file for Multi Part AOF in truncate-to-timestamp mode
+ok Test replica offset would grow after unpause
+ok Test replication partial resync: backlog expired (diskless: no, disabled, reconnect: 1)
+ok Test replication partial resync: backlog expired (diskless: no, swapdb, reconnect: 1)
+ok Test replication partial resync: backlog expired (diskless: yes, disabled, reconnect: 1)
+ok Test replication partial resync: backlog expired (diskless: yes, swapdb, reconnect: 1)
+ok Test replication partial resync: no backlog (diskless: no, disabled, reconnect: 1)
+ok Test replication partial resync: no backlog (diskless: no, swapdb, reconnect: 1)
+ok Test replication partial resync: no backlog (diskless: yes, disabled, reconnect: 1)
+ok Test replication partial resync: no backlog (diskless: yes, swapdb, reconnect: 1)
+ok Test replication partial resync: no reconnection, just sync (diskless: no, disabled, reconnect: 0)
+ok Test replication partial resync: no reconnection, just sync (diskless: no, swapdb, reconnect: 0)
+ok Test replication partial resync: no reconnection, just sync (diskless: yes, disabled, reconnect: 0)
+ok Test replication partial resync: no reconnection, just sync (diskless: yes, swapdb, reconnect: 0)
+ok Test replication partial resync: ok after delay (diskless: no, disabled, reconnect: 1)
+ok Test replication partial resync: ok after delay (diskless: no, swapdb, reconnect: 1)
+ok Test replication partial resync: ok after delay (diskless: yes, disabled, reconnect: 1)
+ok Test replication partial resync: ok after delay (diskless: yes, swapdb, reconnect: 1)
+ok Test replication partial resync: ok psync (diskless: no, disabled, reconnect: 1)
+ok Test replication partial resync: ok psync (diskless: no, swapdb, reconnect: 1)
+ok Test replication partial resync: ok psync (diskless: yes, disabled, reconnect: 1)
+ok Test replication partial resync: ok psync (diskless: yes, swapdb, reconnect: 1)
+ok Test replication with blocking lists and sorted sets operations
+ok Test replication with parallel clients writing in different DBs
+ok Test scripting debug lua stack overflow
+ok Test scripting debug protocol parsing
+ok Test scripts are blocked by pause RO
+ok Test selective replication of certain Redis commands from Lua
+ok Test selective replication of certain Redis commands from Lua
+ok Test selector syntax error reports the error in the selector context
+ok Test separate read and write permissions
+ok Test separate read and write permissions on different selectors are not additive
+ok Test separate read permission
+ok Test separate write permission
+ok Test sharded channel permissions
+ok Test sort with ACL permissions
+ok Test special commands are paused by RO
+ok Test that client pause starts at the end of a transaction
+ok Test various commands for command permissions
+ok Test various odd commands for key permissions
+ok Test when replica paused, offset would not grow
+ok Test write commands are paused by RO
+ok Test write mutli-execs are blocked by pause RO
+ok Test write scripts in mutli-exec are blocked by pause RO
+ok The client is now able to disable tracking
+ok The connection gets invalidation messages about all the keys
+ok The link status should be up
+ok The other connection is able to get invalidations
+ok The role should immediately be changed to "replica"
+ok The update of replBufBlock's repl_offset is ok - Regression test for #11666
+ok Timedout read-only scripts can be killed by SCRIPT KILL
+ok Timedout read-only scripts can be killed by SCRIPT KILL
+ok Timedout read-only scripts can be killed by SCRIPT KILL even when use pcall
+ok Timedout read-only scripts can be killed by SCRIPT KILL even when use pcall
+ok Timedout script does not cause a false dead client
+ok Timedout script does not cause a false dead client
+ok Timedout script link is still usable after Lua returns
+ok Timedout script link is still usable after Lua returns
+ok Timedout scripts and unblocked command
+ok Timedout scripts and unblocked command
+ok Timedout scripts that modified data can't be killed by SCRIPT KILL
+ok Timedout scripts that modified data can't be killed by SCRIPT KILL
+ok Tracking NOLOOP mode in BCAST mode works
+ok Tracking NOLOOP mode in standard mode works
+ok Tracking gets notification of expired keys
+ok Tracking gets notification of lazy expired keys
+ok Tracking gets notification on tracking table key eviction
+ok Tracking info is correct
+ok Tracking invalidation message is not interleaved with multiple keys response
+ok Tracking invalidation message is not interleaved with transaction response
+ok Tracking invalidation message of eviction keys should be before response
+ok Tracking only occurs for scripts when a command calls a read-only command
+ok Truncate AOF to specific timestamp
+ok Truncated AOF loaded: we expect foo to be equal to 5
+ok Truncated AOF loaded: we expect foo to be equal to 6 now
+ok Try trick global protection 1
+ok Try trick global protection 1
+ok Try trick global protection 2
+ok Try trick global protection 2
+ok Try trick global protection 3
+ok Try trick global protection 3
+ok Try trick global protection 4
+ok Try trick global protection 4
+ok Try trick readonly table on bit table
+ok Try trick readonly table on bit table
+ok Try trick readonly table on cmsgpack table
+ok Try trick readonly table on cmsgpack table
+ok Try trick readonly table on json table
+ok Try trick readonly table on json table
+ok Try trick readonly table on redis table
+ok Try trick readonly table on redis table
+ok Turning off AOF kills the background writing child if any
+ok UNLINK can reclaim memory in background
+ok UNSUBSCRIBE from non-subscribed channels
+ok UNWATCH when there is nothing watched works as expected
+ok Unbalanced number of quotes
+ok Unblocked BLMOVE gets notification after response
+ok Unfinished MULTI: Server should have logged an error
+ok Unfinished MULTI: Server should start if load-truncated is yes
+ok Unknown command: Server should have logged an error
+ok Unknown shebang flag
+ok Unknown shebang option
+ok Untagged multi-key commands
+ok Update acl-pubsub-default, existing users shouldn't get affected
+ok Usernames can not contain spaces or null characters
+ok Users can be configured to authenticate with any password
+ok Using side effects is not a problem with command replication
+ok Using side effects is not a problem with command replication
+ok Validate subset of channels is prefixed with resetchannels flag
+ok Vararg DEL
+ok Variadic RPUSH/LPUSH
+ok Variadic SADD
+ok Verify command got unblocked after cluster failure
+ok Verify command got unblocked after resharding
+ok Verify negative arg count is error instead of crash (issue #1842)
+ok Verify negative arg count is error instead of crash (issue #1842)
+ok Very big payload in GET/SET
+ok Very big payload random access
+ok WAIT implicitly blocks on client pause since ACKs aren't sent
+ok WAIT should acknowledge 1 additional copy of the data
+ok WAIT should not acknowledge 1 additional copy if slave is blocked
+ok WAIT should not acknowledge 2 additional copies of the data
+ok WATCH inside MULTI is not allowed
+ok WATCH is able to remember the DB a key belongs to
+ok WATCH stale keys should not fail EXEC
+ok WATCH will consider touched expired keys
+ok WATCH will consider touched keys target of EXPIRE
+ok Wait for cluster to be stable
+ok When default user has no command permission, hello command still works for other users
+ok When default user is off, new connections are not authenticated
+ok With maxmemory and LRU policy integers are not shared
+ok With maxmemory and non-LRU policy integers are still shared
+ok With min-slaves-to-write (1,3): master should be writable
+ok With min-slaves-to-write (2,3): master should not be writable
+ok With min-slaves-to-write function without no-write flag
+ok With min-slaves-to-write: master not writable with lagged slave
+ok With not enough good slaves, read in Lua script is still accepted
+ok Without maxmemory small integers are shared
+ok Writable replica doesn't return expired keys
+ok Wrong multibulk payload header
+ok XACK can't remove the same item multiple times
+ok XACK is able to accept multiple arguments
+ok XACK is able to remove items from the consumer/group PEL
+ok XACK should fail if got at least one invalid ID
+ok XADD 0-* should succeed
+ok XADD IDs are incremental
+ok XADD IDs are incremental when ms is the same as well
+ok XADD IDs correctly report an error when overflowing
+ok XADD advances the entries-added counter and sets the recorded-first-entry-id
+ok XADD auto-generated sequence can't be smaller than last ID
+ok XADD auto-generated sequence can't overflow
+ok XADD auto-generated sequence is incremented for last ID
+ok XADD auto-generated sequence is zero for future timestamp ID
+ok XADD can CREATE an empty stream
+ok XADD can add entries into a stream that XRANGE can fetch
+ok XADD mass insertion and XLEN
+ok XADD streamID edge
+ok XADD with ID 0-0
+ok XADD with LIMIT consecutive calls
+ok XADD with LIMIT delete entries no more than limit
+ok XADD with MAXLEN > xlen can propagate correctly
+ok XADD with MAXLEN option
+ok XADD with MAXLEN option and the '=' argument
+ok XADD with MAXLEN option and the '~' argument
+ok XADD with MINID > lastid can propagate correctly
+ok XADD with MINID option
+ok XADD with NOMKSTREAM option
+ok XADD with ~ MAXLEN and LIMIT can propagate correctly
+ok XADD with ~ MAXLEN can propagate correctly
+ok XADD with ~ MINID and LIMIT can propagate correctly
+ok XADD with ~ MINID can propagate correctly
+ok XADD wrong number of args
+ok XAUTOCLAIM COUNT must be > 0
+ok XAUTOCLAIM as an iterator
+ok XAUTOCLAIM can claim PEL items from another consumer
+ok XAUTOCLAIM with XDEL
+ok XAUTOCLAIM with XDEL and count
+ok XAUTOCLAIM with out of range count
+ok XCLAIM can claim PEL items from another consumer
+ok XCLAIM same consumer
+ok XCLAIM with XDEL
+ok XCLAIM with trimming
+ok XCLAIM with trimming
+ok XCLAIM without JUSTID increments delivery count
+ok XDEL basic test
+ok XDEL fuzz test
+ok XDEL/TRIM are reflected by recorded first entry
+ok XGROUP CREATE: automatic stream creation fails without MKSTREAM
+ok XGROUP CREATE: automatic stream creation works with MKSTREAM
+ok XGROUP CREATE: creation and duplicate group name detection
+ok XGROUP CREATECONSUMER: create consumer if does not exist
+ok XGROUP CREATECONSUMER: group must exist
+ok XGROUP DESTROY should unblock XREADGROUP with -NOGROUP
+ok XGROUP HELP should not have unexpected options
+ok XINFO FULL output
+ok XINFO HELP should not have unexpected options
+ok XPENDING can return single consumer items
+ok XPENDING is able to return pending items
+ok XPENDING only group
+ok XPENDING with IDLE
+ok XPENDING with exclusive range intervals works as expected
+ok XRANGE COUNT works as expected
+ok XRANGE can be used to iterate the whole stream
+ok XRANGE exclusive ranges
+ok XRANGE fuzzing
+ok XREAD + multiple XADD inside transaction
+ok XREAD command is marked with movablekeys
+ok XREAD streamID edge (blocking)
+ok XREAD streamID edge (no-blocking)
+ok XREAD with non empty second stream
+ok XREAD with non empty stream
+ok XREAD with same stream name multiple times should work
+ok XREAD: XADD + DEL + LPUSH should not awake client
+ok XREAD: XADD + DEL should not awake client
+ok XREADGROUP can read the history of the elements we own
+ok XREADGROUP history reporting of deleted entries. Bug #5570
+ok XREADGROUP will not report data on empty history. Bug #5577
+ok XREADGROUP will return only new elements
+ok XREADGROUP with NOACK creates consumer
+ok XREVRANGE COUNT works as expected
+ok XREVRANGE regression test for issue #5006
+ok XREVRANGE returns the reverse of XRANGE
+ok XSETID can set a specific ID
+ok XSETID cannot SETID on non-existent key
+ok XSETID cannot SETID with smaller ID
+ok XSETID cannot run with a maximal tombstone but without an offset
+ok XSETID cannot run with an offset but without a maximal tombstone
+ok XSETID cannot set the maximal tombstone with larger ID
+ok XSETID cannot set the offset to less than the length
+ok XSETID errors on negstive offset
+ok XTRIM with LIMIT delete entries no more than limit
+ok XTRIM with MAXLEN option basic test
+ok XTRIM with MINID option
+ok XTRIM with MINID option, big delta from master record
+ok XTRIM with ~ MAXLEN can propagate correctly
+ok XTRIM with ~ is limited
+ok XTRIM without ~ and with LIMIT
+ok XTRIM without ~ is not limited
+ok ZADD - Return value is the number of actually added items - $encoding
+ok ZADD - Return value is the number of actually added items - $encoding
+ok ZADD - Variadic version base case - $encoding
+ok ZADD - Variadic version base case - $encoding
+ok ZADD - Variadic version does not add nothing on single parsing err - $encoding
+ok ZADD - Variadic version does not add nothing on single parsing err - $encoding
+ok ZADD - Variadic version will raise error on missing arg - $encoding
+ok ZADD - Variadic version will raise error on missing arg - $encoding
+ok ZADD CH option changes return value to all changed elements - listpack
+ok ZADD CH option changes return value to all changed elements - skiplist
+ok ZADD GT XX updates existing elements when new scores are greater and skips new elements - listpack
+ok ZADD GT XX updates existing elements when new scores are greater and skips new elements - skiplist
+ok ZADD GT and NX are not compatible - listpack
+ok ZADD GT and NX are not compatible - skiplist
+ok ZADD GT updates existing elements when new scores are greater - listpack
+ok ZADD GT updates existing elements when new scores are greater - skiplist
+ok ZADD INCR LT/GT replies with nill if score not updated - listpack
+ok ZADD INCR LT/GT replies with nill if score not updated - skiplist
+ok ZADD INCR LT/GT with inf - listpack
+ok ZADD INCR LT/GT with inf - skiplist
+ok ZADD INCR works like ZINCRBY - listpack
+ok ZADD INCR works like ZINCRBY - skiplist
+ok ZADD INCR works with a single score-elemenet pair - listpack
+ok ZADD INCR works with a single score-elemenet pair - skiplist
+ok ZADD LT XX updates existing elements when new scores are lower and skips new elements - listpack
+ok ZADD LT XX updates existing elements when new scores are lower and skips new elements - skiplist
+ok ZADD LT and GT are not compatible - listpack
+ok ZADD LT and GT are not compatible - skiplist
+ok ZADD LT and NX are not compatible - listpack
+ok ZADD LT and NX are not compatible - skiplist
+ok ZADD LT updates existing elements when new scores are lower - listpack
+ok ZADD LT updates existing elements when new scores are lower - skiplist
+ok ZADD NX only add new elements without updating old ones - listpack
+ok ZADD NX only add new elements without updating old ones - skiplist
+ok ZADD NX with non existing key - listpack
+ok ZADD NX with non existing key - skiplist
+ok ZADD XX and NX are not compatible - listpack
+ok ZADD XX and NX are not compatible - skiplist
+ok ZADD XX existing key - listpack
+ok ZADD XX existing key - skiplist
+ok ZADD XX option without key - listpack
+ok ZADD XX option without key - skiplist
+ok ZADD XX returns the number of elements actually added - listpack
+ok ZADD XX returns the number of elements actually added - skiplist
+ok ZADD XX updates existing elements score - listpack
+ok ZADD XX updates existing elements score - skiplist
+ok ZADD with options syntax error with incomplete pair - listpack
+ok ZADD with options syntax error with incomplete pair - skiplist
+ok ZCARD basics - listpack
+ok ZCARD basics - skiplist
+ok ZDIFF algorithm 1 - listpack
+ok ZDIFF algorithm 1 - skiplist
+ok ZDIFF algorithm 2 - listpack
+ok ZDIFF algorithm 2 - skiplist
+ok ZDIFF basics - listpack
+ok ZDIFF basics - skiplist
+ok ZDIFF fuzzing - listpack
+ok ZDIFF fuzzing - skiplist
+ok ZDIFF subtracting set from itself - listpack
+ok ZDIFF subtracting set from itself - skiplist
+ok ZDIFFSTORE basics - listpack
+ok ZDIFFSTORE basics - skiplist
+ok ZDIFFSTORE with a regular set - listpack
+ok ZDIFFSTORE with a regular set - skiplist
+ok ZINCRBY - can create a new sorted set - listpack
+ok ZINCRBY - can create a new sorted set - skiplist
+ok ZINCRBY - increment and decrement - listpack
+ok ZINCRBY - increment and decrement - skiplist
+ok ZINCRBY calls leading to NaN result in error - listpack
+ok ZINCRBY calls leading to NaN result in error - skiplist
+ok ZINCRBY does not work variadic even if shares ZADD implementation - $encoding
+ok ZINCRBY does not work variadic even if shares ZADD implementation - $encoding
+ok ZINCRBY return value - listpack
+ok ZINCRBY return value - skiplist
+ok ZINTER RESP3 - listpack
+ok ZINTER RESP3 - skiplist
+ok ZINTER basics - listpack
+ok ZINTER basics - skiplist
+ok ZINTER with weights - listpack
+ok ZINTER with weights - skiplist
+ok ZINTERCARD basics - listpack
+ok ZINTERCARD basics - skiplist
+ok ZINTERCARD with illegal arguments
+ok ZINTERCARD with illegal arguments
+ok ZINTERSTORE #516 regression, mixed sets and ziplist zsets
+ok ZINTERSTORE basics - listpack
+ok ZINTERSTORE basics - skiplist
+ok ZINTERSTORE regression with two sets, intset+hashtable
+ok ZINTERSTORE with +inf/-inf scores - listpack
+ok ZINTERSTORE with +inf/-inf scores - skiplist
+ok ZINTERSTORE with AGGREGATE MAX - listpack
+ok ZINTERSTORE with AGGREGATE MAX - skiplist
+ok ZINTERSTORE with AGGREGATE MIN - listpack
+ok ZINTERSTORE with AGGREGATE MIN - skiplist
+ok ZINTERSTORE with NaN weights - listpack
+ok ZINTERSTORE with NaN weights - skiplist
+ok ZINTERSTORE with a regular set and weights - listpack
+ok ZINTERSTORE with a regular set and weights - skiplist
+ok ZINTERSTORE with weights - listpack
+ok ZINTERSTORE with weights - skiplist
+ok ZLEXCOUNT advanced - listpack
+ok ZLEXCOUNT advanced - skiplist
+ok ZMPOP propagate as pop with count command to replica
+ok ZMPOP readraw in RESP2
+ok ZMPOP readraw in RESP3
+ok ZMPOP with illegal argument
+ok ZMPOP_MIN/ZMPOP_MAX with count - listpack
+ok ZMPOP_MIN/ZMPOP_MAX with count - listpack RESP3
+ok ZMPOP_MIN/ZMPOP_MAX with count - skiplist
+ok ZMPOP_MIN/ZMPOP_MAX with count - skiplist RESP3
+ok ZMSCORE - listpack
+ok ZMSCORE - skiplist
+ok ZMSCORE retrieve
+ok ZMSCORE retrieve from empty set
+ok ZMSCORE retrieve requires one or more members
+ok ZMSCORE retrieve single member
+ok ZMSCORE retrieve with missing member
+ok ZPOP/ZMPOP against wrong type
+ok ZPOPMAX with negative count
+ok ZPOPMAX with negative count
+ok ZPOPMAX with the count 0 returns an empty array
+ok ZPOPMAX with the count 0 returns an empty array
+ok ZPOPMIN with negative count
+ok ZPOPMIN with negative count
+ok ZPOPMIN with the count 0 returns an empty array
+ok ZPOPMIN with the count 0 returns an empty array
+ok ZPOPMIN/ZPOPMAX readraw in RESP2
+ok ZPOPMIN/ZPOPMAX readraw in RESP3
+ok ZPOPMIN/ZPOPMAX with count - listpack
+ok ZPOPMIN/ZPOPMAX with count - listpack RESP3
+ok ZPOPMIN/ZPOPMAX with count - skiplist
+ok ZPOPMIN/ZPOPMAX with count - skiplist RESP3
+ok ZRANDMEMBER - listpack
+ok ZRANDMEMBER - skiplist
+ok ZRANDMEMBER count of 0 is handled correctly
+ok ZRANDMEMBER count of 0 is handled correctly - emptyarray
+ok ZRANDMEMBER count overflow
+ok ZRANDMEMBER with <count> - listpack
+ok ZRANDMEMBER with <count> - skiplist
+ok ZRANDMEMBER with <count> against non existing key
+ok ZRANDMEMBER with <count> against non existing key - emptyarray
+ok ZRANDMEMBER with RESP3
+ok ZRANGE BYLEX
+ok ZRANGE BYSCORE REV LIMIT
+ok ZRANGE basics - listpack
+ok ZRANGE basics - skiplist
+ok ZRANGE invalid syntax
+ok ZRANGEBYLEX fuzzy test, 100 ranges in 100 element sorted set - skiplist
+ok ZRANGEBYLEX fuzzy test, 100 ranges in 128 element sorted set - listpack
+ok ZRANGEBYLEX with invalid lex range specifiers - listpack
+ok ZRANGEBYLEX with invalid lex range specifiers - skiplist
+ok ZRANGEBYLEX/ZREVRANGEBYLEX/ZLEXCOUNT basics - listpack
+ok ZRANGEBYLEX/ZREVRANGEBYLEX/ZLEXCOUNT basics - skiplist
+ok ZRANGEBYSCORE fuzzy test, 100 ranges in 100 element sorted set - skiplist
+ok ZRANGEBYSCORE fuzzy test, 100 ranges in 128 element sorted set - listpack
+ok ZRANGEBYSCORE with LIMIT - listpack
+ok ZRANGEBYSCORE with LIMIT - skiplist
+ok ZRANGEBYSCORE with LIMIT and WITHSCORES - listpack
+ok ZRANGEBYSCORE with LIMIT and WITHSCORES - skiplist
+ok ZRANGEBYSCORE with WITHSCORES - listpack
+ok ZRANGEBYSCORE with WITHSCORES - skiplist
+ok ZRANGEBYSCORE with non-value min or max - listpack
+ok ZRANGEBYSCORE with non-value min or max - skiplist
+ok ZRANGEBYSCORE/ZREVRANGEBYSCORE/ZCOUNT basics - listpack
+ok ZRANGEBYSCORE/ZREVRANGEBYSCORE/ZCOUNT basics - skiplist
+ok ZRANGEBYSLEX with LIMIT - listpack
+ok ZRANGEBYSLEX with LIMIT - skiplist
+ok ZRANGESTORE - empty range
+ok ZRANGESTORE - src key missing
+ok ZRANGESTORE - src key wrong type
+ok ZRANGESTORE BYLEX
+ok ZRANGESTORE BYLEX - empty range
+ok ZRANGESTORE BYSCORE
+ok ZRANGESTORE BYSCORE - empty range
+ok ZRANGESTORE BYSCORE LIMIT
+ok ZRANGESTORE BYSCORE REV LIMIT
+ok ZRANGESTORE RESP3
+ok ZRANGESTORE basic
+ok ZRANGESTORE invalid syntax
+ok ZRANGESTORE range
+ok ZRANGESTORE with zset-max-listpack-entries 0 #10767 case
+ok ZRANGESTORE with zset-max-listpack-entries 1 dst key should use skiplist encoding
+ok ZRANK - after deletion - listpack
+ok ZRANK - after deletion - skiplist
+ok ZRANK/ZREVRANK basics - listpack
+ok ZRANK/ZREVRANK basics - skiplist
+ok ZREM removes key after last element is removed - listpack
+ok ZREM removes key after last element is removed - skiplist
+ok ZREM variadic version - listpack
+ok ZREM variadic version - skiplist
+ok ZREM variadic version -- remove elements after key deletion - listpack
+ok ZREM variadic version -- remove elements after key deletion - skiplist
+ok ZREMRANGEBYLEX fuzzy test, 100 ranges in 100 element sorted set - skiplist
+ok ZREMRANGEBYLEX fuzzy test, 100 ranges in 128 element sorted set - listpack
+ok ZREMRANGEBYRANK basics - listpack
+ok ZREMRANGEBYRANK basics - skiplist
+ok ZREMRANGEBYSCORE basics - listpack
+ok ZREMRANGEBYSCORE basics - skiplist
+ok ZREMRANGEBYSCORE with non-value min or max - listpack
+ok ZREMRANGEBYSCORE with non-value min or max - skiplist
+ok ZREVRANGE basics - listpack
+ok ZREVRANGE basics - skiplist
+ok ZSCAN scores: regression test for issue #2175
+ok ZSCAN with PATTERN
+ok ZSCAN with encoding listpack
+ok ZSCAN with encoding skiplist
+ok ZSCORE - listpack
+ok ZSCORE - skiplist
+ok ZSCORE after a DEBUG RELOAD - listpack
+ok ZSCORE after a DEBUG RELOAD - skiplist
+ok ZSET basic ZADD and score update - listpack
+ok ZSET basic ZADD and score update - skiplist
+ok ZSET commands don't accept the empty strings as valid score
+ok ZSET element can't be set to NaN with ZADD - listpack
+ok ZSET element can't be set to NaN with ZADD - skiplist
+ok ZSET element can't be set to NaN with ZINCRBY - listpack
+ok ZSET element can't be set to NaN with ZINCRBY - skiplist
+ok ZSET skiplist order consistency when elements are moved
+ok ZSET sorting stresser - listpack
+ok ZSET sorting stresser - skiplist
+ok ZSETs ZRANK augmented skip list stress testing - listpack
+ok ZSETs ZRANK augmented skip list stress testing - skiplist
+ok ZSETs skiplist implementation backlink consistency test - listpack
+ok ZSETs skiplist implementation backlink consistency test - skiplist
+ok ZUNION with weights - listpack
+ok ZUNION with weights - skiplist
+ok ZUNION/ZINTER with AGGREGATE MAX - listpack
+ok ZUNION/ZINTER with AGGREGATE MAX - skiplist
+ok ZUNION/ZINTER with AGGREGATE MIN - listpack
+ok ZUNION/ZINTER with AGGREGATE MIN - skiplist
+ok ZUNION/ZINTER/ZINTERCARD/ZDIFF against non-existing key - listpack
+ok ZUNION/ZINTER/ZINTERCARD/ZDIFF against non-existing key - skiplist
+ok ZUNION/ZINTER/ZINTERCARD/ZDIFF with empty set - listpack
+ok ZUNION/ZINTER/ZINTERCARD/ZDIFF with empty set - skiplist
+ok ZUNION/ZINTER/ZINTERCARD/ZDIFF with integer members - listpack
+ok ZUNION/ZINTER/ZINTERCARD/ZDIFF with integer members - skiplist
+ok ZUNIONSTORE against non-existing key doesn't set destination - listpack
+ok ZUNIONSTORE against non-existing key doesn't set destination - skiplist
+ok ZUNIONSTORE basics - listpack
+ok ZUNIONSTORE basics - skiplist
+ok ZUNIONSTORE command is marked with movablekeys
+ok ZUNIONSTORE regression, should not create NaN in scores
+ok ZUNIONSTORE result is sorted
+ok ZUNIONSTORE with +inf/-inf scores - listpack
+ok ZUNIONSTORE with +inf/-inf scores - skiplist
+ok ZUNIONSTORE with AGGREGATE MAX - listpack
+ok ZUNIONSTORE with AGGREGATE MAX - skiplist
+ok ZUNIONSTORE with AGGREGATE MIN - listpack
+ok ZUNIONSTORE with AGGREGATE MIN - skiplist
+ok ZUNIONSTORE with NaN weights - listpack
+ok ZUNIONSTORE with NaN weights - skiplist
+ok ZUNIONSTORE with a regular set and weights - listpack
+ok ZUNIONSTORE with a regular set and weights - skiplist
+ok ZUNIONSTORE with empty set - listpack
+ok ZUNIONSTORE with empty set - skiplist
+ok ZUNIONSTORE with weights - listpack
+ok ZUNIONSTORE with weights - skiplist
+ok ZUNIONSTORE/ZINTERSTORE/ZDIFFSTORE error if using WITHSCORES 
+ok Zero length value in key. SET/GET/EXISTS
+ok allow-oom shebang flag
+ok allow-stale shebang flag
+ok avoid client eviction when client is freed by output buffer limit
+ok benchmark: arbitrary command
+ok benchmark: clients idle mode should return error when reached maxclients limit
+ok benchmark: connecting using URI set,get
+ok benchmark: connecting using URI with authentication set,get
+ok benchmark: full test suite
+ok benchmark: keyspace length
+ok benchmark: multi-thread set,get
+ok benchmark: pipelined full set,get
+ok benchmark: set,get
+ok bgsave resets the change counter
+ok cannot modify protected configuration - local
+ok cannot modify protected configuration - no
+ok client evicted due to client tracking prefixes
+ok client evicted due to large argv
+ok client evicted due to large multi buf
+ok client evicted due to large query buf
+ok client evicted due to output buf
+ok client evicted due to percentage of maxmemory
+ok client evicted due to pubsub subscriptions
+ok client evicted due to tracking redirection
+ok client evicted due to watched key list
+ok client freed during loading
+ok client no-evict off
+ok client no-evict on
+ok client total memory grows during client no-evict
+ok client total memory grows during maxmemory-clients disabled
+ok client tracking don't cause eviction feedback loop
+ok client unblock tests
+ok client unblock tests
+ok command stats for BRPOP
+ok command stats for EXPIRE
+ok command stats for GEOADD
+ok command stats for MULTI
+ok command stats for scripts
+ok config during loading
+ok corrupt payload: #3080 - quicklist
+ok corrupt payload: #3080 - ziplist
+ok corrupt payload: #7445 - with sanitize
+ok corrupt payload: OOM in rdbGenericLoadStringObject
+ok corrupt payload: fuzzer findings - LCS OOM
+ok corrupt payload: fuzzer findings - NPD in quicklistIndex
+ok corrupt payload: fuzzer findings - NPD in streamIteratorGetID
+ok corrupt payload: fuzzer findings - OOM in dictExpand
+ok corrupt payload: fuzzer findings - dict init to huge size
+ok corrupt payload: fuzzer findings - empty hash ziplist
+ok corrupt payload: fuzzer findings - empty intset
+ok corrupt payload: fuzzer findings - empty quicklist
+ok corrupt payload: fuzzer findings - empty zset
+ok corrupt payload: fuzzer findings - encoded entry header reach outside the allocation
+ok corrupt payload: fuzzer findings - gcc asan reports false leak on assert
+ok corrupt payload: fuzzer findings - hash crash
+ok corrupt payload: fuzzer findings - hash listpack first element too long entry len
+ok corrupt payload: fuzzer findings - hash with len of 0
+ok corrupt payload: fuzzer findings - hash ziplist too long entry len
+ok corrupt payload: fuzzer findings - huge string
+ok corrupt payload: fuzzer findings - infinite loop
+ok corrupt payload: fuzzer findings - invalid access in ziplist tail prevlen decoding
+ok corrupt payload: fuzzer findings - invalid read in lzf_decompress
+ok corrupt payload: fuzzer findings - invalid ziplist encoding
+ok corrupt payload: fuzzer findings - leak in rdbloading due to dup entry in set
+ok corrupt payload: fuzzer findings - listpack NPD on invalid stream
+ok corrupt payload: fuzzer findings - lpFind invalid access
+ok corrupt payload: fuzzer findings - lzf decompression fails, avoid valgrind invalid read
+ok corrupt payload: fuzzer findings - negative reply length
+ok corrupt payload: fuzzer findings - quicklist ziplist tail followed by extra data which start with 0xff
+ok corrupt payload: fuzzer findings - stream PEL without consumer
+ok corrupt payload: fuzzer findings - stream bad lp_count
+ok corrupt payload: fuzzer findings - stream bad lp_count - unsanitized
+ok corrupt payload: fuzzer findings - stream double free listpack when insert dup node to rax returns 0
+ok corrupt payload: fuzzer findings - stream integrity check issue
+ok corrupt payload: fuzzer findings - stream listpack lpPrev valgrind issue
+ok corrupt payload: fuzzer findings - stream listpack valgrind issue
+ok corrupt payload: fuzzer findings - stream with bad lpFirst
+ok corrupt payload: fuzzer findings - stream with no records
+ok corrupt payload: fuzzer findings - stream with non-integer entry id
+ok corrupt payload: fuzzer findings - streamLastValidID panic
+ok corrupt payload: fuzzer findings - uneven entry count in hash
+ok corrupt payload: fuzzer findings - valgrind - bad rdbLoadDoubleValue
+ok corrupt payload: fuzzer findings - valgrind fishy value warning
+ok corrupt payload: fuzzer findings - valgrind invalid read
+ok corrupt payload: fuzzer findings - valgrind negative malloc
+ok corrupt payload: fuzzer findings - valgrind ziplist prev too big
+ok corrupt payload: fuzzer findings - valgrind ziplist prevlen reaches outside the ziplist
+ok corrupt payload: fuzzer findings - zset ziplist entry lensize is 0
+ok corrupt payload: fuzzer findings - zset ziplist invalid tail offset
+ok corrupt payload: fuzzer findings - zset zslInsert with a NAN score
+ok corrupt payload: hash duplicate records
+ok corrupt payload: hash empty zipmap
+ok corrupt payload: hash listpack with duplicate records
+ok corrupt payload: hash listpack with duplicate records - convert
+ok corrupt payload: hash with valid zip list header, invalid entry len
+ok corrupt payload: hash ziplist uneven record count
+ok corrupt payload: hash ziplist with duplicate records
+ok corrupt payload: invalid zlbytes header
+ok corrupt payload: listpack invalid size header
+ok corrupt payload: listpack too long entry len
+ok corrupt payload: listpack too long entry prev len
+ok corrupt payload: listpack very long entry len
+ok corrupt payload: load corrupted rdb with empty keys
+ok corrupt payload: load corrupted rdb with empty keys
+ok corrupt payload: load corrupted rdb with no CRC - #3505
+ok corrupt payload: quicklist big ziplist prev len
+ok corrupt payload: quicklist encoded_len is 0
+ok corrupt payload: quicklist listpack entry start with EOF
+ok corrupt payload: quicklist small ziplist prev len
+ok corrupt payload: quicklist with empty ziplist
+ok corrupt payload: quicklist ziplist wrong count
+ok corrupt payload: stream with duplicate consumers
+ok corrupt payload: valid zipped hash header, dup records
+ok decrease maxmemory-clients causes client eviction
+ok default: load from config file with all channels permissions
+ok default: load from config file, without channel permission default user can't access any channels
+ok default: load from include file, can access any channels
+ok default: with config acl-pubsub-default allchannels after reset, can access any channels
+ok default: with config acl-pubsub-default resetchannels after reset, can not access any channels
+ok diskless all replicas drop during rdb pipe
+ok diskless fast replicas drop during rdb pipe
+ok diskless loading short read
+ok diskless no replicas drop during rdb pipe
+ok diskless replication child being killed is collected
+ok diskless replication read pipe cleanup
+ok diskless slow replicas drop during rdb pipe
+ok diskless timeout replicas drop during rdb pipe
+ok dismiss all data types memory
+ok dismiss client output buffer
+ok dismiss client query buffer
+ok dismiss replication backlog
+ok errors stats for GEOADD
+ok errorstats: blocking commands
+ok errorstats: failed call NOGROUP error
+ok errorstats: failed call NOSCRIPT error
+ok errorstats: failed call authentication error
+ok errorstats: failed call within LUA
+ok errorstats: failed call within MULTI/EXEC
+ok errorstats: rejected call by OOM error
+ok errorstats: rejected call by authorization error
+ok errorstats: rejected call due to wrong arity
+ok errorstats: rejected call unknown command
+ok errorstats: rejected call within MULTI/EXEC
+ok evict clients in right order (large to small)
+ok evict clients only until below limit
+ok eviction due to input buffer of a dead client, client eviction: false
+ok eviction due to input buffer of a dead client, client eviction: true
+ok eviction due to output buffers of many MGET clients, client eviction: false
+ok eviction due to output buffers of many MGET clients, client eviction: true
+ok eviction due to output buffers of pubsub, client eviction: false
+ok eviction due to output buffers of pubsub, client eviction: true
+ok exec with read commands and stale replica state change
+ok exec with write commands and state change
+ok expired key which is created in writeable replicas should be deleted by active expiry
+ok failed bgsave prevents writes
+ok failover aborts if target rejects sync request
+ok failover command fails when sent to a replica
+ok failover command fails with force without timeout
+ok failover command fails with invalid host
+ok failover command fails with invalid port
+ok failover command fails with just force and timeout
+ok failover command fails without connected replica
+ok failover command to any replica works
+ok failover command to specific replica works
+ok failover to a replica with force works
+ok failover with timeout aborts if replica never catches up
+ok failovers can be aborted
+ok flushdb tracking invalidation message is not interleaved with transaction response
+ok hdel deliver invalidate message after response in the same connection
+ok info command with at most one sub command
+ok info command with multiple sub-sections
+ok info command with one sub-section
+ok intsets implementation stress testing
+ok just EXEC and script timeout
+ok latencystats: bad configure percentiles
+ok latencystats: blocking commands
+ok latencystats: configure percentiles
+ok latencystats: disable/enable
+ok latencystats: measure latency
+ok latencystats: subcommands
+ok lazy free a stream with all types of metadata
+ok lazy free a stream with deleted cgroup
+ok maxmemory - is the memory limit honoured? (policy allkeys-lfu)
+ok maxmemory - is the memory limit honoured? (policy allkeys-lru)
+ok maxmemory - is the memory limit honoured? (policy allkeys-random)
+ok maxmemory - is the memory limit honoured? (policy volatile-lfu)
+ok maxmemory - is the memory limit honoured? (policy volatile-lru)
+ok maxmemory - is the memory limit honoured? (policy volatile-random)
+ok maxmemory - is the memory limit honoured? (policy volatile-ttl)
+ok maxmemory - only allkeys-* should remove non-volatile keys (allkeys-lru)
+ok maxmemory - only allkeys-* should remove non-volatile keys (allkeys-random)
+ok maxmemory - only allkeys-* should remove non-volatile keys (volatile-lru)
+ok maxmemory - only allkeys-* should remove non-volatile keys (volatile-random)
+ok maxmemory - only allkeys-* should remove non-volatile keys (volatile-ttl)
+ok maxmemory - policy volatile-lfu should only remove volatile keys.
+ok maxmemory - policy volatile-lru should only remove volatile keys.
+ok maxmemory - policy volatile-random should only remove volatile keys.
+ok maxmemory - policy volatile-ttl should only remove volatile keys.
+ok min-slaves-to-write is ignored by slaves
+ok no-writes shebang flag
+ok no-writes shebang flag on replica
+ok not enough good replicas
+ok not enough good replicas state change during long script
+ok pending querybuf: check size of pending_querybuf after set a big value
+ok plain node check compression
+ok plain node check compression using lset
+ok plain node check compression with ltrim
+ok propagation with eviction
+ok propagation with eviction in MULTI
+ok publish message to master and receive on replica
+ok query buffer resized correctly
+ok query buffer resized correctly when not idle
+ok random numbers are random now
+ok raw protocol response
+ok raw protocol response - deferred
+ok raw protocol response - multiline
+ok redis-cli --cluster add-node with cluster-port
+ok redis-cli --cluster create with cluster-port
+ok redis-server command line arguments - allow option value to use the `--` prefix
+ok redis-server command line arguments - allow passing option name and option value in the same arg
+ok redis-server command line arguments - error cases
+ok redis-server command line arguments - option name and option value in the same arg and `--` prefix
+ok redis-server command line arguments - save with empty input
+ok redis-server command line arguments - take one bulk string with spaces for MULTI_ARG configs parsing
+ok redis-server command line arguments - wrong usage that we support anyway
+ok redis.sha1hex() implementation
+ok redis.sha1hex() implementation
+ok reg node check compression combined with trim
+ok reg node check compression with insert and pop
+ok reg node check compression with lset
+ok reject script do not cause a Lua stack leak
+ok replica buffer don't induce eviction
+ok replica can handle EINTR if use diskless load
+ok replica do not write the reply to the replication link - PSYNC (_addReplyToBufferOrList)
+ok replica do not write the reply to the replication link - PSYNC (addReplyDeferredLen)
+ok replica do not write the reply to the replication link - SYNC (_addReplyToBufferOrList)
+ok replica do not write the reply to the replication link - SYNC (addReplyDeferredLen)
+ok replicaof right after disconnection
+ok replication child dies when parent is killed - diskless: no
+ok replication child dies when parent is killed - diskless: yes
+ok script won't load anymore if it's in rdb
+ok setup replication for following tests
+ok setup replication for following tests
+ok slave buffer are counted correctly
+ok string to double with null terminator
+ok test RESP2/2 big number protocol parsing
+ok test RESP2/2 big number protocol parsing
+ok test RESP2/2 double protocol parsing
+ok test RESP2/2 double protocol parsing
+ok test RESP2/2 false protocol parsing
+ok test RESP2/2 false protocol parsing
+ok test RESP2/2 malformed big number protocol parsing
+ok test RESP2/2 malformed big number protocol parsing
+ok test RESP2/2 map protocol parsing
+ok test RESP2/2 map protocol parsing
+ok test RESP2/2 null protocol parsing
+ok test RESP2/2 null protocol parsing
+ok test RESP2/2 set protocol parsing
+ok test RESP2/2 set protocol parsing
+ok test RESP2/2 true protocol parsing
+ok test RESP2/2 true protocol parsing
+ok test RESP2/2 verbatim protocol parsing
+ok test RESP2/2 verbatim protocol parsing
+ok test RESP2/3 big number protocol parsing
+ok test RESP2/3 big number protocol parsing
+ok test RESP2/3 double protocol parsing
+ok test RESP2/3 double protocol parsing
+ok test RESP2/3 false protocol parsing
+ok test RESP2/3 false protocol parsing
+ok test RESP2/3 malformed big number protocol parsing
+ok test RESP2/3 malformed big number protocol parsing
+ok test RESP2/3 map protocol parsing
+ok test RESP2/3 map protocol parsing
+ok test RESP2/3 null protocol parsing
+ok test RESP2/3 null protocol parsing
+ok test RESP2/3 set protocol parsing
+ok test RESP2/3 set protocol parsing
+ok test RESP2/3 true protocol parsing
+ok test RESP2/3 true protocol parsing
+ok test RESP2/3 verbatim protocol parsing
+ok test RESP2/3 verbatim protocol parsing
+ok test RESP3/2 big number protocol parsing
+ok test RESP3/2 big number protocol parsing
+ok test RESP3/2 double protocol parsing
+ok test RESP3/2 double protocol parsing
+ok test RESP3/2 false protocol parsing
+ok test RESP3/2 false protocol parsing
+ok test RESP3/2 malformed big number protocol parsing
+ok test RESP3/2 malformed big number protocol parsing
+ok test RESP3/2 map protocol parsing
+ok test RESP3/2 map protocol parsing
+ok test RESP3/2 null protocol parsing
+ok test RESP3/2 null protocol parsing
+ok test RESP3/2 set protocol parsing
+ok test RESP3/2 set protocol parsing
+ok test RESP3/2 true protocol parsing
+ok test RESP3/2 true protocol parsing
+ok test RESP3/2 verbatim protocol parsing
+ok test RESP3/2 verbatim protocol parsing
+ok test RESP3/3 big number protocol parsing
+ok test RESP3/3 big number protocol parsing
+ok test RESP3/3 double protocol parsing
+ok test RESP3/3 double protocol parsing
+ok test RESP3/3 false protocol parsing
+ok test RESP3/3 false protocol parsing
+ok test RESP3/3 malformed big number protocol parsing
+ok test RESP3/3 malformed big number protocol parsing
+ok test RESP3/3 map protocol parsing
+ok test RESP3/3 map protocol parsing
+ok test RESP3/3 null protocol parsing
+ok test RESP3/3 null protocol parsing
+ok test RESP3/3 set protocol parsing
+ok test RESP3/3 set protocol parsing
+ok test RESP3/3 true protocol parsing
+ok test RESP3/3 true protocol parsing
+ok test RESP3/3 verbatim protocol parsing
+ok test RESP3/3 verbatim protocol parsing
+ok test argument rewriting - issue 9598
+ok test big number parsing
+ok test bool parsing
+ok test large number of args
+ok test old version rdb file
+ok test resp3 attribute protocol parsing
+ok test resp3 attribute protocol parsing
+ok test various edge cases of repl topology changes with missing pings at the end
+ok test verbatim str parsing
+ok trim on SET with big value
+ok verify reply buffer limits
+ok ziplist implementation: encoding stress testing
+ok ziplist implementation: value encoding and backlink
+ok zset score double range
+ok zunionInterDiffGenericCommand at least 1 input key

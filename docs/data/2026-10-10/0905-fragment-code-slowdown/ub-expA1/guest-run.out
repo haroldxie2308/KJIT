@@ -1,0 +1,275 @@
+guest-run: profile=kjit-guest run-dir=/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/frag-speed/.kjit/build/runs/ub-expA1
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1+ (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #1 SMP PREEMPT Fri Oct  9 14:56:16 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013ac00000-0x000000013b000000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000124] Console: colour dummy device 80x25
+[    0.000133] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000136] pid_max: default: 32768 minimum: 301
+[    0.000271] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000282] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000380] VFS: Finished mounting rootfs on nullfs
+[    0.000526] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000640] rcu: Hierarchical SRCU implementation.
+[    0.000641] rcu: 	Max phase no-delay instances is 1000.
+[    0.000658] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000692] smp: Bringing up secondary CPUs ...
+[    0.000895] Detected PIPT I-cache on CPU1
+[    0.000998] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001293] Detected PIPT I-cache on CPU2
+[    0.001381] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001618] Detected PIPT I-cache on CPU3
+[    0.001719] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.001809] smp: Brought up 1 node, 4 CPUs
+[    0.001810] SMP: Total of 4 processors activated.
+[    0.001810] CPU: All CPU(s) started at EL1
+[    0.001811] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.001812] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.001812] CPU features: detected: CRC32 instructions
+[    0.001812] CPU features: detected: Data independent timing control (DIT)
+[    0.001813] CPU features: detected: E0PD
+[    0.001813] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.001814] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.001814] CPU features: detected: LSE atomic instructions
+[    0.001814] CPU features: detected: Privileged Access Never
+[    0.001815] CPU features: detected: Speculation barrier (SB)
+[    0.001815] CPU features: detected: TLB range maintenance instructions
+[    0.001815] CPU features: detected: XNX
+[    0.001908] alternatives: applying system-wide alternatives
+[    0.002923] Memory: 3910752K/4194304K available (5248K kernel code, 754K rwdata, 2356K rodata, 576K init, 405K bss, 280372K reserved, 0K cma-reserved)
+[    0.003182] devtmpfs: initialized
+[    0.003448] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003451] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003478] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003484] 30384 pages in range for non-PLT usage
+[    0.003484] 521904 pages in range for PLT usage
+[    0.003545] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.003880] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.003921] ASID allocator initialised with 256 entries
+[    0.003929] Serial: AMBA PL011 UART driver
+[    0.004342] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.004439] printk: console [ttyAMA0] enabled
+[    0.010338] vgaarb: loaded
+[    0.010745] clocksource: Switched to clocksource arch_sys_counter
+[    0.020522] NET: Registered PF_INET protocol family
+[    0.020608] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.021037] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.021044] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.021046] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.021099] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.021298] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.021326] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.021360] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.021367] PCI: CLS 0 bytes, default 64
+[    0.021610] Unpacking initramfs...
+[    0.023687] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.023876] 9p: Installing v9fs 9p2000 file system support
+[    0.026975] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.026981] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.026984] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.026985] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.026992] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.027003] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.027016] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.027017] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.027018] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.027019] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.027019] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.027047] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.027322] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.027485] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.027488] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.027497] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.027499] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.027760] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.027880] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.027882] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.027892] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.028135] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.028217] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.028220] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.028226] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.028626] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.028629] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.028649] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.028663] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.028726] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.028735] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.028743] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.028747] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.028752] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.028755] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.028760] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.028760] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.028761] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.029483] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.030201] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.030924] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.087824] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.087847] rtc-pl031 9010000.pl031: setting system clock to 2026-10-10T01:02:22 UTC (1791594142)
+[    0.087953] NET: Registered PF_INET6 protocol family
+[    0.088290] Segment Routing with IPv6
+[    0.088297] In-situ OAM (IOAM) with IPv6
+[    0.088308] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.088403] NET: Registered PF_PACKET protocol family
+[    0.088409] 9pnet: Installing 9P2000 support
+[    0.092843] clk: Disabling unused clocks
+[    0.111935] Freeing initrd memory: 185352K
+[    0.112278] Freeing unused kernel memory: 576K
+[    0.112325] Run /init as init process
+[    0.128743] kjit: loading out-of-tree module taints kernel.
+[    0.129635] rust_kjit: ######## Rust KJIT inits ########
+[    0.129690] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 844 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+exp1 exp_freq ps_per_op median=322 min=319 (outer=6666666 trips_per_outer=1 ops=8)
+exp1 exp_loop ps_per_op median=321 min=318 (outer=20000000 trips_per_outer=1 ops=1)
+exp1 exp_fwd ps_per_op median=1481 min=1471 (outer=10000000 trips_per_outer=1 ops=1)
+exp1 exp_rmw1 ps_per_op median=2155 min=2138 (outer=6666666 trips_per_outer=1 ops=1)
+exp1 exp_rmw2 ps_per_op median=2107 min=2062 (outer=4000000 trips_per_outer=1 ops=2)
+exp1 exp_rmw3 ps_per_op median=2093 min=2071 (outer=2857142 trips_per_outer=1 ops=3)
+exp1 exp_rmw4 ps_per_op median=2074 min=2039 (outer=2500000 trips_per_outer=1 ops=4)
+exp1 exp_rmw1_sp ps_per_op median=2149 min=2120 (outer=6666666 trips_per_outer=1 ops=1)
+exp1 exp_rmw2_indep ps_per_op median=1040 min=1034 (outer=6666666 trips_per_outer=1 ops=2)
+exp1 exp_rmw4_indep ps_per_op median=551 min=544 (outer=6666666 trips_per_outer=1 ops=4)
+exp1 exp_reg1 ps_per_op median=317 min=312 (outer=20000000 trips_per_outer=1 ops=1)
+exp1 exp_reg3 ps_per_op median=358 min=356 (outer=10000000 trips_per_outer=1 ops=3)
+exp1 exp_rmw_every4 ps_per_op median=134 min=132 (outer=20000000 trips_per_outer=1 ops=4)
+exp1 exp_strlen_native ps_per_op median=326 min=321 (outer=29850 trips_per_outer=2048 ops=1)
+exp1 exp_strlen_ldtr ps_per_op median=324 min=319 (outer=30303 trips_per_outer=2048 ops=1)
+exp1 exp_strlen_rmw ps_per_op median=2132 min=2108 (outer=4593 trips_per_outer=2048 ops=1)
+exp1 exp_strlen_reg ps_per_op median=320 min=318 (outer=30030 trips_per_outer=2048 ops=1)
+exp1 exp_strlen_plain_rmw ps_per_op median=2125 min=2105 (outer=4498 trips_per_outer=2048 ops=1)
+exp1 exp_hash_native ps_per_op median=945 min=938 (outer=10266 trips_per_outer=2048 ops=1)
+exp1 exp_hash_ldtr ps_per_op median=950 min=940 (outer=10335 trips_per_outer=2048 ops=1)
+exp1 exp_hash_rmw ps_per_op median=2218 min=2205 (outer=4448 trips_per_outer=2048 ops=1)
+exp1 exp_copyb_native ps_per_op median=319 min=317 (outer=30534 trips_per_outer=2048 ops=1)
+exp1 exp_copyb_ldtr ps_per_op median=319 min=317 (outer=30211 trips_per_outer=2048 ops=1)
+exp1 exp_copyb_rmw ps_per_op median=2087 min=2069 (outer=4669 trips_per_outer=2048 ops=1)
+exp1 exp_copy16_native ps_per_op median=376 min=373 (outer=416666 trips_per_outer=128 ops=1)
+exp1 exp_copy16_ldtr ps_per_op median=537 min=534 (outer=294117 trips_per_outer=128 ops=1)
+exp1 exp_copy16_rmw ps_per_op median=2090 min=2075 (outer=73529 trips_per_outer=128 ops=1)
+exp1 exp_simd_plain ps_per_op median=396 min=393 (outer=769230 trips_per_outer=64 ops=1)
+exp1 exp_simd_plain_rmw ps_per_op median=2087 min=2077 (outer=152671 trips_per_outer=64 ops=1)
+exp1 exp_simd_win1_rmw ps_per_op median=15283 min=15243 (outer=20263 trips_per_outer=64 ops=1)
+exp1 exp_simd_win1_nobud ps_per_op median=15352 min=15257 (outer=20325 trips_per_outer=64 ops=1)
+exp1 exp_simd_win1_reg ps_per_op median=15344 min=15192 (outer=20242 trips_per_outer=64 ops=1)
+exp1 exp_simd_win2_rmw ps_per_op median=7687 min=7542 (outer=41067 trips_per_outer=64 ops=1)
+exp1 exp_simd_win2_reg ps_per_op median=7620 min=7557 (outer=40983 trips_per_outer=64 ops=1)
+exp1 exp_simd_nopan_rmw ps_per_op median=2091 min=2072 (outer=151515 trips_per_outer=64 ops=1)
+exp1 exp_simd_nopan_nobud ps_per_op median=555 min=551 (outer=540540 trips_per_outer=64 ops=1)
+exp1 exp_pan_pair ps_per_op median=4163 min=4112 (outer=4000000 trips_per_outer=1 ops=1)
+exp1 exp_pan_win_ldp ps_per_op median=7705 min=7608 (outer=2500000 trips_per_outer=1 ops=1)
+exp1 exp_pan_nowin_ldp ps_per_op median=315 min=312 (outer=20000000 trips_per_outer=1 ops=1)
+exp1 exp_pan_win_ldr ps_per_op median=7681 min=7603 (outer=2222222 trips_per_outer=1 ops=1)
+exp1 exp_calls_native ps_per_op median=1575 min=1569 (outer=10000000 trips_per_outer=1 ops=1)
+exp1 exp_calls_all ps_per_op median=6249 min=6198 (outer=2857142 trips_per_outer=1 ops=1)
+exp1 exp_calls_nobud ps_per_op median=2049 min=2031 (outer=6666666 trips_per_outer=1 ops=1)
+exp1 exp_calls_reg ps_per_op median=2283 min=2259 (outer=6666666 trips_per_outer=1 ops=1)
+exp1 exp_calls_nodisp ps_per_op median=6369 min=6328 (outer=2857142 trips_per_outer=1 ops=1)
+exp1 exp_calls_noalign ps_per_op median=6313 min=6233 (outer=2857142 trips_per_outer=1 ops=1)
+exp1 exp_calls_nouacc ps_per_op median=6264 min=6226 (outer=2857142 trips_per_outer=1 ops=1)
+exp1 exp_calls_bud_only ps_per_op median=6387 min=6351 (outer=2857142 trips_per_outer=1 ops=1)
+exp1 exp_calls_disp_only ps_per_op median=1621 min=1603 (outer=10000000 trips_per_outer=1 ops=1)
+exp1 exp_calls_acc_only ps_per_op median=1454 min=1438 (outer=10000000 trips_per_outer=1 ops=1)
+exp1 exp_strlen_flag ps_per_op median=322 min=319 (outer=30211 trips_per_outer=2048 ops=1)
+exp1 exp_copy16_flag ps_per_op median=603 min=601 (outer=259740 trips_per_outer=128 ops=1)
+exp1 exp_simd_gpr_nobud ps_per_op median=1097 min=1087 (outer=285714 trips_per_outer=64 ops=1)
+exp1 exp_simd_gpr_rmw ps_per_op median=2102 min=2085 (outer=147058 trips_per_outer=64 ops=1)
+exp1 exp_simd_gpr_reg ps_per_op median=1096 min=1090 (outer=285714 trips_per_outer=64 ops=1)
+exp1 exp_simd_win2_flag ps_per_op median=7677 min=7628 (outer=40404 trips_per_outer=64 ops=1)
+exp1 exp_rmw1_uslot ps_per_op median=2151 min=2128 (outer=6666666 trips_per_outer=1 ops=1)
+exp1 exp_flagpoll2 ps_per_op median=332 min=313 (outer=20000000 trips_per_outer=1 ops=1)
+exp1 exp_calls_persite ps_per_op median=2522 min=2498 (outer=6666666 trips_per_outer=1 ops=1)
+exp1 exp_calls_flag ps_per_op median=2410 min=2393 (outer=6666666 trips_per_outer=1 ops=1)
+exp1 exp_calls_reg_nodisp ps_per_op median=1574 min=1558 (outer=10000000 trips_per_outer=1 ops=1)
+exp1 exp_flagpoll ps_per_op median=318 min=310 (outer=20000000 trips_per_outer=1 ops=1)
+exp1 exp_cntpoll ps_per_op median=630 min=624 (outer=20000000 trips_per_outer=1 ops=1)
+exp0 exp_freq ps_per_op median=316 min=315 (outer=8000000 trips_per_outer=1 ops=8)
+exp0 exp_loop ps_per_op median=322 min=318 (outer=56417489 trips_per_outer=1 ops=1)
+exp0 exp_fwd ps_per_op median=334 min=326 (outer=56417489 trips_per_outer=1 ops=1)
+exp0 exp_rmw1 ps_per_op median=342 min=331 (outer=48019207 trips_per_outer=1 ops=1)
+exp0 exp_rmw2 ps_per_op median=1467 min=1461 (outer=6956521 trips_per_outer=1 ops=2)
+exp0 exp_rmw3 ps_per_op median=1541 min=1525 (outer=4248088 trips_per_outer=1 ops=3)
+exp0 exp_rmw4 ps_per_op median=1584 min=1565 (outer=3356549 trips_per_outer=1 ops=4)
+exp0 exp_rmw1_sp ps_per_op median=356 min=324 (outer=53333333 trips_per_outer=1 ops=1)
+exp0 exp_rmw2_indep ps_per_op median=241 min=240 (outer=38387715 trips_per_outer=1 ops=2)
+exp0 exp_rmw4_indep ps_per_op median=201 min=200 (outer=23995200 trips_per_outer=1 ops=4)
+exp0 exp_reg1 ps_per_op median=321 min=318 (outer=53333333 trips_per_outer=1 ops=1)
+exp0 exp_reg3 ps_per_op median=361 min=359 (outer=18823529 trips_per_outer=1 ops=3)
+exp0 exp_rmw_every4 ps_per_op median=22 min=20 (outer=160000000 trips_per_outer=1 ops=4)
+exp0 exp_strlen_native ps_per_op median=326 min=324 (outer=30419 trips_per_outer=2048 ops=1)
+exp0 exp_strlen_ldtr ps_per_op median=326 min=325 (outer=29571 trips_per_outer=2048 ops=1)
+exp0 exp_strlen_rmw ps_per_op median=416 min=374 (outer=22788 trips_per_outer=2048 ops=1)
+exp0 exp_strlen_reg ps_per_op median=327 min=326 (outer=28628 trips_per_outer=2048 ops=1)
+exp0 exp_strlen_plain_rmw ps_per_op median=428 min=361 (outer=16916 trips_per_outer=2048 ops=1)
+exp0 exp_hash_native ps_per_op median=964 min=959 (outer=10131 trips_per_outer=2048 ops=1)
+exp0 exp_hash_ldtr ps_per_op median=962 min=957 (outer=10369 trips_per_outer=2048 ops=1)
+exp0 exp_hash_rmw ps_per_op median=961 min=952 (outer=10076 trips_per_outer=2048 ops=1)
+exp0 exp_copyb_native ps_per_op median=325 min=321 (outer=31049 trips_per_outer=2048 ops=1)
+exp0 exp_copyb_ldtr ps_per_op median=325 min=320 (outer=30584 trips_per_outer=2048 ops=1)
+exp0 exp_copyb_rmw ps_per_op median=407 min=399 (outer=23925 trips_per_outer=2048 ops=1)
+exp0 exp_copy16_native ps_per_op median=382 min=381 (outer=423652 trips_per_outer=128 ops=1)
+exp0 exp_copy16_ldtr ps_per_op median=539 min=537 (outer=297214 trips_per_outer=128 ops=1)
+exp0 exp_copy16_rmw ps_per_op median=711 min=710 (outer=209973 trips_per_outer=128 ops=1)
+exp0 exp_calls_native ps_per_op median=1604 min=1578 (outer=11851851 trips_per_outer=1 ops=1)
+exp0 exp_calls_all ps_per_op median=2575 min=2560 (outer=7500468 trips_per_outer=1 ops=1)
+exp0 exp_calls_nobud ps_per_op median=2088 min=2057 (outer=9229349 trips_per_outer=1 ops=1)
+exp0 exp_calls_reg ps_per_op median=2303 min=2279 (outer=8205128 trips_per_outer=1 ops=1)
+exp0 exp_calls_nodisp ps_per_op median=2803 min=2713 (outer=6956521 trips_per_outer=1 ops=1)
+exp0 exp_calls_noalign ps_per_op median=2468 min=2406 (outer=7272727 trips_per_outer=1 ops=1)
+exp0 exp_calls_nouacc ps_per_op median=2117 min=2107 (outer=9321836 trips_per_outer=1 ops=1)
+exp0 exp_calls_bud_only ps_per_op median=2836 min=2798 (outer=7058408 trips_per_outer=1 ops=1)
+exp0 exp_calls_disp_only ps_per_op median=1646 min=1625 (outer=12468827 trips_per_outer=1 ops=1)
+exp0 exp_calls_acc_only ps_per_op median=1443 min=1431 (outer=14326647 trips_per_outer=1 ops=1)
+exp0 exp_simd_gpr_nobud ps_per_op median=1117 min=1109 (outer=237094 trips_per_outer=64 ops=1)
+exp0 exp_simd_gpr_rmw ps_per_op median=1241 min=1228 (outer=257028 trips_per_outer=64 ops=1)
+exp0 exp_simd_gpr_reg ps_per_op median=1117 min=1113 (outer=289069 trips_per_outer=64 ops=1)
+exp0 exp_calls_persite ps_per_op median=2570 min=2539 (outer=7741436 trips_per_outer=1 ops=1)
+exp0 exp_calls_reg_nodisp ps_per_op median=1597 min=1581 (outer=12307692 trips_per_outer=1 ops=1)
+exp0 exp_cntpoll ps_per_op median=641 min=631 (outer=29090909 trips_per_outer=1 ops=1)
+[   14.155023] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[   14.191628] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[   14.205218] reboot: Power down
+guest-run: PASS (/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/frag-speed/.kjit/build/runs/ub-expA1/serial.log)

@@ -1,0 +1,5 @@
+label=expA3 kpti=0 profile=kjit-guest
+append=console=ttyAMA0 panic=-1 nokaslr
+waited_s=0 load1_before=3.96
+cmd=mount -t debugfs debugfs /sys/kernel/debug 2>/dev/null; echo 0 > /sys/kernel/debug/kjit/enable; echo 0 > /sys/kernel/debug/kjit/auto; /opt/kjit-tests/exp_el1 7 20; /opt/kjit-tests/exp_el0 7 20
+load1_after=3.76 guest_run_status=0

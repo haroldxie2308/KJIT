@@ -1,0 +1,438 @@
+guest-run: profile=kjit-guest run-dir=/Volumes/Local/kjit-a4b2/build/runs/meas-v4-20261009-023933
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1 (@6906d107117b) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #1 SMP PREEMPT Fri Oct  2 08:37:58 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013ac00000-0x000000013b000000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000103] Console: colour dummy device 80x25
+[    0.000109] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000118] pid_max: default: 32768 minimum: 301
+[    0.000236] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000243] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000331] VFS: Finished mounting rootfs on nullfs
+[    0.000484] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000602] rcu: Hierarchical SRCU implementation.
+[    0.000603] rcu: 	Max phase no-delay instances is 1000.
+[    0.000620] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000657] smp: Bringing up secondary CPUs ...
+[    0.000857] Detected PIPT I-cache on CPU1
+[    0.000967] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001268] Detected PIPT I-cache on CPU2
+[    0.001359] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001576] Detected PIPT I-cache on CPU3
+[    0.001688] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.001774] smp: Brought up 1 node, 4 CPUs
+[    0.001776] SMP: Total of 4 processors activated.
+[    0.001776] CPU: All CPU(s) started at EL1
+[    0.001777] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.001778] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.001778] CPU features: detected: CRC32 instructions
+[    0.001779] CPU features: detected: Data independent timing control (DIT)
+[    0.001779] CPU features: detected: E0PD
+[    0.001780] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.001780] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.001781] CPU features: detected: LSE atomic instructions
+[    0.001781] CPU features: detected: Privileged Access Never
+[    0.001782] CPU features: detected: Speculation barrier (SB)
+[    0.001782] CPU features: detected: TLB range maintenance instructions
+[    0.001782] CPU features: detected: XNX
+[    0.001940] alternatives: applying system-wide alternatives
+[    0.003012] Memory: 3934216K/4194304K available (5248K kernel code, 754K rwdata, 2356K rodata, 576K init, 405K bss, 256908K reserved, 0K cma-reserved)
+[    0.003303] devtmpfs: initialized
+[    0.003572] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003575] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003593] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003603] 30384 pages in range for non-PLT usage
+[    0.003603] 521904 pages in range for PLT usage
+[    0.003725] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.004121] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.004158] ASID allocator initialised with 256 entries
+[    0.004169] Serial: AMBA PL011 UART driver
+[    0.004540] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.004632] printk: console [ttyAMA0] enabled
+[    0.010286] vgaarb: loaded
+[    0.010710] clocksource: Switched to clocksource arch_sys_counter
+[    0.021461] NET: Registered PF_INET protocol family
+[    0.021544] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.021974] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.021981] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.021984] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.022033] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.022185] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.022212] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.022247] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.022254] PCI: CLS 0 bytes, default 64
+[    0.022547] Unpacking initramfs...
+[    0.023410] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.023594] 9p: Installing v9fs 9p2000 file system support
+[    0.027205] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.027212] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.027214] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.027215] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.027223] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.027234] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.027249] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.027266] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.027268] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.027269] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.027269] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.027304] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.027772] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.027960] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.027964] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.027971] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.027973] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.028303] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.028557] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.028560] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.028575] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.029084] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.029244] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.029250] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.029257] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.029795] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.029797] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.029813] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.029828] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.029843] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.029847] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.029850] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.029857] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.029867] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.029871] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.029877] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.029878] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.029878] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.031087] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.031842] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.032608] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.091418] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.091438] rtc-pl031 9010000.pl031: setting system clock to 2026-10-08T18:39:34 UTC (1791484774)
+[    0.091554] NET: Registered PF_INET6 protocol family
+[    0.091890] Segment Routing with IPv6
+[    0.091898] In-situ OAM (IOAM) with IPv6
+[    0.091907] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.091972] NET: Registered PF_PACKET protocol family
+[    0.091978] 9pnet: Installing 9P2000 support
+[    0.096910] clk: Disabling unused clocks
+[    0.106185] Freeing initrd memory: 161888K
+[    0.106660] Freeing unused kernel memory: 576K
+[    0.106779] Run /init as init process
+[    0.122417] kjit: loading out-of-tree module taints kernel.
+[    0.123443] rust_kjit: ######## Rust KJIT inits ########
+[    0.123466] rust_kjit: kjit: dispatch variant 4
+[    0.123505] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark translated for dispatch variant 4; byte comparison skipped (reference is variant 0)
+kjit-init: insmod kjit.ko ok
+meas: variant=4
+rep 0 variant=gpr enabled=0 outer=200000 calls=16 ns_per_outer=142.0 ns_per_call=8.87
+rep 1 variant=gpr enabled=0 outer=200000 calls=16 ns_per_outer=142.4 ns_per_call=8.90
+rep 2 variant=gpr enabled=0 outer=200000 calls=16 ns_per_outer=142.5 ns_per_call=8.91
+rep 3 variant=gpr enabled=0 outer=200000 calls=16 ns_per_outer=140.7 ns_per_call=8.80
+rep 4 variant=gpr enabled=0 outer=200000 calls=16 ns_per_outer=141.3 ns_per_call=8.83
+rep 5 variant=gpr enabled=0 outer=200000 calls=16 ns_per_outer=141.6 ns_per_call=8.85
+rep 6 variant=gpr enabled=0 outer=200000 calls=16 ns_per_outer=140.8 ns_per_call=8.80
+result variant=gpr enabled=0 outer=200000 calls=16 reps=7 median_ns_per_outer=141.6 median_ns_per_call=8.85 min_ns_per_call=8.80 acc=25600000
+[    0.374806] kjit: translate_svc_sites pid 66: 2 text ranges, 111 svc sites
+[    0.375221] rust_kjit: kjit: pc 0x400fe8: installed 532 bytes, 0 fault sites, 2 entries, text 0x400fe8..0x400ff0, fpsimd false
+[    0.375758] rust_kjit: kjit: pc 0x400fcc: installed 1104 bytes, 1 fault sites, 11 entries, text 0x400fbc..0x400fe8, fpsimd false
+rep 0 variant=gpr enabled=1 outer=20000 calls=16 ns_per_outer=145.9 ns_per_call=9.12
+rep 1 variant=gpr enabled=1 outer=20000 calls=16 ns_per_outer=150.1 ns_per_call=9.38
+rep 2 variant=gpr enabled=1 outer=20000 calls=16 ns_per_outer=148.1 ns_per_call=9.26
+rep 3 variant=gpr enabled=1 outer=20000 calls=16 ns_per_outer=144.4 ns_per_call=9.03
+rep 4 variant=gpr enabled=1 outer=20000 calls=16 ns_per_outer=149.3 ns_per_call=9.33
+rep 5 variant=gpr enabled=1 outer=20000 calls=16 ns_per_outer=156.0 ns_per_call=9.75
+rep 6 variant=gpr enabled=1 outer=20000 calls=16 ns_per_outer=146.6 ns_per_call=9.17
+result variant=gpr enabled=1 outer=20000 calls=16 reps=7 median_ns_per_outer=148.1 median_ns_per_call=9.26 min_ns_per_call=9.03 acc=2560000
+counters variant=gpr timed_outer=140000 hook_calls=140045 syscalls_in_kernel=139965 fragment_entries=140045 fpsimd_entries=1 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=139965 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+rep 0 variant=fp enabled=0 outer=200000 calls=16 ns_per_outer=175.3 ns_per_call=10.96
+rep 1 variant=fp enabled=0 outer=200000 calls=16 ns_per_outer=177.1 ns_per_call=11.07
+rep 2 variant=fp enabled=0 outer=200000 calls=16 ns_per_outer=176.9 ns_per_call=11.06
+rep 3 variant=fp enabled=0 outer=200000 calls=16 ns_per_outer=174.1 ns_per_call=10.88
+rep 4 variant=fp enabled=0 outer=200000 calls=16 ns_per_outer=175.5 ns_per_call=10.97
+rep 5 variant=fp enabled=0 outer=200000 calls=16 ns_per_outer=178.3 ns_per_call=11.14
+rep 6 variant=fp enabled=0 outer=200000 calls=16 ns_per_outer=176.1 ns_per_call=11.01
+result variant=fp enabled=0 outer=200000 calls=16 reps=7 median_ns_per_outer=176.1 median_ns_per_call=11.01 min_ns_per_call=10.88 acc=25600000
+[    0.717528] kjit: translate_svc_sites pid 72: 2 text ranges, 111 svc sites
+[    0.718269] rust_kjit: kjit: pc 0x401028: installed 540 bytes, 0 fault sites, 4 entries, text 0x401028..0x401038, fpsimd true
+[    0.719095] rust_kjit: kjit: pc 0x40100c: installed 1104 bytes, 1 fault sites, 11 entries, text 0x400ffc..0x401028, fpsimd false
+rep 0 variant=fp enabled=1 outer=20000 calls=16 ns_per_outer=221.3 ns_per_call=13.83
+rep 1 variant=fp enabled=1 outer=20000 calls=16 ns_per_outer=219.3 ns_per_call=13.71
+rep 2 variant=fp enabled=1 outer=20000 calls=16 ns_per_outer=218.0 ns_per_call=13.63
+rep 3 variant=fp enabled=1 outer=20000 calls=16 ns_per_outer=213.6 ns_per_call=13.35
+rep 4 variant=fp enabled=1 outer=20000 calls=16 ns_per_outer=218.7 ns_per_call=13.67
+rep 5 variant=fp enabled=1 outer=20000 calls=16 ns_per_outer=214.8 ns_per_call=13.43
+rep 6 variant=fp enabled=1 outer=20000 calls=16 ns_per_outer=215.6 ns_per_call=13.47
+result variant=fp enabled=1 outer=20000 calls=16 reps=7 median_ns_per_outer=218.0 median_ns_per_call=13.63 min_ns_per_call=13.35 acc=2560000
+counters variant=fp timed_outer=140000 hook_calls=140045 syscalls_in_kernel=139965 fragment_entries=280017 fpsimd_entries=139973 fpsimd_restores=0 chains=139972 chain_cap=0 exit_svc=139965 exit_bl=139972 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+rep 0 variant=gpr enabled=0 outer=200000 calls=128 ns_per_outer=256.4 ns_per_call=2.00
+rep 1 variant=gpr enabled=0 outer=200000 calls=128 ns_per_outer=258.5 ns_per_call=2.02
+rep 2 variant=gpr enabled=0 outer=200000 calls=128 ns_per_outer=253.9 ns_per_call=1.98
+rep 3 variant=gpr enabled=0 outer=200000 calls=128 ns_per_outer=257.4 ns_per_call=2.01
+rep 4 variant=gpr enabled=0 outer=200000 calls=128 ns_per_outer=256.4 ns_per_call=2.00
+rep 5 variant=gpr enabled=0 outer=200000 calls=128 ns_per_outer=253.2 ns_per_call=1.98
+rep 6 variant=gpr enabled=0 outer=200000 calls=128 ns_per_outer=254.3 ns_per_call=1.99
+result variant=gpr enabled=0 outer=200000 calls=128 reps=7 median_ns_per_outer=256.4 median_ns_per_call=2.00 min_ns_per_call=1.98 acc=204800000
+[    1.201303] kjit: translate_svc_sites pid 74: 2 text ranges, 111 svc sites
+[    1.202256] rust_kjit: kjit: pc 0x400fe8: installed 532 bytes, 0 fault sites, 2 entries, text 0x400fe8..0x400ff0, fpsimd false
+[    1.203105] rust_kjit: kjit: pc 0x400fcc: installed 1104 bytes, 1 fault sites, 11 entries, text 0x400fbc..0x400fe8, fpsimd false
+rep 0 variant=gpr enabled=1 outer=20000 calls=128 ns_per_outer=844.5 ns_per_call=6.60
+rep 1 variant=gpr enabled=1 outer=20000 calls=128 ns_per_outer=857.6 ns_per_call=6.70
+rep 2 variant=gpr enabled=1 outer=20000 calls=128 ns_per_outer=850.6 ns_per_call=6.65
+rep 3 variant=gpr enabled=1 outer=20000 calls=128 ns_per_outer=842.5 ns_per_call=6.58
+rep 4 variant=gpr enabled=1 outer=20000 calls=128 ns_per_outer=842.5 ns_per_call=6.58
+rep 5 variant=gpr enabled=1 outer=20000 calls=128 ns_per_outer=840.3 ns_per_call=6.56
+rep 6 variant=gpr enabled=1 outer=20000 calls=128 ns_per_outer=851.5 ns_per_call=6.65
+result variant=gpr enabled=1 outer=20000 calls=128 reps=7 median_ns_per_outer=844.5 median_ns_per_call=6.60 min_ns_per_call=6.56 acc=20480000
+counters variant=gpr timed_outer=140000 hook_calls=140045 syscalls_in_kernel=139965 fragment_entries=140045 fpsimd_entries=1 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=139965 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+rep 0 variant=fp enabled=0 outer=200000 calls=128 ns_per_outer=535.3 ns_per_call=4.18
+rep 1 variant=fp enabled=0 outer=200000 calls=128 ns_per_outer=534.9 ns_per_call=4.18
+rep 2 variant=fp enabled=0 outer=200000 calls=128 ns_per_outer=538.1 ns_per_call=4.20
+rep 3 variant=fp enabled=0 outer=200000 calls=128 ns_per_outer=536.1 ns_per_call=4.19
+rep 4 variant=fp enabled=0 outer=200000 calls=128 ns_per_outer=535.6 ns_per_call=4.18
+rep 5 variant=fp enabled=0 outer=200000 calls=128 ns_per_outer=555.6 ns_per_call=4.34
+rep 6 variant=fp enabled=0 outer=200000 calls=128 ns_per_outer=546.7 ns_per_call=4.27
+result variant=fp enabled=0 outer=200000 calls=128 reps=7 median_ns_per_outer=536.1 median_ns_per_call=4.19 min_ns_per_call=4.18 acc=204800000
+[    2.240505] kjit: translate_svc_sites pid 76: 2 text ranges, 111 svc sites
+[    2.240655] rust_kjit: kjit: pc 0x401028: installed 540 bytes, 0 fault sites, 4 entries, text 0x401028..0x401038, fpsimd true
+[    2.241120] rust_kjit: kjit: pc 0x40100c: installed 1104 bytes, 1 fault sites, 11 entries, text 0x400ffc..0x401028, fpsimd false
+rep 0 variant=fp enabled=1 outer=20000 calls=128 ns_per_outer=951.5 ns_per_call=7.43
+rep 1 variant=fp enabled=1 outer=20000 calls=128 ns_per_outer=925.5 ns_per_call=7.23
+rep 2 variant=fp enabled=1 outer=20000 calls=128 ns_per_outer=934.6 ns_per_call=7.30
+rep 3 variant=fp enabled=1 outer=20000 calls=128 ns_per_outer=958.2 ns_per_call=7.49
+rep 4 variant=fp enabled=1 outer=20000 calls=128 ns_per_outer=940.5 ns_per_call=7.35
+rep 5 variant=fp enabled=1 outer=20000 calls=128 ns_per_outer=919.2 ns_per_call=7.18
+rep 6 variant=fp enabled=1 outer=20000 calls=128 ns_per_outer=923.0 ns_per_call=7.21
+result variant=fp enabled=1 outer=20000 calls=128 reps=7 median_ns_per_outer=934.6 median_ns_per_call=7.30 min_ns_per_call=7.18 acc=20480000
+counters variant=fp timed_outer=140000 hook_calls=140045 syscalls_in_kernel=139965 fragment_entries=280017 fpsimd_entries=139973 fpsimd_restores=0 chains=139972 chain_cap=0 exit_svc=139965 exit_bl=139972 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+rep 0 variant=gpr enabled=0 outer=200000 calls=256 ns_per_outer=382.7 ns_per_call=1.49
+rep 1 variant=gpr enabled=0 outer=200000 calls=256 ns_per_outer=424.6 ns_per_call=1.66
+rep 2 variant=gpr enabled=0 outer=200000 calls=256 ns_per_outer=733.9 ns_per_call=2.87
+rep 3 variant=gpr enabled=0 outer=200000 calls=256 ns_per_outer=398.0 ns_per_call=1.55
+rep 4 variant=gpr enabled=0 outer=200000 calls=256 ns_per_outer=912.4 ns_per_call=3.56
+rep 5 variant=gpr enabled=0 outer=200000 calls=256 ns_per_outer=398.3 ns_per_call=1.56
+rep 6 variant=gpr enabled=0 outer=200000 calls=256 ns_per_outer=393.2 ns_per_call=1.54
+result variant=gpr enabled=0 outer=200000 calls=256 reps=7 median_ns_per_outer=398.3 median_ns_per_call=1.56 min_ns_per_call=1.49 acc=409600000
+[    3.232892] kjit: translate_svc_sites pid 78: 2 text ranges, 111 svc sites
+[    3.233912] rust_kjit: kjit: pc 0x400fe8: installed 532 bytes, 0 fault sites, 2 entries, text 0x400fe8..0x400ff0, fpsimd false
+[    3.235061] rust_kjit: kjit: pc 0x400fcc: installed 1104 bytes, 1 fault sites, 11 entries, text 0x400fbc..0x400fe8, fpsimd false
+rep 0 variant=gpr enabled=1 outer=20000 calls=256 ns_per_outer=1631.2 ns_per_call=6.37
+rep 1 variant=gpr enabled=1 outer=20000 calls=256 ns_per_outer=1692.2 ns_per_call=6.61
+rep 2 variant=gpr enabled=1 outer=20000 calls=256 ns_per_outer=1659.0 ns_per_call=6.48
+rep 3 variant=gpr enabled=1 outer=20000 calls=256 ns_per_outer=1651.6 ns_per_call=6.45
+rep 4 variant=gpr enabled=1 outer=20000 calls=256 ns_per_outer=1642.3 ns_per_call=6.42
+rep 5 variant=gpr enabled=1 outer=20000 calls=256 ns_per_outer=1625.5 ns_per_call=6.35
+rep 6 variant=gpr enabled=1 outer=20000 calls=256 ns_per_outer=1658.3 ns_per_call=6.48
+result variant=gpr enabled=1 outer=20000 calls=256 reps=7 median_ns_per_outer=1651.6 median_ns_per_call=6.45 min_ns_per_call=6.35 acc=40960000
+counters variant=gpr timed_outer=140000 hook_calls=140045 syscalls_in_kernel=139965 fragment_entries=140045 fpsimd_entries=1 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=139965 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+rep 0 variant=fp enabled=0 outer=200000 calls=256 ns_per_outer=962.4 ns_per_call=3.76
+rep 1 variant=fp enabled=0 outer=200000 calls=256 ns_per_outer=958.2 ns_per_call=3.74
+rep 2 variant=fp enabled=0 outer=200000 calls=256 ns_per_outer=948.5 ns_per_call=3.71
+rep 3 variant=fp enabled=0 outer=200000 calls=256 ns_per_outer=946.8 ns_per_call=3.70
+rep 4 variant=fp enabled=0 outer=200000 calls=256 ns_per_outer=948.0 ns_per_call=3.70
+rep 5 variant=fp enabled=0 outer=200000 calls=256 ns_per_outer=949.5 ns_per_call=3.71
+rep 6 variant=fp enabled=0 outer=200000 calls=256 ns_per_outer=947.2 ns_per_call=3.70
+result variant=fp enabled=0 outer=200000 calls=256 reps=7 median_ns_per_outer=948.5 median_ns_per_call=3.71 min_ns_per_call=3.70 acc=409600000
+[    5.065449] kjit: translate_svc_sites pid 81: 2 text ranges, 111 svc sites
+[    5.065966] rust_kjit: kjit: pc 0x401028: installed 540 bytes, 0 fault sites, 4 entries, text 0x401028..0x401038, fpsimd true
+[    5.066822] rust_kjit: kjit: pc 0x40100c: installed 1104 bytes, 1 fault sites, 11 entries, text 0x400ffc..0x401028, fpsimd false
+rep 0 variant=fp enabled=1 outer=20000 calls=256 ns_per_outer=1679.6 ns_per_call=6.56
+rep 1 variant=fp enabled=1 outer=20000 calls=256 ns_per_outer=1727.9 ns_per_call=6.75
+rep 2 variant=fp enabled=1 outer=20000 calls=256 ns_per_outer=1714.9 ns_per_call=6.70
+rep 3 variant=fp enabled=1 outer=20000 calls=256 ns_per_outer=1707.3 ns_per_call=6.67
+rep 4 variant=fp enabled=1 outer=20000 calls=256 ns_per_outer=1711.4 ns_per_call=6.69
+rep 5 variant=fp enabled=1 outer=20000 calls=256 ns_per_outer=1714.0 ns_per_call=6.70
+rep 6 variant=fp enabled=1 outer=20000 calls=256 ns_per_outer=1733.2 ns_per_call=6.77
+result variant=fp enabled=1 outer=20000 calls=256 reps=7 median_ns_per_outer=1714.0 median_ns_per_call=6.70 min_ns_per_call=6.56 acc=40960000
+counters variant=fp timed_outer=140000 hook_calls=140045 syscalls_in_kernel=139965 fragment_entries=280017 fpsimd_entries=139973 fpsimd_restores=0 chains=139972 chain_cap=0 exit_svc=139965 exit_bl=139972 exit_blr=0 exit_br=0 exit_ret=80 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+a11: ibtc_variant=4
+a11: warm-up at off
+a11maps aaaae0090000-aaaae02e0000 r-xp 00000000 00:03 4263                       /opt/redis/src/redis-server
+a11maps aaaae02e9000-aaaae02f0000 r--p 00259000 00:03 4263                       /opt/redis/src/redis-server
+a11maps aaaae02f0000-aaaae0349000 rw-p 00260000 00:03 4263                       /opt/redis/src/redis-server
+a11maps aaaae0349000-aaaae057c000 rw-p 00000000 00:00 0 
+a11maps aaab1efee000-aaab1f00f000 rw-p 00000000 00:00 0                          [heap]
+a11maps ffffa7540000-ffffa77c0000 rw-p 00000000 00:00 0 
+a11maps ffffa77c0000-ffffa77d0000 ---p 00000000 00:00 0 
+a11maps ffffa77d0000-ffffa7fd0000 rw-p 00000000 00:00 0 
+a11maps ffffa7fd0000-ffffa7fe0000 ---p 00000000 00:00 0 
+a11maps ffffa7fe0000-ffffa87e0000 rw-p 00000000 00:00 0 
+a11maps ffffa87e0000-ffffa87f0000 ---p 00000000 00:00 0 
+a11maps ffffa87f0000-ffffa8ff0000 rw-p 00000000 00:00 0 
+a11maps ffffa8ff0000-ffffa9000000 ---p 00000000 00:00 0 
+a11maps ffffa9000000-ffffa9800000 rw-p 00000000 00:00 0 
+a11maps ffffa9800000-ffffaa000000 rw-p 00000000 00:00 0 
+a11maps ffffaa1c0000-ffffaa34c000 r-xp 00000000 00:03 816                        /usr/lib/aarch64-linux-gnu/libc.so.6
+a11maps ffffaa34c000-ffffaa35c000 ---p 0018c000 00:03 816                        /usr/lib/aarch64-linux-gnu/libc.so.6
+a11maps ffffaa35c000-ffffaa360000 r--p 0018c000 00:03 816                        /usr/lib/aarch64-linux-gnu/libc.so.6
+a11maps ffffaa360000-ffffaa362000 rw-p 00190000 00:03 816                        /usr/lib/aarch64-linux-gnu/libc.so.6
+a11maps ffffaa362000-ffffaa36f000 rw-p 00000000 00:00 0 
+a11maps ffffaa370000-ffffaa3f2000 r-xp 00000000 00:03 863                        /usr/lib/aarch64-linux-gnu/libm.so.6
+a11maps ffffaa3f2000-ffffaa40f000 ---p 00082000 00:03 863                        /usr/lib/aarch64-linux-gnu/libm.so.6
+a11maps ffffaa40f000-ffffaa410000 r--p 0008f000 00:03 863                        /usr/lib/aarch64-linux-gnu/libm.so.6
+a11maps ffffaa410000-ffffaa411000 rw-p 00090000 00:03 863                        /usr/lib/aarch64-linux-gnu/libm.so.6
+a11maps ffffaa413000-ffffaa43a000 r-xp 00000000 00:03 796                        /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1
+a11maps ffffaa444000-ffffaa448000 rw-p 00000000 00:00 0 
+a11maps ffffaa44a000-ffffaa44c000 rw-p 00000000 00:00 0 
+a11maps ffffaa44c000-ffffaa450000 r--p 00000000 00:00 0                          [vvar]
+a11maps ffffaa450000-ffffaa451000 r-xp 00000000 00:00 0                          [vdso]
+a11maps ffffaa451000-ffffaa453000 r--p 0002e000 00:03 796                        /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1
+a11maps ffffaa453000-ffffaa455000 rw-p 00030000 00:03 796                        /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1
+a11maps ffffc63d0000-ffffc63f1000 rw-p 00000000 00:00 0                          [stack]
+a11 point=off pass=1 test=set requests=200000 rps=228571.42 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 fpsimd_run_max_ns=91458 miss_residual=0
+a11slots point=off pass=1 test=set # table all conflicts 0 slots 0 top32 0
+a11slots point=off pass=1 test=set # table nofp conflicts 0 slots 0 top32 0
+a11 point=off pass=1 test=get requests=200000 rps=239234.44 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 fpsimd_run_max_ns=91458 miss_residual=0
+a11slots point=off pass=1 test=get # table all conflicts 0 slots 0 top32 0
+a11slots point=off pass=1 test=get # table nofp conflicts 0 slots 0 top32 0
+a11 point=1024 pass=1 test=set requests=200000 rps=141242.94 hook_calls=408854 syscalls_in_kernel=384563 fragment_entries=607271 fpsimd_entries=198959 fpsimd_restores=0 chains=199224 chain_cap=0 exit_svc=384563 exit_bl=6886 exit_blr=857 exit_br=199599 exit_ret=9956 exit_mem=1 exit_unsupported=5409 exit_budget=0 run_declined=15 ibtc_insert=578 ibtc_replace=41 ibtc_clear=0 ibtc_fpsimd_boundary=198951 ibtc_miss_cold=17176 ibtc_miss_conflict=1171 ibtc_miss_other=0 fpsimd_run_max_ns=134041 miss_residual=0
+a11slots point=1024 pass=1 test=set # table all conflicts 1091 slots 18 top32 1091
+a11slots point=1024 pass=1 test=set all 357 65 0xaaaae0178594 0xaaaae0104594
+a11slots point=1024 pass=1 test=set all 2452 65 0xaaaae01ca650 0xaaaae018e650
+a11slots point=1024 pass=1 test=set all 196 64 0xaaaae0124310 0xffffaa450310
+a11slots point=1024 pass=1 test=set all 257 64 0xaaaae0100404 0xaaaae0104404
+a11slots point=1024 pass=1 test=set all 453 64 0xaaaae012c714 0xaaaae0204714
+a11slots point=1024 pass=1 test=set all 883 64 0xaaaae00fcdcc 0xaaaae0140dcc
+a11slots point=1024 pass=1 test=set all 928 64 0xaaaae0128e80 0xaaaae0140e80
+a11slots point=1024 pass=1 test=set all 1116 64 0xaaaae0109170 0xaaaae0115170
+a11slots point=1024 pass=1 test=set all 1472 64 0xaaaae0109700 0xaaaae011d700
+a11slots point=1024 pass=1 test=set all 1616 64 0xaaaae012d940 0xaaaae0129940
+a11slots point=1024 pass=1 test=set all 1684 64 0xaaaae012da50 0xaaaae011da50
+a11slots point=1024 pass=1 test=set all 1756 64 0xaaaae0115b70 0xaaaae011db70
+a11slots point=1024 pass=1 test=set all 1766 64 0xaaaae01fdb98 0xaaaae011db98
+a11slots point=1024 pass=1 test=set all 1804 64 0xaaaae011dc30 0xffffaa29dc30
+a11slots point=1024 pass=1 test=set all 1813 64 0xaaaae01fdc54 0xaaaae012dc54
+a11slots point=1024 pass=1 test=set all 2364 64 0xaaaae01fe4f0 0xaaaae012e4f0
+a11slots point=1024 pass=1 test=set all 3164 64 0xaaaae010b170 0xaaaae0127170
+a11slots point=1024 pass=1 test=set all 236 1 0xaaaae011c3b0 0xaaaae01003b0
+a11slots point=1024 pass=1 test=set # table nofp conflicts 80 slots 16 top32 80
+a11slots point=1024 pass=1 test=set nofp 236 65 0xaaaae01003b0 0xaaaae011c3b0
+a11slots point=1024 pass=1 test=set nofp 196 1 0xaaaae0124310 0xffffaa450310
+a11slots point=1024 pass=1 test=set nofp 257 1 0xaaaae0100404 0xaaaae0104404
+a11slots point=1024 pass=1 test=set nofp 453 1 0xaaaae012c714 0xaaaae0204714
+a11slots point=1024 pass=1 test=set nofp 883 1 0xaaaae00fcdcc 0xaaaae0140dcc
+a11slots point=1024 pass=1 test=set nofp 928 1 0xaaaae0128e80 0xaaaae0140e80
+a11slots point=1024 pass=1 test=set nofp 1116 1 0xaaaae0109170 0xaaaae0115170
+a11slots point=1024 pass=1 test=set nofp 1472 1 0xaaaae0109700 0xaaaae011d700
+a11slots point=1024 pass=1 test=set nofp 1616 1 0xaaaae012d940 0xaaaae0129940
+a11slots point=1024 pass=1 test=set nofp 1684 1 0xaaaae012da50 0xaaaae011da50
+a11slots point=1024 pass=1 test=set nofp 1756 1 0xaaaae0115b70 0xaaaae011db70
+a11slots point=1024 pass=1 test=set nofp 1766 1 0xaaaae01fdb98 0xaaaae011db98
+a11slots point=1024 pass=1 test=set nofp 1804 1 0xaaaae011dc30 0xffffaa29dc30
+a11slots point=1024 pass=1 test=set nofp 1813 1 0xaaaae01fdc54 0xaaaae012dc54
+a11slots point=1024 pass=1 test=set nofp 2364 1 0xaaaae01fe4f0 0xaaaae012e4f0
+a11slots point=1024 pass=1 test=set nofp 3164 1 0xaaaae010b170 0xaaaae0127170
+a11 point=1024 pass=1 test=get requests=200000 rps=158353.12 hook_calls=409087 syscalls_in_kernel=398681 fragment_entries=608552 fpsimd_entries=200006 fpsimd_restores=0 chains=200021 chain_cap=0 exit_svc=398681 exit_bl=814 exit_blr=93 exit_br=200002 exit_ret=920 exit_mem=0 exit_unsupported=8042 exit_budget=0 run_declined=24 ibtc_insert=36 ibtc_replace=3 ibtc_clear=0 ibtc_fpsimd_boundary=200003 ibtc_miss_cold=1645 ibtc_miss_conflict=181 ibtc_miss_other=0 fpsimd_run_max_ns=302083 miss_residual=0
+a11slots point=1024 pass=1 test=get # table all conflicts 128 slots 2 top32 128
+a11slots point=1024 pass=1 test=get all 1600 64 0xaaaae0121900 0xaaaae011d900
+a11slots point=1024 pass=1 test=get all 1622 64 0xaaaae0121958 0xaaaae011d958
+a11slots point=1024 pass=1 test=get # table nofp conflicts 53 slots 3 top32 53
+a11slots point=1024 pass=1 test=get nofp 1345 51 0xaaaae0101504 0xaaaae0109504
+a11slots point=1024 pass=1 test=get nofp 1600 1 0xaaaae0121900 0xaaaae011d900
+a11slots point=1024 pass=1 test=get nofp 1622 1 0xaaaae0121958 0xaaaae011d958
+a11 point=off pass=2 test=set requests=200000 rps=231213.88 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 fpsimd_run_max_ns=302083 miss_residual=0
+a11slots point=off pass=2 test=set # table all conflicts 0 slots 0 top32 0
+a11slots point=off pass=2 test=set # table nofp conflicts 0 slots 0 top32 0
+a11 point=off pass=2 test=get requests=200000 rps=236686.38 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 fpsimd_run_max_ns=302083 miss_residual=0
+a11slots point=off pass=2 test=get # table all conflicts 0 slots 0 top32 0
+a11slots point=off pass=2 test=get # table nofp conflicts 0 slots 0 top32 0
+a11 point=1024 pass=2 test=set requests=200000 rps=135685.22 hook_calls=408889 syscalls_in_kernel=399653 fragment_entries=608331 fpsimd_entries=200001 fpsimd_restores=0 chains=200001 chain_cap=0 exit_svc=399654 exit_bl=486 exit_blr=30 exit_br=200001 exit_ret=271 exit_mem=0 exit_unsupported=7889 exit_budget=0 run_declined=24 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=736 ibtc_miss_conflict=51 ibtc_miss_other=0 fpsimd_run_max_ns=1583833 miss_residual=0
+a11slots point=1024 pass=2 test=set # table all conflicts 0 slots 0 top32 0
+a11slots point=1024 pass=2 test=set # table nofp conflicts 51 slots 1 top32 51
+a11slots point=1024 pass=2 test=set nofp 1345 51 0xaaaae0101504 0xaaaae0109504
+a11 point=1024 pass=2 test=get requests=200000 rps=164473.69 hook_calls=408842 syscalls_in_kernel=399664 fragment_entries=608286 fpsimd_entries=200001 fpsimd_restores=0 chains=200001 chain_cap=0 exit_svc=399665 exit_bl=459 exit_blr=28 exit_br=200001 exit_ret=269 exit_mem=0 exit_unsupported=7864 exit_budget=0 run_declined=24 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=705 ibtc_miss_conflict=51 ibtc_miss_other=0 fpsimd_run_max_ns=1583833 miss_residual=0
+a11slots point=1024 pass=2 test=get # table all conflicts 0 slots 0 top32 0
+a11slots point=1024 pass=2 test=get # table nofp conflicts 51 slots 1 top32 51
+a11slots point=1024 pass=2 test=get nofp 1345 51 0xaaaae0101504 0xaaaae0109504
+a11 point=off pass=3 test=set requests=200000 rps=206185.56 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 fpsimd_run_max_ns=1583833 miss_residual=0
+a11slots point=off pass=3 test=set # table all conflicts 0 slots 0 top32 0
+a11slots point=off pass=3 test=set # table nofp conflicts 0 slots 0 top32 0
+a11 point=off pass=3 test=get requests=200000 rps=238663.48 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_restores=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 fpsimd_run_max_ns=1583833 miss_residual=0
+a11slots point=off pass=3 test=get # table all conflicts 0 slots 0 top32 0
+a11slots point=off pass=3 test=get # table nofp conflicts 0 slots 0 top32 0
+a11 point=1024 pass=3 test=set requests=200000 rps=134499.00 hook_calls=408791 syscalls_in_kernel=399682 fragment_entries=608228 fpsimd_entries=200001 fpsimd_restores=0 chains=200001 chain_cap=0 exit_svc=399683 exit_bl=452 exit_blr=31 exit_br=200001 exit_ret=272 exit_mem=1 exit_unsupported=7788 exit_budget=0 run_declined=25 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=704 ibtc_miss_conflict=51 ibtc_miss_other=0 fpsimd_run_max_ns=1583833 miss_residual=0
+a11slots point=1024 pass=3 test=set # table all conflicts 0 slots 0 top32 0
+a11slots point=1024 pass=3 test=set # table nofp conflicts 51 slots 1 top32 51
+a11slots point=1024 pass=3 test=set nofp 1345 51 0xaaaae0101504 0xaaaae0109504
+a11 point=1024 pass=3 test=get requests=200000 rps=162601.62 hook_calls=408856 syscalls_in_kernel=399745 fragment_entries=608312 fpsimd_entries=200001 fpsimd_restores=0 chains=200001 chain_cap=0 exit_svc=399745 exit_bl=380 exit_blr=15 exit_br=200001 exit_ret=268 exit_mem=3 exit_unsupported=7900 exit_budget=0 run_declined=12 ibtc_insert=0 ibtc_replace=0 ibtc_clear=0 ibtc_fpsimd_boundary=200001 ibtc_miss_cold=612 ibtc_miss_conflict=51 ibtc_miss_other=0 fpsimd_run_max_ns=1583833 miss_residual=0
+a11slots point=1024 pass=3 test=get # table all conflicts 0 slots 0 top32 0
+a11slots point=1024 pass=3 test=get # table nofp conflicts 51 slots 1 top32 51
+a11slots point=1024 pass=3 test=get nofp 1345 51 0xaaaae0101504 0xaaaae0109504
+a11maps-end aaaae0090000-aaaae02e0000 r-xp 00000000 00:03 4263                       /opt/redis/src/redis-server
+a11maps-end aaaae02e9000-aaaae02f0000 r--p 00259000 00:03 4263                       /opt/redis/src/redis-server
+a11maps-end aaaae02f0000-aaaae0349000 rw-p 00260000 00:03 4263                       /opt/redis/src/redis-server
+a11maps-end aaaae0349000-aaaae057c000 rw-p 00000000 00:00 0 
+a11maps-end aaab1efee000-aaab1f00f000 rw-p 00000000 00:00 0                          [heap]
+a11maps-end ffffa7540000-ffffa77c0000 rw-p 00000000 00:00 0 
+a11maps-end ffffa77c0000-ffffa77d0000 ---p 00000000 00:00 0 
+a11maps-end ffffa77d0000-ffffa7fd0000 rw-p 00000000 00:00 0 
+a11maps-end ffffa7fd0000-ffffa7fe0000 ---p 00000000 00:00 0 
+a11maps-end ffffa7fe0000-ffffa87e0000 rw-p 00000000 00:00 0 
+a11maps-end ffffa87e0000-ffffa87f0000 ---p 00000000 00:00 0 
+a11maps-end ffffa87f0000-ffffa8ff0000 rw-p 00000000 00:00 0 
+a11maps-end ffffa8ff0000-ffffa9000000 ---p 00000000 00:00 0 
+a11maps-end ffffa9000000-ffffa9800000 rw-p 00000000 00:00 0 
+a11maps-end ffffa9800000-ffffaa000000 rw-p 00000000 00:00 0 
+a11maps-end ffffaa1c0000-ffffaa34c000 r-xp 00000000 00:03 816                        /usr/lib/aarch64-linux-gnu/libc.so.6
+a11maps-end ffffaa34c000-ffffaa35c000 ---p 0018c000 00:03 816                        /usr/lib/aarch64-linux-gnu/libc.so.6
+a11maps-end ffffaa35c000-ffffaa360000 r--p 0018c000 00:03 816                        /usr/lib/aarch64-linux-gnu/libc.so.6
+a11maps-end ffffaa360000-ffffaa362000 rw-p 00190000 00:03 816                        /usr/lib/aarch64-linux-gnu/libc.so.6
+a11maps-end ffffaa362000-ffffaa36f000 rw-p 00000000 00:00 0 
+a11maps-end ffffaa370000-ffffaa3f2000 r-xp 00000000 00:03 863                        /usr/lib/aarch64-linux-gnu/libm.so.6
+a11maps-end ffffaa3f2000-ffffaa40f000 ---p 00082000 00:03 863                        /usr/lib/aarch64-linux-gnu/libm.so.6
+a11maps-end ffffaa40f000-ffffaa410000 r--p 0008f000 00:03 863                        /usr/lib/aarch64-linux-gnu/libm.so.6
+a11maps-end ffffaa410000-ffffaa411000 rw-p 00090000 00:03 863                        /usr/lib/aarch64-linux-gnu/libm.so.6
+a11maps-end ffffaa413000-ffffaa43a000 r-xp 00000000 00:03 796                        /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1
+a11maps-end ffffaa444000-ffffaa448000 rw-p 00000000 00:00 0 
+a11maps-end ffffaa44a000-ffffaa44c000 rw-p 00000000 00:00 0 
+a11maps-end ffffaa44c000-ffffaa450000 r--p 00000000 00:00 0                          [vvar]
+a11maps-end ffffaa450000-ffffaa451000 r-xp 00000000 00:00 0                          [vdso]
+a11maps-end ffffaa451000-ffffaa453000 r--p 0002e000 00:03 796                        /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1
+a11maps-end ffffaa453000-ffffaa455000 rw-p 00030000 00:03 796                        /usr/lib/aarch64-linux-gnu/ld-linux-aarch64.so.1
+a11maps-end ffffc63d0000-ffffc63f1000 rw-p 00000000 00:00 0                          [stack]
+a11: done
+[   34.946430] kjit: 0 of 295 translation requests still queued at unload (freed by the kernel)
+[   34.980116] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[   35.006449] reboot: Power down
+guest-run: PASS (/Volumes/Local/kjit-a4b2/build/runs/meas-v4-20261009-023933/serial.log)
+grun: rc=0 run_dir=/Volumes/Local/kjit-a4b2/build/runs/meas-v4-20261009-023933

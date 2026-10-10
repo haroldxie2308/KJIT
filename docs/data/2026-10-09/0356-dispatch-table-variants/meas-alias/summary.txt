@@ -1,0 +1,8 @@
+alias_loop 100000 x 256 calls (blr alternating between callees 16 KiB apart + ret + back-edge), 2 boots per variant, 7 runs each
+variant             off ns/call  on ns/call  (on-off)/call   notes
+V0 direct                  4.11       55.90          51.79   fragment_entries=179857606 chain_cap=0 exit_budget=0 ibtc_insert=358313940 ibtc_replace=358313912
+V1 hash                    4.06        7.94           3.88   fragment_entries=700656 chain_cap=0 exit_budget=0 ibtc_insert=42 ibtc_replace=0
+V2a 2-way 2048x2           4.05        7.94           3.89   fragment_entries=700658 chain_cap=0 exit_budget=0 ibtc_insert=42 ibtc_replace=0
+V2b 2-way 4096x2           4.17        7.95           3.78   fragment_entries=700658 chain_cap=0 exit_budget=0 ibtc_insert=42 ibtc_replace=0
+V3a victim 256             4.07        7.96           3.88   fragment_entries=700656 chain_cap=0 exit_budget=0 ibtc_insert=56 ibtc_replace=14
+V3b victim 512             4.08        7.98           3.90   fragment_entries=700657 chain_cap=0 exit_budget=0 ibtc_insert=56 ibtc_replace=14

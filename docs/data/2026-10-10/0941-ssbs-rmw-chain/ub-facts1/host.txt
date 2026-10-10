@@ -1,0 +1,5 @@
+label=facts1 kpti=0 profile=kjit-guest
+append=console=ttyAMA0 panic=-1 nokaslr
+waited_s=0 load1_before=2.29
+cmd=for f in /sys/devices/system/cpu/vulnerabilities/*; do echo "VULN $(basename $f): $(cat $f)"; done; echo "CMDLINE $(cat /proc/cmdline)"; grep -m1 -i "^Features" /proc/cpuinfo | sed "s/^/CPUINFO /"; grep -m3 -i "implementer\|part\|variant" /proc/cpuinfo | sed "s/^/CPUINFO /"; dmesg | grep -i -E "ssbs|spectre|workaround|store bypass|SSBD|CPU features|mitigat" | sed "s/^/DMESG /"; zcat /proc/config.gz 2>/dev/null | grep -i -E "SSBD|ERRATUM_3194386|MITIGATE|SPECTRE" | sed "s/^/CONFIG /"
+load1_after=2.27 guest_run_status=0
