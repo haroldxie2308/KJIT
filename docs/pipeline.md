@@ -136,8 +136,9 @@ dispatch template). The harness and the kernel executor consume those names.
 - The prologue stores `x2` in frame slot `RUNTIME_FRAME_ENTRY_ADDR_OFFSET` (80)
   before its `pt_regs` loads overwrite it, stores the dispatch table pointer
   (`ldr x12, [x1, #16]; str x12, [sp, #200]`, after the pt_regs/extra pointer
-  store and before the `ldp x0, x1` that overwrites x1), stores the budget
-  counter (`movz x12, #4096; str x12, [sp, #192]`), and ends with
+  store and before the `ldp x0, x1` that overwrites x1), puts user x18 into its
+  frame slot 192 instead of physical x18, sets the budget counter in physical
+  x18 (`movz x18, #4096`, A12), and ends with
   `ldr x12, [sp, #80]; br x12`. x12 is reg-virt scratch, dead at body entry;
   user x12 is already in its frame slot. `PROLOGUE_LEN_BYTES` =
   `EPILOGUE_OFFSET` = 0xa8.
@@ -158,11 +159,16 @@ The frame is 208 bytes (`shared/abi/frame.rs`), kernel stack, `sp`-based:
 | Offset | Content |
 |---|---|
 | `[16, 80)` | user-state slots: stack-backed user x12..x17, user x29, user sp |
+| 192 | user-state slot: stack-backed user x18 (A12; was the budget counter) |
 | 80 | entry address (`RUNTIME_FRAME_ENTRY_ADDR_OFFSET`) |
 | 176 | the pt_regs pointer (kernel slot; the only kernel slot the body may read, into a scratch register x12..x15) |
-| 192 | back-edge/dispatch budget counter (8 bytes, `RUNTIME_FRAME_BUDGET_OFFSET`) |
 | 200 | the run's dispatch table pointer (`RUNTIME_FRAME_IBTC_OFFSET`) |
 | other | caller x29/x30, caller x18..x28, the pt_regs / extra-params pointers (kernel state; the body can neither read nor write them) |
+
+Physical x18 holds the budget counter for the whole run (A12): the prologue
+sets it, only budget checks touch it, and user x18 lives in slot 192. The
+epilogue writes user x18 back to `pt_regs` from slot 192 and restores the
+caller's x18 from its own slot, as before.
 
 The epilogue reloads the kernel's callee-saved state from frame slots the body
 cannot write and writes the full user state back into `pt_regs`.
@@ -382,27 +388,36 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
   `LayoutError::FallthroughNotAdjacent` when a block with a successor at its
   own end is not followed by it, so lowering never adds explicit fall-through
   branches (they would be extra back-edge candidates).
-- The prologue stores `KJIT_BACKEDGE_BUDGET = 4096` (an ABI constant) in the
-  runtime frame slot 192. Why 4096: one entry runs at most 4096 x the longest
-  acyclic path before the runtime re-checks signals and `need_resched`; loops
-  under 4096 iterations never pay a round trip. The counter is an 8-byte slot;
-  the budget unit is one back-edge execution or one dispatch attempt (see
-  In-fragment branch dispatch (A11)).
-- Before each back-edge's lowered sequence the fragment runs: load slot ->
-  `SUB #1` -> store slot -> `CBZ` to a budget stub. The sequence uses scratch,
-  which is dead at an instruction boundary, and must not touch NZCV (hence
-  `SUB` + `CBZ`, not `SUBS`). Exact words, with nothing between them and the
-  branch except that branch's own reg-virt fills (`ldr x12..x15,
-  [sp, #16..#56]`):
+- The prologue sets physical x18 to `KJIT_BACKEDGE_BUDGET = 4096` (an ABI
+  constant; `BUDGET_COUNTER_REG = 18`). Why 4096: one entry runs at most 4096 x
+  the longest acyclic path before the runtime re-checks signals and
+  `need_resched`; loops under 4096 iterations never pay a round trip. The budget
+  unit is one back-edge execution or one dispatch attempt (see In-fragment
+  branch dispatch (A11)).
+- Why a register (A12, decided 2026-10-10): the A6 counter lived in frame slot
+  192 and every unit was a load/sub/store on that one slot. At EL1 this kernel
+  runs with `PSTATE.SSBS = 0` (Linux leaves `SCTLR_EL1.DSSBS` clear), so each
+  load waits for the older store to the same address: 2.1 ns per unit, more
+  than a byte loop's own body, and 3 units (about 4 of 6.3 ns) per call. With
+  the counter in a register a unit is two ALU-class words and no memory
+  ([2026-10-10](journal/2026-10-10.md), root cause and SSBS entries). The cost
+  is that user x18 becomes stack-backed (slot 192): rare in Linux userspace
+  code, and every use pays a fill/spill.
+- Before each back-edge's lowered sequence the fragment runs `SUB #1` on x18
+  and `CBZ` to a budget stub. It must not touch NZCV (hence `SUB` + `CBZ`, not
+  `SUBS`). Exact words, with nothing between them and the branch except that
+  branch's own reg-virt fills (`ldr x12..x15, [sp, <a user-state slot>]`):
 
   ```text
-  f94063ec  ldr x12, [sp, #192]
-  d100058c  sub x12, x12, #1
-  f90063ec  str x12, [sp, #192]
-  b4xxxxxc  cbz x12, <Budget stub of this PC>     // imm19 -> cold region
+  d1000652  sub x18, x18, #1
+  b4??????  cbz x18, <Budget stub of this PC>     // Rt = 18, imm19 -> cold region
             [fills of the branch's stack-backed register]
             <the back-edge branch>
   ```
+
+- No other word of a fragment reads or writes physical x18: reg-virt maps every
+  user operand x18 to slot 192 like x12..x17, and the epilogue (byte-exact)
+  reads user x18 from that slot.
 
 - Count semantics: the prologue stores N; each unit (taken or not) decrements
   first and exits at zero, so units 1..N-1 of one entry run and the N-th exits
@@ -423,7 +438,7 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
   back-edges. A branch inside a UserSynthetic sequence counts; the check then
   precedes the whole lowered sequence of its original instruction. Layout only
   resolves the `CBZ` immediate to the stub label.
-- Kind: `RephrasedInsnKind::BudgetCheck` on all four instructions (not
+- Kind: `RephrasedInsnKind::BudgetCheck` on both instructions (not
   user-semantic, not a runtime exit). Reg-virt passes it through unchanged; in
   the cold region or inside an exit group it is `MalformedRuntimeExitGroup`.
 - Layout self-check: a user branch that resolves to `target_offset <= offset`
@@ -504,10 +519,8 @@ CFG stay in-fragment. `SVC` is not a branch: its resume stays a runtime path.
   body, replacing a plain `b <exit group>`:
 
   ```text
-  ldr  x12, [sp, #192]            ; budget check (rule 6 form) -> Budget stub
-  sub  x12, x12, #1
-  str  x12, [sp, #192]
-  cbz  x12, <Budget stub of pc>
+  sub  x18, x18, #1               ; budget check (rule 6 form) -> Budget stub
+  cbz  x18, <Budget stub of pc>
   <T -> x13>                      ; BL: movz/movk of the target;
                                   ; BLR/BR/RET: mov or fill from the target's mapping,
                                   ; before any x30 write (`blr x30`)
@@ -538,7 +551,7 @@ CFG stay in-fragment. `SVC` is not a branch: its resume stays a runtime path.
     template word). BL's target move is the usual four `movz`/`movk` words;
     BLR/BR/RET use `orr x13, xzr, Xm` with `Xm` the *user* register, which
     reg-virt maps with the capture machinery the exit group's RET_PARAM0
-    already had (stack-backed x12..x17 are loaded from their slot, user x29/sp
+    already had (stack-backed x12..x18 are loaded from their slot, user x29/sp
     are read from x16/x17, everything else is copied). Order is fixed so
     `blr x30` reads x30 into x13 before the link write.
   - The exit group (the miss path) is the site's plain branch exit (same
@@ -555,7 +568,7 @@ CFG stay in-fragment. `SVC` is not a branch: its resume stays a runtime path.
     branch, so a Budget exit leaves the state from before the instruction and
     userspace re-executes the branch natively (also correct for `blr x30`). This
     is what bounds recursion and call loops, which no longer pass through the
-    runtime. `rephrase` puts the budget check (same four words, same cold
+    runtime. `rephrase` puts the budget check (same two words, same cold
     Budget stub) before the whole site, as for a back-edge.
   - Scratch: x12 (kernel values only), x13 (T, a user value), x14. x15 stays
     free. All are dead at original-instruction boundaries; x13 stays live from
@@ -1130,8 +1143,11 @@ Reject with `VerifyError { offset, rule }`.
    `KJIT_PROLOGUE`/`KJIT_EPILOGUE` (the prologue includes the dispatch-table
    store). The body never writes SP (a destination in its SP meaning, or base
    writeback) and never writes x29.
-   - Decision: x18..x28 and x30 hold user values in the body and the body may
-     write them freely. The kernel's callee-saved state is safe because the
+   - Decision: x19..x28 and x30 hold user values in the body and the body may
+     write them freely. Physical x18 is the budget counter (A12): written only
+     by the prologue (byte-exact) and by a budget check's `sub x18, x18, #1`,
+     read only by that `sub` and the check's `cbz` (`BudgetRegisterAccess`
+     otherwise). The kernel's callee-saved state is safe because the
      epilogue is byte-exact and reloads it from frame slots the body cannot
      write (rule 3), and SP (which locates the frame) is never written.
    - x29 is protected because the prologue points it at the runtime frame and
@@ -1154,14 +1170,14 @@ Reject with `VerifyError { offset, rule }`.
      fragment is `UserOnlyForm` too.
    - a runtime access, offset addressing only (no writeback), either
      - SP-based inside the user-state frame slots `[16, 80)` (stack-backed
-       x12..x17, user x29, user sp), or the single kernel-slot read
+       x12..x17, user x29, user sp) and `[192, 200)` (stack-backed x18, A12),
+       or the single kernel-slot read
        `ldr xS, [sp, #176]` (pt_regs pointer, 64-bit, S a reg-virt scratch
        register x12..x15; rule 9), or a dispatch-template word (rule 4). Every
        other frame slot (caller x29/x30, entry address, caller x18..x28, the
        pt_regs / extra-params pointers) and anything outside the 208-byte frame
        is `FrameAccessOutOfRange`: a body write there is a kernel write
-       primitive through the epilogue. The budget counter (192) is rule 6's;
-       slot 200 (dispatch table pointer) is never written by the body and read
+       primitive through the epilogue. Slot 200 (dispatch table pointer) is never written by the body and read
        only as a template's first word.
      - based on a register proven to hold the pt_regs pointer, inside
        `regs[0..31]` + `sp` (`[0, 256)`); `pc`, `pstate` and beyond are never
@@ -1210,22 +1226,21 @@ Reject with `VerifyError { offset, rule }`.
    access.
 6. Budget (A6, A11): every back-edge (a direct branch to a body word at or before
    itself; offset order is layout order) is preceded by
-   `ldr x12, [sp, #192]; sub x12, x12, #1; str x12, [sp, #192]; cbz x12, <stub>`
-   (`RUNTIME_FRAME_BUDGET_OFFSET`, scratch `REG_VIRT_SCRATCH_GPR_START`), then
-   any number of reg-virt fill loads `ldr x12..x15, [sp, #16..#56]` and nothing
+   `sub x18, x18, #1; cbz x18, <stub>` (`BUDGET_COUNTER_REG`), then any number
+   of reg-virt fill loads `ldr x12..x15, [sp, <user-state slot>]` and nothing
    else, then the branch. The same check guards a dispatch template: between its
    `cbz` and the template's first word only data-processing words, reg-virt
    fills and the link write are allowed (at most `DISPATCH_GUARD_MAX_GAP = 16`
    of them; BL's 4 target + 4 link words is the longest real site, 8, so the
    walk back is O(1)); no branch, no memory access other than fills, no join
-   point. No join point may sit on the `sub`, `str`, `cbz`, a fill or the
-   guarded branch, so every path to it decrements the counter; the check's `ldr`
-   may be one (it carries the original PC's label). The `cbz` target is a forward
+   point. No join point may sit on the `cbz`, a fill or the guarded branch, so
+   every path to it decrements the counter; the check's `sub` may be one (it
+   carries the original PC's label). The `cbz` target is a forward
    exit-group start (the Budget stub).
-   - The counter is written only by the prologue's init (byte-exact) and by a
-     check's own `str`; it is read only by a check's own `ldr`. A check that
-     guards nothing is rejected like any other counter access
-     (`BudgetSlotAccess`); a gap violation is `MissingBudgetCheck`.
+   - x18 is written only by the prologue's init (byte-exact) and by a check's
+     own `sub`; it is read only by that `sub` and the check's `cbz`. A check that
+     guards nothing, or any other x18 operand, is `BudgetRegisterAccess`; a gap
+     violation is `MissingBudgetCheck`.
 7. Exit groups: every fault stub, budget stub and template miss target starts an
    exit group: the word before it is an unconditional `B` or a template's `br`,
    and the straight-line run from it contains no user access and ends in
@@ -1288,7 +1303,8 @@ region; rule 3's pt_regs fact is its refinement.
   proven pointer); `LDTR*` and window-access results; `MRS` of TPIDR_EL0,
   CNTVCT_EL0, CNTFRQ_EL0 (EL1 reads what EL0 reads, module init pins it; they
   read no GPR, so the write clears any kernel mark, like `movz`); the budget
-  counter (192): the user can count its own back-edges, so it is not secret; the
+  counter in x18: never a kernel value (the prologue sets a constant), and the
+  user can count its own back-edges, so it is not secret; the
   template's key load `ldr x14, [x12]` (a user PC the runtime copied from a user
   branch target).
 - Transfer: a write gets the kernel mark if the instruction reads SP or a
@@ -2130,6 +2146,17 @@ the reasoning, the numbers and the full list of what was not verified there.
 
 ### Open decisions
 
+- **SSBS inside fragment runs.** EL1 runs with `PSTATE.SSBS = 0` on this
+  platform although the kernel reports Spectre-v4 `Vulnerable` and sees no SSBS
+  capability (`ID_AA64PFR1_EL1` reads 0 under HVF, yet `msr ssbs` takes
+  effect); `ssbd=`/`mitigations=off` change nothing. With SSBS = 1 every
+  remaining store->load pair in fragment code (fills after spills of
+  stack-backed registers) gets cheaper; a per-run toggle costs ~22 ns. Not
+  adopted: SSBS = 1 lets a load speculatively read the value a frame slot held
+  before an older store (e.g. kernel stack residue before the prologue's
+  stores) and rule 9 does not model speculation. Needs a security argument
+  first. [2026-10-10 09:41](journal/2026-10-10.md).
+
 - **FP/SIMD bracket length is a whole run.** A bracketed run dispatches through
   `table_all` and continues into non-FP/SIMD code, so once a run enters an
   FP/SIMD fragment everything after it until the next runtime exit runs with
@@ -2149,8 +2176,9 @@ the reasoning, the numbers and the full list of what was not verified there.
   `ibtc_fpsimd_boundary`; it trades page faults handled in place for `Mem` exits
   and longer non-preemptible stretches); re-entering after a Budget exit instead
   of resuming in userspace (needs Budget resume PCs to be entry labels; decide
-  from `exit_budget`); in-fragment code quality (budget counter read-modify-write
-  through memory, stack-backed x12..x15, `LDTR` imm9-only splits).
+  from `exit_budget`); in-fragment code quality (stack-backed x12..x18
+  fills/spills, `LDTR` imm9-only splits; the budget counter's memory chain is
+  gone with A12).
   [2026-10-02 16:25, A11 contract pinned](journal/2026-10-02.md).
 - **Dispatch table conflicts: decided (A11c victim part, section 4).** Misses
   were classified (conflicts from a few two-pc aliases, not capacity) and five
