@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * The longest FP/SIMD fragment run (A9b): after each getppid, a SIMD copy of
+ * The longest FP/SIMD fragment run (A9, A13 bracket): after each getppid, a SIMD copy of
  * 1 MiB in 64-byte steps (two ldp q + two stp q per back-edge), far more
  * back-edges than the fragment budget. Each run leaves through a Budget exit
  * after KJIT_BACKEDGE_BUDGET iterations and userspace finishes the copy, so
- * the run is the longest non-preemptible stretch an FP/SIMD fragment can have
- * (the runner prints fpsimd_run_max_ns after it). Output must be identical
+ * the run is the longest FP/SIMD bracket one run can have (the runner prints
+ * fpsimd_run_max_ns after it; the bracket is preemptible since A13, the figure
+ * includes time switched out). Output must be identical
  * with KJIT on/off. KJIT_EXPECT=budget: the runs end in Budget exits.
  */
 #include "kjit_test.h"

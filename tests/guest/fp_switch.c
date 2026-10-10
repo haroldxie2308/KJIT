@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Context switches between FP/SIMD fragment runs (A9b, the TIF_FOREIGN_FPSTATE
+ * Context switches between FP/SIMD fragment runs (the TIF_FOREIGN_FPSTATE
  * path). Parent and child are pinned to CPU 0 and ping-pong a token through
  * two pipes, so every parent read blocks and the child runs in between. The
  * child overwrites v0-v15 with its own values and runs with its own FPCR, so
  * when the parent's syscall returns, the registers hold the child's state
- * (TIF_FOREIGN_FPSTATE): the parent's FP/SIMD fragment must reload its own
- * state first. The parent keeps v8-v15 and FPCR constant and accumulates in
- * v6; the child accumulates in v7 and keeps v16-v23 constant. Both check
- * their state after the loop. Output must be identical with KJIT on/off.
- * KJIT_EXPECT=fpsimd: both loops run in FP/SIMD fragments and the parent's
- * runs reloaded the FP/SIMD state (fpsimd_restores).
+ * (TIF_FOREIGN_FPSTATE): the parent's FP/SIMD fragment must load its own
+ * state first (every bracket loads it from memory, A13). The parent keeps
+ * v8-v15 and FPCR constant and accumulates in v6; the child accumulates in v7
+ * and keeps v16-v23 constant. Both check their state after the loop. Output must be identical with KJIT on/off.
+ * KJIT_EXPECT=fpsimd: both loops run in FP/SIMD fragments.
  */
 #include "kjit_test.h"
 #include <sched.h>
@@ -173,14 +172,11 @@ int main(int argc, char **argv)
 		die("fp_switch: FPCR %#llx after the loop", (unsigned long long)fpcr);
 	/*
 	 * Parent and child: two syscalls and one FP/SIMD run per iteration each,
-	 * and each FP/SIMD run follows the other process's run on CPU 0, so it
-	 * reloads its state (2 * iters seen on kjit-guest). Loose: a wakeup can
-	 * set need_resched, and the runtime then returns to userspace instead.
+	 * and each FP/SIMD run follows the other process's run on CPU 0, so the
+	 * registers hold the other process's state when it starts. Loose: a
+	 * wakeup can set need_resched, and the runtime then returns to userspace
+	 * instead.
 	 */
 	kjit_check_fpsimd("fp_switch", s0, s1, 4 * iters, 2 * iters, 50);
-	if (kjit_expect("fpsimd") &&
-	    (s1.fp_restores - s0.fp_restores) * 100 < (iters - kjit_auto_warmup()) * 50)
-		die("fp_switch: only %lld FP/SIMD state reloads for %ld switches",
-		    s1.fp_restores - s0.fp_restores, iters);
 	return 0;
 }

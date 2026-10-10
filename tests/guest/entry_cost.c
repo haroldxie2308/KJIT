@@ -17,7 +17,7 @@
  *   gpr   add x6, x6, #1; ret
  *   fp    fmov d0, x6; fmov x6, d0; add x6, x6, #1; ret
  *         the callee fragment uses FP/SIMD, so its entry runs inside the
- *         A9b bracket (fpsimd_entries); the return site stays integer-only.
+ *         A13 bracket (fpsimd_entries); the return site stays integer-only.
  *
  *   entry_cost <gpr|fp> [outer] [calls] [reps]
  *
@@ -102,7 +102,7 @@ static int read_debugfs_bool(const char *file)
 }
 
 static const char *const counters[] = {
-	"hook_calls", "syscalls_in_kernel", "fragment_entries", "fpsimd_entries", "fpsimd_restores",
+	"hook_calls", "syscalls_in_kernel", "fragment_entries", "fpsimd_entries", "fpsimd_preempted",
 	"chains", "chain_cap", "exit_svc", "exit_bl", "exit_blr", "exit_br", "exit_ret", "exit_mem",
 	"exit_unsupported", "exit_budget", "run_declined",
 };

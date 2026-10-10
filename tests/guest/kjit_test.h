@@ -141,7 +141,7 @@ static inline int kjit_expect(const char *what)
 
 struct kjit_snap {
 	long long in_kernel, entries, translate_ok, exit_mem, exit_budget, exit_unsupported;
-	long long fp_entries, fp_restores, fp_exit_mem;	/* A9b FP/SIMD bracket */
+	long long fp_entries, fp_preempted, fp_exit_mem;	/* A13 FP/SIMD bracket */
 };
 
 static inline struct kjit_snap kjit_snap(void)
@@ -154,7 +154,7 @@ static inline struct kjit_snap kjit_snap(void)
 		.exit_budget = kjit_stat("exit_budget"),
 		.exit_unsupported = kjit_stat("exit_unsupported"),
 		.fp_entries = kjit_stat("fpsimd_entries"),
-		.fp_restores = kjit_stat("fpsimd_restores"),
+		.fp_preempted = kjit_stat("fpsimd_preempted"),
 		.fp_exit_mem = kjit_stat("fpsimd_exit_mem"),
 	};
 	return s;
@@ -162,10 +162,10 @@ static inline struct kjit_snap kjit_snap(void)
 
 static inline void kjit_report(const char *test, struct kjit_snap a, struct kjit_snap b)
 {
-	fprintf(stderr, "%s: in_kernel=%lld entries=%lld exit_mem=%lld exit_budget=%lld exit_unsupported=%lld fpsimd_entries=%lld fpsimd_restores=%lld fpsimd_exit_mem=%lld\n",
+	fprintf(stderr, "%s: in_kernel=%lld entries=%lld exit_mem=%lld exit_budget=%lld exit_unsupported=%lld fpsimd_entries=%lld fpsimd_preempted=%lld fpsimd_exit_mem=%lld\n",
 		test, b.in_kernel - a.in_kernel, b.entries - a.entries, b.exit_mem - a.exit_mem,
 		b.exit_budget - a.exit_budget, b.exit_unsupported - a.exit_unsupported,
-		b.fp_entries - a.fp_entries, b.fp_restores - a.fp_restores,
+		b.fp_entries - a.fp_entries, b.fp_preempted - a.fp_preempted,
 		b.fp_exit_mem - a.fp_exit_mem);
 }
 

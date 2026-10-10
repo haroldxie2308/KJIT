@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Faults of SIMD&FP accesses in FP/SIMD fragments (A9b), which run with page
+ * Faults of SIMD&FP accesses in FP/SIMD fragments (A9), which run with page
  * faults disabled: every user-access fault leaves through the access's stub
  * (Mem exit), and userspace re-executes the access natively.
  *

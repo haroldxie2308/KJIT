@@ -82,7 +82,7 @@ impl Running {
         // fragment; `extra` receives x10/x11 (epilogue `stp x10, x11, [x1]`)
         // and holds this run's dispatch table. A fragment the verifier found to
         // use FP/SIMD only runs inside the FP/SIMD bracket (kjit_glue.c), which
-        // makes the user's FP/SIMD state live in the registers for the run.
+        // loads the user's FP/SIMD state into the registers for the run.
         if self.fpsimd {
             stats::inc(Stat::FpsimdEntries);
             unsafe { ffi::kjit_call_fragment_fpsimd(regs, extra.as_mut_ptr(), entry, self.base) }

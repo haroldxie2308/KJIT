@@ -132,13 +132,10 @@ while [ "$i" -le "$iterations" ]; do
     onoff signal_loop inkernel 0 "$T/signal_loop" 200000
     grep -q "handled=1" signal_loop.1.out || fail "signal_loop: no signal handled"
 
-    # A9b: fragments that use the user's FP/SIMD registers.
+    # A9/A13: fragments that use the user's FP/SIMD registers.
     onoff fp_loop fpsimd 0 "$T/fp_loop" 20000
     onoff fp_regs fpsimd 0 "$T/fp_regs" 100000
-    before=$(stat fpsimd_restores)
     onoff fp_switch fpsimd 0 "$T/fp_switch" 20000
-    restores=$(( $(stat fpsimd_restores) - before ))
-    [ "$restores" -ge 1 ] || fail "fp_switch: no FP/SIMD state reload"
     onoff fp_signal fpsimd 0 "$T/fp_signal" 200000
     grep -q "handled=1" fp_signal.1.out || fail "fp_signal: no signal handled"
     for mode in ro_store unmapped_load null_ld1; do
@@ -153,6 +150,29 @@ while [ "$i" -le "$iterations" ]; do
     onoff fp_fault_demand "" 0 "$T/fp_fault" demand
     mem=$(( $(stat fpsimd_exit_mem) - before ))
     [ "$mem" -ge 100 ] || fail "fp_fault demand: $mem FP/SIMD Mem exits, want one per first touch"
+    # A13: the bracket is preemptible and migratable. V state across
+    # preemption and syscalls with more workers than CPUs, then the same with
+    # softirq kernel-mode NEON rounds clobbering V0-V31 on every CPU (debugfs
+    # neon_noise_us), which must reach tasks inside a bracket.
+    before=$(stat fpsimd_preempted)
+    onoff fp_preempt fpsimd 0 "$T/fp_preempt" 0 1000 3000 2
+    preempted=$(( $(stat fpsimd_preempted) - before ))
+    echo "k2:   fp_preempt: $preempted brackets switched out"
+    [ "$preempted" -ge 1 ] || fail "fp_preempt: no bracket was ever preempted"
+    hits0=$(awk '{ print $2 }' "$K/neon_noise_hits")
+    echo 25 > "$K/neon_noise_us"
+    onoff fp_preempt_noise fpsimd 0 "$T/fp_preempt" 0 1000 3000 2
+    echo 0 > "$K/neon_noise_us"
+    hits=$(( $(awk '{ print $2 }' "$K/neon_noise_hits") - hits0 ))
+    echo "k2:   fp_preempt_noise: $hits NEON softirq rounds interrupted a bracket"
+    [ "$hits" -ge 1 ] || fail "fp_preempt_noise: no softirq NEON round interrupted a bracket"
+    # A13: the bracket invalidates the task's CPU binding (thread.fpsimd_cpu);
+    # a task moved between CPUs around a bracket must get its new state back.
+    onoff fp_stale fpsimd 0 "$T/fp_stale" 300
+    # lat_probe runs (SCHED_FIFO works); its numbers beside a load come from
+    # fp-bracket.sh lat, not from here.
+    "$T/nojit" "$T/lat_probe" 2 1000 50 > lat_probe.out || fail "lat_probe"
+    sed 's/^/k2:   /' lat_probe.out
     echo "k2:   fpsimd_run_max_ns=$(stat fpsimd_run_max_ns) before fp_budget"
     onoff fp_budget budget 0 "$T/fp_budget" 400
     echo "k2:   fpsimd_run_max_ns=$(stat fpsimd_run_max_ns) after fp_budget"

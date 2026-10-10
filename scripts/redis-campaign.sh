@@ -88,12 +88,12 @@ counts() {
 # between DIR/stats.before and DIR/stats.after (k4-suite.sh snapshots).
 kjit_deltas() {
     awk 'FILENAME == ARGV[1] { a[$1] = $2; next } { d[$1] = $2 - a[$1] }
-         END { printf "in_kernel=%d/%d syscalls (%.1f%%) entries=%d translated=%d exit_unsupported=%d exit_mem=%d exit_invalid=%d verify_rejected=%d fpsimd_entries=%d fpsimd_restores=%d fpsimd_exit_mem=%d",
+         END { printf "in_kernel=%d/%d syscalls (%.1f%%) entries=%d translated=%d exit_unsupported=%d exit_mem=%d exit_invalid=%d verify_rejected=%d fpsimd_entries=%d fpsimd_preempted=%d fpsimd_exit_mem=%d",
                    d["syscalls_in_kernel"], d["hook_calls"],
                    d["hook_calls"] ? 100 * d["syscalls_in_kernel"] / d["hook_calls"] : 0,
                    d["fragment_entries"], d["translate_ok"], d["exit_unsupported"], d["exit_mem"],
                    d["exit_invalid"], d["translate_verify_rejected"], d["fpsimd_entries"],
-                   d["fpsimd_restores"], d["fpsimd_exit_mem"] }' "$1/stats.before" "$1/stats.after"
+                   d["fpsimd_preempted"], d["fpsimd_exit_mem"] }' "$1/stats.before" "$1/stats.after"
     printf '; unsupported_top: %s' "$(awk 'FILENAME == ARGV[1] { e[$1] = $2; s[$1] = $3; next }
         { de = $2 - e[$1]; ds = $3 - s[$1]; if (de + ds > 0) printf "%d %s(%d/%d)\n", de + ds, $1, de, ds }' \
         "$1/unsupported_top.before" "$1/unsupported_top.after" | sort -rn | head -6 | cut -d' ' -f2 | tr '\n' ' ')"

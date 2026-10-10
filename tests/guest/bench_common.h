@@ -34,7 +34,7 @@ static inline double bench_median(double *v, long n)
 }
 
 static const char *const bench_counters[] = {
-	"hook_calls", "syscalls_in_kernel", "fragment_entries", "fpsimd_entries", "fpsimd_restores",
+	"hook_calls", "syscalls_in_kernel", "fragment_entries", "fpsimd_entries", "fpsimd_preempted",
 	"chains", "chain_cap", "exit_svc", "exit_bl", "exit_blr", "exit_br", "exit_ret", "exit_mem",
 	"exit_unsupported", "exit_budget", "run_declined",
 };
