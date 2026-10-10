@@ -1874,6 +1874,32 @@ and one module shape is simpler than a K0-only build.
   `exception_table_entry` per fault site (`EX_TYPE_UACCESS_ERR_ZERO`, both
   registers 31), `flush_icache_range`, `set_memory_rox`. The fragment is on the
   global extable list (`kjit_all_frags`) until its retirement callback.
+- **Image placement (A14).** The image does not start at the allocation's base
+  but at a per-fragment colour offset
+  `KJIT_IMAGE_COLOR_STEP * ((n * KJIT_IMAGE_COLOR_STRIDE) % KJIT_IMAGE_COLORS)`.
+  The constants are 16 B, 11 and 256, so the offset is a 16-byte multiple below
+  `PAGE_SIZE`. `n` is a global install counter (atomic). The allocation is the
+  colour offset plus code plus extable, so at most one extra page per fragment.
+  `set_memory_rox` and the free cover the whole allocation, labels and extable
+  entries are relative to the image start, and `max_code_*` (section 9, Caps)
+  count the allocated bytes.
+  - Invariant: the hot first instructions of different fragments (prologue,
+    epilogue, early body and entry labels) do not share L1I sets by
+    construction.
+  - Why: page-aligned images put every fragment's prologue, epilogue and early
+    body at the same page offset. On this core (L1I 6-way, set index VA[14:6],
+    inferred from the data) about 300 hot redis fragments then conflict, and
+    every fragment entry misses at about 3.5-4 ns. That was the "dispatch stall"
+    (about 5 ns per transfer, 1.8 us per SET request). Native code laid out the
+    same way slows 13x. With 256 colours redis SET goes from 0.59 to 1.0 of
+    native throughput (server CPU 6.42 -> 3.72 us/request, native 2.67)
+    ([2026-10-11 03:03](journal/2026-10-11.md)).
+  - Why not packing: packing fragments densely into a shared ROX arena measured
+    3.58 us. It needs writes into pages that hold live code (text patching with
+    an unexported helper, a new kernel patch) and an arena allocator. Deferred;
+    the remaining gap to colouring is about 0.14 us per SET request.
+  - Guard: K2 runs `code_speed sites64`, and the KJIT-on time per iteration
+    must stay below 2x KJIT-off. It measured 4.6x before A14.
 - Locks: `kjit_mm.lock` -> `kjit_frags_lock` (spinlocks, no allocation under
   either: both are taken inside mmu_notifier invalidation). `kjit_mm_lock` is
   never nested with them.
@@ -2222,11 +2248,15 @@ the reasoning, the numbers and the full list of what was not verified there.
   were classified (conflicts from a few two-pc aliases, not capacity) and five
   table shapes measured; hits are still not counted (no atomics in fragment
   code). [2026-10-09](journal/2026-10-09.md).
-- **Where the remaining A11 loss sits.** Of the remaining slowdown against
-  native, a minority is runtime round trips and the larger part is inside
-  fragment code (dispatch sequences, budget accounting, windowed memory
-  accesses), inferred from counters and two models, not timed per phase.
-  [2026-10-05 11:47](journal/2026-10-05.md).
+- **Where the remaining loss sits: decided (A14 placement).** Attributed per
+  request on redis ([2026-10-11 01:54](journal/2026-10-11.md)); the largest
+  part, the stall at dispatch targets, was L1I set conflicts from page-aligned
+  images ([03:03](journal/2026-10-11.md)), not the dispatch template, whose
+  alternatives (inline caches, direct calls, return compares, shorter chains)
+  measured at most 0.07 us per request. PAN windows (SIMD&FP and LSE atomics)
+  are the next candidate: run-scoped PAN clear is measured
+  ([01:47](journal/2026-10-11.md)) but not decided; re-attribute on an A14
+  build first.
 - **V2 chaining.** The fuzzer counts `chained` as a non-verdict; modelling
   chaining in the original runner of the single-fragment fuzzer is deferred
   (cached runs follow branches). [2026-09-27 03:40](journal/2026-09-27.md).
