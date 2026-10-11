@@ -1,9 +1,11 @@
 mod dispatch;
 mod frame;
+mod link;
 mod regs;
 mod wrapper;
 
 pub use dispatch::{ibtc_lookup_slots, ibtc_plan_publish, IbtcPlan, IbtcSource, IbtcStore};
+pub use link::{link_branch_word, LINK_NOP_WORD};
 pub use frame::{
     ibtc_slot_index, ibtc_victim_index, pt_regs_x_slot_offset, reg_virt_stack_backed_slot_offset,
     EXTRA_PARAMS_BYTES, EXTRA_PARAMS_WORDS, EXTRA_PARAM_IBTC_TABLE_INDEX,

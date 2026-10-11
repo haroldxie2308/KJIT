@@ -127,9 +127,19 @@ pub(crate) enum Stat {
     /// publish by another thread between the fragment's read and the
     /// runtime's).
     IbtcMissOther,
+    /// Direct BL links (A16): link slots patched `nop` -> `b` ...
+    LinkMade,
+    /// ... and `b` -> `nop` because the target fragment retired. Bumped through
+    /// `kjit_rs_note`.
+    LinkRestored,
+    /// Link attempts that found labels for the site's target but none within `b`'s
+    /// +-128 MiB (once per attempt).
+    LinkOutOfRange,
+    /// ... or only FP/SIMD labels for a non-FP/SIMD site (the class rule).
+    LinkClassRefused,
 }
 
-const COUNT: usize = Stat::IbtcMissOther as usize + 1;
+const COUNT: usize = Stat::LinkClassRefused as usize + 1;
 
 const NAMES: [&str; COUNT] = [
     "syscalls_in_kernel",
@@ -187,6 +197,10 @@ const NAMES: [&str; COUNT] = [
     "ibtc_miss_cold",
     "ibtc_miss_conflict",
     "ibtc_miss_other",
+    "link_made",
+    "link_restored",
+    "link_out_of_range",
+    "link_class_refused",
 ];
 
 #[allow(clippy::declare_interior_mutable_const)]
@@ -237,6 +251,10 @@ fn note_stat(note: u32) -> Option<Stat> {
         17 => Stat::IbtcInsert,
         18 => Stat::IbtcReplace,
         19 => Stat::IbtcClear,
+        20 => Stat::LinkMade,
+        21 => Stat::LinkRestored,
+        22 => Stat::LinkOutOfRange,
+        23 => Stat::LinkClassRefused,
         _ => return None,
     })
 }

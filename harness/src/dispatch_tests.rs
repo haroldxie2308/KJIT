@@ -250,8 +250,11 @@ fn a_retired_callee_misses_in_the_warm_run() {
     assert!(cache.lookup(false, func_f).is_some(), "func_f was published");
 
     let translations = cache.stats.translations;
+    let linked = cache.stats.link_made;
+    assert!(linked >= 1, "the callers' static BL sites were linked to func_f");
     cache.retire(fragment);
     assert!(cache.stats.ibtc_clear >= 1);
+    assert!(cache.stats.link_restored >= 1, "A16: the links into func_f are undone");
     assert!(cache.lookup(true, func_f).is_none());
     assert!(cache.lookup(false, func_f).is_none());
     assert!(cache.fragment_for_entry(func_f).is_none());
@@ -262,7 +265,34 @@ fn a_retired_callee_misses_in_the_warm_run() {
     assert!(warm.runtime_entries >= 1, "the call into the retired callee misses");
     assert!(warm.runtime_entries < cold.runtime_entries);
     assert!(cache.lookup(false, func_f).is_some(), "and is published again");
+    assert!(cache.stats.link_made > linked, "and the callers link to the new fragment");
     cache.check_invariants().unwrap();
+}
+
+/// A16: a cold run links the static BL sites to the callees it translated, and the
+/// warm run's linked calls execute fewer instructions than the same warm run through
+/// the dispatch template (both are compared with the original).
+#[test]
+fn linked_bl_sites_skip_the_dispatch_template_in_the_warm_run() {
+    let (case, state) = case("dispatch_calls", "nested_calls_mark");
+    let warm_steps = |linking: bool| {
+        let mut cache = new_interpreter_cache(case.text_base, &case.text_bytes);
+        if !linking {
+            cache = cache.without_links();
+        }
+        let (_, cache) = run(cache, &case, &state, "cold");
+        let (warm, cache) = run(cache, &case, &state, "warm");
+        cache.check_invariants().unwrap();
+        (warm.report.steps, cache.stats)
+    };
+    let (linked_steps, linked_stats) = warm_steps(true);
+    let (template_steps, template_stats) = warm_steps(false);
+    assert!(linked_stats.link_made >= 1);
+    assert_eq!(template_stats.link_made, 0);
+    assert!(
+        linked_steps < template_steps,
+        "linked {linked_steps} steps, through the template {template_steps}"
+    );
 }
 
 #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
@@ -271,7 +301,7 @@ fn a_retired_callee_matches_native() {
     let session = crate::native::NativeSession::new().expect("set up native runner");
     let (case, state) = case("dispatch_calls", "nested_calls_mark");
     let func_f = bl_target(&case, case.entry_pc + 12);
-    crate::native::check_cached_case_between(
+    let summary = crate::native::check_cached_case_between(
         &session,
         case.text_base,
         &case.text_bytes,
@@ -286,4 +316,8 @@ fn a_retired_callee_matches_native() {
         },
     )
     .unwrap();
+    // The callers' links into func_f were patched on the CPU's mappings, undone by the
+    // retire and made again by the warm run.
+    assert!(!summary.contains("links made 0 "), "{summary}");
+    assert!(!summary.contains("restored 0"), "{summary}");
 }

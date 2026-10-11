@@ -8,7 +8,7 @@ use kernel::ffi::c_int;
 use crate::shared::abi::{
     IBTC_BITS, IBTC_INDEX_LSB, IBTC_RECORD_BYTES, IBTC_RECORD_HOST_OFFSET, IBTC_RECORD_PC_OFFSET,
     IBTC_SLOT_BYTES, IBTC_SLOTS, IBTC_TABLE_BYTES, IBTC_TABLE_WORDS, IBTC_VICTIM_BITS,
-    IBTC_VICTIM_OFFSET, IBTC_VICTIM_SLOTS,
+    IBTC_VICTIM_OFFSET, IBTC_VICTIM_SLOTS, LINK_NOP_WORD,
 };
 
 // kjit_glue.c mirrors the dispatch-table layout the template reads
@@ -31,6 +31,11 @@ const _: () = assert!(
         && IBTC_RECORD_HOST_OFFSET == 8
         && IBTC_RECORD_BYTES == 16
 );
+
+// kjit_glue.c mirrors the word of an unlinked link slot (`KJIT_LINK_NOP_WORD`, A16); the
+// `b` it patches in comes from `kjit_rs_link_branch_word` (runtime/link.rs), and it
+// checks it is a `b` with the kernel's `aarch64_insn_is_b`.
+const _: () = assert!(LINK_NOP_WORD == 0xd503_201f);
 
 /// `struct kjit_mm`: per-mm code cache (opaque).
 #[repr(C)]
@@ -69,6 +74,15 @@ pub(crate) struct KjitEntry {
     pub(crate) pad: u32,
 }
 
+/// `struct kjit_link_site`: a static `BL` site's link slot (A16), as `kjit_install`
+/// takes it: the code offset of the `nop` and the user PC its `BL` targets.
+#[repr(C)]
+pub(crate) struct KjitLinkSite {
+    pub(crate) slot: u32,
+    pub(crate) pad: u32,
+    pub(crate) target_pc: u64,
+}
+
 extern "C" {
     pub(crate) fn kjit_glue_init() -> c_int;
     pub(crate) fn kjit_glue_exit();
@@ -87,6 +101,8 @@ extern "C" {
         n_sites: u32,
         entries: *const KjitEntry,
         n_entries: u32,
+        links: *const KjitLinkSite,
+        n_links: u32,
         src_start: u64,
         src_end: u64,
         uses_fpsimd: bool,

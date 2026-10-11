@@ -515,6 +515,10 @@ fn layout_err_info(err: LayoutError) -> ErrInfo {
             "MalformedDispatchTemplate",
             format!("insn_index={insn_index}"),
         ),
+        LayoutError::MalformedLinkSlot { insn_index } => (
+            "MalformedLinkSlot",
+            format!("insn_index={insn_index}"),
+        ),
         LayoutError::UnguardedBackEdge {
             insn_index,
             target_original_pc,

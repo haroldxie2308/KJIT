@@ -695,11 +695,19 @@ fn copy_fragment(fragment: &ExecutionFragment) -> Result<ExecutionFragment, Stri
             .push(*site, GFP_KERNEL)
             .map_err(|err| format!("{err:?}"))?;
     }
+    let mut link_sites = SharedVec::with_capacity(fragment.link_sites.len(), GFP_KERNEL)
+        .map_err(|err| format!("{err:?}"))?;
+    for site in &fragment.link_sites {
+        link_sites
+            .push(*site, GFP_KERNEL)
+            .map_err(|err| format!("{err:?}"))?;
+    }
     Ok(ExecutionFragment {
         insns,
         entry_offset: fragment.entry_offset,
         vlabels,
         fault_sites,
+        link_sites,
     })
 }
 

@@ -226,6 +226,8 @@ fn virtualize_insn(
         // instruction boundary): nothing to map.
         RephrasedInsnKind::DispatchLookup => push_rephrased(out, rephrased),
         RephrasedInsnKind::DispatchTarget => emit_dispatch_target(rephrased, out),
+        // A16: a `nop` the runtime may patch (no registers): nothing to map.
+        RephrasedInsnKind::LinkSlot { .. } => push_rephrased(out, rephrased),
         // These kinds are reg-virt output; seeing one here is a pipeline bug.
         RephrasedInsnKind::RegVirtHelper
         | RephrasedInsnKind::UserAccess

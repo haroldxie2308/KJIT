@@ -15,7 +15,7 @@ use kernel::ffi::c_int;
 use kernel::page::PAGE_SIZE;
 use kernel::prelude::*;
 
-use super::ffi::{self, KjitEntry, KjitMm, KjitSite};
+use super::ffi::{self, KjitEntry, KjitLinkSite, KjitMm, KjitSite};
 use super::stats::{self, Stat};
 use crate::shared::trans::cfg::{admit_at, UnsupportedExit};
 use crate::shared::trans::input::{
@@ -349,10 +349,33 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
             .map_err(|_| Failure::Alloc)?;
     }
 
+    // A16: the link slots, in the verifier's shape and the installer's. The installer
+    // takes them from here, after the verifier has accepted exactly these.
+    let mut link_sites = KVec::with_capacity(fragment.link_sites.len(), GFP_KERNEL)
+        .map_err(|_| Failure::Alloc)?;
+    let mut klinks = KVec::with_capacity(fragment.link_sites.len(), GFP_KERNEL)
+        .map_err(|_| Failure::Alloc)?;
+    for &(slot_offset, target_pc) in fragment.link_sites.iter() {
+        link_sites
+            .push((slot_offset, target_pc), GFP_KERNEL)
+            .map_err(|_| Failure::Alloc)?;
+        klinks
+            .push(
+                KjitLinkSite {
+                    slot: u32::try_from(slot_offset).map_err(|_| Failure::Overflow)?,
+                    pad: 0,
+                    target_pc,
+                },
+                GFP_KERNEL,
+            )
+            .map_err(|_| Failure::Alloc)?;
+    }
+
     let verified = match verify_fragment(&VerifyInput {
         code: &code,
         fault_sites: &sites,
         entry_offsets: &entries,
+        link_sites: &link_sites,
     }) {
         Ok(verified) => verified,
         Err(err) => {
@@ -382,6 +405,7 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
     let entry_offset = u32::try_from(fragment.entry_offset).map_err(|_| Failure::Overflow)?;
     let n_sites = u32::try_from(ksites.len()).map_err(|_| Failure::Overflow)?;
     let n_entries = u32::try_from(kentries.len()).map_err(|_| Failure::Overflow)?;
+    let n_links = u32::try_from(klinks.len()).map_err(|_| Failure::Overflow)?;
     // SAFETY: `kmm` is live (see above); every pointer/length pair describes a
     // live KVec.
     let rc = unsafe {
@@ -396,6 +420,8 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
             n_sites,
             kentries.as_ptr(),
             n_entries,
+            klinks.as_ptr(),
+            n_links,
             state.lo,
             state.hi,
             verified.uses_fpsimd,
@@ -409,7 +435,7 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
     }
     if verbose {
         pr_info!(
-            "kjit: pc {pc:#x}: installed {code_len} bytes, {n_sites} fault sites, {n_entries} entries, text {:#x}..{:#x}, fpsimd {}\n",
+            "kjit: pc {pc:#x}: installed {code_len} bytes, {n_sites} fault sites, {n_entries} entries, {n_links} link sites, text {:#x}..{:#x}, fpsimd {}\n",
             state.lo,
             state.hi,
             verified.uses_fpsimd
