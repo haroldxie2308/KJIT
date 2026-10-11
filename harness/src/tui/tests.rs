@@ -9,7 +9,7 @@ fn press(shell: &mut Shell<'_>, code: KeyCode) {
     shell.on_key(KeyEvent::new(code, KeyModifiers::NONE));
 }
 
-fn screen(terminal: &Terminal<TestBackend>) -> String {
+pub(super) fn screen(terminal: &Terminal<TestBackend>) -> String {
     let buffer = terminal.backend().buffer();
     let width = buffer.area.width as usize;
     buffer

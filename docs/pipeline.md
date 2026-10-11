@@ -1779,7 +1779,9 @@ consumers and add no model logic. Code: `harness/src/session/`, CLI
     The record is built by running the shared passes one at a time. Its words
     must equal what the cache installed for the same request, else `record`
     fails, so drift cannot go silent.
-  - `events: Vec<Event>`, ordered by `t`, ties in emission order:
+  - `events: Vec<Event>`, ordered by `t` (an event caused by step `t` has
+    tick `t`; `Exit` and `Transfer` follow their step), ties in emission
+    order:
     - user side: `UserSpan { from_pc, to_pc, steps }` (a coalesced run of
       original code), `Syscall { k, pc }`;
     - profiler: `ProfileHit { pc, kind, count }`, `Hot { pc }`,
@@ -1842,7 +1844,8 @@ from events and steps.
     writes.
   - The events near `t`.
   - Navigation: step ±1/±N; next/previous event of a chosen kind; go to a
-    tick; break on an ori_pc; jump to the divergence. A translation browser
+    tick; break on an ori_pc (stop before the first word of a run of words
+    with that ori_pc, user or fragment); jump to the divergence. A translation browser
     shows one translation's passes side by side. A divergence view shows
     reference vs KJIT.
 - Observe mode (`tui/observe.rs`) is system-level: what the JIT is doing over
