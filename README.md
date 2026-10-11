@@ -42,7 +42,7 @@ make harness-test-native     # adds the host CPU as a third oracle (linux/arm64 
 make fuzz SEED=1 ITERS=200000          # differential fuzzer; FUZZ_ARGS=... for more options
 make harness-test-asm ASM=tests/arm64/toy_cfg.s    # one fixture, full pipeline check
 make harness-dump-cfg        # CFG dump of the toy fixture
-make harness-tui ASM=tests/arm64/toy_cfg.s         # interactive trace explorer (OpenTUI)
+make session-dump ASM=tests/arm64/session_svc_loop.s ENTRY_SYMBOL=session_svc_loop   # record a whole-program session, print it
 make coverage-scan ELF=path/to/aarch64.elf         # how far the translator gets on a real binary
 make e1-trace                # dynamic trace of redis between syscalls (needs Docker)
 make spec-gen                # regenerate A64 code from subset.toml (needs the Arm ISA XML, see ARM64_ISA_XML_DIR)

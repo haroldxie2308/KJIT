@@ -3,7 +3,7 @@
 //! A case is a defined symbol ending in `_mark`: its address is the hot SVC PC
 //! and translation starts at the next instruction. Assembling and symbol
 //! resolution stay in `scripts/compile-asm-fixture.sh`; the interpreter check is
-//! the same `run_entry_fixture` call `trace-tui --check` makes, from the same
+//! the same `run_entry_fixture` call `check-case` makes, from the same
 //! initial state. On Linux arm64 the same cases also run on the host CPU.
 //!
 //! Each interpreter case also runs the fault self-check (`check_fault_injection`)

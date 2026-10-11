@@ -175,6 +175,11 @@ impl<'a> OriginalStepper<'a> {
         &self.state
     }
 
+    /// The session recorder hands the state to a fragment run and takes it back.
+    pub(crate) fn state_mut(&mut self) -> &mut MachineState {
+        &mut self.state
+    }
+
     /// User accesses performed (or attempted, for a faulting one) so far.
     pub fn user_accesses(&self) -> u64 {
         self.user_accesses.seen()

@@ -1723,19 +1723,20 @@ One deterministic whole-program run under the harness model of the kernel
 (translation, code cache, profiler, chaining, links), recorded once and then
 read through a query API. The TUI's debug and observe modes are its only
 consumers and add no model logic. Code: `harness/src/session/`, CLI
-`session-dump`. It replaces the single-fragment explorer (`trace.rs`,
-`active_step.rs`, `explorer/`, `bin/trace-tui.rs`, `opentui_backend.rs`,
-`scripts/run-trace-tui.sh`), which is deleted.
+`session-dump` (`make session-dump ASM=... ENTRY_SYMBOL=...`).
 
 - Input: `SessionConfig { text_base, text, entry_pc, initial_state, policy,
   limits }`. A session program is a `tests/arm64` fixture plus an entry symbol.
   It starts with x30 = `SESSION_EXIT_PC` (not readable text) and ends when the
   user pc reaches it.
 - Policy (`SessionPolicy`): `hot_threshold` (default 64, the kernel's),
-  `chain_budget` (default 1024), `links` (default on). Not modeled: the
-  `hot_window_ms` window (the harness has no clock; hits are counted only),
-  threads, syscall side effects (SVC mocked as in the fixture runs), native
-  execution (sessions are interpreter-only).
+  `chain_budget` (default 1024), `links` (default on). Not modeled:
+  - the `hot_window_ms` window (the harness has no clock; hits are counted
+    only);
+  - the uncounted first syscall of an mm, the per-mm and global caps,
+    `kjit_can_run`, and a negative x8 left to the native SVC;
+  - threads and syscall side effects (SVC is mocked as in the fixture runs);
+  - native execution (sessions are interpreter-only).
 - Two worlds, both on the interpreter:
   - Reference: the original program alone (`OriginalStepper` following
     branches, SVC mocked).
@@ -1744,13 +1745,19 @@ consumers and add no model logic. Code: `harness/src/session/`, CLI
     - It looks up a fragment for the resume pc the way `kjit_lookup` does.
     - On a hit, it runs the chain over the cache (`URuntime` with the cache)
       until the chain returns to userspace. User steps then resume at that pc
-      with that state.
+      with that state. An `SVC` exit ends the chain like `run_chain`: the
+      syscall is a sync point, and the hook runs again at its resume pc with a
+      fresh chain budget.
     - On a miss, it profiles the resume pc (`SvcResume`).
-  - A branch exit that misses inside a chain returns to userspace at the
-    target and profiles it (`ExitTarget`), as the kernel does. This is a
-    `CodeCache` miss policy. The differential suite keeps today's translate-on-
-    miss policy as its default; it is not changed.
-  - Profiler: one hit count per pc. When a pc reaches `hot_threshold`, the
+  - A branch exit inside a chain resolves as `run_chain` does: past the chain
+    budget it returns to userspace without profiling. Otherwise it continues at
+    a label of the entered fragment, else in the fragment translated for
+    exactly the target (and publishes it). Else it returns to userspace at the
+    target and profiles it (`ExitTarget`). It never translates.
+  - This is the `CodeCache` miss policy `ReturnToUser`. The differential suite
+    keeps the default policy, `Translate`.
+  - Profiler: one hit count per pc; the trigger kind (`SvcResume` /
+    `ExitTarget`) is the same type for a hit and for the request it causes. When a pc reaches `hot_threshold`, the
     session runs its translation request before userspace resumes (the
     kernel's task_work) and resets the count. A pc whose translation failed is
     never requested again (negative cache).

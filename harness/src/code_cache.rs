@@ -16,7 +16,11 @@
 //! - The runtime decision for a fragment return (`decide`): continue at the
 //!   resolved fragment's label, translate on a miss (the harness translates a
 //!   branch exit's target at once, where the kernel's profiler learns it after a
-//!   hit count: K3 "exit-target learning"), or stop.
+//!   hit count: K3 "exit-target learning"), or stop. `MissPolicy::ReturnToUser` is
+//!   the kernel's own decision instead (a miss returns to the target for the caller to
+//!   profile; used by the session recorder); `Translate` is the default.
+//! - An opt-in event log (`with_event_log`, `drain_events`) of every install, table
+//!   store, link, restore and retire.
 //!
 //! - Direct BL links (A16, docs/pipeline.md "Direct BL links (A16)", the kernel side in
 //!   "Direct BL links (A16, kernel side)"): every fragment's link slots are `nop`
@@ -98,6 +102,68 @@ pub struct CodePatch {
     pub fragment: usize,
     pub offset: usize,
     pub word: u32,
+}
+
+/// What the runtime does with a branch exit whose target no live fragment translates.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum MissPolicy {
+    /// Translate the target at once and continue there (the differential suite, A11a).
+    #[default]
+    Translate,
+    /// The kernel's chaining (docs/pipeline.md, K3 "Chaining rules"): a target the
+    /// current fragment has no label for, and no fragment is translated for, returns to
+    /// userspace at the target, where the caller profiles it. The chain budget bounds
+    /// every branch exit, and an `SVC` exit always returns (the syscall runs, then the
+    /// hook looks the resume pc up again).
+    ReturnToUser,
+}
+
+/// One of the two dispatch tables.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TableId {
+    All,
+    NoFp,
+}
+
+/// The record in a table slot: the label of `fragment` translated for `pc`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Occupant {
+    pub pc: u64,
+    pub fragment: usize,
+}
+
+/// A change of the cache, queued like `drain_writes` when the log is on
+/// (`with_event_log`) and read with `drain_events`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CacheEvent {
+    Installed { fragment: usize, entry_pc: u64 },
+    /// One table store of `publish`: `slot` of `table` now holds the record of `pc` in
+    /// `fragment` (a moved record included: it lands in its victim slot), over
+    /// `replaced`.
+    Published {
+        table: TableId,
+        slot: usize,
+        pc: u64,
+        fragment: usize,
+        replaced: Option<Occupant>,
+    },
+    /// Link slot `slot_offset` of `fragment` was patched `nop` -> `b` to the label of
+    /// `target_pc` in `target_fragment` (A16).
+    Linked {
+        fragment: usize,
+        slot_offset: usize,
+        target_fragment: usize,
+        target_pc: u64,
+    },
+    /// ... and back to `nop` because `target_fragment` was retired.
+    Restored {
+        fragment: usize,
+        slot_offset: usize,
+        target_fragment: usize,
+        target_pc: u64,
+    },
+    /// `fragment` left the cache; every slot that held one of its records is clear.
+    Retired { fragment: usize },
 }
 
 #[derive(Debug)]
@@ -194,6 +260,16 @@ pub struct CodeCache {
     /// stopped before the same SVC.
     chain_budget: Option<usize>,
     run_entries: usize,
+    miss_policy: MissPolicy,
+    /// The fragment the run last entered through the runtime (`note_entry`): the
+    /// kernel's `run`, whose labels a branch exit resolves against first
+    /// (`MissPolicy::ReturnToUser`).
+    entered: usize,
+    /// A `decide` stopped the run because the chain budget was spent; cleared by
+    /// `begin_run`.
+    chain_capped: bool,
+    /// `None`: events are not logged.
+    events: Option<Vec<CacheEvent>>,
     pub stats: CacheStats,
 }
 
@@ -218,6 +294,10 @@ impl CodeCache {
             code_patches: Vec::new(),
             chain_budget: None,
             run_entries: 0,
+            miss_policy: MissPolicy::Translate,
+            entered: 0,
+            chain_capped: false,
+            events: None,
             stats: CacheStats::default(),
         }
     }
@@ -234,9 +314,49 @@ impl CodeCache {
         self
     }
 
+    pub fn with_miss_policy(mut self, policy: MissPolicy) -> Self {
+        self.miss_policy = policy;
+        self
+    }
+
+    /// Logs every change as a `CacheEvent` for `drain_events`. Off by default: a cache
+    /// nobody drains would grow the log without bound.
+    pub fn with_event_log(mut self) -> Self {
+        self.events = Some(Vec::new());
+        self
+    }
+
+    /// The events logged since the last call, oldest first. Panics without
+    /// `with_event_log`.
+    pub fn drain_events(&mut self) -> Vec<CacheEvent> {
+        std::mem::take(
+            self.events
+                .as_mut()
+                .expect("drain_events without with_event_log"),
+        )
+    }
+
+    fn log(&mut self, event: CacheEvent) {
+        if let Some(events) = self.events.as_mut() {
+            events.push(event);
+        }
+    }
+
     /// A new run starts: its first entry counts against the chain budget.
     pub fn begin_run(&mut self) {
         self.run_entries = 1;
+        self.chain_capped = false;
+    }
+
+    /// The runtime entered `fragment` (a run's first entry or a chained one).
+    pub fn note_entry(&mut self, fragment: usize) {
+        self.entered = fragment;
+    }
+
+    /// Whether the last `decide` returned to userspace because the chain budget was
+    /// spent: the target is then not a miss to profile (K3 "Chaining rules").
+    pub fn chain_capped(&self) -> bool {
+        self.chain_capped
     }
 
     pub fn layout(&self) -> CacheLayout {
@@ -321,6 +441,10 @@ impl CodeCache {
             ));
         }
         self.fragments.push(cached);
+        self.log(CacheEvent::Installed {
+            fragment: index,
+            entry_pc,
+        });
         if self.linking {
             self.link_install(index);
         }
@@ -408,6 +532,12 @@ impl CodeCache {
                     }
                     self.fragments[target_fragment].incoming.push((fragment, link));
                     self.stats.link_made += 1;
+                    self.log(CacheEvent::Linked {
+                        fragment,
+                        slot_offset: site.slot,
+                        target_fragment,
+                        target_pc: site.target_pc,
+                    });
                     return true;
                 }
                 None => out_of_range = true,
@@ -421,7 +551,7 @@ impl CodeCache {
     /// Restores a linked site to `nop` and back to pending.
     fn restore_link(&mut self, fragment: usize, link: usize) {
         let site = self.fragments[fragment].links[link];
-        debug_assert!(site.linked_to.is_some());
+        let (target_fragment, _) = site.linked_to.expect("only linked sites are restored");
         self.patch_code(fragment, site.slot, LINK_NOP_WORD);
         self.fragments[fragment].links[link].linked_to = None;
         self.pending
@@ -429,6 +559,12 @@ impl CodeCache {
             .or_default()
             .push((fragment, link));
         self.stats.link_restored += 1;
+        self.log(CacheEvent::Restored {
+            fragment,
+            slot_offset: site.slot,
+            target_fragment,
+            target_pc: site.target_pc,
+        });
     }
 
     /// Writes `word` at `offset` of the cache's copy of the fragment and queues it
@@ -500,12 +636,7 @@ impl CodeCache {
 
     /// The pc of the record `record` (0: no record).
     fn record_pc(&self, record: u64) -> Option<u64> {
-        if record == 0 {
-            return None;
-        }
-        let number = ((record - self.layout.records) / IBTC_RECORD_BYTES as u64) as usize;
-        let (fragment, label) = self.record_owner[number];
-        Some(self.fragments[fragment].labels[label].pc)
+        self.occupant(record).map(|occupant| occupant.pc)
     }
 
     /// Applies the shared publish plan (`ibtc_plan_publish`) for `pc` to `table_all`
@@ -525,23 +656,49 @@ impl CodeCache {
         }
     }
 
+    /// The label a record belongs to.
+    fn occupant(&self, record: u64) -> Option<Occupant> {
+        if record == 0 {
+            return None;
+        }
+        let number = ((record - self.layout.records) / IBTC_RECORD_BYTES as u64) as usize;
+        let (fragment, label) = self.record_owner[number];
+        Some(Occupant {
+            pc: self.fragments[fragment].labels[label].pc,
+            fragment,
+        })
+    }
+
     fn set_slot(&mut self, all: bool, slot: usize, record: u64) {
+        let previous = if all {
+            self.slots_all[slot]
+        } else {
+            self.slots_nofp[slot]
+        };
+        if previous == record {
+            return;
+        }
+        let replaced = self.occupant(previous);
+        let stored = self
+            .occupant(record)
+            .expect("a publish store writes a record, never 0");
         let (slots, table) = if all {
             (&mut self.slots_all, self.layout.table_all)
         } else {
             (&mut self.slots_nofp, self.layout.table_nofp)
         };
-        match slots[slot] {
-            old if old == record => return,
-            0 => self.stats.ibtc_insert += 1,
-            _ => {
-                self.stats.ibtc_insert += 1;
-                self.stats.ibtc_replace += 1;
-            }
-        }
+        self.stats.ibtc_insert += 1;
+        self.stats.ibtc_replace += u64::from(previous != 0);
         slots[slot] = record;
         self.writes
             .push((table + slot as u64 * u64::from(IBTC_SLOT_BYTES), record));
+        self.log(CacheEvent::Published {
+            table: if all { TableId::All } else { TableId::NoFp },
+            slot,
+            pc: stored.pc,
+            fragment: stored.fragment,
+            replaced,
+        });
     }
 
     /// Retires a fragment: clears every table slot that points at one of its
@@ -592,6 +749,7 @@ impl CodeCache {
                 }
             }
         }
+        self.log(CacheEvent::Retired { fragment });
     }
 
     /// The kernel's table invariant: every non-zero slot (main or victim part) points
@@ -812,6 +970,12 @@ impl CodeCache {
             CacheAction::Stop(URuntimeHalt::ReturnedToUserspace { status, target_pc })
         };
         match status {
+            // The kernel runs the syscall and calls the hook again at the resume pc,
+            // which looks up and starts a new chain: the session models that, not
+            // this run.
+            RetStatus::Svc if self.miss_policy == MissPolicy::ReturnToUser => {
+                Ok(userspace(status, param1))
+            }
             RetStatus::Svc => match self.resolve(param1) {
                 Some(_) if self.chain_budget.is_some_and(|budget| self.run_entries >= budget) => {
                     Ok(userspace(status, param1))
@@ -822,6 +986,11 @@ impl CodeCache {
                 }
                 None => Ok(userspace(status, param1)),
             },
+            RetStatus::Bl | RetStatus::Blr | RetStatus::Br | RetStatus::Ret
+                if self.miss_policy == MissPolicy::ReturnToUser =>
+            {
+                self.decide_return_to_user(run_fpsimd, status, param0)
+            }
             RetStatus::Bl | RetStatus::Blr | RetStatus::Br | RetStatus::Ret => {
                 let target = param0;
                 let mut resolved = self.resolve(target);
@@ -859,6 +1028,47 @@ impl CodeCache {
                 status,
             })),
         }
+    }
+}
+
+impl CodeCache {
+    /// A branch exit under `MissPolicy::ReturnToUser`, as the kernel's `run_chain`
+    /// decides it (runtime/exec.rs): past the chain budget, return to the target (the
+    /// target is not profiled, see `chain_capped`); else continue at the label of the
+    /// target in the fragment the run entered, else in the fragment translated for
+    /// exactly the target, publishing the label; else return to the target, a miss
+    /// the caller profiles.
+    fn decide_return_to_user(
+        &mut self,
+        run_fpsimd: bool,
+        status: RetStatus,
+        target: u64,
+    ) -> Result<CacheAction, String> {
+        let userspace =
+            CacheAction::Stop(URuntimeHalt::ReturnedToUserspace { status, target_pc: target });
+        if self.chain_budget.is_some_and(|budget| self.run_entries >= budget) {
+            self.chain_capped = true;
+            return Ok(userspace);
+        }
+        let entered = &self.fragments[self.entered];
+        let own = (!entered.retired)
+            .then(|| entered.label_for_pc(target))
+            .flatten()
+            .map(|label| (self.entered, label.offset));
+        let resolved = own.or_else(|| {
+            let fragment = *self.by_entry.get(&target)?;
+            let label = self.fragments[fragment].label_for_pc(target)?;
+            Some((fragment, label.offset))
+        });
+        let Some((fragment, offset)) = resolved else {
+            return Ok(userspace);
+        };
+        if self.fragments[fragment].uses_fpsimd && !run_fpsimd {
+            self.stats.ibtc_fpsimd_boundary += 1;
+        }
+        self.publish(fragment, target)?;
+        self.run_entries += 1;
+        Ok(CacheAction::ContinueAt { fragment, offset })
     }
 }
 
@@ -1360,5 +1570,145 @@ mod tests {
         // A site linked into a retired fragment.
         cache.fragments[callee].retired = true;
         assert!(cache.check_invariants().unwrap_err().contains("retired"));
+    }
+
+    /// `MissPolicy::ReturnToUser` is the kernel's `run_chain` (runtime/exec.rs): a miss
+    /// returns to the target untranslated, a label of the entered fragment or a
+    /// fragment translated for the target continues and publishes, the budget stops
+    /// every branch exit, and an SVC exit always returns.
+    #[test]
+    fn return_to_user_follows_the_kernels_chaining() {
+        let mut cache = cache()
+            .with_miss_policy(MissPolicy::ReturnToUser)
+            .with_chain_budget(3);
+        let a = cache.translate(0x1000, 0).unwrap().unwrap();
+        cache.begin_run();
+        cache.note_entry(a);
+        let returned = |status: RetStatus, target_pc: u64| {
+            CacheAction::Stop(URuntimeHalt::ReturnedToUserspace { status, target_pc })
+        };
+
+        // 0x5000 has no fragment: back to userspace at it, nothing translated.
+        let action = cache.decide(false, RetStatus::Bl.as_reg(), 0x5000, 0x1004).unwrap();
+        assert_eq!(action, returned(RetStatus::Bl, 0x5000));
+        assert!(!cache.chain_capped());
+        assert_eq!(cache.stats.translations, 1);
+        assert_eq!(cache.fragment_for_entry(0x5000), None);
+        // Unreadable text is a miss like any other (the caller profiles it).
+        let action = cache.decide(false, RetStatus::Ret.as_reg(), 0x9_0000, 0x1004).unwrap();
+        assert_eq!(action, returned(RetStatus::Ret, 0x9_0000));
+
+        // A label of the entered fragment: continue there and publish it.
+        let action = cache.decide(false, RetStatus::Ret.as_reg(), 0x1000, 0x1004).unwrap();
+        let offset = cache.fragments[a].label_for_pc(0x1000).unwrap().offset;
+        assert_eq!(action, CacheAction::ContinueAt { fragment: a, offset });
+        assert_eq!(cache.lookup(false, 0x1000), Some(a));
+
+        // A fragment translated for the target.
+        let b = cache.translate(0x5000, 0).unwrap().unwrap();
+        let action = cache.decide(false, RetStatus::Br.as_reg(), 0x5000, 0x1004).unwrap();
+        let offset = cache.fragments[b].label_for_pc(0x5000).unwrap().offset;
+        assert_eq!(action, CacheAction::ContinueAt { fragment: b, offset });
+        assert_eq!(cache.lookup(false, 0x5000), Some(b));
+
+        // Three entries made: the budget is spent. Every branch exit returns, hit or
+        // not, and says it was the budget.
+        let action = cache.decide(false, RetStatus::Bl.as_reg(), 0x1000, 0x1004).unwrap();
+        assert_eq!(action, returned(RetStatus::Bl, 0x1000));
+        assert!(cache.chain_capped());
+        // A new run starts afresh.
+        cache.begin_run();
+        assert!(!cache.chain_capped());
+
+        // An SVC exit returns whatever the cache holds for the resume pc.
+        let action = cache.decide(false, RetStatus::Svc.as_reg(), 0, 0x1000).unwrap();
+        assert_eq!(action, returned(RetStatus::Svc, 0x1000));
+        // The entered fragment is the one the runtime last entered: from `b`, 0x1000 is
+        // `a`'s entry label, found by the fragment translated for it.
+        cache.note_entry(b);
+        let action = cache.decide(false, RetStatus::Bl.as_reg(), 0x1000, 0x1004).unwrap();
+        assert!(matches!(action, CacheAction::ContinueAt { fragment, .. } if fragment == a));
+    }
+
+    #[test]
+    fn the_event_log_has_every_change_in_order() {
+        let mut cache = link_cache().with_event_log();
+        let callee = cache.translate(CALLEE, 0).unwrap().unwrap();
+        let caller = cache.translate(CALLER, 0).unwrap().unwrap();
+        let slot = cache.fragments[caller].links[0].slot;
+        cache.publish(callee, CALLEE).unwrap();
+        cache.retire(callee);
+        let slot_all = ibtc_slot_index(CALLEE);
+        assert_eq!(
+            cache.drain_events(),
+            [
+                CacheEvent::Installed { fragment: callee, entry_pc: CALLEE },
+                CacheEvent::Installed { fragment: caller, entry_pc: CALLER },
+                CacheEvent::Linked {
+                    fragment: caller,
+                    slot_offset: slot,
+                    target_fragment: callee,
+                    target_pc: CALLEE,
+                },
+                CacheEvent::Published {
+                    table: TableId::All,
+                    slot: slot_all,
+                    pc: CALLEE,
+                    fragment: callee,
+                    replaced: None,
+                },
+                CacheEvent::Published {
+                    table: TableId::NoFp,
+                    slot: slot_all,
+                    pc: CALLEE,
+                    fragment: callee,
+                    replaced: None,
+                },
+                CacheEvent::Restored {
+                    fragment: caller,
+                    slot_offset: slot,
+                    target_fragment: callee,
+                    target_pc: CALLEE,
+                },
+                CacheEvent::Retired { fragment: callee },
+            ]
+        );
+        assert!(cache.drain_events().is_empty());
+    }
+
+    /// An evicting publish logs the moved record's store first, then the new one,
+    /// each with the record it replaced.
+    #[test]
+    fn an_evicting_publish_logs_both_stores() {
+        let mut cache = cache().with_event_log();
+        let a = cache.translate(0x1000, 0).unwrap().unwrap();
+        let b = cache.translate(0x5000, 0).unwrap().unwrap();
+        cache.publish(a, 0x1000).unwrap();
+        cache.drain_events();
+        cache.publish(b, 0x5000).unwrap();
+        let published = cache
+            .drain_events()
+            .into_iter()
+            .filter(|event| matches!(event, CacheEvent::Published { table: TableId::All, .. }))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            published,
+            [
+                CacheEvent::Published {
+                    table: TableId::All,
+                    slot: ibtc_victim_index(0x1000),
+                    pc: 0x1000,
+                    fragment: a,
+                    replaced: None,
+                },
+                CacheEvent::Published {
+                    table: TableId::All,
+                    slot: ibtc_slot_index(0x5000),
+                    pc: 0x5000,
+                    fragment: b,
+                    replaced: Some(Occupant { pc: 0x1000, fragment: a }),
+                },
+            ]
+        );
     }
 }

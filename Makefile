@@ -32,7 +32,7 @@ MODULE_MAKE = mkdir -p $(KJIT_MODULE_DIR) && $(KMAKE) M=$(CURDIR) MO=$(KJIT_MODU
 .PHONY: initramfs kernel-tree guest-kernel guest-kernel-debug guest-rootfs guest-run e0-bench guest-tests guest-tests-k3 redis-campaign
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
-	harness-test harness-test-native fuzz harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan e1-trace kernel-golden viz help
+	harness-test harness-test-native fuzz harness-dump-cfg harness-test-asm session-dump spec-test-encoding spec-gen coverage-scan e1-trace kernel-golden viz help
 
 default:
 	$(MODULE_MAKE)
@@ -184,10 +184,20 @@ harness-dump-cfg:
 harness-test-asm:
 	ASM_PATH="$(ASM)" bash ./scripts/run-asm-fixture.sh
 
-harness-tui:
-	ASM_PATH="$(ASM)" bash ./scripts/run-trace-tui.sh
-
-tui: harness-tui
+# One whole-program session (harness/src/session): ASM is a tests/arm64 fixture and
+# ENTRY_SYMBOL a defined symbol of it, the program's first instruction.
+# compile-asm-fixture.sh resolves any defined symbol; its "hot SVC" outputs are the
+# symbol's own address here (the session starts there, not after it). SESSION_ARGS:
+# --hot N, --no-links, --max-steps N.
+SESSION_ARGS ?=
+session-dump:
+	@if [ -z "$(ASM)" ] || [ -z "$(ENTRY_SYMBOL)" ]; then echo "usage: make session-dump ASM=tests/arm64/x.s ENTRY_SYMBOL=symbol [SESSION_ARGS='--hot N --no-links --max-steps N']" >&2; exit 2; fi
+	mkdir -p tmp
+	out="$$(mktemp -d tmp/session-dump.XXXXXX)" && \
+	trap 'rm -rf "$$out"' EXIT && \
+	eval "$$(HOT_SVC_SYMBOL=$(ENTRY_SYMBOL) bash ./scripts/compile-asm-fixture.sh $(ASM) "$$out")" && \
+	cargo run --quiet --manifest-path harness/Cargo.toml --bin session-dump -- \
+		"$$COMPILED_BIN_PATH" "$$COMPILED_TEXT_BASE" "$$COMPILED_HOT_SVC_PC" $(SESSION_ARGS)
 
 COVERAGE_OUT ?= tmp/coverage-scan
 
@@ -234,9 +244,8 @@ help:
 		'harness-test-native' 'Run the harness tests plus the native hardware oracle on Linux arm64 (container on macOS)' \
 		'fuzz' 'Differential fuzzer: SEED=, ITERS=, MAX_LEN=, FUZZ_ARGS= (e.g. --native)' \
 		'harness-dump-cfg' 'Assemble the toy AArch64 fixture and print its basic blocks' \
-		'harness-tui' 'Open the full-pipeline trace TUI; use ASM=path/to/file.s to select a fixture' \
-		'tui' 'Alias for harness-tui' \
 		'harness-test-asm' 'Run assembly fixture validation; use ASM=path/to/file.s or select interactively' \
+		'session-dump' 'Record a whole-program session and print it: ASM=path/to/file.s ENTRY_SYMBOL=symbol, SESSION_ARGS=' \
 		'spec-test-encoding' 'Compare generated A64Insn encoding against LLVM assembler output' \
 		'coverage-scan' 'Translate from every SVC site in ELF=path and report exits/unsupported forms' \
 		'e1-trace' 'Trace redis-server under load (QEMU plugin, Docker) and report syscall gaps to tmp/e1/' \
