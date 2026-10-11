@@ -1,65 +1,13 @@
-//! `session-dump <text-bin> <text-base> <entry-pc> [--hot N] [--no-links] [--max-steps N]`
+//! `session-dump <text-bin> <text-base> <entry-pc> [--hot N] [--no-links] [--max-steps N]
+//! [--label TEXT]` (the command line of `kjit_harness::session::cli`)
 //!
 //! Records one whole-program session (`kjit_harness::session`) of an assembled
 //! fixture program and prints its outcome, the translations and the events as text.
 //! `make session-dump ASM=... ENTRY_SYMBOL=...` assembles the program first.
 
 use kjit_harness::session::{
-    Event, EventKind, Outcome, Rejection, Session, SessionConfig, TransferVia, Trigger,
+    cli, Event, EventKind, Outcome, Rejection, Session, TransferVia, Trigger,
 };
-
-const USAGE: &str =
-    "usage: session-dump <text-bin> <text-base> <entry-pc> [--hot N] [--no-links] [--max-steps N]";
-
-fn parse_u64(name: &str, value: &str) -> Result<u64, String> {
-    let parsed = match value.strip_prefix("0x").or_else(|| value.strip_prefix("0X")) {
-        Some(hex) => u64::from_str_radix(hex, 16),
-        None => value.parse::<u64>(),
-    };
-    parsed.map_err(|err| format!("{name} `{value}` is not a number: {err}"))
-}
-
-struct Args {
-    text_bin: String,
-    text_base: u64,
-    entry_pc: u64,
-    hot: Option<u32>,
-    links: bool,
-    max_steps: Option<u64>,
-}
-
-fn parse_args() -> Result<Args, String> {
-    let mut positional = Vec::new();
-    let (mut hot, mut links, mut max_steps) = (None, true, None);
-    let mut args = std::env::args().skip(1);
-    while let Some(arg) = args.next() {
-        let mut value = |flag: &str| {
-            args.next()
-                .ok_or_else(|| format!("{flag} needs a value"))
-        };
-        match arg.as_str() {
-            "--hot" => {
-                let hot_threshold = parse_u64("--hot", &value("--hot")?)?;
-                hot = Some(u32::try_from(hot_threshold).map_err(|err| err.to_string())?);
-            }
-            "--no-links" => links = false,
-            "--max-steps" => max_steps = Some(parse_u64("--max-steps", &value("--max-steps")?)?),
-            flag if flag.starts_with("--") => return Err(format!("unknown option {flag}")),
-            _ => positional.push(arg),
-        }
-    }
-    let [text_bin, text_base, entry_pc] = positional.as_slice() else {
-        return Err("expected <text-bin> <text-base> <entry-pc>".to_string());
-    };
-    Ok(Args {
-        text_bin: text_bin.clone(),
-        text_base: parse_u64("text-base", text_base)?,
-        entry_pc: parse_u64("entry-pc", entry_pc)?,
-        hot,
-        links,
-        max_steps,
-    })
-}
 
 fn describe(event: &Event) -> String {
     let via = |via: TransferVia| match via {
@@ -205,20 +153,9 @@ fn print_session(session: &Session) {
     }
 }
 
-fn run() -> Result<(), String> {
-    let args = parse_args()?;
-    let text = std::fs::read(&args.text_bin)
-        .map_err(|err| format!("failed to read {}: {err}", args.text_bin))?;
-    let mut config =
-        SessionConfig::fixture(args.text_base, text, args.entry_pc).map_err(|err| err.to_string())?;
-    if let Some(hot) = args.hot {
-        config.policy.hot_threshold = hot;
-    }
-    config.policy.links = args.links;
-    if let Some(max_steps) = args.max_steps {
-        config.limits.max_steps = max_steps;
-    }
-    let session = Session::record(config).map_err(|err| err.to_string())?;
+fn run(args: &cli::Args) -> Result<(), String> {
+    let session = args.record()?;
+    println!("program: {}", args.label());
     print_session(&session);
     match session.outcome() {
         Outcome::Exited | Outcome::Halted(_) | Outcome::StepLimit => Ok(()),
@@ -227,11 +164,12 @@ fn run() -> Result<(), String> {
 }
 
 fn main() {
-    if let Err(message) = run() {
+    let args = cli::parse(std::env::args().skip(1)).unwrap_or_else(|message| {
+        eprintln!("session-dump: {message}\n{}", cli::USAGE);
+        std::process::exit(2);
+    });
+    if let Err(message) = run(&args) {
         eprintln!("session-dump: {message}");
-        if message.starts_with("expected") || message.starts_with("unknown") {
-            eprintln!("{USAGE}");
-        }
         std::process::exit(1);
     }
 }

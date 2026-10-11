@@ -32,7 +32,7 @@ MODULE_MAKE = mkdir -p $(KJIT_MODULE_DIR) && $(KMAKE) M=$(CURDIR) MO=$(KJIT_MODU
 .PHONY: initramfs kernel-tree guest-kernel guest-kernel-debug guest-rootfs guest-run e0-bench guest-tests guest-tests-k3 redis-campaign
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
-	harness-test harness-test-native fuzz harness-dump-cfg harness-test-asm session-dump spec-test-encoding spec-gen coverage-scan e1-trace kernel-golden viz help
+	harness-test harness-test-native fuzz harness-dump-cfg harness-test-asm session-dump tui spec-test-encoding spec-gen coverage-scan e1-trace kernel-golden viz help
 
 default:
 	$(MODULE_MAKE)
@@ -188,16 +188,20 @@ harness-test-asm:
 # ENTRY_SYMBOL a defined symbol of it, the program's first instruction.
 # compile-asm-fixture.sh resolves any defined symbol; its "hot SVC" outputs are the
 # symbol's own address here (the session starts there, not after it). SESSION_ARGS:
-# --hot N, --no-links, --max-steps N.
+# --hot N, --no-links, --max-steps N. `session-dump` prints it, `tui` opens it in the
+# TUI (harness/src/tui).
 SESSION_ARGS ?=
-session-dump:
-	@if [ -z "$(ASM)" ] || [ -z "$(ENTRY_SYMBOL)" ]; then echo "usage: make session-dump ASM=tests/arm64/x.s ENTRY_SYMBOL=symbol [SESSION_ARGS='--hot N --no-links --max-steps N']" >&2; exit 2; fi
+session-dump: SESSION_BIN = session-dump
+tui: SESSION_BIN = kjit-tui
+session-dump tui:
+	@if [ -z "$(ASM)" ] || [ -z "$(ENTRY_SYMBOL)" ]; then echo "usage: make $@ ASM=tests/arm64/x.s ENTRY_SYMBOL=symbol [SESSION_ARGS='--hot N --no-links --max-steps N']" >&2; exit 2; fi
 	mkdir -p tmp
-	out="$$(mktemp -d tmp/session-dump.XXXXXX)" && \
+	out="$$(mktemp -d tmp/$@.XXXXXX)" && \
 	trap 'rm -rf "$$out"' EXIT && \
 	eval "$$(HOT_SVC_SYMBOL=$(ENTRY_SYMBOL) bash ./scripts/compile-asm-fixture.sh $(ASM) "$$out")" && \
-	cargo run --quiet --manifest-path harness/Cargo.toml --bin session-dump -- \
-		"$$COMPILED_BIN_PATH" "$$COMPILED_TEXT_BASE" "$$COMPILED_HOT_SVC_PC" $(SESSION_ARGS)
+	cargo run --quiet --manifest-path harness/Cargo.toml --bin $(SESSION_BIN) -- \
+		"$$COMPILED_BIN_PATH" "$$COMPILED_TEXT_BASE" "$$COMPILED_HOT_SVC_PC" \
+		--label "$(ASM):$(ENTRY_SYMBOL)" $(SESSION_ARGS)
 
 COVERAGE_OUT ?= tmp/coverage-scan
 
@@ -246,6 +250,7 @@ help:
 		'harness-dump-cfg' 'Assemble the toy AArch64 fixture and print its basic blocks' \
 		'harness-test-asm' 'Run assembly fixture validation; use ASM=path/to/file.s or select interactively' \
 		'session-dump' 'Record a whole-program session and print it: ASM=path/to/file.s ENTRY_SYMBOL=symbol, SESSION_ARGS=' \
+		'tui' 'Record a whole-program session and open it in the debug/observe TUI: ASM=, ENTRY_SYMBOL=, SESSION_ARGS=' \
 		'spec-test-encoding' 'Compare generated A64Insn encoding against LLVM assembler output' \
 		'coverage-scan' 'Translate from every SVC site in ELF=path and report exits/unsupported forms' \
 		'e1-trace' 'Trace redis-server under load (QEMU plugin, Docker) and report syscall gaps to tmp/e1/' \

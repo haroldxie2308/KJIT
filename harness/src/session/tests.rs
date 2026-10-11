@@ -58,7 +58,7 @@ fn config(name: &str) -> SessionConfig {
     config_for(&root().join(format!("tests/arm64/{name}.s")), name)
 }
 
-fn session(name: &str) -> Session {
+pub(crate) fn session(name: &str) -> Session {
     Session::record(config(name)).unwrap_or_else(|err| panic!("recording {name}: {err}"))
 }
 

@@ -1827,9 +1827,11 @@ from events and steps.
 - Each mode implements
   `trait Mode { fn name(&self) -> &'static str; fn keys(&self) -> &[(&str, &str)];
   fn on_key(&mut self, key: KeyEvent, cx: &mut Cx) -> bool; fn draw(&mut self,
-  frame: &mut Frame, area: Rect, cx: &Cx); }` with
-  `Cx { session: &Session, t: u64 }`. `on_key` returns whether it used the key;
-  the shell handles the rest.
+  frame: &mut Frame, area: Rect, cx: &Cx); fn tick(&mut self, cx: &mut Cx) {} }`
+  with `Cx<'a> { session: &'a Session, t: u64 }`.
+  - `set_t` clamps to `0..=ticks`; `t` is the state after `t` steps.
+  - `on_key` returns whether it used the key; the shell handles the rest.
+  - `tick` runs on the active mode every 50 ms without a key (playback).
 - Debug mode (`tui/debug.rs`) is instruction-level: where the program is at
   `t` and why.
   - Code at `t`: in a fragment, the translated words around the offset, each

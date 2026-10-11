@@ -19,6 +19,7 @@ pub mod runtime;
 pub mod session;
 pub mod shared;
 pub(crate) mod simd;
+pub mod tui;
 
 #[cfg(test)]
 mod asm_fixture_tests;

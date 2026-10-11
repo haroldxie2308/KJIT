@@ -30,13 +30,14 @@ use crate::model::{Flags, HaltReason, MachineState};
 use crate::runtime::URuntimeHalt;
 use crate::shared::abi::RetStatus;
 
+pub mod cli;
 mod query;
 mod record;
 mod steps;
 pub mod translation;
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 pub use query::{CacheView, FragmentView, Lineage, LinkTarget, LinkView, Origin, QueryError};
 pub use steps::{RegId, RegWrite, StepAt, StepMemWrite, StepView};
