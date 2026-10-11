@@ -1982,10 +1982,16 @@ and one module shape is simpler than a K0-only build.
     same way slows 13x. With 256 colours redis SET goes from 0.59 to 1.0 of
     native throughput (server CPU 6.42 -> 3.72 us/request, native 2.67)
     ([2026-10-11 03:03](journal/2026-10-11.md)).
-  - Why not packing: packing fragments densely into a shared ROX arena measured
-    3.58 us. It needs writes into pages that hold live code (text patching with
-    an unexported helper, a new kernel patch) and an arena allocator. Deferred;
-    the remaining gap to colouring is about 0.14 us per SET request.
+  - Packing (open, see section 11): a dense shared ROX arena needs writes
+    into pages that hold live code (`aarch64_insn_copy`, unexported: a new
+    kernel patch) and an arena allocator.
+    - 03:03 measured it only 0.14 us per SET better than colouring. That was
+      before A15 and before the UB protocol.
+    - On A15 under the UB protocol it is 0.75-1.15 us per request better than
+      coloured page-granular images (10/10 boots). Colouring leaves VA[14:12]
+      to vmalloc, which spreads it unevenly
+      ([2026-10-12 04:15](journal/2026-10-12.md)).
+    - ROX vs RWX permissions cost nothing measurable.
   - Guard: K2 runs `code_speed sites64`, and the KJIT-on time per iteration
     must stay below 2x KJIT-off. It measured 4.6x before A14.
 - Locks: `kjit_mm.lock` -> `kjit_frags_lock` (spinlocks, no allocation under
@@ -2378,7 +2384,10 @@ the reasoning, the numbers and the full list of what was not verified there.
   alternatives (inline caches, direct calls, return compares, shorter chains)
   measured at most 0.07 us per request. The next items were the PAN windows, decided as A15
   (run-scoped PAN clear, section 4; [19:31](journal/2026-10-11.md)), and the
-  small-value remainder, which is still open. Server CPU per request
+  small-value remainder, which is still open. Its largest known part is image
+  placement again: a packed ROX arena measured 0.75-1.15 us per request below
+  coloured images, out of 1.4-1.8 us above KJIT-off
+  ([2026-10-12 04:15](journal/2026-10-12.md)). Undecided. Server CPU per request
   (server-bound, UB protocol) is the metric; throughput in the client-bound
   `a11-baseline` setup hides the cost.
 - **V2 chaining.** The fuzzer counts `chained` as a non-verdict; modelling
@@ -2516,3 +2525,4 @@ milestone:
 | A10 chain budget, counter reads | [2026-09-27 19:01](journal/2026-09-27.md); unload race [2026-09-28 00:09](journal/2026-09-28.md); `run_declined` [2026-09-28 00:16](journal/2026-09-28.md) |
 | A11 in-fragment dispatch | [2026-10-02 16:25](journal/2026-10-02.md) contract; [17:10](journal/2026-10-02.md) A11b; [17:14](journal/2026-10-02.md) Step 0; [17:28](journal/2026-10-02.md) A11a; [2026-10-05 11:47](journal/2026-10-05.md) integration |
 | Documentation restructure | [2026-10-09 00:54](journal/2026-10-09.md) |
+| ROX vs RWX, image placement | [2026-10-12 04:15](journal/2026-10-12.md) |

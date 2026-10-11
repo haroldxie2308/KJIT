@@ -76,12 +76,15 @@ directory).
 | 2026-10-11 19:31 Redis CPU gap: 1.0 vs 1.5 us (`-wake.csv`: wake-cost micro-benchmark) | `2026-10-11/1931-cpu-gap*.csv` | logs |
 | 2026-10-11 22:37 Direct BL and RAS-predicted RET in redis | `2026-10-11/2237-dispatch-ablation*.csv` | logs |
 | 2026-10-11 23:18 A15 implemented: run-scoped PAN clear (`-redis-std.csv`: main vs A15 module, same session; `-gates.csv`: harness/fuzz/module/guest gates) | `2026-10-11/2318-a15-{redis-std,code-speed,gates}.csv` | logs |
+| 2026-10-12 04:15 ROX vs RWX fragment images (`-pairs.csv`: paired differences; `-kb.csv`: kernel micro-benchmarks; `-place.csv`: image VA/PFN histograms; `-ptes.csv`, `-linear-map.csv`: page-table evidence; `-install.csv`: install cost; campaigns a-f, boots `rox-<campaign>-b<N>`) | `2026-10-12/0415-rox-rwx*.csv` | logs |
 
 A new measurement entry adds the data file, the raw-log directory, a row in this table and the
 `Data:` line in the entry.
 
 ## What is not in the data files
 
+- 2026-10-12 04:15: the smoke boot (200000 requests, deleted), the per-run counters other than the listed
+  columns (in the serial logs), and the module builds (not stored).
 - 2026-09-27 campaign files: matched to the entries by their figures (suite counts, in-kernel
   syscalls of N, fragment entries, translations, chain histogram all agree with the entry).
   Not extracted: the K2 micro-test lines and the adversarial tests' counters of a campaign, the
