@@ -38,6 +38,11 @@
  *             list, RCU), so a fragment removed while it runs still has its
  *             fault fixups, and queues the image's free (an RCU work item:
  *             execmem_free needs process context).
+ *   Direct BL links (A16): a static BL site's `nop` slot is patched to a `b`
+ *             into another fragment (or its own) of the same kjit_mm, and back,
+ *             under kjit_mm.lock only (struct kjit_link, kjit_link_*()). A run
+ *             that took the `b` is inside the hook SRCU like any other, so the
+ *             target is freed only after the restore that retire does first.
  *   kjit_request  One queued auto-mode translation (task_work). Holds no
  *             reference: it names its kjit_mm by (mm, id) and finds it again
  *             under RCU, and it runs through the kernel's
@@ -91,6 +96,7 @@
 #include <asm/ptrace.h>
 #include <asm/simd.h>
 #include <asm/sysreg.h>
+#include <asm/text-patching.h>
 
 #include <clocksource/arm_arch_timer.h>
 
@@ -138,6 +144,8 @@ struct kjit_ibtc_store {
 u32 kjit_rs_ibtc_plan_publish(const u64 *table, u64 pc, struct kjit_ibtc_store *out);
 void kjit_rs_ibtc_lookup_slots(u64 pc, u32 *out);
 void kjit_rs_note_entry_stop(u32 word);
+/* shared/abi link.rs (runtime/link.rs): `b <host>` for a slot at @slot_addr, or false if out of range. */
+bool kjit_rs_link_branch_word(u64 slot_addr, u64 host, u32 *word);
 
 /* Counters this file bumps: runtime/stats.rs, enum Note (same values). */
 enum kjit_note {
@@ -161,6 +169,10 @@ enum kjit_note {
 	KJIT_NOTE_IBTC_INSERT = 17,	/* dispatch-table slot stores */
 	KJIT_NOTE_IBTC_REPLACE = 18,	/* ... that replaced another record */
 	KJIT_NOTE_IBTC_CLEAR = 19,	/* slots cleared by a fragment's retirement */
+	KJIT_NOTE_LINK_MADE = 20,	/* link slots patched nop -> b */
+	KJIT_NOTE_LINK_RESTORED = 21,	/* ... and b -> nop by a retirement */
+	KJIT_NOTE_LINK_OUT_OF_RANGE = 22,	/* link attempts no in-range label took */
+	KJIT_NOTE_LINK_CLASS_REFUSED = 23,	/* link attempts only an FP/SIMD label could take */
 };
 void kjit_rs_note(u32 note, u64 n);
 
@@ -170,6 +182,7 @@ void kjit_rs_note(u32 note, u64 n);
 struct kjit_frag;
 struct kjit_site;
 struct kjit_entry;
+struct kjit_link_site;
 int kjit_glue_init(void);
 void kjit_glue_exit(void);
 u64 kjit_mm_seq(struct kjit_mm *kmm);
@@ -178,6 +191,7 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		 const u8 *code, u32 code_len, u32 entry_offset,
 		 const struct kjit_site *sites, u32 n_sites,
 		 const struct kjit_entry *entries, u32 n_entries,
+		 const struct kjit_link_site *links, u32 n_links,
 		 u64 src_start, u64 src_end, bool uses_fpsimd);
 bool kjit_fpsimd_supported(void);
 bool kjit_can_run(const struct pt_regs *regs);
@@ -213,17 +227,27 @@ struct kjit_entry {
 	u32 pad;
 };
 
+/* A static BL site's link slot (A16): the `nop` at code offset @slot, for a BL to @target_pc. */
+struct kjit_link_site {
+	u32 slot;
+	u32 pad;
+	u64 target_pc;
+};
+
 /*
  * A verified entry of an installed fragment: the user PC and the absolute
  * address of its code (image + a verified entry offset). Immutable after
  * install and sorted by @pc in kjit_frag.labels. It is also the record the
  * dispatch tables point to, which fragment code reads (docs/pipeline.md,
  * "In-fragment branch dispatch (A11)"): the layout is part of the dispatch template, so @pc is
- * first and @host second.
+ * first and @host second. @by_pc and @frag serve the link bookkeeping (A16).
  */
 struct kjit_label {
 	u64 pc;
 	u64 host;
+	/* Not read by fragment code: */
+	struct hlist_node by_pc;	/* kjit_mm.links->labels, under kjit_mm.lock */
+	struct kjit_frag *frag;		/* the fragment this label belongs to */
 };
 static_assert(offsetof(struct kjit_label, pc) == 0);
 static_assert(offsetof(struct kjit_label, host) == 8);
@@ -254,6 +278,40 @@ static_assert(KJIT_IMAGE_COLOR_STEP % 16 == 0);
 static_assert(KJIT_IMAGE_COLOR_STEP * (KJIT_IMAGE_COLORS - 1) < PAGE_SIZE);
 static atomic_t kjit_image_installs = ATOMIC_INIT(0);
 
+/*
+ * Direct BL links (docs/pipeline.md, "Direct BL links (A16, kernel side)"):
+ * one record per link slot of a fragment, allocated with it. The slot is
+ * either linked (@to is the label whose host the `b` in the slot targets, the
+ * record is on @to->frag's incoming list) or a `nop` and pending (@to is NULL,
+ * the record is on the mm's pending hash, keyed by @target_pc). Everything
+ * under kjit_mm.lock.
+ */
+struct kjit_link {
+	struct hlist_node node;		/* pending hash, or target fragment's incoming list */
+	struct kjit_frag *frag;		/* the fragment holding the slot */
+	struct kjit_label *to;		/* NULL: pending */
+	u64 target_pc;
+	u32 slot;			/* code offset of the slot, from frag->image */
+};
+
+/*
+ * The `nop` word of an unlinked slot. runtime/ffi.rs asserts it equals
+ * shared::abi LINK_NOP_WORD; kjit_glue_init() checks it against the kernel's
+ * own encoder.
+ */
+#define KJIT_LINK_NOP_WORD 0xd503201fU
+
+#define KJIT_LINK_LABEL_BITS 11
+#define KJIT_LINK_PENDING_BITS 8
+
+/* Per kjit_mm, allocated with the dispatch tables. */
+struct kjit_link_index {
+	/* Every label of every fragment of the mm, by pc: the targets a site may link to. */
+	struct hlist_head labels[1 << KJIT_LINK_LABEL_BITS];
+	/* Sites that are `nop`, by target pc. */
+	struct hlist_head pending[1 << KJIT_LINK_PENDING_BITS];
+};
+
 struct kjit_frag {
 	struct hlist_node table_node;	/* kjit_mm.table, under kjit_mm.lock */
 	struct list_head all_node;	/* kjit_all_frags, under kjit_frags_lock */
@@ -275,6 +333,9 @@ struct kjit_frag {
 	bool uses_fpsimd;
 	const struct exception_table_entry *extable;
 	u32 n_extable;
+	struct hlist_head incoming;	/* links patched to one of our labels, under kmm->lock */
+	struct kjit_link *links;	/* the fragment's link slots, kvcalloc'd */
+	u32 n_links;
 	u32 n_labels;
 	struct kjit_label labels[] __counted_by(n_labels);	/* sorted by pc */
 };
@@ -333,6 +394,8 @@ struct kjit_mm {
 	 */
 	struct kjit_label **table_all;
 	struct kjit_label **table_nofp;
+	/* A16: the link bookkeeping, allocated with the tables, under @lock. */
+	struct kjit_link_index *links;
 	u64 seq;			/* invalidations started */
 	unsigned int invalidating;	/* invalidations in progress */
 	bool dead;			/* mm released or module exiting */
@@ -447,6 +510,7 @@ static void kjit_frag_free_work(struct work_struct *work)
 
 	/* VM_FLUSH_RESET_PERMS (execmem) restores the linear map on vfree. */
 	execmem_free(f->alloc);
+	kvfree(f->links);
 	kfree(f);
 }
 
@@ -477,6 +541,192 @@ static void kjit_frag_retired_cb(struct rcu_head *head)
 	kjit_frag_unlist_and_free(container_of(head, struct kjit_frag, retire));
 }
 
+/* ------------------------------------------------------------------------- */
+/* Direct BL links (A16)                                                       */
+
+/*
+ * docs/pipeline.md, "Direct BL links (A16, kernel side)". Everything below runs
+ * under kmm->lock and allocates nothing (the records came with the fragment,
+ * the hashes with the tables).
+ */
+
+/* Sites currently `b` and currently `nop`, over all mms: the stats file shows them. */
+static atomic_long_t kjit_links_linked = ATOMIC_LONG_INIT(0);
+static atomic_long_t kjit_links_pending = ATOMIC_LONG_INIT(0);
+
+static struct hlist_head *kjit_link_label_bucket(struct kjit_link_index *idx, u64 pc)
+{
+	return &idx->labels[hash_64(pc >> 2, KJIT_LINK_LABEL_BITS)];
+}
+
+static struct hlist_head *kjit_link_pending_bucket(struct kjit_link_index *idx, u64 pc)
+{
+	return &idx->pending[hash_64(pc >> 2, KJIT_LINK_PENDING_BITS)];
+}
+
+/*
+ * Writes @word into @l's slot with the arm64 text patcher (fixmap alias of the
+ * ROX page, data cache clean and instruction cache invalidate included). Only
+ * nop <-> b is ever written: both are in the architecture's list of
+ * instructions that may be modified while another CPU executes them, so a CPU
+ * fetching the slot runs either the old or the new word. Returns the patcher's
+ * error (a fault writing the alias: not expected for a mapped page).
+ */
+static int kjit_link_patch(const struct kjit_link *l, u32 word)
+{
+	if (WARN_ON_ONCE(word != KJIT_LINK_NOP_WORD && !aarch64_insn_is_b(word)))
+		return -EINVAL;
+	return aarch64_insn_patch_text_nosync(l->frag->image + l->slot, word);
+}
+
+enum kjit_link_result {
+	KJIT_LINK_MADE,
+	KJIT_LINK_CLASS,	/* a non-FP/SIMD site, an FP/SIMD label */
+	KJIT_LINK_RANGE,	/* the label is out of `b`'s +-128 MiB */
+	KJIT_LINK_FAILED,	/* the patcher failed; the site stays pending */
+};
+
+/*
+ * Links the pending site @l to @label (of a non-retired fragment, translated
+ * for @l->target_pc) if the link condition holds: the class rule (a run
+ * outside the FP/SIMD bracket never reaches FP/SIMD code, as for table_nofp)
+ * and `b`'s range.
+ */
+static enum kjit_link_result kjit_link_to_locked(struct kjit_link *l, struct kjit_label *label)
+{
+	struct kjit_frag *g = label->frag;
+	u32 word;
+
+	lockdep_assert_held(&l->frag->kmm->lock);
+	WARN_ON_ONCE(l->to || g->retired || label->pc != l->target_pc);
+	if (!l->frag->uses_fpsimd && g->uses_fpsimd)
+		return KJIT_LINK_CLASS;
+	if (!kjit_rs_link_branch_word((u64)l->frag->image + l->slot, label->host, &word))
+		return KJIT_LINK_RANGE;
+	if (kjit_link_patch(l, word))
+		return KJIT_LINK_FAILED;
+	hlist_del(&l->node);
+	l->to = label;
+	hlist_add_head(&l->node, &g->incoming);
+	atomic_long_dec(&kjit_links_pending);
+	atomic_long_inc(&kjit_links_linked);
+	kjit_rs_note(KJIT_NOTE_LINK_MADE, 1);
+	return KJIT_LINK_MADE;
+}
+
+static void kjit_link_note_refusal(enum kjit_link_result res)
+{
+	if (res == KJIT_LINK_CLASS)
+		kjit_rs_note(KJIT_NOTE_LINK_CLASS_REFUSED, 1);
+	else if (res == KJIT_LINK_RANGE)
+		kjit_rs_note(KJIT_NOTE_LINK_OUT_OF_RANGE, 1);
+}
+
+/*
+ * A pending site against every label of its target pc in the mm: links to the
+ * first that satisfies the condition. With none, counts once each reason the
+ * labels were refused.
+ */
+static void kjit_link_site_locked(struct kjit_mm *kmm, struct kjit_link *l)
+{
+	struct kjit_label *label;
+	bool class_refused = false, out_of_range = false;
+
+	hlist_for_each_entry(label, kjit_link_label_bucket(kmm->links, l->target_pc), by_pc) {
+		if (label->pc != l->target_pc)
+			continue;
+		switch (kjit_link_to_locked(l, label)) {
+		case KJIT_LINK_MADE:
+		case KJIT_LINK_FAILED:
+			return;
+		case KJIT_LINK_CLASS:
+			class_refused = true;
+			break;
+		case KJIT_LINK_RANGE:
+			out_of_range = true;
+			break;
+		}
+	}
+	if (class_refused)
+		kjit_link_note_refusal(KJIT_LINK_CLASS);
+	if (out_of_range)
+		kjit_link_note_refusal(KJIT_LINK_RANGE);
+}
+
+/*
+ * Install of @f, which has just become visible: its labels become link
+ * targets; each of its sites is put on pending and linked now if a label
+ * (its own included) satisfies the condition; then every other pending site
+ * that one of its labels satisfies is linked.
+ */
+static void kjit_link_install_locked(struct kjit_mm *kmm, struct kjit_frag *f)
+{
+	struct kjit_link_index *idx = kmm->links;
+	u32 i;
+
+	lockdep_assert_held(&kmm->lock);
+	for (i = 0; i < f->n_labels; i++)
+		hlist_add_head(&f->labels[i].by_pc, kjit_link_label_bucket(idx, f->labels[i].pc));
+	for (i = 0; i < f->n_links; i++) {
+		struct kjit_link *l = &f->links[i];
+
+		hlist_add_head(&l->node, kjit_link_pending_bucket(idx, l->target_pc));
+		atomic_long_inc(&kjit_links_pending);
+		kjit_link_site_locked(kmm, l);
+	}
+	for (i = 0; i < f->n_labels; i++) {
+		struct kjit_label *label = &f->labels[i];
+		struct hlist_node *tmp;
+		struct kjit_link *l;
+
+		hlist_for_each_entry_safe(l, tmp, kjit_link_pending_bucket(idx, label->pc), node) {
+			/* @f's own sites were tried against all of its labels above. */
+			if (l->target_pc != label->pc || l->frag == f)
+				continue;
+			kjit_link_note_refusal(kjit_link_to_locked(l, label));
+		}
+	}
+}
+
+/*
+ * Retire of @f (before its retirement callback is queued): its labels are no
+ * longer link targets; every site linked into it is restored to `nop` and goes
+ * back to pending; its own sites leave pending and their targets' incoming
+ * lists.
+ */
+static void kjit_link_retire_locked(struct kjit_mm *kmm, struct kjit_frag *f)
+{
+	struct hlist_node *tmp;
+	struct kjit_link *l;
+	u32 i;
+
+	lockdep_assert_held(&kmm->lock);
+	for (i = 0; i < f->n_labels; i++)
+		hlist_del(&f->labels[i].by_pc);
+	hlist_for_each_entry_safe(l, tmp, &f->incoming, node) {
+		/*
+		 * Not allowed to fail: a slot left as `b` would branch into code
+		 * that is freed after the grace period of this retirement. The
+		 * patcher faults only if the alias of a mapped page cannot be
+		 * written, which arm64's own text patching treats as fatal too
+		 * (patch_map() BUG_ON).
+		 */
+		BUG_ON(kjit_link_patch(l, KJIT_LINK_NOP_WORD));
+		hlist_del(&l->node);
+		l->to = NULL;
+		hlist_add_head(&l->node, kjit_link_pending_bucket(kmm->links, l->target_pc));
+		atomic_long_dec(&kjit_links_linked);
+		atomic_long_inc(&kjit_links_pending);
+		kjit_rs_note(KJIT_NOTE_LINK_RESTORED, 1);
+	}
+	for (i = 0; i < f->n_links; i++) {
+		l = &f->links[i];
+		hlist_del(&l->node);
+		atomic_long_dec(l->to ? &kjit_links_linked : &kjit_links_pending);
+		l->to = NULL;
+	}
+}
+
 /*
  * Retires @f, which the caller has already removed from its kjit_mm's table
  * and accounting: no new run can look it up, no table slot may point into it
@@ -493,6 +743,8 @@ static void kjit_frag_retire_locked(struct kjit_mm *kmm, struct kjit_frag *f)
 	u32 i;
 
 	lockdep_assert_held(&kmm->lock);
+	/* Links first: no site may still branch into @f once its tables are cleared. */
+	kjit_link_retire_locked(kmm, f);
 	f->retired = true;
 	for (i = 0; i < f->n_labels; i++) {
 		struct kjit_label *label = &f->labels[i];
@@ -793,6 +1045,7 @@ static void kjit_mm_free_cb(struct rcu_head *head)
 
 	kvfree(kmm->table_all);
 	kvfree(kmm->table_nofp);
+	kvfree(kmm->links);
 	/* Syscall-path readers found it under RCU, not the notifier SRCU. */
 	kvfree_rcu(kmm, rcu);
 }
@@ -924,8 +1177,14 @@ out:
  * @uses_fpsimd is verify_fragment's verdict on @code: every run of the fragment
  * then goes through the FP/SIMD bracket (kjit_call_fragment_fpsimd()).
  *
+ * @links are the fragment's link slots (A16): verified by verify_fragment (rule
+ * 10), so each is a `nop` right before a dispatch template, for a BL to @target_pc.
+ * The install links them, and every pending site its labels satisfy, before it
+ * returns (kjit_link_install_locked()).
+ *
  * The first install of a kjit_mm also allocates its two dispatch tables (32 KiB
- * each); a failure to do so fails that install with -ENOMEM.
+ * each) and the link bookkeeping; a failure to do so fails that install with
+ * -ENOMEM.
  *
  * Returns 0, -EEXIST (@entry_pc already has a fragment), -EAGAIN (raced with
  * an invalidation), -ESRCH (mm gone), -ENOSPC (a fragment cap is reached,
@@ -936,9 +1195,11 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		 const u8 *code, u32 code_len, u32 entry_offset,
 		 const struct kjit_site *sites, u32 n_sites,
 		 const struct kjit_entry *entries, u32 n_entries,
+		 const struct kjit_link_site *links, u32 n_links,
 		 u64 src_start, u64 src_end, bool uses_fpsimd)
 {
 	struct kjit_label **new_all = NULL, **new_nofp = NULL;
+	struct kjit_link_index *new_links = NULL;
 	struct exception_table_entry *ex;
 	struct kjit_frag *f, *old;
 	bool has_entry = false;
@@ -961,6 +1222,11 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	}
 	if (!has_entry)
 		return -EINVAL;
+	/* Rule 10 of the verifier says each slot is a nop; the patcher relies on it. */
+	for (i = 0; i < n_links; i++)
+		if (links[i].slot >= code_len || links[i].slot % 4 ||
+		    le32_to_cpup((const __le32 *)(code + links[i].slot)) != KJIT_LINK_NOP_WORD)
+			return -EINVAL;
 
 	/*
 	 * Allocated outside kmm->lock, only by installs that find none; the
@@ -969,7 +1235,8 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	if (!READ_ONCE(kmm->table_all)) {
 		new_all = kvzalloc(KJIT_IBTC_TABLE_SLOTS * sizeof(*new_all), GFP_KERNEL);
 		new_nofp = kvzalloc(KJIT_IBTC_TABLE_SLOTS * sizeof(*new_nofp), GFP_KERNEL);
-		if (!new_all || !new_nofp) {
+		new_links = kvzalloc(sizeof(*new_links), GFP_KERNEL);
+		if (!new_all || !new_nofp || !new_links) {
 			ret = -ENOMEM;
 			goto out_tables;
 		}
@@ -982,6 +1249,18 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	}
 	f->kmm = kmm;
 	f->n_labels = n_entries;
+	f->n_links = n_links;
+	f->links = kvcalloc(n_links, sizeof(*f->links), GFP_KERNEL);
+	if (n_links && !f->links) {
+		kfree(f);
+		ret = -ENOMEM;
+		goto out_tables;
+	}
+	for (i = 0; i < n_links; i++) {
+		f->links[i].frag = f;
+		f->links[i].target_pc = links[i].target_pc;
+		f->links[i].slot = links[i].slot;
+	}
 
 	color = KJIT_IMAGE_COLOR_STEP *
 		(((unsigned int)atomic_inc_return(&kjit_image_installs) * KJIT_IMAGE_COLOR_STRIDE) %
@@ -990,6 +1269,7 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	size = color + ex_off + (size_t)n_sites * sizeof(*ex);
 	f->alloc = execmem_alloc(EXECMEM_BPF, size);
 	if (!f->alloc) {
+		kvfree(f->links);
 		kfree(f);
 		ret = -ENOMEM;
 		goto out_tables;
@@ -998,6 +1278,7 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	for (i = 0; i < n_entries; i++) {
 		f->labels[i].pc = entries[i].pc;
 		f->labels[i].host = (u64)f->image + entries[i].offset;
+		f->labels[i].frag = f;
 		if (entries[i].pc == entry_pc)
 			f->entry_label = &f->labels[i];
 	}
@@ -1023,6 +1304,7 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	ret = set_memory_rox((unsigned long)f->alloc, PAGE_ALIGN(size) >> PAGE_SHIFT);
 	if (ret) {
 		execmem_free(f->alloc);
+		kvfree(f->links);
 		kfree(f);
 		goto out_tables;
 	}
@@ -1052,13 +1334,16 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 			if (!kmm->table_all) {
 				WRITE_ONCE(kmm->table_all, new_all);
 				WRITE_ONCE(kmm->table_nofp, new_nofp);
+				kmm->links = new_links;
 				new_all = new_nofp = NULL;
+				new_links = NULL;
 			}
 			hash_add_rcu(kmm->table, &f->table_node, entry_pc);
 			kmm->n_frags++;
 			kmm->code_bytes += code_len;
 			atomic_long_inc(&kjit_total_frags);
 			atomic_long_add(code_len, &kjit_total_code);
+			kjit_link_install_locked(kmm, f);
 		}
 	}
 	spin_unlock(&kmm->lock);
@@ -1069,6 +1354,7 @@ out_tables:
 	/* Tables another install published first, or that this one did not need. */
 	kvfree(new_all);
 	kvfree(new_nofp);
+	kvfree(new_links);
 	return ret;
 }
 
@@ -1943,11 +2229,16 @@ static ssize_t kjit_stats_read(struct file *file, char __user *ubuf, size_t coun
 	size_t size = 2 * PAGE_SIZE;
 	char *buf = kmalloc(size, GFP_KERNEL);
 	ssize_t ret;
+	size_t len;
 
 	if (!buf)
 		return -ENOMEM;
-	ret = simple_read_from_buffer(ubuf, count, ppos, buf,
-				      kjit_rs_stats_show(buf, size));
+	len = kjit_rs_stats_show(buf, size);
+	/* Gauges (A16): link slots patched to a `b` / waiting as a `nop`, over all mms. */
+	len += scnprintf(buf + len, size - len, "link_sites_linked %ld\nlink_sites_pending %ld\n",
+			 atomic_long_read(&kjit_links_linked),
+			 atomic_long_read(&kjit_links_pending));
+	ret = simple_read_from_buffer(ubuf, count, ppos, buf, len);
 	kfree(buf);
 	return ret;
 }
@@ -2149,6 +2440,9 @@ int kjit_glue_init(void)
 	ret = kjit_check_cpu();
 	if (ret)
 		return ret;
+	/* The mirrored link slot word is the kernel's nop (A16). */
+	if (WARN_ON(aarch64_insn_gen_nop() != KJIT_LINK_NOP_WORD))
+		return -EINVAL;
 	if (!kjit_fpsimd_supported())
 		pr_info("kjit: SVE/SME present or no FP/SIMD: fragments that use FP/SIMD will not be installed\n");
 	ret = cpuhp_setup_state(CPUHP_AP_ONLINE_DYN, "kjit/counter:online",
@@ -2241,5 +2535,7 @@ void kjit_glue_exit(void)
 	/* ...and the image frees have run after this. */
 	destroy_workqueue(kjit_wq);
 	WARN_ON(!list_empty(&kjit_all_frags));
+	/* Every fragment is retired: no link record is left linked or pending (A16). */
+	WARN_ON(atomic_long_read(&kjit_links_linked) || atomic_long_read(&kjit_links_pending));
 	cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
 }

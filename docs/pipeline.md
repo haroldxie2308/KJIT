@@ -1343,8 +1343,9 @@ Reject with `VerifyError { offset, rule }`.
    of reg-virt fill loads `ldr x12..x15, [sp, <user-state slot>]` and nothing
    else, then the branch. The same check guards a dispatch template: between its
    `cbz` and the template's first word only data-processing words, reg-virt
-   fills and the link write are allowed (at most `DISPATCH_GUARD_MAX_GAP = 16`
-   of them; BL's 4 target + 4 link words is the longest real site, 8, so the
+   fills, the link write and a BL's link slot `nop` (A16) are allowed (at most
+   `DISPATCH_GUARD_MAX_GAP = 16` of them; BL's 4 target + 4 link words + the
+   slot is the longest real site, 9, so the
    walk back is O(1)); no branch, no memory access other than fills, no join
    point. No join point may sit on the `cbz`, a fill or the guarded branch, so
    every path to it decrements the counter; the check's `sub` may be one (it
@@ -2082,13 +2083,18 @@ and one module shape is simpler than a K0-only build.
 - Bookkeeping, under `kmm->lock`, with no allocation under it: site records
   (`struct kjit_link { slot, target_pc, linked_to, node }`) are allocated with
   the fragment. Each is either on the mm's pending hash (keyed by `target_pc`)
-  or on its target fragment's incoming list.
+  or on its target fragment's incoming list. The labels of the mm's live
+  fragments are on a per-mm hash by `pc` (allocated with the dispatch tables),
+  which finds the candidate labels for a site; it lives in `kjit_label` after
+  the `pc`/`host` pair the template reads.
   - Install of F: for each of F's sites, link it now if a label satisfies the
     condition, else put it on pending. Then, for each of F's labels, link every
     pending site whose `target_pc` matches and whose class allows it.
   - Retire of G: every incoming site is restored to `nop` and goes back to
     pending, before G's retirement callback is queued. G's own sites are
-    removed from pending or from their targets' incoming lists.
+    removed from pending or from their targets' incoming lists. A restore
+    cannot fail (`BUG_ON`): a slot left as `b` would branch into freed code.
+    A failed link only leaves the site pending.
 - Lifetime: a run that took a linked `b` into G before the restore is inside its
   hook-SRCU read section, and G is freed only after that grace period. This is
   the same argument as a dispatch-table slot cleared at retire.
@@ -2097,7 +2103,9 @@ and one module shape is simpler than a K0-only build.
   `kjit_mm`, translated for exactly the slot's `target_pc`, never from a
   non-FP/SIMD fragment into an FP/SIMD one.
 - Stats: `link_made`, `link_restored`, `link_out_of_range`,
-  `link_class_refused`.
+  `link_class_refused`, and the gauges `link_sites_linked`,
+  `link_sites_pending` (slots currently `b` / `nop`, over all mms; both 0
+  at module exit).
 
 ### Chain budget (A10)
 

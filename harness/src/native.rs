@@ -1040,6 +1040,20 @@ impl Mapping {
         Ok(())
     }
 
+    /// Replaces the instruction word at byte `offset` of an installed (RX) mapping
+    /// and synchronizes the instruction cache, as the kernel's `kjit_link_patch` does
+    /// for a link slot.
+    fn patch_word(&self, offset: usize, word: u32) -> Result<(), String> {
+        if offset % 4 != 0 || offset + 4 > self.len {
+            return Err(format!("patch at {offset:#x} is outside the mapping"));
+        }
+        self.protect(PROT_READ | PROT_WRITE)?;
+        unsafe { ptr::write_volatile(self.addr.add(offset) as *mut u32, word) };
+        self.protect(PROT_READ | PROT_EXEC)?;
+        sync_icache(self.base() + offset as u64, 4);
+        Ok(())
+    }
+
     fn read_u64(&self, offset: usize) -> u64 {
         assert!(offset + 8 <= self.len);
         unsafe { ptr::read_volatile(self.addr.add(offset) as *const u64) }
@@ -1898,8 +1912,18 @@ impl NativeCache {
         })
     }
 
-    /// Applies the cache's queued table and record writes to the mapping.
+    /// Applies the cache's queued table and record writes to the mapping, and its
+    /// queued code patches (A16 links) to the fragments' mappings.
     fn flush(&mut self) -> Result<(), String> {
+        for patch in self.cache.drain_code_patches() {
+            let base = self.cache.fragments[patch.fragment].base;
+            let code = self._code.borrow();
+            let mapping = code
+                .iter()
+                .find(|mapping| mapping.base() == base)
+                .ok_or_else(|| format!("no mapping for fragment {} at {base:#x}", patch.fragment))?;
+            mapping.patch_word(patch.offset, patch.word)?;
+        }
         for (addr, value) in self.cache.drain_writes() {
             if !self.memory.contains(addr) || !self.memory.contains(addr + 7) {
                 return Err(format!("cache write at {addr:#x} is outside the cache memory"));
@@ -2097,6 +2121,12 @@ pub fn check_cached_case_between(
             ));
         }
     }
+    // A16: the CPU ran the patched fragments the cache describes (`flush` applied
+    // every queued link and restore to the mappings).
+    summaries.push(format!(
+        "links made {} restored {}",
+        native.cache.stats.link_made, native.cache.stats.link_restored
+    ));
     Ok(summaries.join("; "))
 }
 

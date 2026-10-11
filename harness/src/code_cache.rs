@@ -18,6 +18,14 @@
 //!   branch exit's target at once, where the kernel's profiler learns it after a
 //!   hit count: K3 "exit-target learning"), or stop.
 //!
+//! - Direct BL links (A16, docs/pipeline.md "Direct BL links (A16)", the kernel side in
+//!   "Direct BL links (A16, kernel side)"): every fragment's link slots are `nop`
+//!   until a label of a live fragment translated for the slot's target satisfies the
+//!   link condition (`try_link`); install links a fragment's sites and the pending
+//!   sites its labels satisfy, retire restores the sites linked into it. The patch is
+//!   made on the cache's own copy of the fragment (`fragment.insns`, `encoded`) and
+//!   queued for a backend that holds another (`drain_code_patches`).
+//!
 //! The cache is pure bookkeeping over an address space it is told about
 //! (`CacheLayout`): it never touches machine memory. Every change to a table or a
 //! record is queued as an 8-byte `(address, value)` write (`drain_writes`), and
@@ -29,10 +37,12 @@ use std::collections::BTreeMap;
 use crate::model::PAGE_SIZE;
 use crate::runtime::URuntimeHalt;
 use crate::shared::abi::{
-    ibtc_lookup_slots, ibtc_plan_publish, IbtcSource, RetStatus, IBTC_RECORD_BYTES,
+    ibtc_lookup_slots, ibtc_plan_publish, link_branch_word, IbtcSource, RetStatus, LINK_NOP_WORD,
+    IBTC_RECORD_BYTES,
     IBTC_RECORD_HOST_OFFSET, IBTC_RECORD_PC_OFFSET, IBTC_SLOT_BYTES, IBTC_TABLE_BYTES,
     IBTC_TABLE_WORDS,
 };
+use crate::shared::arm64::A64Insn;
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::trans::cfg::CfgError;
 use crate::shared::trans::input::{TranslationRequest, TranslationTrigger};
@@ -70,6 +80,26 @@ pub struct Label {
     pub record: u64,
 }
 
+/// One link slot (A16) of a fragment: the offset of its `nop` and the pc its `BL`
+/// targets. Either `linked_to` a label (the slot holds `b <host of that label>`) or
+/// pending (the slot is a `nop` and the site is in `CodeCache::pending`): exactly one.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct LinkSite {
+    pub slot: usize,
+    pub target_pc: u64,
+    /// (fragment, label index) of the target label.
+    pub linked_to: Option<(usize, usize)>,
+}
+
+/// One word of fragment code the cache patched (a link made or restored), for a
+/// backend that holds its own copy of the code.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CodePatch {
+    pub fragment: usize,
+    pub offset: usize,
+    pub word: u32,
+}
+
 #[derive(Debug)]
 pub struct CachedFragment {
     pub entry_pc: u64,
@@ -84,6 +114,11 @@ pub struct CachedFragment {
     pub retired: bool,
     /// Sorted by pc.
     pub labels: Vec<Label>,
+    /// The fragment's link slots, in `ExecutionFragment::link_sites` order.
+    pub links: Vec<LinkSite>,
+    /// The sites (fragment, link index) currently linked to one of this fragment's
+    /// labels, own sites included.
+    incoming: Vec<(usize, usize)>,
 }
 
 impl CachedFragment {
@@ -109,6 +144,13 @@ pub struct CacheStats {
     /// A branch exit of a non-FP/SIMD run whose target resolved to an FP/SIMD
     /// fragment.
     pub ibtc_fpsimd_boundary: u64,
+    /// A16: slots patched `nop` -> `b`, and restored `b` -> `nop` by a retire.
+    pub link_made: u64,
+    pub link_restored: u64,
+    /// A site no candidate label could take: every class-eligible label out of `b`'s
+    /// range, or only labels the class rule refuses (counted once per attempt).
+    pub link_out_of_range: u64,
+    pub link_class_refused: u64,
 }
 
 /// What the runtime does after a fragment returned.
@@ -138,6 +180,12 @@ pub struct CodeCache {
     /// Record number -> (fragment, label index), for the invariant check.
     record_owner: Vec<(usize, usize)>,
     writes: Vec<(u64, u64)>,
+    /// A16: whether installs link at all (`without_links`), the sites not linked
+    /// (their target pc -> (fragment, link index)), and the code words patched since
+    /// the last `drain_code_patches`.
+    linking: bool,
+    pending: BTreeMap<u64, Vec<(usize, usize)>>,
+    code_patches: Vec<CodePatch>,
     /// Fragment entries per run before the next `SVC` exit returns to userspace
     /// (the kernel's `chain_budget`, K3 "Chaining rules"); `None` never stops. Fixture
     /// text is not always a terminating program once branches are followed: an
@@ -165,10 +213,20 @@ impl CodeCache {
             slots_nofp: vec![0; IBTC_TABLE_WORDS],
             record_owner: Vec::new(),
             writes: Vec::new(),
+            linking: true,
+            pending: BTreeMap::new(),
+            code_patches: Vec::new(),
             chain_budget: None,
             run_entries: 0,
             stats: CacheStats::default(),
         }
+    }
+
+    /// A cache that never links (the single-fragment run of `URuntime::new`: its
+    /// tables stay empty and every exit takes the runtime path).
+    pub fn without_links(mut self) -> Self {
+        self.linking = false;
+        self
     }
 
     pub fn with_chain_budget(mut self, entries: usize) -> Self {
@@ -227,6 +285,8 @@ impl CodeCache {
             base: 0,
             retired: false,
             labels: Vec::new(),
+            links: Vec::new(),
+            incoming: Vec::new(),
         };
         cached.base = (self.loader)(&cached)?;
         let mut labels = cached
@@ -261,7 +321,136 @@ impl CodeCache {
             ));
         }
         self.fragments.push(cached);
+        if self.linking {
+            self.link_install(index);
+        }
         Ok(index)
+    }
+
+    /// Install of fragment `index` (A16): its sites are pending, then each is linked
+    /// if a label satisfies the link condition; then every other fragment's pending
+    /// site that one of its labels satisfies is linked.
+    fn link_install(&mut self, index: usize) {
+        let sites = self.fragments[index]
+            .fragment
+            .link_sites
+            .iter()
+            .map(|&(slot, target_pc)| LinkSite {
+                slot,
+                target_pc,
+                linked_to: None,
+            })
+            .collect::<Vec<_>>();
+        self.fragments[index].links = sites;
+        for link in 0..self.fragments[index].links.len() {
+            let target = self.fragments[index].links[link].target_pc;
+            self.pending.entry(target).or_default().push((index, link));
+        }
+        for link in 0..self.fragments[index].links.len() {
+            let target = self.fragments[index].links[link].target_pc;
+            let candidates = self.labels_for(target);
+            self.try_link(index, link, &candidates);
+        }
+        for label in 0..self.fragments[index].labels.len() {
+            let pc = self.fragments[index].labels[label].pc;
+            let waiting = self.pending.get(&pc).cloned().unwrap_or_default();
+            // The fragment's own sites were tried against all of its labels above.
+            for (site_fragment, link) in waiting.into_iter().filter(|&(f, _)| f != index) {
+                self.try_link(site_fragment, link, &[(index, label)]);
+            }
+        }
+    }
+
+    /// Every label of a live fragment for `pc` as (fragment, label index): the
+    /// fragment translated for `pc` first.
+    fn labels_for(&self, pc: u64) -> Vec<(usize, usize)> {
+        let entry = self.by_entry.get(&pc).copied();
+        entry
+            .into_iter()
+            .chain((0..self.fragments.len()).filter(|&fragment| Some(fragment) != entry))
+            .filter_map(|fragment| {
+                let frag = &self.fragments[fragment];
+                if frag.retired {
+                    return None;
+                }
+                let label = frag.labels.binary_search_by_key(&pc, |label| label.pc).ok()?;
+                Some((fragment, label))
+            })
+            .collect()
+    }
+
+    /// Links site `link` of `fragment` to the first of `candidates` (labels for its
+    /// target pc of live fragments) that the class rule allows and `b` reaches. With
+    /// none, counts why. Returns whether it linked.
+    fn try_link(&mut self, fragment: usize, link: usize, candidates: &[(usize, usize)]) -> bool {
+        let site = self.fragments[fragment].links[link];
+        debug_assert!(site.linked_to.is_none(), "only pending sites are tried");
+        let slot_addr = self.fragments[fragment].base + site.slot as u64;
+        let site_uses_fpsimd = self.fragments[fragment].uses_fpsimd;
+        let (mut class_refused, mut out_of_range) = (false, false);
+        for &(target_fragment, label) in candidates {
+            let target = &self.fragments[target_fragment];
+            debug_assert!(!target.retired && target.labels[label].pc == site.target_pc);
+            // A run outside the FP/SIMD bracket never reaches FP/SIMD code.
+            if !site_uses_fpsimd && target.uses_fpsimd {
+                class_refused = true;
+                continue;
+            }
+            match link_branch_word(slot_addr, target.host(&target.labels[label])) {
+                Some(word) => {
+                    self.patch_code(fragment, site.slot, word);
+                    self.fragments[fragment].links[link].linked_to = Some((target_fragment, label));
+                    if let Some(waiting) = self.pending.get_mut(&site.target_pc) {
+                        waiting.retain(|&entry| entry != (fragment, link));
+                        if waiting.is_empty() {
+                            self.pending.remove(&site.target_pc);
+                        }
+                    }
+                    self.fragments[target_fragment].incoming.push((fragment, link));
+                    self.stats.link_made += 1;
+                    return true;
+                }
+                None => out_of_range = true,
+            }
+        }
+        self.stats.link_class_refused += u64::from(class_refused);
+        self.stats.link_out_of_range += u64::from(out_of_range);
+        false
+    }
+
+    /// Restores a linked site to `nop` and back to pending.
+    fn restore_link(&mut self, fragment: usize, link: usize) {
+        let site = self.fragments[fragment].links[link];
+        debug_assert!(site.linked_to.is_some());
+        self.patch_code(fragment, site.slot, LINK_NOP_WORD);
+        self.fragments[fragment].links[link].linked_to = None;
+        self.pending
+            .entry(site.target_pc)
+            .or_default()
+            .push((fragment, link));
+        self.stats.link_restored += 1;
+    }
+
+    /// Writes `word` at `offset` of the cache's copy of the fragment and queues it
+    /// for a backend with another copy.
+    fn patch_code(&mut self, fragment: usize, offset: usize, word: u32) {
+        let frag = &mut self.fragments[fragment];
+        frag.fragment.insns[offset / 4] =
+            A64Insn::decode(word).expect("a link slot word is a `nop` or a `b`");
+        // A cache of fragments installed without their bytes (`URuntime::new`) has none.
+        if let Some(bytes) = frag.encoded.get_mut(offset..offset + 4) {
+            bytes.copy_from_slice(&word.to_le_bytes());
+        }
+        self.code_patches.push(CodePatch {
+            fragment,
+            offset,
+            word,
+        });
+    }
+
+    /// The code words patched since the last call, oldest first.
+    pub fn drain_code_patches(&mut self) -> Vec<CodePatch> {
+        std::mem::take(&mut self.code_patches)
     }
 
     /// Translates, encodes, verifies and installs the fragment for `entry_pc`
@@ -359,6 +548,28 @@ impl CodeCache {
     /// labels, and its entry. Its code stays mapped (the kernel frees it after a
     /// grace period; the harness never frees).
     pub fn retire(&mut self, fragment: usize) {
+        // A16: every site linked into the fragment goes back to `nop` and pending,
+        // then the fragment's own sites leave pending and their targets' incoming
+        // lists. Before the fragment is marked retired.
+        for (site_fragment, link) in std::mem::take(&mut self.fragments[fragment].incoming) {
+            self.restore_link(site_fragment, link);
+        }
+        for link in 0..self.fragments[fragment].links.len() {
+            let site = self.fragments[fragment].links[link];
+            match site.linked_to {
+                Some((target_fragment, _)) => self.fragments[target_fragment]
+                    .incoming
+                    .retain(|&entry| entry != (fragment, link)),
+                None => {
+                    if let Some(waiting) = self.pending.get_mut(&site.target_pc) {
+                        waiting.retain(|&entry| entry != (fragment, link));
+                        if waiting.is_empty() {
+                            self.pending.remove(&site.target_pc);
+                        }
+                    }
+                }
+            }
+        }
         let frag = &mut self.fragments[fragment];
         frag.retired = true;
         if self.by_entry.get(&frag.entry_pc) == Some(&fragment) {
@@ -419,6 +630,96 @@ impl CodeCache {
                     ));
                 }
             }
+        }
+        self.check_link_invariants()?;
+        Ok(())
+    }
+
+    /// The link invariant (docs/pipeline.md, "Direct BL links (A16, kernel side)"):
+    /// every site of a live fragment is pending with a `nop` in its slot, or linked,
+    /// with `b <host of the label>` in its slot, to a label of a live fragment
+    /// translated for exactly the site's target, never from a non-FP/SIMD fragment
+    /// into an FP/SIMD one; the pending map and the incoming lists hold exactly those
+    /// sites; the encoded bytes agree with the typed code.
+    fn check_link_invariants(&self) -> Result<(), String> {
+        let mut pending = 0;
+        let mut incoming = 0;
+        for (index, frag) in self.fragments.iter().enumerate() {
+            if frag.retired {
+                if !frag.incoming.is_empty() {
+                    return Err(format!("retired fragment {index} still has incoming links"));
+                }
+                continue;
+            }
+            for (link, site) in frag.links.iter().enumerate() {
+                let slot_addr = frag.base + site.slot as u64;
+                let word = match frag.fragment.insns[site.slot / 4].encode() {
+                    Ok(word) => word,
+                    Err(err) => return Err(format!("fragment {index} slot {:#x}: {err:?}", site.slot)),
+                };
+                if let Some(bytes) = frag.encoded.get(site.slot..site.slot + 4) {
+                    if bytes != word.to_le_bytes() {
+                        return Err(format!(
+                            "fragment {index} slot {:#x}: the encoded bytes differ from the code",
+                            site.slot
+                        ));
+                    }
+                }
+                match site.linked_to {
+                    None => {
+                        pending += 1;
+                        if word != LINK_NOP_WORD {
+                            return Err(format!(
+                                "pending site {index}/{link} (slot {:#x}) holds {word:#010x}, not a nop",
+                                site.slot
+                            ));
+                        }
+                        let listed = self
+                            .pending
+                            .get(&site.target_pc)
+                            .is_some_and(|waiting| waiting.iter().filter(|&&e| e == (index, link)).count() == 1);
+                        if !listed {
+                            return Err(format!("pending site {index}/{link} is not in the pending map once"));
+                        }
+                    }
+                    Some((target, label)) => {
+                        incoming += 1;
+                        let target_frag = &self.fragments[target];
+                        let label = target_frag.labels[label];
+                        if target_frag.retired {
+                            return Err(format!("site {index}/{link} is linked into retired fragment {target}"));
+                        }
+                        if label.pc != site.target_pc {
+                            return Err(format!(
+                                "site {index}/{link} targets {:#x} but is linked to a label for {:#x}",
+                                site.target_pc, label.pc
+                            ));
+                        }
+                        if !frag.uses_fpsimd && target_frag.uses_fpsimd {
+                            return Err(format!(
+                                "site {index}/{link} of a non-FP/SIMD fragment is linked into FP/SIMD fragment {target}"
+                            ));
+                        }
+                        if link_branch_word(slot_addr, target_frag.host(&label)) != Some(word) {
+                            return Err(format!(
+                                "site {index}/{link} (slot {:#x}) holds {word:#010x}, not `b` to {:#x}",
+                                site.slot,
+                                target_frag.host(&label)
+                            ));
+                        }
+                        if target_frag.incoming.iter().filter(|&&e| e == (index, link)).count() != 1 {
+                            return Err(format!("site {index}/{link} is not on fragment {target}'s incoming list once"));
+                        }
+                    }
+                }
+            }
+        }
+        let listed_pending = self.pending.values().map(Vec::len).sum::<usize>();
+        let listed_incoming = self.fragments.iter().map(|frag| frag.incoming.len()).sum::<usize>();
+        if listed_pending != pending || listed_incoming != incoming {
+            return Err(format!(
+                "pending map has {listed_pending} sites for {pending} pending, incoming lists {listed_incoming} for {incoming} linked"
+            ));
         }
         Ok(())
     }
@@ -797,5 +1098,267 @@ mod tests {
                 target_pc: 0x1000
             })
         );
+    }
+
+    // ---- Direct BL links (A16) ----
+
+    fn bl(from: u64, to: u64) -> [u8; 4] {
+        let words = ((to as i64 - from as i64) / 4) as u32 & 0x03ff_ffff;
+        word(A64Insn::BlBlOnlyBranchImm {
+            imm26: crate::shared::arm64::ergo::scaled_simm(words, 26, 2),
+        })
+    }
+
+    fn ldr_q0() -> [u8; 4] {
+        word(A64Insn::LdrImmFpsimdLdrQLdstPos {
+            rt: 0,
+            mem: mem_off(sp(), scaled_uimm(0, 12, 4)),
+        })
+    }
+
+    /// 0x1000 `bl 0x2000; ret`, 0x2000 `ret` (the callee), 0x3000 `bl 0x4000; ret`,
+    /// 0x4000 `ldr q0, [sp]; ret` (an FP/SIMD callee), 0x5000 `ldr q0, [sp]; bl 0x2000;
+    /// ret` (an FP/SIMD caller), 0x6000 `bl 0x6000; ret` (a self-recursive call).
+    fn link_text() -> Vec<u8> {
+        let mut text = vec![0u8; 0x6010];
+        let mut put = |pc: u64, words: &[[u8; 4]]| {
+            let at = (pc - TEXT_BASE) as usize;
+            for (index, bytes) in words.iter().enumerate() {
+                text[at + index * 4..at + index * 4 + 4].copy_from_slice(bytes);
+            }
+        };
+        put(0x1000, &[bl(0x1000, 0x2000), word(ret())]);
+        put(0x2000, &[word(ret())]);
+        put(0x3000, &[bl(0x3000, 0x4000), word(ret())]);
+        put(0x4000, &[ldr_q0(), word(ret())]);
+        put(0x5000, &[ldr_q0(), bl(0x5004, 0x2000), word(ret())]);
+        put(0x6000, &[bl(0x6000, 0x6000), word(ret())]);
+        text
+    }
+
+    fn link_cache() -> CodeCache {
+        CodeCache::new(
+            DEFAULT_CACHE_LAYOUT,
+            Some(MockCodeProvider::new(TEXT_BASE, link_text())),
+            synthetic_loader(0x400000),
+        )
+    }
+
+    const CALLER: u64 = 0x1000;
+    const CALLEE: u64 = 0x2000;
+    const PLAIN_TO_FP: u64 = 0x3000;
+    const FP_CALLEE: u64 = 0x4000;
+    const FP_CALLER: u64 = 0x5000;
+    const SELF_CALLER: u64 = 0x6000;
+
+    /// The slot word of link `link` of `fragment`.
+    fn slot_word(cache: &CodeCache, fragment: usize, link: usize) -> u32 {
+        let frag = &cache.fragments[fragment];
+        frag.fragment.insns[frag.links[link].slot / 4].encode().unwrap()
+    }
+
+    fn b_to(cache: &CodeCache, fragment: usize, link: usize, target: usize) -> u32 {
+        let frag = &cache.fragments[fragment];
+        let (g, l) = frag.links[link].linked_to.expect("linked");
+        assert_eq!(g, target);
+        link_branch_word(
+            frag.base + frag.links[link].slot as u64,
+            cache.fragments[g].host(&cache.fragments[g].labels[l]),
+        )
+        .expect("in range")
+    }
+
+    #[test]
+    fn a_site_links_when_its_target_installs() {
+        let mut cache = link_cache();
+        let caller = cache.translate(CALLER, 0).unwrap().unwrap();
+        // No label for the target yet: the slot stays a nop, the site pending.
+        assert_eq!(cache.fragments[caller].links.len(), 1);
+        assert_eq!(cache.fragments[caller].links[0].target_pc, CALLEE);
+        assert_eq!(slot_word(&cache, caller, 0), LINK_NOP_WORD);
+        assert_eq!(cache.stats.link_made, 0);
+        assert!(cache.drain_code_patches().is_empty());
+        cache.check_invariants().unwrap();
+
+        let callee = cache.translate(CALLEE, CALLER).unwrap().unwrap();
+        assert_eq!(cache.stats.link_made, 1);
+        assert_eq!(slot_word(&cache, caller, 0), b_to(&cache, caller, 0, callee));
+        // The bytes follow the typed code, and the backend is told once.
+        let slot = cache.fragments[caller].links[0].slot;
+        assert_eq!(
+            cache.fragments[caller].encoded[slot..slot + 4],
+            slot_word(&cache, caller, 0).to_le_bytes()
+        );
+        assert_eq!(
+            cache.drain_code_patches(),
+            [CodePatch {
+                fragment: caller,
+                offset: slot,
+                word: slot_word(&cache, caller, 0)
+            }]
+        );
+        cache.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn a_site_links_at_its_own_install_when_the_target_is_already_there() {
+        let mut cache = link_cache();
+        let callee = cache.translate(CALLEE, 0).unwrap().unwrap();
+        let caller = cache.translate(CALLER, 0).unwrap().unwrap();
+        assert_eq!(cache.stats.link_made, 1);
+        assert_eq!(slot_word(&cache, caller, 0), b_to(&cache, caller, 0, callee));
+        // A label inside a larger fragment satisfies the condition too: the fragment
+        // translated for 0x4000 holds a label for 0x4004 only if the CFG reaches it, so
+        // use the self-recursive caller, whose own label is the target.
+        let me = cache.translate(SELF_CALLER, 0).unwrap().unwrap();
+        assert_eq!(cache.stats.link_made, 2);
+        assert_eq!(slot_word(&cache, me, 0), b_to(&cache, me, 0, me));
+        cache.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn retire_restores_the_sites_linked_into_the_fragment_and_they_link_again() {
+        let mut cache = link_cache();
+        let caller = cache.translate(CALLER, 0).unwrap().unwrap();
+        let fp_caller = cache.translate(FP_CALLER, 0).unwrap().unwrap();
+        let callee = cache.translate(CALLEE, CALLER).unwrap().unwrap();
+        assert_eq!(cache.stats.link_made, 2, "both callers link into the callee");
+        cache.drain_code_patches();
+
+        cache.retire(callee);
+        assert_eq!(cache.stats.link_restored, 2);
+        for fragment in [caller, fp_caller] {
+            let link = cache.fragments[fragment].links.iter().position(|l| l.target_pc == CALLEE).unwrap();
+            assert_eq!(slot_word(&cache, fragment, link), LINK_NOP_WORD);
+            assert_eq!(cache.fragments[fragment].links[link].linked_to, None);
+        }
+        assert_eq!(cache.drain_code_patches().len(), 2);
+        cache.check_invariants().unwrap();
+
+        // The target translated again: the pending sites link to the new fragment.
+        let again = cache.translate(CALLEE, CALLER).unwrap().unwrap();
+        assert_ne!(again, callee);
+        assert_eq!(cache.stats.link_made, 4);
+        cache.check_invariants().unwrap();
+
+        // Retiring a caller takes its site off the callee's incoming list: retiring
+        // the callee then restores only the other caller's.
+        cache.retire(caller);
+        cache.retire(again);
+        assert_eq!(cache.stats.link_restored, 3);
+        cache.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn a_self_recursive_site_links_to_its_own_fragment_and_retires_cleanly() {
+        let mut cache = link_cache();
+        let me = cache.translate(SELF_CALLER, 0).unwrap().unwrap();
+        assert_eq!(cache.stats.link_made, 1);
+        assert_eq!(cache.fragments[me].links[0].linked_to.map(|(g, _)| g), Some(me));
+        cache.retire(me);
+        assert_eq!(cache.stats.link_restored, 1);
+        cache.check_invariants().unwrap();
+        // Nothing is left waiting for the retired fragment's site.
+        assert!(cache.pending.is_empty());
+    }
+
+    #[test]
+    fn the_class_rule_refuses_a_non_fpsimd_site_into_fpsimd_code_only() {
+        let mut cache = link_cache();
+        // A non-FP/SIMD caller (`bl 0x4000`) against the FP/SIMD callee: refused, the
+        // site stays pending.
+        let fp_callee = cache.translate(FP_CALLEE, 0).unwrap().unwrap();
+        assert!(cache.fragments[fp_callee].uses_fpsimd);
+        let plain_caller = cache.translate(PLAIN_TO_FP, 0).unwrap().unwrap();
+        assert!(!cache.fragments[plain_caller].uses_fpsimd);
+        assert_eq!(cache.stats.link_class_refused, 1);
+        assert_eq!(cache.stats.link_made, 0);
+        assert_eq!(cache.fragments[plain_caller].links[0].linked_to, None);
+        assert_eq!(slot_word(&cache, plain_caller, 0), LINK_NOP_WORD);
+        // The refusal is counted when a pending site meets a label, too.
+        cache.retire(fp_callee);
+        let fp_callee = cache.translate(FP_CALLEE, 0).unwrap().unwrap();
+        assert_eq!(cache.stats.link_class_refused, 2);
+        cache.check_invariants().unwrap();
+        let _ = fp_callee;
+
+        // The other way round is allowed: an FP/SIMD fragment's site into non-FP/SIMD
+        // code (the bracketed run may continue into it).
+        let plain = cache.translate(CALLEE, 0).unwrap().unwrap();
+        let fp_caller = cache.translate(FP_CALLER, 0).unwrap().unwrap();
+        assert!(cache.fragments[fp_caller].uses_fpsimd && !cache.fragments[plain].uses_fpsimd);
+        assert_eq!(cache.stats.link_made, 1);
+        assert_eq!(b_to(&cache, fp_caller, 0, plain), slot_word(&cache, fp_caller, 0));
+        cache.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn a_target_out_of_the_reach_of_b_stays_a_pending_nop() {
+        let mut next = 0x400000_u64;
+        let loader: FragmentLoader = Box::new(move |_| {
+            // Fragments 256 MiB apart: beyond `b`'s +-128 MiB.
+            let base = next;
+            next += 0x1000_0000;
+            Ok(base)
+        });
+        let mut cache = CodeCache::new(
+            DEFAULT_CACHE_LAYOUT,
+            Some(MockCodeProvider::new(TEXT_BASE, link_text())),
+            loader,
+        );
+        let caller = cache.translate(CALLER, 0).unwrap().unwrap();
+        cache.translate(CALLEE, CALLER).unwrap().unwrap();
+        assert_eq!(cache.stats.link_made, 0);
+        assert_eq!(cache.stats.link_out_of_range, 1);
+        assert_eq!(slot_word(&cache, caller, 0), LINK_NOP_WORD);
+        cache.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn a_cache_without_links_never_patches() {
+        let mut cache = link_cache().without_links();
+        cache.translate(CALLEE, 0).unwrap().unwrap();
+        let caller = cache.translate(CALLER, 0).unwrap().unwrap();
+        assert!(cache.fragments[caller].links.is_empty());
+        assert_eq!(cache.stats.link_made, 0);
+        assert!(cache.drain_code_patches().is_empty());
+        cache.check_invariants().unwrap();
+    }
+
+    #[test]
+    fn the_link_invariant_is_enforced() {
+        let mut cache = link_cache();
+        let caller = cache.translate(CALLER, 0).unwrap().unwrap();
+        let callee = cache.translate(CALLEE, CALLER).unwrap().unwrap();
+        cache.check_invariants().unwrap();
+        let slot = cache.fragments[caller].links[0].slot;
+        let good = cache.fragments[caller].fragment.insns[slot / 4];
+
+        // A linked slot that holds something else (code and bytes agree on it).
+        let good_bytes = cache.fragments[caller].encoded[slot..slot + 4].to_vec();
+        cache.fragments[caller].fragment.insns[slot / 4] = A64Insn::NopNopHiHints {};
+        cache.fragments[caller].encoded[slot..slot + 4].copy_from_slice(&LINK_NOP_WORD.to_le_bytes());
+        assert!(cache.check_invariants().unwrap_err().contains("not `b`"));
+        cache.fragments[caller].encoded[slot..slot + 4].copy_from_slice(&good_bytes);
+        // Only the typed code changed: the bytes disagree.
+        assert!(cache.check_invariants().unwrap_err().contains("encoded bytes"));
+        cache.fragments[caller].fragment.insns[slot / 4] = good;
+        // The bytes and the typed code disagree.
+        cache.fragments[caller].encoded[slot] ^= 1;
+        assert!(cache.check_invariants().unwrap_err().contains("encoded bytes"));
+        cache.fragments[caller].encoded[slot] ^= 1;
+        // A pending site holding a branch.
+        let link = cache.fragments[caller].links[0];
+        cache.fragments[caller].links[0].linked_to = None;
+        cache.fragments[callee].incoming.clear();
+        cache.pending.entry(CALLEE).or_default().push((caller, 0));
+        assert!(cache.check_invariants().unwrap_err().contains("not a nop"));
+        cache.pending.clear();
+        cache.fragments[caller].links[0] = link;
+        cache.fragments[callee].incoming.push((caller, 0));
+        cache.check_invariants().unwrap();
+        // A site linked into a retired fragment.
+        cache.fragments[callee].retired = true;
+        assert!(cache.check_invariants().unwrap_err().contains("retired"));
     }
 }

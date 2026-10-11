@@ -887,9 +887,10 @@ pub(super) fn is_budget_fill(insn: &A64Insn) -> bool {
 
 /// A word that may sit between a dispatch template's budget `cbz` and the
 /// template (A11): the site's target move and link write (data-processing
-/// words) and reg-virt fill loads. No branch, no other memory access.
+/// words), a BL's link slot (`nop`, A16) and reg-virt fill loads. No branch, no other
+/// memory access.
 pub(super) fn is_dispatch_gap_word(insn: &A64Insn) -> bool {
-    classify(*insn) == Form::Alu || is_budget_fill(insn)
+    matches!(classify(*insn), Form::Alu | Form::Nop) || is_budget_fill(insn)
 }
 
 /// `sub x18, x18, #1` (64-bit, no `lsl #12`, not `SUBS`).

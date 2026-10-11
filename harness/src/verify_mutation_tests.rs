@@ -376,6 +376,7 @@ impl Suite {
         self.window_checks(fixture);
         self.kernel_values(fixture);
         self.dispatch_templates(fixture);
+        self.link_slots(fixture);
         self.random_words(fixture);
     }
 
@@ -1902,6 +1903,184 @@ impl Suite {
         }
     }
 
+    /// Rule 10 (A16) mutation classes, for every link slot of the fragment: the slot
+    /// not a `nop`; the table entry moved off the slot (onto the word before, the
+    /// template's first word, the prologue, outside, unaligned), listed twice, or
+    /// aimed at another target PC; the slot a join point; the target move altered
+    /// (a halfword changed) or x13 written a second time between the check and the
+    /// template (a second `movk` of a halfword, `add x13`, a fill into x13).
+    fn link_slots(&mut self, fixture: &Fixture) {
+        let sub_word = enc(budget_sub());
+        for &(slot, target) in &fixture.tables.link_sites {
+            let slot_index = slot / 4;
+
+            for (what, insn) in [
+                ("movz x9", A64Insn::MovzMovz64Movewide { hw: 0, imm16: uimm(0, 16), rd: x(9) }),
+                ("mov x13, x13", mov_reg(13, 13)),
+                ("add x13, x13, #0", add_imm(13, 13, 0)),
+                ("ldr x13, [sp, #56]", ldr64(13, sp(), 56)),
+                ("ldr x12, [sp, #16]", ldr64(12, sp(), 16)),
+                ("b <next>", A64Insn::BUncondBOnlyBranchImm { imm26: scaled_simm(1, 26, 2) }),
+                ("str x0, [sp, #16]", str64(0, sp(), 16)),
+            ] {
+                self.replace(
+                    "link slot not a nop (A16)",
+                    fixture,
+                    slot_index,
+                    enc(insn),
+                    what,
+                );
+            }
+
+            let tables_with = |this: &mut Self, class: &'static str, what: String, links: Vec<(usize, u64)>| {
+                let mut tables = clone_tables(&fixture.tables);
+                tables.link_sites = links;
+                this.expect_reject(class, fixture, what, &fixture.words, &tables);
+            };
+            let others: Vec<(usize, u64)> = fixture
+                .tables
+                .link_sites
+                .iter()
+                .copied()
+                .filter(|&(offset, _)| offset != slot)
+                .collect();
+            let with = |entry: (usize, u64)| {
+                let mut links = others.clone();
+                links.push(entry);
+                links
+            };
+
+            for offset in [
+                slot - 4,
+                slot + 4,
+                slot + 4 * DISPATCH_TEMPLATE_LEN,
+                0,
+                BODY_OFFSET - 4,
+                fixture.words.len() * 4,
+                slot + 2,
+            ] {
+                tables_with(
+                    self,
+                    "link slot listed at another word (A16)",
+                    format!("slot {slot:#x} listed at {offset:#x}"),
+                    with((offset, target)),
+                );
+            }
+            let mut twice = with((slot, target));
+            twice.push((slot, target));
+            tables_with(
+                self,
+                "link slot listed twice (A16)",
+                format!("slot {slot:#x}"),
+                twice,
+            );
+            for bit in [0, 2, 12, 16, 31, 32, 47, 48, 63] {
+                tables_with(
+                    self,
+                    "link target altered (A16)",
+                    format!("slot {slot:#x} target bit {bit}"),
+                    with((slot, target ^ (1 << bit))),
+                );
+            }
+            {
+                let mut tables = clone_tables(&fixture.tables);
+                tables.entry_offsets.push(slot);
+                self.expect_reject(
+                    "link slot is a join point (A16)",
+                    fixture,
+                    format!("entry at slot {slot:#x}"),
+                    &fixture.words,
+                    &tables,
+                );
+            }
+
+            // The target move: the words between the budget check and the slot that
+            // write x13 (a `movz` and `movk`s), found backwards to the check's `sub`.
+            let Some(check) = (0..=16)
+                .map(|back| slot_index - back)
+                .find(|&index| fixture.words[index] == sub_word)
+            else {
+                continue;
+            };
+            let mut moves = Vec::new();
+            for index in check + 2..slot_index {
+                match fixture.decoded(index) {
+                    Some(
+                        A64Insn::MovzMovz64Movewide { rd, imm16, hw }
+                        | A64Insn::MovkMovk64Movewide { rd, imm16, hw },
+                    ) if rd.enc() == 13 => {
+                        moves.push(index);
+                        let altered = match fixture.decoded(index).unwrap() {
+                            A64Insn::MovzMovz64Movewide { .. } => A64Insn::MovzMovz64Movewide {
+                                hw,
+                                imm16: uimm(imm16.raw() ^ 1, 16),
+                                rd,
+                            },
+                            _ => A64Insn::MovkMovk64Movewide {
+                                hw,
+                                imm16: uimm(imm16.raw() ^ 1, 16),
+                                rd,
+                            },
+                        };
+                        self.replace(
+                            "link target move altered (A16)",
+                            fixture,
+                            index,
+                            enc(altered),
+                            "imm16 ^ 1",
+                        );
+                    }
+                    _ => {}
+                }
+            }
+            // Another write of x13 in place of any word of the run that is not one.
+            for index in check + 2..slot_index {
+                if moves.contains(&index) {
+                    continue;
+                }
+                for (what, insn) in [
+                    (
+                        "movk x13, #1, lsl #48",
+                        A64Insn::MovkMovk64Movewide { hw: 3, imm16: uimm(1, 16), rd: x(13) },
+                    ),
+                    ("add x13, x13, #0", add_imm(13, 13, 0)),
+                    ("ldr x13, [sp, #56]", ldr64(13, sp(), 56)),
+                    ("mov x13, x30", mov_reg(13, 30)),
+                ] {
+                    self.replace(
+                        "link target set twice (A16)",
+                        fixture,
+                        index,
+                        enc(insn),
+                        what,
+                    );
+                }
+            }
+            // A second `movz`, and a `movk` of a halfword the move already sets, in
+            // place of a movk.
+            for &index in moves.iter().skip(1) {
+                for (what, insn) in [
+                    (
+                        "movz x13, #1",
+                        A64Insn::MovzMovz64Movewide { hw: 0, imm16: uimm(1, 16), rd: x(13) },
+                    ),
+                    (
+                        "movk x13, #1, lsl #48",
+                        A64Insn::MovkMovk64Movewide { hw: 3, imm16: uimm(1, 16), rd: x(13) },
+                    ),
+                ] {
+                    self.replace(
+                        "link target set twice (A16)",
+                        fixture,
+                        index,
+                        enc(insn),
+                        what,
+                    );
+                }
+            }
+        }
+    }
+
     /// Start index of every dispatch template (A11, A11c) of the fragment, found on the
     /// bytes: twenty words that are `KJIT_DISPATCH_TEMPLATE` up to the miss offsets.
     fn find_dispatch_templates(fixture: &Fixture) -> Vec<usize> {
@@ -2458,7 +2637,8 @@ impl Suite {
 
             // No budget check: its two words replaced by data processing (the gap
             // may hold those), or the word before the template by something a gap
-            // may not hold (a branch, a store, a non-fill load, a nop).
+            // may not hold (a branch, a store, a non-fill load). A `nop` is legal there
+            // (a BL's link slot, A16).
             let sub_word = enc(budget_sub());
             let check = start
                 .checked_sub(1)
@@ -2509,7 +2689,6 @@ impl Suite {
                 }
             }
             for (what, insn) in [
-                ("nop", A64Insn::NopNopHiHints {}),
                 ("str x0, [sp, #16]", str64(0, sp(), 16)),
                 ("ldr x0, [sp, #16]", ldr64(0, sp(), 16)),
                 ("ldr x13, [sp, #176]", ldr64(13, sp(), 176)),
@@ -3086,6 +3265,7 @@ fn clone_tables(tables: &FragmentTables) -> FragmentTables {
     FragmentTables {
         fault_sites: tables.fault_sites.clone(),
         entry_offsets: tables.entry_offsets.clone(),
+        link_sites: tables.link_sites.clone(),
     }
 }
 

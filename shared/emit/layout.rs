@@ -29,6 +29,9 @@ pub struct ExecutionFragment {
     pub vlabels: LayoutVLabels,
     /// Every user access, sorted by `access_offset` (strictly increasing).
     pub fault_sites: SharedVec<FaultSite>,
+    /// Every static `BL` site's link slot (A16), in layout order: the byte offset of
+    /// its `nop` and the user PC the `BL` targets.
+    pub link_sites: SharedVec<(usize, u64)>,
 }
 
 impl ExecutionFragment {
@@ -107,6 +110,11 @@ pub enum LayoutError {
     MalformedDispatchTemplate {
         insn_index: usize,
     },
+    /// A link slot (A16) that is not a `nop`, or that no dispatch template follows
+    /// directly.
+    MalformedLinkSlot {
+        insn_index: usize,
+    },
     /// A block whose successor starts at its end (it falls through) is not
     /// followed by that successor in layout order: its lowering would run into
     /// the wrong block.
@@ -180,6 +188,9 @@ impl core::fmt::Display for LayoutError {
             Self::MalformedDispatchTemplate { insn_index } => {
                 write!(f, "malformed dispatch template at instruction {insn_index}")
             }
+            Self::MalformedLinkSlot { insn_index } => {
+                write!(f, "malformed link slot at instruction {insn_index}")
+            }
             Self::FallthroughNotAdjacent {
                 block_start,
                 end_addr,
@@ -242,6 +253,7 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
         entry_offset: 0,
         vlabels: SharedVec::with_capacity(insn_count, GFP_KERNEL)?,
         fault_sites: SharedVec::new(),
+        link_sites: SharedVec::new(),
     };
     let mut relocs = SharedVec::with_capacity(insn_count, GFP_KERNEL)?;
     let mut runtime_exit_branches = SharedVec::with_capacity(insn_count, GFP_KERNEL)?;
@@ -258,6 +270,8 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
     // (miss branch index, exit-group index, original PC) of every finished one.
     let mut dispatch_start: Option<usize> = None;
     let mut dispatch_misses: SharedVec<(usize, usize, u64)> = SharedVec::new();
+    // Index of the link slot (A16) just laid out: the next word must start a template.
+    let mut link_slot_index: Option<usize> = None;
     // Original PC whose budget check has been emitted in the current run of
     // instructions with that PC.
     let mut budget_checked_pc = None;
@@ -276,6 +290,11 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
 
             if rephrased.kind != RephrasedInsnKind::DispatchLookup && dispatch_start.is_some() {
                 return Err(LayoutError::MalformedDispatchTemplate { insn_index });
+            }
+            if link_slot_index.take().is_some() && rephrased.kind != RephrasedInsnKind::DispatchLookup {
+                return Err(LayoutError::MalformedLinkSlot {
+                    insn_index: insn_index - 1,
+                });
             }
             let user_access = rephrased.kind == RephrasedInsnKind::UserAccess;
             if user_access != rephrased.insn.is_unprivileged_access() {
@@ -313,6 +332,16 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
                     budget_branches.push((insn_index, rephrased.ori_pc), GFP_KERNEL)?;
                     budget_checked_pc = Some(rephrased.ori_pc);
                 }
+            } else if let RephrasedInsnKind::LinkSlot { target_pc } = rephrased.kind {
+                // A16: a `nop` right before the site's template (the next word must be
+                // the template's first, checked when it arrives).
+                if !matches!(rephrased.insn, A64Insn::NopNopHiHints {}) {
+                    return Err(LayoutError::MalformedLinkSlot { insn_index });
+                }
+                fragment
+                    .link_sites
+                    .push((output_offset, target_pc), GFP_KERNEL)?;
+                link_slot_index = Some(insn_index);
             } else if rephrased.kind == RephrasedInsnKind::DispatchLookup {
                 let start = *dispatch_start.get_or_insert(insn_index);
                 let position = insn_index - start;
@@ -365,6 +394,9 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
         }
     }
 
+    if let Some(insn_index) = link_slot_index {
+        return Err(LayoutError::MalformedLinkSlot { insn_index });
+    }
     if dispatch_start.is_some() {
         return Err(LayoutError::MalformedDispatchTemplate {
             insn_index: fragment.insns.len(),
@@ -753,6 +785,80 @@ mod tests {
         assert!(matches!(
             layout_program(one_block(template(DISPATCH_TEMPLATE_LEN, false))),
             Err(LayoutError::MalformedDispatchTemplate { .. })
+        ));
+    }
+
+    /// A16: a link slot is listed with its byte offset and target PC, only when a
+    /// template follows it directly; a slot that is not a `nop`, or that anything but a
+    /// template follows, is a layout error.
+    #[test]
+    fn link_slots_are_listed_when_a_template_follows_them() {
+        use crate::shared::abi::KJIT_DISPATCH_TEMPLATE;
+
+        let site = |slot: RephrasedInsn, between: Option<A64Insn>, template: bool| {
+            let mut insns = SharedVec::new();
+            insns.push(slot, GFP_KERNEL).unwrap();
+            if let Some(between) = between {
+                insns
+                    .push(RephrasedInsn::synthetic(0x1000, between), GFP_KERNEL)
+                    .unwrap();
+            }
+            if template {
+                for insn in KJIT_DISPATCH_TEMPLATE.iter() {
+                    insns
+                        .push(RephrasedInsn::dispatch_lookup(0x1000, *insn), GFP_KERNEL)
+                        .unwrap();
+                }
+            }
+            insns
+                .push(RephrasedInsn::synthetic(0x1000, A64Insn::NopNopHiHints {}), GFP_KERNEL)
+                .unwrap();
+            insns
+        };
+        let nop = A64Insn::NopNopHiHints {};
+
+        let layout = layout_program(one_block(site(
+            RephrasedInsn::link_slot(0x1000, 0x2008),
+            None,
+            true,
+        )))
+        .unwrap();
+        assert_eq!(
+            layout.link_sites.iter().copied().collect::<Vec<_>>(),
+            [(body_start_offset(), 0x2008)]
+        );
+        assert_eq!(layout.insns[body_start_offset() / 4], nop);
+
+        // No template after the slot, another word between, a slot that is no nop.
+        for malformed in [
+            site(RephrasedInsn::link_slot(0x1000, 0x2008), None, false),
+            site(RephrasedInsn::link_slot(0x1000, 0x2008), Some(nop), true),
+            site(
+                RephrasedInsn {
+                    insn: A64Insn::MovzMovz64Movewide {
+                        hw: 0,
+                        imm16: A64Imm::unsigned(1, 16),
+                        rd: A64Reg::x(9),
+                    },
+                    ..RephrasedInsn::link_slot(0x1000, 0x2008)
+                },
+                None,
+                true,
+            ),
+        ] {
+            assert!(matches!(
+                layout_program(one_block(malformed)),
+                Err(LayoutError::MalformedLinkSlot { .. })
+            ));
+        }
+        // A slot as the block's last word.
+        let mut only_slot = SharedVec::new();
+        only_slot
+            .push(RephrasedInsn::link_slot(0x1000, 0x2008), GFP_KERNEL)
+            .unwrap();
+        assert!(matches!(
+            layout_program(one_block(only_slot)),
+            Err(LayoutError::MalformedLinkSlot { .. })
         ));
     }
 

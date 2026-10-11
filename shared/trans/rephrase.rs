@@ -52,6 +52,13 @@ pub enum RephrasedInsnKind {
     /// to the victim probe's first word, the victim probe's to the exit group that
     /// follows the final `br`).
     DispatchLookup,
+    /// A static `BL` site's link slot (A16; docs/pipeline.md, "Direct BL links
+    /// (A16)"): one `nop` between the link write and the dispatch template that the
+    /// runtime may turn into `b <host of target_pc>`. Runtime-owned, reg-virt passes
+    /// it through; layout lists it in `ExecutionFragment::link_sites`.
+    LinkSlot {
+        target_pc: u64,
+    },
     RuntimeExitPayload,
     RuntimeExitBranch,
 }
@@ -68,6 +75,7 @@ impl RephrasedInsnKind {
             | Self::WindowAccess
             | Self::DispatchTarget
             | Self::DispatchLookup
+            | Self::LinkSlot { .. }
             | Self::RuntimeExitPayload
             | Self::RuntimeExitBranch => false,
         }
@@ -85,7 +93,8 @@ impl RephrasedInsnKind {
             | Self::RangeCheck
             | Self::WindowAccess
             | Self::DispatchTarget
-            | Self::DispatchLookup => false,
+            | Self::DispatchLookup
+            | Self::LinkSlot { .. } => false,
         }
     }
 
@@ -187,6 +196,14 @@ impl RephrasedInsn {
             kind: RephrasedInsnKind::DispatchLookup,
             ori_pc,
             insn,
+        }
+    }
+
+    pub const fn link_slot(ori_pc: u64, target_pc: u64) -> Self {
+        Self {
+            kind: RephrasedInsnKind::LinkSlot { target_pc },
+            ori_pc,
+            insn: A64Insn::NopNopHiHints {},
         }
     }
 
@@ -301,8 +318,9 @@ pub(crate) fn rephrase_insn(
         // Lowering). The budget
         // check that precedes the whole sequence is added by `rephrase`. Order: the
         // target into x13 (before any x30 write, so `blr x30` stays correct), the
-        // link write, the dispatch template, then the exit group a miss takes: the
-        // same status and x11 as before the template existed, x10 = x13.
+        // link write, (BL only, A16) the link slot, the dispatch template, then the
+        // exit group a miss takes: the same status and x11 as before the template
+        // existed, x10 = x13.
         A64Insn::BlBlOnlyBranchImm { .. } => {
             let Some(RuntimeExitReason::Bl {
                 target_pc,
@@ -326,6 +344,8 @@ pub(crate) fn rephrase_insn(
                 resume_pc,
                 RephrasedInsnKind::UserSynthetic,
             )?;
+            // A16: the target is a translation-time constant, so the site can be linked.
+            ret.push(RephrasedInsn::link_slot(insn.pc, target_pc), GFP_KERNEL)?;
             push_dispatch_template(&mut ret, insn.pc)?;
             push_dispatch_miss_exit(&mut ret, insn.pc, RetStatus::Bl, resume_pc)?;
         }
@@ -809,7 +829,9 @@ mod tests {
             let dispatch_kind = |kind: RephrasedInsnKind| {
                 matches!(
                     kind,
-                    RephrasedInsnKind::DispatchTarget | RephrasedInsnKind::DispatchLookup
+                    RephrasedInsnKind::DispatchTarget
+                        | RephrasedInsnKind::DispatchLookup
+                        | RephrasedInsnKind::LinkSlot { .. }
                 )
             };
             assert!(
@@ -929,6 +951,75 @@ mod tests {
             )
         );
         assert_eq!(rephrased[1].kind, RephrasedInsnKind::UserSynthetic);
+    }
+
+    #[test]
+    fn only_a_static_bl_gets_a_link_slot_right_before_the_template() {
+        let lower = |inner| {
+            rephrase_insn(IrInsn {
+                pc: 0x1000,
+                word: 0,
+                inner,
+            })
+            .unwrap()
+        };
+        let slots = |lowered: &[RephrasedInsn]| {
+            lowered
+                .iter()
+                .enumerate()
+                .filter(|(_, insn)| matches!(insn.kind, RephrasedInsnKind::LinkSlot { .. }))
+                .map(|(index, _)| index)
+                .collect::<Vec<_>>()
+        };
+
+        let bl = lower(A64Insn::BlBlOnlyBranchImm {
+            imm26: scaled_simm(2, 26, 2),
+        });
+        let [slot] = slots(&bl)[..] else {
+            panic!("a BL has exactly one link slot");
+        };
+        assert_eq!(
+            bl[slot],
+            RephrasedInsn::link_slot(0x1000, 0x1008),
+            "the slot is a nop that carries the BL's target"
+        );
+        assert_eq!(bl[slot].insn, A64Insn::NopNopHiHints {});
+        assert_eq!(bl[slot + 1].kind, RephrasedInsnKind::DispatchLookup);
+        assert_eq!(bl[slot - 1].kind, RephrasedInsnKind::UserSynthetic);
+        assert!(matches!(
+            bl[slot - 1].insn,
+            A64Insn::MovzMovz64Movewide { rd, .. } | A64Insn::MovkMovk64Movewide { rd, .. }
+                if rd.enc == ABI_LINK_REG
+        ));
+
+        // A target above 4 GiB takes the full movz + three movk.
+        let far = rephrase_insn(IrInsn {
+            pc: 0x1_2345_6000,
+            word: 0,
+            inner: A64Insn::BlBlOnlyBranchImm {
+                imm26: scaled_simm(2, 26, 2),
+            },
+        })
+        .unwrap();
+        assert!(matches!(
+            far[slots(&far)[0]].kind,
+            RephrasedInsnKind::LinkSlot { target_pc: 0x1_2345_6008 }
+        ));
+
+        for inner in [
+            A64Insn::BlrBlr64BranchReg { rn: x(4) },
+            A64Insn::BrBr64BranchReg { rn: x(5) },
+            A64Insn::RetRet64rBranchReg { rn: x(30) },
+            A64Insn::SvcSvcExException {
+                imm16: A64Imm::unsigned(0, 16),
+            },
+        ] {
+            assert!(
+                slots(&lower(inner)).is_empty(),
+                "{} has a dynamic target: no link slot",
+                inner.key()
+            );
+        }
     }
 
     #[test]

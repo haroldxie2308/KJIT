@@ -167,7 +167,8 @@ impl URuntime {
             DEFAULT_CACHE_LAYOUT,
             None,
             synthetic_loader(config.base_pc),
-        );
+        )
+        .without_links();
         cache
             .install(entry_pc, fragment, Vec::new(), uses_fpsimd)
             .expect("one fragment fits an empty cache");
@@ -197,6 +198,8 @@ impl URuntime {
     ) -> Self {
         seed_pt_regs(&mut initial_state, &config);
         cache.begin_run();
+        // The interpreter runs the cache's own copy of the code.
+        cache.drain_code_patches();
         for (addr, value) in cache.image() {
             initial_state.write_u64(addr, value);
         }
@@ -292,6 +295,8 @@ impl URuntime {
         for (addr, value) in self.cache.drain_writes() {
             self.state.write_u64(addr, value);
         }
+        // The interpreter runs the cache's own copy of the code: nothing to apply.
+        self.cache.drain_code_patches();
         Ok(action)
     }
 

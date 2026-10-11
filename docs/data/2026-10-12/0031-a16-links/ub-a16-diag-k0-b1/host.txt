@@ -1,0 +1,5 @@
+label=a16-diag-k0-b1 kpti=0 profile=kjit-guest
+append=console=ttyAMA0 panic=-1 nokaslr
+waited_s=0 load1_before=4.54
+cmd=sh /opt/kjit-tests/ub-standard.sh /tmp/ubd pinned 300000 1 64 | grep -c "ubstd run"; grep -E "^(link|translate_ok|ibtc_miss|exit_(bl|br|ret|blr|svc)|fragment_entries|released)" /sys/kernel/debug/kjit/stats
+load1_after=4.56 guest_run_status=0

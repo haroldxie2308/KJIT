@@ -94,6 +94,7 @@ fn main() {
                         RephrasedInsnKind::WindowAccess => "window-access",
                         RephrasedInsnKind::DispatchTarget => "dispatch-target",
                 RephrasedInsnKind::DispatchLookup => "dispatch-lookup",
+                RephrasedInsnKind::LinkSlot { .. } => "link-slot",
                 RephrasedInsnKind::RuntimeExitPayload => "rt-payload",
                 RephrasedInsnKind::RuntimeExitBranch => "rt-branch",
             };

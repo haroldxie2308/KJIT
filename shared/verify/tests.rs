@@ -18,6 +18,7 @@ struct Frag {
     code: Vec<u8>,
     sites: Vec<FaultSiteEntry>,
     entries: Vec<usize>,
+    links: Vec<(usize, u64)>,
 }
 
 impl Frag {
@@ -30,6 +31,7 @@ impl Frag {
             code,
             sites: Vec::new(),
             entries: alloc::vec![BODY_OFFSET],
+            links: Vec::new(),
         }
     }
 
@@ -46,11 +48,18 @@ impl Frag {
         self
     }
 
+    /// A16: a link-site entry for body word `index`.
+    fn link(mut self, index: usize, target_pc: u64) -> Self {
+        self.links.push((at(index), target_pc));
+        self
+    }
+
     fn verify(&self) -> Result<VerifyOk, VerifyError> {
         verify_fragment(&VerifyInput {
             code: &self.code,
             fault_sites: &self.sites,
             entry_offsets: &self.entries,
+            link_sites: &self.links,
         })
     }
 
@@ -1797,9 +1806,9 @@ fn dispatch_templates_need_a_budget_check_and_have_no_join_points() {
     let mut body = site.clone();
     body[..CHECK].fill(movz(14, 0));
     assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::MissingBudgetCheck));
-    // Something a gap may not hold between the check and the template.
+    // Something a gap may not hold between the check and the template (a `nop` it
+    // may: a BL's link slot, A16).
     for insn in [
-        A64Insn::NopNopHiHints {},
         str(0, sp(), 16),
         ldr(0, sp(), 16),
         b(CHECK, at(CHECK + 1) as i64),
@@ -1959,4 +1968,232 @@ fn template_register_discipline_holds() {
         assert_eq!(read & !defined, 0, "word {position} reads x14 before it is written");
         defined |= rules::writes(insn).unwrap().gprs & KEY;
     }
+}
+
+// ---- Link slots (A16, rule 10) ----
+
+fn movk(rd: u8, hw: u8, imm: u32) -> A64Insn {
+    A64Insn::MovkMovk64Movewide {
+        hw,
+        imm16: uimm(imm, 16),
+        rd: x(rd),
+    }
+}
+
+fn movz_hw(rd: u8, hw: u8, imm: u32) -> A64Insn {
+    A64Insn::MovzMovz64Movewide {
+        hw,
+        imm16: uimm(imm, 16),
+        rd: x(rd),
+    }
+}
+
+/// `movz` + three `movk`s: the lowering of a 64-bit constant into `rd`.
+fn mov_imm64(rd: u8, value: u64) -> Vec<A64Insn> {
+    alloc::vec![
+        movz_hw(rd, 3, (value >> 48) as u32 & 0xffff),
+        movk(rd, 2, (value >> 32) as u32 & 0xffff),
+        movk(rd, 1, (value >> 16) as u32 & 0xffff),
+        movk(rd, 0, value as u32 & 0xffff),
+    ]
+}
+
+const NOP: A64Insn = A64Insn::NopNopHiHints {};
+
+fn mov_x(rd: u8, rm: u8) -> A64Insn {
+    mov(x(rd), x(rm))
+}
+
+fn add(rd: u8, rn: u8, imm: u32) -> A64Insn {
+    A64Insn::AddAddsubImmAdd64AddsubImm {
+        sh: 0,
+        imm12: uimm(imm, 12),
+        rn: A64Reg::x_sp(rn),
+        rd: A64Reg::x_sp(rd),
+    }
+}
+
+/// A BL site as rephrase lowers it: `<check>; x13 <- target; x30 <- resume; nop;
+/// <template>; <exit group>; <stub>`. Returns the body and the slot's body index.
+fn bl_site_with(target_move: &[A64Insn]) -> (Vec<A64Insn>, usize) {
+    let mut gap = target_move.to_vec();
+    gap.extend(mov_imm64(30, 0x1004));
+    gap.push(NOP);
+    let slot = CHECK + gap.len() - 1;
+    (dispatch_site(&gap), slot)
+}
+
+fn bl_site(target: u64) -> (Vec<A64Insn>, usize) {
+    bl_site_with(&mov_imm64(13, target))
+}
+
+#[test]
+fn accepts_a_link_slot_whose_template_target_is_the_listed_pc() {
+    for target in [0x40_05a0_u64, 0, 0x1_2345_6789_abcc, u64::MAX & !3] {
+        let (body, slot) = bl_site(target);
+        let ok = Frag::new(&body).link(slot, target).verify();
+        assert_eq!(ok.map(|ok| ok.uses_fpsimd), Ok(false), "target {target:#x}");
+    }
+    // A shorter constant move: a movz and one movk.
+    let (body, slot) = bl_site_with(&[movz_hw(13, 1, 0x40), movk(13, 0, 0x5a0)]);
+    assert_eq!(Frag::new(&body).link(slot, 0x40_05a0).rule(), None);
+    // Halfwords in any order.
+    let (body, slot) = bl_site_with(&[movz_hw(13, 0, 0x5a0), movk(13, 1, 0x40)]);
+    assert_eq!(Frag::new(&body).link(slot, 0x40_05a0).rule(), None);
+    // A listed slot of the second of two sites.
+    let mut body = alloc::vec![NOP, b(1, at(2) as i64)];
+    let (site, slot) = {
+        let mut gap = mov_imm64(13, 0x7000);
+        gap.push(NOP);
+        let slot = 2 + CHECK + gap.len() - 1;
+        (dispatch_site_from(2, &gap), slot)
+    };
+    body.extend(site);
+    assert_eq!(Frag::new(&body).link(slot, 0x7000).rule(), None);
+    // Unlisted, the same nop is just a nop in the gap.
+    let (body, _) = bl_site(0x4000);
+    assert_eq!(Frag::new(&body).rule(), None);
+}
+
+#[test]
+fn a_link_slot_must_be_a_nop_before_a_template() {
+    let target = 0x40_05a0_u64;
+    let (body, slot) = bl_site(target);
+    let rule = |body: &[A64Insn], slot: usize| Frag::new(body).link(slot, target).rule();
+
+    // Not a nop: any other word, data processing included.
+    for insn in [movz(9, 0), mov_x(13, 13), fill(12, 16)] {
+        let mut body = body.clone();
+        body[slot] = insn;
+        assert_eq!(rule(&body, slot), Some(VerifyRule::LinkSite), "{insn:?}");
+    }
+    // Listed on another word: before the slot, on the template, on its last word, past
+    // the fragment, in the epilogue, unaligned.
+    let template = slot + 1;
+    for offset in [
+        at(slot - 1),
+        at(template),
+        at(template + DISPATCH_TEMPLATE_LEN - 1),
+        at(body.len()),
+        at(body.len() + 8),
+        EPILOGUE_OFFSET,
+        at(slot) + 2,
+        0,
+    ] {
+        let mut frag = Frag::new(&body);
+        frag.links.push((offset, target));
+        assert_eq!(frag.rule(), Some(VerifyRule::LinkSite), "listed at {offset:#x}");
+    }
+    // A nop that no template follows (it is followed by the exit group).
+    let mut with_stray = body.clone();
+    let group = template + DISPATCH_TEMPLATE_LEN;
+    with_stray[group] = NOP;
+    let mut frag = Frag::new(&with_stray);
+    frag.links.push((at(group), target));
+    assert_eq!(frag.rule(), Some(VerifyRule::LinkSite));
+    // A nop in front of the template's second word is not in front of the template.
+    let mut frag = Frag::new(&body);
+    frag.links.push((at(template + 1), target));
+    assert_eq!(frag.rule(), Some(VerifyRule::LinkSite));
+}
+
+#[test]
+fn a_link_slot_names_the_templates_target_exactly() {
+    let target = 0x40_05a0_u64;
+    let (body, slot) = bl_site(target);
+    // Another PC listed, down to one bit of each halfword.
+    for bit in [0, 2, 4, 15, 16, 22, 31, 32, 40, 47, 48, 63] {
+        assert_eq!(
+            Frag::new(&body).link(slot, target ^ (1 << bit)).rule(),
+            Some(VerifyRule::LinkSite),
+            "bit {bit}"
+        );
+    }
+    // The move altered instead: each halfword.
+    for hw in 0..4 {
+        let mut altered = body.clone();
+        altered[CHECK + hw] = if hw == 0 {
+            movz_hw(13, 3, 1)
+        } else {
+            movk(13, 3 - hw as u8, 1)
+        };
+        assert_eq!(
+            Frag::new(&altered).link(slot, target).rule(),
+            Some(VerifyRule::LinkSite),
+            "word {hw}"
+        );
+    }
+}
+
+#[test]
+fn a_link_slot_needs_x13_set_once_by_a_movz_and_movks() {
+    let target = 0x40_05a0_u64;
+    let reject = |target_move: &[A64Insn]| {
+        let (body, slot) = bl_site_with(target_move);
+        Frag::new(&body).link(slot, target).rule()
+    };
+    let exact = [movz_hw(13, 1, 0x40), movk(13, 0, 0x5a0)];
+    assert_eq!(reject(&exact), None);
+    // Nothing sets x13 / only a movk / a movk before the movz.
+    assert_eq!(reject(&[]), Some(VerifyRule::LinkSite));
+    assert_eq!(reject(&[movk(13, 0, 0x5a0)]), Some(VerifyRule::LinkSite));
+    assert_eq!(reject(&[movk(13, 1, 0x40), movz_hw(13, 0, 0x5a0)]), Some(VerifyRule::LinkSite));
+    // Set twice: a second movz, a movk of a halfword already set, either order.
+    assert_eq!(
+        reject(&[movz_hw(13, 1, 0x40), movk(13, 0, 0x5a0), movz_hw(13, 1, 0x40), movk(13, 0, 0x5a0)]),
+        Some(VerifyRule::LinkSite)
+    );
+    assert_eq!(
+        reject(&[movz_hw(13, 0, 0x5a0), movk(13, 0, 0x5a0), movk(13, 1, 0x40)]),
+        Some(VerifyRule::LinkSite)
+    );
+    // x13 written another way, before or after the move: a copy, arithmetic, a fill,
+    // a 32-bit movz, a load.
+    for insn in [
+        mov_x(13, 30),
+        add(13, 13, 0),
+        fill(13, 56),
+        A64Insn::MovzMovz32Movewide { hw: 0, imm16: uimm(0x5a0, 16), rd: A64Reg::w(13) },
+    ] {
+        let mut before = alloc::vec![insn];
+        before.extend_from_slice(&exact);
+        let mut after = exact.to_vec();
+        after.push(insn);
+        assert_eq!(reject(&before), Some(VerifyRule::LinkSite), "{insn:?} before");
+        assert_eq!(reject(&after), Some(VerifyRule::LinkSite), "{insn:?} after");
+    }
+    // Writes of other registers in the run are fine, x13 only read is too.
+    let mut busy = alloc::vec![fill(14, 32), mov_x(15, 13)];
+    busy.extend_from_slice(&exact);
+    busy.push(movz(9, 5));
+    assert_eq!(reject(&busy), None);
+}
+
+#[test]
+fn a_link_slot_is_listed_once_and_is_no_join_point() {
+    let target = 0x40_05a0_u64;
+    let (body, slot) = bl_site(target);
+    let mut twice = Frag::new(&body).link(slot, target);
+    twice.links.push((at(slot), target));
+    assert_eq!(twice.rule(), Some(VerifyRule::LinkSite));
+    // Twice with two targets, one of them the template's.
+    let mut twice = Frag::new(&body).link(slot, target);
+    twice.links.push((at(slot), 0x1000));
+    assert_eq!(twice.rule(), Some(VerifyRule::LinkSite));
+    // A join point on the slot: an entry, a branch to it.
+    assert_eq!(
+        Frag::new(&body).entry(slot).link(slot, target).rule(),
+        Some(VerifyRule::LinkSite)
+    );
+    let mut gap = mov_imm64(13, target);
+    gap.push(NOP);
+    let slot = 1 + CHECK + gap.len() - 1;
+    let mut with_branch = alloc::vec![b(0, at(slot) as i64)];
+    with_branch.extend(dispatch_site_from(1, &gap));
+    assert_eq!(
+        Frag::new(&with_branch).link(slot, target).rule(),
+        Some(VerifyRule::LinkSite)
+    );
+    // Not listed, the same branch is the generic rule-6 join point.
+    assert_eq!(Frag::new(&with_branch).rule(), Some(VerifyRule::MissingBudgetCheck));
 }

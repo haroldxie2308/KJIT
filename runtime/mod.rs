@@ -9,12 +9,14 @@
 //! - `stats`: counters behind `/sys/kernel/debug/kjit/stats`.
 //! - `ibtc`: dispatch-miss classification and the per-slot conflict
 //!   diagnostics behind `/sys/kernel/debug/kjit/ibtc_slots`.
+//! - `link`: the C glue's access to the shared link-slot encoder (A16).
 //! - `ffi`: the C glue (`kjit_glue.c`): hook registration, code cache,
 //!   mmu_notifier, fragment memory, trampoline, debugfs.
 
 mod exec;
 mod ffi;
 mod ibtc;
+mod link;
 mod stats;
 mod translate;
 

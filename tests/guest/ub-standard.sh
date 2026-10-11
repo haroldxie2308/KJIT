@@ -27,7 +27,9 @@
 # Server CPU is the user + system ticks of the server process (all its threads, from
 # /proc/PID/stat) over one run, as ub-redis-cpu.sh: CONFIG_HZ tick sampling, use many
 # requests. The counters are the KJIT debugfs counter deltas of the run (the load
-# generator runs under nojit, so they are the server's). Exits non-zero when a run
+# generator runs under nojit, so they are the server's); with direct BL links (A16) also
+# link_made, link_restored, link_out_of_range, link_class_refused (deltas) and the gauges
+# link_sites_linked and link_sites_pending after the run. Exits non-zero when a run
 # reports no throughput, when a KJIT-on run shows no fragment entry, when a KJIT-off run
 # shows one, or when the runtime reports an invalid exit or a verifier rejection.
 set -eu
@@ -64,6 +66,7 @@ done
 counters="hook_calls syscalls_in_kernel fragment_entries exit_svc exit_bl exit_blr exit_br exit_ret
 exit_mem exit_unsupported exit_budget run_declined svc_declined fpsimd_entries translate_ok
 invalidated_fragments"
+link_counters="link_made link_restored link_out_of_range link_class_refused"
 
 orig_budget=$(cat "$K/chain_budget")
 trap 'echo "$orig_budget" > "$K/chain_budget"; set_mode 0' EXIT
@@ -117,6 +120,16 @@ measure() {
     line="$line wall_cs=$((t1 - t0)) utime_ticks=$((u1 - u0)) stime_ticks=$((s1 - s0)) clk_tck=$clk"
     for c in $counters; do
         line="$line $c=$(( $(stat_of "$work/after.stats" "$c") - $(stat_of "$work/before.stats" "$c") ))"
+    done
+    # A16 counters (a module without direct BL links has none) and the number of
+    # link slots linked / pending after the run (gauges, not deltas).
+    for c in $link_counters; do
+        [ -n "$(stat_of "$work/after.stats" "$c")" ] || continue
+        line="$line $c=$(( $(stat_of "$work/after.stats" "$c") - $(stat_of "$work/before.stats" "$c") ))"
+    done
+    for c in link_sites_linked link_sites_pending; do
+        [ -n "$(stat_of "$work/after.stats" "$c")" ] || continue
+        line="$line $c=$(stat_of "$work/after.stats" "$c")"
     done
     echo "$line"
     for c in exit_invalid translate_verify_rejected unsupported_bad_word; do

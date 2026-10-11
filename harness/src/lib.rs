@@ -1062,6 +1062,8 @@ pub struct FragmentTables {
     /// `entry_offset` and every `vlabels` offset: any of them can be the runtime's
     /// entry address (`offset_for_pc` after a runtime exit).
     pub entry_offsets: Vec<usize>,
+    /// A16 link slots: `ExecutionFragment::link_sites`.
+    pub link_sites: Vec<(usize, u64)>,
 }
 
 impl FragmentTables {
@@ -1080,6 +1082,7 @@ impl FragmentTables {
         Self {
             fault_sites,
             entry_offsets,
+            link_sites: fragment.link_sites.iter().copied().collect(),
         }
     }
 
@@ -1088,6 +1091,7 @@ impl FragmentTables {
             code,
             fault_sites: &self.fault_sites,
             entry_offsets: &self.entry_offsets,
+            link_sites: &self.link_sites,
         }
     }
 }
