@@ -1812,6 +1812,51 @@ consumers and add no model logic. Code: `harness/src/session/`, CLI
   `StepLimit`. Recording memory is O(steps): sessions are fixture-scale, not
   redis-scale.
 
+### TUI: debug and observe modes
+
+`make tui ASM=... ENTRY_SYMBOL=... [SESSION_ARGS=...]` records one session
+(above) and opens it in ratatui. The TUI only reads `&Session`: it adds no
+model logic, and anything it derives (rates, counts per window) is computed
+from events and steps.
+
+- Shell (`harness/src/tui/mod.rs`, bin `kjit-tui`): terminal setup and
+  restore (also on panic), a header (fixture, outcome, ticks, translations),
+  mode tabs, a help overlay (`?`), quit (`q`).
+- One shared cursor: the current tick `t` lives in the shell, so switching
+  modes (`Tab`, `1`, `2`) keeps the moment in view.
+- Each mode implements
+  `trait Mode { fn name(&self) -> &'static str; fn keys(&self) -> &[(&str, &str)];
+  fn on_key(&mut self, key: KeyEvent, cx: &mut Cx) -> bool; fn draw(&mut self,
+  frame: &mut Frame, area: Rect, cx: &Cx); }` with
+  `Cx { session: &Session, t: u64 }`. `on_key` returns whether it used the key;
+  the shell handles the rest.
+- Debug mode (`tui/debug.rs`) is instruction-level: where the program is at
+  `t` and why.
+  - Code at `t`: in a fragment, the translated words around the offset, each
+    with its ori_pc, kind and original instruction. In user code, the original
+    text.
+  - The lineage of the selected word through the passes.
+  - Registers at `t`, with this tick's writes marked, and this tick's memory
+    writes.
+  - The events near `t`.
+  - Navigation: step ±1/±N; next/previous event of a chosen kind; go to a
+    tick; break on an ori_pc; jump to the divergence. A translation browser
+    shows one translation's passes side by side. A divergence view shows
+    reference vs KJIT.
+- Observe mode (`tui/observe.rs`) is system-level: what the JIT is doing over
+  time.
+  - A timeline over ticks: user vs fragment time, runtime round trips,
+    syscalls, translations, each per window.
+  - The cache at `t`: fragments, table occupancy, and the link and transfer
+    graph between fragments with counts by `via`.
+  - The profiler: pcs, hit counts against `hot_threshold`.
+  - A scrolling event log.
+  - Playback: play/pause, speed, scrub. Summary figures up to `t`: share of
+    ticks in fragments, runtime entries per syscall, transfers by `via`.
+- Tests: each mode renders every tick kind of the session fixtures on a
+  `TestBackend` without panicking, and the shared cursor survives a mode
+  switch. No snapshot tests of the screen.
+
 ## 8. Kernel runtime (K2)
 
 Facts checked against `dep/linux` 7.1-rc1: `arch/arm64/kernel/syscall.c`
