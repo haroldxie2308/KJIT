@@ -1,0 +1,5 @@
+label=std-a-k1-b1 kpti=1 profile=kjit-guest
+append=console=ttyAMA0 panic=-1 nokaslr kpti=1 rodata=off
+waited_s=0 load1_before=4.60
+cmd=sh /opt/kjit-tests/ub-bench.sh sys 7; sh /opt/kjit-tests/ub-standard.sh /tmp/ubs pinned 1000000 1 1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384; sh /opt/kjit-tests/ub-standard.sh /tmp/ubu unpinned 1000000 1 4
+load1_after=5.77 guest_run_status=0
