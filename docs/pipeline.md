@@ -270,15 +270,17 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
     `STTRB.STTRB_32_ldst_unpriv`, `STTRH.STTRH_32_ldst_unpriv` (13 forms;
     `A64Insn::is_unprivileged_access`, pinned by a test against the generated
     `LDTR*`/`STTR*` mnemonics). These are the only instructions that touch user
-    memory, except the PAN-window accesses (LSE atomics, SIMD&FP loads/stores:
-    see their sections). EL0 permissions apply in hardware. Reg-virt emits them
+    memory, except the window accesses (LSE atomics, SIMD&FP loads/stores:
+    privileged accesses behind a range check, run with PAN clear; see
+    "Run-scoped PAN clear (A15)"). EL0 permissions apply in hardware. Reg-virt emits them
     with an unscaled `simm9` offset only, and never admits one from user code.
   - runtime access = any other load/store. Allowed only on the runtime frame
     (kernel stack, `sp`-based), the `pt_regs` / extra-params blocks and the
     dispatch table and records.
-- Kernel assumptions this relies on (pinned in K1): hardware PAN on,
-  `PSTATE.UAO == 0` while a fragment runs (otherwise `LDTR` at EL1 is a
-  privileged access), `ARM64_SW_TTBR0_PAN` off.
+- Kernel assumptions this relies on (pinned in K1): hardware PAN on (cleared
+  only for the duration of a fragment run, A15), `PSTATE.UAO == 0` while a
+  fragment runs (otherwise `LDTR` at EL1 is a privileged access, and with PAN
+  clear it would reach any address), `ARM64_SW_TTBR0_PAN` off.
 - User code containing `LDTR`/`STTR` is rejected by `RewritePlan::build` as
   `UnprivilegedUserAccess` (intrinsic -> `Unsupported` exit): at EL0 they are
   plain loads/stores, but a fragment runs them at EL1 as its user-access
@@ -768,9 +770,11 @@ stricter check `and xS, xN, #(size - 1); cbnz`); FEAT_LRCPC for LDAPR
 
 Why: there is no unprivileged LSE form without FEAT_LSUI, which no current
 hardware has. Linux's own futex code performs privileged accesses to user
-memory by clearing PAN after `access_ok`; a fragment does the same inside a
-window of a shape the independent verifier can check word by word. The window
-is also what SIMD&FP loads/stores use (see FP/SIMD).
+memory with PAN clear after `access_ok`; a fragment does the same: a range
+check the verifier can check word by word, then the privileged access, in a run
+that executes with PAN clear (A15). SIMD&FP loads/stores use the same shape
+(see FP/SIMD). "Window access" names such a range-checked privileged access
+(it was a PAN window before A15).
 
 - In: LSE single-register atomics: `LDADD/LDCLR/LDEOR/LDSET/LDSMAX/LDSMIN/
   LDUMAX/LDUMIN` (all size and A/L/AL variants), `SWP*`, `CAS*` (not `CASP`),
@@ -795,25 +799,22 @@ is also what SIMD&FP loads/stores use (see FP/SIMD).
   | SP base only | `and sB, x17, #15; cbnz sB, <Mem stub>` | AlignCheck |
   | base not stack-backed | `mov sA, <mapped Rn>` (x17 for SP, x16 for x29) | RegVirtHelper |
   | size > 1, base not SP | `and sB, sA, #15; add sB, sB, #(size-1); and sB, sB, #16; cbnz sB, <Mem stub>` | AlignCheck |
-  | range check | `ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>` | RangeCheck |
-  | window | `msr pan, #0; <atomic, Rs/Rt mapped, Rn = sA>; msr pan, #1` | PanToggle, WindowAccess, PanToggle |
+  | range check | `ubfx sB, sA, #48, #8; cbnz sB, <Mem stub>` | RangeCheck |
+  | access | `<atomic, Rs/Rt mapped, Rn = sA>` | WindowAccess |
   | spills | `str xS, [sp, #slot]` of the written stack-backed register | RegVirtHelper |
 
   - `sA` is the stack-backed base's own fill scratch, else a fresh scratch; `sB`
     is always a fresh scratch. Worst case 4, so admission never runs out.
   - Commit-after-last-access: before the atomic only scratch is written; the
     atomic writes its destination (Rt, or CAS's Rs) only when it retires; spills
-    follow `msr pan, #1`.
+    follow it.
   - The range check accepts any top byte (TBI0 ignores bits [63:56] for TTBR0
     accesses at EL1 too) and requires bits [55:48] == 0: bit 55 selects TTBR0
     vs TTBR1, and user VA is 48 bits (`USER_VA_BITS = 48`,
     `PAN_WINDOW_RANGE_TOP_BIT = 55`; K1 pins `ARM64_VA_BITS_48`; the module
-    checks `vabits_actual == 48` at init). Rejected addresses exit through the
-    same PAN stub (harmless: `msr pan, #1` with PAN already set).
-  - The PAN stub is the instruction's ordinary `Mem` exit group preceded by
-    `msr pan, #1` (`RephrasedInsnKind::PanRestore`). The atomic's fault-site
-    entry points at it: the extable fixup resumes with the faulting context's
-    PSTATE (PAN = 0), so the stub must restore PAN before anything else.
+    checks `vabits_actual == 48` at init). Rejected addresses leave through the
+    instruction's ordinary `Mem` stub, as do its faults (its fault-site entry
+    names that stub); userspace re-executes the instruction natively.
   - Alignment: SP-based atomics keep the SP alignment check. LSE atomics use
     `AArch64_UnalignedAccessFaults`'s `exclusive || atomicop` rule: with
     FEAT_LSE2 they fault iff not inside one `MemSingleGranule()` block,
@@ -821,19 +822,11 @@ is also what SIMD&FP loads/stores use (see FP/SIMD).
     (the minimum): an access it lets through never faults natively; one it
     stops leaves for userspace, which re-executes it natively, so on hardware
     with a larger granule it is conservative, never wrong.
-  - Two stubs per atomic that has an SP or alignment check: the verifier's rule
-    allows a PAN stub only as the target of the window `cbnz` and of the
-    atomic's fault site, so the alignment/SP checks (and they only) leave
-    through a plain `Mem` stub of the same PC. Rephrase emits the plain one only
-    when reg-virt will branch to it (`atomic_needs_check_stub`: size > 1 or an
-    SP base); a byte atomic on a register base has only its PAN stub.
-  - Layout: PAN stubs have their own label map (one per PC); a `RangeCheck`
-    `cbnz` and a `WindowAccess` fault site resolve to the PAN stub, `AlignCheck`
-    to the plain stub. `UntaggedPanWindow` if a kind and the instruction
-    disagree; `MissingPanStub`.
-  - Exceptions inside the window: Linux runs with SCTLR_EL1.SPAN = 0, so taking
-    an exception to EL1 sets PAN, and ERET restores the window's PAN = 0.
-    Preemption saves/restores PSTATE the same way.
+  - One stub per instruction: the range check, the alignment/SP checks and the
+    fault site all name the instruction's `Mem` stub.
+  - Layout: a `RangeCheck` `cbnz`, an `AlignCheck` and a `WindowAccess` fault
+    site resolve to the `Mem` stub. `UntaggedPanWindow` if a kind and the
+    instruction disagree.
 - Kernel requirements (`kjit_check_cpu`, module init refuses to load with
   `-ENODEV` and a `pr_err` naming the cause): FEAT_LSE (sanitised
   `ID_AA64ISAR0_EL1.Atomic >= IMP`), `vabits_actual == 48`, no MTE in use
@@ -843,13 +836,60 @@ is also what SIMD&FP loads/stores use (see FP/SIMD).
   fault site is an ordinary extable entry (`EX_TYPE_UACCESS_ERR_ZERO`), so
   `insn_may_access_user` accepts the atomic's EL1 permission faults, demand
   paging and CoW go through `handle_mm_fault` like `copy_from_user`, and an
-  unresolvable fault resumes at the PAN stub. Known exposure, same as the
-  kernel's own futex ops without EPAN: a privileged atomic can read an
+  unresolvable fault resumes at the `Mem` stub. Known exposure, same as the
+  kernel's own futex ops without EPAN: a privileged window access can read an
   execute-only user page that an EL0 access could not (recorded, not
   mitigated; section 11).
 - Verifier: rule 8 (section 6).
 - Harness: the interpreter models PSTATE.PAN for fragment runs; see section 7,
   Harness memory model (A4).
+
+### Run-scoped PAN clear (A15)
+
+- Every fragment run executes with `PSTATE.PAN = 0`. The trampoline
+  `kjit_call_fragment` (asm; the plain call and the FP/SIMD bracket both go
+  through it) executes `msr pan, #0` immediately before its `blr` into the
+  fragment and `msr pan, #1` immediately after it returns. Nothing else in the
+  module, and no fragment word, writes PAN: a fragment body contains no `msr`
+  of any kind (rules 5 and 8). The harness clears PAN at every fragment entry
+  and sets it at every return.
+- Why (decided 2026-10-11): a per-access window (`msr pan, #0; access;
+  msr pan, #1`) cost about 7.6-8 ns. Each `msr pan` is about 2 ns, and the
+  access cannot overlap the PSTATE writes. glibc's SIMD loops ran 23-57x
+  native; a run-scoped clear brings them to about 1.4x
+  ([2026-10-11 01:47](journal/2026-10-11.md)). In redis under the UB protocol
+  the windows were 87-94% of the size-dependent penalty, 8.6 us of server CPU
+  per request at 16 KiB ([19:31](journal/2026-10-11.md)). The alternative
+  that keeps PAN (LDTR/STTR GPR split) measured 2.3x native, with weaker fault
+  equivalence for multi-register stores and no 3-4 register `ld1`; it was
+  rejected.
+- Why this is safe:
+  - With PAN clear, an EL1 load/store to a user address succeeds instead of
+    faulting. In a fragment the only EL1 accesses are rule 3's runtime
+    accesses and the window accesses:
+    - runtime accesses: SP-based frame slots, the proven `pt_regs` pointer,
+      and the byte-exact dispatch template's table and record loads. None can
+      carry a user-controlled address.
+    - window accesses: preceded by the range check, so a user-controlled
+      address reaches only the TTBR0 half, and EL1 permissions still apply
+      (read-only stays read-only).
+  - `LDTR`/`STTR` stay unprivileged whatever PAN is (UAO = 0).
+  - So PAN no longer stops any access the verifier admits. What is given up is
+    the backstop against a verifier hole that let a plain EL1 access with a
+    user-controlled address through (section 11).
+- Exceptions and scheduling: Linux runs with `SCTLR_EL1.SPAN = 0` (checked at
+  init), so every exception to EL1 sets PAN and its ERET restores the
+  fragment's PAN = 0.
+  - Interrupts, page faults (handled in place in a non-FP/SIMD run) and
+    preemption therefore run kernel code with PAN set.
+  - A context switch happens inside such an exception, or in the hook's C code
+    after the trampoline has set PAN again, so no other task and no kernel path
+    outside the fragment ever runs with PAN clear.
+  - An extable fixup resumes the fragment at a `Mem` stub with the faulting
+    context's PSTATE (PAN = 0). The stub reaches the epilogue, and the
+    trampoline sets PAN.
+- The exposure on execute-only user pages (section 11) is unchanged: window
+  accesses had it before A15.
 
 ### FP/SIMD in fragments (A9)
 
@@ -883,7 +923,7 @@ Translator:
   registers, ORR/BIC (vector, immediate), FMOV (vector, immediate), saturating
   arithmetic.
 - FP/SIMD memory forms have no unprivileged variants, so each is lowered as ONE
-  privileged access inside an A8 PAN window (`WindowInsn::{Atomic, FpSimd}` ->
+  range-checked privileged access, like an A8 atomic (`WindowInsn::{Atomic, FpSimd}` ->
   `plan_window` -> `emit_window`; `A64Insn::fpsimd_mem()` gives a SIMD&FP
   load/store's base, pre-access offset, writeback and base-only access):
 
@@ -894,12 +934,12 @@ Translator:
   | offset 0, base stack-backed | sA = the base's fill scratch | |
   | offset 0, otherwise | `mov sA, <mapped base>` | RegVirtHelper |
   | offset != 0 | `add/sub sA, <mapped base>, #offset` (1-2 words) | RegVirtHelper |
-  | range check | `ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>` | RangeCheck |
-  | window | `msr pan, #0; <base-only access on sA>; msr pan, #1` | PanToggle, WindowAccess, PanToggle |
+  | range check | `ubfx sB, sA, #48, #8; cbnz sB, <Mem stub>` | RangeCheck |
+  | access | `<base-only access on sA>` | WindowAccess |
   | writeback | `add/sub <base>, <base>, #amount` or `add <base>, <base>, <Xm>` | Original |
   | spills | written stack-backed base | RegVirtHelper |
 
-  - The window holds the user's access in its base-only encoding (LDR/STR
+  - The access is the user's instruction in its base-only encoding (LDR/STR
     unsigned offset `#0`, LDP/STP signed offset `#0`, LD1/ST1 without
     post-index) on sA = the access's start address. Why: the range check then
     covers the first byte, and an access is at most 64 bytes, so it cannot reach
@@ -909,15 +949,14 @@ Translator:
     its fault behaviour (including which destination registers of a
     multi-register load are written before an abort) is the architecture's,
     identical to native.
-  - Only SP-based accesses have a plain `Mem` stub
-    (`window_needs_check_stub`): SIMD&FP accesses to Normal memory never
-    alignment-fault at EL0 (SCTLR_EL1.A = 0), so there is no block check.
+  - SIMD&FP accesses to Normal memory never alignment-fault at EL0
+    (SCTLR_EL1.A = 0), so only SP-based accesses have an alignment check.
   - Scratch worst case stays 4: stack-backed base and LD1/ST1 index, sA, sB.
   - Register-only forms: only their `Reg*` operands are mapped; V registers
     never.
   - Layout: `WindowAccess` <=> `is_pan_window_access()` (LSE atomic or base-only
     SIMD&FP load/store); any other SIMD&FP load/store in a fragment is
-    `UntaggedPanWindow`. Fault sites of window accesses resolve to the PAN stub.
+    `UntaggedPanWindow`. Fault sites of window accesses resolve to the `Mem` stub.
 - Decode: `is_decode_undefined` carries the per-form value rules (DUP/INS/UMOV
   `imm5 == x0000`; DUP (vector, general) `imm5 == x1000 && Q == 0`; UMOV
   (32-bit) `imm5 == x1000`; `size:Q == 110` for every vector CM*, ADD, SUB,
@@ -983,8 +1022,8 @@ Kernel (A9b, bracket revised by A13):
   fixup path -> `Mem` exit -> userspace re-executes natively and handles the
   fault; the next run finds the page present. Correct, occasionally slower.
   `do_page_fault()` sees `faulthandler_disabled()` -> `no_context` ->
-  `fixup_exception()` -> the fragment's extable (patch 0002) -> the access's PAN
-  or Mem stub; nothing on this path sleeps and `handle_mm_fault` is never
+  `fixup_exception()` -> the fragment's extable (patch 0002) -> the access's
+  Mem stub; nothing on this path sleeps and `handle_mm_fault` is never
   reached. Why still disabled: a fault path that sleeps or uses kernel-mode NEON
   (e.g. a NEON-accelerated filesystem read) would nest a second task-level
   `kernel_neon_begin`, which the kernel does not allow.
@@ -1220,7 +1259,7 @@ Reject with `VerifyError { offset, rule }`.
        point in between.
    - Everything else is rejected: exclusives, PRFUM/RPRFM, DC/IC/AT are outside
      the decoded subset (rule 1); LSE atomics and SIMD&FP loads/stores are valid
-     only as a PAN window's access (rule 8); pair or pre/post forms not matching
+     only as a range-checked window access (rule 8); pair or pre/post forms not matching
      the above fail the base/range/writeback checks.
 4. Control flow.
    - Direct branches (B, B.cond, CBZ/CBNZ, TBZ/TBNZ) target the epilogue's first
@@ -1253,7 +1292,7 @@ Reject with `VerifyError { offset, rule }`.
    `DSB`/`ISB` with any CRm (`DSB` without nXS; `Form::Barrier`): allowed
    anywhere, exit groups included. SVC and ADR/ADRP (a kernel address into a user
    register) are rejected; BTI decodes but is `UserOnlyForm` (rule 3); MSR other
-   than the PAN window's (rule 8), HVC, SMC, BRK, HLT, ERET, SB, CLREX, DSB nXS,
+   (any `msr`, PAN included: rule 8), HVC, SMC, BRK, HLT, ERET, SB, CLREX, DSB nXS,
    WFE/WFI, PAC and every other hint, and cache/TLB maintenance do not decode.
    A barrier cannot confuse rules 6/7: it is not a fill (so one between a budget
    `cbz` and its back-edge is rejected) and not a branch, user access or runtime
@@ -1278,31 +1317,19 @@ Reject with `VerifyError { offset, rule }`.
 7. Exit groups: every fault stub, budget stub and template miss target starts an
    exit group: the word before it is an unconditional `B` or a template's `br`,
    and the straight-line run from it contains no user access and ends in
-   `b <epilogue>`. The cold region starts at the lowest stub offset. A PAN stub's
-   first word is `msr pan, #1`, accepted as the first word only.
-8. PAN windows (A8, generalized by A9): `msr pan, #0` appears only as the exact
-   window. `rules::classify` yields `Form::WindowAccess { rn, fpsimd }` for the
-   160 LSE atomics and the 24 base-only offset-0 SIMD&FP load/store encodings
-   (the one list of window accesses), `PanClear` (`msr pan, #0`), `PanSet`
-   (`#1`), and `MsrOther` (any other CRm: rejected, `Msr`). Pre-pass
-   `find_pan_windows`: every `PanClear` at i must have `ubfx sB, sA, #48, #8`
-   (64-bit UBFM, immr = `USER_VA_BITS`, imms = `PAN_WINDOW_RANGE_TOP_BIT`,
-   sA/sB < 31) at i-2, `cbnz xsB, S` (64-bit) at i-1 with S > i+2 and S's word
-   `PanSet`, a `WindowAccess` with `rn == sA` at i+1 and `PanSet` at i+2
-   (`PanWindow` otherwise). It records S as a PAN stub.
-   - Fault table: a `WindowAccess` site must name its window's S
-     (`PanStubTarget`; outside a window `AtomicOutsideWindow`, a name that
-     predates A9a); an LDTR/STTR site must not name a PAN stub. Every stub is
-     still an exit group (rule 7).
-   - Branches: a target that is a PAN stub is legal only from a window `cbnz`
-     aimed at it (`PanStubTarget`). Other branches into it are harmless but are
-     rejected to keep the rule simple.
-   - Join points: none on the window's `cbnz`, either MSR or the access (the
-     `ubfx` may be one: it recomputes the checked value).
-   - Main pass: a `WindowAccess` outside a window -> `AtomicOutsideWindow` (and
-     it consumes its fault-site entry like a user access); `PanSet` neither a
-     window end nor a PAN stub -> `PanSetOutsideWindow`. `msr pan, #1` appears
-     only as the window end or as the first word of a PAN stub.
+   `b <epilogue>`. The cold region starts at the lowest stub offset.
+8. Window accesses (A8, A9, A15): `rules::classify` yields
+   `Form::WindowAccess { rn, fpsimd }` for the 160 LSE atomics and the 24
+   base-only offset-0 SIMD&FP load/store encodings (the one list of window
+   accesses). Any `msr` in the body, PAN included, is rejected (`Msr`). Every
+   `WindowAccess` at i must have `ubfx sB, sA, #48, #8` (64-bit UBFM, immr =
+   `USER_VA_BITS`, imms = `PAN_WINDOW_RANGE_TOP_BIT`, sA/sB < 31) at i-2 and
+   `cbnz xsB, S` (64-bit) at i-1, with `rn == sA` and S a forward exit-group
+   start (`WindowRangeCheck` otherwise).
+   - Fault table: a `WindowAccess` has a fault-site entry like a user access,
+     naming an exit-group start.
+   - Join points: none on the `cbnz` or the access (the `ubfx` may be one: it
+     recomputes the checked value).
    - The 75 register-only SIMD&FP forms are `Form::Simd`: allowed anywhere, exit
      groups included.
 9. Confidentiality: no kernel value reaches user-visible state; see
@@ -1350,7 +1377,7 @@ region; rule 3's pt_regs fact is its refinement.
 - Checks (`VerifyRule`):
   - `KernelValueRead`: an instruction reads SP or a kernel-valued GPR as data
     (ALU source, store data, branch operand, `MOVK`/`BFM` destination, exit
-    payload source, `LDTR*`/`STTR*` or window-access data, the PAN range check),
+    payload source, `LDTR*`/`STTR*` or window-access data, the window range check),
     or uses a kernel-valued GPR as the base of a user access / window access. A
     kernel value may be a base only of a runtime access: SP for a frame access,
     a proven pt_regs pointer for a `pt_regs` access (rule 3). So a kernel value
@@ -1447,16 +1474,16 @@ no duplicate translation logic.
   to every access address (original code and a fragment's LDTR/STTR alike: both
   translate through the EL0 regime); a base writeback keeps the tag. Fault
   addresses are reported the same way.
-- PSTATE.PAN in fragment runs: `URuntime.pan` is set at every entry
-  (`AccessContext::Fragment.pan`); `msr pan` writes it. A window access with
-  PAN set is a hard error (PAN violation). With PAN clear it is
-  `Privilege::Window`: counted with the user accesses (fault injection) and
-  checked against the user page permissions, and a hard error on runtime memory.
-  The first access of a window access must start below 2^48 (a hard error
-  otherwise: the range check exists to prevent it); a later access past 2^48 is
-  an ordinary fault. Every return to the runtime requires PAN set (hard error
-  otherwise). Original-code runs execute LSE atomics and SIMD&FP accesses as EL0
-  user accesses.
+- PSTATE.PAN in fragment runs (A15): clear for the whole run, as the kernel
+  trampoline does; a fragment `msr` is a hard error (the verifier rejects it).
+  A window access is `Privilege::Window`: counted with the user accesses (fault
+  injection) and checked against the user page permissions, and a hard error on
+  runtime memory. The first access of a window access must start below 2^48 (a
+  hard error otherwise: the range check exists to prevent it); a later access
+  past 2^48 is an ordinary fault. A runtime access outside the runtime-owned
+  ranges stays a hard error (PAN violation), PAN clear or not: rule 3 is what
+  prevents it. Original-code runs execute LSE atomics and SIMD&FP accesses as
+  EL0 user accesses.
 - `execute_atomic`: one read-modify-write access that needs write permission (a
   failing CAS too: its access descriptor is read + write), the EL0 SP check
   (original code), the 16-byte block alignment rule, then permissions;
@@ -1660,7 +1687,7 @@ Facts checked against `dep/linux` 7.1-rc1: `arch/arm64/kernel/syscall.c`
     CRC32*/CRC32C* are UNDEFINED natively and would be an undefined instruction
     at EL1 in a fragment.
   - FEAT_LSE (sanitised `ID_AA64ISAR0_EL1.Atomic >= IMP`); `vabits_actual == 48`;
-    `!system_supports_mte()`; `SCTLR_EL1.SPAN == 0` (section 4, LSE atomics through a PAN window (A8)).
+    `!system_supports_mte()`; `SCTLR_EL1.SPAN == 0` (section 4, LSE atomics through a PAN window (A8), Run-scoped PAN clear (A15)).
   - Counter access (section 4, Counter reads): on every online CPU
     `CNTKCTL_EL1.EL0VCTEN` set and no out-of-line CNTVCT erratum handler, as a
     `CPUHP_AP_ONLINE_DYN` callback (a CPU that fails it does not come online
@@ -2257,18 +2284,11 @@ the reasoning, the numbers and the full list of what was not verified there.
   part, the stall at dispatch targets, was L1I set conflicts from page-aligned
   images ([03:03](journal/2026-10-11.md)), not the dispatch template, whose
   alternatives (inline caches, direct calls, return compares, shorter chains)
-  measured at most 0.07 us per request. Run-scoped PAN clear is not adopted. It
-  made the windows' SIMD loops near native in microbenchmarks
-  ([01:47](journal/2026-10-11.md)), but in redis on A14 it saved 0.00-0.08 us per
-  request at `-d 3`, inside the noise ([12:42](journal/2026-10-11.md)). Across
-  value sizes ([19:31](journal/2026-10-11.md)) it removes 94% / 87% (SET / GET)
-  of the size-dependent penalty: 8.6 us per request at 16 KiB (78-81% of the
-  on-off gap), about 8 ns per SIMD q-pair window, nothing measurable below
-  1 KiB. Decision pending: run-scoped PAN clear (security trade-off in the
-  01:47 entry) or the LDTR/STTR GPR split (2.3x native on glibc loops, keeps
-  PAN). Server CPU per request (server-bound, UB protocol) is
-  the metric; throughput in the client-bound `a11-baseline` setup hides the
-  cost.
+  measured at most 0.07 us per request. The next items were the PAN windows, decided as A15
+  (run-scoped PAN clear, section 4; [19:31](journal/2026-10-11.md)), and the
+  small-value remainder, which is still open. Server CPU per request
+  (server-bound, UB protocol) is the metric; throughput in the client-bound
+  `a11-baseline` setup hides the cost.
 - **V2 chaining.** The fuzzer counts `chained` as a non-verdict; modelling
   chaining in the original runner of the single-fragment fuzzer is deferred
   (cached runs follow branches). [2026-09-27 03:40](journal/2026-09-27.md).
@@ -2309,10 +2329,16 @@ Kernel runtime:
 - The verifier does not cover NZCV at entry (the trampoline's flags: not an
   address) and assumes the kernel's fault fixup changes no GPR before the stub.
   [2026-09-27 13:01](journal/2026-09-27.md).
-- A PAN-window access can read an execute-only user page that an EL0 access could
+- A window access can read an execute-only user page that an EL0 access could
   not (the kernel's own futex ops have the same exposure without EPAN):
   recorded, not mitigated. `kjit.ko` refuses to load when MTE is in use.
   [2026-09-27 12:07](journal/2026-09-27.md).
+- Run-scoped PAN clear (A15) removes PAN as a backstop for the whole run: a
+  plain EL1 load/store with a user-controlled address that slipped past
+  verifier rule 3 would reach user memory instead of faulting. No kernel
+  memory is reachable either way (rule 3 and the window range check are what
+  protect it). Accepted for the 8.6 us/request (16 KiB redis) the windows
+  cost.
 - SVE/SME systems: `uses_fpsimd` fragments are refused (`-ENODEV`, negative
   cached); that path is compiled but has never run. `PREEMPT_RT` is a build error.
   [2026-09-27 16:16](journal/2026-09-27.md).
@@ -2344,8 +2370,10 @@ Recorded in full in the entries named; none is known to be wrong.
 - Ordering of the `DMB ISH` mapping and single-copy atomicity of misaligned
   accesses under FEAT_LSE2: argued, no test observes a reordering.
   [2026-09-27 04:10](journal/2026-09-27.md).
-- A PAN window interrupted or preempted on real hardware (SPAN = 0 is checked at
-  init); a window atomic that faults in the kernel and is retried; multi-threaded
+- A fragment run with PAN clear (A15) interrupted or preempted on real hardware
+  (SPAN = 0 is checked at init; on M1/HVF 605 timer interrupts and 38
+  preemptions inside a PAN-clear kernel loop all saw PAN set in the handler,
+  [2026-10-11 01:47](journal/2026-10-11.md)); a window atomic that faults in the kernel and is retried; multi-threaded
   atomicity of window accesses. [2026-09-27 12:07](journal/2026-09-27.md).
 - Partial-fault behaviour of SIMD&FP accesses on hardware other than the M1; the
   softirq-NEON-versus-bracket case (argued from `fpsimd.c`); the worst-case
@@ -2390,7 +2418,7 @@ milestone:
 | A7c barriers, acquire/release | [2026-09-27 04:10](journal/2026-09-27.md) |
 | K3 auto mode | [2026-09-27 05:06](journal/2026-09-27.md) |
 | A7d BTI, carry, CRC32 | [2026-09-27 05:46](journal/2026-09-27.md) |
-| A8 LSE atomics, PAN window | [2026-09-27 09:58](journal/2026-09-27.md) contract; [12:07](journal/2026-09-27.md) implementation |
+| A8 LSE atomics, PAN window (A15: run-scoped PAN clear, [2026-10-11](journal/2026-10-11.md)) | [2026-09-27 09:58](journal/2026-09-27.md) contract; [12:07](journal/2026-09-27.md) implementation |
 | K4 redis campaign | [2026-09-27 10:20](journal/2026-09-27.md) campaign; [10:20](journal/2026-09-27.md) client-eviction race |
 | A9 FP/SIMD | [2026-09-27 10:22](journal/2026-09-27.md) contract; [14:35](journal/2026-09-27.md) A9a; [16:16](journal/2026-09-27.md) A9b |
 | A10 chain budget, counter reads | [2026-09-27 19:01](journal/2026-09-27.md); unload race [2026-09-28 00:09](journal/2026-09-28.md); `run_declined` [2026-09-28 00:16](journal/2026-09-28.md) |
