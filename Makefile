@@ -32,7 +32,7 @@ MODULE_MAKE = mkdir -p $(KJIT_MODULE_DIR) && $(KMAKE) M=$(CURDIR) MO=$(KJIT_MODU
 .PHONY: initramfs kernel-tree guest-kernel guest-kernel-debug guest-rootfs guest-run e0-bench guest-tests guest-tests-k3 redis-campaign
 .PHONY: default modules_install install uninstall dm test rust-analyzer prepare harness-sync harness-prepare module-build \
     rustavailable-check kernel-prepare kernel-build kernel-clean clean qemu-run qemu-run-bg qemu-reset pack \
-	harness-test harness-test-native fuzz harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan e1-trace kernel-golden help
+	harness-test harness-test-native fuzz harness-dump-cfg harness-tui tui harness-test-asm spec-test-encoding spec-gen coverage-scan e1-trace kernel-golden viz help
 
 default:
 	$(MODULE_MAKE)
@@ -205,6 +205,9 @@ spec-gen:
 	cargo run --manifest-path specgen/Cargo.toml -- --xml-dir "$(ARM64_ISA_XML_DIR)"
 	cp spec/arm64/generated/a64_subset.rs harness/src/shared/arm64/generated.rs
 
+viz:
+	python3 docs/viz/make.py
+
 help:
 	@printf '%-20s %s\n' \
 		'prepare' 'Prepare/build the kernel in the container dev environment' \
@@ -238,6 +241,7 @@ help:
 		'coverage-scan' 'Translate from every SVC site in ELF=path and report exits/unsupported forms' \
 		'e1-trace' 'Trace redis-server under load (QEMU plugin, Docker) and report syscall gaps to tmp/e1/' \
 		'kernel-golden' 'Regenerate the kernel module golden fragment from the harness' \
+		'viz' 'Regenerate the SVG figures of docs/viz from docs/data (python3 + matplotlib + pandas)' \
 		'qemu-run' "Boot the profile's kernel + golden initramfs in QEMU (foreground)" \
 		'qemu-run-bg' 'Boot the local kernel image in QEMU (background)' \
 		'qemu-reset' 'Reset the running QEMU guest through QMP' \

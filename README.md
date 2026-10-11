@@ -22,6 +22,8 @@ experiments and decisions are in [`docs/journal/`](docs/journal/).
 | `docs/` | `pipeline.md` (contracts), `journal/` (dated entries), `data/` (measurement data) |
 | `figs/` | draw.io sources and SVGs |
 
+Figures of the journal results (`make viz`): [`docs/viz/`](docs/viz/README.md).
+
 `shared/` is the source of truth; `harness/src/shared/` is a synced copy
 (`make harness-sync`). Generated A64 code is never edited by hand: change
 `spec/arm64/subset.toml` or `specgen/`, then `make spec-gen`.

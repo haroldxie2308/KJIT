@@ -39,6 +39,7 @@ Current non-goals:
   discussion results, newest last. Read the latest entries for the state of the
   work.
 - `docs/data/`: structured measurement data and raw logs of journal entries.
+- `docs/viz/`: figures of the journal results and the code that regenerates them.
 - `README.md`: short overview, architecture figure, build/run, repo layout.
 - `spec/arm64/subset.toml`: canonical supported Arm XML subset.
 - `specgen/`: Rust generator for instruction metadata/code derived from Arm XML.
