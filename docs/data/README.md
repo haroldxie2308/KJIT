@@ -74,6 +74,7 @@ directory).
 | 2026-10-11 16:21 Redis under UB's benchmark protocol (`std-a-k<kpti>-b<boot>` boots; `-sys.csv`: null syscall) | `2026-10-11/1621-ub-standard.csv` | logs |
 | 2026-10-11 19:31 PAN ablation across value sizes | `2026-10-11/1931-pan-sweep*.csv` | logs |
 | 2026-10-11 19:31 Redis CPU gap: 1.0 vs 1.5 us (`-wake.csv`: wake-cost micro-benchmark) | `2026-10-11/1931-cpu-gap*.csv` | logs |
+| 2026-10-11 22:37 Direct BL and RAS-predicted RET in redis | `2026-10-11/2237-dispatch-ablation*.csv` | logs |
 
 A new measurement entry adds the data file, the raw-log directory, a row in this table and the
 `Data:` line in the entry.
