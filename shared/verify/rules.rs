@@ -57,8 +57,9 @@ pub(super) enum Form {
     Exception,
     /// A privileged access to user memory: an LSE single-register atomic (LD<op>,
     /// SWP, CAS; A8) or, `fpsimd`, an A9a SIMD&FP load/store in its base-only
-    /// encoding (`[Xn]`, #0, no writeback). Allowed only as the single access of an
-    /// exact PAN window, based on the window's range-checked register `rn`.
+    /// encoding (`[Xn]`, #0, no writeback). Allowed only right after its range
+    /// check (rule 8), based on the range-checked register `rn`; the run executes
+    /// with PAN clear (A15).
     WindowAccess {
         rn: A64Reg,
         fpsimd: bool,
@@ -67,13 +68,9 @@ pub(super) enum Form {
     /// forms touches them) and the general registers its roles name. Allowed
     /// anywhere; a fragment containing one `uses_fpsimd`.
     Simd,
-    /// `msr pan, #0`: allowed only as the start of an exact PAN window.
-    PanClear,
-    /// `msr pan, #1`: allowed only as a window's end or a PAN stub's first word.
-    PanSet,
-    /// Any other `MSR (immediate)` encoding the generated form decodes (PSTATE.PAN
-    /// with CRm other than 0/1): never allowed.
-    MsrOther,
+    /// Any `MSR (immediate)` the generated subset decodes (PSTATE.PAN, whatever the
+    /// immediate): never allowed in a fragment (A15: only the trampoline writes PAN).
+    Msr,
 }
 
 pub(super) fn classify(insn: A64Insn) -> Form {
@@ -346,7 +343,7 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         | A64Insn::CashCasalhC32Comswap { rn, .. }
         | A64Insn::CashCaslhC32Comswap { rn, .. } => Form::WindowAccess { rn, fpsimd: false },
         // A9a SIMD&FP loads/stores in their base-only encoding (`[Xn]`, offset #0,
-        // no writeback): the SIMD&FP half of the one list of PAN-window accesses.
+        // no writeback): the SIMD&FP half of the one list of window accesses.
         A64Insn::LdrImmFpsimdLdrBLdstPos { mem, .. }
         | A64Insn::LdrImmFpsimdLdrHLdstPos { mem, .. }
         | A64Insn::LdrImmFpsimdLdrSLdstPos { mem, .. }
@@ -528,9 +525,7 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         | A64Insn::Rev64AdvsimdRev64AsimdmiscR { .. }
         | A64Insn::CntAdvsimdCntAsimdmiscR { .. }
         | A64Insn::TblAdvsimdTblAsimdtblL11 { .. } => Form::Simd,
-        A64Insn::MsrImmMsrSiPstate { crm: 0 } => Form::PanClear,
-        A64Insn::MsrImmMsrSiPstate { crm: 1 } => Form::PanSet,
-        A64Insn::MsrImmMsrSiPstate { .. } => Form::MsrOther,
+        A64Insn::MsrImmMsrSiPstate { .. } => Form::Msr,
 
         A64Insn::LdrImmGenLdr32LdstImmpost { mem, .. }
         | A64Insn::LdrImmGenLdr32LdstImmpre { mem, .. }
@@ -918,7 +913,7 @@ pub(super) fn budget_sequence(seq: &[A64Insn]) -> Option<i64> {
     }
 }
 
-/// The PAN window's range check (A8): `ubfx sB, sA, #USER_VA_BITS, #width` with
+/// The window access's range check (A8, A15): `ubfx sB, sA, #USER_VA_BITS, #width` with
 /// `width` reaching bit `PAN_WINDOW_RANGE_TOP_BIT` (64-bit `UBFM`, `immr = 48`,
 /// `imms = 55`), both registers general-purpose. Returns `(sA, sB)`.
 pub(super) fn range_check(insn: &A64Insn) -> Option<(u8, u8)> {

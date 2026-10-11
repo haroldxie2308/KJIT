@@ -10,10 +10,10 @@ use crate::shared::trans::rephrase::{RephrasedInsnKind, RephrasedProgram};
 
 pub type LayoutVLabels = SharedVec<(u64, usize)>;
 
-/// One user access (`LDTR`/`STTR`, or a PAN window's LSE atomic) of the fragment. A
-/// fault on the instruction at `access_offset` resumes at `stub_offset`: the
-/// out-of-line `RetStatus::Mem` exit group of the original memory instruction at
-/// `ori_pc` (for a window atomic, its PAN stub, which restores PAN first).
+/// One user access (`LDTR`/`STTR`, or a window access: LSE atomic, SIMD&FP load/store)
+/// of the fragment. A fault on the instruction at `access_offset` resumes at
+/// `stub_offset`: the out-of-line `RetStatus::Mem` exit group of the original memory
+/// instruction at `ori_pc`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct FaultSite {
     pub access_offset: usize,
@@ -78,21 +78,16 @@ pub enum LayoutError {
         insn_index: usize,
     },
     /// Two cold exit groups (fault or budget stubs) for the same original
-    /// instruction (A8: two plain groups, or two PAN stubs).
+    /// instruction.
     DuplicateFaultStub {
         ori_pc: u64,
     },
-    /// A8: a `WindowAccess`/`PanToggle`/`PanRestore` tag and the instruction (LSE
-    /// atomic or A9a base-only SIMD&FP load/store, `msr pan`) disagree, or an LSE
-    /// atomic, SIMD&FP load/store or `msr pan` outside those kinds.
+    /// A8, A15: a `WindowAccess` tag and the instruction (LSE atomic or A9a base-only
+    /// SIMD&FP load/store) disagree, an LSE atomic or SIMD&FP load/store appears
+    /// outside that kind, or an `msr pan` appears anywhere (a fragment contains
+    /// none).
     UntaggedPanWindow {
         insn_index: usize,
-    },
-    /// A8: a window atomic or range check whose original instruction has no PAN
-    /// stub.
-    MissingPanStub {
-        insn_index: usize,
-        ori_pc: u64,
     },
     /// A budget check whose original instruction has no `Budget` stub.
     MissingBudgetStub {
@@ -169,11 +164,7 @@ impl core::fmt::Display for LayoutError {
             }
             Self::UntaggedPanWindow { insn_index } => write!(
                 f,
-                "instruction {insn_index}: PAN-window tag and LSE atomic / msr pan form disagree"
-            ),
-            Self::MissingPanStub { insn_index, ori_pc } => write!(
-                f,
-                "PAN window at instruction {insn_index} has no PAN stub for pc {ori_pc:#x}"
+                "instruction {insn_index}: window-access tag and LSE atomic / SIMD&FP / msr pan form disagree"
             ),
             Self::MissingBudgetStub { insn_index, ori_pc } => write!(
                 f,
@@ -232,9 +223,9 @@ pub(crate) enum BranchRelocKind {
 /// the victim probe's to the word right after the template's final `br`, where the
 /// site's exit group starts. A budget check's
 /// `CBZ` and an alignment check's `CBNZ` resolve to the
-/// plain stub of their `ori_pc`; a PAN window's range-check `CBNZ` and its atomic's
-/// fault site resolve to the PAN stub (A8). A user branch that resolves backward
-/// must be budget-checked.
+/// plain stub of their `ori_pc`, as do a window access's range-check `CBNZ` and its
+/// fault site (A8, A15). A user branch that resolves backward must be
+/// budget-checked.
 pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragment, LayoutError> {
     let insn_count = program
         .iter()
@@ -257,10 +248,7 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
     // Stub labels: original PC -> offset of its cold `Mem` or `Budget` exit group
     // (at most one per PC). Their own label kind, never merged into `vlabels`.
     let mut stub_labels: LayoutVLabels = SharedVec::new();
-    // PAN stub labels (A8): original PC -> offset of its PAN stub (`msr pan, #1`
-    // then its `Mem` exit group). At most one per PC.
-    let mut pan_stub_labels: LayoutVLabels = SharedVec::new();
-    // Range-check `CBNZ`s: (instruction index, original PC of the atomic).
+    // Range-check `CBNZ`s: (instruction index, original PC of the window access).
     let mut range_branches: SharedVec<(usize, u64)> = SharedVec::new();
     // Budget-check `CBZ`s: (instruction index, original PC of the back-edge).
     let mut budget_branches: SharedVec<(usize, u64)> = SharedVec::new();
@@ -294,11 +282,11 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
                 return Err(LayoutError::UntaggedUserAccess { insn_index });
             }
             let window_access = rephrased.kind == RephrasedInsnKind::WindowAccess;
-            let pan_toggle = rephrased.kind == RephrasedInsnKind::PanToggle;
-            // A9a: a SIMD&FP load/store appears only as a window's base-only access.
+            // A9a: a SIMD&FP load/store appears only as a window access in its base-only
+            // encoding. A15: no `msr` appears in a fragment at all.
             if window_access != rephrased.insn.is_pan_window_access()
                 || (!window_access && rephrased.insn.fpsimd_mem().is_some())
-                || pan_toggle != rephrased.insn.msr_pan().is_some()
+                || rephrased.insn.msr_pan().is_some()
             {
                 return Err(LayoutError::UntaggedPanWindow { insn_index });
             }
@@ -383,31 +371,23 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
         });
     }
 
-    // Reg-virt guarantees each cold group is one PC and ends in its exit branch; a
-    // PAN stub is a group whose first instruction is `PanRestore`.
+    // Reg-virt guarantees each cold group is one PC and ends in its exit branch.
     let mut group_start = true;
     for rephrased in order.iter().flat_map(|&index| program[index].cold.iter()) {
         let insn_index = fragment.insns.len();
-        let pan_restore = rephrased.kind == RephrasedInsnKind::PanRestore;
-        if pan_restore != (group_start && rephrased.insn.msr_pan() == Some(true))
-            || (!pan_restore && rephrased.insn.msr_pan().is_some())
+        if rephrased.insn.msr_pan().is_some()
             || rephrased.insn.lse_atomic().is_some()
             || rephrased.insn.fpsimd_mem().is_some()
         {
             return Err(LayoutError::UntaggedPanWindow { insn_index });
         }
         if group_start {
-            let labels = if pan_restore {
-                &mut pan_stub_labels
-            } else {
-                &mut stub_labels
-            };
-            if find_vlabel(labels, rephrased.ori_pc).is_some() {
+            if find_vlabel(&stub_labels, rephrased.ori_pc).is_some() {
                 return Err(LayoutError::DuplicateFaultStub {
                     ori_pc: rephrased.ori_pc,
                 });
             }
-            labels.push((rephrased.ori_pc, insn_index * 4), GFP_KERNEL)?;
+            stub_labels.push((rephrased.ori_pc, insn_index * 4), GFP_KERNEL)?;
         }
         if rephrased.insn.is_unprivileged_access() {
             return Err(LayoutError::UntaggedUserAccess { insn_index });
@@ -421,22 +401,16 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
 
     for site in fragment.fault_sites.iter_mut() {
         let insn_index = site.access_offset / 4;
-        site.stub_offset = if fragment.insns[insn_index].is_pan_window_access() {
-            find_vlabel(&pan_stub_labels, site.ori_pc).ok_or(LayoutError::MissingPanStub {
-                insn_index,
-                ori_pc: site.ori_pc,
-            })?
-        } else {
+        site.stub_offset =
             find_vlabel(&stub_labels, site.ori_pc).ok_or(LayoutError::MissingFaultStub {
                 insn_index,
                 ori_pc: site.ori_pc,
-            })?
-        };
+            })?;
     }
 
     for &(insn_index, ori_pc) in &range_branches {
-        let stub_offset = find_vlabel(&pan_stub_labels, ori_pc)
-            .ok_or(LayoutError::MissingPanStub { insn_index, ori_pc })?;
+        let stub_offset = find_vlabel(&stub_labels, ori_pc)
+            .ok_or(LayoutError::MissingFaultStub { insn_index, ori_pc })?;
         rewrite_branch_to_offset(&mut fragment, insn_index, stub_offset, ori_pc)?;
     }
 

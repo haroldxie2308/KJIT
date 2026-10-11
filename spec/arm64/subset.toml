@@ -272,8 +272,8 @@ forms = [
   "RET.RET_64R_branch_reg",
   "SVC.SVC_EX_exception",
   # A8: LSE single-register atomics (LD<op>, SWP, CAS; every size and A/L/AL
-  # variant; ST<op> is LD<op> with Rt = XZR). Lowered inside a PAN window
-  # (docs/pipeline.md, "LSE atomics through a PAN window (A8)").
+  # variant; ST<op> is LD<op> with Rt = XZR). Lowered to a range-checked
+  # privileged access in a run with PAN clear (docs/pipeline.md, A8 and A15).
   "LDADD.LDADD_32_memop",
   "LDADD.LDADDA_32_memop",
   "LDADD.LDADDAL_32_memop",
@@ -434,11 +434,13 @@ forms = [
   "CASH.CASAH_C32_comswap",
   "CASH.CASALH_C32_comswap",
   "CASH.CASLH_C32_comswap",
-  # A8: translator-emitted only (the PAN window). Constrained to PSTATE.PAN
-  # below; user code containing it is rejected by reg-virt (Unsupported exit).
+  # A8/A15: decoded only so that user code containing it is recognised and
+  # rejected by reg-virt (Unsupported exit); no fragment contains an msr.
+  # Constrained to PSTATE.PAN below.
   "MSR_imm.MSR_SI_pstate",
   # A9a: FP/SIMD in fragments (docs/pipeline.md, "FP/SIMD in fragments (A9)"). Memory forms run
-  # as one privileged access inside a PAN window; V registers are never virtualized.
+  # as one range-checked privileged access (A15: the run has PAN clear); V registers
+  # are never virtualized.
   # Half-precision FMOV (FEAT_FP16) and FP arithmetic/conversion/compare stay out.
   "LDR_imm_fpsimd.LDR_B_ldst_immpost",
   "LDR_imm_fpsimd.LDR_H_ldst_immpost",
@@ -622,10 +624,10 @@ forms = [
 "LDAPR.LDAPR_64L_memop" = { Rs = 31 }
 "LDAPRB.LDAPRB_32L_memop" = { Rs = 31 }
 "LDAPRH.LDAPRH_32L_memop" = { Rs = 31 }
-# MSR (immediate) (A8) is only the PAN window's `msr pan, #0/#1`: op1 = 000,
-# op2 = 100 selects PSTATE.PAN (CRn = 0100 is fixed by the diagram). Every other
-# PSTATE field stays undecodable. CRm (the immediate) stays an operand; the
-# verifier accepts only CRm = 0 and 1, at the exact window positions.
+# MSR (immediate) (A8) is decoded only for PSTATE.PAN, so a user `msr pan` is
+# rejected rather than undecodable: op1 = 000, op2 = 100 selects PSTATE.PAN (CRn =
+# 0100 is fixed by the diagram). Every other PSTATE field stays undecodable. The
+# verifier rejects any msr in a fragment (A15).
 "MSR_imm.MSR_SI_pstate" = { op1 = 0, op2 = 4 }
 
 # Exact instances of one encoding, each generated as its own variant (key

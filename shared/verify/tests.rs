@@ -1063,26 +1063,23 @@ fn slot_192_is_a_user_state_slot() {
     );
 }
 
-/// A8 PAN window: `ubfx x5, x4, #48, #8; cbnz x5, <S>; msr pan, #0;
-/// ldaddal x0, x1, [x4]; msr pan, #1; b <epilogue>`, then the PAN stub S (`msr
-/// pan, #1`, exit payload, `b <epilogue>`). The atomic's fault site is S.
-/// Indices: 0 ubfx, 1 cbnz, 2 msr#0, 3 atomic, 4 msr#1, 5 b, 6 S, 7 movz, 8 b.
-fn pan_window_body() -> Vec<A64Insn> {
+/// A8/A15 window access: `ubfx x5, x4, #48, #8; cbnz x5, <S>; ldaddal x0, x1, [x4];
+/// b <epilogue>`, then the Mem stub S (exit payload, `b <epilogue>`). The atomic's
+/// fault site is S.
+/// Indices: 0 ubfx, 1 cbnz, 2 atomic, 3 b, 4 S (movz), 5 b.
+fn window_body() -> Vec<A64Insn> {
     alloc::vec![
         ubfx48(4, 5),
-        cbnz(1, 5, 6),
-        msr_pan(0),
+        cbnz(1, 5, 4),
         ldaddal(0, 1, 4),
-        msr_pan(1),
-        b_epi(5),
-        msr_pan(1),
+        b_epi(3),
         movz(9, 5),
-        b_epi(8),
+        b_epi(5),
     ]
 }
 
-fn pan_window_fragment(body: &[A64Insn]) -> Frag {
-    Frag::new(body).site(3, 6)
+fn window_fragment(body: &[A64Insn]) -> Frag {
+    Frag::new(body).site(2, 4)
 }
 
 fn ubfx48(rn: u8, rd: u8) -> A64Insn {
@@ -1114,27 +1111,35 @@ fn ldaddal(rs: u8, rt: u8, rn: u8) -> A64Insn {
 }
 
 #[test]
-fn accepts_the_exact_pan_window() {
-    assert_eq!(pan_window_fragment(&pan_window_body()).rule(), None);
-    // The `ubfx` may be a join point (it recomputes the checked value).
-    assert_eq!(
-        pan_window_fragment(&pan_window_body()).entry(0).rule(),
-        None
-    );
+fn accepts_the_exact_window_access() {
+    assert_eq!(window_fragment(&window_body()).rule(), None);
+    // The `ubfx` may be a join point (it recomputes the checked value): branched to,
+    // and an entry.
+    let mut body = alloc::vec![b(0, at(1) as i64)];
+    body.extend(window_body().into_iter().enumerate().map(|(i, insn)| match i {
+        1 => cbnz(2, 5, 5),
+        3 => b_epi(4),
+        5 => b_epi(6),
+        _ => insn,
+    }));
+    assert_eq!(Frag::new(&body).site(3, 5).entry(1).rule(), None);
 }
 
+/// Rule 8: a window access needs `ubfx sB, sA, #48, #8; cbnz sB, <exit group>` right
+/// before it, based on sA; anything else is `WindowRangeCheck`.
 #[test]
-fn pan_window_rule_rejects_every_deviation() {
-    let rule = |body: &[A64Insn]| pan_window_fragment(body).rule();
+fn window_rule_rejects_a_missing_or_wrong_range_check() {
+    let rule = |body: &[A64Insn]| window_fragment(body).rule();
     let with = |index: usize, insn: A64Insn| {
-        let mut body = pan_window_body();
+        let mut body = window_body();
         body[index] = insn;
         rule(&body)
     };
-    // Range check: other register, shift, width, 32-bit form; cbnz on another
-    // register, to a non-PAN-stub word, 32-bit form.
-    assert_eq!(with(0, ubfx48(3, 5)), Some(VerifyRule::PanWindow));
-    assert_eq!(with(0, ubfx48(4, 6)), Some(VerifyRule::PanWindow));
+    let bad = Some(VerifyRule::WindowRangeCheck);
+    // `ubfx` of another register than the access base, or into another register
+    // than the `cbnz` tests; other lsb / width / 32-bit-clearing forms.
+    assert_eq!(with(0, ubfx48(3, 5)), bad);
+    assert_eq!(with(0, ubfx48(4, 6)), bad);
     for (immr, imms) in [(47, 55), (48, 54), (48, 63), (56, 63)] {
         let ubfx = A64Insn::UbfmUbfm64mBitfield {
             immr: uimm(immr, 6),
@@ -1142,89 +1147,159 @@ fn pan_window_rule_rejects_every_deviation() {
             rn: x(4),
             rd: x(5),
         };
-        assert_eq!(with(0, ubfx), Some(VerifyRule::PanWindow), "{immr} {imms}");
+        assert_eq!(with(0, ubfx), bad, "{immr} {imms}");
     }
-    assert_eq!(with(1, cbnz(1, 6, 6)), Some(VerifyRule::PanWindow));
-    assert_eq!(with(1, cbnz(1, 5, 7)), Some(VerifyRule::PanWindow));
+    // The `ubfx` or the `cbnz` replaced by something else; `cbz` for `cbnz`; the
+    // 32-bit `cbnz`.
+    assert_eq!(with(0, movz(5, 0)), bad);
+    assert_eq!(with(1, movz(2, 0)), bad);
+    let cbz = A64Insn::CbzCbz64Compbranch {
+        imm19: branch_imm(at(4) as i64 - at(1) as i64, 19),
+        rt: x(5),
+    };
+    assert_eq!(with(1, cbz), bad);
     let cbnz32 = A64Insn::CbnzCbnz32Compbranch {
-        imm19: branch_imm(at(6) as i64 - at(1) as i64, 19),
+        imm19: branch_imm(at(4) as i64 - at(1) as i64, 19),
         rt: crate::shared::arm64::A64Reg::w(5),
     };
-    assert_eq!(with(1, cbnz32), Some(VerifyRule::PanWindow));
-    // The atomic on another base, or not an atomic.
-    assert_eq!(with(3, ldaddal(0, 1, 3)), Some(VerifyRule::PanWindow));
-    assert_eq!(with(3, ldtr(0, 4)), Some(VerifyRule::PanWindow));
-    assert_eq!(with(3, movz(0, 1)), Some(VerifyRule::PanWindow));
-    // Missing window end; `msr pan, #1` / `#0` anywhere else; other CRm.
-    assert_eq!(with(4, movz(2, 0)), Some(VerifyRule::PanWindow));
-    assert_eq!(with(2, movz(2, 0)), Some(VerifyRule::AtomicOutsideWindow));
-    assert_eq!(with(0, msr_pan(1)), Some(VerifyRule::PanWindow));
+    assert_eq!(with(1, cbnz32), bad);
+    // The `cbnz` tests another register, or targets: a backward word, the access, a
+    // body word that is no exit-group start, an offset past the fragment.
+    assert_eq!(with(1, cbnz(1, 6, 4)), bad);
+    assert_eq!(with(1, cbnz(1, 5, 0)), bad);
+    assert_eq!(with(1, cbnz(1, 5, 2)), bad);
+    assert_eq!(with(1, cbnz(1, 5, 3)), bad);
+    assert_eq!(with(1, cbnz(1, 5, 50)), bad);
+    // The access on a base other than the range-checked register.
+    assert_eq!(with(2, ldaddal(0, 1, 3)), bad);
+    assert_eq!(with(2, ldaddal(0, 1, 5)), bad);
+    // No range check at all: first words of the body, or an access whose
+    // predecessors are ordinary words, with or without a fault site.
+    assert_eq!(Frag::new(&[ldaddal(0, 1, 4), b_epi(1)]).rule(), bad);
     assert_eq!(
-        Frag::new(&[msr_pan(2), b_epi(1)]).rule(),
-        Some(VerifyRule::Msr)
+        Frag::new(&[movz(5, 0), ldaddal(0, 1, 4), b_epi(2)]).rule(),
+        bad
     );
-    assert_eq!(
-        Frag::new(&[msr_pan(15), b_epi(1)]).rule(),
-        Some(VerifyRule::Msr)
-    );
-    let body = [msr_pan(1), movz(0, 1), b_epi(2)];
-    assert_eq!(
-        Frag::new(&body).rule(),
-        Some(VerifyRule::PanSetOutsideWindow)
-    );
-    let body = [movz(0, 1), msr_pan(0), b_epi(2)];
-    assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::PanWindow));
-    // The PAN stub without its leading msr.
-    assert_eq!(with(6, movz(8, 0)), Some(VerifyRule::PanWindow));
-    // No join point on the cbnz, either MSR or the atomic.
-    for index in 1..=4 {
+    let body = [
+        movz(5, 0),
+        movz(6, 0),
+        ldaddal(0, 1, 4),
+        b_epi(3),
+        movz(9, 5),
+        b_epi(5),
+    ];
+    assert_eq!(Frag::new(&body).rule(), bad);
+    assert_eq!(Frag::new(&body).site(2, 4).rule(), bad);
+}
+
+/// Rule 8: no join point on the `cbnz` or the access, whichever way control arrives.
+#[test]
+fn window_rule_rejects_a_join_point_on_the_cbnz_or_the_access() {
+    let bad = Some(VerifyRule::WindowRangeCheck);
+    for index in [1, 2] {
         assert_eq!(
-            pan_window_fragment(&pan_window_body()).entry(index).rule(),
-            Some(VerifyRule::PanWindow),
+            window_fragment(&window_body()).entry(index).rule(),
+            bad,
             "entry at {index}"
         );
     }
+    // 0 b/cbz, 1 ubfx, 2 cbnz, 3 atomic, 4 b, 5 S, 6 b.
+    let prefixed = |first: A64Insn| {
+        let mut body = alloc::vec![first];
+        body.extend(window_body().into_iter().enumerate().map(|(i, insn)| match i {
+            1 => cbnz(2, 5, 5),
+            3 => b_epi(4),
+            5 => b_epi(6),
+            _ => insn,
+        }));
+        Frag::new(&body).site(3, 5).rule()
+    };
+    assert_eq!(prefixed(b(0, at(1) as i64)), None);
+    assert_eq!(prefixed(b(0, at(2) as i64)), bad);
+    assert_eq!(prefixed(b(0, at(3) as i64)), bad);
+    let cbz_to = |to: usize| A64Insn::CbzCbz64Compbranch {
+        imm19: branch_imm(at(to) as i64 - at(0) as i64, 19),
+        rt: x(0),
+    };
+    assert_eq!(prefixed(cbz_to(2)), bad);
+    assert_eq!(prefixed(cbz_to(3)), bad);
 }
 
+/// A window access has a fault-site entry like a user access, naming an exit group.
 #[test]
-fn pan_stub_is_only_a_window_target() {
-    // The atomic's fault site at a plain stub, or missing.
-    let mut body = pan_window_body();
-    body.extend([movz(9, 5), b_epi(10)]);
+fn window_access_needs_a_fault_site_naming_an_exit_group() {
     assert_eq!(
-        Frag::new(&body).site(3, 9).rule(),
-        Some(VerifyRule::PanStubTarget)
-    );
-    assert_eq!(
-        Frag::new(&pan_window_body()).rule(),
+        Frag::new(&window_body()).rule(),
         Some(VerifyRule::MissingFaultSite)
     );
-    // An LDTR whose fault site is the PAN stub.
-    let body = [
-        ubfx48(4, 5),
-        cbnz(1, 5, 7),
-        msr_pan(0),
-        ldaddal(0, 1, 4),
-        msr_pan(1),
-        ldtr(2, 3),
-        b_epi(6),
-        msr_pan(1),
-        movz(9, 5),
-        b_epi(9),
-    ];
+    // The fault site on a body word that is not an exit-group start.
     assert_eq!(
-        Frag::new(&body).site(3, 7).rule(),
-        Some(VerifyRule::MissingFaultSite)
+        Frag::new(&window_body()).site(2, 3).rule(),
+        Some(VerifyRule::ExitGroup)
     );
-    let frag = Frag::new(&body).site(3, 7).site(5, 7);
-    assert_eq!(frag.rule(), Some(VerifyRule::PanStubTarget));
-    // Any other branch into the PAN stub.
-    let mut body = pan_window_body();
-    body[5] = b(5, at(6) as i64);
+    // A fault site on the `cbnz` is not on an access.
     assert_eq!(
-        pan_window_fragment(&body).rule(),
-        Some(VerifyRule::PanStubTarget)
+        Frag::new(&window_body()).site(1, 4).site(2, 4).rule(),
+        Some(VerifyRule::FaultSiteNotUserAccess)
     );
+}
+
+/// A15: a fragment never writes PSTATE.PAN. `msr` is rejected wherever it sits: the
+/// body, between the range check and the access, after the access, an exit group.
+#[test]
+fn any_msr_is_rejected() {
+    for crm in [0, 1, 2, 15] {
+        assert_eq!(
+            Frag::new(&[msr_pan(crm), b_epi(1)]).rule(),
+            Some(VerifyRule::Msr),
+            "msr #{crm}"
+        );
+        // After the access.
+        let body = [
+            ubfx48(4, 5),
+            cbnz(1, 5, 5),
+            ldaddal(0, 1, 4),
+            msr_pan(crm),
+            b_epi(4),
+            movz(9, 5),
+            b_epi(6),
+        ];
+        assert_eq!(
+            Frag::new(&body).site(2, 5).rule(),
+            Some(VerifyRule::Msr),
+            "after, msr #{crm}"
+        );
+        // Between the `cbnz` and the access: the access loses its range check.
+        let body = [
+            ubfx48(4, 5),
+            cbnz(1, 5, 5),
+            msr_pan(crm),
+            ldaddal(0, 1, 4),
+            b_epi(4),
+            movz(9, 5),
+            b_epi(6),
+        ];
+        assert_eq!(
+            Frag::new(&body).site(3, 5).rule(),
+            Some(VerifyRule::WindowRangeCheck),
+            "between, msr #{crm}"
+        );
+        // First word of the exit group (the shape of the removed PAN stub).
+        let body = [
+            ubfx48(4, 5),
+            cbnz(1, 5, 4),
+            ldaddal(0, 1, 4),
+            b_epi(3),
+            msr_pan(crm),
+            movz(9, 5),
+            b_epi(6),
+        ];
+        assert_eq!(
+            Frag::new(&body).site(2, 4).rule(),
+            Some(VerifyRule::ExitGroup),
+            "stub, msr #{crm}"
+        );
+    }
 }
 
 fn ldr_q(rt: u8, rn: u8, raw_offset: u32) -> A64Insn {
@@ -1237,14 +1312,14 @@ fn ldr_q(rt: u8, rn: u8, raw_offset: u32) -> A64Insn {
     }
 }
 
-/// A9a: the A8 window around a base-only SIMD&FP load/store is accepted, and
+/// A9a: the window access lowering around a base-only SIMD&FP load/store is accepted, and
 /// `uses_fpsimd` says whether any SIMD&FP form appears.
 #[test]
 fn simd_windows_and_uses_fpsimd() {
     let ok = |frag: Frag| frag.verify().unwrap().uses_fpsimd;
     // The LSE window alone: no SIMD&FP.
-    assert!(!ok(pan_window_fragment(&pan_window_body())));
-    // The same window around `ldr q0, [x4]`, `ld1 {v0.16b-v3.16b}, [x4]`,
+    assert!(!ok(window_fragment(&window_body())));
+    // The same range check around `ldr q0, [x4]`, `ld1 {v0.16b-v3.16b}, [x4]`,
     // `stp q1, q2, [x4]`.
     for access in [
         ldr_q(0, 4, 0),
@@ -1260,9 +1335,9 @@ fn simd_windows_and_uses_fpsimd() {
             mem: mem_off(xs(4), scaled_simm(0, 7, 4)),
         },
     ] {
-        let mut body = pan_window_body();
-        body[3] = access;
-        assert!(ok(pan_window_fragment(&body)), "{access:?}");
+        let mut body = window_body();
+        body[2] = access;
+        assert!(ok(window_fragment(&body)), "{access:?}");
     }
     // A register-only SIMD&FP form anywhere.
     let body = [
@@ -1278,65 +1353,57 @@ fn simd_windows_and_uses_fpsimd() {
     assert!(!ok(Frag::new(&[movz(0, 1), b_epi(1)])));
 }
 
-/// A9a: a SIMD&FP load/store is valid only as a window's base-only access on sA,
-/// with its fault site at the window's PAN stub.
+/// A9a: a SIMD&FP load/store is valid only as a window access in its base-only
+/// encoding on sA, right after its range check.
 #[test]
 fn simd_memory_forms_are_window_only() {
     let with = |insn: A64Insn| {
-        let mut body = pan_window_body();
-        body[3] = insn;
-        pan_window_fragment(&body).rule()
+        let mut body = window_body();
+        body[2] = insn;
+        window_fragment(&body).rule()
     };
-    // Another base, SP, an offset, writeback, unscaled: not a window access, so
-    // the window is malformed (and each form is user-only elsewhere).
-    assert_eq!(with(ldr_q(0, 3, 0)), Some(VerifyRule::PanWindow));
-    assert_eq!(with(ldr_q(0, 31, 0)), Some(VerifyRule::PanWindow));
-    assert_eq!(with(ldr_q(0, 4, 1)), Some(VerifyRule::PanWindow));
-    assert_eq!(
-        Frag::new(&[ldr_q(0, 4, 1), b_epi(1)]).rule(),
-        Some(VerifyRule::UserOnlyForm)
-    );
+    // Another base or SP: a window access, but not on the range-checked register.
+    assert_eq!(with(ldr_q(0, 3, 0)), Some(VerifyRule::WindowRangeCheck));
+    assert_eq!(with(ldr_q(0, 31, 0)), Some(VerifyRule::WindowRangeCheck));
+    // An offset, writeback, unscaled: not a window access at all, so user-only
+    // wherever they appear (with a fault site on one, not even a fault site).
     let post = A64Insn::LdrImmFpsimdLdrQLdstImmpost {
         rt: 0,
         mem: crate::shared::arm64::ergo::mem_post(xs(4), simm(16, 9)),
     };
-    assert_eq!(with(post), Some(VerifyRule::PanWindow));
     let ld1_post = A64Insn::Ld1AdvsimdMultLd1AsisdlsepI1I1 {
         q: 1,
         size: 0,
         rn: xs(4),
         rt: 0,
     };
-    assert_eq!(with(ld1_post), Some(VerifyRule::PanWindow));
     let ldur = A64Insn::LdurFpsimdLdurQLdstUnscaled {
         rt: 0,
         mem: mem_off(xs(4), simm(0, 9)),
     };
-    assert_eq!(with(ldur), Some(VerifyRule::PanWindow));
-    for insn in [post, ld1_post, ldur] {
+    for insn in [ldr_q(0, 4, 1), post, ld1_post, ldur] {
         assert_eq!(
-            Frag::new(&[insn, b_epi(1)]).rule(),
+            with(insn),
+            Some(VerifyRule::FaultSiteNotUserAccess),
+            "{insn:?}"
+        );
+        let mut body = window_body();
+        body[2] = insn;
+        assert_eq!(
+            Frag::new(&body).rule(),
             Some(VerifyRule::UserOnlyForm),
             "{insn:?}"
         );
     }
-    // Outside a window, even with a fault site.
+    // Without its range check, even with a fault site.
     let body = [ldr_q(0, 4, 0), b_epi(1), movz(9, 5), b_epi(3)];
     assert_eq!(
         Frag::new(&body).rule(),
-        Some(VerifyRule::AtomicOutsideWindow)
+        Some(VerifyRule::WindowRangeCheck)
     );
     assert_eq!(
         Frag::new(&body).site(0, 2).rule(),
-        Some(VerifyRule::AtomicOutsideWindow)
-    );
-    // In a window whose access's fault site is a plain stub.
-    let mut body = pan_window_body();
-    body[3] = ldr_q(0, 4, 0);
-    body.extend([movz(9, 5), b_epi(10)]);
-    assert_eq!(
-        Frag::new(&body).site(3, 9).rule(),
-        Some(VerifyRule::PanStubTarget)
+        Some(VerifyRule::WindowRangeCheck)
     );
     // A SIMD&FP register form writing x29.
     let fmov = A64Insn::FmovFloatGenFmov64dFloat2int { rn: 0, rd: x(29) };
@@ -1405,16 +1472,13 @@ fn simd_registers_are_not_general_registers_for_rule_9() {
     let body = [
         load13,
         ubfx48(13, 5),
-        cbnz(2, 5, 7),
-        msr_pan(0),
+        cbnz(2, 5, 5),
         ldr_q(0, 13, 0),
-        msr_pan(1),
-        b_epi(6),
-        msr_pan(1),
+        b_epi(4),
         movz(9, 5),
-        b_epi(9),
+        b_epi(6),
     ];
-    assert_eq!(Frag::new(&body).site(4, 7).rule(), read);
+    assert_eq!(Frag::new(&body).site(3, 5).rule(), read);
 }
 
 /// Cross-check of the hand classification against the generated metadata on
@@ -1491,7 +1555,7 @@ fn classification_agrees_with_generated_roles() {
                     insn.key()
                 );
             }
-            rules::Form::PanClear | rules::Form::PanSet | rules::Form::MsrOther => {
+            rules::Form::Msr => {
                 assert!(!memory && !control && roles.is_empty(), "{}", insn.key())
             }
             // Every user-only form is a load/store, except PRFM and BTI (hints, no

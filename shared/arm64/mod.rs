@@ -221,7 +221,7 @@ impl A64Insn {
     }
 
     /// The LSE single-register atomics (A8): the only forms a fragment runs as a
-    /// privileged access to user memory, inside a PAN window (docs/pipeline.md, "LSE
+    /// privileged access to user memory behind a range check (docs/pipeline.md, "LSE
     /// atomics through a PAN window (A8)"). Pinned by a test against the generated mnemonics.
     pub const fn lse_atomic(self) -> Option<A64Atomic> {
         let (op, size, rs, rt, rn) = match self {
@@ -397,8 +397,9 @@ impl A64Insn {
     }
 
     /// `MSR PAN, #imm` (the only decodable MSR): `Some(PSTATE.PAN after it)`, i.e.
-    /// `CRm<0>`. Translator-emitted only (the PAN window); user code containing it
-    /// is rejected by reg-virt.
+    /// `CRm<0>`. Never emitted into a fragment (A15: only the trampoline writes PAN;
+    /// the verifier rejects any `msr`); user code containing it is rejected by
+    /// reg-virt.
     pub const fn msr_pan(self) -> Option<bool> {
         match self {
             Self::MsrImmMsrSiPstate { crm } => Some(crm & 1 == 1),
@@ -1238,7 +1239,7 @@ impl A64Insn {
             .extract_field(word, name)
     }
 
-    /// The instruction a fragment's PAN window may hold (A8, A9a): an LSE atomic, or
+    /// A window access (A8, A9a, A15): an LSE atomic, or
     /// an A9a SIMD&FP load/store in its base-only encoding (`A64FpSimdMem::access`
     /// of itself, no offset, no writeback). Translator side (layout's tag check);
     /// the verifier decides this on its own.

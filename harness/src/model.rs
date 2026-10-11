@@ -34,7 +34,7 @@ pub enum AccessKind {
 pub enum Privilege {
     User,
     Runtime,
-    /// A PAN window's access in a fragment (an LSE atomic, A8, or a SIMD&FP
+    /// A window access in a fragment (an LSE atomic, A8, or a SIMD&FP
     /// load/store, A9a): an EL1 access to user memory with PSTATE.PAN clear. Same
     /// page permissions as a user access, and numbered with the user accesses for
     /// fault injection.

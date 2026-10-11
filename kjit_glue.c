@@ -1175,6 +1175,15 @@ void kjit_bad_status(u64 status, u64 pc)
  * afterwards; x19..x29, x30 and sp come back through the fragment epilogue.
  * Returns x0 = RetStatus; extra[0], extra[1] = x10, x11 (out), extra[2] = the
  * run's dispatch table (in, kjit_frag_table()).
+ *
+ * PSTATE.PAN is clear for exactly the fragment run (A15, docs/pipeline.md,
+ * "Run-scoped PAN clear (A15)"): `msr pan, #0` right before the blr and
+ * `msr pan, #1` right after it returns, the only PAN writes of the module.
+ * The window accesses (LSE atomics, SIMD&FP loads/stores) are privileged
+ * accesses to user memory behind a range check; nothing in a fragment writes
+ * PAN (the verifier rejects any msr). SCTLR_EL1.SPAN == 0 (checked at init)
+ * makes every exception taken inside the run set PAN, so interrupts and
+ * preemption run kernel code with PAN set.
  */
 asm(
 "	.pushsection .text, \"ax\"\n"
@@ -1188,7 +1197,9 @@ asm(
 "	ldr	x9, [x0, #264]\n"
 "	and	x9, x9, #0xf0000000\n"
 "	msr	nzcv, x9\n"
+	SET_PSTATE_PAN(0)
 "	blr	x3\n"
+	SET_PSTATE_PAN(1)
 "	mrs	x9, nzcv\n"
 "	ldr	x1, [sp, #16]\n"
 "	ldr	x10, [x1, #264]\n"
@@ -1225,7 +1236,7 @@ static DEFINE_PER_CPU(u64, kjit_fpsimd_max_ticks);
  *   filesystem's NEON-accelerated read path, which would nest a second
  *   task-level kernel_neon_begin() (a BUG). With page faults disabled,
  *   do_page_fault() goes straight to no_context, the fragment's exception table
- *   (kernel-patches/0002) sends the access to its Mem or PAN stub, and the Mem
+ *   (kernel-patches/0002) sends the access to its Mem stub, and the Mem
  *   exit makes userspace re-execute the instruction natively, where the fault is
  *   handled as usual (demand paging, CoW, SIGSEGV). Correct, occasionally slower.
  * - fpsimd_save_state(): the registers back into thread.uw.
@@ -2056,9 +2067,9 @@ static int kjit_check_cpu(void)
 		return -ENODEV;
 	}
 	/*
-	 * A8 PAN windows (docs/pipeline.md, "LSE atomics through a PAN window
-	 * (A8)"): user LSE atomics run as
-	 * privileged accesses between `msr pan, #0` and `msr pan, #1`.
+	 * A8 window accesses (docs/pipeline.md, "LSE atomics through a PAN window
+	 * (A8)"): user LSE atomics run as privileged accesses, in a run that
+	 * executes with PAN clear (A15).
 	 * FEAT_LSE: else user LD<op>/SWP/CAS are UNDEFINED natively but would
 	 * run in a fragment.
 	 */
@@ -2073,7 +2084,7 @@ static int kjit_check_cpu(void)
 	 * (K1 pins ARM64_VA_BITS_48).
 	 */
 	if (vabits_actual != 48) {
-		pr_err("kjit: vabits_actual is %llu, not 48: the PAN window's range check assumes 48-bit user VAs; refusing to load\n",
+		pr_err("kjit: vabits_actual is %llu, not 48: a window access's range check assumes 48-bit user VAs; refusing to load\n",
 		       (unsigned long long)vabits_actual);
 		return -ENODEV;
 	}
@@ -2082,16 +2093,17 @@ static int kjit_check_cpu(void)
 	 * LDTR/STTR do (TCF0), so a window atomic would skip MTE tag checks.
 	 */
 	if (system_supports_mte()) {
-		pr_err("kjit: MTE is in use: a PAN-window atomic is a privileged access that skips the user's tag checks; refusing to load\n");
+		pr_err("kjit: MTE is in use: a window atomic is a privileged access that skips the user's tag checks; refusing to load\n");
 		return -ENODEV;
 	}
 	/*
-	 * The window relies on an exception taken inside it setting PAN
-	 * (SCTLR_EL1.SPAN == 0, which cpu_enable_pan() establishes); with SPAN
-	 * set, an interrupt handler would run with PAN clear.
+	 * A15: a run executes with PAN clear and relies on an exception taken
+	 * inside it setting PAN (SCTLR_EL1.SPAN == 0, which cpu_enable_pan()
+	 * establishes); with SPAN set, an interrupt handler would run with PAN
+	 * clear.
 	 */
 	if (read_sysreg(sctlr_el1) & SCTLR_EL1_SPAN) {
-		pr_err("kjit: SCTLR_EL1.SPAN is set: an exception inside a PAN window would keep PAN clear; refusing to load\n");
+		pr_err("kjit: SCTLR_EL1.SPAN is set: an exception inside a fragment run would keep PAN clear; refusing to load\n");
 		return -ENODEV;
 	}
 	return 0;

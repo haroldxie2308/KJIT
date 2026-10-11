@@ -65,9 +65,10 @@ pub struct URuntime {
     /// runtime-loop continuations included; optionally fails one.
     user_accesses: UserAccessCounter,
     access_log: Option<Vec<LoggedAccess>>,
-    /// PSTATE.PAN while the fragment runs (A8). The kernel calls a fragment with
-    /// PAN set; only a PAN window clears it, and every return to the runtime must
-    /// find it set again (checked in `apply_runtime_return`).
+    /// PSTATE.PAN, as the kernel trampoline `kjit_call_fragment` keeps it (A15): set
+    /// outside a fragment run, clear from the entry (`prepare_entry_at`) to the
+    /// return to the runtime (`apply_runtime_return`). Nothing in a fragment writes
+    /// it.
     pan: bool,
 }
 
@@ -250,6 +251,11 @@ impl URuntime {
         self.user_accesses.seen()
     }
 
+    /// Modelled PSTATE.PAN: clear while a fragment runs, set once it returned (A15).
+    pub fn pan(&self) -> bool {
+        self.pan
+    }
+
     pub fn run(&mut self) -> URuntimeReport {
         match URuntimeCursor::new(self) {
             Ok(mut cursor) => run_cursor_to_halt(self, &mut cursor),
@@ -309,7 +315,8 @@ impl URuntime {
             .write_x(ABI_ENTRY_ARG_REG, base + offset as u64);
         self.state.write_x(ABI_LINK_REG, self.config.return_pc);
         self.state.set_sp(self.config.stack_top);
-        self.pan = true;
+        // The trampoline's `msr pan, #0` right before its `blr`.
+        self.pan = false;
         Ok(())
     }
 
@@ -476,7 +483,7 @@ impl URuntimeCursor {
             runtime_ranges: &runtime_ranges,
             counter: &mut runtime.user_accesses,
             log: runtime.access_log.as_mut(),
-            pan: &mut runtime.pan,
+            pan: runtime.pan,
         };
         let next_pc = match execute_insn(insn, insn_pc, &mut runtime.state, &mut ctx) {
             Ok(next_pc) => next_pc,
@@ -561,14 +568,8 @@ impl URuntimeCursor {
         next_offset: Option<usize>,
         executed: bool,
     ) -> Result<Advanced, String> {
-        // A8: the fragment must hand PSTATE back with PAN set, at every exit (a
-        // PAN stub restores it before its exit group).
-        if !runtime.pan {
-            return Err(format!(
-                "fragment returned to the runtime with PSTATE.PAN clear (status {:#x})",
-                runtime.state.read_x(RET_STATUS_REG)
-            ));
-        }
+        // The trampoline's `msr pan, #1` right after the fragment returned.
+        runtime.pan = true;
         let fragment = fragment.unwrap_or(runtime.entered);
         match runtime.handle_runtime_return()? {
             CacheAction::ContinueAt {
@@ -1173,11 +1174,12 @@ mod tests {
         assert_eq!(report.fragment_state.read_u64(0x9008), 0x1122);
     }
 
-    /// A8: a faulting window atomic resumes at its PAN stub, which restores PAN
-    /// before the Mem exit; a stub without its `msr pan, #1` hands PSTATE back to
-    /// the runtime with PAN clear, which is a hard error.
+    /// A15: PAN is clear from the fragment entry to its return and set again after
+    /// it, as the trampoline leaves it. A window atomic on a mapped page runs (it is
+    /// a privileged access, legal only with PAN clear); one that faults resumes at
+    /// its ordinary Mem stub (no PAN restore: nothing in the fragment writes PAN).
     #[test]
-    fn window_atomic_fault_exits_through_the_pan_stub_with_pan_restored() {
+    fn pan_is_clear_for_the_run_and_set_at_return() {
         let insns = [
             A64Insn::LdaddLdaddal64Memop {
                 rs: x(0),
@@ -1186,12 +1188,55 @@ mod tests {
             },
             A64Insn::RetRet64rBranchReg { rn: x(30) },
         ];
-        let mut state = MachineState::new();
-        state.write_x(0, 1);
-        state.write_x(1, 0x9000); // unmapped
-        state.write_x(2, 0x22);
+        let mut mapped = MachineState::new();
+        mapped
+            .map_user_range(0x9000, 0xa000, PagePerm::ReadWrite)
+            .unwrap();
+        mapped.write_x(0, 1);
+        mapped.write_x(1, 0x9000);
+        mapped.seed_memory_u64(0x9000, 41);
+        let mut runtime = URuntime::new(compile_insns(0x4000, &insns), mapped);
+        assert!(runtime.pan(), "PAN is set outside a run");
+        let report = runtime.run();
+        assert!(
+            matches!(
+                report.halt,
+                URuntimeHalt::ReturnedToUserspace {
+                    status: RetStatus::Ret,
+                    ..
+                }
+            ),
+            "{:?}",
+            report.halt
+        );
+        assert_eq!(report.state.read_x(2), 41);
+        assert_eq!(report.state.read_u64(0x9000), 42);
+        assert!(runtime.pan(), "PAN is set again after the return");
+
+        let mut unmapped = MachineState::new();
+        unmapped.write_x(0, 1);
+        unmapped.write_x(1, 0x9000);
+        unmapped.write_x(2, 0x22);
         let fragment = compile_insns(0x4000, &insns);
-        let mut runtime = URuntime::new(fragment, state.clone());
+        // One Mem stub for the instruction: the range check's `cbnz` (right before
+        // the atomic, after its `ubfx`) and the fault site both name it, and
+        // nothing in the fragment writes PAN.
+        let site = fragment.fault_sites[0];
+        assert!(fragment.insns.iter().all(|insn| insn.msr_pan().is_none()));
+        let access = site.access_offset / 4;
+        assert!(fragment.insns[access].is_pan_window_access());
+        assert!(matches!(
+            fragment.insns[access - 2],
+            A64Insn::UbfmUbfm64mBitfield { .. }
+        ));
+        let A64Insn::CbnzCbnz64Compbranch { imm19, .. } = fragment.insns[access - 1] else {
+            panic!("no range-check cbnz before the atomic");
+        };
+        assert_eq!(
+            ((access - 1) * 4) as i64 + imm19.value(),
+            site.stub_offset as i64
+        );
+        let mut runtime = URuntime::new(fragment, unmapped.clone());
         let report = runtime.run();
         assert_eq!(
             report.halt,
@@ -1200,20 +1245,27 @@ mod tests {
                 target_pc: 0x4000,
             }
         );
-        assert_eq!(report.state, state);
+        assert_eq!(report.state, unmapped);
         assert_eq!(runtime.user_accesses(), 1);
+        assert!(runtime.pan());
+    }
 
-        let mut fragment = compile_insns(0x4000, &insns);
-        let stub = fragment.fault_sites[0].stub_offset / 4;
-        assert_eq!(fragment.insns[stub].msr_pan(), Some(true));
-        fragment.insns[stub] = A64Insn::NopNopHiHints {};
-        let report = URuntime::new(fragment, state).run();
-        assert!(
-            matches!(&report.halt, URuntimeHalt::ExecutionError { message, .. }
-                if message.contains("PSTATE.PAN clear")),
-            "{:?}",
-            report.halt
-        );
+    /// A15: a fragment word writing PSTATE.PAN is a hard error (the verifier rejects
+    /// it; the harness does not execute it).
+    #[test]
+    fn msr_in_a_fragment_is_a_hard_error() {
+        for crm in [0, 1] {
+            let mut fragment = compile_insns(0x4000, &[movz_x(0, 1), A64Insn::RetRet64rBranchReg { rn: x(30) }]);
+            let entry = fragment.entry_offset / 4;
+            fragment.insns[entry] = A64Insn::MsrImmMsrSiPstate { crm };
+            let report = URuntime::new(fragment, MachineState::new()).run();
+            match report.halt {
+                URuntimeHalt::ExecutionError { message, .. } => {
+                    assert!(message.contains("in a fragment"), "{message}");
+                }
+                other => panic!("expected an execution error, got {other:?}"),
+            }
+        }
     }
 
     #[test]

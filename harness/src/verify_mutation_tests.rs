@@ -149,8 +149,8 @@ const USER_ONLY_WORDS: &[(&str, u32)] = &[
     ("ldpsw x0, x1, [x2]", 0x6940_0440),
 ];
 
-/// LSE atomics of the subset (A8): allowed only as the atomic of an exact PAN
-/// window, so each is rejected anywhere else (its window's own atomic position is
+/// LSE atomics of the subset (A8): allowed only right after their range check
+/// (rule 8), so each is rejected anywhere else (a window's own access position is
 /// skipped: another atomic on the same base there is not a violation).
 const ATOMIC_WORDS: &[(&str, u32)] = &[
     ("ldadd x0, x1, [x2]", 0xf820_0041),
@@ -162,8 +162,7 @@ const ATOMIC_WORDS: &[(&str, u32)] = &[
     ("ldsmaxa x1, x2, [x12]", 0xf8a1_4182),
 ];
 
-/// `MSR (immediate)` of PSTATE.PAN (A8): `#0` only as a window start, `#1` only as
-/// a window end or a PAN stub's first word, any other immediate never.
+/// `MSR (immediate)` of PSTATE.PAN, every immediate (A15): never in a fragment.
 const MSR_PAN_WORDS: &[(&str, u32)] = &[
     ("msr pan, #0", 0xd500_409f),
     ("msr pan, #1", 0xd500_419f),
@@ -171,8 +170,8 @@ const MSR_PAN_WORDS: &[(&str, u32)] = &[
     ("msr pan, #15", 0xd500_4f9f),
 ];
 
-/// A9a SIMD&FP loads/stores in the base-only encoding a PAN window holds (`[Xn]`,
-/// #0, no writeback): allowed only as the access of an exact PAN window, so each is
+/// A9a SIMD&FP loads/stores in the base-only encoding of a window access (`[Xn]`,
+/// #0, no writeback): allowed only right after their range check, so each is
 /// rejected anywhere else (a window's own access position is skipped).
 const SIMD_WINDOW_WORDS: &[(&str, u32)] = &[
     ("ldr q0, [x1]", 0x3dc0_0020),
@@ -235,6 +234,9 @@ struct RandomResult {
     /// An offset-form runtime load/store the verifier admitted: rule 3 proved it
     /// stays in the frame's user-state slots or `pt_regs` `regs[]`/`sp`.
     in_bounds_runtime_access: usize,
+    /// An `LDTR*`/`STTR*` on a word that has a fault-site entry (a window access's,
+    /// A15: a user access with an extra range check before it is a legal user access).
+    user_access_at_fault_site: usize,
     escapes: Vec<String>,
 }
 
@@ -371,7 +373,7 @@ impl Suite {
         self.runtime_accesses(fixture);
         self.end_and_entries(fixture);
         self.budget_checks(fixture);
-        self.pan_windows_checks(fixture);
+        self.window_checks(fixture);
         self.kernel_values(fixture);
         self.dispatch_templates(fixture);
         self.random_words(fixture);
@@ -1128,46 +1130,43 @@ impl Suite {
         }
     }
 
-    /// PAN windows found on the bytes (A8): the index of each `msr pan, #0`, which
-    /// the translator only emits as `ubfx; cbnz <S>; msr pan, #0; <atomic>; msr pan,
-    /// #1`, and its PAN stub S.
-    fn pan_windows(fixture: &Fixture) -> Vec<(usize, usize)> {
+    /// Window accesses found on the bytes (A8, A9a, A15): `(ubfx, cbnz, access)` word
+    /// indices of each window access, which the translator only emits as `ubfx sB,
+    /// sA, #48, #8; cbnz sB, <S>; <access on sA>`. `S` is the `cbnz` target.
+    fn windows(fixture: &Fixture) -> Vec<(usize, usize, usize)> {
         fixture
             .body()
-            .filter(|&index| fixture.words[index] == enc(msr_pan(0)))
-            .map(|clear| {
-                let Some(A64Insn::CbnzCbnz64Compbranch { imm19, .. }) = fixture.decoded(clear - 1)
-                else {
-                    panic!("{}: window at {:#x} has no cbnz", fixture.name, clear * 4);
-                };
-                let stub = ((clear - 1) as i64 * 4 + imm19.value()) as usize / 4;
-                (clear, stub)
+            .filter(|&index| {
+                fixture
+                    .decoded(index)
+                    .is_some_and(|insn| insn.is_pan_window_access())
             })
+            .map(|access| (access - 2, access - 1, access))
             .collect()
     }
 
-    /// Every A8 mutation class, at every window of the fragment, plus the
-    /// everywhere-else insertions of atomics and `msr pan`.
-    fn pan_windows_checks(&mut self, fixture: &Fixture) {
-        let windows = Self::pan_windows(fixture);
-        let nop = enc(A64Insn::NopNopHiHints {});
-        let window_atomics: Vec<usize> = windows.iter().map(|&(clear, _)| clear + 1).collect();
-        let pan_stubs: Vec<usize> = windows.iter().map(|&(_, stub)| stub).collect();
-        let plain_stubs: Vec<usize> = fixture
-            .tables
-            .fault_sites
-            .iter()
-            .map(|site| site.stub_offset / 4)
-            .filter(|stub| !pan_stubs.contains(stub))
-            .collect();
+    /// The exit group a window's range-check `cbnz` leaves through.
+    fn window_stub(fixture: &Fixture, cbnz: usize) -> usize {
+        let Some(A64Insn::CbnzCbnz64Compbranch { imm19, .. }) = fixture.decoded(cbnz) else {
+            panic!("{}: window access at {:#x} has no cbnz", fixture.name, (cbnz + 1) * 4);
+        };
+        ((cbnz as i64 * 4 + imm19.value()) / 4) as usize
+    }
 
-        for &(clear, stub) in &windows {
-            let (ubfx, cbnz, atomic, set) = (clear - 2, clear - 1, clear + 1, clear + 2);
+    /// Every rule 8 mutation class, at every window access of the fragment, plus the
+    /// everywhere-else insertions of `msr`, atomics and SIMD&FP accesses.
+    fn window_checks(&mut self, fixture: &Fixture) {
+        let windows = Self::windows(fixture);
+        let nop = enc(A64Insn::NopNopHiHints {});
+        let accesses: Vec<usize> = windows.iter().map(|&(_, _, access)| access).collect();
+
+        for &(ubfx, cbnz, atomic) in &windows {
+            let stub = Self::window_stub(fixture, cbnz);
             let Some(A64Insn::UbfmUbfm64mBitfield { rn: sa, rd: sb, .. }) = fixture.decoded(ubfx)
             else {
-                panic!("{}: window at {:#x} has no ubfx", fixture.name, clear * 4);
+                panic!("{}: window at {:#x} has no ubfx", fixture.name, atomic * 4);
             };
-            let at = |index: usize| format!("window at {:#x}, word {:#x}", clear * 4, index * 4);
+            let at = |index: usize| format!("window at {:#x}, word {:#x}", atomic * 4, index * 4);
             // A9a: a window around a SIMD&FP access reports under its own classes.
             let simd = fixture
                 .decoded(atomic)
@@ -1180,38 +1179,52 @@ impl Suite {
                 }
             };
 
-            // Dropped: either MSR, or the PAN stub's leading MSR.
-            for (index, class) in [
-                (clear, tag("PAN window msr pan, #0 dropped")),
-                (set, tag("PAN window msr pan, #1 dropped")),
-                (stub, tag("PAN stub msr pan, #1 dropped")),
-            ] {
-                self.replace(class, fixture, index, nop, &at(index));
+            // Dropped: the `ubfx`, the `cbnz`, or both.
+            for index in [ubfx, cbnz] {
+                self.replace(
+                    tag("window range check dropped"),
+                    fixture,
+                    index,
+                    nop,
+                    &at(index),
+                );
             }
+            let mut words = fixture.words.clone();
+            words[ubfx] = nop;
+            words[cbnz] = nop;
+            self.expect_reject(
+                tag("window range check dropped"),
+                fixture,
+                format!("both, {}", at(atomic)),
+                &words,
+                &fixture.tables,
+            );
 
-            // Moved: each MSR swapped with a neighbour.
+            // Moved: the check's words and the access swapped with each other and
+            // with their neighbours (the fault site stays where it was).
             for (a, b) in [
-                (clear, clear - 1),
-                (clear, clear + 1),
-                (clear, clear - 3),
-                (set, set - 1),
-                (set, set + 1),
+                (ubfx, cbnz),
+                (cbnz, atomic),
+                (ubfx, atomic),
+                (ubfx, ubfx - 1),
+                (atomic, atomic + 1),
             ] {
                 let mut words = fixture.words.clone();
                 words.swap(a, b);
                 self.expect_reject(
-                    tag("PAN window msr moved"),
+                    tag("window range check moved"),
                     fixture,
-                    at(a),
+                    format!("swap {:#x} and {:#x}, {}", a * 4, b * 4, at(atomic)),
                     &words,
                     &fixture.tables,
                 );
             }
 
-            // Widened: one word inserted into each gap of the window. The words
-            // before the gap move one word earlier (over the word before the
-            // `ubfx`), with the `cbnz` still aimed at S and the atomic's fault site
-            // following the atomic, so only the window shape changes.
+            // Widened: one word inserted into each gap of the check (between the
+            // `ubfx` and the `cbnz`, between the `cbnz` and the access), `msr`
+            // included. The words before the gap move one word earlier (over the
+            // word before the `ubfx`), with the `cbnz` still aimed at S and the
+            // access, with its fault site, where it was.
             let inserts = [
                 ("nop", A64Insn::NopNopHiHints {}),
                 ("mov sA, x0", mov_reg(sa.enc(), 0)),
@@ -1224,31 +1237,25 @@ impl Suite {
                         rd: x(sb.enc()),
                     },
                 ),
+                ("msr pan, #0", msr_pan(0)),
+                ("msr pan, #1", msr_pan(1)),
             ];
-            for gap in ubfx + 1..=set {
+            for gap in ubfx + 1..=atomic {
                 for (what, insn) in inserts {
                     let mut words = fixture.words.clone();
-                    let mut tables = clone_tables(&fixture.tables);
                     for index in ubfx - 1..gap - 1 {
                         words[index] = fixture.words[index + 1];
                     }
                     words[gap - 1] = enc(insn);
-                    // The cbnz moved: re-aim it at S.
+                    // The `cbnz` moved if the gap is after it: re-aim it at S.
                     let new_cbnz = if gap > cbnz { cbnz - 1 } else { cbnz };
                     words[new_cbnz] = enc(cbnz_to(new_cbnz, stub, sb.enc()));
-                    if gap > atomic {
-                        for site in &mut tables.fault_sites {
-                            if site.access_offset == atomic * 4 {
-                                site.access_offset -= 4;
-                            }
-                        }
-                    }
                     self.expect_reject(
-                        tag("PAN window widened (word inserted)"),
+                        tag("window widened (word inserted)"),
                         fixture,
-                        format!("{what} before word {:#x}, {}", gap * 4, at(clear)),
+                        format!("{what} before word {:#x}, {}", gap * 4, at(atomic)),
                         &words,
-                        &tables,
+                        &fixture.tables,
                     );
                 }
             }
@@ -1287,7 +1294,7 @@ impl Suite {
             ];
             for (what, insn) in checks {
                 self.replace(
-                    tag("PAN range check altered"),
+                    tag("window range check altered"),
                     fixture,
                     ubfx,
                     enc(insn),
@@ -1295,14 +1302,14 @@ impl Suite {
                 );
             }
 
-            // cbnz retargeted, inverted, on another register.
+            // cbnz retargeted to a word that is not a forward exit-group start (any
+            // other exit group is a legal target: the access is skipped whenever
+            // sB != 0, wherever the branch goes); inverted, on another register.
             let len = fixture.words.len();
-            let mut targets = vec![clear, set + 1, stub + 1, BODY_OFFSET / 4, len - 1];
-            targets.extend(plain_stubs.iter().copied());
-            targets.extend(pan_stubs.iter().copied().filter(|&other| other != stub));
+            let targets = [ubfx, cbnz, atomic, atomic + 1, stub + 1, BODY_OFFSET / 4, len - 1];
             for target in targets {
                 self.replace(
-                    tag("PAN range check cbnz retargeted"),
+                    tag("window range check cbnz retargeted"),
                     fixture,
                     cbnz,
                     enc(cbnz_to(cbnz, target, sb.enc())),
@@ -1341,7 +1348,7 @@ impl Suite {
             ];
             for (what, insn) in branches {
                 self.replace(
-                    tag("PAN range check cbnz altered"),
+                    tag("window range check cbnz altered"),
                     fixture,
                     cbnz,
                     enc(insn),
@@ -1349,25 +1356,12 @@ impl Suite {
                 );
             }
 
-            // Window around something other than an LSE atomic on sA.
+            // The access replaced by something that is not a window access on sA
+            // (an LDTR/STTR there would be a legal user access, so none is listed).
             let base = A64Reg::x_sp(sa.enc());
             let others = [
                 ("ldr x0, [sA]", ldr64(0, base, 0)),
                 ("str x0, [sA]", str64(0, base, 0)),
-                (
-                    "ldtr x0, [sA]",
-                    A64Insn::LdtrLdtr64LdstUnpriv {
-                        rt: x(0),
-                        mem: mem_off(base, simm(0, 9)),
-                    },
-                ),
-                (
-                    "sttr w0, [sA]",
-                    A64Insn::SttrSttr32LdstUnpriv {
-                        rt: w(0),
-                        mem: mem_off(base, simm(0, 9)),
-                    },
-                ),
                 (
                     "ldar x0, [sA]",
                     A64Insn::LdarLdarLr64Ldstord { rn: base, rt: x(0) },
@@ -1393,7 +1387,7 @@ impl Suite {
             ];
             for (what, insn) in others {
                 self.replace(
-                    tag("PAN window around a non-atomic / plain access"),
+                    tag("window access replaced by a non-access / foreign-base access"),
                     fixture,
                     atomic,
                     enc(insn),
@@ -1456,7 +1450,7 @@ impl Suite {
             ];
             for (what, insn) in simd_others {
                 self.replace(
-                    "PAN window around a SIMD&FP access on another base / with offset (A9a)",
+                    "window around a SIMD&FP access on another base / with offset (A9a)",
                     fixture,
                     atomic,
                     enc(insn),
@@ -1464,21 +1458,19 @@ impl Suite {
                 );
             }
 
-            // The atomic's fault site at a non-PAN stub, at another window's PAN
-            // stub, or dropped.
+            // The access's fault site at a word that starts no exit group (another
+            // exit group is legal: the resume PC is not safety-relevant).
             let position = fixture
                 .tables
                 .fault_sites
                 .iter()
                 .position(|site| site.access_offset == atomic * 4)
-                .unwrap_or_else(|| panic!("{}: window atomic without a site", fixture.name));
-            let mut stubs = plain_stubs.clone();
-            stubs.extend(pan_stubs.iter().copied().filter(|&other| other != stub));
-            for other in stubs {
+                .unwrap_or_else(|| panic!("{}: window access without a site", fixture.name));
+            for other in [stub + 1, atomic + 1, BODY_OFFSET / 4] {
                 let mut tables = clone_tables(&fixture.tables);
                 tables.fault_sites[position].stub_offset = other * 4;
                 self.expect_reject(
-                    tag("window fault site -> other stub"),
+                    tag("window fault site -> not an exit group"),
                     fixture,
                     format!("{} -> {:#x}", at(atomic), other * 4),
                     &fixture.words,
@@ -1486,12 +1478,12 @@ impl Suite {
                 );
             }
 
-            // Bypass: an entry on the cbnz, either MSR or the atomic.
-            for inner in cbnz..=set {
+            // Bypass: an entry on the cbnz or the access.
+            for inner in cbnz..=atomic {
                 let mut tables = clone_tables(&fixture.tables);
                 tables.entry_offsets.push(inner * 4);
                 self.expect_reject(
-                    tag("PAN window entered past its range check"),
+                    tag("window entered past its range check"),
                     fixture,
                     format!("entry {:#x}", inner * 4),
                     &fixture.words,
@@ -1500,27 +1492,9 @@ impl Suite {
             }
         }
 
-        // Any other LDTR/STTR's fault site pointed at a PAN stub.
-        for (position, site) in fixture.tables.fault_sites.iter().enumerate() {
-            if window_atomics.contains(&(site.access_offset / 4)) {
-                continue;
-            }
-            for &stub in &pan_stubs {
-                let mut tables = clone_tables(&fixture.tables);
-                tables.fault_sites[position].stub_offset = stub * 4;
-                self.expect_reject(
-                    "LDTR/STTR fault site -> PAN stub",
-                    fixture,
-                    format!("site {:#x} -> {:#x}", site.access_offset, stub * 4),
-                    &fixture.words,
-                    &tables,
-                );
-            }
-        }
-
-        // Any other direct branch retargeted to a PAN stub.
+        // Bypass: any other direct branch retargeted onto a window's `cbnz` or access.
         for index in fixture.body() {
-            if windows.iter().any(|&(clear, _)| index == clear - 1) {
+            if windows.iter().any(|&(_, cbnz, _)| index == cbnz) {
                 continue;
             }
             let Some(insn) = fixture.decoded(index) else {
@@ -1529,19 +1503,21 @@ impl Suite {
             let Some((field, scale, bits)) = branch_role(insn) else {
                 continue;
             };
-            for &stub in &pan_stubs {
-                let delta = (stub as i64 - index as i64) * 4;
-                let encoded = ((delta >> scale) as u32) & ((1 << bits) - 1);
-                let Ok(moved) = insn.set_branch_target_imm(field, encoded) else {
-                    continue;
-                };
-                self.replace(
-                    "branch -> PAN stub",
-                    fixture,
-                    index,
-                    enc(moved),
-                    &format!("{} -> {:#x}", insn.key(), stub * 4),
-                );
+            for &(_, cbnz, atomic) in &windows {
+                for target in [cbnz, atomic] {
+                    let delta = (target as i64 - index as i64) * 4;
+                    let encoded = ((delta >> scale) as u32) & ((1 << bits) - 1);
+                    let Ok(moved) = insn.set_branch_target_imm(field, encoded) else {
+                        continue;
+                    };
+                    self.replace(
+                        "branch into a window past its range check",
+                        fixture,
+                        index,
+                        enc(moved),
+                        &format!("{} -> {:#x}", insn.key(), target * 4),
+                    );
+                }
             }
         }
 
@@ -1551,12 +1527,12 @@ impl Suite {
                 if fixture.words[index] == *word {
                     continue;
                 }
-                self.replace("insert msr pan elsewhere", fixture, index, *word, what);
+                self.replace("insert msr pan anywhere", fixture, index, *word, what);
             }
         }
         for (what, word) in ATOMIC_WORDS {
             for index in fixture.body() {
-                if window_atomics.contains(&index) {
+                if accesses.contains(&index) {
                     continue;
                 }
                 self.replace(
@@ -1571,7 +1547,7 @@ impl Suite {
         // A9a: base-only SIMD&FP loads/stores anywhere but a window's access.
         for (what, word) in SIMD_WINDOW_WORDS {
             for index in fixture.body() {
-                if window_atomics.contains(&index) {
+                if accesses.contains(&index) {
                     continue;
                 }
                 self.replace(
@@ -1853,12 +1829,11 @@ impl Suite {
             }
         }
 
-        // At each PAN window: the pointer loaded before the range check and used
+        // At each window access: the pointer loaded before the range check and used
         // as the atomic's data operand (the window shape is kept).
-        for (clear, _) in Self::pan_windows(fixture) {
-            let (ubfx, atomic) = (clear - 2, clear + 1);
+        for (ubfx, _, atomic) in Self::windows(fixture) {
             let Some(A64Insn::UbfmUbfm64mBitfield { rn: sa, .. }) = fixture.decoded(ubfx) else {
-                panic!("{}: window at {:#x} has no ubfx", fixture.name, clear * 4);
+                panic!("{}: window at {:#x} has no ubfx", fixture.name, atomic * 4);
             };
             let base = A64Reg::x_sp(sa.enc());
             for (what, insn) in [
@@ -1883,9 +1858,9 @@ impl Suite {
                 words[ubfx - 1] = load;
                 words[atomic] = enc(insn);
                 self.expect_reject(
-                    "pt_regs pointer into a PAN window atomic (rule 9)",
+                    "pt_regs pointer into a window atomic (rule 9)",
                     fixture,
-                    format!("{what}, window at {:#x}", clear * 4),
+                    format!("{what}, window at {:#x}", atomic * 4),
                     &words,
                     &fixture.tables,
                 );
@@ -2780,6 +2755,14 @@ impl Suite {
                 self.random.in_fragment_branch += 1;
             } else if insn.is_some_and(is_offset_runtime_access) {
                 self.random.in_bounds_runtime_access += 1;
+            } else if insn.is_some_and(A64Insn::is_unprivileged_access)
+                && fixture
+                    .tables
+                    .fault_sites
+                    .iter()
+                    .any(|site| site.access_offset == index * 4)
+            {
+                self.random.user_access_at_fault_site += 1;
             } else if self.random.escapes.len() < 10 {
                 self.random.escapes.push(format!(
                     "{}: {word:#010x} at {:#x} ({:?})",
@@ -2985,21 +2968,19 @@ fn scaled_offset(mem: A64Mem, log2: u8) -> A64Mem {
 /// SIMD&FP load/store.
 fn simd_window_class(class: &'static str) -> &'static str {
     match class {
-        "PAN window msr pan, #0 dropped" => "[A9a SIMD&FP window] msr pan, #0 dropped",
-        "PAN window msr pan, #1 dropped" => "[A9a SIMD&FP window] msr pan, #1 dropped",
-        "PAN stub msr pan, #1 dropped" => "[A9a SIMD&FP window] PAN stub msr pan, #1 dropped",
-        "PAN window msr moved" => "[A9a SIMD&FP window] msr moved",
-        "PAN window widened (word inserted)" => "[A9a SIMD&FP window] widened (word inserted)",
-        "PAN range check altered" => "[A9a SIMD&FP window] range check altered",
-        "PAN range check cbnz retargeted" => "[A9a SIMD&FP window] range check cbnz retargeted",
-        "PAN range check cbnz altered" => "[A9a SIMD&FP window] range check cbnz altered",
-        "PAN window around a non-atomic / plain access" => {
-            "[A9a SIMD&FP window] access replaced by a plain / unprivileged / foreign-base access"
+        "window range check dropped" => "[A9a SIMD&FP window] range check dropped",
+        "window range check moved" => "[A9a SIMD&FP window] range check moved",
+        "window widened (word inserted)" => "[A9a SIMD&FP window] widened (word inserted)",
+        "window range check altered" => "[A9a SIMD&FP window] range check altered",
+        "window range check cbnz retargeted" => "[A9a SIMD&FP window] range check cbnz retargeted",
+        "window range check cbnz altered" => "[A9a SIMD&FP window] range check cbnz altered",
+        "window access replaced by a non-access / foreign-base access" => {
+            "[A9a SIMD&FP window] access replaced by a plain / foreign-base access"
         }
-        "window fault site -> other stub" => {
-            "[A9a SIMD&FP window] fault site -> non-PAN / other window's stub"
+        "window fault site -> not an exit group" => {
+            "[A9a SIMD&FP window] fault site -> not an exit group"
         }
-        "PAN window entered past its range check" => {
+        "window entered past its range check" => {
             "[A9a SIMD&FP window] entered past its range check"
         }
         other => panic!("no A9a class for `{other}`"),
@@ -3174,11 +3155,12 @@ fn verifier_rejects_every_mutation_of_every_fixture_fragment() {
     }
     let random = &suite.random;
     println!(
-        "| random body word | rejected {} / benign ALU {} / in-fragment branch {} / in-bounds runtime access {} / other accepted {} of {} | |",
+        "| random body word | rejected {} / benign ALU {} / in-fragment branch {} / in-bounds runtime access {} / user access at a fault site {} / other accepted {} of {} | |",
         random.rejected,
         random.benign_alu,
         random.in_fragment_branch,
         random.in_bounds_runtime_access,
+        random.user_access_at_fault_site,
         random.escapes.len(),
         random.total
     );

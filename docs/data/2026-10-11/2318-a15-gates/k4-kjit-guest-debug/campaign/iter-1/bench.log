@@ -1,0 +1,86 @@
+k4-bench: default (redis-benchmark -q -n 100000 ):
+k4:     PING_INLINE: 36337.21 requests per second, p50=0.663 msec
+k4:     PING_MBULK: 36429.88 requests per second, p50=0.671 msec
+k4:     SET: 36859.56 requests per second, p50=0.663 msec
+k4:     GET: 36643.46 requests per second, p50=0.663 msec
+k4:     INCR: 36643.46 requests per second, p50=0.663 msec
+k4:     LPUSH: 36523.01 requests per second, p50=0.663 msec
+k4:     RPUSH: 37009.62 requests per second, p50=0.655 msec
+k4:     LPOP: 36456.43 requests per second, p50=0.663 msec
+k4:     RPOP: 36549.71 requests per second, p50=0.671 msec
+k4:     SADD: 36258.16 requests per second, p50=0.671 msec
+k4:     HSET: 36284.47 requests per second, p50=0.671 msec
+k4:     SPOP: 35997.12 requests per second, p50=0.671 msec
+k4:     ZADD: 35310.73 requests per second, p50=0.679 msec
+k4:     ZPOPMIN: 35385.70 requests per second, p50=0.679 msec
+k4:     LPUSH (needed to benchmark LRANGE): 36153.29 requests per second, p50=0.671 msec
+k4:     LRANGE_100 (first 100 elements): 27389.76 requests per second, p50=0.895 msec
+k4:     LRANGE_300 (first 300 elements): 17473.35 requests per second, p50=1.423 msec
+k4:     LRANGE_500 (first 500 elements): 13290.80 requests per second, p50=1.879 msec
+k4:     LRANGE_600 (first 600 elements): 11897.68 requests per second, p50=2.095 msec
+k4:     MSET (10 keys): 35688.79 requests per second, p50=0.687 msec
+k4:   default: in_kernel=3715447/5316457 syscalls (69.9%) entries=7310491 chains=1999421 chain_cap=0 translated=512 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   default: exits svc=3715447 bl=119477 blr=600928 br=1999910 ret=30189 mem=56 unsupported=844484 budget=0 invalid=0 svc_declined=0
+k4:   default: fpsimd entries=1998931 preempted=134 exit_mem=56 refused_sve_sme=0 run_max_ns(since load)=12109833
+k4:   default: ibtc insert=1089 replace=96 clear=0 fpsimd_boundary=1998911 miss cold=747149 conflict=4444 other=0; per in-kernel syscall: entries=1.97 exit_budget=0.0000
+k4:   default: entries per hook call: 1-1:3312123 2-3:1998906 4-7:41 (chain_max since load 1024)
+k4:   default: unsupported_top (word(exits/entry_stops)): 0x9e630160(740439/0) 0xfc6c79c0(103959/0) 0xd503203f(86/0) 
+k4:   default: hot: 7310495 fragment entries, 3715447 syscalls in kernel before the event
+k4-bench: pipelined (redis-benchmark -q -n 100000 -P 16):
+k4:     PING_INLINE: 520833.34 requests per second, p50=1.167 msec
+k4:     PING_MBULK: 564971.75 requests per second, p50=0.703 msec
+k4:     SET: 537634.38 requests per second, p50=1.151 msec
+k4:     GET: 558659.19 requests per second, p50=0.991 msec
+k4:     INCR: 564971.75 requests per second, p50=1.031 msec
+k4:     LPUSH: 518134.72 requests per second, p50=1.271 msec
+k4:     RPUSH: 543478.25 requests per second, p50=1.143 msec
+k4:     LPOP: 564971.75 requests per second, p50=1.015 msec
+k4:     RPOP: 574712.69 requests per second, p50=0.951 msec
+k4:     SADD: 578034.69 requests per second, p50=0.951 msec
+k4:     HSET: 534759.31 requests per second, p50=1.223 msec
+k4:     SPOP: 617283.94 requests per second, p50=0.767 msec
+k4:     ZADD: 571428.56 requests per second, p50=0.711 msec
+k4:     ZPOPMIN: 564971.75 requests per second, p50=0.695 msec
+k4:     LPUSH (needed to benchmark LRANGE): 531914.94 requests per second, p50=1.231 msec
+k4:     LRANGE_100 (first 100 elements): 108695.65 requests per second, p50=3.687 msec
+k4:     LRANGE_300 (first 300 elements): 35498.76 requests per second, p50=8.439 msec
+k4:     LRANGE_500 (first 500 elements): 21838.83 requests per second, p50=10.327 msec
+k4:     LRANGE_600 (first 600 elements): 18195.05 requests per second, p50=10.791 msec
+k4:     MSET (10 keys): 403225.81 requests per second, p50=1.711 msec
+k4:   pipelined: in_kernel=131253/304067 syscalls (43.2%) entries=400169 chains=125001 chain_cap=0 translated=0 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   pipelined: exits svc=131253 bl=9877 blr=38898 br=125001 ret=21043 mem=53 unsupported=11159 budget=62885 invalid=0 svc_declined=0
+k4:   pipelined: fpsimd entries=125001 preempted=6 exit_mem=53 refused_sve_sme=0 run_max_ns(since load)=12109833
+k4:   pipelined: ibtc insert=0 replace=0 clear=0 fpsimd_boundary=125001 miss cold=67816 conflict=2002 other=0; per in-kernel syscall: entries=3.05 exit_budget=0.4791
+k4:   pipelined: entries per hook call: 1-1:150167 2-3:125001 (chain_max since load 1024)
+k4:   pipelined: unsupported_top (word(exits/entry_stops)): 0xfc6c79c0(8413/0) 0x9e630160(2742/0) 0xd503203f(4/0) 
+k4:   pipelined: hot: 400173 fragment entries, 131253 syscalls in kernel before the event
+k4-bench: clients256 (redis-benchmark -q -n 100000 -c 256):
+k4:     PING_INLINE: 32754.67 requests per second, p50=3.887 msec
+k4:     PING_MBULK: 32840.72 requests per second, p50=3.879 msec
+k4:     SET: 33025.10 requests per second, p50=3.871 msec
+k4:     GET: 32362.46 requests per second, p50=3.919 msec
+k4:     INCR: 32776.14 requests per second, p50=3.895 msec
+k4:     LPUSH: 32331.07 requests per second, p50=3.935 msec
+k4:     RPUSH: 32637.08 requests per second, p50=3.927 msec
+k4:     LPOP: 33366.70 requests per second, p50=3.807 msec
+k4:     RPOP: 32195.75 requests per second, p50=3.935 msec
+k4:     SADD: 32000.00 requests per second, p50=3.967 msec
+k4:     HSET: 32594.52 requests per second, p50=3.935 msec
+k4:     SPOP: 32341.53 requests per second, p50=3.951 msec
+k4:     ZADD: 31715.82 requests per second, p50=4.031 msec
+k4:     ZPOPMIN: 30202.36 requests per second, p50=4.199 msec
+k4:     LPUSH (needed to benchmark LRANGE): 32626.43 requests per second, p50=3.935 msec
+k4:     LRANGE_100 (first 100 elements): 24539.88 requests per second, p50=5.183 msec
+k4:     LRANGE_300 (first 300 elements): 15540.02 requests per second, p50=8.111 msec
+k4:     LRANGE_500 (first 500 elements): 11936.02 requests per second, p50=10.695 msec
+k4:     LRANGE_600 (first 600 elements): 10565.24 requests per second, p50=12.143 msec
+k4:     MSET (10 keys): 31397.18 requests per second, p50=4.071 msec
+k4:   clients256: in_kernel=3550609/5138555 syscalls (69.1%) entries=7115201 chains=1999998 chain_cap=0 translated=0 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4:   clients256: exits svc=3550609 bl=116717 blr=600007 br=2000000 ret=41401 mem=959 unsupported=805508 budget=0 invalid=0 svc_declined=0
+k4:   clients256: fpsimd entries=1999998 preempted=175 exit_mem=959 refused_sve_sme=0 run_max_ns(since load)=12109833
+k4:   clients256: ibtc insert=0 replace=0 clear=0 fpsimd_boundary=1999998 miss cold=747885 conflict=10242 other=0; per in-kernel syscall: entries=2.00 exit_budget=0.0000
+k4:   clients256: entries per hook call: 1-1:3115205 2-3:1999998 (chain_max since load 1024)
+k4:   clients256: unsupported_top (word(exits/entry_stops)): 0x9e630160(700690/0) 0xfc6c79c0(104718/0) 0xd503203f(100/0) 
+k4:   clients256: hot: 7115218 fragment entries, 3550609 syscalls in kernel before the event
+k4-bench: consistency PASS: dbsize 10044 digest 603e069a26083ceb1309ded3186769f0b0809e09 readback sha256 362731776718583235c4f1394cb708151a5c09052efd2c0ace0f6f0f7392fb50 
+k4-bench: ALL PASS
