@@ -476,7 +476,8 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
 Every `BL`, `BLR`, `BR` and `RET` is lowered to an in-fragment table-based
 transfer; the runtime is entered only on a miss. One path covers all four
 kinds, needs no text writes (so no ROX patching, no +-128 MiB range limit, no
-incoming-link lists) and makes unlinking a single store. `B`/`B.cond` inside the
+incoming-link lists) and makes unlinking a single store. A16 adds, for static
+`BL` sites only, a link slot in front of the template (Direct BL links (A16)). `B`/`B.cond` inside the
 CFG stay in-fragment. `SVC` is not a branch: its resume stays a runtime path.
 
 - Tables (kernel side, section 8): per `kjit_mm` two dispatch tables. Each is
@@ -598,6 +599,44 @@ CFG stay in-fragment. `SVC` is not a branch: its resume stays a runtime path.
   budget-charged, and that no kernel value escapes. What the runtime must
   guarantee (table content) is the invariant in section 8.
 - Run conditions and bounds: see section 8, Run conditions (kjit_can_run).
+
+### Direct BL links (A16)
+
+A `BL` whose target is a translation-time constant can be linked: its site
+carries one link slot that the runtime patches into a direct `b` to a verified
+entry of a live fragment translated for that target. Every other transfer, and
+every site that is not linked, uses the dispatch template unchanged.
+
+- Lowering (rephrase): at a `BL` site, between the link write and the template's
+  first word, one `nop` (`RephrasedInsnKind::LinkSlot`):
+
+  ```text
+  sub  x18, x18, #1 ; cbz x18, <Budget stub>   ; budget unit (unchanged)
+  movz/movk x13, #T                             ; target (unchanged)
+  movz/movk x30, #resume                        ; link write (unchanged)
+  nop                                           ; link slot: runtime may make it `b <host of T>`
+  <dispatch template, 20 words>                 ; unchanged
+  ```
+
+  `ExecutionFragment` lists the slots, `link_sites: [(slot_offset, target_pc)]`.
+  `BLR`/`BR`/`RET` get no slot; their targets are dynamic.
+- Linked semantics: a linked slot branches where the template would have, had
+  its probe hit a record for T. Every fragment's labels for T are translations
+  of the same text (section 8, Dispatch tables). The budget unit, x13 and x30
+  are already written when the slot runs, so a linked and an unlinked transfer
+  leave identical user state.
+- Why (decided 2026-10-12): in redis, linking the static `BL` sites saved
+  0.12-0.23 us of server CPU per request (3-5%), with 6 of 6 boots positive and
+  99% of `BL` executions on linkable sites
+  ([2026-10-11 22:37](journal/2026-10-11.md)). This revokes A11's "no text
+  writes, no incoming-link lists" for `BL` only. The cost is the link
+  bookkeeping and a kernel export for text patching (section 8, Direct BL links;
+  patch 0008).
+- Verifier (rule 10, section 6): every listed slot is a `nop`, immediately
+  followed by a dispatch template's first word. The template's guarded run sets
+  x13 by one `movz` plus `movk`s to exactly `target_pc`. The patched `b` is
+  runtime-owned state, like a table record: what the runtime must guarantee is
+  in section 8.
 
 ### Memory form coverage (A7b)
 
@@ -1194,7 +1233,8 @@ accepts. It is written against this file and `shared::abi`, not the translator.
 ### Input
 
 `VerifyInput { code: &[u8], fault_sites: &[FaultSiteEntry { access_offset,
-stub_offset }], entry_offsets: &[usize] }`, all offsets relative to the fragment
+stub_offset }], entry_offsets: &[usize], link_sites: &[(usize, u64)] }`
+(A16), all offsets relative to the fragment
 base. `ori_pc` is not part of the input: the stub loads its own resume PC, so the
 table's PC column is not safety-relevant. The harness builds the input from
 `ExecutionFragment` (`FragmentTables::of`): the entry table is `entry_offset`
@@ -1337,6 +1377,11 @@ Reject with `VerifyError { offset, rule }`.
      groups included.
 9. Confidentiality: no kernel value reaches user-visible state; see
    "Confidentiality (rule 9)" below.
+10. Link slots (A16): every `link_sites` entry `(slot_offset, target_pc)` names
+    a body word that is `nop`, followed immediately by a dispatch template's
+    first word. Within that template's guarded run (rule 6), x13 is set exactly
+    once, by a `movz` and up to three `movk`s, to `target_pc` (`LinkSite`
+    otherwise). Two entries never share a slot. The slot is not a join point.
 
 Join points (where the dataflow restarts): entry offsets, stubs, and direct
 branch targets; also after every unconditional `B`.
@@ -1612,6 +1657,12 @@ no duplicate translation logic.
 
 ### Code cache and cached runs (A11a)
 
+- Links (A16): the code cache applies the same link condition and bookkeeping as
+  the kernel (install links a fragment's sites and pending sites into its labels;
+  retire restores incoming slots), using the shared encoder
+  `shared::abi::link_branch_word(slot_addr, host) -> Option<u32>` (`None` out of
+  `b` range), so cached runs execute linked transfers. The differential compares
+  them against the original like any other transfer.
 - `harness/src/code_cache.rs` mirrors the kernel's store: fragments by entry pc,
   labels as records `{pc, host}` (`vlabels` sorted by pc), the two tables
   (`table_all`, `table_nofp`, main and victim part), `publish` and `retire`
@@ -1797,6 +1848,9 @@ and one module shape is simpler than a K0-only build.
    and `kjit_hook_srcu_barrier()` (`srcu_barrier()`), both `EXPORT_SYMBOL_GPL`;
    the `srcu_struct` stays private to `arch/arm64/kernel/kjit.c`. No new state or
    lock.
+8. **0008**: `EXPORT_SYMBOL_GPL(aarch64_insn_patch_text_nosync)` for direct BL
+   links (A16). It writes one instruction through the fixmap alias with cache
+   maintenance; kjit uses it only for `nop` <-> `b` link slots.
 
 ### kjit_after_syscall decision
 
@@ -2004,6 +2058,40 @@ and one module shape is simpler than a K0-only build.
   (cleared slots), `ibtc_fpsimd_boundary` (counted in Rust, `exec.rs`: a
   branch exit of a non-FP/SIMD run whose target resolved to an FP/SIMD
   fragment). Hits are not counted (no atomics in fragment code).
+
+### Direct BL links (A16, kernel side)
+
+- Patching: `kjit_link_patch(slot, word)` writes one instruction with
+  `aarch64_insn_patch_text_nosync` (exported by patch 0008; fixmap alias of the
+  ROX page, cache maintenance included). Only `nop` <-> `b` transitions are
+  written. Both are in the architecture's concurrent-modification-and-execution
+  list, so a CPU fetching the slot concurrently executes either the old or the
+  new word. Images stay ROX.
+- Link condition, for slot S of fragment F (target pc T): a label L with
+  `L.pc == T` of a non-retired fragment G of the same `kjit_mm`. If F does not
+  use FP/SIMD, G must not either (the `table_nofp` rule: a run outside the
+  bracket never reaches FP/SIMD code). `L.host - S` must fit `b`'s imm26
+  (+-128 MiB); otherwise the slot stays a `nop` (`link_out_of_range`), which is
+  correct and only slower. G may be F itself.
+- Bookkeeping, under `kmm->lock`, with no allocation under it: site records
+  (`struct kjit_link { slot, target_pc, linked_to, node }`) are allocated with
+  the fragment. Each is either on the mm's pending hash (keyed by `target_pc`)
+  or on its target fragment's incoming list.
+  - Install of F: for each of F's sites, link it now if a label satisfies the
+    condition, else put it on pending. Then, for each of F's labels, link every
+    pending site whose `target_pc` matches and whose class allows it.
+  - Retire of G: every incoming site is restored to `nop` and goes back to
+    pending, before G's retirement callback is queued. G's own sites are
+    removed from pending or from their targets' incoming lists.
+- Lifetime: a run that took a linked `b` into G before the restore is inside its
+  hook-SRCU read section, and G is freed only after that grace period. This is
+  the same argument as a dispatch-table slot cleared at retire.
+- Invariant (not verified, owned by the runtime): every slot holds `nop` or `b`
+  to `image + a verified entry offset` of a non-retired fragment of the same
+  `kjit_mm`, translated for exactly the slot's `target_pc`, never from a
+  non-FP/SIMD fragment into an FP/SIMD one.
+- Stats: `link_made`, `link_restored`, `link_out_of_range`,
+  `link_class_refused`.
 
 ### Chain budget (A10)
 
@@ -2266,8 +2354,9 @@ the reasoning, the numbers and the full list of what was not verified there.
   not needed. [2026-10-05 11:47](journal/2026-10-05.md),
   [2026-10-09 02:31](journal/2026-10-09.md).
 - **A11 deferred items**, each safe to defer because it is pure speed or policy
-  on top of the same records and lifetimes: patched direct `b` for `BL` sites and
-  a return-address stack for `RET` (revisit if a profile shows the ~20-word
+  on top of the same records and lifetimes: a return-address stack for `RET`
+  (patched direct `b` for `BL` sites became A16; a RAS-predicted `ret x12`
+  measured slower in redis, [2026-10-11 22:37](journal/2026-10-11.md)) (revisit if a profile shows the ~20-word
   dispatch sequence dominating fragment time); a bracket that spans non-FP/SIMD
   runs so that non-FP/SIMD -> FP/SIMD transfers stop missing (decide from
   `ibtc_fpsimd_boundary`, about 1 per redis request after A11c; it trades page
