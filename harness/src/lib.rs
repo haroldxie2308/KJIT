@@ -2,9 +2,7 @@ extern crate alloc;
 
 pub mod a64_forms;
 pub mod a64_pretty;
-pub mod active_step;
 pub(crate) mod asm_fixture;
-pub mod explorer;
 pub mod golden;
 pub mod arm64;
 pub mod cached_run;
@@ -18,9 +16,10 @@ pub mod model;
 pub mod native;
 pub mod report_util;
 pub mod runtime;
+pub mod session;
 pub mod shared;
 pub(crate) mod simd;
-pub mod trace;
+pub mod tui;
 
 #[cfg(test)]
 mod asm_fixture_tests;
@@ -170,7 +169,7 @@ pub fn default_fixture_state() -> MachineState {
 }
 
 /// The initial state of a fixture case: `default_fixture_state()` with the text
-/// mapped (`with_text_mapped`). Shared by the fixture suites and `trace-tui`.
+/// mapped (`with_text_mapped`). Shared by the fixture suites, `check-case` and `session-dump`.
 pub fn fixture_state(text_base: u64, text: &[u8]) -> Result<MachineState, String> {
     with_text_mapped(&default_fixture_state(), text_base, text)
 }
@@ -751,7 +750,7 @@ pub struct Mismatch {
 /// The differential oracle: the fragment must end in the original's user
 /// state with a corresponding halt, except that each unit of a faulting store's
 /// footprint may hold its new value. The only copy of this check; the fixture
-/// suite, `trace-tui --check` and the fuzzer all use it.
+/// suite, `check-case` and the fuzzer all use it.
 pub fn compare_differential(name: &str, run: &DifferentialRun) -> Result<(), Mismatch> {
     let (original, report) = (&run.original, &run.report);
     let fragment_state = undo_footprint(&original.state, &run.original_footprint, &report.state);

@@ -126,7 +126,33 @@ pub struct MachineState {
     memory: BTreeMap<u64, u8>,
     /// User page map keyed by page base address.
     user_pages: BTreeMap<u64, PagePerm>,
+    /// Memory writes since the last `take_write_journal`, when journaling is on
+    /// (`start_write_journal`). Observation only: never part of the state's identity.
+    journal: WriteJournal,
 }
+
+/// One `write_le`: `size` bytes at `addr`, the little-endian value before (`old`)
+/// and after (`new`). Recorded only while the state's journal is on.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MemWrite {
+    pub addr: u64,
+    pub size: u8,
+    pub old: u64,
+    pub new: u64,
+}
+
+/// The write journal of a `MachineState`. All journals compare equal, so turning it
+/// on does not make two states with equal contents differ.
+#[derive(Clone, Debug, Default)]
+struct WriteJournal(Option<Vec<MemWrite>>);
+
+impl PartialEq for WriteJournal {
+    fn eq(&self, _: &Self) -> bool {
+        true
+    }
+}
+
+impl Eq for WriteJournal {}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HaltReason {
@@ -317,6 +343,21 @@ impl MachineState {
     /// permission check; see `read_le`.
     pub fn write_le(&mut self, addr: u64, size: u8, value: u64) {
         assert!(size <= 8, "memory write wider than 8 bytes: {size}");
+        if self.journal.0.is_some() {
+            let old = self.read_le(addr, size);
+            let new = match size {
+                0 => 0,
+                8 => value,
+                _ => value & ((1u64 << (8 * u32::from(size))) - 1),
+            };
+            let write = MemWrite {
+                addr,
+                size,
+                old,
+                new,
+            };
+            self.journal.0.as_mut().expect("checked above").push(write);
+        }
         for (i, byte) in value
             .to_le_bytes()
             .into_iter()
@@ -345,6 +386,27 @@ impl MachineState {
 
     pub fn memory(&self) -> &BTreeMap<u64, u8> {
         &self.memory
+    }
+
+    /// Starts recording every `write_le` (and so `write_u64`) in order, from now on.
+    pub fn start_write_journal(&mut self) {
+        self.journal.0.get_or_insert_with(Vec::new);
+    }
+
+    /// Stops recording and drops what was recorded.
+    pub fn stop_write_journal(&mut self) {
+        self.journal.0 = None;
+    }
+
+    /// The writes recorded since the last call, oldest first; the journal stays on.
+    /// Panics if it was never started.
+    pub fn take_write_journal(&mut self) -> Vec<MemWrite> {
+        std::mem::take(
+            self.journal
+                .0
+                .as_mut()
+                .expect("take_write_journal without start_write_journal"),
+        )
     }
 
     pub fn without_memory_ranges(&self, ranges: &[(u64, u64)]) -> Self {

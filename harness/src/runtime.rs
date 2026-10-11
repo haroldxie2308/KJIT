@@ -111,6 +111,14 @@ pub enum URuntimeHalt {
     },
 }
 
+/// What a fragment returned to the runtime with: x0 (status), x10, x11.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RuntimeReturn {
+    pub status: RetStatus,
+    pub param0: u64,
+    pub param1: u64,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct URuntimeStep {
     /// The fragment `offset`, `insn_index` and `next_offset` are relative to.
@@ -232,6 +240,11 @@ impl URuntime {
         self.cache
     }
 
+    /// The session recorder drains the cache's event log between steps.
+    pub(crate) fn cache_mut(&mut self) -> &mut CodeCache {
+        &mut self.cache
+    }
+
     /// Fails the `k`-th dynamic user access (`LDTR`/`STTR`) of the run (1-based)
     /// regardless of permissions.
     pub fn fail_user_access(mut self, k: u64) -> Self {
@@ -274,12 +287,18 @@ impl URuntime {
 
     /// The runtime's decision for the exit the fragment just returned with. A cache
     /// run applies the memory writes of any publish or install to the machine.
-    fn handle_runtime_return(&mut self) -> Result<CacheAction, String> {
+    fn handle_runtime_return(&mut self) -> Result<(RuntimeReturn, CacheAction), String> {
         let status = self.state.read_x(RET_STATUS_REG);
         let param0 = self.state.read_x(RET_PARAM0_REG);
         let param1 = self.state.read_x(RET_PARAM1_REG);
+        let returned = RuntimeReturn {
+            status: RetStatus::from_reg(status),
+            param0,
+            param1,
+        };
         if !self.resolving {
-            return Ok(
+            return Ok((
+                returned,
                 match decide_runtime_return(&self.cache.fragments[0].fragment, status, param0, param1)
                 {
                     RuntimeAction::ContinueAt(offset) => CacheAction::ContinueAt {
@@ -288,7 +307,7 @@ impl URuntime {
                     },
                     RuntimeAction::Stop(halt) => CacheAction::Stop(halt),
                 },
-            );
+            ));
         }
         let run_fpsimd = self.cache.fragments[self.entered].uses_fpsimd;
         let action = self.cache.decide(run_fpsimd, status, param0, param1)?;
@@ -297,7 +316,7 @@ impl URuntime {
         }
         // The interpreter runs the cache's own copy of the code: nothing to apply.
         self.cache.drain_code_patches();
-        Ok(action)
+        Ok((returned, action))
     }
 
     /// Sets up the ABI call: the fragment is always called at its base (the
@@ -308,6 +327,7 @@ impl URuntime {
         validate_entry_offset(&frag.fragment, offset)?;
         let (base, table) = (frag.base, self.cache.table_for(frag.uses_fpsimd));
         self.entered = fragment;
+        self.cache.note_entry(fragment);
         self.state
             .write_x(ABI_PT_REGS_ARG_REG, self.config.pt_regs_addr);
         self.state
@@ -469,6 +489,7 @@ impl URuntimeCursor {
                 executed: false,
                 runtime_transition: None,
                 halt: Some(halt),
+                exit: None,
                 snapshot: Snapshot::Physical,
             }));
         };
@@ -513,6 +534,7 @@ impl URuntimeCursor {
                                     stub_offset: site.stub_offset,
                                 }),
                                 halt: None,
+                                exit: None,
                                 snapshot: Snapshot::Physical,
                             }));
                         }
@@ -535,6 +557,7 @@ impl URuntimeCursor {
                     executed: true,
                     runtime_transition: None,
                     halt: Some(halt),
+                    exit: None,
                     snapshot: Snapshot::Physical,
                 }));
             }
@@ -560,6 +583,7 @@ impl URuntimeCursor {
             executed: true,
             runtime_transition: None,
             halt: None,
+            exit: None,
             snapshot: Snapshot::Physical,
         }))
     }
@@ -576,7 +600,8 @@ impl URuntimeCursor {
         // The trampoline's `msr pan, #1` right after the fragment returned.
         runtime.pan = true;
         let fragment = fragment.unwrap_or(runtime.entered);
-        match runtime.handle_runtime_return()? {
+        let (returned, action) = runtime.handle_runtime_return()?;
+        match action {
             CacheAction::ContinueAt {
                 fragment: fragment_to_enter,
                 offset: offset_to_enter,
@@ -594,6 +619,7 @@ impl URuntimeCursor {
                         offset: offset_to_enter,
                     }),
                     halt: None,
+                    exit: Some(returned),
                     snapshot: Snapshot::UserFromPtRegs,
                 })
             }
@@ -607,6 +633,7 @@ impl URuntimeCursor {
                     executed,
                     runtime_transition: None,
                     halt: Some(halt),
+                    exit: Some(returned),
                     snapshot: Snapshot::UserFromPtRegs,
                 })
             }
@@ -633,11 +660,30 @@ pub(crate) struct Advanced {
     pub(crate) executed: bool,
     pub(crate) runtime_transition: Option<URuntimeTransition>,
     pub(crate) halt: Option<URuntimeHalt>,
+    /// The fragment returned to the runtime in this step (its epilogue's last
+    /// instruction): what it returned with.
+    pub(crate) exit: Option<RuntimeReturn>,
     snapshot: Snapshot,
 }
 
 impl Advanced {
+    /// The step ended a fragment run (or a chained one): the user's registers are
+    /// those in `pt_regs`, not the machine's (`Snapshot::UserFromPtRegs`).
+    pub(crate) fn is_runtime_return(&self) -> bool {
+        self.snapshot == Snapshot::UserFromPtRegs
+    }
+
+    /// The state the step reports: the machine's, or at a runtime boundary the user's
+    /// from `pt_regs`; runtime-owned memory is left out of both.
+    pub(crate) fn state_after(&self, runtime: &URuntime) -> MachineState {
+        match self.snapshot {
+            Snapshot::Physical => runtime.physical_user_state(),
+            Snapshot::UserFromPtRegs => runtime.user_state_from_pt_regs(),
+        }
+    }
+
     fn into_step(self, runtime: &URuntime) -> URuntimeStep {
+        let state = self.state_after(runtime);
         URuntimeStep {
             fragment: self.fragment,
             offset: self.offset,
@@ -646,10 +692,7 @@ impl Advanced {
             executed: self.executed,
             runtime_transition: self.runtime_transition,
             halt: self.halt,
-            state: match self.snapshot {
-                Snapshot::Physical => runtime.physical_user_state(),
-                Snapshot::UserFromPtRegs => runtime.user_state_from_pt_regs(),
-            },
+            state,
         }
     }
 }
@@ -679,6 +722,19 @@ impl<'a> URuntimeStepper<'a> {
 
     pub fn report_for_halt(&self, halt: URuntimeHalt) -> URuntimeReport {
         self.runtime.report(halt, self.cursor.steps())
+    }
+
+    /// The fragment and offset of the next instruction, if the pc is in a fragment.
+    pub(crate) fn location(&self) -> Option<(usize, usize)> {
+        self.runtime.locate(self.cursor.pc())
+    }
+
+    pub(crate) fn runtime(&self) -> &URuntime {
+        self.runtime
+    }
+
+    pub(crate) fn runtime_mut(&mut self) -> &mut URuntime {
+        self.runtime
     }
 
     pub fn step(&mut self) -> Result<Option<URuntimeStep>, String> {
