@@ -16,8 +16,9 @@
 //! - **Fragment:** the encoded fragment is mapped RX and called like the kernel
 //!   will call it (x0 = pt_regs, x1 = extra params, x2 = entry address, lr =
 //!   return), driven by the same `decide_runtime_return` loop as `URuntime`.
-//!   It runs at EL0, so the one deviation from the kernel's bytes is that every
-//!   `msr pan` (A8 PAN windows and stubs) is a NOP in the mapped copy.
+//!   It runs at EL0, so the one deviation from the kernel's bytes is that counter
+//!   reads (A10) are emulated `BRK`s. A fragment contains no `msr` (A15), so there
+//!   is nothing to NOP: one would be an UNDEFINED instruction here.
 //!
 //! Register state enters and leaves user code through the signal frame: a BRK
 //! in `kjit_native_enter_user` lets the SIGTRAP handler load every register from
@@ -1687,24 +1688,11 @@ pub fn run_fragment(
             fragment.len_bytes()
         ));
     }
-    // The native-leg deviations: (A8) the fragment runs at EL0 here, where
-    // `msr pan` is UNDEFINED, so the copy has NOPs for the PAN window's and PAN
-    // stubs' `msr pan, #0/#1`. The window atomic at EL0 already has the user
-    // permissions the window grants at EL1; the modelled PSTATE.PAN is checked by
-    // the interpreter (`URuntime`). (A10) Counter reads are `BRK_COUNTER`s,
-    // emulated with the run's values, as in the native original.
-    let nop = A64Insn::NopNopHiHints {}
-        .encode()
-        .map_err(|err| format!("encode nop: {err:?}"))?;
-    let words = encoded
-        .chunks_exact(4)
-        .map(|chunk| u32::from_le_bytes(chunk.try_into().expect("chunks_exact(4)")))
-        .map(|word| match A64Insn::decode(word) {
-            Some(insn) if insn.msr_pan().is_some() => nop,
-            Some(insn) => counter_brk(insn).unwrap_or(word),
-            None => word,
-        })
-        .collect::<Vec<_>>();
+    // The native-leg deviation: (A10) counter reads are `BRK_COUNTER`s, emulated
+    // with the run's values, as in the native original. A window access at EL0
+    // already has the user permissions it has at EL1 with PAN clear (A15); the
+    // modelled PSTATE.PAN is checked by the interpreter (`URuntime`).
+    let words = native_fragment_words(encoded);
     let code = Mapping::anywhere(
         round_up(encoded.len() + 4, session.page),
         PROT_READ | PROT_WRITE,
@@ -1892,7 +1880,7 @@ impl NativeCache {
                 round_up(frag.encoded.len() + 4, page),
                 PROT_READ | PROT_WRITE,
             )?;
-            mapping.install_code(&native_fragment_words(&frag.encoded)?)?;
+            mapping.install_code(&native_fragment_words(&frag.encoded))?;
             let base = mapping.base();
             loader_code.borrow_mut().push(mapping);
             Ok(base)
@@ -1926,21 +1914,17 @@ impl NativeCache {
     }
 }
 
-/// The native-leg deviations of a fragment's words (see `run_fragment`): `msr pan`
-/// is a NOP at EL0, counter reads are emulated `BRK_COUNTER`s.
-fn native_fragment_words(encoded: &[u8]) -> Result<Vec<u32>, String> {
-    let nop = A64Insn::NopNopHiHints {}
-        .encode()
-        .map_err(|err| format!("encode nop: {err:?}"))?;
-    Ok(encoded
+/// The native-leg deviation of a fragment's words (see `run_fragment`): counter
+/// reads are emulated `BRK_COUNTER`s.
+fn native_fragment_words(encoded: &[u8]) -> Vec<u32> {
+    encoded
         .chunks_exact(4)
         .map(|chunk| u32::from_le_bytes(chunk.try_into().expect("chunks_exact(4)")))
         .map(|word| match A64Insn::decode(word) {
-            Some(insn) if insn.msr_pan().is_some() => nop,
             Some(insn) => counter_brk(insn).unwrap_or(word),
             None => word,
         })
-        .collect())
+        .collect()
 }
 
 /// One run over the native cache, as `URuntime::with_cache` runs it in the

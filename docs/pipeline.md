@@ -1324,8 +1324,11 @@ Reject with `VerifyError { offset, rule }`.
    accesses). Any `msr` in the body, PAN included, is rejected (`Msr`). Every
    `WindowAccess` at i must have `ubfx sB, sA, #48, #8` (64-bit UBFM, immr =
    `USER_VA_BITS`, imms = `PAN_WINDOW_RANGE_TOP_BIT`, sA/sB < 31) at i-2 and
-   `cbnz xsB, S` (64-bit) at i-1, with `rn == sA` and S a forward exit-group
-   start (`WindowRangeCheck` otherwise).
+   `cbnz xsB, S` (64-bit) at i-1, with `rn == sA` and S a forward body word
+   (`WindowRangeCheck` otherwise; rule 4 still makes a cold-region S an
+   exit-group start). The translator aims S at the instruction's own `Mem`
+   stub, but safety only needs the access to be skipped when the check fails,
+   so the verifier does not tie S to the fault stub.
    - Fault table: a `WindowAccess` has a fault-site entry like a user access,
      naming an exit-group start.
    - Join points: none on the `cbnz` or the access (the `ubfx` may be one: it

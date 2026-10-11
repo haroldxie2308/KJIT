@@ -86,7 +86,7 @@ fn transfer(access: A64Insn) -> Result<(Transfer, bool), InsnError> {
 }
 
 /// The A9a loads/stores. Original code: EL0 user accesses (with the EL0 SP
-/// alignment check). Fragment: a PAN-window access (`check_window_accesses`).
+/// alignment check). Fragment: a window access (`check_window_accesses`).
 /// Accesses follow the pseudocode: one per LDR/STR/LDP/STP, one per element for
 /// LD1/ST1; all are checked before anything is written.
 fn execute_mem(

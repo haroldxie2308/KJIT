@@ -3,7 +3,7 @@ use crate::shared::abi::{
     RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG, UNSUPPORTED_WORD_UNREADABLE,
 };
 use crate::shared::arm64::ergo::{scaled_simm, uimm, x, xzr};
-use crate::shared::arm64::{A64Atomic, A64Insn, A64Reg, A64Reg31Mode, IrInsn};
+use crate::shared::arm64::{A64Insn, A64Reg, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::{layout_block_order, Cfg, RuntimeExitReason};
 
@@ -30,23 +30,16 @@ pub enum RephrasedInsnKind {
     ///   #(size - 1); and xS, xS, #16; cbnz xS` (the access crosses a 16-byte
     ///   boundary, which alignment-faults natively).
     AlignCheck,
-    /// PAN window range check (A8; docs/pipeline.md, "LSE atomics through a PAN
-    /// window (A8)"), emitted by
-    /// reg-virt right before a window: `ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>`.
-    /// Its `CBNZ` targets the PAN stub of the same `ori_pc`.
+    /// Window range check (A8, A15; docs/pipeline.md, "LSE atomics through a PAN
+    /// window (A8)"), emitted by reg-virt right before a window access:
+    /// `ubfx sB, sA, #48, #8; cbnz sB, <Mem stub>`. Its `CBNZ` targets the `Mem` stub
+    /// of the same `ori_pc`.
     RangeCheck,
-    /// `msr pan, #0` / `msr pan, #1` around a window's atomic (reg-virt output).
-    PanToggle,
-    /// The single instruction inside a PAN window -- an LSE atomic (A8) or an A9a
-    /// SIMD&FP load/store in its base-only encoding: a privileged access to user
-    /// memory (reg-virt output). It is a fault site whose stub is the PAN stub of
+    /// The window access -- an LSE atomic (A8) or an A9a SIMD&FP load/store in its
+    /// base-only encoding: a privileged access to user memory, run with PAN clear
+    /// (A15; reg-virt output). It is a fault site whose stub is the `Mem` stub of
     /// the same `ori_pc`.
     WindowAccess,
-    /// `msr pan, #1`, the first instruction of a PAN stub in `cold` (rephrase
-    /// output): the fault fixup resumes with the faulting context's PAN = 0, so the
-    /// stub restores PAN before its exit group. Runtime-owned: reg-virt passes it
-    /// through, and it is always immediately followed by that exit group.
-    PanRestore,
     /// A branch site's target move (A11): writes the target T into
     /// `DISPATCH_TARGET_REG` (physical x13, never user x13). Either `movz`/`movk x13`
     /// of a constant (BL), or `orr x13, xzr, Xm` where `Xm` is the *user* register
@@ -72,9 +65,7 @@ impl RephrasedInsnKind {
             | Self::BudgetCheck
             | Self::AlignCheck
             | Self::RangeCheck
-            | Self::PanToggle
             | Self::WindowAccess
-            | Self::PanRestore
             | Self::DispatchTarget
             | Self::DispatchLookup
             | Self::RuntimeExitPayload
@@ -92,9 +83,7 @@ impl RephrasedInsnKind {
             | Self::BudgetCheck
             | Self::AlignCheck
             | Self::RangeCheck
-            | Self::PanToggle
             | Self::WindowAccess
-            | Self::PanRestore
             | Self::DispatchTarget
             | Self::DispatchLookup => false,
         }
@@ -177,27 +166,11 @@ impl RephrasedInsn {
         }
     }
 
-    pub const fn pan_toggle(ori_pc: u64, insn: A64Insn) -> Self {
-        Self {
-            kind: RephrasedInsnKind::PanToggle,
-            ori_pc,
-            insn,
-        }
-    }
-
     pub const fn window_access(ori_pc: u64, insn: A64Insn) -> Self {
         Self {
             kind: RephrasedInsnKind::WindowAccess,
             ori_pc,
             insn,
-        }
-    }
-
-    pub const fn pan_restore(ori_pc: u64) -> Self {
-        Self {
-            kind: RephrasedInsnKind::PanRestore,
-            ori_pc,
-            insn: A64Insn::MsrImmMsrSiPstate { crm: 1 },
         }
     }
 
@@ -240,10 +213,9 @@ impl RephrasedInsn {
 /// `RetStatus::Mem` fault stub per original memory instruction and one
 /// `RetStatus::Budget` stub per back-edge or dispatch site (BL/BLR/BR/RET, A11) of
 /// this block. A branch never accesses
-/// memory, so each original instruction has at most one plain stub. An LSE atomic
-/// (A8) or SIMD&FP load/store (A9a) also has a PAN stub: `msr pan, #1`
-/// (`PanRestore`) followed by its `Mem` exit group; its plain stub exists only
-/// when reg-virt emits an SP or alignment check for it (`window_needs_check_stub`).
+/// memory, so each original instruction has at most one plain stub. That includes an
+/// LSE atomic (A8) or SIMD&FP load/store (A9a): its range check, alignment checks
+/// and fault site all leave through its `Mem` stub (A15).
 /// Layout places every block's `cold` after all block bodies, so nothing falls
 /// through into it.
 #[derive(Debug, PartialEq, Eq)]
@@ -646,32 +618,6 @@ fn push_native_resume_exit(
     push_branch_to_stub(out, pc)
 }
 
-/// Whether reg-virt guards an LSE atomic (A8) with a check that leaves through a
-/// plain `Mem` stub (the PAN stub is only for the window's range check and the
-/// atomic's fault site): the SP alignment check for an SP base, or the 16-byte
-/// block alignment check for an access wider than a byte (an atomic crossing a
-/// 16-byte boundary alignment-faults natively under FEAT_LSE2).
-pub(crate) fn atomic_needs_check_stub(atomic: A64Atomic) -> bool {
-    atomic.size > 1 || is_sp_reg(atomic.rn)
-}
-
-/// For an instruction reg-virt runs inside a PAN window (an LSE atomic, A8, or an
-/// A9a SIMD&FP load/store): `Some(whether it also has a plain Mem stub)`, i.e.
-/// whether a check before the window leaves through one. A SIMD&FP access has only
-/// the SP alignment check: EL0 alignment checking (SCTLR_EL1.A) is off, so an
-/// unaligned SIMD&FP access to Normal memory never faults natively. `None` for
-/// every other instruction.
-pub(crate) fn window_needs_check_stub(insn: A64Insn) -> Option<bool> {
-    if let Some(atomic) = insn.lse_atomic() {
-        return Some(atomic_needs_check_stub(atomic));
-    }
-    insn.fpsimd_mem().map(|mem| is_sp_reg(mem.base))
-}
-
-const fn is_sp_reg(reg: A64Reg) -> bool {
-    reg.enc() == 31 && matches!(reg.reg31, A64Reg31Mode::Sp)
-}
-
 /// Words of the budget check.
 const BUDGET_CHECK_LEN: usize = 2;
 
@@ -779,17 +725,12 @@ pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
             insns.append(lowered, GFP_KERNEL)?;
             if insn.inner.accesses_memory() {
                 // Fault stub: userspace re-executes the instruction and takes the fault.
-                let word = u64::from(insn.word);
-                match window_needs_check_stub(insn.inner) {
-                    Some(check_stub) => {
-                        if check_stub {
-                            push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, word)?;
-                        }
-                        cold.push(RephrasedInsn::pan_restore(insn.pc), GFP_KERNEL)?;
-                        push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, word)?;
-                    }
-                    None => push_native_resume_exit(&mut cold, RetStatus::Mem, insn.pc, word)?,
-                }
+                push_native_resume_exit(
+                    &mut cold,
+                    RetStatus::Mem,
+                    insn.pc,
+                    u64::from(insn.word),
+                )?;
             }
         }
         if let Some(exit) = block.unsupported_exit {

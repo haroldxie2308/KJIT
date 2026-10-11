@@ -75,6 +75,7 @@ directory).
 | 2026-10-11 19:31 PAN ablation across value sizes | `2026-10-11/1931-pan-sweep*.csv` | logs |
 | 2026-10-11 19:31 Redis CPU gap: 1.0 vs 1.5 us (`-wake.csv`: wake-cost micro-benchmark) | `2026-10-11/1931-cpu-gap*.csv` | logs |
 | 2026-10-11 22:37 Direct BL and RAS-predicted RET in redis | `2026-10-11/2237-dispatch-ablation*.csv` | logs |
+| 2026-10-11 23:18 A15 implemented: run-scoped PAN clear (`-redis-std.csv`: main vs A15 module, same session; `-gates.csv`: harness/fuzz/module/guest gates) | `2026-10-11/2318-a15-{redis-std,code-speed,gates}.csv` | logs |
 
 A new measurement entry adds the data file, the raw-log directory, a row in this table and the
 `Data:` line in the entry.

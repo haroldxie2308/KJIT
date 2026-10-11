@@ -60,11 +60,11 @@ pub const fn reg_virt_scratch_gpr(index: usize) -> Option<u8> {
     Some(REG_VIRT_SCRATCH_GPR_START + index as u8)
 }
 
-/// User VA size the A8 PAN window's range check assumes (docs/pipeline.md, "LSE
-/// atomics through a PAN window (A8)"). Before a privileged LSE atomic the
-/// fragment requires VA bits
+/// User VA size the window access range check assumes (docs/pipeline.md, "LSE
+/// atomics through a PAN window (A8)"). Before a privileged LSE atomic or SIMD&FP
+/// access the fragment requires VA bits
 /// `[PAN_WINDOW_RANGE_TOP_BIT:USER_VA_BITS]` of the address to be zero
-/// (`ubfx sB, sA, #48, #8; cbnz sB, <PAN stub>`): bit 55 selects TTBR0 vs TTBR1
+/// (`ubfx sB, sA, #48, #8; cbnz sB, <Mem stub>`): bit 55 selects TTBR0 vs TTBR1
 /// and the top byte is ignored (TBI0), so the access is a TTBR0 user address below
 /// 2^48. The module refuses to load unless `vabits_actual == USER_VA_BITS` (K1 pins
 /// `ARM64_VA_BITS_48`).

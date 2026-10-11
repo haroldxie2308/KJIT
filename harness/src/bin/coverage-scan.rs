@@ -507,10 +507,6 @@ fn layout_err_info(err: LayoutError) -> ErrInfo {
         LayoutError::UntaggedPanWindow { insn_index } => {
             ("UntaggedPanWindow", format!("insn_index={insn_index}"))
         }
-        LayoutError::MissingPanStub { insn_index, ori_pc } => (
-            "MissingPanStub",
-            format!("insn_index={insn_index} pc={ori_pc:#x}"),
-        ),
         LayoutError::MissingBudgetStub { insn_index, ori_pc } => (
             "MissingBudgetStub",
             format!("insn_index={insn_index} pc={ori_pc:#x}"),

@@ -12,8 +12,8 @@ use crate::shared::arm64::{
 };
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::rephrase::{
-    is_dispatch_miss_param0_copy, rephrase_insn, window_needs_check_stub, RephrasedInsn,
-    RephrasedInsnKind, RephrasedProgram,
+    is_dispatch_miss_param0_copy, rephrase_insn, RephrasedInsn, RephrasedInsnKind,
+    RephrasedProgram,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -111,8 +111,8 @@ pub enum RegVirtError {
         insn: &'static str,
     },
     /// User code containing `MSR PAN, #imm` (A8). At EL0 it is UNDEFINED natively;
-    /// in a fragment it would change the kernel's PSTATE.PAN. Only the translator
-    /// emits it (the PAN window), so it is never translated.
+    /// in a fragment it would change the kernel's PSTATE.PAN. A fragment contains no
+    /// `msr` (A15: the trampoline alone writes PAN), so it is never translated.
     PanUserForm {
         pc: u64,
         insn: &'static str,
@@ -197,17 +197,6 @@ fn virtualize_insns(
         let insn = insns[index];
         if insn.kind.is_runtime_exit_payload() {
             index = virtualize_runtime_exit_group(insns, index, &mut rewritten)?;
-        } else if cold && insn.kind == RephrasedInsnKind::PanRestore {
-            // A PAN stub (A8): `msr pan, #1`, then the exit group it guards. Runtime-owned,
-            // nothing to map; it must not be separated from its group.
-            let group_follows = insns.get(index + 1).is_some_and(|next| {
-                next.kind.is_runtime_exit_payload() && next.ori_pc == insn.ori_pc
-            });
-            if !group_follows || insn.insn.msr_pan() != Some(true) {
-                return Err(RegVirtError::MalformedRuntimeExitGroup { pc: insn.ori_pc });
-            }
-            push_rephrased(&mut rewritten, insn)?;
-            index += 1;
         } else if cold {
             return Err(RegVirtError::MalformedRuntimeExitGroup { pc: insn.ori_pc });
         } else {
@@ -237,15 +226,12 @@ fn virtualize_insn(
         // instruction boundary): nothing to map.
         RephrasedInsnKind::DispatchLookup => push_rephrased(out, rephrased),
         RephrasedInsnKind::DispatchTarget => emit_dispatch_target(rephrased, out),
-        // These kinds are reg-virt output (or, for `PanRestore`, only valid at the
-        // start of a cold PAN stub); seeing one here is a pipeline bug.
+        // These kinds are reg-virt output; seeing one here is a pipeline bug.
         RephrasedInsnKind::RegVirtHelper
         | RephrasedInsnKind::UserAccess
         | RephrasedInsnKind::AlignCheck
         | RephrasedInsnKind::RangeCheck
-        | RephrasedInsnKind::PanToggle
-        | RephrasedInsnKind::WindowAccess
-        | RephrasedInsnKind::PanRestore => Err(RegVirtError::UnexpectedRegVirtHelper {
+        | RephrasedInsnKind::WindowAccess => Err(RegVirtError::UnexpectedRegVirtHelper {
             pc: rephrased.ori_pc,
         }),
         RephrasedInsnKind::Original | RephrasedInsnKind::UserSynthetic => unreachable!(),
@@ -946,7 +932,7 @@ struct MemLowering {
     block_align_scratch: Option<u8>,
 }
 
-/// The one privileged user access a PAN window holds: an LSE atomic (A8) or an A9a
+/// The one privileged user access a window access is: an LSE atomic (A8) or an A9a
 /// SIMD&FP load/store (docs/pipeline.md, "FP/SIMD in fragments (A9)"). Neither has an
 /// unprivileged form, so the fragment runs the user's own access.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -972,7 +958,7 @@ impl WindowInsn {
     }
 }
 
-/// How one PAN-window access (A8, A9a) is lowered (see `emit_window`).
+/// How one window access (A8, A9a) is lowered (see `emit_window`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct WindowLowering {
     insn: WindowInsn,
@@ -992,7 +978,7 @@ struct WindowLowering {
 }
 
 /// The memory lowering of one user instruction: `LDTR*`/`STTR*` accesses, or one
-/// privileged access in a PAN window.
+/// privileged access (a window access).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum MemPlan {
     Unpriv(MemLowering),
@@ -1099,12 +1085,7 @@ impl RewritePlan {
             };
             plan.mem = Some(match window {
                 Some(window) => {
-                    let lowering = plan.plan_window(window)?;
-                    debug_assert_eq!(
-                        Some(lowering.sp_check || lowering.block_check),
-                        window_needs_check_stub(insn)
-                    );
-                    MemPlan::Window(lowering)
+                    MemPlan::Window(plan.plan_window(window)?)
                 }
                 None => {
                     let shape = mem_shape(insn, rephrased.ori_pc).ok_or(
@@ -1241,7 +1222,7 @@ impl RewritePlan {
         })
     }
 
-    /// Scratch for a PAN window (A8, A9a). Stack-backed operands were mapped first
+    /// Scratch for a window access (A8, A9a). Stack-backed operands were mapped first
     /// (role order), so the worst case is three of them plus `sB` (an atomic), or
     /// two plus `sA` and `sB` (an atomic, or LD1/ST1 post-indexed by a register): four.
     fn plan_window(&mut self, insn: WindowInsn) -> SharedResult<WindowLowering, RegVirtError> {
@@ -1274,8 +1255,10 @@ impl RewritePlan {
         })
     }
 
-    /// Emits one PAN-window access (docs/pipeline.md, "LSE atomics through a PAN
-    /// window (A8)" and "FP/SIMD in fragments (A9)") between its fills and spills:
+    /// Emits one window access (docs/pipeline.md, "LSE atomics through a PAN
+    /// window (A8)", "FP/SIMD in fragments (A9)" and "Run-scoped PAN clear (A15)")
+    /// between its fills and spills; the run executes with PAN clear, so the access
+    /// needs no PSTATE write:
     ///
     /// ```text
     ///   [and sB, x17, #15; cbnz sB, <Mem stub>]         SP base: EL0 SP alignment
@@ -1284,10 +1267,8 @@ impl RewritePlan {
     ///   [and sB, sA, #15; add sB, sB, #(size - 1);
     ///    and sB, sB, #16; cbnz sB, <Mem stub>]           atomic wider than a byte, base not SP
     ///   ubfx sB, sA, #48, #8                             VA bits [55:48]
-    ///   cbnz sB, <PAN stub>                              not a TTBR0 user address
-    ///   msr  pan, #0
-    ///   <the access, base = sA>                          fault site -> PAN stub
-    ///   msr  pan, #1
+    ///   cbnz sB, <Mem stub>                              not a TTBR0 user address
+    ///   <the access, base = sA>                          fault site -> Mem stub
     ///   [add/sub <mapped base>, <mapped base>, #amount   SIMD&FP writeback
     ///    | add <mapped base>, <mapped base>, <mapped Xm>]
     /// ```
@@ -1298,7 +1279,7 @@ impl RewritePlan {
     /// (at most 64 bytes) cannot reach the kernel half. Commit-after-last-access:
     /// before the access only scratch is written; the access writes its
     /// destination (`Rt`, CAS's `Rs`, or V registers) only when it retires; the
-    /// base writeback and spills follow `msr pan, #1`. An atomic crossing a
+    /// base writeback and spills follow it. An atomic crossing a
     /// 16-byte boundary alignment-faults natively (FEAT_LSE2; `MemSingleGranule()`
     /// is at least 16), so leaving for it is exact or conservative: userspace
     /// re-executes the instruction natively either way.
@@ -1388,15 +1369,7 @@ impl RewritePlan {
             insn: self.insn,
             field: "Rn",
         })?;
-        push_rephrased(
-            out,
-            RephrasedInsn::pan_toggle(pc, A64Insn::MsrImmMsrSiPstate { crm: 0 }),
-        )?;
         push_rephrased(out, RephrasedInsn::window_access(pc, access))?;
-        push_rephrased(
-            out,
-            RephrasedInsn::pan_toggle(pc, A64Insn::MsrImmMsrSiPstate { crm: 1 }),
-        )?;
 
         let WindowInsn::FpSimd(mem) = lowering.insn else {
             return Ok(());
@@ -3309,25 +3282,22 @@ mod tests {
         .map(|insn| RephrasedInsn::range_check(0x1000, insn))
     }
 
-    /// `msr pan, #0; <atomic>; msr pan, #1`.
-    fn pan_window(atomic: A64Insn) -> [RephrasedInsn; 3] {
-        [
-            RephrasedInsn::pan_toggle(0x1000, A64Insn::MsrImmMsrSiPstate { crm: 0 }),
-            RephrasedInsn::window_access(0x1000, atomic),
-            RephrasedInsn::pan_toggle(0x1000, A64Insn::MsrImmMsrSiPstate { crm: 1 }),
-        ]
+    /// The window access itself: no PSTATE write around it (A15).
+    fn window_access(access: A64Insn) -> [RephrasedInsn; 1] {
+        [RephrasedInsn::window_access(0x1000, access)]
     }
 
-    /// A8: the exact PAN window (docs/pipeline.md, "LSE atomics through a PAN window (A8)").
+    /// A8, A15: the exact window access lowering (docs/pipeline.md, "LSE atomics
+    /// through a PAN window (A8)").
     #[test]
-    fn lse_atomic_lowers_to_the_exact_pan_window() {
+    fn lse_atomic_lowers_to_the_exact_window_access() {
         let w = A64Reg::w;
         // ldaddal x0, x1, [x2]: direct base copied into sA = x12; sB = x13 does the
         // block check and the range check.
         let mut expected = vec![helper(mov(12, 2))];
         expected.extend(block_align_check(13, 12, 8));
         expected.extend(range_check(12, 13));
-        expected.extend(pan_window(A64Insn::LdaddLdaddal64Memop {
+        expected.extend(window_access(A64Insn::LdaddLdaddal64Memop {
             rs: x(0),
             rn: A64Reg::x_sp(12),
             rt: x(1),
@@ -3348,7 +3318,7 @@ mod tests {
         let mut expected = vec![fill(12, 14), fill(13, 12), fill(14, 13)];
         expected.extend(block_align_check(15, 12, 8));
         expected.extend(range_check(12, 15));
-        expected.extend(pan_window(A64Insn::CasCasC64Comswap {
+        expected.extend(window_access(A64Insn::CasCasC64Comswap {
             rs: x(13),
             rn: A64Reg::x_sp(12),
             rt: x(14),
@@ -3369,7 +3339,7 @@ mod tests {
         let mut expected = sp_align_check(14).to_vec();
         expected.push(helper(mov(13, 17)));
         expected.extend(range_check(13, 14));
-        expected.extend(pan_window(A64Insn::SwpbSwpb32Memop {
+        expected.extend(window_access(A64Insn::SwpbSwpb32Memop {
             rs: w(0),
             rn: A64Reg::x_sp(13),
             rt: w(12),
@@ -3389,7 +3359,7 @@ mod tests {
         let mut expected = vec![helper(mov(12, 16))];
         expected.extend(block_align_check(13, 12, 4));
         expected.extend(range_check(12, 13));
-        expected.extend(pan_window(A64Insn::LdaddLdadd32Memop {
+        expected.extend(window_access(A64Insn::LdaddLdadd32Memop {
             rs: w(1),
             rn: A64Reg::x_sp(12),
             rt: w(31),
@@ -3407,8 +3377,8 @@ mod tests {
 
     /// Every LSE atomic form with every register class in every operand: admitted
     /// (four scratch registers always suffice), one window, only scratch written
-    /// before the atomic, spills only after `msr pan, #1`, and the atomic based on
-    /// the range-checked register.
+    /// before the atomic, spills only after it, and the atomic based on the
+    /// range-checked register, right after the range check and with no `msr` anywhere.
     #[test]
     fn every_atomic_lowering_is_one_window_committing_after_it() {
         use crate::shared::arm64::GENERATED_A64_SUBSET;
@@ -3440,9 +3410,8 @@ mod tests {
                             1
                         );
                         let atomic = out[window].insn;
-                        let (ubfx, cbnz) = (out[window - 3], out[window - 2]);
-                        assert_eq!(out[window - 1].insn.msr_pan(), Some(false), "{out:?}");
-                        assert_eq!(out[window + 1].insn.msr_pan(), Some(true), "{out:?}");
+                        let (ubfx, cbnz) = (out[window - 2], out[window - 1]);
+                        assert!(out.iter().all(|r| r.insn.msr_pan().is_none()), "{out:?}");
                         let A64Insn::UbfmUbfm64mBitfield { rn: sa, rd: sb, .. } = ubfx.insn else {
                             panic!("{insn:?}: {out:?}");
                         };
@@ -3470,7 +3439,7 @@ mod tests {
                                 }
                             }
                         }
-                        for after in &out[window + 2..] {
+                        for after in &out[window + 1..] {
                             assert!(
                                 matches!(after.insn, A64Insn::StrImmGenStr64LdstPos { .. }),
                                 "{insn:?}: only spills follow the window: {out:?}"
@@ -3488,11 +3457,11 @@ mod tests {
         RephrasedInsn::original(0x1000, insn)
     }
 
-    /// A9a: SIMD&FP loads/stores run their base-only encoding in the A8 window
+    /// A9a: SIMD&FP loads/stores run their base-only encoding as a window access
     /// (docs/pipeline.md, "FP/SIMD in fragments (A9)"): the access address in sA, the writeback
-    /// after `msr pan, #1`, V registers untouched by reg-virt.
+    /// after the access, V registers untouched by reg-virt.
     #[test]
-    fn simd_memory_lowers_to_the_exact_pan_window() {
+    fn simd_memory_lowers_to_the_exact_window_access() {
         let q_pos = |rt: u8, base: u8| A64Insn::LdrImmFpsimdLdrQLdstPos {
             rt,
             mem: mem_off(A64Reg::x_sp(base), scaled_uimm(0, 12, 4)),
@@ -3500,7 +3469,7 @@ mod tests {
         // ldr q0, [x1, #32]: sA = x1 + 32, sB = x13.
         let mut expected = vec![helper(add_imm(12, 1, 0, 32))];
         expected.extend(range_check(12, 13));
-        expected.extend(pan_window(q_pos(0, 12)));
+        expected.extend(window_access(q_pos(0, 12)));
         assert_eq!(
             lowered(A64Insn::LdrImmFpsimdLdrQLdstPos {
                 rt: 0,
@@ -3514,7 +3483,7 @@ mod tests {
         // (offset 0); the writeback follows the window, then the spill.
         let mut expected = vec![fill(12, 13)];
         expected.extend(range_check(12, 13));
-        expected.extend(pan_window(A64Insn::LdpFpsimdLdpQLdstpairOff {
+        expected.extend(window_access(A64Insn::LdpFpsimdLdpQLdstpairOff {
             rt2: 1,
             rt: 0,
             mem: mem_off(A64Reg::x_sp(12), scaled_simm(0, 7, 4)),
@@ -3536,7 +3505,7 @@ mod tests {
         let mut expected = sp_align_check(13).to_vec();
         expected.push(helper(sub_imm(12, 17, 16)));
         expected.extend(range_check(12, 13));
-        expected.extend(pan_window(A64Insn::StrImmFpsimdStrQLdstPos {
+        expected.extend(window_access(A64Insn::StrImmFpsimdStrQLdstPos {
             rt: 2,
             mem: mem_off(A64Reg::x_sp(12), scaled_uimm(0, 12, 4)),
         }));
@@ -3554,7 +3523,7 @@ mod tests {
         // sA = the base's scratch, sB = x14; post-index by register after the window.
         let mut expected = vec![fill(12, 14), fill(13, 15)];
         expected.extend(range_check(12, 14));
-        expected.extend(pan_window(A64Insn::Ld1AdvsimdMultLd1AsisdlseR22v {
+        expected.extend(window_access(A64Insn::Ld1AdvsimdMultLd1AsisdlseR22v {
             q: 1,
             size: 0,
             rn: A64Reg::x_sp(12),
@@ -3583,7 +3552,7 @@ mod tests {
         // ldur d3, [x29, #-8]: x29 lives in x16.
         let mut expected = vec![helper(sub_imm(12, 16, 8))];
         expected.extend(range_check(12, 13));
-        expected.extend(pan_window(A64Insn::LdrImmFpsimdLdrDLdstPos {
+        expected.extend(window_access(A64Insn::LdrImmFpsimdLdrDLdstPos {
             rt: 3,
             mem: mem_off(A64Reg::x_sp(12), scaled_uimm(0, 12, 3)),
         }));
@@ -3658,8 +3627,8 @@ mod tests {
     }
 
     /// A9a: every SIMD&FP load/store form with every register class in its base
-    /// (and LD1/ST1 post-index register): admitted, one window around the
-    /// base-only access on the range-checked register, only scratch written
+    /// (and LD1/ST1 post-index register): admitted, one base-only window access
+    /// on the range-checked register, only scratch written
     /// before it, and after it only the base writeback and spills.
     #[test]
     fn every_simd_memory_lowering_is_one_window_committing_after_it() {
@@ -3703,12 +3672,11 @@ mod tests {
                         .unwrap();
                     let access = out[window].insn;
                     assert!(access.is_pan_window_access(), "{out:?}");
-                    let A64Insn::UbfmUbfm64mBitfield { rn: sa, rd: sb, .. } = out[window - 3].insn
+                    let A64Insn::UbfmUbfm64mBitfield { rn: sa, rd: sb, .. } = out[window - 2].insn
                     else {
                         panic!("{insn:?}: {out:?}");
                     };
-                    assert_eq!(out[window - 1].insn.msr_pan(), Some(false));
-                    assert_eq!(out[window + 1].insn.msr_pan(), Some(true));
+                    assert!(out.iter().all(|r| r.insn.msr_pan().is_none()), "{out:?}");
                     assert!(scratch.contains(&sa.enc) && scratch.contains(&sb.enc));
                     let mem = insn.fpsimd_mem().unwrap();
                     assert_eq!(
@@ -3728,7 +3696,7 @@ mod tests {
                             }
                         }
                     }
-                    let tail = &out[window + 2..];
+                    let tail = &out[window + 1..];
                     let spills = tail
                         .iter()
                         .filter(|r| matches!(r.insn, A64Insn::StrImmGenStr64LdstPos { .. }))

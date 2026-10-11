@@ -72,14 +72,15 @@ pub(crate) enum AccessContext<'a> {
     /// Translated fragment at EL1. Privilege is decided by the instruction, never
     /// the address: `LDTR`/`STTR` are user accesses (EL0 permissions, numbered by
     /// `counter`); an LSE atomic (A8) or SIMD&FP load/store (A9a) is a privileged
-    /// access to user memory, legal only while `pan` (PSTATE.PAN, written by `msr
-    /// pan`) is clear; every other load/store is a runtime access and must stay
-    /// inside `runtime_ranges` (else a PAN violation).
+    /// access to user memory, legal only while `pan` (PSTATE.PAN) is clear, which is
+    /// the whole run (A15: the trampoline clears it before the call); every other
+    /// load/store is a runtime access and must stay inside `runtime_ranges` (else a
+    /// PAN violation). A fragment never writes PAN: `msr` is a hard error.
     Fragment {
         runtime_ranges: &'a [(u64, u64)],
         counter: &'a mut UserAccessCounter,
         log: Option<&'a mut Vec<LoggedAccess>>,
-        pan: &'a mut bool,
+        pan: bool,
     },
 }
 
@@ -1604,7 +1605,7 @@ pub(crate) fn execute_insn(
         }
 
         // LSE single-register atomics (A8): EL0 user accesses in original code; in a
-        // fragment a privileged access that requires PSTATE.PAN == 0.
+        // fragment a privileged access that requires PSTATE.PAN == 0 (A15: the run).
         A64Insn::LdaddLdadd32Memop { .. }
         | A64Insn::LdaddLdadda32Memop { .. }
         | A64Insn::LdaddLdaddal32Memop { .. }
@@ -1928,17 +1929,17 @@ pub(crate) fn execute_insn(
         | A64Insn::Rev64AdvsimdRev64AsimdmiscR { .. }
         | A64Insn::CntAdvsimdCntAsimdmiscR { .. }
         | A64Insn::TblAdvsimdTblAsimdtblL11 { .. } => crate::simd::execute(insn, pc, state, ctx),
-        // `msr pan, #imm` (A8): only a fragment's PAN window and PAN stubs contain it
-        // (admission rejects it in user code, so an original run never gets here).
-        A64Insn::MsrImmMsrSiPstate { crm } => match ctx {
-            AccessContext::Fragment { pan, .. } => {
-                **pan = crm & 1 == 1;
-                Ok(pc + 4)
+        // `msr pan, #imm`: UNDEFINED at EL0, and never in a fragment (A15: only the
+        // trampoline writes PAN; the verifier rejects any `msr`). Either way a hard
+        // error: admission rejects it in user code, the translator never emits it.
+        A64Insn::MsrImmMsrSiPstate { .. } => Err(InsnError::Error(match ctx {
+            AccessContext::Fragment { .. } => {
+                format!("msr pan at pc={pc:#x} in a fragment (fragments never write PSTATE.PAN)")
             }
-            AccessContext::Original { .. } => Err(InsnError::Error(format!(
-                "msr pan at pc={pc:#x} in original code (UNDEFINED at EL0)"
-            ))),
-        },
+            AccessContext::Original { .. } => {
+                format!("msr pan at pc={pc:#x} in original code (UNDEFINED at EL0)")
+            }
+        })),
 
         A64Insn::BlBlOnlyBranchImm { imm26 } => {
             let target = pc_relative_target(pc, imm26.raw(), 26);
@@ -2796,10 +2797,10 @@ fn execute_atomic(
     Ok(pc + 4)
 }
 
-/// The permission check of a PAN-window instruction's accesses (an LSE atomic,
+/// The permission check of a window access instruction's accesses (an LSE atomic,
 /// A8, or an A9a SIMD&FP load/store), in order. Original code: EL0 user accesses.
-/// Fragment: privileged accesses, legal only while PSTATE.PAN is clear (a PAN
-/// violation otherwise, a hard error: an oops in the kernel) and only to user
+/// Fragment: privileged accesses, legal only while PSTATE.PAN is clear (A15: every
+/// run; a PAN violation otherwise, a hard error: an oops in the kernel) and only to user
 /// memory: the window's range check proves the first access starts below 2^48
 /// (else a hard error), and none may touch runtime memory (the kernel's here).
 /// A later access of a multi-byte or multi-element instruction may run past 2^48,
@@ -2824,7 +2825,7 @@ pub(crate) fn check_window_accesses(
                 log,
                 pan,
             } => {
-                if **pan {
+                if *pan {
                     return Err(InsnError::Error(format!(
                         "PAN violation: privileged access at pc={pc:#x} to {:#x} with PSTATE.PAN set",
                         access.addr
@@ -3304,7 +3305,7 @@ mod tests {
                 runtime_ranges: &[(0x7000, 0x8000)],
                 counter,
                 log: None,
-                pan: &mut true,
+                pan: false,
             },
         )
     }
@@ -3913,14 +3914,17 @@ mod tests {
         );
     }
 
-    /// A8: in a fragment an atomic is a privileged access: a PAN violation (hard
-    /// error) while PSTATE.PAN is set, and never on runtime memory or beyond the
-    /// user VA range; with PAN clear it is logged as a window access and faults on
-    /// the user page permissions. `msr pan` sets the modelled PSTATE.PAN.
+    /// A8, A15: in a fragment an atomic is a privileged access: a PAN violation (hard
+    /// error) if PSTATE.PAN were set, and never on runtime memory or beyond the user
+    /// VA range; with PAN clear (the whole run) it is logged as a window access,
+    /// numbered for fault injection, and faults on the user page permissions. `msr`
+    /// is a hard error in a fragment and in original code.
     #[test]
-    fn window_atomic_requires_pan_clear_and_user_memory() {
-        let run = |insn: A64Insn, state: &mut MachineState, pan: &mut bool| {
-            let mut counter = UserAccessCounter::default();
+    fn window_atomic_runs_with_pan_clear_on_user_memory() {
+        let run = |insn: A64Insn, state: &mut MachineState, pan: bool, fail_at: Option<u64>| {
+            let mut counter = fail_at.map_or_else(UserAccessCounter::default, |at| {
+                UserAccessCounter::failing_at(at)
+            });
             let mut log = Vec::new();
             let result = execute_insn(
                 insn,
@@ -3933,7 +3937,7 @@ mod tests {
                     pan,
                 },
             );
-            (result, log)
+            (result, log, counter.seen())
         };
         let ldadd = A64Insn::LdaddLdadd64Memop {
             rs: x(1),
@@ -3944,33 +3948,49 @@ mod tests {
         state.write_x(1, 1);
         state.write_x(3, 0x9000);
 
-        let mut pan = true;
-        let (result, _) = run(ldadd, &mut state, &mut pan);
+        // PAN set: the harness model of a privileged access with the trampoline's
+        // clear missing.
+        let (result, log, _) = run(ldadd, &mut state, true, None);
         assert!(
             matches!(&result, Err(InsnError::Error(message)) if message.contains("PAN violation")),
             "{result:?}"
         );
-        let (result, _) = run(A64Insn::MsrImmMsrSiPstate { crm: 0 }, &mut state, &mut pan);
-        assert_eq!((result, pan), (Ok(0x4004), false));
-        let (result, log) = run(ldadd, &mut state, &mut pan);
+        assert!(log.is_empty());
+        // PAN clear: a window access, counted with the user accesses.
+        let (result, log, seen) = run(ldadd, &mut state, false, None);
         assert_eq!(result, Ok(0x4004));
         assert_eq!(log[0].privilege, Privilege::Window);
+        assert_eq!(seen, 1);
         assert_eq!(state.read_u64(0x9000), 1);
+        // Injection fails the window access like a user access; the state is intact.
+        let before = state.clone();
+        let (result, _, _) = run(ldadd, &mut state, false, Some(1));
+        assert!(matches!(result, Err(InsnError::Fault(_))), "{result:?}");
+        assert_eq!(state, before);
+        // Runtime memory and addresses outside the user VA are hard errors, PAN clear
+        // or not.
         for address in [0x7008, 0x1_0000_0000_9000, 0xffff_8000_0000_9000] {
             state.write_x(3, address);
-            let (result, _) = run(ldadd, &mut state, &mut pan);
+            let (result, _, _) = run(ldadd, &mut state, false, None);
             assert!(
                 matches!(result, Err(InsnError::Error(_))),
                 "{address:#x}: {result:?}"
             );
         }
+        // An unmapped user page faults.
         state.write_x(3, 0xa000);
-        let (result, _) = run(ldadd, &mut state, &mut pan);
+        let (result, _, _) = run(ldadd, &mut state, false, None);
         assert!(matches!(result, Err(InsnError::Fault(_))), "{result:?}");
-        let (result, _) = run(A64Insn::MsrImmMsrSiPstate { crm: 1 }, &mut state, &mut pan);
-        assert_eq!((result, pan), (Ok(0x4004), true));
-        // Original code never executes `msr pan` (admission rejects it).
-        assert!(exec_user(A64Insn::MsrImmMsrSiPstate { crm: 1 }, 0x4000, &mut state).is_err());
+        // No `msr` in a fragment, whatever the immediate; none in original code.
+        for crm in [0, 1] {
+            let msr = A64Insn::MsrImmMsrSiPstate { crm };
+            let (result, _, _) = run(msr, &mut state, false, None);
+            assert!(
+                matches!(&result, Err(InsnError::Error(message)) if message.contains("in a fragment")),
+                "{result:?}"
+            );
+            assert!(exec_user(msr, 0x4000, &mut state).is_err());
+        }
     }
 
     #[test]
