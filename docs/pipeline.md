@@ -1854,7 +1854,8 @@ from events and steps.
   - The profiler: pcs, hit counts against `hot_threshold`.
   - A scrolling event log.
   - Playback: play/pause, speed, scrub. Summary figures up to `t`: share of
-    ticks in fragments, runtime entries per syscall, transfers by `via`.
+    ticks in fragments, fragment exits per syscall (`Exit` events / syscalls),
+    transfers by `via` (a "round trip" is a `Runtime` transfer).
 - Tests: each mode renders every tick kind of the session fixtures on a
   `TestBackend` without panicking, and the shared cursor survives a mode
   switch. No snapshot tests of the screen.

@@ -50,7 +50,10 @@ fn modes_draw_and_the_cursor_survives_a_switch() {
     assert_eq!(shell.active_name(), "observe");
     assert_eq!(shell.t(), 4);
     let screen = draw(&mut shell, &mut terminal);
-    assert!(screen.contains("observe mode, t = 4"), "{screen}");
+    assert!(
+        screen.contains(&format!("t 4/{}", session.ticks())),
+        "{screen}"
+    );
 
     press(&mut shell, KeyCode::Right);
     press(&mut shell, KeyCode::Char('1'));
@@ -64,7 +67,7 @@ fn modes_draw_and_the_cursor_survives_a_switch() {
     // The help overlay lists the shell's keys and the active mode's.
     press(&mut shell, KeyCode::Char('?'));
     let screen = draw(&mut shell, &mut terminal);
-    for text in ["next mode", "quit", "step t by"] {
+    for text in ["next mode", "quit", "scrub t by"] {
         assert!(screen.contains(text), "help lacks {text}:\n{screen}");
     }
     press(&mut shell, KeyCode::Esc);
