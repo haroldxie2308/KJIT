@@ -1,0 +1,5 @@
+label=a2-micropan1 kpti=0 profile=kjit-guest
+append=console=ttyAMA0 panic=-1 nokaslr
+waited_s=0 load1_before=4.36
+cmd=mount -t debugfs debugfs /sys/kernel/debug; echo 1 > /sys/kernel/debug/kjit/attrib_pan_run; sh /kjit/ub-bench-kjit.sh redis 7; sh /kjit/ub-bench-kjit.sh simd 7
+load1_after=4.99 guest_run_status=0

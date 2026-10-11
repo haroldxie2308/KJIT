@@ -2257,10 +2257,11 @@ the reasoning, the numbers and the full list of what was not verified there.
   part, the stall at dispatch targets, was L1I set conflicts from page-aligned
   images ([03:03](journal/2026-10-11.md)), not the dispatch template, whose
   alternatives (inline caches, direct calls, return compares, shorter chains)
-  measured at most 0.07 us per request. PAN windows (SIMD&FP and LSE atomics)
-  are the next candidate: run-scoped PAN clear is measured
-  ([01:47](journal/2026-10-11.md)) but not decided; re-attribute on an A14
-  build first.
+  measured at most 0.07 us per request. Run-scoped PAN clear is not adopted. It
+  made the windows' SIMD loops near native in microbenchmarks
+  ([01:47](journal/2026-10-11.md)), but in redis on A14 it saved 0.00-0.08 us per
+  request, inside the noise ([12:42](journal/2026-10-11.md)). Deferred until a
+  dispatch change lands; re-measure then with the same ablation.
 - **V2 chaining.** The fuzzer counts `chained` as a non-verdict; modelling
   chaining in the original runner of the single-fragment fuzzer is deferred
   (cached runs follow branches). [2026-09-27 03:40](journal/2026-09-27.md).

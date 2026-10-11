@@ -1,0 +1,18 @@
+variant  unit  n: off ns / on ns per outer ; slope off / on (ns per n) ; intercept off / on (ns)
+calls     64:224/209 128:304/358 256:501/655 512:893/1252 1000:1640/2386
+          slope 1.522 / 2.326  (x1.53)   intercept 116 / 60   boots 3
+plt       64:226/339 128:318/604 256:507/1155 512:902/2228 900:1533/3934
+          slope 1.565 / 4.297  (x2.75)   intercept 115 / 53   boots 3
+ldadd     64:271/262 128:409/435 256:682/818 512:1233/1547 1000:2285/2958
+          slope 2.152 / 2.883  (x1.34)   intercept 133 / 74   boots 3
+sites16   per outer iteration: off 141 ns, on 82 ns  =>  per call (intercepts 110 / 55 ns taken from `calls`): off 1.91, on 1.67 ns   boots 3
+sites32   per outer iteration: off 151 ns, on 114 ns  =>  per call (intercepts 110 / 55 ns taken from `calls`): off 1.28, on 1.85 ns   boots 3
+sites64   per outer iteration: off 172 ns, on 174 ns  =>  per call (intercepts 110 / 55 ns taken from `calls`): off 0.96, on 1.86 ns   boots 3
+foot      16:216/135 32:304/219 64:479/382 96:641/558 128:821/718
+          slope 5.369 / 5.226  (x0.97)   intercept 132 / 51   boots 3
+chase     256:373/295 1024:1117/1039 2048:2105/2023 3000:3015/2947
+          slope 0.963 / 0.966  (x1.00)   intercept 129 / 48   boots 3
+simd32    512:139/128 1024:143/142 2048:153/168 4096:183/236
+          slope 0.013 / 0.030  (x2.42)   intercept 131 / 110   boots 3
+copy16    512:142/77 1024:152/93 2048:178/131 4096:231/215
+          slope 0.025 / 0.039  (x1.55)   intercept 128 / 54   boots 3
