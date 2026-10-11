@@ -63,6 +63,7 @@ directory).
 | 2026-10-09 22:11 A11c implemented | `2026-10-09/2211-a11c-victim-table.csv` | table |
 | 2026-10-10 09:05 Fragment-code slowdown: root cause | `2026-10-10/0905-fragment-code-slowdown.json` | logs |
 | 2026-10-10 09:41 EL1 RMW chain = PSTATE.SSBS | `2026-10-10/0941-ssbs-rmw-chain.json` | logs |
+| 2026-10-11 16:21 Redis under UB's benchmark protocol (`std-a-k<kpti>-b<boot>` boots; `-sys.csv`: null syscall) | `2026-10-11/1621-ub-standard.csv` | logs |
 
 A new measurement entry adds the data file, the raw-log directory, a row in this table and the
 `Data:` line in the entry.
