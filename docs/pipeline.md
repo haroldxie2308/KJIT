@@ -2260,10 +2260,13 @@ the reasoning, the numbers and the full list of what was not verified there.
   measured at most 0.07 us per request. Run-scoped PAN clear is not adopted. It
   made the windows' SIMD loops near native in microbenchmarks
   ([01:47](journal/2026-10-11.md)), but in redis on A14 it saved 0.00-0.08 us per
-  request at `-d 3`, inside the noise ([12:42](journal/2026-10-11.md)). Not
-  measured at large values, where KJIT costs 3.4-3.6x server CPU at 16 KiB
-  ([16:21](journal/2026-10-11.md)). Re-measure the same ablation across value
-  sizes before deciding. Server CPU per request (server-bound, UB protocol) is
+  request at `-d 3`, inside the noise ([12:42](journal/2026-10-11.md)). Across
+  value sizes ([19:31](journal/2026-10-11.md)) it removes 94% / 87% (SET / GET)
+  of the size-dependent penalty: 8.6 us per request at 16 KiB (78-81% of the
+  on-off gap), about 8 ns per SIMD q-pair window, nothing measurable below
+  1 KiB. Decision pending: run-scoped PAN clear (security trade-off in the
+  01:47 entry) or the LDTR/STTR GPR split (2.3x native on glibc loops, keeps
+  PAN). Server CPU per request (server-bound, UB protocol) is
   the metric; throughput in the client-bound `a11-baseline` setup hides the
   cost.
 - **V2 chaining.** The fuzzer counts `chained` as a non-verdict; modelling

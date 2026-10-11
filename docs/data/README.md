@@ -63,7 +63,17 @@ directory).
 | 2026-10-09 22:11 A11c implemented | `2026-10-09/2211-a11c-victim-table.csv` | table |
 | 2026-10-10 09:05 Fragment-code slowdown: root cause | `2026-10-10/0905-fragment-code-slowdown.json` | logs |
 | 2026-10-10 09:41 EL1 RMW chain = PSTATE.SSBS | `2026-10-10/0941-ssbs-rmw-chain.json` | logs |
+| 2026-10-10 11:09 A13 implemented: preemptible FP/SIMD bracket | `2026-10-10/1109-a13-{entry-cost,redis,preempt-stress,latency,stale-binding}.csv` | logs |
+| 2026-10-10 11:51 A12 implemented: budget counter in x18 | `2026-10-10/1149-a12-{code-speed,entry-cost,redis}.csv` | logs |
+| 2026-10-11 00:37 Merged main (A12 + A13): code speed and redis | `2026-10-11/0037-main-{code-speed,redis}.csv` | logs |
+| 2026-10-11 01:47 SIMD&FP access lowering alternatives | `2026-10-11/0147-simd-lowering*.csv` | logs |
+| 2026-10-11 01:54 Redis per-request loss attribution | `2026-10-11/0154-redis-attrib*.csv` | logs |
+| 2026-10-11 03:03 Dispatch stall: cause and alternatives | `2026-10-11/0303-dispatch-study*.csv` | logs |
+| 2026-10-11 03:54 A14 implemented: fragment image colouring | `2026-10-11/0354-a14-*.csv` | logs |
+| 2026-10-11 12:42 Redis loss attribution on A14 | `2026-10-11/1240-attrib-a14*.csv` | logs |
 | 2026-10-11 16:21 Redis under UB's benchmark protocol (`std-a-k<kpti>-b<boot>` boots; `-sys.csv`: null syscall) | `2026-10-11/1621-ub-standard.csv` | logs |
+| 2026-10-11 19:31 PAN ablation across value sizes | `2026-10-11/1931-pan-sweep*.csv` | logs |
+| 2026-10-11 19:31 Redis CPU gap: 1.0 vs 1.5 us (`-wake.csv`: wake-cost micro-benchmark) | `2026-10-11/1931-cpu-gap*.csv` | logs |
 
 A new measurement entry adds the data file, the raw-log directory, a row in this table and the
 `Data:` line in the entry.

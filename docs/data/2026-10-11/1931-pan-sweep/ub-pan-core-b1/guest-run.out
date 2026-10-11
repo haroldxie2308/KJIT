@@ -1,0 +1,239 @@
+guest-run: profile=kjit-guest run-dir=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/runs/ub-pan-core-b1
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1 (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #3 SMP PREEMPT Sat Oct 10 04:02:05 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr rodata=off
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013b400000-0x000000013b800000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000101] Console: colour dummy device 80x25
+[    0.000107] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000111] pid_max: default: 32768 minimum: 301
+[    0.000236] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000244] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000315] VFS: Finished mounting rootfs on nullfs
+[    0.000459] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000568] rcu: Hierarchical SRCU implementation.
+[    0.000568] rcu: 	Max phase no-delay instances is 1000.
+[    0.000587] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000620] smp: Bringing up secondary CPUs ...
+[    0.000824] Detected PIPT I-cache on CPU1
+[    0.000896] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001100] Detected PIPT I-cache on CPU2
+[    0.001185] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001599] Detected PIPT I-cache on CPU3
+[    0.001714] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.001827] smp: Brought up 1 node, 4 CPUs
+[    0.001828] SMP: Total of 4 processors activated.
+[    0.001828] CPU: All CPU(s) started at EL1
+[    0.001829] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.001829] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.001830] CPU features: detected: CRC32 instructions
+[    0.001830] CPU features: detected: Data independent timing control (DIT)
+[    0.001830] CPU features: detected: E0PD
+[    0.001831] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.001831] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.001832] CPU features: detected: LSE atomic instructions
+[    0.001832] CPU features: detected: Privileged Access Never
+[    0.001832] CPU features: detected: Speculation barrier (SB)
+[    0.001833] CPU features: detected: TLB range maintenance instructions
+[    0.001833] CPU features: detected: XNX
+[    0.001947] alternatives: applying system-wide alternatives
+[    0.002834] Memory: 3917932K/4194304K available (5248K kernel code, 754K rwdata, 2356K rodata, 576K init, 405K bss, 273192K reserved, 0K cma-reserved)
+[    0.003082] devtmpfs: initialized
+[    0.003289] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003291] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003305] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003310] 30384 pages in range for non-PLT usage
+[    0.003311] 521904 pages in range for PLT usage
+[    0.003358] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.003626] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.003661] ASID allocator initialised with 256 entries
+[    0.003668] Serial: AMBA PL011 UART driver
+[    0.004041] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.004267] printk: console [ttyAMA0] enabled
+[    0.010102] vgaarb: loaded
+[    0.010494] clocksource: Switched to clocksource arch_sys_counter
+[    0.020444] NET: Registered PF_INET protocol family
+[    0.020523] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.020946] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.020953] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.020956] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.021006] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.021172] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.021195] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.021226] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.021235] PCI: CLS 0 bytes, default 64
+[    0.021530] Unpacking initramfs...
+[    0.023460] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.023516] 9p: Installing v9fs 9p2000 file system support
+[    0.023896] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.023902] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.023905] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.023907] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.023912] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.023920] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.023933] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.023934] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.023935] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.023935] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.023936] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.023955] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.024167] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.024241] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.024245] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.024257] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.024259] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.024565] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.024757] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.024762] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.024795] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.025072] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.025193] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.025197] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.025203] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.025512] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.025513] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.025528] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.025546] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.025561] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.025566] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.025569] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.025573] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.025577] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.025581] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.025585] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.025586] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.025586] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.026208] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.026990] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.027715] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.034985] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.034994] rtc-pl031 9010000.pl031: setting system clock to 2026-10-11T09:43:03 UTC (1791711783)
+[    0.035095] NET: Registered PF_INET6 protocol family
+[    0.035418] Segment Routing with IPv6
+[    0.035424] In-situ OAM (IOAM) with IPv6
+[    0.035436] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.035492] NET: Registered PF_PACKET protocol family
+[    0.035497] 9pnet: Installing 9P2000 support
+[    0.040108] clk: Disabling unused clocks
+[    0.108224] Freeing initrd memory: 186360K
+[    0.108652] Freeing unused kernel memory: 576K
+[    0.108695] Kernel memory protection disabled.
+[    0.108706] Run /init as init process
+[    0.124697] kjit: loading out-of-tree module taints kernel.
+[    0.125843] rust_kjit: ######## Rust KJIT inits ########
+[    0.125933] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+pansweep: cmdline: console=ttyAMA0 panic=-1 nokaslr rodata=off
+pansweep: kpti dmesg: none
+pansweep: kernel: 7.1.0-rc1 cpus: 4 redis: Redis server v=7.0.15 sha=00000000:0 malloc=jemalloc-5.2.1 bits=64 build=fe67efb337924bf0
+pansweep: sizes='1 64 1024 4096 16384' requests=1000000 reps=2 warm=300000 chain_budget=1024 hz_ticks=100
+pansweep: module: 64 hot_threshold, 100 hot_window_ms
+pansweep: server tasks allowed CPUs:       5 0 
+pansweep: warm-up at on, -d 1, 1000000 requests
+pansweep: translate_ok after warm-up: 295
+pansweep run size=1 rep=1 pos=0 state=off test=set requests=1000000 rps=363372.09 wall_cs=276 utime_ticks=70 stime_ticks=184 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=261
+pansweep run size=1 rep=1 pos=0 state=off test=get requests=1000000 rps=399840.06 wall_cs=250 utime_ticks=61 stime_ticks=176 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=261
+pansweep run size=1 rep=1 pos=1 state=pan test=set requests=1000000 rps=210482.00 wall_cs=492 utime_ticks=1 stime_ticks=448 clk_tck=100 hook_calls=2041674 syscalls_in_kernel=1998700 fragment_entries=3040515 exit_svc=1998700 exit_bl=1751 exit_blr=62 exit_br=1000001 exit_ret=312 exit_mem=4 exit_unsupported=39685 exit_budget=0 run_declined=56 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=261
+pansweep run size=1 rep=1 pos=1 state=pan test=get requests=1000000 rps=235183.45 wall_cs=443 utime_ticks=2 stime_ticks=406 clk_tck=100 hook_calls=2043109 syscalls_in_kernel=1998894 fragment_entries=3041955 exit_svc=1998896 exit_bl=1475 exit_blr=52 exit_br=1000000 exit_ret=306 exit_mem=17 exit_unsupported=41209 exit_budget=0 run_declined=51 svc_declined=2 fpsimd_entries=1000000 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=261
+pansweep run size=1 rep=1 pos=2 state=on test=set requests=1000000 rps=235072.86 wall_cs=446 utime_ticks=4 stime_ticks=400 clk_tck=100 hook_calls=2043277 syscalls_in_kernel=1998603 fragment_entries=3042114 exit_svc=1998603 exit_bl=1845 exit_blr=58 exit_br=1000000 exit_ret=306 exit_mem=7 exit_unsupported=41295 exit_budget=0 run_declined=57 svc_declined=0 fpsimd_entries=1000000 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=261
+pansweep run size=1 rep=1 pos=2 state=on test=get requests=1000000 rps=266595.59 wall_cs=395 utime_ticks=0 stime_ticks=363 clk_tck=100 hook_calls=2044450 syscalls_in_kernel=1998863 fragment_entries=3043320 exit_svc=1998864 exit_bl=1500 exit_blr=42 exit_br=1000001 exit_ret=300 exit_mem=34 exit_unsupported=42579 exit_budget=0 run_declined=43 svc_declined=1 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=261
+pansweep run size=1 rep=2 pos=0 state=off test=set requests=1000000 rps=363504.19 wall_cs=275 utime_ticks=68 stime_ticks=192 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=261
+pansweep run size=1 rep=2 pos=0 state=off test=get requests=1000000 rps=363504.19 wall_cs=276 utime_ticks=63 stime_ticks=186 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=261
+pansweep run size=1 rep=2 pos=1 state=on test=set requests=1000000 rps=235238.77 wall_cs=443 utime_ticks=1 stime_ticks=405 clk_tck=100 hook_calls=2043380 syscalls_in_kernel=1998602 fragment_entries=3042241 exit_svc=1998602 exit_bl=1853 exit_blr=48 exit_br=1000001 exit_ret=304 exit_mem=0 exit_unsupported=41433 exit_budget=0 run_declined=46 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=261
+pansweep run size=1 rep=2 pos=1 state=on test=get requests=1000000 rps=266595.59 wall_cs=393 utime_ticks=1 stime_ticks=361 clk_tck=100 hook_calls=2044865 syscalls_in_kernel=1998764 fragment_entries=3043727 exit_svc=1998764 exit_bl=1635 exit_blr=52 exit_br=1000001 exit_ret=298 exit_mem=2 exit_unsupported=42975 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=261
+pansweep run size=1 rep=2 pos=2 state=pan test=set requests=1000000 rps=221975.58 wall_cs=467 utime_ticks=1 stime_ticks=419 clk_tck=100 hook_calls=2043135 syscalls_in_kernel=1998603 fragment_entries=3041981 exit_svc=1998604 exit_bl=1866 exit_blr=52 exit_br=1000001 exit_ret=308 exit_mem=2 exit_unsupported=41148 exit_budget=0 run_declined=47 svc_declined=1 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=522
+pansweep run size=1 rep=2 pos=2 state=pan test=get requests=1000000 rps=266595.59 wall_cs=392 utime_ticks=1 stime_ticks=365 clk_tck=100 hook_calls=2044521 syscalls_in_kernel=1998872 fragment_entries=3043395 exit_svc=1998873 exit_bl=1514 exit_blr=39 exit_br=1000001 exit_ret=301 exit_mem=14 exit_unsupported=42653 exit_budget=0 run_declined=42 svc_declined=1 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=522
+pansweep run size=64 rep=1 pos=0 state=off test=set requests=1000000 rps=363636.38 wall_cs=275 utime_ticks=69 stime_ticks=190 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=546
+pansweep run size=64 rep=1 pos=0 state=off test=get requests=1000000 rps=363504.19 wall_cs=276 utime_ticks=59 stime_ticks=193 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=546
+pansweep run size=64 rep=1 pos=1 state=on test=set requests=1000000 rps=222172.86 wall_cs=469 utime_ticks=1 stime_ticks=443 clk_tck=100 hook_calls=2042404 syscalls_in_kernel=1998280 fragment_entries=3041249 exit_svc=1998280 exit_bl=2250 exit_blr=61 exit_br=1000001 exit_ret=307 exit_mem=0 exit_unsupported=40350 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=546
+pansweep run size=64 rep=1 pos=1 state=on test=get requests=1000000 rps=249750.23 wall_cs=419 utime_ticks=3 stime_ticks=391 clk_tck=100 hook_calls=2043821 syscalls_in_kernel=1998831 fragment_entries=3042682 exit_svc=1998831 exit_bl=1545 exit_blr=52 exit_br=1000001 exit_ret=301 exit_mem=15 exit_unsupported=41937 exit_budget=0 run_declined=50 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=546
+pansweep run size=64 rep=1 pos=2 state=pan test=set requests=1000000 rps=222024.86 wall_cs=469 utime_ticks=0 stime_ticks=431 clk_tck=100 hook_calls=2042722 syscalls_in_kernel=1998369 fragment_entries=3041566 exit_svc=1998371 exit_bl=2188 exit_blr=60 exit_br=1000001 exit_ret=308 exit_mem=1 exit_unsupported=40637 exit_budget=0 run_declined=55 svc_declined=2 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=807
+pansweep run size=64 rep=1 pos=2 state=pan test=get requests=1000000 rps=266453.50 wall_cs=394 utime_ticks=2 stime_ticks=372 clk_tck=100 hook_calls=2044256 syscalls_in_kernel=1998787 fragment_entries=3043106 exit_svc=1998790 exit_bl=1607 exit_blr=56 exit_br=1000001 exit_ret=299 exit_mem=4 exit_unsupported=42349 exit_budget=0 run_declined=58 svc_declined=3 fpsimd_entries=1000000 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=807
+pansweep run size=64 rep=2 pos=0 state=off test=set requests=1000000 rps=285469.59 wall_cs=351 utime_ticks=76 stime_ticks=242 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=807
+pansweep run size=64 rep=2 pos=0 state=off test=get requests=1000000 rps=307597.66 wall_cs=326 utime_ticks=65 stime_ticks=244 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=807
+pansweep run size=64 rep=2 pos=1 state=pan test=set requests=1000000 rps=181785.12 wall_cs=567 utime_ticks=3 stime_ticks=521 clk_tck=100 hook_calls=2043084 syscalls_in_kernel=1998149 fragment_entries=3041917 exit_svc=1998149 exit_bl=2379 exit_blr=55 exit_br=1000001 exit_ret=319 exit_mem=10 exit_unsupported=41004 exit_budget=0 run_declined=44 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=807
+pansweep run size=64 rep=2 pos=1 state=pan test=get requests=1000000 rps=266595.59 wall_cs=394 utime_ticks=2 stime_ticks=371 clk_tck=100 hook_calls=2043436 syscalls_in_kernel=1998858 fragment_entries=3042287 exit_svc=1998861 exit_bl=1542 exit_blr=54 exit_br=1000001 exit_ret=299 exit_mem=12 exit_unsupported=41518 exit_budget=0 run_declined=56 svc_declined=3 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=807
+pansweep run size=64 rep=2 pos=2 state=on test=set requests=1000000 rps=222024.86 wall_cs=468 utime_ticks=2 stime_ticks=445 clk_tck=100 hook_calls=2042346 syscalls_in_kernel=1998309 fragment_entries=3041185 exit_svc=1998309 exit_bl=2291 exit_blr=61 exit_br=1000001 exit_ret=306 exit_mem=6 exit_unsupported=40211 exit_budget=0 run_declined=53 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=807
+pansweep run size=64 rep=2 pos=2 state=on test=get requests=1000000 rps=249750.23 wall_cs=418 utime_ticks=2 stime_ticks=374 clk_tck=100 hook_calls=2044028 syscalls_in_kernel=1998838 fragment_entries=3042883 exit_svc=1998839 exit_bl=1511 exit_blr=56 exit_br=1000001 exit_ret=303 exit_mem=0 exit_unsupported=42173 exit_budget=0 run_declined=55 svc_declined=1 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=807
+pansweep run size=1024 rep=1 pos=0 state=off test=set requests=1000000 rps=333111.25 wall_cs=300 utime_ticks=79 stime_ticks=195 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1068
+pansweep run size=1024 rep=1 pos=0 state=off test=get requests=1000000 rps=363504.19 wall_cs=276 utime_ticks=61 stime_ticks=197 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1068
+pansweep run size=1024 rep=1 pos=1 state=pan test=set requests=1000000 rps=199960.02 wall_cs=520 utime_ticks=2 stime_ticks=475 clk_tck=100 hook_calls=2041783 syscalls_in_kernel=1998208 fragment_entries=3040621 exit_svc=1998209 exit_bl=2359 exit_blr=59 exit_br=1000001 exit_ret=316 exit_mem=0 exit_unsupported=39677 exit_budget=0 run_declined=56 svc_declined=1 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1068
+pansweep run size=1024 rep=1 pos=1 state=pan test=get requests=1000000 rps=235238.77 wall_cs=446 utime_ticks=3 stime_ticks=402 clk_tck=100 hook_calls=2043068 syscalls_in_kernel=1998836 fragment_entries=3041924 exit_svc=1998836 exit_bl=1555 exit_blr=44 exit_br=1000001 exit_ret=306 exit_mem=1 exit_unsupported=41181 exit_budget=0 run_declined=46 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1068
+pansweep run size=1024 rep=1 pos=2 state=on test=set requests=1000000 rps=190403.66 wall_cs=543 utime_ticks=3 stime_ticks=514 clk_tck=100 hook_calls=2041047 syscalls_in_kernel=1998502 fragment_entries=3039870 exit_svc=1998502 exit_bl=2047 exit_blr=72 exit_br=1000001 exit_ret=313 exit_mem=0 exit_unsupported=38935 exit_budget=0 run_declined=62 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1068
+pansweep run size=1024 rep=1 pos=2 state=on test=get requests=1000000 rps=210349.17 wall_cs=495 utime_ticks=2 stime_ticks=473 clk_tck=100 hook_calls=2041441 syscalls_in_kernel=1998834 fragment_entries=3040279 exit_svc=1998834 exit_bl=1542 exit_blr=58 exit_br=1000001 exit_ret=310 exit_mem=0 exit_unsupported=39534 exit_budget=0 run_declined=53 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1068
+pansweep run size=1024 rep=2 pos=0 state=off test=set requests=1000000 rps=333111.25 wall_cs=300 utime_ticks=76 stime_ticks=209 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1068
+pansweep run size=1024 rep=2 pos=0 state=off test=get requests=1000000 rps=363504.19 wall_cs=276 utime_ticks=67 stime_ticks=201 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1068
+pansweep run size=1024 rep=2 pos=1 state=on test=set requests=1000000 rps=190331.17 wall_cs=542 utime_ticks=3 stime_ticks=521 clk_tck=100 hook_calls=2041193 syscalls_in_kernel=1998361 fragment_entries=3040034 exit_svc=1998361 exit_bl=2198 exit_blr=56 exit_br=1000001 exit_ret=315 exit_mem=15 exit_unsupported=39088 exit_budget=0 run_declined=48 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1068
+pansweep run size=1024 rep=2 pos=1 state=on test=get requests=1000000 rps=210482.00 wall_cs=494 utime_ticks=3 stime_ticks=461 clk_tck=100 hook_calls=2041450 syscalls_in_kernel=1998885 fragment_entries=3040289 exit_svc=1998885 exit_bl=1508 exit_blr=56 exit_br=1000001 exit_ret=310 exit_mem=4 exit_unsupported=39525 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1068
+pansweep run size=1024 rep=2 pos=2 state=pan test=set requests=1000000 rps=221975.58 wall_cs=468 utime_ticks=2 stime_ticks=440 clk_tck=100 hook_calls=2041762 syscalls_in_kernel=1998294 fragment_entries=3040611 exit_svc=1998295 exit_bl=2302 exit_blr=51 exit_br=1000001 exit_ret=306 exit_mem=1 exit_unsupported=39655 exit_budget=0 run_declined=48 svc_declined=1 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1329
+pansweep run size=1024 rep=2 pos=2 state=pan test=get requests=1000000 rps=249812.66 wall_cs=420 utime_ticks=2 stime_ticks=388 clk_tck=100 hook_calls=2043350 syscalls_in_kernel=1998749 fragment_entries=3042217 exit_svc=1998752 exit_bl=1636 exit_blr=43 exit_br=1000001 exit_ret=304 exit_mem=10 exit_unsupported=41471 exit_budget=0 run_declined=46 svc_declined=3 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1329
+pansweep run size=4096 rep=1 pos=0 state=off test=set requests=1000000 rps=307597.66 wall_cs=326 utime_ticks=78 stime_ticks=236 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1329
+pansweep run size=4096 rep=1 pos=0 state=off test=get requests=1000000 rps=285551.09 wall_cs=349 utime_ticks=75 stime_ticks=254 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1329
+pansweep run size=4096 rep=1 pos=1 state=on test=set requests=1000000 rps=137816.98 wall_cs=744 utime_ticks=2 stime_ticks=705 clk_tck=100 hook_calls=2040999 syscalls_in_kernel=1997809 fragment_entries=3039770 exit_svc=1997810 exit_bl=2787 exit_blr=91 exit_br=1000001 exit_ret=337 exit_mem=1 exit_unsupported=38743 exit_budget=0 run_declined=64 svc_declined=1 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1329
+pansweep run size=4096 rep=1 pos=1 state=on test=get requests=1000000 rps=148104.27 wall_cs=694 utime_ticks=2 stime_ticks=658 clk_tck=100 hook_calls=2040344 syscalls_in_kernel=1998808 fragment_entries=3039129 exit_svc=1998808 exit_bl=1555 exit_blr=85 exit_br=1000000 exit_ret=329 exit_mem=17 exit_unsupported=38335 exit_budget=0 run_declined=64 svc_declined=0 fpsimd_entries=1000000 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1329
+pansweep run size=4096 rep=1 pos=2 state=pan test=set requests=1000000 rps=210482.00 wall_cs=492 utime_ticks=1 stime_ticks=467 clk_tck=100 hook_calls=2041734 syscalls_in_kernel=1998327 fragment_entries=3040564 exit_svc=1998327 exit_bl=2254 exit_blr=65 exit_br=1000000 exit_ret=308 exit_mem=1 exit_unsupported=39609 exit_budget=0 run_declined=62 svc_declined=0 fpsimd_entries=1000000 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1590
+pansweep run size=4096 rep=1 pos=2 state=pan test=get requests=1000000 rps=235072.86 wall_cs=444 utime_ticks=1 stime_ticks=418 clk_tck=100 hook_calls=2042531 syscalls_in_kernel=1998850 fragment_entries=3041373 exit_svc=1998852 exit_bl=1525 exit_blr=64 exit_br=1000001 exit_ret=305 exit_mem=18 exit_unsupported=40608 exit_budget=0 run_declined=66 svc_declined=2 fpsimd_entries=999999 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1590
+pansweep run size=4096 rep=2 pos=0 state=off test=set requests=1000000 rps=333222.28 wall_cs=300 utime_ticks=82 stime_ticks=211 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1590
+pansweep run size=4096 rep=2 pos=0 state=off test=get requests=1000000 rps=307503.06 wall_cs=325 utime_ticks=66 stime_ticks=234 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1590
+pansweep run size=4096 rep=2 pos=1 state=pan test=set requests=1000000 rps=210482.00 wall_cs=493 utime_ticks=2 stime_ticks=466 clk_tck=100 hook_calls=2042122 syscalls_in_kernel=1998385 fragment_entries=3040951 exit_svc=1998386 exit_bl=2149 exit_blr=68 exit_br=1000000 exit_ret=311 exit_mem=1 exit_unsupported=40036 exit_budget=0 run_declined=66 svc_declined=1 fpsimd_entries=1000000 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1590
+pansweep run size=4096 rep=2 pos=1 state=pan test=get requests=1000000 rps=235238.77 wall_cs=446 utime_ticks=2 stime_ticks=418 clk_tck=100 hook_calls=2042746 syscalls_in_kernel=1998785 fragment_entries=3041591 exit_svc=1998786 exit_bl=1614 exit_blr=60 exit_br=1000000 exit_ret=305 exit_mem=14 exit_unsupported=40812 exit_budget=0 run_declined=63 svc_declined=1 fpsimd_entries=1000000 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=1590
+pansweep run size=4096 rep=2 pos=2 state=on test=set requests=1000000 rps=124937.54 wall_cs=819 utime_ticks=5 stime_ticks=777 clk_tck=100 hook_calls=2040654 syscalls_in_kernel=1998248 fragment_entries=3039423 exit_svc=1998248 exit_bl=2300 exit_blr=88 exit_br=1000001 exit_ret=343 exit_mem=1 exit_unsupported=38442 exit_budget=0 run_declined=53 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1590
+pansweep run size=4096 rep=2 pos=2 state=on test=get requests=1000000 rps=153798.83 wall_cs=667 utime_ticks=2 stime_ticks=646 clk_tck=100 hook_calls=2040047 syscalls_in_kernel=1998714 fragment_entries=3038847 exit_svc=1998714 exit_bl=1664 exit_blr=75 exit_br=1000001 exit_ret=326 exit_mem=1 exit_unsupported=38066 exit_budget=0 run_declined=55 svc_declined=0 fpsimd_entries=1000000 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=1590
+pansweep run size=16384 rep=1 pos=0 state=off test=set requests=1000000 rps=249875.08 wall_cs=400 utime_ticks=104 stime_ticks=278 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=2085
+pansweep run size=16384 rep=1 pos=0 state=off test=get requests=1000000 rps=222024.86 wall_cs=451 utime_ticks=121 stime_ticks=319 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=2085
+pansweep run size=16384 rep=1 pos=1 state=pan test=set requests=1000000 rps=166500.17 wall_cs=618 utime_ticks=5 stime_ticks=594 clk_tck=100 hook_calls=2041215 syscalls_in_kernel=1998392 fragment_entries=3040057 exit_svc=1998392 exit_bl=2184 exit_blr=84 exit_br=1000051 exit_ret=352 exit_mem=0 exit_unsupported=38994 exit_budget=0 run_declined=66 svc_declined=0 fpsimd_entries=1000052 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=2085
+pansweep run size=16384 rep=1 pos=1 state=pan test=get requests=1000000 rps=137816.98 wall_cs=744 utime_ticks=2 stime_ticks=712 clk_tck=100 hook_calls=2039084 syscalls_in_kernel=1995006 fragment_entries=3081251 exit_svc=1995007 exit_bl=36120 exit_blr=73 exit_br=1011043 exit_ret=2365 exit_mem=6 exit_unsupported=36637 exit_budget=0 run_declined=46 svc_declined=1 fpsimd_entries=1043370 translate_ok=1 invalidated_fragments=0 pan_run=1 pan_patched=2085
+pansweep run size=16384 rep=1 pos=2 state=on test=set requests=1000000 rps=64432.99 wall_cs=1571 utime_ticks=5 stime_ticks=1525 clk_tck=100 hook_calls=2041119 syscalls_in_kernel=1993598 fragment_entries=3039449 exit_svc=1993598 exit_bl=2485 exit_blr=162 exit_br=1000051 exit_ret=5146 exit_mem=0 exit_unsupported=38007 exit_budget=0 run_declined=55 svc_declined=0 fpsimd_entries=1000053 translate_ok=1 invalidated_fragments=0 pan_run=0 pan_patched=2085
+pansweep run size=16384 rep=1 pos=2 state=on test=get requests=1000000 rps=64437.14 wall_cs=1571 utime_ticks=5 stime_ticks=1534 clk_tck=100 hook_calls=2042988 syscalls_in_kernel=1992263 fragment_entries=3085045 exit_svc=1992263 exit_bl=4873 exit_blr=171 exit_br=1043658 exit_ret=8881 exit_mem=16 exit_unsupported=35183 exit_budget=0 run_declined=66 svc_declined=0 fpsimd_entries=1043659 translate_ok=45 invalidated_fragments=0 pan_run=0 pan_patched=2085
+pansweep run size=16384 rep=2 pos=0 state=off test=set requests=1000000 rps=249937.52 wall_cs=401 utime_ticks=102 stime_ticks=278 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=2085
+pansweep run size=16384 rep=2 pos=0 state=off test=get requests=1000000 rps=210482.00 wall_cs=475 utime_ticks=117 stime_ticks=343 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=2085
+pansweep run size=16384 rep=2 pos=1 state=on test=set requests=1000000 rps=65535.09 wall_cs=1544 utime_ticks=8 stime_ticks=1510 clk_tck=100 hook_calls=2040925 syscalls_in_kernel=1993455 fragment_entries=3039601 exit_svc=1993455 exit_bl=2583 exit_blr=166 exit_br=1000050 exit_ret=5272 exit_mem=2 exit_unsupported=38073 exit_budget=0 run_declined=63 svc_declined=0 fpsimd_entries=1000051 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=2085
+pansweep run size=16384 rep=2 pos=1 state=on test=get requests=1000000 rps=64432.99 wall_cs=1571 utime_ticks=7 stime_ticks=1537 clk_tck=100 hook_calls=2078567 syscalls_in_kernel=1992708 fragment_entries=3122112 exit_svc=1992708 exit_bl=36850 exit_blr=156 exit_br=1018273 exit_ret=39847 exit_mem=31 exit_unsupported=34247 exit_budget=0 run_declined=51 svc_declined=0 fpsimd_entries=1044916 translate_ok=0 invalidated_fragments=0 pan_run=0 pan_patched=2085
+pansweep run size=16384 rep=2 pos=2 state=pan test=set requests=1000000 rps=159846.55 wall_cs=643 utime_ticks=1 stime_ticks=617 clk_tck=100 hook_calls=2040991 syscalls_in_kernel=1998589 fragment_entries=3039854 exit_svc=1998590 exit_bl=1970 exit_blr=78 exit_br=1000051 exit_ret=365 exit_mem=1 exit_unsupported=38799 exit_budget=0 run_declined=60 svc_declined=1 fpsimd_entries=1000051 translate_ok=0 invalidated_fragments=0 pan_run=1 pan_patched=2580
+pansweep run size=16384 rep=2 pos=2 state=pan test=get requests=1000000 rps=148016.58 wall_cs=693 utime_ticks=5 stime_ticks=652 clk_tck=100 hook_calls=2039373 syscalls_in_kernel=1994830 fragment_entries=3080034 exit_svc=1994830 exit_bl=33293 exit_blr=74 exit_br=1012503 exit_ret=2382 exit_mem=2 exit_unsupported=36950 exit_budget=0 run_declined=52 svc_declined=0 fpsimd_entries=1041853 translate_ok=2 invalidated_fragments=0 pan_run=1 pan_patched=2580
+pansweep: done
+[  486.881105] kjit: 0 of 5674 translation requests still queued at unload (freed by the kernel)
+[  486.900378] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[  486.925605] reboot: Power down
+guest-run: PASS (/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/runs/ub-pan-core-b1/serial.log)
