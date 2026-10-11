@@ -76,6 +76,7 @@ directory).
 | 2026-10-11 19:31 Redis CPU gap: 1.0 vs 1.5 us (`-wake.csv`: wake-cost micro-benchmark) | `2026-10-11/1931-cpu-gap*.csv` | logs |
 | 2026-10-11 22:37 Direct BL and RAS-predicted RET in redis | `2026-10-11/2237-dispatch-ablation*.csv` | logs |
 | 2026-10-11 23:18 A15 implemented: run-scoped PAN clear (`-redis-std.csv`: main vs A15 module, same session; `-gates.csv`: harness/fuzz/module/guest gates) | `2026-10-11/2318-a15-{redis-std,code-speed,gates}.csv` | logs |
+| 2026-10-12 00:31 A16 implemented: direct BL links (`-links.csv`: redis under the UB protocol, main module vs A16 module, 4 boots each, interleaved; `-gates.csv`: guest gates on both profiles; `-links/` also holds the `a16-diag` boot with cumulative link counters) | `2026-10-12/0031-a16-{links,gates}.csv` | logs |
 
 A new measurement entry adds the data file, the raw-log directory, a row in this table and the
 `Data:` line in the entry.

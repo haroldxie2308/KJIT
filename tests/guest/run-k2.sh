@@ -153,6 +153,9 @@ while [ "$i" -le "$iterations" ]; do
     onoff link_race link 0 "$T/link_race"
     [ "$(( $(stat ibtc_insert) - before ))" -ge 1 ] || fail "link_race: nothing published in the dispatch tables"
 
+    # A16: direct BL links made and restored under concurrent retirement.
+    onoff bl_link_race bl_link 0 "$T/bl_link_race"
+
     onoff signal_loop inkernel 0 "$T/signal_loop" 200000
     grep -q "handled=1" signal_loop.1.out || fail "signal_loop: no signal handled"
 
