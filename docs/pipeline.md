@@ -1477,7 +1477,7 @@ region; rule 3's pt_regs fact is its refinement.
   instruction; fall-through between body blocks (any body word is verified
   code); that ordering fences are present.
 - Harness: `run_entry_fixture` verifies before running, so every fixture case
-  (interpreter and native suites, `trace-tui --check`) runs only verified
+  (interpreter and native suites) and every session translation runs only verified
   fragments; the runtime unit-test fragments and the kernel golden are verified
   too. `verify_mutation_tests.rs` is the G1 mutation suite: each mutation class
   must be rejected 100%.
@@ -1621,8 +1621,8 @@ no duplicate translation logic.
 
 - One oracle. `run_differential` runs both sides (original through the
   interpreter, fragment through `URuntime`); `compare_differential` is the only
-  state/halt check, used by `run_entry_fixture` (fixture suite, `trace-tui
-  --check`) and the fuzzer. It translates, verifies (V3), runs the fragment (a
+  state/halt check, used by `run_entry_fixture` (fixture suite) and the
+  fuzzer. It translates, verifies (V3), runs the fragment (a
   `Budget` exit caps the original at the same instance), then the original.
   Bounded runs (`StepLimits`, the fuzzer): a program where neither side halts (an
   SVC in an endless loop restarts the budget) is discarded; one side halting
@@ -1683,7 +1683,8 @@ no duplicate translation logic.
   interpreter models tables and records as runtime memory and executes the
   template. `URuntime::new(fragment, ..)` is a cache of one fragment that never
   publishes (empty tables, every exit misses).
-- `decide` translates the target of every branch exit on a miss, `RET` included
+- `decide` (miss policy `Translate`, the default; sessions use `ReturnToUser`,
+  see Session recorder) translates the target of every branch exit on a miss, `RET` included
   (a return point is never a fragment entry, so without it no `RET` site could
   ever hit; the kernel learns them through exit-target learning, the harness at
   once). A target that is not readable text has no fragment: stop with
@@ -1715,6 +1716,94 @@ no duplicate translation logic.
   word altered (register, `#200`, `ubfx` lsb/width, `#8`), key compare dropped,
   `br` of x13 or x14, a join point inside, no budget check, slot 200 read outside
   a template or written anywhere, a kernel value in x13.
+
+### Session recorder (TUI data layer)
+
+One deterministic whole-program run under the harness model of the kernel
+(translation, code cache, profiler, chaining, links), recorded once and then
+read through a query API. The TUI's debug and observe modes are its only
+consumers and add no model logic. Code: `harness/src/session/`, CLI
+`session-dump`. It replaces the single-fragment explorer (`trace.rs`,
+`active_step.rs`, `explorer/`, `bin/trace-tui.rs`, `opentui_backend.rs`,
+`scripts/run-trace-tui.sh`), which is deleted.
+
+- Input: `SessionConfig { text_base, text, entry_pc, initial_state, policy,
+  limits }`. A session program is a `tests/arm64` fixture plus an entry symbol.
+  It starts with x30 = `SESSION_EXIT_PC` (not readable text) and ends when the
+  user pc reaches it.
+- Policy (`SessionPolicy`): `hot_threshold` (default 64, the kernel's),
+  `chain_budget` (default 1024), `links` (default on). Not modeled: the
+  `hot_window_ms` window (the harness has no clock; hits are counted only),
+  threads, syscall side effects (SVC mocked as in the fixture runs), native
+  execution (sessions are interpreter-only).
+- Two worlds, both on the interpreter:
+  - Reference: the original program alone (`OriginalStepper` following
+    branches, SVC mocked).
+  - KJIT: user code runs on the same stepper. After every SVC the session
+    models the syscall-return hook (section 9):
+    - It looks up a fragment for the resume pc the way `kjit_lookup` does.
+    - On a hit, it runs the chain over the cache (`URuntime` with the cache)
+      until the chain returns to userspace. User steps then resume at that pc
+      with that state.
+    - On a miss, it profiles the resume pc (`SvcResume`).
+  - A branch exit that misses inside a chain returns to userspace at the
+    target and profiles it (`ExitTarget`), as the kernel does. This is a
+    `CodeCache` miss policy. The differential suite keeps today's translate-on-
+    miss policy as its default; it is not changed.
+  - Profiler: one hit count per pc. When a pc reaches `hot_threshold`, the
+    session runs its translation request before userspace resumes (the
+    kernel's task_work) and resets the count. A pc whose translation failed is
+    never requested again (negative cache).
+  - Sync: the k-th SVC of both worlds must be at the same pc, with equal GPRs,
+    SP and NZCV and the same memory writes so far. The end must match the same
+    way. The first mismatch records `Divergence` with both states and stops the
+    session (an outcome, not an error).
+- Time `t`: one tick per instruction executed in the KJIT world, user code and
+  fragment code alike.
+- Recorded data:
+  - `translations: Vec<TranslationRecord>`, one per request:
+    - the request: entry pc, trigger (`SvcResume`/`ExitTarget`), source pc;
+    - every pass's output: decoded insns, CFG blocks, rephrased and virtualized
+      insns per block with their `RephrasedInsnKind`, and layout words
+      (offset, word, insn, kind, ori_pc);
+    - entries, fault sites, link sites, the verifier verdict, and the outcome
+      (installed as fragment f, or rejected with the error).
+
+    The record is built by running the shared passes one at a time. Its words
+    must equal what the cache installed for the same request, else `record`
+    fails, so drift cannot go silent.
+  - `events: Vec<Event>`, ordered by `t`, ties in emission order:
+    - user side: `UserSpan { from_pc, to_pc, steps }` (a coalesced run of
+      original code), `Syscall { k, pc }`;
+    - profiler: `ProfileHit { pc, kind, count }`, `Hot { pc }`,
+      `Translated { translation }`;
+    - cache: `Installed { fragment, translation }`, `Published { table, slot,
+      pc, fragment, replaced }`, `Linked`/`Restored { fragment, slot_offset,
+      target }`, `Retired { fragment }`;
+    - runs: `RunBegin { fragment, entry_pc }`, `Transfer { from, to, via }`,
+      `Exit { fragment, offset, status, param0, param1 }`, `FaultRedirect`,
+      `RunEnd { user_pc, entries }`;
+    - `Divergence`.
+
+    `Transfer` covers control passing between fragments: `via` is `Dispatch`
+    (the template's `br`), `Link` (a slot's `b`) or `Runtime` (a chain
+    continuation). Cache events come from `CodeCache` itself (drained like its
+    writes); the recorder does not reconstruct them.
+  - `steps`: per tick, `{ where: User { pc } | Fragment { fragment, offset },
+    word, register writes (old, new), memory writes (addr, old, new), NZCV }`.
+    A full `MachineState` checkpoint is kept every `checkpoint_every` ticks
+    (default 4096).
+- Query API, read-only on `&Session`:
+  - `state_at(t)`;
+  - `cache_at(t)`: live fragments, table slots and link slot words, by
+    replaying the cache events;
+  - `events_between(t0, t1)`;
+  - `origin(fragment, offset)`: translation, layout index, ori_pc, kind and the
+    pass lineage of that word; `words_for(fragment, ori_pc)` is the reverse;
+  - `reference_at_syscall(k)`.
+- Limits: `max_steps` (default 1,000,000). Reaching it gives the outcome
+  `StepLimit`. Recording memory is O(steps): sessions are fixture-scale, not
+  redis-scale.
 
 ## 8. Kernel runtime (K2)
 
