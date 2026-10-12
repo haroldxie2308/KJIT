@@ -78,12 +78,16 @@ directory).
 | 2026-10-11 23:18 A15 implemented: run-scoped PAN clear (`-redis-std.csv`: main vs A15 module, same session; `-gates.csv`: harness/fuzz/module/guest gates) | `2026-10-11/2318-a15-{redis-std,code-speed,gates}.csv` | logs |
 | 2026-10-12 00:31 A16 implemented: direct BL links (`-links.csv`: redis under the UB protocol, main module vs A16 module, 4 boots each, interleaved; `-gates.csv`: guest gates on both profiles; `-links/` also holds the `a16-diag` boot with cumulative link counters) | `2026-10-12/0031-a16-{links,gates}.csv` | logs |
 | 2026-10-12 04:15 ROX vs RWX fragment images (`-pairs.csv`: paired differences; `-kb.csv`: kernel micro-benchmarks; `-place.csv`: image VA/PFN histograms; `-ptes.csv`, `-linear-map.csv`: page-table evidence; `-install.csv`: install cost; campaigns a-f, boots `rox-<campaign>-b<N>`) | `2026-10-12/0415-rox-rwx*.csv` | logs |
+| 2026-10-13 02:20 A17 implemented: packed image arena (`-a17-arena.csv`: redis under the UB protocol, KPTI off and forced on, main module vs A17 module, 5 boots each per KPTI setting, interleaved; boots `ub-<module>-std-k<kpti>-b<N>`, tables = `tests/guest/host/ub-arena.py` output; `-gates.csv`: guest gates on both profiles, `arena_churn_version` v1 = first version of the test, v2 = final) | `2026-10-13/0220-a17-arena{,-gates}.csv` | logs |
 
 A new measurement entry adds the data file, the raw-log directory, a row in this table and the
 `Data:` line in the entry.
 
 ## What is not in the data files
 
+- 2026-10-13 02:20: the module builds (not stored), the first run of the mutation check against the first version of
+  `arena_churn` (the first version did not detect it; it was rewritten with callees of different sizes and the check
+  repeated, `arena_churn-mutation-neighbour-granule.log`), the K2/K3 runs of the first version of the test (same pass lines).
 - 2026-10-12 04:15: the smoke boot (200000 requests, deleted), the per-run counters other than the listed
   columns (in the serial logs), and the module builds (not stored).
 - 2026-09-27 campaign files: matched to the entries by their figures (suite counts, in-kernel

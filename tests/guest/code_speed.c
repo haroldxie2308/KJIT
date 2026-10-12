@@ -36,7 +36,7 @@
  *   sites64  (n is ignored, use 1) straight-line `bl cs_mini` x 64: 64 distinct call
  *            sites of one two-instruction leaf (64 dispatch sites with one target, 64
  *            return targets for one ret) per outer iteration. Fragment code with many
- *            hot entry blocks: the A14 guard (run-k2.sh) runs it. Fragment images that
+ *            hot entry blocks: the placement guard (run-k2.sh) runs it. Fragment images that
  *            all start at the same page offset conflict in the L1I and made it 4.6x
  *            slower than native.
  *

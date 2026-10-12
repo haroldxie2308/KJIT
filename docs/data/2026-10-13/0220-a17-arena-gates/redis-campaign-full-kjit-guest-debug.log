@@ -1,0 +1,32 @@
+KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build bash ./scripts/mk-guest-rootfs.sh
+Guest rootfs: /Volumes/CaseSentitiveLocal/KJIT/.kjit/build/guest-rootfs/rootfs.cpio (185M); tests: a11-baseline.sh alias_loop arena_churn bl_link_race call_loop code_speed entry_cost epoll_echo fault_segv fork_cow fp-bracket.sh fp_budget fp_fault fp_loop fp_preempt fp_regs fp_signal fp_stale fp_switch gen_data jit_churn k4-adversarial.sh k4-bench.sh k4-campaign.sh k4-lib.sh k4-suite.sh lat_probe link_race mem_loop munmap_race nojit pipe_ring ptrace_loop redis-smoke.sh run-k2.sh run-k3.sh seccomp_loop signal_loop svc_bench tight_loop toy_loop ub-bench.sh ub-redis-cpu.sh ub-standard.sh unload-stress.sh unload_fault 
+KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build bash ./scripts/redis-campaign.sh --profile kjit-guest-debug \
+		--iterations 1 --requests 100000 
+k4-campaign: suite-off: guest-run (log /Volumes/CaseSentitiveLocal/KJIT/.kjit/build/runs/k4-kjit-guest-debug-20261013-002743/suite-off.log)
+k4-campaign: suite-on: guest-run (log /Volumes/CaseSentitiveLocal/KJIT/.kjit/build/runs/k4-kjit-guest-debug-20261013-002743/suite-on.log)
+k4-campaign: campaign: guest-run (log /Volumes/CaseSentitiveLocal/KJIT/.kjit/build/runs/k4-kjit-guest-debug-20261013-002743/campaign.log)
+
+k4-campaign: profile=kjit-guest-debug out=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/runs/k4-kjit-guest-debug-20261013-002743
+k4-campaign: suite-off   PASS ok=2853 err=0 skip=0 ignore=15
+k4-campaign: suite-on    PASS ok=2866 err=0 skip=0 ignore=15; in_kernel=12899991/34731936 syscalls (37.1%) entries=52919564 translated=46015 exit_unsupported=13706498 exit_mem=278536 exit_invalid=0 verify_rejected=0 fpsimd_entries=19939716 fpsimd_preempted=92044 fpsimd_exit_mem=278536; unsupported_top: 0x3ca36800(10236692/0) 0x9e620028(1473573/0) 0x9e630160(1220601/0) 0xfc6c79c0(398378/0) 0xd50b7423(222701/0) 0xd53b4415(82291/0) 
+k4-campaign: suite-same  PASS: same outcome for every test with and without KJIT (2518 distinct outcomes, 2881 vs 2868 raw)
+k4-campaign: campaign    PASS: 1 iterations; 10 adversarial tests, 1 consistency checks; dmesg clean
+k4-campaign: benchmark (last iteration, /Volumes/CaseSentitiveLocal/KJIT/.kjit/build/runs/k4-kjit-guest-debug-20261013-002743/campaign/campaign/iter-1/bench.log):
+k4-campaign:   k4-bench: default (redis-benchmark -q -n 100000 ):
+k4-campaign:   k4:   default: in_kernel=3741725/5391716 syscalls (69.4%) entries=7385511 chains=1999249 chain_cap=0 translated=512 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4-campaign:   k4:   default: exits svc=3741725 bl=17062 blr=601136 br=2001973 ret=130089 mem=65 unsupported=893461 budget=0 invalid=0 svc_declined=0
+k4-campaign:   k4:   default: unsupported_top (word(exits/entry_stops)): 0x9e630160(789463/0) 0xfc6c79c0(103967/0) 0xd503203f(31/0) 
+k4-campaign:   k4-bench: pipelined (redis-benchmark -q -n 100000 -P 16):
+k4-campaign:   k4:   pipelined: in_kernel=152685/326680 syscalls (46.7%) entries=422739 chains=125001 chain_cap=0 translated=0 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4-campaign:   k4:   pipelined: exits svc=152685 bl=1742 blr=38683 br=125700 ret=28307 mem=68 unsupported=12542 budget=63012 invalid=0 svc_declined=0
+k4-campaign:   k4:   pipelined: unsupported_top (word(exits/entry_stops)): 0xfc6c79c0(8404/0) 0x9e630160(4105/0) 0xd503203f(33/0) 
+k4-campaign:   k4-bench: clients256 (redis-benchmark -q -n 100000 -c 256):
+k4-campaign:   k4:   clients256: in_kernel=3577043/5212546 syscalls (68.6%) entries=7188783 chains=2000001 chain_cap=0 translated=0 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4-campaign:   k4:   clients256: exits svc=3577043 bl=8527 blr=601259 br=2002497 ret=146611 mem=666 unsupported=852180 budget=0 invalid=0 svc_declined=0
+k4-campaign:   k4:   clients256: unsupported_top (word(exits/entry_stops)): 0x9e630160(747402/0) 0xfc6c79c0(104689/0) 0xd503203f(89/0) 
+k4-campaign:   k4-bench: consistency PASS: dbsize 10044 digest 603e069a26083ceb1309ded3186769f0b0809e09 readback sha256 362731776718583235c4f1394cb708151a5c09052efd2c0ace0f6f0f7392fb50 
+k4-campaign:   k4-bench: ALL PASS
+k4-campaign: RESULT PASS
+real 1547.38
+user 3117.89
+sys 219.42

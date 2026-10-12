@@ -29,7 +29,8 @@
 # requests. The counters are the KJIT debugfs counter deltas of the run (the load
 # generator runs under nojit, so they are the server's); with direct BL links (A16) also
 # link_made, link_restored, link_out_of_range, link_class_refused (deltas) and the gauges
-# link_sites_linked and link_sites_pending after the run. Exits non-zero when a run
+# link_sites_linked and link_sites_pending after the run; with the image arena (A17) also
+# the gauges arena_chunks and arena_bytes after the run. Exits non-zero when a run
 # reports no throughput, when a KJIT-on run shows no fragment entry, when a KJIT-off run
 # shows one, or when the runtime reports an invalid exit or a verifier rejection.
 set -eu
@@ -122,12 +123,13 @@ measure() {
         line="$line $c=$(( $(stat_of "$work/after.stats" "$c") - $(stat_of "$work/before.stats" "$c") ))"
     done
     # A16 counters (a module without direct BL links has none) and the number of
-    # link slots linked / pending after the run (gauges, not deltas).
+    # link slots linked / pending after the run (gauges, not deltas), then the
+    # A17 arena gauges (a module without the arena has none).
     for c in $link_counters; do
         [ -n "$(stat_of "$work/after.stats" "$c")" ] || continue
         line="$line $c=$(( $(stat_of "$work/after.stats" "$c") - $(stat_of "$work/before.stats" "$c") ))"
     done
-    for c in link_sites_linked link_sites_pending; do
+    for c in link_sites_linked link_sites_pending arena_chunks arena_bytes; do
         [ -n "$(stat_of "$work/after.stats" "$c")" ] || continue
         line="$line $c=$(stat_of "$work/after.stats" "$c")"
     done

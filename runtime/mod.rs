@@ -3,7 +3,7 @@
 //! K2 kernel runtime: translate on request, run on the syscall return path.
 //!
 //! - `translate`: user text -> `compile_request` -> encode -> `verify_fragment`
-//!   -> install (C: execmem + extable + code cache).
+//!   -> install (C: image arena + extable + code cache).
 //! - `exec`: the `kjit_after_syscall` decision table (docs/pipeline.md,
 //!   "kjit_after_syscall decision").
 //! - `stats`: counters behind `/sys/kernel/debug/kjit/stats`.

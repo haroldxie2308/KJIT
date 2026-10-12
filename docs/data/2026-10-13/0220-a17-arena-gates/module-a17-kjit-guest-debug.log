@@ -1,0 +1,18 @@
+Configured rust-analyzer:
+  component: rust-analyzer-aarch64-unknown-linux-gnu
+  binary:    /usr/local/rustup/toolchains/1.85.0-aarch64-unknown-linux-gnu/bin/rust-analyzer
+  link:      /workspace/.kjit/bin/rust-analyzer
+Neovim is configured. For full Rust-for-Linux LSP quality, run:
+  make prepare
+  make rust-analyzer
+mkdir -p /Volumes/CaseSentitiveLocal/KJIT/.kjit/build/kjit-guest-debug/kjit-module && make -C /Volumes/CaseSentitiveLocal/KJIT/.kjit/build/linux-kjit ARCH=arm64 LLVM=1 O=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/kjit-guest-debug M=/workspace MO=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/kjit-guest-debug/kjit-module
+make[1]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/linux-kjit'
+make[2]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/kjit-guest-debug/kjit-module'
+  UPD     /Volumes/CaseSentitiveLocal/KJIT/.kjit/build/kjit-guest-debug/Makefile
+  RUSTC [M] rust_kjit.o
+  CC [M]  kjit_glue.o
+  LD [M]  kjit.o
+  MODPOST Module.symvers
+  LD [M]  kjit.ko
+make[2]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/kjit-guest-debug/kjit-module'
+make[1]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/linux-kjit'

@@ -2170,8 +2170,8 @@ and one module shape is simpler than a K0-only build.
   - Guard: K2 runs `code_speed sites64`. The KJIT-on time per iteration must
     stay below 2x KJIT-off.
 - Locks: `kjit_mm.lock` -> `kjit_frags_lock` (spinlocks, no allocation under
-  either: both are taken inside mmu_notifier invalidation). `kjit_mm_lock` is
-  never nested with them.
+  either: both are taken inside mmu_notifier invalidation). `kjit_mm_lock` and
+  the `kjit_arena_lock` mutex are never nested with them.
 - Invalidation: every `invalidate_range_start` event whose range intersects a
   fragment's source span `[lo, hi)` (min/max of every byte the translator read)
   retires it; not only unmaps, because a protection change can make the text
@@ -2194,11 +2194,13 @@ and one module shape is simpler than a K0-only build.
   `ibtc_clear`); `hash_del_rcu`; then `kjit_hook_call_srcu(&f->retire, ...)`
   (`call_srcu`, legal in the non-blocking mmu-notifier path). The callback
   (workqueue context, BHs off) takes the fragment off `kjit_all_frags` and
-  queues the existing RCU free (`queue_rcu_work`: `execmem_free` needs process
-  context). So a fragment is freed only after a hook-SRCU grace period following
+  queues the existing RCU free (`queue_rcu_work`: the slot's BRK fill and
+  release need process context). So a fragment is freed only after a hook-SRCU grace period following
   retirement, which protects every run, linked or not, and gives the extable
-  invariant (below) by construction. A fragment whose install failed was never
-  visible, so it is unlisted and freed directly (`kjit_frag_unlist_and_free`).
+  invariant (below) by construction. A fragment goes on `kjit_all_frags` only
+  when the install publishes it (under `kmm->lock`). A fragment whose install
+  failed was never listed or visible: its slot is released at once and the
+  fragment freed directly.
 - Teardown: mm release (`release` callback) retires everything in the table and
   unhashes. Module exit: remove debugfs (waits for writers), unregister the hook
   (waits for calls in flight, i.e. every fragment run, with their extable search
@@ -2707,4 +2709,4 @@ milestone:
 | A10 chain budget, counter reads | [2026-09-27 19:01](journal/2026-09-27.md); unload race [2026-09-28 00:09](journal/2026-09-28.md); `run_declined` [2026-09-28 00:16](journal/2026-09-28.md) |
 | A11 in-fragment dispatch | [2026-10-02 16:25](journal/2026-10-02.md) contract; [17:10](journal/2026-10-02.md) A11b; [17:14](journal/2026-10-02.md) Step 0; [17:28](journal/2026-10-02.md) A11a; [2026-10-05 11:47](journal/2026-10-05.md) integration |
 | Documentation restructure | [2026-10-09 00:54](journal/2026-10-09.md) |
-| ROX vs RWX, image placement | [2026-10-12 04:15](journal/2026-10-12.md) |
+| ROX vs RWX, image placement; A17 packed arena | [2026-10-12 04:15](journal/2026-10-12.md) study; [2026-10-13 02:20](journal/2026-10-13.md) A17 |
