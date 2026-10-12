@@ -6,7 +6,7 @@
  * table and the statistics (runtime/). This file owns what has no Rust binding
  * and what must interoperate with C-side lifetimes: the hook registration
  * (kernel-patches/0001, 0002), the per-mm code cache and its mmu_notifier,
- * fragment memory (execmem, ROX, I-cache, the arm64 exception table), reading
+ * fragment memory (the packed image arena, the arm64 exception table), reading
  * the target's user text, the call trampoline, the auto-mode profiler and its
  * task_work requests (kernel-patches/0004), the FP/SIMD bracket around
  * fragments that use the user's FP/SIMD registers (kernel-patches/0005), and
@@ -37,7 +37,20 @@
  *             SRCU callback takes it off kjit_all_frags (the extable search
  *             list, RCU), so a fragment removed while it runs still has its
  *             fault fixups, and queues the image's free (an RCU work item:
- *             execmem_free needs process context).
+ *             the slot is filled with BRK and released in process context).
+ *   Image arena (A17): a fragment's image is a slot (code, then its extable)
+ *             of one shared arena of 2 MiB ROX chunks, first fit under
+ *             kjit_arena_lock (a mutex over the chunk list and the bitmaps;
+ *             never held together with kjit_mm.lock or kjit_frags_lock). A
+ *             chunk is filled with BRK and made ROX once; slots are written
+ *             with aarch64_insn_copy() (kernel-patches/0009) at install and
+ *             filled with BRK by aarch64_insn_set() when the free work
+ *             releases them. Both flush the I-cache and IPI every CPU, so
+ *             slots are only written from process context, no spinlock held,
+ *             interrupts on. A slot is invisible until kjit_install()
+ *             publishes the fragment under kjit_mm.lock; after that its words
+ *             change only by link patches (A16), until the retired fragment's
+ *             free work, which runs after a hook-SRCU grace period.
  *   Direct BL links (A16): a static BL site's `nop` slot is patched to a `b`
  *             into another fragment (or its own) of the same kjit_mm, and back,
  *             under kjit_mm.lock only (struct kjit_link, kjit_link_*()). A run
@@ -48,12 +61,14 @@
  *             under RCU, and it runs through the kernel's
  *             kjit_queue_task_work(), which frees it instead of calling in
  *             here once this module is unregistered.
- *   Lock order: kjit_mm.lock -> kjit_frags_lock. kjit_mm_lock is never held
- *             together with either. None of them is held across an allocation
- *             (they are taken inside mmu_notifier invalidation).
+ *   Lock order: kjit_mm.lock -> kjit_frags_lock. kjit_mm_lock and
+ *             kjit_arena_lock are never held together with either. None of the
+ *             spinlocks is held across an allocation (they are taken inside
+ *             mmu_notifier invalidation).
  */
 #include <linux/atomic.h>
 #include <linux/bitfield.h>
+#include <linux/bitmap.h>
 #include <linux/bottom_half.h>
 #include <linux/cacheflush.h>
 #include <linux/compat.h>
@@ -73,6 +88,7 @@
 #include <linux/mmu_notifier.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
+#include <linux/mutex.h>
 #include <linux/percpu.h>
 #include <linux/pid.h>
 #include <linux/rculist.h>
@@ -81,6 +97,7 @@
 #include <linux/sched/signal.h>
 #include <linux/sched/task.h>
 #include <linux/set_memory.h>
+#include <linux/sizes.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/timekeeping.h>
@@ -91,6 +108,7 @@
 #include <asm/asm-extable.h>
 #include <asm/cpufeature.h>
 #include <asm/fpsimd.h>
+#include <asm/insn.h>
 #include <asm/neon.h>
 #include <asm/processor.h>
 #include <asm/ptrace.h>
@@ -265,18 +283,17 @@ static_assert(offsetof(struct kjit_label, host) == 8);
 #define KJIT_IBTC_TABLE_SLOTS ((1U << KJIT_IBTC_BITS) + (1U << KJIT_IBTC_VICTIM_BITS))
 
 /*
- * Fragment image placement (docs/pipeline.md, "Image placement (A14)"): the
- * image starts KJIT_IMAGE_COLOR_STEP * ((n * STRIDE) % COLORS) bytes into its
- * allocation, n counting installs, so the hot first instructions of different
- * fragments do not all sit at the same page offset (and L1I sets). STRIDE is odd,
- * so consecutive installs cycle through all COLORS.
+ * Fragment image placement (docs/pipeline.md, "Image placement (A17, packed
+ * arena)"): an image is a slot of a shared arena of KJIT_ARENA_CHUNK-byte
+ * chunks, first fit at KJIT_ARENA_GRANULE bytes, so the hot code of all
+ * fragments is dense. At most KJIT_ARENA_MAX_CHUNKS chunks exist.
  */
-#define KJIT_IMAGE_COLOR_STEP 16
-#define KJIT_IMAGE_COLOR_STRIDE 11
-#define KJIT_IMAGE_COLORS 256
-static_assert(KJIT_IMAGE_COLOR_STEP % 16 == 0);
-static_assert(KJIT_IMAGE_COLOR_STEP * (KJIT_IMAGE_COLORS - 1) < PAGE_SIZE);
-static atomic_t kjit_image_installs = ATOMIC_INIT(0);
+#define KJIT_ARENA_CHUNK SZ_2M
+#define KJIT_ARENA_GRANULE 16
+#define KJIT_ARENA_GRANULES (KJIT_ARENA_CHUNK / KJIT_ARENA_GRANULE)
+#define KJIT_ARENA_MAX_CHUNKS 64
+static_assert(KJIT_ARENA_CHUNK % PAGE_SIZE == 0);
+static_assert(KJIT_ARENA_GRANULE % sizeof(u32) == 0);
 
 /*
  * Direct BL links (docs/pipeline.md, "Direct BL links (A16, kernel side)"):
@@ -322,8 +339,7 @@ struct kjit_frag {
 	bool retired;
 	u64 entry_pc;
 	u64 src_start, src_end;		/* user text the translation read */
-	void *alloc;			/* the execmem allocation (ROX, freed as a whole) */
-	void *image;			/* alloc + the colour offset: code, then the extable */
+	void *image;			/* the arena slot: code, then the extable */
 	u32 code_len;
 	struct kjit_label *entry_label;	/* the label of entry_pc, in labels[] */
 	/*
@@ -502,14 +518,164 @@ static atomic64_t kjit_req_queued = ATOMIC64_INIT(0);
 static atomic64_t kjit_req_ran = ATOMIC64_INIT(0);
 
 /* ------------------------------------------------------------------------- */
+/* Image arena (A17)                                                           */
+
+/*
+ * docs/pipeline.md, "Image placement (A17, packed arena)". Everything here
+ * runs in process context with no spinlock held and interrupts on: a chunk is
+ * allocated and made ROX, and slots are written and filled with BRK through
+ * the text patcher, whose icache flush IPIs every CPU.
+ */
+
+/* The slots of one execmem allocation. @used, @map: kjit_arena_lock. */
+struct kjit_arena_chunk {
+	struct list_head node;		/* kjit_arena_chunks */
+	void *base;			/* ROX from creation to execmem_free() */
+	unsigned int used;		/* granules in use */
+	unsigned long map[BITS_TO_LONGS(KJIT_ARENA_GRANULES)];	/* 1 = in use */
+};
+
+static DEFINE_MUTEX(kjit_arena_lock);
+/* New chunks at the tail, so the first fit fills the oldest chunk first. */
+static LIST_HEAD(kjit_arena_chunks);
+/* Gauges (stats file), written under kjit_arena_lock: chunks, and bytes in live slots. */
+static atomic_long_t kjit_arena_nchunks = ATOMIC_LONG_INIT(0);
+static atomic_long_t kjit_arena_nbytes = ATOMIC_LONG_INIT(0);
+
+/*
+ * The bytes an image of @code_len bytes of code and @n_sites extable entries
+ * takes in the arena: the code, then the entries (at offset @code_len, which
+ * is a multiple of 4), rounded to a granule.
+ */
+static size_t kjit_image_size(u32 code_len, u32 n_sites)
+{
+	return ALIGN((size_t)code_len + (size_t)n_sites * sizeof(struct exception_table_entry),
+		     KJIT_ARENA_GRANULE);
+}
+
+/*
+ * A new chunk, full of BRK and ROX; its pages are never writable through this
+ * mapping again. The BRK fill gets the same icache flush as every later write,
+ * so a branch into a slot that was never written traps instead of running a
+ * stale line of whatever the pages held before.
+ */
+static struct kjit_arena_chunk *kjit_arena_chunk_new(void)
+{
+	struct kjit_arena_chunk *c = kvzalloc(sizeof(*c), GFP_KERNEL);
+	int ret;
+
+	if (!c)
+		return ERR_PTR(-ENOMEM);
+	c->base = execmem_alloc(EXECMEM_BPF, KJIT_ARENA_CHUNK);
+	if (!c->base) {
+		kvfree(c);
+		return ERR_PTR(-ENOMEM);
+	}
+	memset32(c->base, AARCH64_BREAK_FAULT, KJIT_ARENA_CHUNK / sizeof(u32));
+	flush_icache_range((unsigned long)c->base, (unsigned long)c->base + KJIT_ARENA_CHUNK);
+	ret = set_memory_rox((unsigned long)c->base, KJIT_ARENA_CHUNK >> PAGE_SHIFT);
+	if (ret) {
+		execmem_free(c->base);
+		kvfree(c);
+		return ERR_PTR(ret);
+	}
+	return c;
+}
+
+/*
+ * A free slot of @size bytes (a multiple of KJIT_ARENA_GRANULE), first fit
+ * over the chunks, in a new chunk if none has room. Returns the slot, whose
+ * contents are BRK, or an ERR_PTR: -ENOSPC (@size exceeds a chunk, or the
+ * chunk cap is reached), -ENOMEM, or the set_memory_rox() error.
+ */
+static void *kjit_arena_alloc(size_t size)
+{
+	unsigned int granules = size / KJIT_ARENA_GRANULE, start;
+	struct kjit_arena_chunk *c;
+	void *slot;
+
+	if (size > KJIT_ARENA_CHUNK)
+		return ERR_PTR(-ENOSPC);
+	mutex_lock(&kjit_arena_lock);
+	list_for_each_entry(c, &kjit_arena_chunks, node) {
+		/* A miss returns an index past the end of the bitmap. */
+		start = bitmap_find_next_zero_area(c->map, KJIT_ARENA_GRANULES, 0, granules, 0);
+		if (start + granules <= KJIT_ARENA_GRANULES)
+			goto found;
+	}
+	if (atomic_long_read(&kjit_arena_nchunks) >= KJIT_ARENA_MAX_CHUNKS) {
+		slot = ERR_PTR(-ENOSPC);
+		goto out;
+	}
+	c = kjit_arena_chunk_new();
+	if (IS_ERR(c)) {
+		slot = ERR_CAST(c);
+		goto out;
+	}
+	list_add_tail(&c->node, &kjit_arena_chunks);
+	atomic_long_inc(&kjit_arena_nchunks);
+	start = 0;
+found:
+	bitmap_set(c->map, start, granules);
+	c->used += granules;
+	atomic_long_add(size, &kjit_arena_nbytes);
+	slot = c->base + (size_t)start * KJIT_ARENA_GRANULE;
+out:
+	mutex_unlock(&kjit_arena_lock);
+	return slot;
+}
+
+/*
+ * Fills the slot with BRK, then releases it; a chunk with no slot left is
+ * freed. The caller guarantees nothing can run or read the slot: it was never
+ * published, or a hook-SRCU grace period has passed since its fragment was
+ * retired.
+ */
+static void kjit_arena_free(void *slot, size_t size)
+{
+	struct kjit_arena_chunk *c, *empty = NULL;
+	unsigned int granules = size / KJIT_ARENA_GRANULE;
+
+	/*
+	 * Not recoverable and not possible for a slot this file handed out
+	 * (chunk base + a multiple of 16): the patcher refuses a misaligned
+	 * address. The slot stays allocated: it is never reused, so no code
+	 * ever runs from it, and arena_bytes shows the leak (WARN at unload).
+	 */
+	if (WARN_ON_ONCE(!aarch64_insn_set(slot, AARCH64_BREAK_FAULT, size)))
+		return;
+	mutex_lock(&kjit_arena_lock);
+	list_for_each_entry(c, &kjit_arena_chunks, node) {
+		if (slot >= c->base && slot < c->base + KJIT_ARENA_CHUNK) {
+			bitmap_clear(c->map, (slot - c->base) / KJIT_ARENA_GRANULE, granules);
+			c->used -= granules;
+			atomic_long_sub(size, &kjit_arena_nbytes);
+			if (!c->used) {
+				list_del(&c->node);
+				atomic_long_dec(&kjit_arena_nchunks);
+				empty = c;
+			}
+			break;
+		}
+	}
+	/* The slot is in no chunk: a slot freed twice, or not ours. */
+	WARN_ON_ONCE(list_entry_is_head(c, &kjit_arena_chunks, node));
+	mutex_unlock(&kjit_arena_lock);
+	if (empty) {
+		/* VM_FLUSH_RESET_PERMS (execmem) restores the linear map on vfree. */
+		execmem_free(empty->base);
+		kvfree(empty);
+	}
+}
+
+/* ------------------------------------------------------------------------- */
 /* Fragments                                                                   */
 
 static void kjit_frag_free_work(struct work_struct *work)
 {
 	struct kjit_frag *f = container_of(to_rcu_work(work), struct kjit_frag, free_work);
 
-	/* VM_FLUSH_RESET_PERMS (execmem) restores the linear map on vfree. */
-	execmem_free(f->alloc);
+	kjit_arena_free(f->image, kjit_image_size(f->code_len, f->n_extable));
 	kvfree(f->links);
 	kfree(f);
 }
@@ -517,9 +683,8 @@ static void kjit_frag_free_work(struct work_struct *work)
 /*
  * Takes the fragment off the extable list and frees it after an RCU grace
  * period (extable searchers are RCU readers). Callable in atomic context. The
- * caller guarantees that no run can still be inside the fragment: either it
- * was never published (a failed install) or a hook-SRCU grace period has
- * passed since it was retired.
+ * caller guarantees that no run can still be inside the fragment: a hook-SRCU
+ * grace period has passed since it was retired.
  */
 static void kjit_frag_unlist_and_free(struct kjit_frag *f)
 {
@@ -533,8 +698,9 @@ static void kjit_frag_unlist_and_free(struct kjit_frag *f)
 /*
  * Hook-SRCU callback of kjit_frag_retire_locked(): every hook call that could
  * have been running the fragment has returned, so its fault fixups are no
- * longer needed and its image can go. Runs in a workqueue context with BHs
- * disabled; kjit_frags_lock is never taken from a context it can interrupt.
+ * longer needed and its image can go (queued, not freed here: the slot's fill
+ * needs process context). Runs in a workqueue context with BHs disabled;
+ * kjit_frags_lock is never taken from a context it can interrupt.
  */
 static void kjit_frag_retired_cb(struct rcu_head *head)
 {
@@ -927,8 +1093,8 @@ static u64 kjit_mm_flush_locked(struct kjit_mm *kmm, unsigned long start, unsign
  * Whether @kmm may install @code_len more bytes of code. The per-mm limits are
  * exact under kmm->lock; the global ones are checked racily against other
  * mms, so concurrent installs can overshoot them by one fragment each. The
- * colour padding (A14) is not code: it is bounded by the fragment caps, at
- * most one page per fragment.
+ * extable entries and the granule rounding of the arena slot are not code; the
+ * arena's own cap is KJIT_ARENA_MAX_CHUNKS.
  */
 static bool kjit_caps_allow(const struct kjit_mm *kmm, unsigned long code_len)
 {
@@ -1165,11 +1331,12 @@ out:
 /* Install                                                                     */
 
 /*
- * Installs a verified fragment for @entry_pc in @kmm: one execmem allocation
- * holding the colour offset (KJIT_IMAGE_COLOR_STEP), @code and, after it, one
- * exception_table_entry per fault site (self-relative, so it must be the same
- * allocation), made ROX. The image starts at the colour offset; labels and
- * extable entries are relative to its start; the caps count @code_len.
+ * Installs a verified fragment for @entry_pc in @kmm: a slot of the image arena
+ * (A17) holding @code and, after it, one exception_table_entry per fault site
+ * (self-relative, so it must be the same slot). The image is built in a buffer
+ * and written to the slot with aarch64_insn_copy(); labels and extable entries
+ * are relative to the slot start; the caps count @code_len. Process context,
+ * no spinlock held, interrupts on (the write IPIs every CPU).
  * Installs only if no invalidation started since @seq
  * (kjit_mm_seq() before the text was read) and none is in progress, so a
  * translation of text that changed while it was read never becomes visible.
@@ -1188,8 +1355,12 @@ out:
  *
  * Returns 0, -EEXIST (@entry_pc already has a fragment), -EAGAIN (raced with
  * an invalidation), -ESRCH (mm gone), -ENOSPC (a fragment cap is reached,
- * kjit_caps_allow()), -ENOMEM, -EINVAL (malformed tables; the Rust side never
- * passes them), or the set_memory_rox() error.
+ * kjit_caps_allow(); or the arena's: the image exceeds a chunk, or
+ * KJIT_ARENA_MAX_CHUNKS chunks exist and none has room), -ENOMEM, -EINVAL
+ * (malformed tables, which the Rust side never passes; or the text patcher
+ * refused the slot), -EIO (the slot does not read back as written), or the
+ * set_memory_rox() error of a new chunk. A failure after the write releases
+ * the slot at once: the fragment was never visible.
  */
 int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		 const u8 *code, u32 code_len, u32 entry_offset,
@@ -1200,10 +1371,11 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 {
 	struct kjit_label **new_all = NULL, **new_nofp = NULL;
 	struct kjit_link_index *new_links = NULL;
-	struct exception_table_entry *ex;
+	struct exception_table_entry *ex, *ex_slot;
 	struct kjit_frag *f, *old;
 	bool has_entry = false;
-	size_t color, ex_off, size;
+	size_t len, size;
+	void *buf, *slot;
 	int ret;
 	u32 i;
 
@@ -1262,22 +1434,27 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		f->links[i].slot = links[i].slot;
 	}
 
-	color = KJIT_IMAGE_COLOR_STEP *
-		(((unsigned int)atomic_inc_return(&kjit_image_installs) * KJIT_IMAGE_COLOR_STRIDE) %
-		 KJIT_IMAGE_COLORS);
-	ex_off = ALIGN(code_len, 4);
-	size = color + ex_off + (size_t)n_sites * sizeof(*ex);
-	f->alloc = execmem_alloc(EXECMEM_BPF, size);
-	if (!f->alloc) {
-		kvfree(f->links);
-		kfree(f);
+	/*
+	 * The extable entries start at offset code_len (a multiple of 4, checked
+	 * above); @len is what is written, @size the slot (the tail stays BRK).
+	 */
+	len = code_len + (size_t)n_sites * sizeof(*ex);
+	size = kjit_image_size(code_len, n_sites);
+	buf = kvmalloc(len, GFP_KERNEL);
+	if (!buf) {
 		ret = -ENOMEM;
-		goto out_tables;
+		goto out_frag;
 	}
-	f->image = f->alloc + color;
+	slot = kjit_arena_alloc(size);
+	if (IS_ERR(slot)) {
+		ret = PTR_ERR(slot);
+		kvfree(buf);
+		goto out_frag;
+	}
+	f->image = slot;
 	for (i = 0; i < n_entries; i++) {
 		f->labels[i].pc = entries[i].pc;
-		f->labels[i].host = (u64)f->image + entries[i].offset;
+		f->labels[i].host = (u64)slot + entries[i].offset;
 		f->labels[i].frag = f;
 		if (entries[i].pc == entry_pc)
 			f->entry_label = &f->labels[i];
@@ -1289,30 +1466,33 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 	f->n_extable = n_sites;
 	f->uses_fpsimd = uses_fpsimd;
 
-	memcpy(f->image, code, code_len);
-	ex = f->image + ex_off;
+	memcpy(buf, code, code_len);
+	ex = buf + code_len;
+	ex_slot = slot + code_len;
 	for (i = 0; i < n_sites; i++) {
-		ex[i].insn = (long)(f->image + sites[i].access) - (long)&ex[i].insn;
-		ex[i].fixup = (long)(f->image + sites[i].stub) - (long)&ex[i].fixup;
+		/* Self-relative, so computed for the slot's final address. */
+		ex[i].insn = (long)(slot + sites[i].access) - (long)&ex_slot[i].insn;
+		ex[i].fixup = (long)(slot + sites[i].stub) - (long)&ex_slot[i].fixup;
 		ex[i].type = EX_TYPE_UACCESS_ERR_ZERO;
 		/* xzr for both: the handler only sets pc to the fixup. */
 		ex[i].data = FIELD_PREP(EX_DATA_REG_ERR, 31) | FIELD_PREP(EX_DATA_REG_ZERO, 31);
 	}
-	f->extable = ex;
+	f->extable = ex_slot;
 
-	flush_icache_range((unsigned long)f->image, (unsigned long)f->image + code_len);
-	ret = set_memory_rox((unsigned long)f->alloc, PAGE_ALIGN(size) >> PAGE_SHIFT);
-	if (ret) {
-		execmem_free(f->alloc);
-		kvfree(f->links);
-		kfree(f);
-		goto out_tables;
+	/* NULL only for a misaligned slot, which the arena never hands out. */
+	if (WARN_ON_ONCE(!aarch64_insn_copy(slot, buf, len))) {
+		ret = -EINVAL;
+		goto out_buf;
 	}
-
-	/* On the extable list before anything can run it. */
-	spin_lock(&kjit_frags_lock);
-	list_add_rcu(&f->all_node, &kjit_all_frags);
-	spin_unlock(&kjit_frags_lock);
+	/*
+	 * The patcher's faulting copy reports nothing: what the verifier
+	 * accepted is what must be in the slot before anything can run it.
+	 */
+	if (WARN_ON_ONCE(memcmp(slot, buf, len))) {
+		ret = -EIO;
+		goto out_buf;
+	}
+	kvfree(buf);
 
 	spin_lock(&kmm->lock);
 	if (kmm->dead || kmm->disabled) {
@@ -1338,6 +1518,10 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 				new_all = new_nofp = NULL;
 				new_links = NULL;
 			}
+			/* On the extable list before anything can run it. */
+			spin_lock(&kjit_frags_lock);
+			list_add_rcu(&f->all_node, &kjit_all_frags);
+			spin_unlock(&kjit_frags_lock);
 			hash_add_rcu(kmm->table, &f->table_node, entry_pc);
 			kmm->n_frags++;
 			kmm->code_bytes += code_len;
@@ -1347,9 +1531,17 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 		}
 	}
 	spin_unlock(&kmm->lock);
-	/* Never published: nothing can be running it. */
-	if (ret)
-		kjit_frag_unlist_and_free(f);
+	if (!ret)
+		goto out_tables;
+	/* Never published, so nothing can be running or reading it. */
+	goto out_slot;
+out_buf:
+	kvfree(buf);
+out_slot:
+	kjit_arena_free(slot, size);
+out_frag:
+	kvfree(f->links);
+	kfree(f);
 out_tables:
 	/* Tables another install published first, or that this one did not need. */
 	kvfree(new_all);
@@ -2238,6 +2430,10 @@ static ssize_t kjit_stats_read(struct file *file, char __user *ubuf, size_t coun
 	len += scnprintf(buf + len, size - len, "link_sites_linked %ld\nlink_sites_pending %ld\n",
 			 atomic_long_read(&kjit_links_linked),
 			 atomic_long_read(&kjit_links_pending));
+	/* Gauges (A17): arena chunks, and bytes in live slots. */
+	len += scnprintf(buf + len, size - len, "arena_chunks %ld\narena_bytes %ld\n",
+			 atomic_long_read(&kjit_arena_nchunks),
+			 atomic_long_read(&kjit_arena_nbytes));
 	ret = simple_read_from_buffer(ubuf, count, ppos, buf, len);
 	kfree(buf);
 	return ret;
@@ -2537,5 +2733,8 @@ void kjit_glue_exit(void)
 	WARN_ON(!list_empty(&kjit_all_frags));
 	/* Every fragment is retired: no link record is left linked or pending (A16). */
 	WARN_ON(atomic_long_read(&kjit_links_linked) || atomic_long_read(&kjit_links_pending));
+	/* ...and every slot is released and every chunk freed (A17). */
+	WARN_ON(atomic_long_read(&kjit_arena_nchunks) || atomic_long_read(&kjit_arena_nbytes) ||
+		!list_empty(&kjit_arena_chunks));
 	cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
 }

@@ -1,0 +1,1373 @@
+rsync -a --delete shared/ "harness/src/shared/"
+cp spec/arm64/generated/a64_subset.rs "harness/src/shared/arm64/generated.rs"
+cargo test --manifest-path harness/Cargo.toml -- --nocapture
+   Compiling kjit-harness v0.1.0 (/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/a17/harness)
+    Finished `test` profile [optimized + debuginfo] target(s) in 23.32s
+     Running unittests src/lib.rs (harness/target/debug/deps/kjit_harness-3dfbc03f4e0b777e)
+
+running 325 tests
+test a64_pretty::tests::formats_pc_relative_targets ... ok
+test a64_pretty::tests::formats_registers_and_immediates_concisely ... ok
+test arm64::alu_tests::cmn_detects_glibc_syscall_error_range ... ok
+test arm64::alu_tests::adds_subs_carry_and_overflow_at_boundaries ... ok
+test arm64::alu_tests::bti_is_a_nop ... ok
+test arm64::alu_tests::add_sub_with_carry_at_boundaries ... ok
+test arm64::alu_tests::ccmp_takes_compare_or_immediate_flags ... ok
+test arm64::alu_tests::byte_and_bit_reversal ... ok
+test arm64::alu_tests::bitfield_aliases ... ok
+test arm64::alu_tests::condition_codes_follow_condition_holds ... ok
+test a64_forms::tests::normalize_form_keeps_operand_shape ... ok
+test arm64::alu_tests::crc32_check_values ... ok
+test arm64::alu_tests::decode_bit_masks_matches_known_immediates ... ok
+test arm64::alu_tests::division_edge_cases ... ok
+test arm64::alu_tests::extended_register_add_uses_sp_and_sign_extends_index ... ok
+test arm64::alu_tests::extr_and_variable_shifts ... ok
+test arm64::alu_tests::logical_forms_set_nz_and_clear_cv ... ok
+test arm64::alu_tests::mrs_reads_its_register ... ok
+test arm64::alu_tests::multi_word_carry_chain ... ok
+test arm64::alu_tests::multiply_high_and_long ... ok
+test arm64::alu_tests::multiply_subtract_long ... ok
+test arm64::alu_tests::thirty_two_bit_results_zero_extend ... ok
+test arm64::mem_form_tests::narrow_stores_write_only_their_bytes ... ok
+test arm64::mem_form_tests::page_crossing_into_unmapped_memory_faults_without_side_effects ... ok
+test arm64::mem_form_tests::pair_loads_extend_each_element ... ok
+test arm64::mem_form_tests::literal_loads_address_from_the_pc_and_prefetch_never_faults ... ok
+test arm64::mem_form_tests::register_offset_applies_every_extend_and_the_size_shift ... ok
+test arm64::mem_form_tests::unaligned_and_page_crossing_accesses_are_allowed_on_mapped_pages ... ok
+test arm64::mem_form_tests::signed_loads_extend_at_every_boundary_and_32_bit_targets_clear_the_top ... ok
+test arm64::tests::add_sub_immediate_distinguishes_sp_from_xzr ... ok
+test arm64::tests::barriers_are_no_ops_and_acquire_release_move_data ... ok
+test arm64::tests::execute_blr_x30_branches_to_old_lr_and_then_updates_lr ... ok
+test arm64::tests::ldr_str_use_sp_as_memory_base ... ok
+test arm64::tests::fragment_ldtr_is_a_user_access_and_plain_ldr_a_runtime_access ... ok
+test arm64::tests::ldp_stp_pair_support_sp_pre_and_post_index ... ok
+test arm64::tests::ldtr_sttr_use_unscaled_simm9_and_zero_extend_32_bit_loads ... ok
+test arm64::tests::lse_atomics_compute_every_operation ... ok
+test arm64::tests::data_accesses_ignore_the_top_byte ... ok
+test arm64::tests::map_user_range_rejects_misaligned_or_empty_ranges ... ok
+test arm64::tests::load_from_unmapped_page_faults ... ok
+test arm64::tests::faulting_ldp_stp_and_writeback_leave_base_and_destinations_unchanged ... ok
+test arm64::tests::injected_fault_on_second_ldp_access_faults_whole_instruction ... ok
+test arm64::tests::lse_atomic_faults_are_precise ... ok
+test arm64::tests::original_stepper_advances_one_arithmetic_instruction ... ok
+test arm64::tests::acquire_release_alignment_faults_only_across_16_byte_blocks ... ok
+test arm64::tests::original_stepper_blr_updates_lr_before_runtime_exit ... ok
+test arm64::tests::original_stepper_direct_branch_updates_pc ... ok
+test arm64::tests::original_stepper_ret_and_br_halt_with_runtime_exit_reasons ... ok
+test arm64::tests::original_stepper_svc_can_resume_at_resume_pc ... ok
+test arm64::tests::page_straddling_store_faults_on_unmapped_second_page_and_writes_nothing ... ok
+test arm64::tests::sp_based_access_with_misaligned_sp_faults ... ok
+test arm64::tests::store_to_read_only_page_faults_and_leaves_memory ... ok
+test arm64::tests::user_ldtr_in_original_code_is_an_unsupported_exit ... ok
+test arm64::tests::window_atomic_runs_with_pan_clear_on_user_memory ... ok
+test code_cache::tests::a_site_links_when_its_target_installs ... ok
+test code_cache::tests::an_evicting_publish_logs_both_stores ... ok
+test code_cache::tests::a_conflicting_publish_queues_the_victim_store_before_the_main_store ... ok
+test code_cache::tests::an_fpsimd_fragment_is_published_in_table_all_only ... ok
+test code_cache::tests::a_cache_without_links_never_patches ... ok
+test code_cache::tests::aliasing_publishes_move_the_old_record_to_the_victim_part_and_retire_clears_both ... ok
+test code_cache::tests::a_self_recursive_site_links_to_its_own_fragment_and_retires_cleanly ... ok
+test code_cache::tests::a_site_links_at_its_own_install_when_the_target_is_already_there ... ok
+test code_cache::tests::a_target_out_of_the_reach_of_b_stays_a_pending_nop ... ok
+test code_cache::tests::decide_translates_return_targets_and_stops_at_unreadable_text ... ok
+test code_cache::tests::return_to_user_follows_the_kernels_chaining ... ok
+test code_cache::tests::the_chain_budget_stops_at_an_svc_exit_only ... ok
+test code_cache::tests::retire_restores_the_sites_linked_into_the_fragment_and_they_link_again ... ok
+test code_cache::tests::the_event_log_has_every_change_in_order ... ok
+test code_cache::tests::the_link_invariant_is_enforced ... ok
+test code_cache::tests::the_class_rule_refuses_a_non_fpsimd_site_into_fpsimd_code_only ... ok
+test code_cache::tests::the_table_invariants_are_enforced ... ok
+test dispatch_tests::a_non_fpsimd_caller_reaches_an_fpsimd_callee_only_through_the_runtime ... ok
+test dispatch_tests::nested_calls_leave_the_runtime_once_the_cache_is_warm ... ok
+test encoding_tests::a9a_decode_admission_agrees_with_llvm_disassembler ... ignored, requires llvm-mc in PATH
+test encoding_tests::encoding_matches_llvm_for_handwritten_cases ... ignored, requires llvm-mc and llvm-objcopy in PATH
+test encoding_tests::reg_accessors_do_not_expose_implicit_bl_link_register ... ok
+test encoding_tests::reg_accessors_get_and_set_memory_base_preserving_mode_and_offset ... ok
+test encoding_tests::reg_accessors_get_and_set_top_level_fields ... ok
+test encoding_tests::set_reg_canonicalizes_target_width_and_reg31_mode ... ok
+test dispatch_tests::an_fpsimd_caller_dispatches_into_plain_callees ... ok
+test encoding_tests::set_reg_rejects_invalid_register_encoding ... ok
+test encoding_tests::set_reg_rejects_unsupported_field ... ok
+test fuzz::forms::tests::catalog_classifies_every_generated_form ... ok
+test dispatch_tests::a_retired_callee_misses_in_the_warm_run ... ok
+test fuzz::rng::tests::streams_are_deterministic_and_distinct ... ok
+test report_util::tests::dist_uses_nearest_rank ... ok
+test golden::tests::kernel_golden_matches_harness_output ... ok
+test runtime::tests::bl_runtime_exit_writes_user_lr_before_epilogue ... ok
+test dispatch_tests::plt_stub_calls_hit_after_the_first_resolution ... ok
+test runtime::tests::msr_in_a_fragment_is_a_hard_error ... ok
+test dispatch_tests::linked_bl_sites_skip_the_dispatch_template_in_the_warm_run ... ok
+test runtime::tests::pan_is_clear_for_the_run_and_set_at_return ... ok
+test runtime::tests::plain_load_of_user_memory_in_a_fragment_is_a_pan_violation ... ok
+test runtime::tests::ret_to_unknown_original_pc_returns_to_userspace ... ok
+test runtime::tests::runtime_owned_memory_is_never_user_accessible ... ok
+test runtime::tests::runtime_stepper_executes_prologue_before_body ... ok
+test runtime::tests::runtime_stepper_runtime_return_preserves_run_behavior ... ok
+test runtime::tests::budget_exits_exactly_on_the_budget_th_unit ... ok
+test runtime::tests::self_branch_exits_budget_on_its_budget_th_execution ... ok
+test runtime::tests::store_to_read_only_page_matches_the_original_fault_end_to_end ... ok
+test runtime::tests::svc_runtime_exit_continues_at_original_resume_pc ... ok
+test runtime::tests::user_access_fault_without_fault_site_is_a_hard_error ... ok
+test runtime::tests::user_access_fault_inside_fragment_exits_through_its_mem_stub ... ok
+test dispatch_tests::recursion_exhausts_the_budget_at_a_call ... ok
+test dispatch_tests::aliasing_targets_keep_both_callees_resident_through_the_victim_part ... ok
+interp asm fixture pass: adc_chain.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=13 injected_fragment_faults=13 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/6 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/6 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test session::tests::a_fault_in_a_fragment_halts_both_worlds ... ok
+test session::tests::a_broken_model_diverges_at_the_syscall_it_breaks ... ok
+test session::tests::a_corrupted_memory_word_diverges_too ... ok
+test session::tests::a_hot_unreadable_pc_is_refused_and_never_requested_again ... ok
+test runtime::tests::budget_restarts_on_every_fragment_entry ... ok
+test dispatch_tests::blr_x30_and_ret_x5_dispatch_through_their_registers ... ok
+test dispatch_tests::two_evicted_pcs_sharing_a_victim_slot_lose_one_of_them ... ok
+interp asm fixture pass: adc_chain.s adc32_ngc_mark entry=0x100d0 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=9 injected_fragment_faults=9 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test session::tests::bad_configs_are_errors ... ok
+test session::tests::an_unsupported_word_halts_both_worlds ... ok
+interp asm fixture pass: adc_chain.s msubl_crc_mark entry=0x10128 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=12 injected_fragment_faults=12 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test session::tests::events_are_ordered_by_tick_and_events_between_is_half_open ... ok
+test session::tests::cold_chains_continue_through_the_runtime_and_learn_the_callee ... ok
+test session::tests::reference_at_syscall_is_what_an_independent_reference_run_has ... ok
+test session::tests::the_cache_grows_as_the_events_say ... ok
+test session::tests::a_translation_record_is_the_fragment_the_cache_installed ... ok
+test session::tests::steps_are_the_instructions_that_executed ... ok
+test session::tests::cache_at_the_last_tick_is_the_final_cache ... ok
+test shared::abi::dispatch::tests::a_conflicting_publish_moves_the_old_record_to_its_victim_slot_first ... ok
+test shared::abi::dispatch::tests::publish_fills_an_empty_main_slot_and_keeps_a_resident_pc ... ok
+test shared::abi::dispatch::tests::publish_skips_a_pc_held_in_either_slot ... ok
+test shared::abi::dispatch::tests::the_indices_are_the_contracts ... ok
+test shared::abi::dispatch::tests::two_evicted_pcs_sharing_a_victim_slot_drop_the_earlier_one ... ok
+test shared::abi::link::tests::a_distant_address_is_none ... ok
+test shared::abi::link::tests::branch_words_match_the_architecture ... ok
+test shared::abi::link::tests::the_nop_word_is_the_encoders ... ok
+test shared::abi::link::tests::the_reach_is_exactly_128_mib ... ok
+test shared::abi::link::tests::unaligned_addresses_are_refused ... ok
+test shared::abi::wrapper::tests::dispatch_template_is_the_contract_twenty_words ... ok
+test shared::abi::wrapper::tests::dispatch_template_structure ... ok
+test shared::abi::wrapper::tests::prologue_stores_the_dispatch_table_before_x1_is_overwritten ... ok
+test shared::abi::wrapper::tests::wrapper_copy_helpers_preserve_sequences ... ok
+test shared::abi::wrapper::tests::wrapper_lengths_match_contract ... ok
+test shared::abi::wrapper::tests::wrapper_sequences_are_encodable ... ok
+test shared::abi::wrapper::tests::x18_is_the_budget_counter_between_prologue_and_epilogue ... ok
+test shared::arm64::tests::a9a_subset_boundary ... ok
+test shared::arm64::tests::barriers_and_acquire_release_forms_decode ... ok
+test shared::arm64::tests::carry_msubl_and_crc32_forms_decode ... ok
+test shared::arm64::tests::decode_word_rejects_pseudocode_undefined_encodings ... ok
+test shared::arm64::tests::diagram_exclusions_route_words_to_the_right_form ... ok
+test shared::arm64::tests::exclusive_atomic_and_fp_memory_forms_stay_undecodable ... ok
+test shared::arm64::tests::fpsimd_mem_matches_the_generated_simd_memory_forms ... ok
+test shared::arm64::tests::hint_space_decodes_only_nop_and_bti ... ok
+test shared::arm64::tests::lse_atomic_matches_the_generated_atomic_forms ... ok
+test shared::arm64::tests::lse_atomics_decode_with_their_registers ... ok
+test shared::arm64::tests::msr_immediate_decodes_only_pstate_pan ... ok
+test shared::arm64::tests::register_offset_with_sub_word_index_is_undefined ... ok
+test shared::arm64::tests::unprivileged_family_matches_the_generated_ldtr_sttr_forms ... ok
+test shared::emit::layout::tests::dispatch_template_miss_branches_resolve_to_the_next_probe_or_the_exit_group ... ok
+test shared::emit::layout::tests::emits_blocks_in_layout_order_and_enters_at_the_first_program_block ... ok
+test shared::emit::layout::tests::link_slots_are_listed_when_a_template_follows_them ... ok
+test shared::emit::layout::tests::places_fault_stubs_after_the_body_and_records_sorted_fault_sites ... ok
+test shared::emit::layout::tests::rejects_a_fallthrough_successor_that_is_not_laid_out_next ... ok
+test shared::emit::layout::tests::rejects_backward_branch_without_budget_check ... ok
+test shared::emit::layout::tests::rejects_budget_check_without_budget_stub ... ok
+test shared::emit::layout::tests::rejects_user_accesses_without_stub_or_tag ... ok
+test shared::emit::layout::tests::resolves_runtime_exit_branch_to_epilogue ... ok
+test shared::emit::layout::tests::rewrites_backward_cond_branch_to_layout_offset ... ok
+test shared::emit::layout::tests::rewrites_forward_branch_to_layout_offset ... ok
+test shared::emit::layout::tests::rewrites_user_synthetic_branch_to_layout_offset ... ok
+test shared::emit::layout::tests::wraps_body_with_prologue_and_epilogue ... ok
+test shared::trans::cfg::tests::admit_word_distinguishes_translate_exit_and_undecodable ... ok
+test shared::trans::cfg::tests::reg_virt_rejected_insn_ends_block_with_unsupported_exit ... ok
+test shared::trans::cfg::tests::running_off_the_text_ends_the_block_with_an_unreadable_exit ... ok
+test shared::trans::cfg::tests::split_keeps_unsupported_exit_on_tail_block ... ok
+test shared::trans::cfg::tests::undecodable_entry_yields_empty_block_with_unsupported_exit ... ok
+test shared::trans::cfg::tests::undecodable_word_mid_block_ends_block_before_it ... ok
+test shared::trans::cfg::tests::unreadable_entry_is_a_hard_error ... ok
+test shared::trans::cfg::tests::unreadable_successor_is_an_empty_exit_block ... ok
+test shared::trans::reg_virt::tests::acquire_release_is_a_fenced_unprivileged_access_at_offset_zero ... ok
+test shared::trans::reg_virt::tests::admission_accepts_runtime_exits_and_expansions_on_virtualized_registers ... ok
+test shared::trans::reg_virt::tests::admission_rejects_user_ldtr_sttr_as_intrinsic ... ok
+test shared::trans::reg_virt::tests::admission_rejects_user_msr_pan_as_intrinsic ... ok
+test shared::trans::reg_virt::tests::admission_rejects_what_rewrite_rejects_as_intrinsic ... ok
+test shared::trans::reg_virt::tests::blr_x30_runtime_exit_captures_old_lr_before_link_update ... ok
+test shared::trans::reg_virt::tests::br_x9_runtime_exit_preserves_user_regs_and_captures_before_status ... ok
+test shared::trans::reg_virt::tests::budget_check_precedes_the_back_edge_fills_and_is_not_rewritten ... ok
+test shared::trans::reg_virt::tests::byte_post_index_store_writes_back_after_its_access ... ok
+test shared::trans::reg_virt::tests::direct_user_semantic_registers_pass_validation ... ok
+test shared::trans::reg_virt::tests::dispatch_target_moves_the_users_register_into_x13 ... ok
+test shared::trans::reg_virt::tests::every_acquire_release_lowering_is_fenced_on_both_sides ... ok
+test session::tests::the_step_limit_ends_the_recording ... ok
+interp asm fixture pass: alu_mix.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=20 injected_fragment_faults=20 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/16 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/16 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test session::tests::every_program_exits_with_the_worlds_in_agreement ... ok
+test shared::trans::reg_virt::tests::every_simd_memory_lowering_is_one_window_committing_after_it ... ok
+test shared::trans::reg_virt::tests::fault_stub_groups_in_the_cold_region_are_virtualized_like_exit_groups ... ok
+test shared::trans::reg_virt::tests::internal_errors_still_fail_virtualization ... ok
+test shared::trans::reg_virt::tests::ldp_into_stack_backed_base_register_keeps_base_until_second_access ... ok
+test shared::trans::reg_virt::tests::ldp_post_index_into_x29_loads_first_into_scratch ... ok
+test shared::trans::reg_virt::tests::ldp_under_full_scratch_pressure_uses_all_four_scratch_registers ... ok
+test shared::trans::reg_virt::tests::ldp_whose_second_target_is_the_base_loads_it_last ... ok
+test shared::trans::reg_virt::tests::ldr_post_index_with_stack_backed_base_writes_back_before_spill ... ok
+test shared::trans::reg_virt::tests::ldr_w_pre_index_into_stack_backed_loads_w_scratch_and_spills_x ... ok
+test shared::trans::reg_virt::tests::literal_load_materializes_the_absolute_address_in_scratch ... ok
+test shared::trans::reg_virt::tests::lse_atomic_lowers_to_the_exact_window_access ... ok
+test shared::trans::reg_virt::tests::narrow_and_signed_loads_use_the_matching_unprivileged_form ... ok
+test shared::trans::reg_virt::tests::narrow_pairs_split_into_two_element_accesses ... ok
+test shared::trans::reg_virt::tests::only_the_dispatch_miss_copy_may_read_x13_in_an_exit_group ... ok
+test shared::trans::reg_virt::tests::out_of_range_offsets_materialize_the_address_in_scratch ... ok
+test shared::trans::reg_virt::tests::prefetch_becomes_a_nop_without_a_user_access_or_fault_stub ... ok
+test shared::trans::reg_virt::tests::register_offset_computes_the_address_with_add_extended_then_accesses_at_zero ... ok
+test shared::trans::reg_virt::tests::rejects_constrained_unpredictable_memory_overlaps ... ok
+test shared::trans::reg_virt::tests::rejects_implicit_register_writes_left_on_user_path ... ok
+test shared::trans::reg_virt::tests::rejects_more_than_four_stack_backed_registers ... ok
+test shared::trans::reg_virt::tests::runtime_payload_can_write_return_channel_registers ... ok
+test shared::trans::reg_virt::tests::runtime_reserved_user_semantic_registers_remain_direct_until_runtime_exit ... ok
+test shared::trans::reg_virt::tests::simd_ldp_same_destination_is_rejected ... ok
+test shared::trans::reg_virt::tests::simd_memory_lowers_to_the_exact_window_access ... ok
+test shared::trans::reg_virt::tests::simd_register_forms_remap_only_general_registers ... ok
+test shared::trans::reg_virt::tests::stable_mapped_sp_rewrites_to_physical_x17 ... ok
+test shared::trans::reg_virt::tests::stable_mapped_x29_rewrites_to_physical_x16 ... ok
+test shared::trans::reg_virt::tests::stack_backed_32_bit_writes_spill_zero_extended_physical_register ... ok
+test shared::trans::reg_virt::tests::stack_backed_registers_without_current_physical_shadow_use_scratch ... ok
+test shared::trans::reg_virt::tests::stack_backed_runtime_exit_source_captures_from_frame_slot ... ok
+test shared::trans::reg_virt::tests::stack_backed_write_spills_to_frame_slot ... ok
+test shared::trans::reg_virt::tests::stp_pre_index_on_sp_stores_through_x17_then_writes_back ... ok
+test shared::trans::reg_virt::tests::str_of_stack_backed_register_fills_then_stores_with_sttr ... ok
+test shared::trans::reg_virt::tests::user_x18_is_stack_backed_in_its_own_slot ... ok
+test shared::trans::reg_virt::tests::x18_in_any_operand_position_needs_no_more_scratch_than_x12_to_x15 ... ok
+test shared::trans::reg_virt::tests::zero_register_operands_do_not_require_virtualization ... ok
+test shared::trans::rephrase::tests::adr_expansions_are_user_synthetic ... ok
+test shared::trans::rephrase::tests::back_edges_follow_layout_order_not_cfg_discovery_order ... ok
+test shared::trans::rephrase::tests::bl_and_blr_emit_user_semantic_link_update ... ok
+test shared::trans::rephrase::tests::blr_x30_captures_old_lr_before_link_update ... ok
+test shared::trans::rephrase::tests::branch_inside_a_user_synthetic_sequence_is_a_back_edge_too ... ok
+test shared::trans::rephrase::tests::budget_check_is_runtime_owned_and_leaves_nzcv_alone ... ok
+test shared::trans::rephrase::tests::dispatch_sites_get_the_budget_check_before_the_whole_site ... ok
+test shared::trans::rephrase::tests::every_user_branch_form_to_an_earlier_block_gets_the_budget_check ... ok
+test shared::trans::rephrase::tests::every_user_branch_form_to_itself_gets_the_budget_check ... ok
+test shared::trans::rephrase::tests::forward_user_branches_get_no_budget_check ... ok
+test shared::trans::rephrase::tests::memory_instructions_get_one_mem_fault_stub_in_the_cold_region ... ok
+test shared::trans::rephrase::tests::only_a_static_bl_gets_a_link_slot_right_before_the_template ... ok
+test shared::trans::rephrase::tests::runtime_exit_rewrites_have_explicit_exit_branch_only ... ok
+test shared::trans::translate::tests::compile_request_returns_encodable_wrapped_fragment ... ok
+test shared::verify::tests::a_link_slot_is_listed_once_and_is_no_join_point ... ok
+test shared::verify::tests::a_link_slot_must_be_a_nop_before_a_template ... ok
+test shared::verify::tests::a_link_slot_names_the_templates_target_exactly ... ok
+test shared::verify::tests::a_link_slot_needs_x13_set_once_by_a_movz_and_movks ... ok
+test shared::verify::tests::accepts_a_link_slot_whose_template_target_is_the_listed_pc ... ok
+test shared::verify::tests::accepts_minimal_body ... ok
+test shared::verify::tests::accepts_the_exact_dispatch_template_behind_its_budget_check ... ok
+test shared::verify::tests::accepts_the_exact_window_access ... ok
+test shared::verify::tests::any_msr_is_rejected ... ok
+test shared::verify::tests::barriers_are_the_only_allowed_system_instructions_besides_mrs_user_regs ... ok
+test shared::verify::tests::budget_rule_accepts_the_check_and_fill_loads ... ok
+test shared::verify::tests::budget_rule_rejects_altered_checks ... ok
+test shared::verify::tests::budget_rule_rejects_unguarded_or_bypassable_back_edges ... ok
+test shared::verify::tests::classification_agrees_with_generated_roles ... ok
+test shared::verify::tests::cold_region_is_entered_only_at_exit_group_starts ... ok
+test shared::verify::tests::control_flow_rules ... ok
+test shared::verify::tests::dispatch_miss_branches_name_the_victim_probe_or_one_forward_exit_group ... ok
+test shared::verify::tests::dispatch_template_words_are_byte_exact ... ok
+test shared::verify::tests::dispatch_templates_need_a_budget_check_and_have_no_join_points ... ok
+test shared::verify::tests::every_other_indirect_branch_stays_rejected ... ok
+test shared::verify::tests::every_unprivileged_form_is_a_fault_site_user_access ... ok
+test shared::verify::tests::join_state_is_dead_in_the_epilogue ... ok
+test shared::verify::tests::join_state_is_derived_from_the_prologue ... ok
+test shared::verify::tests::kernel_values_are_never_read ... ok
+test shared::verify::tests::kernel_values_do_not_cross_edges ... ok
+test shared::verify::tests::kernel_values_never_reach_a_dispatch_template ... ok
+test shared::trans::reg_virt::tests::every_lowering_commits_only_after_its_last_user_access ... ok
+test shared::verify::tests::pt_regs_dataflow ... ok
+test shared::verify::tests::rejects_length_and_decode_errors ... ok
+test shared::verify::tests::rejects_sp_and_frame_pointer_writes ... ok
+test shared::verify::tests::rejects_wrapper_mismatch ... ok
+test shared::verify::tests::runtime_access_windows ... ok
+test shared::verify::tests::simd_memory_forms_are_window_only ... ok
+test shared::verify::tests::simd_registers_are_not_general_registers_for_rule_9 ... ok
+test shared::verify::tests::simd_windows_and_uses_fpsimd ... ok
+test shared::verify::tests::slot_192_is_a_user_state_slot ... ok
+test shared::verify::tests::slot_200_is_readable_only_by_a_templates_table_loads ... ok
+test shared::verify::tests::template_register_discipline_holds ... ok
+test shared::verify::tests::user_access_needs_fault_site_and_exit_group_stub ... ok
+test shared::verify::tests::user_only_memory_forms_are_rejected_anywhere ... ok
+test shared::verify::tests::verifier_does_not_import_the_translator ... ok
+test shared::verify::tests::window_access_needs_a_fault_site_naming_an_exit_group ... ok
+test shared::verify::tests::window_rule_rejects_a_join_point_on_the_cbnz_or_the_access ... ok
+test shared::verify::tests::window_rule_rejects_a_missing_or_wrong_range_check ... ok
+test tests::faulting_pair_store_may_leave_its_first_unit_written ... ok
+test tests::generated_arm64_subset_extracts_expected_fields ... ok
+test tests::generated_arm64_subset_matches_sample_opcodes ... ok
+test tests::shared_cfg_splits_conditional_branch_into_basic_blocks ... ok
+test tests::shared_cfg_splits_existing_block_when_branch_targets_middle ... ok
+test shared::trans::reg_virt::tests::every_atomic_lowering_is_one_window_committing_after_it ... ok
+test session::tests::without_links_nothing_is_linked ... ok
+interp asm fixture pass: barriers_acqrel.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=26 injected_fragment_faults=26 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/5 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/5 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test tui::debug::tests::a_breakpoint_can_be_set_on_a_selected_user_pc ... ok
+test tui::debug::tests::a_missing_event_keeps_the_cursor_and_says_so ... ok
+test session::tests::the_warm_path_of_a_chain_makes_no_runtime_round_trip ... ok
+interp asm fixture pass: barriers_acqrel.s sp_acqrel_mark entry=0x10084 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=6 injected_fragment_faults=6 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test shared::verify::tests::mrs_is_allowed_for_exactly_the_user_readable_registers ... ok
+test tui::debug::tests::continuing_without_a_breakpoint_or_a_hit_says_so ... ok
+test tui::debug::tests::go_to_takes_a_number_clamps_and_owns_the_keyboard ... ok
+interp asm fixture pass: barriers_acqrel.s narrow_acqrel_mark entry=0x100b0 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=10 injected_fragment_faults=10 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test tui::debug::tests::stepping_keys_move_and_clamp_the_cursor ... ok
+test session::tests::every_step_takes_the_previous_state_to_the_next ... ok
+interp asm fixture pass: barriers_acqrel.s stlr_ro_mark entry=0x100fc halt=ReturnedToUserspace { status: Mem, target_pc: 65800 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Mem, target_pc: 65800 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65800 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test tui::debug::tests::the_browser_opens_on_the_translation_of_the_fragment_at_the_cursor ... ok
+test tui::debug::tests::continuing_lands_before_a_step_of_the_breakpoint_pc ... ok
+test tui::debug::tests::the_kind_cycle_visits_every_class_and_returns ... ok
+test tui::debug::tests::the_divergence_view_of_a_clean_run_says_there_is_none ... ok
+interp asm fixture pass: barriers_acqrel.s ldar_unmapped_mark entry=0x10118 halt=ReturnedToUserspace { status: Mem, target_pc: 65824 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65824 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65824 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test tui::debug::tests::the_divergence_view_shows_both_worlds_when_they_disagree ... ok
+test tui::debug::tests::the_events_pane_marks_the_cursor ... ok
+test tui::debug::tests::the_panes_show_the_place_at_the_cursor ... ok
+test session::tests::a_pc_is_translated_exactly_when_its_hits_reach_the_threshold ... ok
+interp asm fixture pass: barriers_acqrel.s ldar_cross_mark entry=0x1012c halt=ReturnedToUserspace { status: Mem, target_pc: 65852 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Mem, target_pc: 65852 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65852 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test tui::debug::tests::next_event_of_a_kind_lands_on_an_event_tick_of_that_kind ... ok
+test tui::debug::tests::the_selection_moves_inside_the_listing_and_follows_the_cursor_again_on_a_step ... ok
+test session::tests::state_at_is_the_state_of_a_fresh_run_stopped_there ... ok
+interp asm fixture pass: barriers_acqrel.s stlrh_cross_mark entry=0x10148 halt=ReturnedToUserspace { status: Mem, target_pc: 65872 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65872 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65872 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test tui::observe::tests::draws_in_tiny_areas ... ok
+test tui::observe::tests::edge_totals_equal_transfer_totals ... ok
+test tui::observe::tests::log_windows_follow_t_and_the_filter ... ok
+interp asm fixture pass: barriers_acqrel.s ldar_sp_misaligned_mark entry=0x1015c halt=ReturnedToUserspace { status: Mem, target_pc: 65892 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65892 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65892 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test tui::observe::tests::playback_advances_by_the_speed_and_stops_at_the_end ... ok
+test tui::observe::tests::scrubbing_jumps_and_navigation_keys ... ok
+test tui::observe::tests::counts_up_to_t_equal_counts_over_the_events ... ok
+test tui::observe::tests::draws_the_session_programs_at_start_middle_and_end ... ok
+test tui::debug::tests::the_translation_browser_lists_every_translation_and_their_passes ... ok
+test verify_mutation_tests::mutation_word_lists_are_classified_as_named ... ok
+test tui::tests::modes_draw_and_the_cursor_survives_a_switch ... ok
+interp asm fixture pass: bti_entry.s hot_svc_mark entry=0x10004 halt=NeedsTranslation { status: Blr, target_pc: 65596, resume_offset: None } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Svc, target_pc: 65636 }/1023 entries] warm=[ReturnedToUserspace { status: Svc, target_pc: 65636 }/1023 entries] fragments=5 ibtc_insert=8 ibtc_replace=0
+test tui::tests::the_cursor_stays_inside_the_recording ... ok
+test tui::observe::tests::the_cache_view_at_the_cache_key_is_the_view_at_t ... ok
+test tui::observe::tests::timeline_columns_partition_the_run ... ok
+verify-mutation asm fixture pass: adc_chain.s hot_svc_mark entry=0x10004 
+test tui::observe::tests::transfer_edges_and_profiler_state_match_a_direct_fold ... ok
+interp asm fixture pass: bti_entry.s callee_c_mark entry=0x1003c halt=NeedsTranslation { status: Bl, target_pc: 65720, resume_offset: None } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Svc, target_pc: 65636 }/1023 entries] warm=[ReturnedToUserspace { status: Svc, target_pc: 65636 }/1023 entries] fragments=4 ibtc_insert=6 ibtc_replace=0
+verify-mutation asm fixture pass: adc_chain.s adc32_ngc_mark entry=0x100d0 
+interp asm fixture pass: bti_entry.s jump_table_mark entry=0x10064 halt=NeedsTranslation { status: Br, target_pc: 65664, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=2 ibtc_insert=2 ibtc_replace=0
+verify-mutation asm fixture pass: adc_chain.s msubl_crc_mark entry=0x10128 
+interp asm fixture pass: bti_entry.s case_j_mark entry=0x1009c halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: alu_mix.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: bti_entry.s callee_jc_mark entry=0x100b8 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture pass: bti_entry.s paciasp_entry_mark entry=0x100cc halt=ReturnedToUserspace { status: Unsupported, target_pc: 65740 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65740 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65740 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: barriers_acqrel.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: bti_entry.s autiasp_ret_mark entry=0x100dc halt=ReturnedToUserspace { status: Unsupported, target_pc: 65768 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65768 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65768 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: barriers_acqrel.s sp_acqrel_mark entry=0x10084 
+verify-mutation asm fixture pass: barriers_acqrel.s narrow_acqrel_mark entry=0x100b0 
+interp asm fixture pass: budget_tight_loop.s self_loop_mark entry=0x10004 halt=ReturnedToUserspace { status: Budget, target_pc: 65544 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Budget, target_pc: 65544 }/0 entries] warm=[ReturnedToUserspace { status: Budget, target_pc: 65544 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: barriers_acqrel.s stlr_ro_mark entry=0x100fc 
+interp asm fixture pass: budget_tight_loop.s flags_self_loop_mark entry=0x10014 halt=ReturnedToUserspace { status: Budget, target_pc: 65564 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Budget, target_pc: 65564 }/0 entries] warm=[ReturnedToUserspace { status: Budget, target_pc: 65564 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: barriers_acqrel.s ldar_unmapped_mark entry=0x10118 
+verify-mutation asm fixture pass: barriers_acqrel.s ldar_cross_mark entry=0x1012c 
+interp asm fixture pass: budget_tight_loop.s long_countdown_mark entry=0x10028 halt=ReturnedToUserspace { status: Budget, target_pc: 65592 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Budget, target_pc: 65592 }/0 entries] warm=[ReturnedToUserspace { status: Budget, target_pc: 65592 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: barriers_acqrel.s stlrh_cross_mark entry=0x10148 
+interp asm fixture pass: budget_tight_loop.s short_countdown_mark entry=0x10044 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: barriers_acqrel.s ldar_sp_misaligned_mark entry=0x1015c 
+interp asm fixture pass: budget_tight_loop.s boundary_complete_mark entry=0x10058 halt=ReturnedToUserspace { status: Budget, target_pc: 65636 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Budget, target_pc: 65636 }/0 entries] warm=[ReturnedToUserspace { status: Budget, target_pc: 65636 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: bti_entry.s hot_svc_mark entry=0x10004 
+verify-mutation asm fixture pass: bti_entry.s callee_c_mark entry=0x1003c 
+interp asm fixture pass: budget_tight_loop.s boundary_exit_mark entry=0x1006c halt=ReturnedToUserspace { status: Budget, target_pc: 65652 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Budget, target_pc: 65652 }/0 entries] warm=[ReturnedToUserspace { status: Budget, target_pc: 65652 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: bti_entry.s jump_table_mark entry=0x10064 
+interp asm fixture pass: budget_tight_loop.s tbz_loop_mark entry=0x10080 halt=ReturnedToUserspace { status: Budget, target_pc: 65672 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Budget, target_pc: 65672 }/0 entries] warm=[ReturnedToUserspace { status: Budget, target_pc: 65672 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: bti_entry.s case_j_mark entry=0x1009c 
+verify-mutation asm fixture pass: bti_entry.s callee_jc_mark entry=0x100b8 
+interp asm fixture pass: budget_tight_loop.s nested_loop_mark entry=0x10094 halt=ReturnedToUserspace { status: Budget, target_pc: 65696 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Budget, target_pc: 65696 }/0 entries] warm=[ReturnedToUserspace { status: Budget, target_pc: 65696 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: bti_entry.s paciasp_entry_mark entry=0x100cc 
+verify-mutation asm fixture pass: bti_entry.s autiasp_ret_mark entry=0x100dc 
+interp asm fixture pass: budget_tight_loop.s svc_resets_budget_mark entry=0x100b4 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: budget_tight_loop.s self_loop_mark entry=0x10004 
+verify-mutation asm fixture pass: budget_tight_loop.s flags_self_loop_mark entry=0x10014 
+interp asm fixture pass: counter_read.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=24 injected_fragment_faults=24 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: budget_tight_loop.s long_countdown_mark entry=0x10028 
+interp asm fixture pass: counter_read.s counter_regs_mark entry=0x1007c halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: budget_tight_loop.s short_countdown_mark entry=0x10044 
+verify-mutation asm fixture pass: budget_tight_loop.s boundary_complete_mark entry=0x10058 
+interp asm fixture pass: dispatch_alias.s alias_blr_mark entry=0x10004 halt=NeedsTranslation { status: Blr, target_pc: 65632, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/4 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=5 ibtc_insert=10 ibtc_replace=2
+verify-mutation asm fixture pass: budget_tight_loop.s boundary_exit_mark entry=0x1006c 
+interp asm fixture pass: dispatch_alias.s alias_bl_mark entry=0x10038 halt=NeedsTranslation { status: Bl, target_pc: 65632, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/4 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=5 ibtc_insert=10 ibtc_replace=2
+verify-mutation asm fixture pass: budget_tight_loop.s tbz_loop_mark entry=0x10080 
+verify-mutation asm fixture pass: budget_tight_loop.s nested_loop_mark entry=0x10094 
+interp asm fixture pass: dispatch_calls.s nested_calls_mark entry=0x10004 halt=NeedsTranslation { status: Bl, target_pc: 65572, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/8 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=9 ibtc_insert=16 ibtc_replace=0
+verify-mutation asm fixture pass: budget_tight_loop.s svc_resets_budget_mark entry=0x100b4 
+interp asm fixture pass: dispatch_calls.s tail_calls_mark entry=0x10068 halt=NeedsTranslation { status: Bl, target_pc: 65664, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=4 ibtc_insert=6 ibtc_replace=0
+interp asm fixture pass: dispatch_calls.s recursion_frames_mark entry=0x100a0 halt=NeedsTranslation { status: Bl, target_pc: 65728, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=3 ibtc_insert=6 ibtc_replace=0
+verify-mutation asm fixture pass: counter_read.s hot_svc_mark entry=0x10004 
+verify-mutation asm fixture pass: counter_read.s counter_regs_mark entry=0x1007c 
+interp asm fixture pass: dispatch_fpsimd.s fp_callee_mark entry=0x10004 halt=NeedsTranslation { status: Bl, target_pc: 65580, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/6 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] fragments=6 ibtc_insert=9 ibtc_replace=0
+interp asm fixture pass: dispatch_fpsimd.s fp_caller_mark entry=0x10050 halt=NeedsTranslation { status: Bl, target_pc: 65604, resume_offset: None } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=4 ibtc_insert=5 ibtc_replace=0
+verify-mutation asm fixture pass: dispatch_alias.s alias_blr_mark entry=0x10004 
+verify-mutation asm fixture pass: dispatch_alias.s alias_bl_mark entry=0x10038 
+interp asm fixture pass: dispatch_lr_forms.s blr_x30_mark entry=0x10004 halt=NeedsTranslation { status: Blr, target_pc: 65580, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=4 ibtc_insert=6 ibtc_replace=0
+interp asm fixture pass: dispatch_lr_forms.s ret_x5_mark entry=0x10038 halt=NeedsTranslation { status: Bl, target_pc: 65616, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/2 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=3 ibtc_insert=4 ibtc_replace=0
+verify-mutation asm fixture pass: dispatch_calls.s nested_calls_mark entry=0x10004 
+interp asm fixture pass: dispatch_lr_forms.s br_x30_mark entry=0x10070 halt=NeedsTranslation { status: Bl, target_pc: 65672, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/2 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=3 ibtc_insert=4 ibtc_replace=0
+verify-mutation asm fixture pass: dispatch_calls.s tail_calls_mark entry=0x10068 
+verify-mutation asm fixture pass: dispatch_calls.s recursion_frames_mark entry=0x100a0 
+interp asm fixture pass: dispatch_plt.s plt_call_mark entry=0x10004 halt=NeedsTranslation { status: Bl, target_pc: 65632, resume_offset: None } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/4 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=5 ibtc_insert=8 ibtc_replace=0
+interp asm fixture pass: dispatch_plt.s plt_two_stubs_mark entry=0x1002c halt=NeedsTranslation { status: Bl, target_pc: 65632, resume_offset: None } injected_user_accesses=2 injected_fragment_faults=2 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/8 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=9 ibtc_insert=16 ibtc_replace=0
+verify-mutation asm fixture pass: dispatch_fpsimd.s fp_callee_mark entry=0x10004 
+verify-mutation asm fixture pass: dispatch_fpsimd.s fp_caller_mark entry=0x10050 
+interp asm fixture pass: dispatch_recursion.s recursion_budget_mark entry=0x10004 halt=NeedsTranslation { status: Bl, target_pc: 65564, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Budget, target_pc: 65576 }/1 entries] warm=[ReturnedToUserspace { status: Budget, target_pc: 65576 }/0 entries] fragments=2 ibtc_insert=2 ibtc_replace=0
+verify-mutation asm fixture pass: dispatch_lr_forms.s blr_x30_mark entry=0x10004 
+interp asm fixture pass: dispatch_victim_share.s victim_share_mark entry=0x10004 halt=NeedsTranslation { status: Blr, target_pc: 65792, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/8 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] fragments=9 ibtc_insert=24 ibtc_replace=8
+verify-mutation asm fixture pass: dispatch_lr_forms.s ret_x5_mark entry=0x10038 
+interp asm fixture pass: dispatch_victim_share.s victim_distinct_mark entry=0x1003c halt=NeedsTranslation { status: Blr, target_pc: 65792, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/8 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=9 ibtc_insert=20 ibtc_replace=4
+verify-mutation asm fixture pass: dispatch_lr_forms.s br_x30_mark entry=0x10070 
+test tui::debug::tests::the_ticks_of_every_program_render ... ok
+interp asm fixture pass: fuzz_regress_3d74ff35501da143.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Mem, target_pc: 65556 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65556 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65556 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: dispatch_plt.s plt_call_mark entry=0x10004 
+verify-mutation asm fixture pass: dispatch_plt.s plt_two_stubs_mark entry=0x1002c 
+interp asm fixture pass: fuzz_regress_4d8286952cad317f.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Unsupported, target_pc: 65544 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65544 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65544 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: dispatch_recursion.s recursion_budget_mark entry=0x10004 
+interp asm fixture pass: fuzz_regress_bf938844fc6f2fe6.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Mem, target_pc: 65552 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Mem, target_pc: 65552 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65552 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: dispatch_victim_share.s victim_share_mark entry=0x10004 
+interp asm fixture pass: glibc_syscall_wrapper.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: dispatch_victim_share.s victim_distinct_mark entry=0x1003c 
+interp asm fixture pass: glibc_syscall_wrapper.s glibc_error_boundary_mark entry=0x1001c halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=2 injected_fragment_faults=2 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture pass: glibc_syscall_wrapper.s glibc_error_eintr_mark entry=0x10034 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=2 injected_fragment_faults=2 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: fuzz_regress_3d74ff35501da143.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: glibc_syscall_wrapper.s glibc_not_error_mark entry=0x1004c halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: fuzz_regress_4d8286952cad317f.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: ldtr_user.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Unsupported, target_pc: 65548 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65548 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65548 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture pass: ldtr_user.s sttr_user_mark entry=0x10018 halt=ReturnedToUserspace { status: Unsupported, target_pc: 65564 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65564 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65564 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: fuzz_regress_bf938844fc6f2fe6.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: lse_atomics.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=17 injected_fragment_faults=17 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: glibc_syscall_wrapper.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: lse_atomics.s cas_mark entry=0x10064 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=14 injected_fragment_faults=14 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: glibc_syscall_wrapper.s glibc_error_boundary_mark entry=0x1001c 
+interp asm fixture pass: lse_atomics.s narrow_mark entry=0x100e4 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=33 injected_fragment_faults=33 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: glibc_syscall_wrapper.s glibc_error_eintr_mark entry=0x10034 
+interp asm fixture pass: lse_atomics.s refcount_mark entry=0x10194 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=16 injected_fragment_faults=16 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/5 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/5 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: glibc_syscall_wrapper.s glibc_not_error_mark entry=0x1004c 
+interp asm fixture pass: lse_atomics.s mapped_regs_mark entry=0x101cc halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=12 injected_fragment_faults=12 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture pass: lse_atomics.s tagged_mark entry=0x1022c halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=2 injected_fragment_faults=2 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: ldtr_user.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: lse_atomics.s atomic_ro_mark entry=0x1024c halt=ReturnedToUserspace { status: Mem, target_pc: 66140 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Mem, target_pc: 66140 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 66140 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: ldtr_user.s sttr_user_mark entry=0x10018 
+interp asm fixture pass: lse_atomics.s cas_ro_fail_mark entry=0x1026c halt=ReturnedToUserspace { status: Mem, target_pc: 66172 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 66172 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 66172 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: lse_atomics.s atomic_unmapped_mark entry=0x10288 halt=ReturnedToUserspace { status: Mem, target_pc: 66196 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 66196 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 66196 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s cas_mark entry=0x10064 
+interp asm fixture pass: lse_atomics.s kernel_pointer_mark entry=0x102a0 halt=ReturnedToUserspace { status: Mem, target_pc: 66228 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 66228 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 66228 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s narrow_mark entry=0x100e4 
+interp asm fixture pass: lse_atomics.s high_pointer_mark entry=0x102c0 halt=ReturnedToUserspace { status: Mem, target_pc: 66252 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 66252 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 66252 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s refcount_mark entry=0x10194 
+interp asm fixture pass: lse_atomics.s misaligned_mark entry=0x102d8 halt=ReturnedToUserspace { status: Mem, target_pc: 66292 } injected_user_accesses=2 injected_fragment_faults=2 cold=[ReturnedToUserspace { status: Mem, target_pc: 66292 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 66292 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s mapped_regs_mark entry=0x101cc 
+interp asm fixture pass: lse_atomics.s cas_cross_mark entry=0x10300 halt=ReturnedToUserspace { status: Mem, target_pc: 66316 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 66316 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 66316 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s tagged_mark entry=0x1022c 
+interp asm fixture pass: lse_atomics.s sp_misaligned_mark entry=0x10318 halt=ReturnedToUserspace { status: Mem, target_pc: 66340 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 66340 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 66340 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s atomic_ro_mark entry=0x1024c 
+interp asm fixture pass: lse_atomics.s user_msr_pan_mark entry=0x10330 halt=ReturnedToUserspace { status: Unsupported, target_pc: 66364 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 66364 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 66364 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s cas_ro_fail_mark entry=0x1026c 
+verify-mutation asm fixture pass: lse_atomics.s atomic_unmapped_mark entry=0x10288 
+verify-mutation asm fixture pass: lse_atomics.s kernel_pointer_mark entry=0x102a0 
+verify-mutation asm fixture pass: lse_atomics.s high_pointer_mark entry=0x102c0 
+interp asm fixture pass: mem_bytes.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=104 injected_fragment_faults=104 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/50 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/50 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s misaligned_mark entry=0x102d8 
+verify-mutation asm fixture pass: lse_atomics.s cas_cross_mark entry=0x10300 
+interp asm fixture pass: mem_faults.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Mem, target_pc: 65556 } injected_user_accesses=3 injected_fragment_faults=3 cold=[ReturnedToUserspace { status: Mem, target_pc: 65556 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65556 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s sp_misaligned_mark entry=0x10318 
+interp asm fixture pass: mem_faults.s unmapped_load_mark entry=0x10024 halt=ReturnedToUserspace { status: Mem, target_pc: 65584 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65584 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65584 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: lse_atomics.s user_msr_pan_mark entry=0x10330 
+interp asm fixture pass: mem_faults.s split_ldp_mark entry=0x1003c halt=ReturnedToUserspace { status: Mem, target_pc: 65612 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65612 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65612 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture pass: mem_faults.s byte_store_ro_mark entry=0x10058 halt=ReturnedToUserspace { status: Mem, target_pc: 65640 } injected_user_accesses=2 injected_fragment_faults=2 cold=[ReturnedToUserspace { status: Mem, target_pc: 65640 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65640 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_bytes.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: mem_faults.s unscaled_unmapped_mark entry=0x10074 halt=ReturnedToUserspace { status: Mem, target_pc: 65660 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65660 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65660 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture pass: mem_faults.s regoffset_cross_mark entry=0x10088 halt=ReturnedToUserspace { status: Mem, target_pc: 65684 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65684 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65684 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_faults.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: mem_faults.s split_ldp32_mark entry=0x100a0 halt=ReturnedToUserspace { status: Mem, target_pc: 65712 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65712 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65712 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_faults.s unmapped_load_mark entry=0x10024 
+verify-mutation asm fixture pass: mem_faults.s split_ldp_mark entry=0x1003c 
+interp asm fixture pass: mem_literal.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=13 injected_fragment_faults=13 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_faults.s byte_store_ro_mark entry=0x10058 
+interp asm fixture pass: mem_literal.s literal_fault_mark entry=0x10074 halt=ReturnedToUserspace { status: Mem, target_pc: 65656 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65656 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65656 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_faults.s unscaled_unmapped_mark entry=0x10074 
+interp asm fixture pass: mem_literal.s text_literal_mark entry=0x10084 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=3 injected_fragment_faults=3 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_faults.s regoffset_cross_mark entry=0x10088 
+interp asm fixture pass: mem_literal.s text_store_fault_mark entry=0x10098 halt=ReturnedToUserspace { status: Mem, target_pc: 65696 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65696 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65696 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_faults.s split_ldp32_mark entry=0x100a0 
+interp asm fixture pass: mem_offsets.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=27 injected_fragment_faults=27 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_literal.s hot_svc_mark entry=0x10004 
+verify-mutation asm fixture pass: mem_literal.s literal_fault_mark entry=0x10074 
+interp asm fixture pass: mem_pairs32.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=38 injected_fragment_faults=38 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_literal.s text_literal_mark entry=0x10084 
+verify-mutation asm fixture pass: mem_literal.s text_store_fault_mark entry=0x10098 
+interp asm fixture pass: mem_pressure.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 12336 } injected_user_accesses=29 injected_fragment_faults=29 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 12336 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 12336 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_offsets.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: mem_regoffset.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=55 injected_fragment_faults=55 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/16 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/16 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_pairs32.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: pair_writeback.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=25 injected_fragment_faults=25 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_pressure.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: regvirt_reject_exit.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Unsupported, target_pc: 65588 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65588 }/5 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65588 }/5 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: mem_regoffset.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: reserved_regs.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=3 injected_fragment_faults=3 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: pair_writeback.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: reserved_regs_hard.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=3 injected_fragment_faults=3 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: regvirt_reject_exit.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: reserved_regs_hard.s hard_br_x9_mark entry=0x10034 halt=NeedsTranslation { status: Br, target_pc: 65644, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=2 ibtc_insert=2 ibtc_replace=0
+verify-mutation asm fixture pass: reserved_regs.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: reserved_regs_hard.s hard_blr_x10_mark entry=0x10040 halt=NeedsTranslation { status: Blr, target_pc: 65644, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Svc, target_pc: 65612 }/1023 entries] warm=[ReturnedToUserspace { status: Svc, target_pc: 65612 }/1023 entries] fragments=3 ibtc_insert=4 ibtc_replace=0
+verify-mutation asm fixture pass: reserved_regs_hard.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: reserved_regs_hard.s hard_ret_x11_mark entry=0x1004c halt=ReturnedToUserspace { status: Ret, target_pc: 65644 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=2 ibtc_insert=2 ibtc_replace=0
+verify-mutation asm fixture pass: reserved_regs_hard.s hard_br_x9_mark entry=0x10034 
+interp asm fixture pass: reserved_regs_hard.s hard_br_x16_mark entry=0x10058 halt=NeedsTranslation { status: Br, target_pc: 65644, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=2 ibtc_insert=2 ibtc_replace=0
+verify-mutation asm fixture pass: reserved_regs_hard.s hard_blr_x10_mark entry=0x10040 
+interp asm fixture pass: reserved_regs_hard.s hard_ret_x29_mark entry=0x10064 halt=ReturnedToUserspace { status: Ret, target_pc: 65644 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/1 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=2 ibtc_insert=2 ibtc_replace=0
+verify-mutation asm fixture pass: reserved_regs_hard.s hard_ret_x11_mark entry=0x1004c 
+verify-mutation asm fixture pass: reserved_regs_hard.s hard_br_x16_mark entry=0x10058 
+interp asm fixture pass: session_call_loop.s session_call_loop_mark entry=0x10008 halt=NeedsTranslation { status: Bl, target_pc: 65588, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/302 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/300 entries] fragments=3 ibtc_insert=4 ibtc_replace=0
+verify-mutation asm fixture pass: reserved_regs_hard.s hard_ret_x29_mark entry=0x10064 
+interp asm fixture pass: session_indirect_loop.s session_indirect_loop_mark entry=0x10008 halt=NeedsTranslation { status: Blr, target_pc: 65592, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/302 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/300 entries] fragments=3 ibtc_insert=4 ibtc_replace=0
+verify-mutation asm fixture pass: session_call_loop.s session_call_loop_mark entry=0x10008 
+verify-mutation asm fixture pass: session_indirect_loop.s session_indirect_loop_mark entry=0x10008 
+interp asm fixture pass: session_svc_loop.s session_svc_loop_mark entry=0x10008 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/300 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/300 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: session_svc_loop.s session_svc_loop_mark entry=0x10008 
+interp asm fixture pass: simd_faults.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Mem, target_pc: 65556 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65556 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65556 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture pass: simd_faults.s stp_q_ro_mark entry=0x10020 halt=ReturnedToUserspace { status: Mem, target_pc: 65584 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65584 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65584 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_faults.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: simd_faults.s str_q_ro_mark entry=0x1003c halt=ReturnedToUserspace { status: Mem, target_pc: 65608 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65608 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65608 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_faults.s stp_q_ro_mark entry=0x10020 
+verify-mutation asm fixture pass: simd_faults.s str_q_ro_mark entry=0x1003c 
+interp asm fixture pass: simd_faults.s ld1_unmapped_mark entry=0x10054 halt=ReturnedToUserspace { status: Mem, target_pc: 65644 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65644 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65644 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_faults.s ld1_unmapped_mark entry=0x10054 
+interp asm fixture pass: simd_faults.s st1_ro_mark entry=0x10078 halt=ReturnedToUserspace { status: Mem, target_pc: 65676 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65676 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65676 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture pass: simd_faults.s sp_misaligned_ldr_q_mark entry=0x10098 halt=ReturnedToUserspace { status: Mem, target_pc: 65700 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65700 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65700 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_faults.s st1_ro_mark entry=0x10078 
+verify-mutation asm fixture pass: simd_faults.s sp_misaligned_ldr_q_mark entry=0x10098 
+interp asm fixture pass: simd_faults.s sp_misaligned_str_q_mark entry=0x100b0 halt=ReturnedToUserspace { status: Mem, target_pc: 65724 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65724 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65724 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_faults.s sp_misaligned_str_q_mark entry=0x100b0 
+interp asm fixture pass: simd_faults.s kernel_half_mark entry=0x100c8 halt=ReturnedToUserspace { status: Mem, target_pc: 65744 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65744 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65744 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_faults.s kernel_half_mark entry=0x100c8 
+interp asm fixture pass: simd_faults.s beyond_va_mark entry=0x100dc halt=ReturnedToUserspace { status: Mem, target_pc: 65764 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Mem, target_pc: 65764 }/0 entries] warm=[ReturnedToUserspace { status: Mem, target_pc: 65764 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_faults.s beyond_va_mark entry=0x100dc 
+interp asm fixture pass: simd_faults.s tagged_then_unpredictable_mark entry=0x100f0 halt=ReturnedToUserspace { status: Unsupported, target_pc: 65804 } injected_user_accesses=4 injected_fragment_faults=4 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65804 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65804 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_faults.s tagged_then_unpredictable_mark entry=0x100f0 
+interp asm fixture pass: simd_memcpy.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=21 injected_fragment_faults=21 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_memcpy.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: simd_memcpy.s memcpy_medium_mark entry=0x10074 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=55 injected_fragment_faults=55 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_memcpy.s memcpy_medium_mark entry=0x10074 
+interp asm fixture pass: simd_memcpy.s memcpy_long_mark entry=0x100c0 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=62 injected_fragment_faults=62 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/4 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/4 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_memcpy.s memcpy_long_mark entry=0x100c0 
+interp asm fixture pass: simd_memcpy.s memcpy_sp_mark entry=0x10138 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=5 injected_fragment_faults=5 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_memcpy.s memcpy_sp_mark entry=0x10138 
+interp asm fixture pass: simd_memset.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=9 injected_fragment_faults=9 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/3 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_memset.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: simd_memset.s memset_zero_mark entry=0x10048 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=149 injected_fragment_faults=149 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_memset.s memset_zero_mark entry=0x10048 
+verify-mutation asm fixture pass: simd_ops.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: simd_ops.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_ops.s compare_logic_mark entry=0x100c4 
+interp asm fixture pass: simd_ops.s compare_logic_mark entry=0x100c4 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_ops.s arith_mark entry=0x10174 
+interp asm fixture pass: simd_ops.s arith_mark entry=0x10174 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_ops.s shift_permute_mark entry=0x101fc 
+interp asm fixture pass: simd_ops.s shift_permute_mark entry=0x101fc halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_strlen.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: simd_strlen.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=117 injected_fragment_faults=117 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/2 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/2 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: simd_strlen.s strlen_short_mark entry=0x100b4 
+interp asm fixture pass: simd_strlen.s strlen_short_mark entry=0x100b4 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=17 injected_fragment_faults=17 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: stack_backed_alu.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: stack_backed_alu.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=10 injected_fragment_faults=10 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/2 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/2 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: toy_cfg.s hot_svc_mark entry=0x10038 
+interp asm fixture pass: toy_cfg.s hot_svc_mark entry=0x10038 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=2 injected_fragment_faults=2 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/200 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/200 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: unsupported_exit.s hot_svc_mark entry=0x10004 
+interp asm fixture pass: unsupported_exit.s hot_svc_mark entry=0x10004 halt=ReturnedToUserspace { status: Unsupported, target_pc: 65584 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65584 }/5 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65584 }/5 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: unsupported_exit.s ldxr_unsupported_mark entry=0x1003c 
+verify-mutation asm fixture pass: unsupported_exit.s ldadd_unsupported_mark entry=0x10050 
+interp asm fixture pass: unsupported_exit.s ldxr_unsupported_mark entry=0x1003c halt=ReturnedToUserspace { status: Unsupported, target_pc: 65604 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65604 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65604 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+test tui::debug::tests::interesting_ticks_render_at_every_size_and_screen ... ok
+verify-mutation asm fixture pass: unsupported_exit.s ldr_q_unsupported_mark entry=0x10060 
+interp asm fixture pass: unsupported_exit.s ldadd_unsupported_mark entry=0x10050 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: unsupported_exit.s fadd_unsupported_mark entry=0x10074 
+interp asm fixture pass: unsupported_exit.s ldr_q_unsupported_mark entry=0x10060 halt=ReturnedToUserspace { status: Unsupported, target_pc: 65640 } injected_user_accesses=2 injected_fragment_faults=2 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65640 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65640 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: unsupported_exit.s ldaxr_unsupported_mark entry=0x10088 
+interp asm fixture pass: unsupported_exit.s fadd_unsupported_mark entry=0x10074 halt=ReturnedToUserspace { status: Unsupported, target_pc: 65660 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65660 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65660 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: unsupported_exit.s stlxr_unsupported_mark entry=0x1009c 
+interp asm fixture pass: unsupported_exit.s ldaxr_unsupported_mark entry=0x10088 halt=ReturnedToUserspace { status: Unsupported, target_pc: 65680 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65680 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65680 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: unsupported_exit.s cas_unsupported_mark entry=0x100b4 
+interp asm fixture pass: unsupported_exit.s stlxr_unsupported_mark entry=0x1009c halt=ReturnedToUserspace { status: Unsupported, target_pc: 65704 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65704 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65704 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: unsupported_exit.s ldapr_writeback_unsupported_mark entry=0x100cc 
+interp asm fixture pass: unsupported_exit.s cas_unsupported_mark entry=0x100b4 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=1 injected_fragment_faults=1 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture pass: unsupported_exit.s ldapr_writeback_unsupported_mark entry=0x100cc halt=ReturnedToUserspace { status: Unsupported, target_pc: 65744 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 65744 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 65744 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: user_x18.s x18_alu_mark entry=0x10004 
+verify-mutation asm fixture pass: user_x18.s x18_mem_mark entry=0x10064 
+interp asm fixture pass: user_x18.s x18_alu_mark entry=0x10004 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/2 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/2 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: user_x18.s x18_loop_mark entry=0x100c0 
+interp asm fixture pass: user_x18.s x18_mem_mark entry=0x10064 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=18 injected_fragment_faults=18 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: user_x18.s x18_budget_mark entry=0x100dc 
+interp asm fixture pass: user_x18.s x18_loop_mark entry=0x100c0 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+verify-mutation asm fixture pass: user_x18.s x18_dispatch_mark entry=0x100f8 
+verify-mutation asm fixture pass: user_x18.s x18_branch_mark entry=0x10140 
+verify-mutation asm fixture suite: 136 cases across 42 fixtures, 0 failed
+interp asm fixture pass: user_x18.s x18_budget_mark entry=0x100dc halt=ReturnedToUserspace { status: Budget, target_pc: 65772 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Budget, target_pc: 65772 }/0 entries] warm=[ReturnedToUserspace { status: Budget, target_pc: 65772 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture pass: user_x18.s x18_dispatch_mark entry=0x100f8 halt=NeedsTranslation { status: Blr, target_pc: 65840, resume_offset: None } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/4 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=5 ibtc_insert=8 ibtc_replace=0
+interp asm fixture pass: user_x18.s x18_branch_mark entry=0x10140 halt=ReturnedToUserspace { status: Ret, target_pc: 0 } injected_user_accesses=0 injected_fragment_faults=0 cold=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] warm=[ReturnedToUserspace { status: Unsupported, target_pc: 0 }/0 entries] fragments=1 ibtc_insert=0 ibtc_replace=0
+interp asm fixture suite: 136 cases across 42 fixtures, 0 failed
+test asm_fixture_tests::every_asm_fixture_case_matches_original ... ok
+fuzz smoke (seed 0x5eed0ff022):
+generated:                2000
+run:                      1998
+discarded-nonterminating: 2
+chained (no verdict):     0
+passed:                   1998
+native-passed:            0
+native-unobservable:      0
+failed:                   0
+original halts:
+  bl             335
+  blr            254
+  br             264
+  budget         41
+  fault          230
+  fault-align    40
+  fault-sp-align 114
+  ret            248
+  unreadable     121
+  unsupported    351
+per-form coverage (instances generated / original steps executed):
+  ADC.ADC_32_addsub_carry                         85         39
+  ADC.ADC_64_addsub_carry                         70         32
+  ADCS.ADCS_32_addsub_carry                       91         42
+  ADCS.ADCS_64_addsub_carry                       88        188
+  ADDP_advsimd_pair.ADDP_asisdpair_only          163       4225
+  ADDP_advsimd_vec.ADDP_asimdsame_only           178       4167
+  ADDS_addsub_ext.ADDS_32S_addsub_ext             86         50
+  ADDS_addsub_ext.ADDS_64S_addsub_ext             88         44
+  ADDS_addsub_imm.ADDS_32S_addsub_imm             86         34
+  ADDS_addsub_imm.ADDS_64S_addsub_imm             92        197
+  ADDS_addsub_shift.ADDS_32_addsub_shift          91         48
+  ADDS_addsub_shift.ADDS_64_addsub_shift          94         37
+  ADDV_advsimd.ADDV_asimdall_only                193       4173
+  ADD_addsub_ext.ADD_32_addsub_ext                90       1758
+  ADD_addsub_ext.ADD_64_addsub_ext                83        187
+  ADD_addsub_imm.ADD_32_addsub_imm                97       4142
+  ADD_addsub_imm.ADD_64_addsub_imm               102         54
+  ADD_addsub_shift.ADD_32_addsub_shift            79         27
+  ADD_addsub_shift.ADD_64_addsub_shift           100         59
+  ADD_advsimd.ADD_asimdsame_only                 103         66
+  ADD_advsimd.ADD_asisdsame_only                  85         49
+  ADR.ADR_only_pcreladdr                         175         83
+  ADRP.ADRP_only_pcreladdr                       185        409
+  ANDS_log_imm.ANDS_32S_log_imm                   99         46
+  ANDS_log_imm.ANDS_64S_log_imm                  105       4140
+  ANDS_log_shift.ANDS_32_log_shift                97         50
+  ANDS_log_shift.ANDS_64_log_shift                91       4143
+  AND_advsimd.AND_asimdsame_only                 178       1573
+  AND_log_imm.AND_32_log_imm                      84         32
+  AND_log_imm.AND_64_log_imm                     108         49
+  AND_log_shift.AND_32_log_shift                  99         53
+  AND_log_shift.AND_64_log_shift                  97         51
+  ASRV.ASRV_32_dp_2src                            82         45
+  ASRV.ASRV_64_dp_2src                            90         48
+  BFM.BFM_32M_bitfield                            99         43
+  BFM.BFM_64M_bitfield                            87         41
+  BICS.BICS_32_log_shift                          98         42
+  BICS.BICS_64_log_shift                         101         29
+  BIC_advsimd_reg.BIC_asimdsame_only             191        113
+  BIC_log_shift.BIC_32_log_shift                 108         55
+  BIC_log_shift.BIC_64_log_shift                 107        386
+  BIF_advsimd.BIF_asimdsame_only                 163       4170
+  BIT_advsimd.BIT_asimdsame_only                 177         78
+  BL.BL_only_branch_imm                          901        335
+  BLR.BLR_64_branch_reg                          652        254
+  BR.BR_64_branch_reg                            624        264
+  BSL_advsimd.BSL_asimdsame_only                 193        164
+  BTI.BTI_HB_hints                               187        215
+  B_cond.B_only_condbranch                      2915      37101
+  B_uncond.B_only_branch_imm                    1745      77173
+  CAS.CASAL_C32_comswap                           35         16
+  CAS.CASAL_C64_comswap                           33         10
+  CAS.CASA_C32_comswap                            28         14
+  CAS.CASA_C64_comswap                            26         18
+  CAS.CASL_C32_comswap                            37       8207
+  CAS.CASL_C64_comswap                            25          3
+  CAS.CAS_C32_comswap                             29          8
+  CAS.CAS_C64_comswap                             30         15
+  CASB.CASAB_C32_comswap                          64       4109
+  CASB.CASALB_C32_comswap                         63         48
+  CASB.CASB_C32_comswap                           58         36
+  CASB.CASLB_C32_comswap                          62       4130
+  CASH.CASAH_C32_comswap                          62         25
+  CASH.CASALH_C32_comswap                         48         18
+  CASH.CASH_C32_comswap                           45         27
+  CASH.CASLH_C32_comswap                          60         37
+  CBNZ.CBNZ_32_compbranch                        726      33053
+  CBNZ.CBNZ_64_compbranch                       2288      32844
+  CBZ.CBZ_32_compbranch                          671       8605
+  CBZ.CBZ_64_compbranch                          668      12704
+  CCMN_imm.CCMN_32_condcmp_imm                    89         42
+  CCMN_imm.CCMN_64_condcmp_imm                   104        180
+  CCMN_reg.CCMN_32_condcmp_reg                   103         53
+  CCMN_reg.CCMN_64_condcmp_reg                    99         40
+  CCMP_imm.CCMP_32_condcmp_imm                    81        186
+  CCMP_imm.CCMP_64_condcmp_imm                   101         50
+  CCMP_reg.CCMP_32_condcmp_reg                    84       4121
+  CCMP_reg.CCMP_64_condcmp_reg                    98         48
+  CLZ_int.CLZ_32_dp_1src                          98       4140
+  CLZ_int.CLZ_64_dp_1src                          92         40
+  CMEQ_advsimd_reg.CMEQ_asimdsame_only            83         35
+  CMEQ_advsimd_reg.CMEQ_asisdsame_only            93         45
+  CMEQ_advsimd_zero.CMEQ_asimdmisc_Z              91       4155
+  CMEQ_advsimd_zero.CMEQ_asisdmisc_Z             108       8241
+  CMGE_advsimd_reg.CMGE_asimdsame_only           103         47
+  CMGE_advsimd_reg.CMGE_asisdsame_only            76         34
+  CMGE_advsimd_zero.CMGE_asimdmisc_Z              82         28
+  CMGE_advsimd_zero.CMGE_asisdmisc_Z              94         31
+  CMGT_advsimd_reg.CMGT_asimdsame_only            76         28
+  CMGT_advsimd_reg.CMGT_asisdsame_only            96         50
+  CMGT_advsimd_zero.CMGT_asimdmisc_Z              87        187
+  CMGT_advsimd_zero.CMGT_asisdmisc_Z              79         34
+  CMHI_advsimd.CMHI_asimdsame_only               107       4157
+  CMHI_advsimd.CMHI_asisdsame_only               102       8243
+  CMHS_advsimd.CMHS_asimdsame_only                97       1613
+  CMHS_advsimd.CMHS_asisdsame_only                89       4516
+  CMTST_advsimd.CMTST_asimdsame_only              97         43
+  CMTST_advsimd.CMTST_asisdsame_only              85         45
+  CNT_advsimd.CNT_asimdmisc_R                    192        113
+  CRC32.CRC32B_32C_dp_2src                        47         21
+  CRC32.CRC32H_32C_dp_2src                        41         25
+  CRC32.CRC32W_32C_dp_2src                        43       8213
+  CRC32.CRC32X_64C_dp_2src                        49         24
+  CRC32C.CRC32CB_32C_dp_2src                      50         20
+  CRC32C.CRC32CH_32C_dp_2src                      47       4116
+  CRC32C.CRC32CW_32C_dp_2src                      56       4109
+  CRC32C.CRC32CX_64C_dp_2src                      34       4105
+  CSEL.CSEL_32_condsel                            98         49
+  CSEL.CSEL_64_condsel                            89         45
+  CSINC.CSINC_32_condsel                          91         35
+  CSINC.CSINC_64_condsel                          90         52
+  CSINV.CSINV_32_condsel                          72         20
+  CSINV.CSINV_64_condsel                         113         42
+  CSNEG.CSNEG_32_condsel                          85         40
+  CSNEG.CSNEG_64_condsel                          99       4145
+  DMB.DMB_BO_barriers                            175         73
+  DSB.DSB_BO_barriers                            164       4184
+  DUP_advsimd_elt.DUP_asimdins_DV_v               87         55
+  DUP_advsimd_elt.DUP_asisdone_only               87         47
+  DUP_advsimd_gen.DUP_asimdins_DR_r              201         91
+  EON.EON_32_log_shift                            95        387
+  EON.EON_64_log_shift                           103         46
+  EOR_advsimd.EOR_asimdsame_only                 185        107
+  EOR_log_imm.EOR_32_log_imm                      83        391
+  EOR_log_imm.EOR_64_log_imm                      84         40
+  EOR_log_shift.EOR_32_log_shift                  81         44
+  EOR_log_shift.EOR_64_log_shift                  93         48
+  EXTR.EXTR_32_extract                            68         36
+  EXTR.EXTR_64_extract                            97         54
+  EXT_advsimd.EXT_asimdext_only                  183       4890
+  FMOV_float.FMOV_D_floatdp1                     100         39
+  FMOV_float.FMOV_S_floatdp1                      78         45
+  FMOV_float_gen.FMOV_32S_float2int               31         14
+  FMOV_float_gen.FMOV_64D_float2int               26         13
+  FMOV_float_gen.FMOV_64VX_float2int              37         22
+  FMOV_float_gen.FMOV_D64_float2int               27        691
+  FMOV_float_gen.FMOV_S32_float2int               24         14
+  FMOV_float_gen.FMOV_V64I_float2int              33         19
+  INS_advsimd_elt.INS_asimdins_IV_v              178         78
+  INS_advsimd_gen.INS_asimdins_IR_r              161         81
+  ISB.ISB_BI_barriers                            184         80
+  LD1_advsimd_mult.LD1_asisdlse_R1_1v             14          8
+  LD1_advsimd_mult.LD1_asisdlse_R2_2v             19          5
+  LD1_advsimd_mult.LD1_asisdlse_R3_3v             11          5
+  LD1_advsimd_mult.LD1_asisdlse_R4_4v             20          5
+  LD1_advsimd_mult.LD1_asisdlsep_I1_i1            23          9
+  LD1_advsimd_mult.LD1_asisdlsep_I2_i2            23          7
+  LD1_advsimd_mult.LD1_asisdlsep_I3_i3            20         11
+  LD1_advsimd_mult.LD1_asisdlsep_I4_i4            20          6
+  LD1_advsimd_mult.LD1_asisdlsep_R1_r1            20          5
+  LD1_advsimd_mult.LD1_asisdlsep_R2_r2            15          8
+  LD1_advsimd_mult.LD1_asisdlsep_R3_r3            18         12
+  LD1_advsimd_mult.LD1_asisdlsep_R4_r4            16          8
+  LDADD.LDADDAL_32_memop                          26         16
+  LDADD.LDADDAL_64_memop                          18          6
+  LDADD.LDADDA_32_memop                           27          9
+  LDADD.LDADDA_64_memop                           24       4109
+  LDADD.LDADDL_32_memop                           21          8
+  LDADD.LDADDL_64_memop                           28         15
+  LDADD.LDADD_32_memop                            30         13
+  LDADD.LDADD_64_memop                            25          8
+  LDADDB.LDADDAB_32_memop                         59         29
+  LDADDB.LDADDALB_32_memop                        48         22
+  LDADDB.LDADDB_32_memop                          59         25
+  LDADDB.LDADDLB_32_memop                         63         27
+  LDADDH.LDADDAH_32_memop                         51         40
+  LDADDH.LDADDALH_32_memop                        62         47
+  LDADDH.LDADDH_32_memop                          57       4137
+  LDADDH.LDADDLH_32_memop                         58         24
+  LDAPR.LDAPR_32L_memop                          125         66
+  LDAPR.LDAPR_64L_memop                          129         56
+  LDAPRB.LDAPRB_32L_memop                        231        107
+  LDAPRH.LDAPRH_32L_memop                        238       4542
+  LDAR.LDAR_LR32_ldstord                         110         55
+  LDAR.LDAR_LR64_ldstord                         107         50
+  LDARB.LDARB_LR32_ldstord                       259        116
+  LDARH.LDARH_LR32_ldstord                       254        108
+  LDCLR.LDCLRAL_32_memop                          27         11
+  LDCLR.LDCLRAL_64_memop                          30         20
+  LDCLR.LDCLRA_32_memop                           33         15
+  LDCLR.LDCLRA_64_memop                           29          8
+  LDCLR.LDCLRL_32_memop                           19          5
+  LDCLR.LDCLRL_64_memop                           39         16
+  LDCLR.LDCLR_32_memop                            31         11
+  LDCLR.LDCLR_64_memop                            26          6
+  LDCLRB.LDCLRAB_32_memop                         60         28
+  LDCLRB.LDCLRALB_32_memop                        58         21
+  LDCLRB.LDCLRB_32_memop                          50         17
+  LDCLRB.LDCLRLB_32_memop                         51         39
+  LDCLRH.LDCLRAH_32_memop                         51         18
+  LDCLRH.LDCLRALH_32_memop                        73         35
+  LDCLRH.LDCLRH_32_memop                          72         26
+  LDCLRH.LDCLRLH_32_memop                         65       8223
+  LDEOR.LDEORAL_32_memop                          22          8
+  LDEOR.LDEORAL_64_memop                          27         13
+  LDEOR.LDEORA_32_memop                           26          7
+  LDEOR.LDEORA_64_memop                           26         11
+  LDEOR.LDEORL_32_memop                           29          8
+  LDEOR.LDEORL_64_memop                           28         17
+  LDEOR.LDEOR_32_memop                            23         14
+  LDEOR.LDEOR_64_memop                            29         13
+  LDEORB.LDEORAB_32_memop                         56         20
+  LDEORB.LDEORALB_32_memop                        50         12
+  LDEORB.LDEORB_32_memop                          55         31
+  LDEORB.LDEORLB_32_memop                         55         28
+  LDEORH.LDEORAH_32_memop                         63         27
+  LDEORH.LDEORALH_32_memop                        64         21
+  LDEORH.LDEORH_32_memop                          57       4120
+  LDEORH.LDEORLH_32_memop                         60         27
+  LDPSW.LDPSW_64_ldstpair_off                     62         35
+  LDPSW.LDPSW_64_ldstpair_post                    66         38
+  LDPSW.LDPSW_64_ldstpair_pre                     78        379
+  LDP_fpsimd.LDP_D_ldstpair_off                   18          7
+  LDP_fpsimd.LDP_D_ldstpair_post                  31         11
+  LDP_fpsimd.LDP_D_ldstpair_pre                   26         22
+  LDP_fpsimd.LDP_Q_ldstpair_off                   34         10
+  LDP_fpsimd.LDP_Q_ldstpair_post                  20         15
+  LDP_fpsimd.LDP_Q_ldstpair_pre                   24        112
+  LDP_fpsimd.LDP_S_ldstpair_off                   32         13
+  LDP_fpsimd.LDP_S_ldstpair_post                  26         52
+  LDP_fpsimd.LDP_S_ldstpair_pre                   28         16
+  LDP_gen.LDP_32_ldstpair_off                     32         29
+  LDP_gen.LDP_32_ldstpair_post                    30        722
+  LDP_gen.LDP_32_ldstpair_pre                     42        170
+  LDP_gen.LDP_64_ldstpair_off                     37         15
+  LDP_gen.LDP_64_ldstpair_post                    30         10
+  LDP_gen.LDP_64_ldstpair_pre                     47        388
+  LDRB_imm.LDRB_32_ldst_immpost                   92       1520
+  LDRB_imm.LDRB_32_ldst_immpre                    67         29
+  LDRB_imm.LDRB_32_ldst_pos                       86         38
+  LDRB_reg.LDRB_32BL_ldst_regoff                 118       3460
+  LDRB_reg.LDRB_32B_ldst_regoff                  119         48
+  LDRH_imm.LDRH_32_ldst_immpost                   67         34
+  LDRH_imm.LDRH_32_ldst_immpre                    72         41
+  LDRH_imm.LDRH_32_ldst_pos                       76         39
+  LDRH_reg.LDRH_32_ldst_regoff                   233       4181
+  LDRSB_imm.LDRSB_32_ldst_immpost                 41         33
+  LDRSB_imm.LDRSB_32_ldst_immpre                  40         11
+  LDRSB_imm.LDRSB_32_ldst_pos                     47         19
+  LDRSB_imm.LDRSB_64_ldst_immpost                 26         17
+  LDRSB_imm.LDRSB_64_ldst_immpre                  31         21
+  LDRSB_imm.LDRSB_64_ldst_pos                     32       4113
+  LDRSB_reg.LDRSB_32BL_ldst_regoff                49         23
+  LDRSB_reg.LDRSB_32B_ldst_regoff                 59         30
+  LDRSB_reg.LDRSB_64BL_ldst_regoff                67         34
+  LDRSB_reg.LDRSB_64B_ldst_regoff                 55         21
+  LDRSH_imm.LDRSH_32_ldst_immpost                 47         26
+  LDRSH_imm.LDRSH_32_ldst_immpre                  37         26
+  LDRSH_imm.LDRSH_32_ldst_pos                     27         15
+  LDRSH_imm.LDRSH_64_ldst_immpost                 32       1584
+  LDRSH_imm.LDRSH_64_ldst_immpre                  50         24
+  LDRSH_imm.LDRSH_64_ldst_pos                     35         11
+  LDRSH_reg.LDRSH_32_ldst_regoff                 113         50
+  LDRSH_reg.LDRSH_64_ldst_regoff                 109         42
+  LDRSW_imm.LDRSW_64_ldst_immpost                 74        265
+  LDRSW_imm.LDRSW_64_ldst_immpre                  72         48
+  LDRSW_imm.LDRSW_64_ldst_pos                     68         29
+  LDRSW_lit.LDRSW_64_loadlit                     213       8620
+  LDRSW_reg.LDRSW_64_ldst_regoff                 215       4181
+  LDR_imm_fpsimd.LDR_B_ldst_immpost               16          4
+  LDR_imm_fpsimd.LDR_B_ldst_immpre                13          4
+  LDR_imm_fpsimd.LDR_B_ldst_pos                   15          3
+  LDR_imm_fpsimd.LDR_D_ldst_immpost               18          5
+  LDR_imm_fpsimd.LDR_D_ldst_immpre                21         11
+  LDR_imm_fpsimd.LDR_D_ldst_pos                   14          7
+  LDR_imm_fpsimd.LDR_H_ldst_immpost               14          3
+  LDR_imm_fpsimd.LDR_H_ldst_immpre                19          9
+  LDR_imm_fpsimd.LDR_H_ldst_pos                   20         10
+  LDR_imm_fpsimd.LDR_Q_ldst_immpost               11          7
+  LDR_imm_fpsimd.LDR_Q_ldst_immpre                16          7
+  LDR_imm_fpsimd.LDR_Q_ldst_pos                   17          7
+  LDR_imm_fpsimd.LDR_S_ldst_immpost               12          6
+  LDR_imm_fpsimd.LDR_S_ldst_immpre                18          9
+  LDR_imm_fpsimd.LDR_S_ldst_pos                   10          4
+  LDR_imm_gen.LDR_32_ldst_immpost                 34         16
+  LDR_imm_gen.LDR_32_ldst_immpre                  32         18
+  LDR_imm_gen.LDR_32_ldst_pos                     40         31
+  LDR_imm_gen.LDR_64_ldst_immpost                 35         19
+  LDR_imm_gen.LDR_64_ldst_immpre                  38         20
+  LDR_imm_gen.LDR_64_ldst_pos                     28         15
+  LDR_lit_gen.LDR_32_loadlit                     118         56
+  LDR_lit_gen.LDR_64_loadlit                     104         73
+  LDR_reg_gen.LDR_32_ldst_regoff                 119         59
+  LDR_reg_gen.LDR_64_ldst_regoff                 103       4160
+  LDSET.LDSETAL_32_memop                          34         89
+  LDSET.LDSETAL_64_memop                          29         20
+  LDSET.LDSETA_32_memop                           11          4
+  LDSET.LDSETA_64_memop                           27         18
+  LDSET.LDSETL_32_memop                           30         18
+  LDSET.LDSETL_64_memop                           32          7
+  LDSET.LDSET_32_memop                            31         22
+  LDSET.LDSET_64_memop                            32         19
+  LDSETB.LDSETAB_32_memop                         65         36
+  LDSETB.LDSETALB_32_memop                        63         30
+  LDSETB.LDSETB_32_memop                          57         31
+  LDSETB.LDSETLB_32_memop                         48         21
+  LDSETH.LDSETAH_32_memop                         68         20
+  LDSETH.LDSETALH_32_memop                        53         21
+  LDSETH.LDSETH_32_memop                          65         25
+  LDSETH.LDSETLH_32_memop                         63         29
+  LDSMAX.LDSMAXAL_32_memop                        36         17
+  LDSMAX.LDSMAXAL_64_memop                        22         10
+  LDSMAX.LDSMAXA_32_memop                         24          5
+  LDSMAX.LDSMAXA_64_memop                         29       4109
+  LDSMAX.LDSMAXL_32_memop                         28          9
+  LDSMAX.LDSMAXL_64_memop                         34       4105
+  LDSMAX.LDSMAX_32_memop                          40         19
+  LDSMAX.LDSMAX_64_memop                          38        697
+  LDSMAXB.LDSMAXAB_32_memop                       58         35
+  LDSMAXB.LDSMAXALB_32_memop                      70         29
+  LDSMAXB.LDSMAXB_32_memop                        49         57
+  LDSMAXB.LDSMAXLB_32_memop                       64         36
+  LDSMAXH.LDSMAXAH_32_memop                       56         41
+  LDSMAXH.LDSMAXALH_32_memop                      58       3437
+  LDSMAXH.LDSMAXH_32_memop                        65         37
+  LDSMAXH.LDSMAXLH_32_memop                       57         27
+  LDSMIN.LDSMINAL_32_memop                        38       4107
+  LDSMIN.LDSMINAL_64_memop                        26       4108
+  LDSMIN.LDSMINA_32_memop                         31         13
+  LDSMIN.LDSMINA_64_memop                         27          4
+  LDSMIN.LDSMINL_32_memop                         27         15
+  LDSMIN.LDSMINL_64_memop                         31         10
+  LDSMIN.LDSMIN_32_memop                          25          8
+  LDSMIN.LDSMIN_64_memop                          26         15
+  LDSMINB.LDSMINAB_32_memop                       59         27
+  LDSMINB.LDSMINALB_32_memop                      47         18
+  LDSMINB.LDSMINB_32_memop                        60         29
+  LDSMINB.LDSMINLB_32_memop                       52         25
+  LDSMINH.LDSMINAH_32_memop                       61         37
+  LDSMINH.LDSMINALH_32_memop                      53         25
+  LDSMINH.LDSMINH_32_memop                        52         26
+  LDSMINH.LDSMINLH_32_memop                       55         24
+  LDTR.LDTR_32_ldst_unpriv                         2          0
+  LDTR.LDTR_64_ldst_unpriv                         2          1
+  LDTRB.LDTRB_32_ldst_unpriv                       6          2
+  LDTRH.LDTRH_32_ldst_unpriv                       8          2
+  LDTRSB.LDTRSB_32_ldst_unpriv                     3          2
+  LDTRSB.LDTRSB_64_ldst_unpriv                     3          0
+  LDTRSH.LDTRSH_32_ldst_unpriv                     2          1
+  LDTRSH.LDTRSH_64_ldst_unpriv                     3          1
+  LDTRSW.LDTRSW_64_ldst_unpriv                     5          2
+  LDUMAX.LDUMAXAL_32_memop                        28         16
+  LDUMAX.LDUMAXAL_64_memop                        30       4107
+  LDUMAX.LDUMAXA_32_memop                         33          8
+  LDUMAX.LDUMAXA_64_memop                         26         11
+  LDUMAX.LDUMAXL_32_memop                         32        159
+  LDUMAX.LDUMAXL_64_memop                         38         14
+  LDUMAX.LDUMAX_32_memop                          25         15
+  LDUMAX.LDUMAX_64_memop                          27          7
+  LDUMAXB.LDUMAXAB_32_memop                       53         23
+  LDUMAXB.LDUMAXALB_32_memop                      57         27
+  LDUMAXB.LDUMAXB_32_memop                        52       4116
+  LDUMAXB.LDUMAXLB_32_memop                       66         42
+  LDUMAXH.LDUMAXAH_32_memop                       58         17
+  LDUMAXH.LDUMAXALH_32_memop                      55       4145
+  LDUMAXH.LDUMAXH_32_memop                        71         30
+  LDUMAXH.LDUMAXLH_32_memop                       68         34
+  LDUMIN.LDUMINAL_32_memop                        29         11
+  LDUMIN.LDUMINAL_64_memop                        31         12
+  LDUMIN.LDUMINA_32_memop                         30         10
+  LDUMIN.LDUMINA_64_memop                         29         11
+  LDUMIN.LDUMINL_32_memop                         23         11
+  LDUMIN.LDUMINL_64_memop                         28         20
+  LDUMIN.LDUMIN_32_memop                          32         21
+  LDUMIN.LDUMIN_64_memop                          32         12
+  LDUMINB.LDUMINAB_32_memop                       48         31
+  LDUMINB.LDUMINALB_32_memop                      56       1592
+  LDUMINB.LDUMINB_32_memop                        57       4119
+  LDUMINB.LDUMINLB_32_memop                       56         25
+  LDUMINH.LDUMINAH_32_memop                       71         53
+  LDUMINH.LDUMINALH_32_memop                      66         37
+  LDUMINH.LDUMINH_32_memop                        59         36
+  LDUMINH.LDUMINLH_32_memop                       51       1510
+  LDURB.LDURB_32_ldst_unscaled                   241       4198
+  LDURH.LDURH_32_ldst_unscaled                   224        124
+  LDURSB.LDURSB_32_ldst_unscaled                 112         47
+  LDURSB.LDURSB_64_ldst_unscaled                 107       4162
+  LDURSH.LDURSH_32_ldst_unscaled                 123       4147
+  LDURSH.LDURSH_64_ldst_unscaled                 118         76
+  LDURSW.LDURSW_64_ldst_unscaled                 198       8295
+  LDUR_fpsimd.LDUR_B_ldst_unscaled                57         36
+  LDUR_fpsimd.LDUR_D_ldst_unscaled                42         17
+  LDUR_fpsimd.LDUR_H_ldst_unscaled                43         19
+  LDUR_fpsimd.LDUR_Q_ldst_unscaled                48         17
+  LDUR_fpsimd.LDUR_S_ldst_unscaled                43         26
+  LDUR_gen.LDUR_32_ldst_unscaled                 144         77
+  LDUR_gen.LDUR_64_ldst_unscaled                 106         46
+  LSLV.LSLV_32_dp_2src                            92         35
+  LSLV.LSLV_64_dp_2src                            97       5621
+  LSRV.LSRV_32_dp_2src                            86         32
+  LSRV.LSRV_64_dp_2src                            91         43
+  MADD.MADD_32A_dp_3src                           93         56
+  MADD.MADD_64A_dp_3src                           75       4125
+  MOVI_advsimd.MOVI_asimdimm_D2_d                 30         19
+  MOVI_advsimd.MOVI_asimdimm_D_ds                 32         14
+  MOVI_advsimd.MOVI_asimdimm_L_hl                 30         11
+  MOVI_advsimd.MOVI_asimdimm_L_sl                 22          8
+  MOVI_advsimd.MOVI_asimdimm_M_sm                 35         21
+  MOVI_advsimd.MOVI_asimdimm_N_b                  29         19
+  MOVK.MOVK_32_movewide                           93         45
+  MOVK.MOVK_64_movewide                           84         36
+  MOVN.MOVN_32_movewide                           81         32
+  MOVN.MOVN_64_movewide                           92       4142
+  MOVZ.MOVZ_32_movewide                           90         25
+  MOVZ.MOVZ_64_movewide                         3294      11943
+  MRS.MRS_RS_systemmove@CNTFRQ_EL0                66         30
+  MRS.MRS_RS_systemmove@CNTVCT_EL0                81       1521
+  MRS.MRS_RS_systemmove@TPIDR_EL0                 65       5602
+  MSR_imm.MSR_SI_pstate                            3          0
+  MSUB.MSUB_32A_dp_3src                           85         61
+  MSUB.MSUB_64A_dp_3src                           80         40
+  MVNI_advsimd.MVNI_asimdimm_L_hl                 80         44
+  MVNI_advsimd.MVNI_asimdimm_L_sl                 59         27
+  MVNI_advsimd.MVNI_asimdimm_M_sm                 59         26
+  NOP.NOP_HI_hints                               193       4189
+  NOT_advsimd.NOT_asimdmisc_R                    172         68
+  ORN_advsimd.ORN_asimdsame_only                 192       4176
+  ORN_log_shift.ORN_32_log_shift                  99       4152
+  ORN_log_shift.ORN_64_log_shift                 105         37
+  ORR_advsimd_reg.ORR_asimdsame_only             185        129
+  ORR_log_imm.ORR_32_log_imm                     103         49
+  ORR_log_imm.ORR_64_log_imm                      85         42
+  ORR_log_shift.ORR_32_log_shift                  96       4153
+  ORR_log_shift.ORR_64_log_shift                  98         47
+  PRFM_imm.PRFM_P_ldst_pos                       192         98
+  PRFM_lit.PRFM_P_loadlit                        209        125
+  PRFM_reg.PRFM_P_ldst_regoff                    171        112
+  RBIT_int.RBIT_32_dp_1src                        90         35
+  RBIT_int.RBIT_64_dp_1src                       101        782
+  RET.RET_64R_branch_reg                         638        248
+  REV.REV_32_dp_1src                              78       1521
+  REV.REV_64_dp_1src                              77         30
+  REV16_advsimd.REV16_asimdmisc_R                181        101
+  REV16_int.REV16_32_dp_1src                     100         46
+  REV16_int.REV16_64_dp_1src                      81         33
+  REV32_advsimd.REV32_asimdmisc_R                228        175
+  REV32_int.REV32_64_dp_1src                     162       4190
+  REV64_advsimd.REV64_asimdmisc_R                178         91
+  RORV.RORV_32_dp_2src                           109       1531
+  RORV.RORV_64_dp_2src                           102        421
+  SBC.SBC_32_addsub_carry                         94         42
+  SBC.SBC_64_addsub_carry                         86         42
+  SBCS.SBCS_32_addsub_carry                       91       4127
+  SBCS.SBCS_64_addsub_carry                       99         48
+  SBFM.SBFM_32M_bitfield                          88         57
+  SBFM.SBFM_64M_bitfield                         107         60
+  SDIV.SDIV_32_dp_2src                           103         53
+  SDIV.SDIV_64_dp_2src                            94         36
+  SHL_advsimd.SHL_asimdshf_R                     108         73
+  SHL_advsimd.SHL_asisdshf_R                      94         41
+  SHRN_advsimd.SHRN_asimdshf_N                   175         88
+  SMADDL.SMADDL_64WA_dp_3src                     182       4184
+  SMSUBL.SMSUBL_64WA_dp_3src                     173         84
+  SMULH.SMULH_64_dp_3src                         199         98
+  ST1_advsimd_mult.ST1_asisdlse_R1_1v             15          7
+  ST1_advsimd_mult.ST1_asisdlse_R2_2v             20         18
+  ST1_advsimd_mult.ST1_asisdlse_R3_3v             13          8
+  ST1_advsimd_mult.ST1_asisdlse_R4_4v             25        720
+  ST1_advsimd_mult.ST1_asisdlsep_I1_i1            30         16
+  ST1_advsimd_mult.ST1_asisdlsep_I2_i2            25         20
+  ST1_advsimd_mult.ST1_asisdlsep_I3_i3            17          5
+  ST1_advsimd_mult.ST1_asisdlsep_I4_i4            19          8
+  ST1_advsimd_mult.ST1_asisdlsep_R1_r1            16         10
+  ST1_advsimd_mult.ST1_asisdlsep_R2_r2            16          5
+  ST1_advsimd_mult.ST1_asisdlsep_R3_r3            25          8
+  ST1_advsimd_mult.ST1_asisdlsep_R4_r4            17          2
+  STLR.STLR_SL32_ldstord                         119       1112
+  STLR.STLR_SL64_ldstord                         123         71
+  STLRB.STLRB_SL32_ldstord                       225       4202
+  STLRH.STLRH_SL32_ldstord                       226       4201
+  STP_fpsimd.STP_D_ldstpair_off                   25         10
+  STP_fpsimd.STP_D_ldstpair_post                  22          9
+  STP_fpsimd.STP_D_ldstpair_pre                   24         15
+  STP_fpsimd.STP_Q_ldstpair_off                   29          5
+  STP_fpsimd.STP_Q_ldstpair_post                  21          5
+  STP_fpsimd.STP_Q_ldstpair_pre                   27         12
+  STP_fpsimd.STP_S_ldstpair_off                   20          4
+  STP_fpsimd.STP_S_ldstpair_post                  27         12
+  STP_fpsimd.STP_S_ldstpair_pre                   21         77
+  STP_gen.STP_32_ldstpair_off                     29         14
+  STP_gen.STP_32_ldstpair_post                    39         18
+  STP_gen.STP_32_ldstpair_pre                     38         15
+  STP_gen.STP_64_ldstpair_off                     43         24
+  STP_gen.STP_64_ldstpair_post                    30         15
+  STP_gen.STP_64_ldstpair_pre                     42         15
+  STRB_imm.STRB_32_ldst_immpost                   76         29
+  STRB_imm.STRB_32_ldst_immpre                    71         35
+  STRB_imm.STRB_32_ldst_pos                       79         46
+  STRB_reg.STRB_32BL_ldst_regoff                 120         51
+  STRB_reg.STRB_32B_ldst_regoff                  111       4145
+  STRH_imm.STRH_32_ldst_immpost                   71         40
+  STRH_imm.STRH_32_ldst_immpre                    79         29
+  STRH_imm.STRH_32_ldst_pos                       95         55
+  STRH_reg.STRH_32_ldst_regoff                   219         86
+  STR_imm_fpsimd.STR_B_ldst_immpost               19          7
+  STR_imm_fpsimd.STR_B_ldst_immpre                 7          3
+  STR_imm_fpsimd.STR_B_ldst_pos                   15          4
+  STR_imm_fpsimd.STR_D_ldst_immpost               17          8
+  STR_imm_fpsimd.STR_D_ldst_immpre                12          7
+  STR_imm_fpsimd.STR_D_ldst_pos                   20          9
+  STR_imm_fpsimd.STR_H_ldst_immpost               17          7
+  STR_imm_fpsimd.STR_H_ldst_immpre                23          7
+  STR_imm_fpsimd.STR_H_ldst_pos                   10          9
+  STR_imm_fpsimd.STR_Q_ldst_immpost               13          7
+  STR_imm_fpsimd.STR_Q_ldst_immpre                18         11
+  STR_imm_fpsimd.STR_Q_ldst_pos                   13          9
+  STR_imm_fpsimd.STR_S_ldst_immpost               21         15
+  STR_imm_fpsimd.STR_S_ldst_immpre                17          4
+  STR_imm_fpsimd.STR_S_ldst_pos                   11          8
+  STR_imm_gen.STR_32_ldst_immpost                 42         19
+  STR_imm_gen.STR_32_ldst_immpre                  31         14
+  STR_imm_gen.STR_32_ldst_pos                     42       4114
+  STR_imm_gen.STR_64_ldst_immpost                 36         16
+  STR_imm_gen.STR_64_ldst_immpre                  38         23
+  STR_imm_gen.STR_64_ldst_pos                     41         19
+  STR_reg_gen.STR_32_ldst_regoff                 106        468
+  STR_reg_gen.STR_64_ldst_regoff                 114         55
+  STTR.STTR_32_ldst_unpriv                         6          0
+  STTR.STTR_64_ldst_unpriv                         4          1
+  STTRB.STTRB_32_ldst_unpriv                       3          1
+  STTRH.STTRH_32_ldst_unpriv                       9          2
+  STURB.STURB_32_ldst_unscaled                   212        114
+  STURH.STURH_32_ldst_unscaled                   221        468
+  STUR_fpsimd.STUR_B_ldst_unscaled                57         29
+  STUR_fpsimd.STUR_D_ldst_unscaled                53       7529
+  STUR_fpsimd.STUR_H_ldst_unscaled                34         20
+  STUR_fpsimd.STUR_Q_ldst_unscaled                40         15
+  STUR_fpsimd.STUR_S_ldst_unscaled                41         22
+  STUR_gen.STUR_32_ldst_unscaled                 108       4150
+  STUR_gen.STUR_64_ldst_unscaled                 111         56
+  SUBS_addsub_ext.SUBS_32S_addsub_ext             91       4129
+  SUBS_addsub_ext.SUBS_64S_addsub_ext             88       1525
+  SUBS_addsub_imm.SUBS_32S_addsub_imm             92       4138
+  SUBS_addsub_imm.SUBS_64S_addsub_imm           1659      13360
+  SUBS_addsub_shift.SUBS_32_addsub_shift          76         37
+  SUBS_addsub_shift.SUBS_64_addsub_shift          89         93
+  SUB_addsub_ext.SUB_32_addsub_ext                79       4142
+  SUB_addsub_ext.SUB_64_addsub_ext                78         36
+  SUB_addsub_imm.SUB_32_addsub_imm               107       4155
+  SUB_addsub_imm.SUB_64_addsub_imm              1725       7823
+  SUB_addsub_shift.SUB_32_addsub_shift           103         45
+  SUB_addsub_shift.SUB_64_addsub_shift            94         47
+  SUB_advsimd.SUB_asimdsame_only                  97         43
+  SUB_advsimd.SUB_asisdsame_only                  88         47
+  SVC.SVC_EX_exception                          2261       3810
+  SWP.SWPAL_32_memop                              23         10
+  SWP.SWPAL_64_memop                              29        250
+  SWP.SWPA_32_memop                               32         17
+  SWP.SWPA_64_memop                               35         17
+  SWP.SWPL_32_memop                               29         13
+  SWP.SWPL_64_memop                               26         13
+  SWP.SWP_32_memop                                22          5
+  SWP.SWP_64_memop                                34         21
+  SWPB.SWPAB_32_memop                             50         19
+  SWPB.SWPALB_32_memop                            52         26
+  SWPB.SWPB_32_memop                              65         27
+  SWPB.SWPLB_32_memop                             61         26
+  SWPH.SWPAH_32_memop                             61         24
+  SWPH.SWPALH_32_memop                            58         33
+  SWPH.SWPH_32_memop                              61         29
+  SWPH.SWPLH_32_memop                             54         27
+  TBL_advsimd.TBL_asimdtbl_L1_1                  174       4181
+  TBNZ.TBNZ_only_testbranch                     1353      16929
+  TBZ.TBZ_only_testbranch                       1344      34147
+  UBFM.UBFM_32M_bitfield                          91         51
+  UBFM.UBFM_64M_bitfield                         104         50
+  UDIV.UDIV_32_dp_2src                           104         40
+  UDIV.UDIV_64_dp_2src                           106         73
+  UMADDL.UMADDL_64WA_dp_3src                     185         73
+  UMAXP_advsimd.UMAXP_asimdsame_only             174      12495
+  UMAXV_advsimd.UMAXV_asimdall_only              188         90
+  UMINP_advsimd.UMINP_asimdsame_only             162       4169
+  UMINV_advsimd.UMINV_asimdall_only              210       4203
+  UMOV_advsimd.UMOV_asimdins_W_w                  92         48
+  UMOV_advsimd.UMOV_asimdins_X_x                  85         23
+  UMSUBL.UMSUBL_64WA_dp_3src                     193       4178
+  UMULH.UMULH_64_dp_3src                         206       8278
+  USHLL_advsimd.USHLL_asimdshf_L                 177       8368
+  USHR_advsimd.USHR_asimdshf_R                    92         51
+  USHR_advsimd.USHR_asisdshf_R                   112       4173
+  XTN_advsimd.XTN_asimdmisc_N                    166       4168
+
+test fuzz::tests::fixed_seed_programs_agree ... ok
+test verify_mutation_tests::verifier_rejects_every_mutation_of_every_fixture_fragment has been running for over 60 seconds
+verifier mutation suite: 136 fragments, 19492 body words
+| mutation class | rejected | rules |
+|---|---|---|
+| LDTR -> LDR | 120 of 120 | FaultSiteNotUserAccess 120 |
+| LDTR*/STTR* -> LDUR*/STUR* | 377 of 377 | FaultSiteNotUserAccess 377 |
+| LDTR*/STTR* -> plain form, site dropped | 754 of 754 | RuntimeAccessBase 289, UserOnlyForm 465 |
+| LDTRB/H/SB/SH/SW -> LDRB/H/SB/SH/SW | 63 of 63 | FaultSiteNotUserAccess 63 |
+| SP read as data (rule 9) | 97460 of 97460 | BudgetRegisterAccess 420, DispatchTemplate 12500, ExitGroup 3705, FaultSiteNotUserAccess 2570, KernelValueRead 75385, LinkSite 260, MissingBudgetCheck 1250, WindowRangeCheck 1370 |
+| SP write | 97460 of 97460 | BudgetRegisterAccess 420, DispatchTemplate 12500, ExitGroup 3705, FaultSiteNotUserAccess 2570, LinkSite 156, MissingBudgetCheck 1772, RuntimeAccessWriteback 29736, SpWrite 45231, WindowRangeCheck 1370 |
+| STTR -> STR | 169 of 169 | FaultSiteNotUserAccess 169 |
+| STTRB/H -> STRB/H | 25 of 25 | FaultSiteNotUserAccess 25 |
+| V12 write keeps x12's kernel mark (A9a, rule 9) | 19220 of 19220 | BudgetRegisterAccess 46, DispatchTemplate 2750, ExitGroup 1962, FaultSiteNotUserAccess 1302, KernelValueRead 12510, MissingBudgetCheck 400, WindowRangeCheck 250 |
+| [A9a SIMD&FP window] access replaced by a plain / foreign-base access | 364 of 364 | FaultSiteNotUserAccess 260, WindowRangeCheck 104 |
+| [A9a SIMD&FP window] entered past its range check | 104 of 104 | WindowRangeCheck 104 |
+| [A9a SIMD&FP window] fault site -> not an exit group | 156 of 156 | ExitGroup 156 |
+| [A9a SIMD&FP window] range check altered | 468 of 468 | WindowRangeCheck 468 |
+| [A9a SIMD&FP window] range check cbnz altered | 208 of 208 | WindowRangeCheck 208 |
+| [A9a SIMD&FP window] range check cbnz retargeted | 364 of 364 | WindowRangeCheck 364 |
+| [A9a SIMD&FP window] range check dropped | 156 of 156 | WindowRangeCheck 156 |
+| [A9a SIMD&FP window] range check moved | 260 of 260 | FaultSiteNotUserAccess 155, WindowRangeCheck 105 |
+| [A9a SIMD&FP window] widened (word inserted) | 624 of 624 | WindowRangeCheck 624 |
+| br x12 outside the dispatch template (A11) | 58226 of 58226 | BudgetRegisterAccess 168, DispatchTemplate 24242, ExitGroup 24124, FaultSiteNotUserAccess 1028, IndirectBranch 7094, MissingBudgetCheck 1022, WindowRangeCheck 548 |
+| br/blr/ret of x13 or x14 or another register (A11) | 292380 of 292380 | BudgetRegisterAccess 1260, DispatchTemplate 37500, ExitGroup 180930, FaultSiteNotUserAccess 7710, IndirectBranch 53205, MissingBudgetCheck 7665, WindowRangeCheck 4110 |
+| branch -> middle of an exit group | 15145 of 15145 | BranchTarget 2485, DispatchTemplate 1788, ExitGroup 8989, WindowRangeCheck 1883 |
+| branch -> outside fragment | 5400 of 5400 | BranchTarget 921, DispatchTemplate 1500, ExitGroup 2193, MissingBudgetCheck 375, WindowRangeCheck 411 |
+| branch -> prologue / epilogue middle | 9000 of 9000 | BranchTarget 1535, DispatchTemplate 2500, ExitGroup 3655, MissingBudgetCheck 625, WindowRangeCheck 685 |
+| branch into a window past its range check | 8374 of 8374 | DispatchTemplate 1096, ExitGroup 4476, MissingBudgetCheck 270, WindowRangeCheck 2532 |
+| budget cbz altered | 123 of 123 | BudgetRegisterAccess 123 |
+| budget cbz retargeted | 246 of 246 | BranchTarget 41, BudgetRegisterAccess 123, ExitGroup 82 |
+| budget check bypassed by an entry | 84 of 84 | MissingBudgetCheck 84 |
+| budget check dropped | 123 of 123 | BudgetRegisterAccess 82, MissingBudgetCheck 41 |
+| budget register accessed elsewhere | 388075 of 388075 | BranchTarget 12, BudgetRegisterAccess 265820, DispatchTemplate 50000, ExitGroup 48908, FaultSiteNotUserAccess 9766, LinkSite 468, MissingBudgetCheck 7621, WindowRangeCheck 5480 |
+| budget sub amount altered | 369 of 369 | BudgetRegisterAccess 369 |
+| dispatch index bounds removed (A11) | 625 of 625 | DispatchTemplate 625 |
+| dispatch key compare dropped (A11) | 1000 of 1000 | DispatchTemplate 1000 |
+| dispatch miss branches disagree (A11) | 3250 of 3250 | DispatchTemplate 3250 |
+| dispatch table slot read outside a template (A11) | 97210 of 97210 | BudgetRegisterAccess 420, DispatchTemplate 12250, ExitGroup 3705, FaultSiteNotUserAccess 2570, FrameAccessOutOfRange 74340, MissingBudgetCheck 2555, WindowRangeCheck 1370 |
+| dispatch table slot written (A11) | 116952 of 116952 | BudgetRegisterAccess 504, DispatchTemplate 15000, ExitGroup 4446, FaultSiteNotUserAccess 3084, FrameAccessOutOfRange 89208, MissingBudgetCheck 3066, WindowRangeCheck 1644 |
+| dispatch template entered inside (A11) | 12271 of 12271 | DispatchTemplate 4642, ExitGroup 6503, LinkSite 13, MissingBudgetCheck 154, WindowRangeCheck 959 |
+| dispatch template without budget check (A11) | 1250 of 1250 | MissingBudgetCheck 1250 |
+| dispatch template word altered (A11) | 99625 of 99625 | DispatchTemplate 84750, Undecodable 14875 |
+| entry offset outside body / into cold region | 1330 of 1330 | EntryOffset 1330 |
+| falls off the end | 272 of 272 | ExitGroup 260, FallsOffEnd 12 |
+| fault site -> non-access | 1542 of 1542 | FaultSiteNotUserAccess 1356, FaultSiteOrder 186 |
+| fault site -> non-stub | 3598 of 3598 | ExitGroup 3598 |
+| fault site dropped | 514 of 514 | MissingFaultSite 514 |
+| frame access out of range | 214412 of 214412 | BudgetRegisterAccess 924, DispatchTemplate 27500, ExitGroup 8151, FaultSiteNotUserAccess 5654, FrameAccessOutOfRange 163548, MissingBudgetCheck 5621, WindowRangeCheck 3014 |
+| insert ADR/ADRP | 38984 of 38984 | BudgetRegisterAccess 168, DispatchTemplate 5000, ExitGroup 1482, FaultSiteNotUserAccess 1028, MissingBudgetCheck 1022, PcRelative 29736, WindowRangeCheck 548 |
+| insert BL/BLR/BR/RET | 77968 of 77968 | BudgetRegisterAccess 336, Call 3547, DispatchTemplate 10000, ExitGroup 48248, FaultSiteNotUserAccess 2056, IndirectBranch 10641, MissingBudgetCheck 2044, WindowRangeCheck 1096 |
+| insert BTI (A7d) | 77968 of 77968 | BudgetRegisterAccess 336, DispatchTemplate 10000, ExitGroup 48248, FaultSiteNotUserAccess 2056, MissingBudgetCheck 2044, UserOnlyForm 14188, WindowRangeCheck 1096 |
+| insert LDTR*/STTR* without a fault site | 75912 of 75912 | BudgetRegisterAccess 336, DispatchTemplate 10000, ExitGroup 48248, MissingBudgetCheck 2044, MissingFaultSite 14188, WindowRangeCheck 1096 |
+| insert LSE atomic outside a window | 135485 of 135485 | DispatchTemplate 17500, ExitGroup 57953, WindowRangeCheck 60032 |
+| insert MRS of a non-allowlisted system register (A10) | 292380 of 292380 | Undecodable 292380 |
+| insert SIMD&FP load/store outside a window (A9a) | 174195 of 174195 | DispatchTemplate 22500, ExitGroup 74511, WindowRangeCheck 77184 |
+| insert SIMD&FP load/store with offset / writeback (A9a) | 155936 of 155936 | BudgetRegisterAccess 672, DispatchTemplate 20000, ExitGroup 96496, FaultSiteNotUserAccess 4112, MissingBudgetCheck 4088, UserOnlyForm 28376, WindowRangeCheck 2192 |
+| insert SVC | 19492 of 19492 | BudgetRegisterAccess 84, DispatchTemplate 2500, Exception 3547, ExitGroup 12062, FaultSiteNotUserAccess 514, MissingBudgetCheck 511, WindowRangeCheck 274 |
+| insert acquire/release user form (A7c) | 116952 of 116952 | BudgetRegisterAccess 504, DispatchTemplate 15000, ExitGroup 72372, FaultSiteNotUserAccess 3084, MissingBudgetCheck 3066, UserOnlyForm 21282, WindowRangeCheck 1644 |
+| insert msr pan anywhere | 77968 of 77968 | BudgetRegisterAccess 336, DispatchTemplate 10000, ExitGroup 48248, FaultSiteNotUserAccess 2056, MissingBudgetCheck 2044, Msr 14188, WindowRangeCheck 1096 |
+| insert non-allowlisted barrier-like system op (A7c) | 136444 of 136444 | Undecodable 136444 |
+| insert non-subset hint / PAC (A7d) | 214412 of 214412 | Undecodable 214412 |
+| insert system / exclusive / SIMD / other non-subset | 526284 of 526284 | Undecodable 526284 |
+| insert user-only memory form (A7b) | 331364 of 331364 | BudgetRegisterAccess 1428, DispatchTemplate 42500, ExitGroup 205054, FaultSiteNotUserAccess 8738, MissingBudgetCheck 8687, UserOnlyForm 60299, WindowRangeCheck 4658 |
+| kernel value in x13 at a dispatch template (A11, rule 9) | 1000 of 1000 | DispatchTemplate 250, KernelValueRead 336, LinkSite 39, MissingBudgetCheck 375 |
+| kernel-valued frame slot loaded (rule 9) | 994086 of 994086 | BudgetRegisterAccess 36433, DispatchTemplate 127494, ExitGroup 37791, FaultSiteNotUserAccess 26214, FrameAccessOutOfRange 726119, MissingBudgetCheck 26061, WindowRangeCheck 13974 |
+| link slot is a join point (A16) | 13 of 13 | LinkSite 13 |
+| link slot listed at another word (A16) | 91 of 91 | LinkSite 91 |
+| link slot listed twice (A16) | 13 of 13 | LinkSite 13 |
+| link slot not a nop (A16) | 91 of 91 | LinkSite 65, MissingBudgetCheck 26 |
+| link target altered (A16) | 117 of 117 | LinkSite 117 |
+| link target move altered (A16) | 52 of 52 | LinkSite 52 |
+| link target set twice (A16) | 286 of 286 | LinkSite 286 |
+| plain LDR/STR, non-frame base | 77968 of 77968 | BudgetRegisterAccess 336, DispatchTemplate 10000, ExitGroup 2964, FaultSiteNotUserAccess 2056, MissingBudgetCheck 2044, RuntimeAccessBase 59472, WindowRangeCheck 1096 |
+| prologue/epilogue word corrupted | 41888 of 41888 | Epilogue 19040, Prologue 22848 |
+| pt_regs access out of range | 58068 of 58068 | BudgetRegisterAccess 210, DispatchTemplate 7875, ExitGroup 4056, FaultSiteNotUserAccess 2805, MissingBudgetCheck 1401, PtRegsAccessOutOfRange 37074, RuntimeAccessBase 3825, WindowRangeCheck 822 |
+| pt_regs pointer into a V register (A9a, rule 9) | 77424 of 77424 | BudgetRegisterAccess 280, DispatchTemplate 10500, ExitGroup 5408, FaultSiteNotUserAccess 3740, KernelValueRead 54532, MissingBudgetCheck 1868, WindowRangeCheck 1096 |
+| pt_regs pointer into a user access (rule 9) | 754 of 754 | BudgetRegisterAccess 4, FaultSiteNotUserAccess 186, KernelValueRead 564 |
+| pt_regs pointer into a window atomic (rule 9) | 274 of 274 | KernelValueRead 274 |
+| pt_regs pointer leaked (rule 9) | 212916 of 212916 | BranchTarget 6, BudgetRegisterAccess 770, DispatchTemplate 28875, ExitGroup 25462, FaultSiteNotUserAccess 10285, KernelValueRead 135542, MissingBudgetCheck 5137, RuntimeAccessBase 3825, WindowRangeCheck 3014 |
+| pt_regs pointer live across a control edge (rule 9) | 11769 of 11769 | BudgetRegisterAccess 366, DispatchTemplate 1500, ExitGroup 18, FaultSiteNotUserAccess 1071, KernelValueAtEdge 7617, MissingBudgetCheck 375, WindowRangeCheck 822 |
+| slot 192 accessed as other than a user-state slot | 77968 of 77968 | BudgetRegisterAccess 336, DispatchTemplate 10000, ExitGroup 14285, FaultSiteNotUserAccess 1542, FrameAccessOutOfRange 29736, MissingBudgetCheck 2044, RuntimeAccessWriteback 14868, UserAccessSpBase 4061, WindowRangeCheck 1096 |
+| window access replaced by a non-access / foreign-base access | 595 of 595 | FaultSiteNotUserAccess 425, WindowRangeCheck 170 |
+| window around a SIMD&FP access on another base / with offset (A9a) | 1096 of 1096 | FaultSiteNotUserAccess 685, WindowRangeCheck 411 |
+| window entered past its range check | 170 of 170 | WindowRangeCheck 170 |
+| window fault site -> not an exit group | 255 of 255 | ExitGroup 255 |
+| window range check altered | 765 of 765 | WindowRangeCheck 765 |
+| window range check cbnz altered | 340 of 340 | WindowRangeCheck 340 |
+| window range check cbnz retargeted | 595 of 595 | WindowRangeCheck 595 |
+| window range check dropped | 255 of 255 | WindowRangeCheck 255 |
+| window range check moved | 425 of 425 | FaultSiteNotUserAccess 251, WindowRangeCheck 174 |
+| window widened (word inserted) | 1020 of 1020 | WindowRangeCheck 1020 |
+| x29 read (rule 9) | 97460 of 97460 | BranchTarget 6, BudgetRegisterAccess 420, DispatchTemplate 12500, ExitGroup 15026, FaultSiteNotUserAccess 2570, KernelValueRead 63431, LinkSite 104, MissingBudgetCheck 2033, WindowRangeCheck 1370 |
+| x29 write | 38984 of 38984 | BudgetRegisterAccess 168, DispatchTemplate 5000, ExitGroup 1482, FaultSiteNotUserAccess 1028, FramePointerWrite 30154, LinkSite 104, MissingBudgetCheck 500, WindowRangeCheck 548 |
+| x29 write by a SIMD&FP form (A9a) | 58476 of 58476 | BudgetRegisterAccess 252, DispatchTemplate 7500, ExitGroup 2223, FaultSiteNotUserAccess 1542, FramePointerWrite 44604, MissingBudgetCheck 1533, WindowRangeCheck 822 |
+| random body word | rejected 52027 / benign ALU 2370 / in-fragment branch 0 / in-bounds runtime access 1 / user access at a fault site 2 / other accepted 0 of 54400 | |
+test verify_mutation_tests::verifier_rejects_every_mutation_of_every_fixture_fragment ... ok
+
+test result: ok. 323 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 88.79s
+
+     Running unittests src/bin/check-case.rs (harness/target/debug/deps/check_case-cacd9232b12b3f96)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/coverage-scan.rs (harness/target/debug/deps/coverage_scan-f5fca8a700384408)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/dump-cfg.rs (harness/target/debug/deps/dump_cfg-16c6bab18fad8aeb)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/dump-golden.rs (harness/target/debug/deps/dump_golden-12a99ad84ac878b8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/dump-rephrase.rs (harness/target/debug/deps/dump_rephrase-d8a350453c3c80e6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/e1-report.rs (harness/target/debug/deps/e1_report-36502905cc26c106)
+
+running 4 tests
+test tests::parses_and_cross_checks_trace ... ok
+test tests::rejects_counts_that_disagree_with_gap_lengths ... ok
+test tests::rejects_truncated_trace ... ok
+test tests::classifies_lse_atomics_by_mnemonic ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/fuzz.rs (harness/target/debug/deps/fuzz-b800d98c18a35a55)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/kjit-tui.rs (harness/target/debug/deps/kjit_tui-c5f855272e37f9a8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/bin/session-dump.rs (harness/target/debug/deps/session_dump-a4411451441c2871)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests kjit_harness
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+make harness-test  275.42s user 17.93s system 260% cpu 1:52.61 total

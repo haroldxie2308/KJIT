@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Mon, 12 Oct 2026 12:00:00 +0800
+Subject: [PATCH] arm64: export aarch64_insn_copy() and aarch64_insn_set() for
+ the KJIT runtime's packed image arena
+
+The KJIT runtime keeps fragment images in slots of one shared, packed
+region of read-only, executable memory that is made ROX once and never
+writable again through its own mapping (docs/pipeline.md, "Image
+placement (A17, packed arena)"). A slot is written when a fragment is
+installed and filled with BRK when it is freed. Those are exactly the
+operations the BPF prog pack uses these two functions for: the write goes
+through the fixmap alias of the ROX page under patch_lock, followed by
+flush_icache_range(), which also sends every CPU through a context
+synchronization event, and the IPIs are waited for with interrupts enabled.
+The runtime therefore calls them only from process context, with no spinlock
+held.
+
+Export both GPL-only. Nothing else changes.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+---
+ arch/arm64/kernel/patching.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/kernel/patching.c b/arch/arm64/kernel/patching.c
+--- a/arch/arm64/kernel/patching.c
++++ b/arch/arm64/kernel/patching.c
+@@ -160,6 +160,7 @@ noinstr void *aarch64_insn_copy(void *dst, void *src, size_t len)
+ 
+ 	return __text_poke(text_poke_memcpy, dst, src, len);
+ }
++EXPORT_SYMBOL_GPL(aarch64_insn_copy);
+ 
+ /**
+  * aarch64_insn_set - memset for RX memory regions.
+@@ -176,6 +177,7 @@ noinstr void *aarch64_insn_set(void *dst, u32 insn, size_t len)
+ 
+ 	return __text_poke(text_poke_memset, dst, &insn, len);
+ }
++EXPORT_SYMBOL_GPL(aarch64_insn_set);
+ 
+ int __kprobes aarch64_insn_patch_text_nosync(void *addr, u32 insn)
+ {
+-- 
+2.43.0

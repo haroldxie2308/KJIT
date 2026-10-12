@@ -72,10 +72,11 @@ onoff() {
     sed "s/^/k2:   /" "$name.1.err"
 }
 
-# A14 guard (docs/pipeline.md, "Image placement (A14)"): code_speed sites64 is
-# 64 call sites of one leaf per syscall; fragment images that all start at the
-# same page offset conflict in the L1I and made it 4.6x slower with KJIT on
-# than off. KJIT on must stay within 2x of off per outer iteration.
+# Placement guard (docs/pipeline.md, "Image placement (A17, packed arena)"):
+# code_speed sites64 is 64 call sites of one leaf per syscall; fragment images
+# that all start at the same page offset conflict in the L1I and made it 4.6x
+# slower with KJIT on than off. KJIT on must stay within 2x of off per outer
+# iteration.
 GUARD_MAX_RATIO=2
 placement_guard() {
     local off on ratio
@@ -155,6 +156,10 @@ while [ "$i" -le "$iterations" ]; do
 
     # A16: direct BL links made and restored under concurrent retirement.
     onoff bl_link_race bl_link 0 "$T/bl_link_race"
+
+    # A17: image slots freed and reused while other fragments in the same
+    # chunks run; with KJIT on the arena is empty again once the workers exit.
+    onoff arena_churn arena 0 "$T/arena_churn"
 
     onoff signal_loop inkernel 0 "$T/signal_loop" 200000
     grep -q "handled=1" signal_loop.1.out || fail "signal_loop: no signal handled"
