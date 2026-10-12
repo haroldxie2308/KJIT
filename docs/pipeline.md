@@ -1999,6 +1999,10 @@ and one module shape is simpler than a K0-only build.
 8. **0008**: `EXPORT_SYMBOL_GPL(aarch64_insn_patch_text_nosync)` for direct BL
    links (A16). It writes one instruction through the fixmap alias with cache
    maintenance; kjit uses it only for `nop` <-> `b` link slots.
+9. **0009**: `EXPORT_SYMBOL_GPL(aarch64_insn_copy)` and
+   `EXPORT_SYMBOL_GPL(aarch64_insn_set)` for the packed image arena (A17):
+   the BPF prog pack's arm64 writers (fixmap alias under `patch_lock`, then
+   `flush_icache_range`).
 
 ### kjit_after_syscall decision
 
@@ -2102,46 +2106,69 @@ and one module shape is simpler than a K0-only build.
   page (`get_user_pages_remote`, `FOLL_FORCE` for exec-only text). Per
   translation at most 16 pages and 16384 reads (`build_cfg` has no size bound of
   its own and quadratic bookkeeping).
-- Image = one `execmem_alloc(EXECMEM_BPF)` allocation: code, then one
-  `exception_table_entry` per fault site (`EX_TYPE_UACCESS_ERR_ZERO`, both
-  registers 31), `flush_icache_range`, `set_memory_rox`. The fragment is on the
-  global extable list (`kjit_all_frags`) until its retirement callback.
-- **Image placement (A14).** The image does not start at the allocation's base
-  but at a per-fragment colour offset
-  `KJIT_IMAGE_COLOR_STEP * ((n * KJIT_IMAGE_COLOR_STRIDE) % KJIT_IMAGE_COLORS)`.
-  The constants are 16 B, 11 and 256, so the offset is a 16-byte multiple below
-  `PAGE_SIZE`. `n` is a global install counter (atomic). The allocation is the
-  colour offset plus code plus extable, so at most one extra page per fragment.
-  `set_memory_rox` and the free cover the whole allocation, and labels and
-  extable entries are relative to the image start. `max_code_*` (section 9,
-  Caps) keep counting code bytes. The colour padding is bounded by the fragment
-  caps instead: at most one page per fragment, so 2 MiB per mm and 32 MiB in
-  total at the defaults. Counting the padding made the 2 MiB code cap bind at
-  about 480 redis fragments, and K4 then translated and refused about 15k hot
-  PCs per run.
-  - Invariant: the hot first instructions of different fragments (prologue,
-    epilogue, early body and entry labels) do not share L1I sets by
-    construction.
-  - Why: page-aligned images put every fragment's prologue, epilogue and early
-    body at the same page offset. On this core (L1I 6-way, set index VA[14:6],
-    inferred from the data) about 300 hot redis fragments then conflict, and
-    every fragment entry misses at about 3.5-4 ns. That was the "dispatch stall"
-    (about 5 ns per transfer, 1.8 us per SET request). Native code laid out the
-    same way slows 13x. With 256 colours redis SET goes from 0.59 to 1.0 of
-    native throughput (server CPU 6.42 -> 3.72 us/request, native 2.67)
-    ([2026-10-11 03:03](journal/2026-10-11.md)).
-  - Packing (open, see section 11): a dense shared ROX arena needs writes
-    into pages that hold live code (`aarch64_insn_copy`, unexported: a new
-    kernel patch) and an arena allocator.
-    - 03:03 measured it only 0.14 us per SET better than colouring. That was
-      before A15 and before the UB protocol.
-    - On A15 under the UB protocol it is 0.75-1.15 us per request better than
-      coloured page-granular images (10/10 boots). Colouring leaves VA[14:12]
-      to vmalloc, which spreads it unevenly
+- **Image placement (A17, packed arena).** A fragment's image is a slot in a
+  shared, packed, always-ROX arena. One arena serves every mm.
+  - Chunks: `KJIT_ARENA_CHUNK` = 2 MiB, each one
+    `execmem_alloc(EXECMEM_BPF)`. A new chunk is filled with
+    `AARCH64_BREAK_FAULT` while it is still writable, then made ROX once
+    (`set_memory_rox`). Its pages are never writable again through the chunk
+    mapping. At most `KJIT_ARENA_MAX_CHUNKS` = 64 chunks (128 MiB) exist; when
+    a chunk would exceed that, the install gets `-ENOSPC`.
+  - Slots: an image is code, then one `exception_table_entry` per fault site
+    (`EX_TYPE_UACCESS_ERR_ZERO`, both registers 31). It takes
+    `ALIGN(code + extable, 16)` bytes, first fit over all chunks. Each chunk
+    keeps a 16-byte-granule bitmap (`bitmap_find_next_zero_area`). There is no
+    colour offset and no per-fragment padding. Labels, link slots and extable
+    entries are relative to the slot start (`f->image`).
+  - `kjit_arena_lock` is a mutex. It covers the bitmaps and the chunk list.
+    It is never taken under `kmm->lock` or `kjit_frags_lock`, and they are
+    never taken under it.
+  - Write: the install builds the image in a `kvmalloc` buffer, with extable
+    offsets computed for the slot's final address. It then writes it with
+    `aarch64_insn_copy(slot, buf, len)` (patch 0009). That function writes
+    through the fixmap alias under `patch_lock`, then calls
+    `flush_icache_range`, which also IPIs every CPU into a context
+    synchronization. So it runs only in sleepable context, with no spinlock
+    held and interrupts on. A `NULL` return (misalignment) is a bug:
+    `WARN_ON_ONCE` and fail the install with `-EINVAL`.
+  - Visibility: nothing can branch into a slot before the install publishes
+    the fragment under `kmm->lock` (table, labels, links). That happens after
+    the copy and its context synchronization on every CPU. A CPU therefore
+    never executes a slot's old contents after taking a pointer to its new
+    ones.
+  - Free:
+    - A retired fragment's slot is released in the existing RCU free work
+      (process context), after the hook-SRCU grace period. The work first
+      fills the slot with `AARCH64_BREAK_FAULT` (`aarch64_insn_set`, patch
+      0009), then clears its bitmap bits. A stale branch into freed code
+      traps; it never runs another fragment.
+    - A chunk whose bitmap becomes empty is freed (`execmem_free`).
+    - A fragment whose install failed after the copy was never visible: its
+      slot is filled and released at once.
+  - Links (A16) patch words inside slots with `aarch64_insn_patch_text_nosync`.
+    It serializes with the copy on `patch_lock`.
+  - Caps: `max_code_*` (section 9) count code bytes, as before. Bitmap
+    fragmentation is bounded by `KJIT_ARENA_MAX_CHUNKS`.
+  - Stats (gauges, next to the link gauges): `arena_chunks`, `arena_bytes`
+    (bytes in live slots). Both are 0 at module exit (`WARN_ON`).
+  - Invariant: hot code of all fragments is dense, so no fragment layout
+    leaves L1I set bits to the allocator. The fragment is on the global
+    extable list (`kjit_all_frags`) until its retirement callback.
+  - Why:
+    - The A14 colouring fixed only VA[11:6] of page-granular images, one
+      execmem allocation each. vmalloc spread VA[14:12] unevenly, imbalance
+      1.32 (1.0 = uniform).
+    - Measured (UB protocol, A15), against coloured images, in us per
+      request:
+      - packed arena: 0.75-1.15 less (10/10 boots);
+      - making VA[14:12] uniform: 0.3-0.6 less.
+    - ROX vs RWX permissions cost nothing measurable
       ([2026-10-12 04:15](journal/2026-10-12.md)).
-    - ROX vs RWX permissions cost nothing measurable.
-  - Guard: K2 runs `code_speed sites64`, and the KJIT-on time per iteration
-    must stay below 2x KJIT-off. It measured 4.6x before A14.
+    - The pre-A14 page-aligned layout, every fragment at the same page
+      offset, was the "dispatch stall" (L1I set index VA[14:6] on this core,
+      6 ways): 1.8 us per SET request ([2026-10-11 03:03](journal/2026-10-11.md)).
+  - Guard: K2 runs `code_speed sites64`. The KJIT-on time per iteration must
+    stay below 2x KJIT-off.
 - Locks: `kjit_mm.lock` -> `kjit_frags_lock` (spinlocks, no allocation under
   either: both are taken inside mmu_notifier invalidation). `kjit_mm_lock` is
   never nested with them.
@@ -2532,17 +2559,17 @@ the reasoning, the numbers and the full list of what was not verified there.
   were classified (conflicts from a few two-pc aliases, not capacity) and five
   table shapes measured; hits are still not counted (no atomics in fragment
   code). [2026-10-09](journal/2026-10-09.md).
-- **Where the remaining loss sits: decided (A14 placement).** Attributed per
+- **Where the remaining loss sits: decided (A14, A15, A17).** Attributed per
   request on redis ([2026-10-11 01:54](journal/2026-10-11.md)); the largest
   part, the stall at dispatch targets, was L1I set conflicts from page-aligned
   images ([03:03](journal/2026-10-11.md)), not the dispatch template, whose
   alternatives (inline caches, direct calls, return compares, shorter chains)
   measured at most 0.07 us per request. The next items were the PAN windows, decided as A15
   (run-scoped PAN clear, section 4; [19:31](journal/2026-10-11.md)), and the
-  small-value remainder, which is still open. Its largest known part is image
-  placement again: a packed ROX arena measured 0.75-1.15 us per request below
-  coloured images, out of 1.4-1.8 us above KJIT-off
-  ([2026-10-12 04:15](journal/2026-10-12.md)). Undecided. Server CPU per request
+  small-value remainder. Its largest known part was image placement again:
+  a packed ROX arena measured 0.75-1.15 us per request below coloured images,
+  out of 1.4-1.8 us above KJIT-off ([2026-10-12 04:15](journal/2026-10-12.md)).
+  Decided as A17 (section 8, Image placement). Server CPU per request
   (server-bound, UB protocol) is the metric; throughput in the client-bound
   `a11-baseline` setup hides the cost.
 - **V2 chaining.** The fuzzer counts `chained` as a non-verdict; modelling
