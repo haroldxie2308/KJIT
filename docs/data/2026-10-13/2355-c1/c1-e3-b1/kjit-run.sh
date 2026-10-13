@@ -1,0 +1,3 @@
+#!/bin/sh
+set -e
+STATES='off on on+time on+pf=1+time on+pf=2+time on+pf=3+time on+spin+time on+spin+pf=2+time' sh /kjit/c1-sweep.sh /tmp/c1 3 get_c1:base:get:100000:1:1:1:0:0:1-3:tcp get_c10:base:get:300000:10:1:1:2:0:1-3:tcp

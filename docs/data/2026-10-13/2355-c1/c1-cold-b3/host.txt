@@ -1,0 +1,5 @@
+label=c1-cold-b3 kpti=0 profile=kjit-guest
+append=console=ttyAMA0 panic=-1 nokaslr rodata=off
+waited_s=163 load1_before=3.90
+cmd=for n in 256 64 16; do COLD_BIN=/kjit/cold_calls$n VARIANTS="calls ret alu" sh /kjit/c1-cold.sh 3 50 "off on"; done; COLD_BIN=/kjit/cold_calls64 VARIANTS="calls ret" sh /kjit/c1-cold.sh 3 0 "off on"
+load1_after=4.82 guest_run_status=0

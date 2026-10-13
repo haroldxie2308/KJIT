@@ -1,0 +1,478 @@
+diff --git a/kjit_glue.c b/kjit_glue.c
+index f5aca10..b75abf9 100644
+--- a/kjit_glue.c
++++ b/kjit_glue.c
+@@ -220,6 +220,7 @@ u64 kjit_frag_table(const struct kjit_frag *f);
+ bool kjit_frag_uses_fpsimd(const struct kjit_frag *f);
+ void kjit_bad_status(u64 status, u64 pc);
+ u64 kjit_call_fragment(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
++u64 kjit_call_fragment_raw(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
+ u64 kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
+ u64 kjit_fpsimd_run_max_ns(void);
+ void kjit_profile(u64 pc, u32 kind);
+@@ -435,6 +436,345 @@ static bool kjit_enabled = true;
+ static atomic64_t kjit_mm_ids = ATOMIC64_INIT(0);
+ static DEFINE_PER_CPU(u64, kjit_hook_calls_pcpu);
+ 
++/* ========================================================================= */
++/* EXPERIMENT (exp/c1), never merged: redis -c 1 overhead. All knobs are off   */
++/* at module load (debugfs x_*), so the module is the A17 module until one is  */
++/* written.                                                                    */
++/*  x_decline=1   the hook returns to EL0 at once: the hook infrastructure     */
++/*                (SRCU, indirect call) with all user code native;             */
++/*  x_epoll_native=1  the hook after epoll_pwait (x8 == 22) returns to EL0 at  */
++/*                once, so the code after a blocking wait runs natively until  */
++/*                the next syscall;                                            */
++/*  x_nofpinv=1   the FP/SIMD bracket does not set fpsimd_cpu = NR_CPUS;       */
++/*  x_pid=TID     times the hook calls of that thread (x_stats; "reset"):      */
++/*                per (what ended the previous hook call: 0 = return to EL0, 1 */
++/*                = a syscall number; syscall class epoll_pwait/read/write/    */
++/*                other; the task switched out since the previous hook call    */
++/*                ended or not): the gap before this hook call and the time    */
++/*                inside it, in CNTVCT ticks.                                  */
++/* ========================================================================= */
++static bool x_decline, x_epoll_native, x_nofpinv, x_svc22;	/* x_svc22: kjit_can_run() fails while x8 == 22: an epoll_pwait SVC is left to userspace (the SVC runs natively) */
++static u32 x_pid, x_pf;	/* x_pf: prefetch the images of the fragments of the previous wake-up episode at the first hook call after a switch: 1 prfm pldl2keep, 2 prfm plil1keep, 3 prfm pldl1keep */
++/*
++ * x_guard=M (a wake-up guard): the hook returns to EL0 for the first M hook calls after the task
++ * last switched out (voluntarily or not), so the code that runs right after a wake-up is never
++ * a translated fragment. Per-CPU (task, switch count, calls since): any switch changes the
++ * count, a migration is a switch.
++ */
++static u32 x_guard;
++struct x_guard_pc {
++	struct task_struct *t;
++	u64 sw;
++	u32 age;
++};
++static DEFINE_PER_CPU(struct x_guard_pc, x_gd);
++
++
++static bool x_guard_declines(void)
++{
++	u32 m = READ_ONCE(x_guard);
++	struct x_guard_pc *g;
++	u64 sw = current->nvcsw + current->nivcsw;
++	bool d;
++
++	if (!m)
++		return false;
++	g = get_cpu_ptr(&x_gd);
++	if (g->t != current || g->sw != sw) {
++		g->t = current;
++		g->sw = sw;
++		g->age = 0;
++	}
++	d = g->age < m;
++	g->age++;
++	put_cpu_ptr(&x_gd);
++	return d;
++}
++
++#define X_RING 8
++static void *x_ring_img[X_RING];
++static u32 x_ring_len[X_RING];
++static int x_ring_n;
++static u64 x_pf_lines, x_pf_calls;
++#define X_SNAP 2048
++static void *x_snap_img[X_SNAP];
++static u32 x_snap_len[X_SNAP];
++static int x_snap_n;
++static void *x_snap_lab[X_SNAP];
++static u32 x_snap_labn[X_SNAP];
++static u64 x_last_exit, x_last_sw;
++static int x_last_kind, x_last_age, x_cur_age = -1;
++#define X_AGES 4	/* hook calls since the task last switched out: 0 = the first, ..., 3 = the fourth or later */
++struct x_bucket {
++	u64 gap_t, gap_n, hook_t, hook_n;
++};
++struct x_pcpu {
++	struct x_bucket b[2][4][X_AGES];
++	u64 fr_t[X_AGES][2], fr_n[X_AGES][2];	/* fragment runs by hook age: [plain, FP/SIMD bracket] */
++	u64 brk_t[X_AGES][4];	/* bracket parts: kernel_neon_begin, fpsimd_load_state, the run, save + end */
++	u64 slept_in_hook;
++};
++static DEFINE_PER_CPU(struct x_pcpu, x_pc);
++
++/* Remember the image of a fragment looked up by the timed thread in this wake-up episode. */
++static void x_pf_record(struct kjit_frag *f)
++{
++	int i;
++
++	if ((u32)current->pid != READ_ONCE(x_pid))
++		return;
++	for (i = 0; i < x_ring_n && i < X_RING; i++)
++		if (x_ring_img[i] == f->image)
++			return;
++	if (x_ring_n < X_RING) {
++		x_ring_img[x_ring_n] = f->image;
++		x_ring_len[x_ring_n] = f->code_len;
++		x_ring_n++;
++	}
++}
++
++static void x_snap_build(void)
++{
++	struct kjit_frag *f;
++	int n = 0;
++
++	spin_lock(&kjit_frags_lock);
++	list_for_each_entry(f, &kjit_all_frags, all_node) {
++		if (n == X_SNAP)
++			break;
++		x_snap_img[n] = f->image;
++		x_snap_len[n] = f->code_len;
++		x_snap_lab[n] = f->labels;
++		x_snap_labn[n] = f->n_labels * sizeof(struct kjit_label);
++		n++;
++	}
++	spin_unlock(&kjit_frags_lock);
++	x_snap_n = n;
++}
++
++static struct kjit_mm *kjit_mm_find_rcu(struct mm_struct *mm);
++
++static void x_pf_data(u32 mode)
++{
++	struct kjit_mm *kmm;
++	u64 lines = 0;
++	char *p, *e;
++	int i;
++
++	rcu_read_lock();
++	kmm = kjit_mm_find_rcu(current->mm);
++	if (kmm && kmm->table_all) {
++		for (p = (char *)kmm->table_all, e = p + KJIT_IBTC_TABLE_SLOTS * sizeof(void *); p < e; p += 64, lines++)
++			asm volatile("prfm pldl1keep, [%0]" : : "r"(p));
++		for (p = (char *)kmm->table_nofp, e = p + KJIT_IBTC_TABLE_SLOTS * sizeof(void *); p < e; p += 64, lines++)
++			asm volatile("prfm pldl1keep, [%0]" : : "r"(p));
++	}
++	rcu_read_unlock();
++	if (mode >= 8) {
++		if (!x_snap_n)
++			x_snap_build();
++		for (i = 0; i < x_snap_n; i++)
++			for (p = x_snap_lab[i], e = p + x_snap_labn[i]; p < e; p += 64, lines++)
++				asm volatile("prfm pldl1keep, [%0]" : : "r"(p));
++	}
++	x_pf_lines += lines;
++	x_pf_calls++;
++}
++
++static void x_pf_run(u32 mode)
++{
++	int i, n = x_ring_n;
++	u64 lines = 0;
++	void **img = x_ring_img;
++	u32 *len = x_ring_len;
++
++	if (mode == 7 || mode == 8) {
++		x_pf_data(mode);
++		return;
++	}
++
++	if (mode >= 4) {	/* every fragment of the module */
++		if (!x_snap_n)
++			x_snap_build();
++		n = x_snap_n;
++		img = x_snap_img;
++		len = x_snap_len;
++		mode -= 3;
++	}
++	for (i = 0; i < n; i++) {
++		char *p = img[i], *e = p + len[i];
++
++		for (p = (char *)((unsigned long)p & ~63UL); p < e; p += 64, lines++) {
++			if (mode == 1)
++				asm volatile("prfm pldl2keep, [%0]" : : "r"(p));
++			else if (mode == 2)
++				asm volatile("prfm plil1keep, [%0]" : : "r"(p));
++			else
++				asm volatile("prfm pldl1keep, [%0]" : : "r"(p));
++		}
++	}
++	x_pf_lines += lines;
++	x_pf_calls++;
++}
++
++static long kjit_rs_after_syscall_x(struct pt_regs *regs)
++{
++	u32 pid = READ_ONCE(x_pid);
++	u64 t0, t1, sw0, sw1;
++	long ret;
++	int nr, age;
++	struct x_bucket *b;
++
++	if (!pid || (u32)current->pid != pid) {
++		if (READ_ONCE(x_decline) || x_guard_declines())
++			return -1;
++		if (READ_ONCE(x_epoll_native) && regs->regs[8] == 22)
++			return -1;
++		return kjit_rs_after_syscall(regs);
++	}
++	nr = regs->regs[8] == 22 ? 0 : regs->regs[8] == 63 ? 1 : regs->regs[8] == 64 ? 2 : 3;
++	t0 = arch_timer_read_counter();
++	sw0 = current->nvcsw + current->nivcsw;
++	age = (x_last_exit && sw0 == x_last_sw) ? min(x_last_age + 1, X_AGES - 1) : 0;
++	x_cur_age = age;
++	if (age == 0) {
++		u32 mode = READ_ONCE(x_pf);
++
++		if (mode)
++			x_pf_run(mode);
++		x_ring_n = 0;
++	}
++	if (READ_ONCE(x_decline) || (READ_ONCE(x_epoll_native) && nr == 0) || x_guard_declines())
++		ret = -1;
++	else
++		ret = kjit_rs_after_syscall(regs);
++	x_cur_age = -1;
++	t1 = arch_timer_read_counter();
++	sw1 = current->nvcsw + current->nivcsw;
++	b = &get_cpu_ptr(&x_pc)->b[x_last_kind][nr][age];
++	if (x_last_exit) {
++		b->gap_t += t0 - x_last_exit;
++		b->gap_n++;
++	}
++	b->hook_t += t1 - t0;
++	b->hook_n++;
++	if (sw1 != sw0)
++		this_cpu_ptr(&x_pc)->slept_in_hook++;
++	put_cpu_ptr(&x_pc);
++	x_last_exit = arch_timer_read_counter();
++	x_last_sw = current->nvcsw + current->nivcsw;
++	x_last_kind = ret >= 0;
++	x_last_age = age;
++	return ret;
++}
++
++/* One fragment run, timed for the timed thread (x_cur_age >= 0): fp = 0 plain, 1 bracket. */
++static inline void x_fr_note(int fp, u64 t0)
++{
++	int age = READ_ONCE(x_cur_age);
++	struct x_pcpu *pc;
++
++	if (age < 0)
++		return;
++	pc = get_cpu_ptr(&x_pc);
++	pc->fr_t[age][fp] += arch_timer_read_counter() - t0;
++	pc->fr_n[age][fp]++;
++	put_cpu_ptr(&x_pc);
++}
++
++static inline void x_brk_note(u64 t0, u64 t1, u64 t2, u64 t3, u64 t4)
++{
++	int age = READ_ONCE(x_cur_age);
++	struct x_pcpu *pc;
++
++	if (age < 0)
++		return;
++	pc = get_cpu_ptr(&x_pc);
++	pc->brk_t[age][0] += t1 - t0;
++	pc->brk_t[age][1] += t2 - t1;
++	pc->brk_t[age][2] += t3 - t2;
++	pc->brk_t[age][3] += t4 - t3;
++	put_cpu_ptr(&x_pc);
++}
++
++static ssize_t x_stats_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
++{
++	static const char *const nrn[4] = { "epoll_pwait", "read", "write", "other" };
++	size_t size = 8192, len = 0;
++	char *buf = kmalloc(size, GFP_KERNEL);
++	ssize_t ret;
++	int k, n, ag, cpu, fp;
++	u64 sih = 0;
++
++	if (!buf)
++		return -ENOMEM;
++	len += scnprintf(buf + len, size - len, "cntfrq %u\n", arch_timer_get_cntfrq());
++	for_each_possible_cpu(cpu)
++		sih += per_cpu_ptr(&x_pc, cpu)->slept_in_hook;
++	len += scnprintf(buf + len, size - len, "slept_in_hook %llu\n", sih);
++	len += scnprintf(buf + len, size - len, "pf_calls %llu pf_lines %llu\n", x_pf_calls, x_pf_lines);
++	for (k = 0; k < 2; k++)
++		for (n = 0; n < 4; n++)
++			for (ag = 0; ag < X_AGES; ag++) {
++				struct x_bucket t = {};
++
++				for_each_possible_cpu(cpu) {
++					struct x_bucket *b = &per_cpu_ptr(&x_pc, cpu)->b[k][n][ag];
++
++					t.gap_t += b->gap_t;
++					t.gap_n += b->gap_n;
++					t.hook_t += b->hook_t;
++					t.hook_n += b->hook_n;
++				}
++				if (t.hook_n || t.gap_n)
++					len += scnprintf(buf + len, size - len,
++							 "b prev%d_%s_age%d gap_t %llu gap_n %llu hook_t %llu hook_n %llu\n",
++							 k, nrn[n], ag, t.gap_t, t.gap_n, t.hook_t, t.hook_n);
++			}
++	for (ag = 0; ag < X_AGES; ag++)
++		for (fp = 0; fp < 2; fp++) {
++			u64 ft = 0, fn = 0;
++
++			for_each_possible_cpu(cpu) {
++				ft += per_cpu_ptr(&x_pc, cpu)->fr_t[ag][fp];
++				fn += per_cpu_ptr(&x_pc, cpu)->fr_n[ag][fp];
++			}
++			if (fn)
++				len += scnprintf(buf + len, size - len, "f age%d_fp%d t %llu n %llu\n", ag, fp, ft, fn);
++		}
++	for (ag = 0; ag < X_AGES; ag++) {
++		u64 bt[4] = {};
++
++		for_each_possible_cpu(cpu)
++			for (n = 0; n < 4; n++)
++				bt[n] += per_cpu_ptr(&x_pc, cpu)->brk_t[ag][n];
++		if (bt[2])
++			len += scnprintf(buf + len, size - len, "g age%d begin %llu load %llu run %llu tail %llu\n",
++					 ag, bt[0], bt[1], bt[2], bt[3]);
++	}
++	ret = simple_read_from_buffer(ubuf, count, ppos, buf, len);
++	kfree(buf);
++	return ret;
++}
++
++static ssize_t x_stats_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
++{
++	int cpu;
++
++	for_each_possible_cpu(cpu)
++		memset(per_cpu_ptr(&x_pc, cpu), 0, sizeof(struct x_pcpu));
++	x_last_exit = 0;
++	x_snap_n = 0;
++	return count;
++}
++
++static const struct file_operations x_stats_fops = {
++	.owner = THIS_MODULE,
++	.read = x_stats_read,
++	.write = x_stats_write,
++};
++/* ========================================================================= */
++
+ /*
+  * Auto mode (P3) and its limits. Module parameters (writable in
+  * /sys/module/kjit/parameters/); auto, hot_threshold and hot_window_ms are
+@@ -1578,6 +1918,8 @@ bool kjit_can_run(const struct pt_regs *regs)
+ 	/* debugfs enable=N stops fragment runs and chains at the next check. */
+ 	if (!READ_ONCE(kjit_enabled) || is_compat_task() || current->ptrace)
+ 		return false;
++	if (unlikely(READ_ONCE(x_svc22)) && regs->regs[8] == 22)	/* EXPERIMENT (exp/c1) */
++		return false;
+ 	if (read_thread_flags() & KJIT_BAIL_FLAGS)
+ 		return false;
+ 	/* -ERESTARTSYS..-ERESTART_RESTARTBLOCK: the signal code must see it. */
+@@ -1616,6 +1958,8 @@ struct kjit_frag *kjit_lookup(u64 pc, bool link, u64 *entry)
+ 	}
+ 	rcu_read_unlock();
+ 	if (found) {
++		if (unlikely(READ_ONCE(x_pf)))	/* EXPERIMENT (exp/c1) */
++			x_pf_record(found);
+ 		if (link)
+ 			kjit_ibtc_publish(found, found->entry_label);
+ 		*entry = found->entry_label->host;
+@@ -1666,9 +2010,9 @@ void kjit_bad_status(u64 status, u64 pc)
+ asm(
+ "	.pushsection .text, \"ax\"\n"
+ "	.p2align 2\n"
+-"	.globl	kjit_call_fragment\n"
+-"	.type	kjit_call_fragment, %function\n"
+-"kjit_call_fragment:\n"
++"	.globl	kjit_call_fragment_raw\n"
++"	.type	kjit_call_fragment_raw, %function\n"
++"kjit_call_fragment_raw:\n"
+ "	stp	x29, x30, [sp, #-32]!\n"
+ "	mov	x29, sp\n"
+ "	str	x0, [sp, #16]\n"
+@@ -1686,9 +2030,22 @@ asm(
+ "	str	x10, [x1, #264]\n"
+ "	ldp	x29, x30, [sp], #32\n"
+ "	ret\n"
+-"	.size	kjit_call_fragment, . - kjit_call_fragment\n"
++"	.size	kjit_call_fragment_raw, . - kjit_call_fragment_raw\n"
+ "	.popsection\n");
+ 
++/* EXPERIMENT (exp/c1): the plain fragment run, timed for the timed thread. */
++u64 kjit_call_fragment(struct pt_regs *regs, u64 *extra, u64 entry, u64 base)
++{
++	u64 t0, status;
++
++	if (likely(READ_ONCE(x_cur_age) < 0))
++		return kjit_call_fragment_raw(regs, extra, entry, base);
++	t0 = arch_timer_read_counter();
++	status = kjit_call_fragment_raw(regs, extra, entry, base);
++	x_fr_note(0, t0);
++	return status;
++}
++
+ /*
+  * Longest FP/SIMD bracket per CPU, in arch counter ticks (stats:
+  * fpsimd_run_max_ns). Written with preemption off, on the CPU the bracket ends
+@@ -1748,19 +2105,23 @@ u64 kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 b
+ 	struct user_fpsimd_state kbuf;
+ 	struct user_fpsimd_state *uw = &current->thread.uw.fpsimd_state;
+ 	unsigned long switches;
+-	u64 t0, ticks, status;
++	u64 t0, ticks, status, tx = arch_timer_read_counter(), tb, tl, tr;
+ 
+ 	kernel_neon_begin(&kbuf);
++	tb = arch_timer_read_counter();
+ 	switches = current->nvcsw + current->nivcsw;
+ 	t0 = arch_timer_read_counter();
+ 	fpsimd_load_state(uw);
++	tl = arch_timer_read_counter();
+ 	pagefault_disable();
+-	status = kjit_call_fragment(regs, extra, entry, base);
++	status = kjit_call_fragment_raw(regs, extra, entry, base);
++	tr = arch_timer_read_counter();
+ 	pagefault_enable();
+ 
+ 	preempt_disable();
+ 	fpsimd_save_state(uw);
+-	current->thread.fpsimd_cpu = NR_CPUS;
++	if (!READ_ONCE(x_nofpinv))	/* EXPERIMENT (exp/c1) */
++		current->thread.fpsimd_cpu = NR_CPUS;
+ 	barrier();
+ 	ticks = arch_timer_read_counter() - t0;
+ 	if (ticks > __this_cpu_read(kjit_fpsimd_max_ticks))
+@@ -1771,6 +2132,12 @@ u64 kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 b
+ 
+ 	if (switches)
+ 		kjit_rs_note(KJIT_NOTE_FPSIMD_PREEMPTED, 1);
++	if (READ_ONCE(x_cur_age) >= 0) {	/* EXPERIMENT (exp/c1) */
++		u64 te = arch_timer_read_counter();
++
++		x_brk_note(tx, tb, tl, tr, te);
++		x_fr_note(1, tx);
++	}
+ 	return status;
+ }
+ 
+@@ -1896,7 +2263,7 @@ static long kjit_after_syscall(struct pt_regs *regs)
+ 	if (!READ_ONCE(kjit_enabled))
+ 		return -1;
+ 	this_cpu_inc(kjit_hook_calls_pcpu);
+-	return kjit_rs_after_syscall(regs);
++	return kjit_rs_after_syscall_x(regs);
+ }
+ 
+ /*
+@@ -2668,6 +3035,15 @@ int kjit_glue_init(void)
+ 	debugfs_create_file("ibtc_slots", 0600, kjit_debugfs, NULL, &kjit_ibtc_slots_fops);
+ 	debugfs_create_file_unsafe("neon_noise_us", 0600, kjit_debugfs, NULL, &kjit_neon_noise_fops);
+ 	debugfs_create_file("neon_noise_hits", 0400, kjit_debugfs, NULL, &kjit_neon_hits_fops);
++	/* EXPERIMENT (exp/c1) */
++	debugfs_create_bool("x_decline", 0600, kjit_debugfs, &x_decline);
++	debugfs_create_bool("x_epoll_native", 0600, kjit_debugfs, &x_epoll_native);
++	debugfs_create_bool("x_nofpinv", 0600, kjit_debugfs, &x_nofpinv);
++	debugfs_create_bool("x_svc22", 0600, kjit_debugfs, &x_svc22);
++	debugfs_create_u32("x_pid", 0600, kjit_debugfs, &x_pid);
++	debugfs_create_u32("x_pf", 0600, kjit_debugfs, &x_pf);
++	debugfs_create_u32("x_guard", 0600, kjit_debugfs, &x_guard);
++	debugfs_create_file("x_stats", 0600, kjit_debugfs, NULL, &x_stats_fops);
+ 
+ 	ret = kjit_register_hook(&kjit_hook_ops);
+ 	if (ret) {
