@@ -1,0 +1,3 @@
+#!/bin/sh
+set -e
+sh /kjit/cond-info.sh 5; sh /kjit/cond-sweep.sh /tmp/cond 3 unix_set_c50_p1_d1:unix:set:1000000:50:1:1:2:0:1-3:unix unix_get_c50_p1_d1:unix:get:1000000:50:1:1:2:0:1-3:unix aofalw_set_c50_p1:aof_always:set:300000:50:1:1:2:0:1-3:tcp aofalw_unix_set_c50_p1:aof_always_unix:set:300000:50:1:1:2:0:1-3:unix get_c10_p1_d1:base:get:300000:10:1:1:2:0:1-3:tcp set_c1_p1_d1:base:set:100000:1:1:1:0:0:1-3:tcp get_c1_p1_d1:base:get:100000:1:1:1:0:0:1-3:tcp set_c50_p1_d1:base:set:1000000:50:1:1:2:0:1-3:tcp get_c50_p1_d1:base:get:1000000:50:1:1:2:0:1-3:tcp set_c50_p1_d1024:base:set:1000000:50:1:1024:2:0:1-3:tcp get_c50_p1_d1024:base:get:1000000:50:1:1024:2:0:1-3:tcp set_c10_p1_d1:base:set:300000:10:1:1:2:0:1-3:tcp

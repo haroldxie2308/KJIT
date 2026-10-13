@@ -1,0 +1,38 @@
+diff --git a/dev/fd/12 b/tests/guest/cond-sweep.sh
+old mode 100644
+new mode 100755
+index 0000000..94e22d6
+--- a/dev/fd/12
++++ b/tests/guest/cond-sweep.sh
+@@ -6,7 +6,7 @@
+ #   cond-sweep.sh WORKDIR REPS CELL...
+ #
+ # CELL = NAME:SRV:TEST:N:C:P:D:THR:SCPUS:CCPUS:XPORT
+-#   SRV     server profile: base | aof_always | aof_everysec | aof_no | aof9p_always | unix | iot2
++#   SRV     server profile: base | aof_always | aof_always_unix | aof_everysec | aof_no | aof9p_always | unix | iot2
+ #   TEST    redis-benchmark -t value (set get incr lpush ping_inline ping_mbulk mset ...), or
+ #           pub<N><l|r>: PUBLISH to channel ch with N redis-cli subscribers on the server (l) or client (r) CPUs
+ #   N       -n requests per measured run
+@@ -96,6 +96,7 @@ srv_start() {
+             start_server "$srv_dir" --appendonly yes --appendfsync always --auto-aof-rewrite-percentage 0
+             ;;
+         unix) start_server "$srv_dir" --unixsocket "$sock" --unixsocketperm 777 ;;
++        aof_always_unix) start_server "$srv_dir" --unixsocket "$sock" --unixsocketperm 777 --appendonly yes --appendfsync always --auto-aof-rewrite-percentage 0 ;;
+         iot2) start_server "$srv_dir" --io-threads 2 --io-threads-do-reads yes ;;
+         *) k4_fail "bad SRV '$1'" ;;
+     esac
+diff --git a/dev/fd/12 b/tests/guest/host/cond-sweep.sh
+old mode 100644
+new mode 100755
+index 0000000..69aca57
+--- a/dev/fd/12
++++ b/tests/guest/host/cond-sweep.sh
+@@ -178,7 +178,7 @@ for ((b = first; b < first + boots; b++)); do
+     run_dir="$build_root/runs/ub-$label"
+     mkdir -p "$run_dir"
+     cp "$here/../cond-sweep.sh" "$here/../cond-info.sh" "$run_dir/"
+-    order=$(rotate_cells "$((b - first + 1))")
++    order=$(rotate_cells "$b")
+     echo "cond-sweep: boot $label ($(date '+%H:%M:%S')) profile=$sprofile args='$sargs' set=$set_name"
+     GUEST_PROFILE="$sprofile" UB_APPEND_EXTRA="rodata=off $sargs" "$here/ub-run.sh" "$label" 0 "sh /kjit/cond-info.sh 5; sh /kjit/cond-sweep.sh /tmp/cond $reps $order"
+ done
