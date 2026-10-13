@@ -467,23 +467,39 @@ pub enum A64FpSimdWriteback {
     Reg(A64Reg),
 }
 
-/// An A9a SIMD&FP load/store (LDR/STR (immediate), LDUR/STUR, LDP/STP, LD1/ST1
-/// (multiple structures)), split the way a fragment performs it (docs/pipeline.md,
-/// "FP/SIMD in fragments (A9)"): the address `base + offset`, then `access` -- the same access in
+/// The index of an A18 register-offset SIMD&FP load/store: the address is
+/// `base + ExtendReg(reg, option, shift)` (`ADD` extended register semantics:
+/// `option` 010 UXTW, 011 LSL/UXTX, 110 SXTW, 111 SXTX; `shift` is `log2(size)`
+/// when the encoding's `S` is set, else 0).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct A64FpSimdIndex {
+    pub reg: A64Reg,
+    pub option: u8,
+    pub shift: u8,
+}
+
+/// A SIMD&FP load/store (A9a: LDR/STR (immediate), LDUR/STUR, LDP/STP, LD1/ST1
+/// (multiple structures); A18: LDR/STR (register)), split the way a fragment
+/// performs it (docs/pipeline.md, "FP/SIMD in fragments (A9)", "Scalar floating
+/// point (A18)"): the address `base + offset` (`base + index` for the A18
+/// register-offset forms, whose `offset` is 0), then `access` -- the same access in
 /// its base-only encoding (unsigned-offset LDR/STR or signed-offset LDP/STP with
-/// `#0`, LD1/ST1 without post-index; `Rn` still names `base`) -- then `writeback`.
+/// `#0`, LD1/ST1 without post-index; `Rn` still names `base`) -- then `writeback`
+/// (none for the register-offset forms).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct A64FpSimdMem {
     pub access: A64Insn,
     pub base: A64Reg,
     pub offset: i64,
+    pub index: Option<A64FpSimdIndex>,
     pub writeback: Option<A64FpSimdWriteback>,
 }
 
 impl A64Insn {
-    /// Every A9a SIMD&FP load/store (`A64FpSimdMem`); pinned by a test against the
-    /// generated forms (a `Memory` role with a `Vec*` role). Translator and harness
-    /// helper; the verifier has its own list (`rules::classify`).
+    /// Every SIMD&FP load/store (`A64FpSimdMem`; A9a, and A18's register-offset
+    /// forms); pinned by a test against the generated forms (a `Memory` role with a
+    /// `Vec*` role). Translator and harness helper; the verifier has its own list
+    /// (`rules::classify`).
     pub fn fpsimd_mem(self) -> Option<A64FpSimdMem> {
         // The base-only addressing: the base with offset #0 in the base-only
         // form's own offset field (`imm12` of LDR/STR (unsigned offset), `imm7` of
@@ -501,6 +517,7 @@ impl A64Insn {
                 access,
                 base: mem.base(),
                 offset,
+                index: None,
                 writeback,
             })
         }
@@ -513,9 +530,37 @@ impl A64Insn {
                 access,
                 base,
                 offset: 0,
+                index: None,
                 writeback,
             })
         }
+        // A18: `[base, index, <extend> #shift]`; `access` is the same-size
+        // unsigned-offset load/store at `#0`. `s` scales the index by the transfer
+        // size (`scale` = log2 bytes) for every form but the `*BL` byte form, whose
+        // option is LSL (UXTX) and whose S bit scales by 0.
+        fn indexed(
+            access: A64Insn,
+            base: A64Reg,
+            index: A64Reg,
+            option: u8,
+            s: u8,
+            scale: u8,
+        ) -> Option<A64FpSimdMem> {
+            Some(A64FpSimdMem {
+                access,
+                base,
+                offset: 0,
+                index: Some(A64FpSimdIndex {
+                    reg: index,
+                    option,
+                    shift: if s == 1 { scale } else { 0 },
+                }),
+                writeback: None,
+            })
+        }
+        let zero_base = |rn: A64Reg| A64Mem::offset(rn, A64Imm::unsigned(0, 12));
+        // The `*BL` byte forms fix option = 0b011.
+        const LSL: u8 = 0b011;
         match self {
             Self::LdrImmFpsimdLdrBLdstPos { rt, mem } => single(
                 Self::LdrImmFpsimdLdrBLdstPos {
@@ -1225,6 +1270,198 @@ impl A64Insn {
                 rn,
                 Some(A64FpSimdWriteback::Reg(rm)),
             ),
+            Self::LdrRegFpsimdLdrBLdstRegoff {
+                rm,
+                option,
+                s,
+                rn,
+                rt,
+            } => indexed(
+                Self::LdrImmFpsimdLdrBLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                option,
+                s,
+                0,
+            ),
+            Self::LdrRegFpsimdLdrHLdstRegoff {
+                rm,
+                option,
+                s,
+                rn,
+                rt,
+            } => indexed(
+                Self::LdrImmFpsimdLdrHLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                option,
+                s,
+                1,
+            ),
+            Self::LdrRegFpsimdLdrSLdstRegoff {
+                rm,
+                option,
+                s,
+                rn,
+                rt,
+            } => indexed(
+                Self::LdrImmFpsimdLdrSLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                option,
+                s,
+                2,
+            ),
+            Self::LdrRegFpsimdLdrDLdstRegoff {
+                rm,
+                option,
+                s,
+                rn,
+                rt,
+            } => indexed(
+                Self::LdrImmFpsimdLdrDLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                option,
+                s,
+                3,
+            ),
+            Self::LdrRegFpsimdLdrQLdstRegoff {
+                rm,
+                option,
+                s,
+                rn,
+                rt,
+            } => indexed(
+                Self::LdrImmFpsimdLdrQLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                option,
+                s,
+                4,
+            ),
+            Self::LdrRegFpsimdLdrBlLdstRegoff { rm, s, rn, rt } => indexed(
+                Self::LdrImmFpsimdLdrBLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                LSL,
+                s,
+                0,
+            ),
+            Self::StrRegFpsimdStrBLdstRegoff {
+                rm,
+                option,
+                s,
+                rn,
+                rt,
+            } => indexed(
+                Self::StrImmFpsimdStrBLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                option,
+                s,
+                0,
+            ),
+            Self::StrRegFpsimdStrHLdstRegoff {
+                rm,
+                option,
+                s,
+                rn,
+                rt,
+            } => indexed(
+                Self::StrImmFpsimdStrHLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                option,
+                s,
+                1,
+            ),
+            Self::StrRegFpsimdStrSLdstRegoff {
+                rm,
+                option,
+                s,
+                rn,
+                rt,
+            } => indexed(
+                Self::StrImmFpsimdStrSLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                option,
+                s,
+                2,
+            ),
+            Self::StrRegFpsimdStrDLdstRegoff {
+                rm,
+                option,
+                s,
+                rn,
+                rt,
+            } => indexed(
+                Self::StrImmFpsimdStrDLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                option,
+                s,
+                3,
+            ),
+            Self::StrRegFpsimdStrQLdstRegoff {
+                rm,
+                option,
+                s,
+                rn,
+                rt,
+            } => indexed(
+                Self::StrImmFpsimdStrQLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                option,
+                s,
+                4,
+            ),
+            Self::StrRegFpsimdStrBlLdstRegoff { rm, s, rn, rt } => indexed(
+                Self::StrImmFpsimdStrBLdstPos {
+                    rt,
+                    mem: zero_base(rn),
+                },
+                rn,
+                rm,
+                LSL,
+                s,
+                0,
+            ),
             _ => None,
         }
     }
@@ -1237,6 +1474,22 @@ impl A64Insn {
             .iter()
             .find(|spec| spec.key == self.key())?
             .extract_field(word, name)
+    }
+
+    /// Whether the instruction names a V register or reads FPCR/FPSR (A9, A18), so a
+    /// fragment containing it runs inside the FP/SIMD bracket. The translator's view
+    /// (generated operand roles, plus the two system-register reads that have no
+    /// register role); the verifier derives `uses_fpsimd` from the bytes on its own.
+    pub fn uses_fpsimd_state(self) -> bool {
+        matches!(
+            self,
+            Self::MrsMrsRsSystemmoveFpcr { .. } | Self::MrsMrsRsSystemmoveFpsr { .. }
+        ) || self.operand_roles().iter().any(|role| {
+            matches!(
+                role,
+                A64OperandRole::VecRead { .. } | A64OperandRole::VecWrite { .. }
+            )
+        })
     }
 
     /// A window access (A8, A9a, A15): an LSE atomic, or
@@ -1344,7 +1597,18 @@ impl A64Insn {
             | Self::LdrsbRegLdrsb64bLdstRegoff { option, .. }
             | Self::LdrshRegLdrsh32LdstRegoff { option, .. }
             | Self::LdrshRegLdrsh64LdstRegoff { option, .. }
-            | Self::LdrswRegLdrsw64LdstRegoff { option, .. } => option & 0b010 == 0,
+            | Self::LdrswRegLdrsw64LdstRegoff { option, .. }
+            // A18: SIMD&FP (register); the `*BL` byte forms fix option = 0b011.
+            | Self::LdrRegFpsimdLdrBLdstRegoff { option, .. }
+            | Self::LdrRegFpsimdLdrHLdstRegoff { option, .. }
+            | Self::LdrRegFpsimdLdrSLdstRegoff { option, .. }
+            | Self::LdrRegFpsimdLdrDLdstRegoff { option, .. }
+            | Self::LdrRegFpsimdLdrQLdstRegoff { option, .. }
+            | Self::StrRegFpsimdStrBLdstRegoff { option, .. }
+            | Self::StrRegFpsimdStrHLdstRegoff { option, .. }
+            | Self::StrRegFpsimdStrSLdstRegoff { option, .. }
+            | Self::StrRegFpsimdStrDLdstRegoff { option, .. }
+            | Self::StrRegFpsimdStrQLdstRegoff { option, .. } => option & 0b010 == 0,
 
             // A9a SIMD&FP (docs/pipeline.md, "FP/SIMD in fragments (A9)"): the value rules of each
             // form's decode pseudocode that its diagram does not fix.
@@ -1929,7 +2193,131 @@ impl A64Insn {
             | Self::AddpAdvsimdPairAddpAsisdpairOnly { .. }
             | Self::UshrAdvsimdUshrAsisdshfR { .. }
             | Self::ShlAdvsimdShlAsisdshfR { .. }
-            | Self::TblAdvsimdTblAsimdtblL11 { .. } => false,
+            | Self::TblAdvsimdTblAsimdtblL11 { .. }
+            // A18 scalar floating point (single and double precision; the FP16 and
+            // BFloat16 forms are not in the subset). No decode-time value rule: the
+            // `ftype`/`opc`/`rmode`/`opcode` combinations are fixed per encoding, every
+            // `imm8` is a valid FMOV constant, FCMP/FCMPE (zero) pin their
+            // should-be-zero `Rm` in subset.toml, and the only other UNDEFINED case is
+            // a missing FEAT_FP, a CPU property. The register-offset SIMD&FP forms
+            // with an `option` field are the arms above; their `*BL` byte forms fix
+            // it. MRS of FPCR/FPSR: the diagram fixes every field.
+            | Self::MrsMrsRsSystemmoveFpcr { .. }
+            | Self::MrsMrsRsSystemmoveFpsr { .. }
+            | Self::FaddFloatFaddSFloatdp2 { .. }
+            | Self::FaddFloatFaddDFloatdp2 { .. }
+            | Self::FsubFloatFsubSFloatdp2 { .. }
+            | Self::FsubFloatFsubDFloatdp2 { .. }
+            | Self::FmulFloatFmulSFloatdp2 { .. }
+            | Self::FmulFloatFmulDFloatdp2 { .. }
+            | Self::FnmulFloatFnmulSFloatdp2 { .. }
+            | Self::FnmulFloatFnmulDFloatdp2 { .. }
+            | Self::FdivFloatFdivSFloatdp2 { .. }
+            | Self::FdivFloatFdivDFloatdp2 { .. }
+            | Self::FmaxFloatFmaxSFloatdp2 { .. }
+            | Self::FmaxFloatFmaxDFloatdp2 { .. }
+            | Self::FminFloatFminSFloatdp2 { .. }
+            | Self::FminFloatFminDFloatdp2 { .. }
+            | Self::FmaxnmFloatFmaxnmSFloatdp2 { .. }
+            | Self::FmaxnmFloatFmaxnmDFloatdp2 { .. }
+            | Self::FminnmFloatFminnmSFloatdp2 { .. }
+            | Self::FminnmFloatFminnmDFloatdp2 { .. }
+            | Self::FmaddFloatFmaddSFloatdp3 { .. }
+            | Self::FmaddFloatFmaddDFloatdp3 { .. }
+            | Self::FmsubFloatFmsubSFloatdp3 { .. }
+            | Self::FmsubFloatFmsubDFloatdp3 { .. }
+            | Self::FnmaddFloatFnmaddSFloatdp3 { .. }
+            | Self::FnmaddFloatFnmaddDFloatdp3 { .. }
+            | Self::FnmsubFloatFnmsubSFloatdp3 { .. }
+            | Self::FnmsubFloatFnmsubDFloatdp3 { .. }
+            | Self::FabsFloatFabsSFloatdp1 { .. }
+            | Self::FabsFloatFabsDFloatdp1 { .. }
+            | Self::FnegFloatFnegSFloatdp1 { .. }
+            | Self::FnegFloatFnegDFloatdp1 { .. }
+            | Self::FsqrtFloatFsqrtSFloatdp1 { .. }
+            | Self::FsqrtFloatFsqrtDFloatdp1 { .. }
+            | Self::FrintnFloatFrintnSFloatdp1 { .. }
+            | Self::FrintnFloatFrintnDFloatdp1 { .. }
+            | Self::FrintpFloatFrintpSFloatdp1 { .. }
+            | Self::FrintpFloatFrintpDFloatdp1 { .. }
+            | Self::FrintmFloatFrintmSFloatdp1 { .. }
+            | Self::FrintmFloatFrintmDFloatdp1 { .. }
+            | Self::FrintzFloatFrintzSFloatdp1 { .. }
+            | Self::FrintzFloatFrintzDFloatdp1 { .. }
+            | Self::FrintaFloatFrintaSFloatdp1 { .. }
+            | Self::FrintaFloatFrintaDFloatdp1 { .. }
+            | Self::FrintxFloatFrintxSFloatdp1 { .. }
+            | Self::FrintxFloatFrintxDFloatdp1 { .. }
+            | Self::FrintiFloatFrintiSFloatdp1 { .. }
+            | Self::FrintiFloatFrintiDFloatdp1 { .. }
+            | Self::FcvtFloatFcvtDsFloatdp1 { .. }
+            | Self::FcvtFloatFcvtSdFloatdp1 { .. }
+            | Self::FcmpFloatFcmpSFloatcmp { .. }
+            | Self::FcmpFloatFcmpSzFloatcmp { .. }
+            | Self::FcmpFloatFcmpDFloatcmp { .. }
+            | Self::FcmpFloatFcmpDzFloatcmp { .. }
+            | Self::FcmpeFloatFcmpeSFloatcmp { .. }
+            | Self::FcmpeFloatFcmpeSzFloatcmp { .. }
+            | Self::FcmpeFloatFcmpeDFloatcmp { .. }
+            | Self::FcmpeFloatFcmpeDzFloatcmp { .. }
+            | Self::FccmpFloatFccmpSFloatccmp { .. }
+            | Self::FccmpFloatFccmpDFloatccmp { .. }
+            | Self::FccmpeFloatFccmpeSFloatccmp { .. }
+            | Self::FccmpeFloatFccmpeDFloatccmp { .. }
+            | Self::FcselFloatFcselSFloatsel { .. }
+            | Self::FcselFloatFcselDFloatsel { .. }
+            | Self::FmovFloatImmFmovSFloatimm { .. }
+            | Self::FmovFloatImmFmovDFloatimm { .. }
+            | Self::ScvtfFloatIntScvtfS32Float2int { .. }
+            | Self::ScvtfFloatIntScvtfD32Float2int { .. }
+            | Self::ScvtfFloatIntScvtfS64Float2int { .. }
+            | Self::ScvtfFloatIntScvtfD64Float2int { .. }
+            | Self::UcvtfFloatIntUcvtfS32Float2int { .. }
+            | Self::UcvtfFloatIntUcvtfD32Float2int { .. }
+            | Self::UcvtfFloatIntUcvtfS64Float2int { .. }
+            | Self::UcvtfFloatIntUcvtfD64Float2int { .. }
+            | Self::FcvtzsFloatIntFcvtzs32sFloat2int { .. }
+            | Self::FcvtzsFloatIntFcvtzs64sFloat2int { .. }
+            | Self::FcvtzsFloatIntFcvtzs32dFloat2int { .. }
+            | Self::FcvtzsFloatIntFcvtzs64dFloat2int { .. }
+            | Self::FcvtzuFloatIntFcvtzu32sFloat2int { .. }
+            | Self::FcvtzuFloatIntFcvtzu64sFloat2int { .. }
+            | Self::FcvtzuFloatIntFcvtzu32dFloat2int { .. }
+            | Self::FcvtzuFloatIntFcvtzu64dFloat2int { .. }
+            | Self::FcvtnsFloatFcvtns32sFloat2int { .. }
+            | Self::FcvtnsFloatFcvtns64sFloat2int { .. }
+            | Self::FcvtnsFloatFcvtns32dFloat2int { .. }
+            | Self::FcvtnsFloatFcvtns64dFloat2int { .. }
+            | Self::FcvtnuFloatFcvtnu32sFloat2int { .. }
+            | Self::FcvtnuFloatFcvtnu64sFloat2int { .. }
+            | Self::FcvtnuFloatFcvtnu32dFloat2int { .. }
+            | Self::FcvtnuFloatFcvtnu64dFloat2int { .. }
+            | Self::FcvtmsFloatFcvtms32sFloat2int { .. }
+            | Self::FcvtmsFloatFcvtms64sFloat2int { .. }
+            | Self::FcvtmsFloatFcvtms32dFloat2int { .. }
+            | Self::FcvtmsFloatFcvtms64dFloat2int { .. }
+            | Self::FcvtmuFloatFcvtmu32sFloat2int { .. }
+            | Self::FcvtmuFloatFcvtmu64sFloat2int { .. }
+            | Self::FcvtmuFloatFcvtmu32dFloat2int { .. }
+            | Self::FcvtmuFloatFcvtmu64dFloat2int { .. }
+            | Self::FcvtpsFloatFcvtps32sFloat2int { .. }
+            | Self::FcvtpsFloatFcvtps64sFloat2int { .. }
+            | Self::FcvtpsFloatFcvtps32dFloat2int { .. }
+            | Self::FcvtpsFloatFcvtps64dFloat2int { .. }
+            | Self::FcvtpuFloatFcvtpu32sFloat2int { .. }
+            | Self::FcvtpuFloatFcvtpu64sFloat2int { .. }
+            | Self::FcvtpuFloatFcvtpu32dFloat2int { .. }
+            | Self::FcvtpuFloatFcvtpu64dFloat2int { .. }
+            | Self::FcvtasFloatFcvtas32sFloat2int { .. }
+            | Self::FcvtasFloatFcvtas64sFloat2int { .. }
+            | Self::FcvtasFloatFcvtas32dFloat2int { .. }
+            | Self::FcvtasFloatFcvtas64dFloat2int { .. }
+            | Self::FcvtauFloatFcvtau32sFloat2int { .. }
+            | Self::FcvtauFloatFcvtau64sFloat2int { .. }
+            | Self::FcvtauFloatFcvtau32dFloat2int { .. }
+            | Self::FcvtauFloatFcvtau64dFloat2int { .. }
+            | Self::LdrRegFpsimdLdrBlLdstRegoff { .. }
+            | Self::StrRegFpsimdStrBlLdstRegoff { .. } => false,
         }
     }
 }
@@ -2102,14 +2490,14 @@ mod tests {
     }
 
     /// Exclusive, pair-atomic (CASP, FEAT_LSE128) and the FP/SIMD memory forms
-    /// outside A9a (register offset, literal, LD2-4, single structure, replicate,
+    /// outside A9a and A18 (literal, LD2-4, single structure, replicate,
     /// non-temporal), and
     /// the acquire/release forms beyond A7c's base-register ones (FEAT_LRCPC2
     /// unscaled, FEAT_LRCPC3 writeback, non-canonical should-be-one fields), stay
     /// outside the subset: they must not decode, so they take the Unsupported exit.
     #[test]
     fn exclusive_atomic_and_fp_memory_forms_stay_undecodable() {
-        let words: [(u32, &str); 26] = [
+        let words: [(u32, &str); 24] = [
             (0xc85f_7c20, "ldxr x0, [x1]"),
             (0xc802_7c20, "stxr w2, x0, [x1]"),
             (0x885f_fc20, "ldaxr w0, [x1]"),
@@ -2127,8 +2515,6 @@ mod tests {
             (0x1921_1040, "ldclrp x0, x1, [x2] (FEAT_LSE128)"),
             (0x1921_8040, "swpp x0, x1, [x2] (FEAT_LSE128)"),
             (0x1921_3040, "ldsetp x0, x1, [x2] (FEAT_LSE128)"),
-            (0xfc22_7820, "str d0, [x1, x2, lsl #3]"),
-            (0x3ce2_6820, "str q0, [x1, x2]"),
             (0x4c40_8020, "ld2 {v0.8h, v1.8h}, [x1]"),
             (0x4d40_0020, "ld1 {v0.b}[8], [x1]"),
             (0x4d40_c020, "ld1r {v0.16b}, [x1]"),
@@ -2146,20 +2532,16 @@ mod tests {
         }
     }
 
-    /// A9a: FP arithmetic, conversions and compares, half-precision FMOV, FMOV
-    /// (vector, immediate), saturating integer SIMD and multi-register TBL stay
-    /// outside the subset (Unsupported exit), next to the forms that joined it.
+    /// A9a: half-precision FMOV, FMOV (vector, immediate), saturating integer SIMD
+    /// and multi-register TBL stay outside the subset (Unsupported exit), next to the
+    /// forms that joined it. (A18 moved the scalar floating-point forms inside:
+    /// `a18_subset_boundary`.)
     #[test]
     fn a9a_subset_boundary() {
-        let outside: [(u32, &str); 10] = [
-            (0x1e60_2801, "fadd d1, d0, d0"),
-            (0x9e63_0020, "ucvtf d0, x1"),
-            (0x1e61_2010, "fcmpe d0, d1"),
-            (0x9e78_0000, "fcvtzs x0, d0"),
+        let outside: [(u32, &str); 5] = [
             (0x4f03_f600, "fmov v0.4s, #1.0"),
             (0x1ee6_0020, "fmov w0, h1 (FEAT_FP16)"),
             (0x1ee0_4020, "fmov h0, h1 (FEAT_FP16)"),
-            (0x1e22_0020, "scvtf s0, w1"),
             (0x4e22_0c20, "sqadd v0.16b, v1.16b, v2.16b"),
             (0x4e03_2020, "tbl v0.16b, {v1.16b, v2.16b}, v3.16b"),
         ];
@@ -2173,6 +2555,74 @@ mod tests {
         ];
         for (word, key) in inside {
             assert_eq!(decode_word(word, 0).unwrap().inner.key(), key);
+        }
+    }
+
+    /// A18: single- and double-precision scalar floating point and FPCR/FPSR reads
+    /// decode; half precision (FEAT_FP16), BFloat16, fixed-point conversions, the
+    /// FEAT_FRINTTS and FEAT_JSCVT forms, writes of FPCR/FPSR, every other system
+    /// register, a non-zero should-be-zero `Rm` of FCMP against zero and the
+    /// register-offset SIMD&FP forms with a sub-word index (`option<1> == 0`) stay
+    /// out. (Encodings assembled with llvm-mc.)
+    #[test]
+    fn a18_subset_boundary() {
+        let inside: [(u32, &str); 12] = [
+            (0x1e60_2801, "FADD_float.FADD_D_floatdp2"),
+            (0x9e63_0020, "UCVTF_float_int.UCVTF_D64_float2int"),
+            (0x1e61_2010, "FCMPE_float.FCMPE_D_floatcmp"),
+            (0x9e78_0000, "FCVTZS_float_int.FCVTZS_64D_float2int"),
+            (0x1e22_0020, "SCVTF_float_int.SCVTF_S32_float2int"),
+            (0x1e6e_1000, "FMOV_float_imm.FMOV_D_floatimm"),
+            (0x1e20_2028, "FCMP_float.FCMP_SZ_floatcmp"),
+            (0xd53b_4400, "MRS.MRS_RS_systemmove@FPCR"),
+            (0xd53b_4420, "MRS.MRS_RS_systemmove@FPSR"),
+            (0xfc62_7820, "LDR_reg_fpsimd.LDR_D_ldst_regoff"),
+            (0x3ca2_6820, "STR_reg_fpsimd.STR_Q_ldst_regoff"),
+            (0x3c62_6820, "LDR_reg_fpsimd.LDR_BL_ldst_regoff"),
+        ];
+        for (word, key) in inside {
+            assert_eq!(decode_word(word, 0).unwrap().inner.key(), key, "{word:#x}");
+        }
+        let outside: [(u32, &str); 22] = [
+            (0x1ee2_2820, "fadd h0, h1, h2"),
+            (0x1fc2_0c20, "fmadd h0, h1, h2, h3"),
+            (0x1ee1_2000, "fcmp h0, h1"),
+            (0x1e23_c020, "fcvt h0, s1"),
+            (0x1ee2_4020, "fcvt s0, h1"),
+            (0x1ee2_c020, "fcvt d0, h1"),
+            (0x1e63_c020, "fcvt h0, d1"),
+            (0x1ee2_0020, "scvtf h0, w1"),
+            (0x1ef8_0020, "fcvtzs w0, h1"),
+            (0x1eee_1000, "fmov h0, #1.0"),
+            (0x1ee1_c020, "fsqrt h0, h1"),
+            (0x1ee2_0c20, "fcsel h0, h1, h2, eq"),
+            (0x9e42_f420, "scvtf d0, x1, #3"),
+            (0x1e58_f420, "fcvtzs w0, d1, #3"),
+            (0x1e28_4020, "frint32z s0, s1"),
+            (0x1e69_c020, "frint64x d0, d1"),
+            (0x1e7e_0020, "fjcvtzs w0, d1"),
+            (0x1e63_4020, "bfcvt h0, s1"),
+            (0xd51b_4400, "msr fpcr, x0"),
+            (0xd51b_4420, "msr fpsr, x0"),
+            (0xd53b_4440, "mrs x0, fpmr"),
+            (0x1e21_2028, "fcmp s1, #0.0 with Rm = 1"),
+        ];
+        for (word, what) in outside {
+            assert!(decode_word(word, 0).is_err(), "{what}");
+        }
+        // option<1> == 0 (a sub-word index) is UNDEFINED: every size, load and store.
+        for base in [
+            0x3c62_6820_u32,
+            0x3ca2_6820,
+            0x7c62_6820,
+            0xbc62_6820,
+            0xfc62_6820,
+            0x3ce2_6820,
+        ] {
+            for option in [0b000, 0b001, 0b100, 0b101] {
+                let word = (base & !(0b111 << 13)) | (option << 13);
+                assert!(decode_word(word, 0).is_err(), "{word:#x}");
+            }
         }
     }
 
@@ -2207,7 +2657,7 @@ mod tests {
                 assert_eq!(insn.is_pan_window_access(), insn.lse_atomic().is_some());
             }
         }
-        assert_eq!((memory, base_only), (82, 24));
+        assert_eq!((memory, base_only), (94, 24));
     }
 
     /// A7c: the barriers and base-register acquire/release forms decode as

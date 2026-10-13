@@ -1933,7 +1933,139 @@ pub(crate) fn execute_insn(
         | A64Insn::Rev32AdvsimdRev32AsimdmiscR { .. }
         | A64Insn::Rev64AdvsimdRev64AsimdmiscR { .. }
         | A64Insn::CntAdvsimdCntAsimdmiscR { .. }
-        | A64Insn::TblAdvsimdTblAsimdtblL11 { .. } => crate::simd::execute(insn, pc, state, ctx),
+        | A64Insn::TblAdvsimdTblAsimdtblL11 { .. }
+        // A18: register-offset SIMD&FP loads/stores (the memory path of simd.rs).
+        | A64Insn::LdrRegFpsimdLdrBLdstRegoff { .. }
+        | A64Insn::LdrRegFpsimdLdrHLdstRegoff { .. }
+        | A64Insn::LdrRegFpsimdLdrSLdstRegoff { .. }
+        | A64Insn::LdrRegFpsimdLdrDLdstRegoff { .. }
+        | A64Insn::LdrRegFpsimdLdrQLdstRegoff { .. }
+        | A64Insn::LdrRegFpsimdLdrBlLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrBLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrHLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrSLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrDLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrQLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrBlLdstRegoff { .. } => crate::simd::execute(insn, pc, state, ctx),
+        // A18 scalar floating point, executed on the host CPU (fp.rs), and MRS of
+        // FPCR/FPSR.
+        A64Insn::FaddFloatFaddSFloatdp2 { .. }
+        | A64Insn::FaddFloatFaddDFloatdp2 { .. }
+        | A64Insn::FsubFloatFsubSFloatdp2 { .. }
+        | A64Insn::FsubFloatFsubDFloatdp2 { .. }
+        | A64Insn::FmulFloatFmulSFloatdp2 { .. }
+        | A64Insn::FmulFloatFmulDFloatdp2 { .. }
+        | A64Insn::FnmulFloatFnmulSFloatdp2 { .. }
+        | A64Insn::FnmulFloatFnmulDFloatdp2 { .. }
+        | A64Insn::FdivFloatFdivSFloatdp2 { .. }
+        | A64Insn::FdivFloatFdivDFloatdp2 { .. }
+        | A64Insn::FmaxFloatFmaxSFloatdp2 { .. }
+        | A64Insn::FmaxFloatFmaxDFloatdp2 { .. }
+        | A64Insn::FminFloatFminSFloatdp2 { .. }
+        | A64Insn::FminFloatFminDFloatdp2 { .. }
+        | A64Insn::FmaxnmFloatFmaxnmSFloatdp2 { .. }
+        | A64Insn::FmaxnmFloatFmaxnmDFloatdp2 { .. }
+        | A64Insn::FminnmFloatFminnmSFloatdp2 { .. }
+        | A64Insn::FminnmFloatFminnmDFloatdp2 { .. }
+        | A64Insn::FmaddFloatFmaddSFloatdp3 { .. }
+        | A64Insn::FmaddFloatFmaddDFloatdp3 { .. }
+        | A64Insn::FmsubFloatFmsubSFloatdp3 { .. }
+        | A64Insn::FmsubFloatFmsubDFloatdp3 { .. }
+        | A64Insn::FnmaddFloatFnmaddSFloatdp3 { .. }
+        | A64Insn::FnmaddFloatFnmaddDFloatdp3 { .. }
+        | A64Insn::FnmsubFloatFnmsubSFloatdp3 { .. }
+        | A64Insn::FnmsubFloatFnmsubDFloatdp3 { .. }
+        | A64Insn::FabsFloatFabsSFloatdp1 { .. }
+        | A64Insn::FabsFloatFabsDFloatdp1 { .. }
+        | A64Insn::FnegFloatFnegSFloatdp1 { .. }
+        | A64Insn::FnegFloatFnegDFloatdp1 { .. }
+        | A64Insn::FsqrtFloatFsqrtSFloatdp1 { .. }
+        | A64Insn::FsqrtFloatFsqrtDFloatdp1 { .. }
+        | A64Insn::FrintnFloatFrintnSFloatdp1 { .. }
+        | A64Insn::FrintnFloatFrintnDFloatdp1 { .. }
+        | A64Insn::FrintpFloatFrintpSFloatdp1 { .. }
+        | A64Insn::FrintpFloatFrintpDFloatdp1 { .. }
+        | A64Insn::FrintmFloatFrintmSFloatdp1 { .. }
+        | A64Insn::FrintmFloatFrintmDFloatdp1 { .. }
+        | A64Insn::FrintzFloatFrintzSFloatdp1 { .. }
+        | A64Insn::FrintzFloatFrintzDFloatdp1 { .. }
+        | A64Insn::FrintaFloatFrintaSFloatdp1 { .. }
+        | A64Insn::FrintaFloatFrintaDFloatdp1 { .. }
+        | A64Insn::FrintxFloatFrintxSFloatdp1 { .. }
+        | A64Insn::FrintxFloatFrintxDFloatdp1 { .. }
+        | A64Insn::FrintiFloatFrintiSFloatdp1 { .. }
+        | A64Insn::FrintiFloatFrintiDFloatdp1 { .. }
+        | A64Insn::FcvtFloatFcvtDsFloatdp1 { .. }
+        | A64Insn::FcvtFloatFcvtSdFloatdp1 { .. }
+        | A64Insn::FcmpFloatFcmpSFloatcmp { .. }
+        | A64Insn::FcmpFloatFcmpSzFloatcmp { .. }
+        | A64Insn::FcmpFloatFcmpDFloatcmp { .. }
+        | A64Insn::FcmpFloatFcmpDzFloatcmp { .. }
+        | A64Insn::FcmpeFloatFcmpeSFloatcmp { .. }
+        | A64Insn::FcmpeFloatFcmpeSzFloatcmp { .. }
+        | A64Insn::FcmpeFloatFcmpeDFloatcmp { .. }
+        | A64Insn::FcmpeFloatFcmpeDzFloatcmp { .. }
+        | A64Insn::FccmpFloatFccmpSFloatccmp { .. }
+        | A64Insn::FccmpFloatFccmpDFloatccmp { .. }
+        | A64Insn::FccmpeFloatFccmpeSFloatccmp { .. }
+        | A64Insn::FccmpeFloatFccmpeDFloatccmp { .. }
+        | A64Insn::FcselFloatFcselSFloatsel { .. }
+        | A64Insn::FcselFloatFcselDFloatsel { .. }
+        | A64Insn::FmovFloatImmFmovSFloatimm { .. }
+        | A64Insn::FmovFloatImmFmovDFloatimm { .. }
+        | A64Insn::ScvtfFloatIntScvtfS32Float2int { .. }
+        | A64Insn::ScvtfFloatIntScvtfD32Float2int { .. }
+        | A64Insn::ScvtfFloatIntScvtfS64Float2int { .. }
+        | A64Insn::ScvtfFloatIntScvtfD64Float2int { .. }
+        | A64Insn::UcvtfFloatIntUcvtfS32Float2int { .. }
+        | A64Insn::UcvtfFloatIntUcvtfD32Float2int { .. }
+        | A64Insn::UcvtfFloatIntUcvtfS64Float2int { .. }
+        | A64Insn::UcvtfFloatIntUcvtfD64Float2int { .. }
+        | A64Insn::FcvtzsFloatIntFcvtzs32sFloat2int { .. }
+        | A64Insn::FcvtzsFloatIntFcvtzs64sFloat2int { .. }
+        | A64Insn::FcvtzsFloatIntFcvtzs32dFloat2int { .. }
+        | A64Insn::FcvtzsFloatIntFcvtzs64dFloat2int { .. }
+        | A64Insn::FcvtzuFloatIntFcvtzu32sFloat2int { .. }
+        | A64Insn::FcvtzuFloatIntFcvtzu64sFloat2int { .. }
+        | A64Insn::FcvtzuFloatIntFcvtzu32dFloat2int { .. }
+        | A64Insn::FcvtzuFloatIntFcvtzu64dFloat2int { .. }
+        | A64Insn::FcvtnsFloatFcvtns32sFloat2int { .. }
+        | A64Insn::FcvtnsFloatFcvtns64sFloat2int { .. }
+        | A64Insn::FcvtnsFloatFcvtns32dFloat2int { .. }
+        | A64Insn::FcvtnsFloatFcvtns64dFloat2int { .. }
+        | A64Insn::FcvtnuFloatFcvtnu32sFloat2int { .. }
+        | A64Insn::FcvtnuFloatFcvtnu64sFloat2int { .. }
+        | A64Insn::FcvtnuFloatFcvtnu32dFloat2int { .. }
+        | A64Insn::FcvtnuFloatFcvtnu64dFloat2int { .. }
+        | A64Insn::FcvtmsFloatFcvtms32sFloat2int { .. }
+        | A64Insn::FcvtmsFloatFcvtms64sFloat2int { .. }
+        | A64Insn::FcvtmsFloatFcvtms32dFloat2int { .. }
+        | A64Insn::FcvtmsFloatFcvtms64dFloat2int { .. }
+        | A64Insn::FcvtmuFloatFcvtmu32sFloat2int { .. }
+        | A64Insn::FcvtmuFloatFcvtmu64sFloat2int { .. }
+        | A64Insn::FcvtmuFloatFcvtmu32dFloat2int { .. }
+        | A64Insn::FcvtmuFloatFcvtmu64dFloat2int { .. }
+        | A64Insn::FcvtpsFloatFcvtps32sFloat2int { .. }
+        | A64Insn::FcvtpsFloatFcvtps64sFloat2int { .. }
+        | A64Insn::FcvtpsFloatFcvtps32dFloat2int { .. }
+        | A64Insn::FcvtpsFloatFcvtps64dFloat2int { .. }
+        | A64Insn::FcvtpuFloatFcvtpu32sFloat2int { .. }
+        | A64Insn::FcvtpuFloatFcvtpu64sFloat2int { .. }
+        | A64Insn::FcvtpuFloatFcvtpu32dFloat2int { .. }
+        | A64Insn::FcvtpuFloatFcvtpu64dFloat2int { .. }
+        | A64Insn::FcvtasFloatFcvtas32sFloat2int { .. }
+        | A64Insn::FcvtasFloatFcvtas64sFloat2int { .. }
+        | A64Insn::FcvtasFloatFcvtas32dFloat2int { .. }
+        | A64Insn::FcvtasFloatFcvtas64dFloat2int { .. }
+        | A64Insn::FcvtauFloatFcvtau32sFloat2int { .. }
+        | A64Insn::FcvtauFloatFcvtau64sFloat2int { .. }
+        | A64Insn::FcvtauFloatFcvtau32dFloat2int { .. }
+        | A64Insn::FcvtauFloatFcvtau64dFloat2int { .. }
+        | A64Insn::MrsMrsRsSystemmoveFpcr { .. }
+        | A64Insn::MrsMrsRsSystemmoveFpsr { .. } => {
+            crate::fp::execute(insn, state)?;
+            Ok(pc + 4)
+        }
         // `msr pan, #imm`: UNDEFINED at EL0, and never in a fragment (A15: only the
         // trampoline writes PAN; the verifier rejects any `msr`). Either way a hard
         // error: admission rejects it in user code, the translator never emits it.
@@ -2155,7 +2287,7 @@ fn shift_value(value: u64, shift: u8, amount: u32, bits: u8) -> Result<u64, Stri
 
 /// `ExtendReg`: `option` selects UXTB..UXTX, SXTB..SXTX; the result is shifted left
 /// by `shift` (0..=4).
-fn extend_value(value: u64, option: u8, shift: u32, bits: u8) -> Result<u64, String> {
+pub(crate) fn extend_value(value: u64, option: u8, shift: u32, bits: u8) -> Result<u64, String> {
     if shift > 4 {
         return Err(format!("extended-register shift {shift} is reserved"));
     }
@@ -2389,7 +2521,7 @@ fn extract(
     Ok(())
 }
 
-fn condition_holds(cond: u8, state: &MachineState) -> Result<bool, String> {
+pub(crate) fn condition_holds(cond: u8, state: &MachineState) -> Result<bool, String> {
     let condition = A64Condition::from_bits(cond)
         .ok_or_else(|| format!("invalid condition field: {cond:#x}"))?;
     Ok(eval_condition(condition, state))

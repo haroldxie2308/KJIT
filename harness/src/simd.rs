@@ -2,9 +2,13 @@
 //! (A4)"): exactly the A9a forms, each written from its Arm XML execute
 //! pseudocode. A write of `V{datasize}(d)` with `datasize < 128` zero-extends to
 //! 128 bits; `Vpart{64}(d, 1)` writes bits 127:64 and keeps the rest. No A9a form
-//! reads or writes FPCR/FPSR.
+//! reads or writes FPCR/FPSR. A18's register-offset loads/stores are the memory
+//! path here too (`execute_mem`, address `base + ExtendReg(index)`); its scalar
+//! floating-point forms are `fp.rs`.
 
-use crate::arm64::{check_accesses, check_window_accesses, untagged, AccessContext, InsnError};
+use crate::arm64::{
+    check_accesses, check_window_accesses, extend_value, untagged, AccessContext, InsnError,
+};
 use crate::model::{AccessKind, FaultCause, MachineState, MemAccess, MemFault};
 use crate::shared::arm64::{A64FpSimdWriteback, A64Insn, A64Reg31Mode};
 
@@ -100,7 +104,17 @@ fn execute_mem(
         .ok_or_else(|| format!("{} is not a SIMD&FP load/store", insn.key()))?;
     let (transfer, load) = transfer(mem.access)?;
     let base = state.read_reg(mem.base);
-    let address = base.wrapping_add_signed(mem.offset);
+    // A18 register-offset forms: `base + ExtendReg(index, option, shift)`.
+    let index = match mem.index {
+        Some(index) => extend_value(
+            state.read_reg(index.reg),
+            index.option,
+            u32::from(index.shift),
+            64,
+        )?,
+        None => 0,
+    };
+    let address = base.wrapping_add_signed(mem.offset).wrapping_add(index);
     let kind = if load {
         AccessKind::Read
     } else {

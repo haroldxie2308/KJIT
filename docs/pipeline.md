@@ -1136,14 +1136,27 @@ They are then translated, not `Unsupported` exits.
     take an FP exception at EL1. `kjit_call_fragment_fpsimd()` reads the
     user FPCR from `thread.uw.fpsimd_state` after `kernel_neon_begin` and
     before `fpsimd_load_state`. If any trap-enable bit is set, it runs
-    nothing, closes the bracket and returns "declined": userspace resumes at
-    the entry pc (`run_declined`, plus the new stat `fpsimd_trap_declined`).
-    A fragment cannot change FPCR, because MSR FPCR is not admitted.
+    nothing, closes the bracket and returns false
+    (`kjit_call_fragment_fpsimd(.., u64 *status) -> bool`). `run_chain` then
+    resumes userspace at the pc this entry would have started at: the hook's
+    pc, or the target of the chained branch, whose state the previous run's
+    epilogue already wrote back. This counts `run_declined` and
+    `fpsimd_trap_declined`, but not `fragment_entries`. A fragment cannot
+    change FPCR, because MSR FPCR is not admitted.
+  - Trap-enable bits are not RAZ on every CPU without trapping. On M1/HVF
+    they read back as written and never trap. Such a task is then declined
+    needlessly, which is correct, only slower.
+- Subset: 124 forms (112 scalar FP, 12 register-offset SIMD&FP LDR/STR) and
+  2 MRS instances. FCMP/FCMPE against zero pin their should-be-zero `Rm`
+  to 0. MRS FPCR/FPSR set `uses_fpsimd`: outside the bracket the hardware
+  FPCR/FPSR are not the user's.
 - Harness: the interpreter executes each admitted scalar FP form on the host
   CPU. AArch64 is the only supported host. It uses inline asm per form, with
   the state's FPCR written and FPSR read back, so rounding modes, NaNs and
-  flags are the hardware's. It does not reimplement IEEE 754. The fuzzer gets
-  the forms from the generated metadata as usual.
+  flags are the hardware's. It does not reimplement IEEE 754 (`harness/src/fp.rs`).
+  The fuzzer gets the forms from the generated metadata as usual.
+  - Fixtures cannot write FPCR, because MSR FPCR is not admitted. A case
+    symbol containing `_fpcr<HEX>_` starts with that FPCR instead.
 - Verifier: the new forms set `uses_fpsimd`. Register-offset SIMD&FP accesses
   are window accesses under rule 8, like the A9 forms.
 
@@ -1175,7 +1188,7 @@ They are then translated, not `Unsupported` exits.
   `-ENODEV`, the load fails) and on every CPU onlined while kjit is loaded
   (failure: that CPU does not come online). EL0VCTEN changes later only for
   compat tasks (`ARM64_ERRATUM_1418040`), which never run fragments.
-- Verifier: rule 5 allows exactly the three instances (`Form::MrsUserReg`);
+- Verifier: rule 5 allows exactly these instances and MRS FPCR/FPSR (A18) (`Form::MrsUserReg`);
   rule 9 treats their results as user values.
 - Harness counter modelling: see section 7.
 
@@ -1376,8 +1389,9 @@ Reject with `VerifyError { offset, rule }`.
      `ubfx #2, #12`; victim index < 2^8 from `ubfx #2, #8` at offset 32 KiB).
      There is no join point from the preceding budget check's `sub` to the final
      `br` (`DispatchTemplate`).
-5. System: only `MRS Xt, TPIDR_EL0`, `MRS Xt, CNTVCT_EL0` and `MRS Xt,
-   CNTFRQ_EL0` (A10; the only MRS encodings the generated subset decodes, one
+5. System: only `MRS Xt, TPIDR_EL0`, `MRS Xt, CNTVCT_EL0`, `MRS Xt,
+   CNTFRQ_EL0` (A10), `MRS Xt, FPCR` and `MRS Xt, FPSR` (A18; the FP ones are
+   `Form::Simd`, so a fragment with them is FP/SIMD; the only MRS encodings the generated subset decodes, one
    generated form each, `Form::MrsUserReg`; every other value of
    o0:op1:CRn:CRm:op2 is rule 1's, pinned exhaustively by
    `mrs_is_allowed_for_exactly_the_user_readable_registers`), NOP, and `DMB`/
@@ -1426,8 +1440,11 @@ Reject with `VerifyError { offset, rule }`.
      naming an exit-group start.
    - Join points: none on the `cbnz` or the access (the `ubfx` may be one: it
      recomputes the checked value).
-   - The 75 register-only SIMD&FP forms are `Form::Simd`: allowed anywhere, exit
-     groups included.
+   - The register-only SIMD&FP forms (75 of A9, 112 scalar FP of A18) are
+     `Form::Simd`: allowed anywhere, exit groups included. A18's
+     register-offset SIMD&FP loads/stores are `UserOnlyForm` like every
+     non-base-only SIMD&FP memory encoding; translation lowers them to base-only
+     window accesses.
 9. Confidentiality: no kernel value reaches user-visible state; see
    "Confidentiality (rule 9)" below.
 10. Link slots (A16): every `link_sites` entry `(slot_offset, target_pc)` names

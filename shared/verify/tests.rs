@@ -440,10 +440,11 @@ fn barriers_are_the_only_allowed_system_instructions_besides_mrs_user_regs() {
     }
 }
 
-/// Rule 5 (A10): MRS is allowlisted for exactly TPIDR_EL0, CNTVCT_EL0 and
-/// CNTFRQ_EL0, with any Rt, in the body and in an exit group; every other value of
-/// the system-register field (o0:op1:CRn:CRm:op2, all 2^15) is undecodable. Rule 9:
-/// their results are user values.
+/// Rule 5 (A10, A18): MRS is allowlisted for exactly TPIDR_EL0, CNTVCT_EL0,
+/// CNTFRQ_EL0, FPCR and FPSR, with any Rt, in the body and in an exit group; every
+/// other value of the system-register field (o0:op1:CRn:CRm:op2, all 2^15) is
+/// undecodable. Rule 9: their results are user values. FPCR/FPSR need the FP/SIMD
+/// bracket (`uses_fpsimd`); the others do not.
 #[test]
 fn mrs_is_allowed_for_exactly_the_user_readable_registers() {
     const MRS: u32 = 0xd530_0000;
@@ -454,6 +455,8 @@ fn mrs_is_allowed_for_exactly_the_user_readable_registers() {
         sysreg(3, 13, 0, 2), // TPIDR_EL0
         sysreg(3, 14, 0, 2), // CNTVCT_EL0
         sysreg(3, 14, 0, 0), // CNTFRQ_EL0
+        sysreg(3, 4, 4, 0),  // FPCR
+        sysreg(3, 4, 4, 1),  // FPSR
     ];
     for reg in 0..(1_u32 << 15) {
         for rt in [0, 12, 30, 31] {
@@ -486,9 +489,15 @@ fn mrs_is_allowed_for_exactly_the_user_readable_registers() {
         A64Insn::MrsMrsRsSystemmoveTpidrEl0 { rt: x(12) },
         A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt: x(12) },
         A64Insn::MrsMrsRsSystemmoveCntfrqEl0 { rt: x(12) },
+        A64Insn::MrsMrsRsSystemmoveFpcr { rt: x(12) },
+        A64Insn::MrsMrsRsSystemmoveFpsr { rt: x(12) },
     ] {
         assert_eq!(Frag::new(&[mrs, orr, b_epi(2)]).rule(), None, "{mrs:?}");
     }
+    let uses = |insn: A64Insn| Frag::new(&[insn, b_epi(1)]).verify().unwrap().uses_fpsimd;
+    assert!(!uses(A64Insn::MrsMrsRsSystemmoveCntvctEl0 { rt: x(0) }));
+    assert!(uses(A64Insn::MrsMrsRsSystemmoveFpcr { rt: x(0) }));
+    assert!(uses(A64Insn::MrsMrsRsSystemmoveFpsr { rt: x(0) }));
 }
 
 #[test]
@@ -1362,6 +1371,115 @@ fn simd_windows_and_uses_fpsimd() {
     assert!(!ok(Frag::new(&[movz(0, 1), b_epi(1)])));
 }
 
+/// A decodable word of `spec`'s form: its fixed bits with the free bits chosen so
+/// that no decode-time value rule (`is_decode_undefined`) rejects it.
+fn valid_word(spec: &crate::shared::arm64::GeneratedInsnSpec) -> A64Insn {
+    let base = crate::shared::arm64::form_base_word(spec);
+    let free = !spec.mask;
+    // Walk subsets of the low free bits until one decodes as this very form.
+    let mut candidate = 0_u32;
+    loop {
+        if let Some(insn) = A64Insn::decode(base | (candidate & free)) {
+            if insn.key() == spec.key && !insn.is_decode_undefined() {
+                return insn;
+            }
+        }
+        candidate = candidate.wrapping_add(1);
+        assert!(candidate < 1 << 20, "{}: no valid word", spec.key);
+    }
+}
+
+/// A18: every register-only SIMD&FP form of the subset (A9a data movement and
+/// integer SIMD, A18 scalar floating point) is accepted anywhere and makes the
+/// fragment `uses_fpsimd`: in the body and first in an exit group.
+#[test]
+fn every_register_only_simd_form_is_allowed_and_uses_fpsimd() {
+    use crate::shared::arm64::GENERATED_A64_SUBSET;
+    let mut checked = 0;
+    for spec in GENERATED_A64_SUBSET {
+        let has_vec = spec.operands.iter().any(|role| {
+            matches!(
+                role,
+                crate::shared::arm64::A64OperandRole::VecRead { .. }
+                    | crate::shared::arm64::A64OperandRole::VecWrite { .. }
+            )
+        });
+        if !has_vec || spec.operands.contains(&crate::shared::arm64::A64OperandRole::Memory) {
+            continue;
+        }
+        let insn = valid_word(spec);
+        // In the body ...
+        let verified = Frag::new(&[insn, b_epi(1)]).verify();
+        assert_eq!(verified.map(|ok| ok.uses_fpsimd), Ok(true), "{}", spec.key);
+        // ... and in an exit group (after a user access's Mem stub start).
+        let body = [movz(1, 1), ldtr(0, 1), b_epi(2), insn, movz(9, 5), b_epi(5)];
+        let frag = Frag::new(&body).site(1, 3);
+        assert_eq!(frag.verify().map(|ok| ok.uses_fpsimd), Ok(true), "{}", spec.key);
+        checked += 1;
+    }
+    // 75 A9a forms + 112 A18 forms (scalar floating point).
+    assert_eq!(checked, 75 + 112);
+}
+
+/// A18: the register-offset SIMD&FP loads/stores are never valid in a fragment,
+/// window position included -- translation computes the address into sA and runs the
+/// base-only encoding -- and that lowering (`add sA, <base>, <index>, <extend>`,
+/// range check, access) is accepted. The verifier ties neither the add nor its
+/// operands to the access: safety needs only the range check of the register the
+/// access uses.
+#[test]
+fn register_offset_simd_forms_are_user_only_and_their_lowering_is_a_window() {
+    use crate::shared::arm64::GENERATED_A64_SUBSET;
+    let mut forms = 0;
+    for spec in GENERATED_A64_SUBSET {
+        if !(spec.key.starts_with("LDR_reg_fpsimd.") || spec.key.starts_with("STR_reg_fpsimd.")) {
+            continue;
+        }
+        let insn = valid_word(spec);
+        forms += 1;
+        // Anywhere in the body, and in the window's access position.
+        assert_eq!(
+            Frag::new(&[insn, b_epi(1)]).rule(),
+            Some(VerifyRule::UserOnlyForm),
+            "{}",
+            spec.key
+        );
+        let mut body = window_body();
+        body[2] = insn;
+        assert_eq!(window_fragment(&body).rule(), Some(VerifyRule::FaultSiteNotUserAccess));
+        assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::UserOnlyForm), "{}", spec.key);
+    }
+    assert_eq!(forms, 12);
+
+    // add x4, x1, x2, lsl #3; ubfx x5, x4, #48, #8; cbnz x5, <S>; ldr d0, [x4]; ...
+    let add = A64Insn::AddAddsubExtAdd64AddsubExt {
+        rm: x(2),
+        option: 0b011,
+        imm3: uimm(3, 3),
+        rn: xs(1),
+        rd: xs(4),
+    };
+    let ldr_d = A64Insn::LdrImmFpsimdLdrDLdstPos {
+        rt: 0,
+        mem: mem_off(xs(4), crate::shared::arm64::ergo::scaled_uimm(0, 12, 3)),
+    };
+    let body = [add, ubfx48(4, 5), cbnz(2, 5, 5), ldr_d, b_epi(4), movz(9, 5), b_epi(6)];
+    let frag = Frag::new(&body).site(3, 5);
+    assert_eq!(frag.verify().map(|ok| ok.uses_fpsimd), Ok(true));
+    // The same without the add is just as safe (sA is range-checked whatever it
+    // holds); without the range check it is rejected.
+    let body = [ubfx48(4, 5), cbnz(1, 5, 4), ldr_d, b_epi(3), movz(9, 5), b_epi(5)];
+    assert_eq!(Frag::new(&body).site(2, 4).rule(), None);
+    let body = [add, ldr_d, b_epi(2), movz(9, 5), b_epi(4)];
+    assert_eq!(Frag::new(&body).site(1, 3).rule(), Some(VerifyRule::WindowRangeCheck));
+    // The add between the range check and the access: the window is widened.
+    let body = [ubfx48(4, 5), cbnz(1, 5, 5), add, ldr_d, b_epi(4), movz(9, 5), b_epi(6)];
+    assert_eq!(
+        Frag::new(&body).site(3, 5).rule(),
+        Some(VerifyRule::WindowRangeCheck)
+    );
+}
+
 /// A9a: a SIMD&FP load/store is valid only as a window access in its base-only
 /// encoding on sA, right after its range check.
 #[test]
@@ -1543,23 +1661,18 @@ fn classification_agrees_with_generated_roles() {
             }
             // A8/A9a: the window accesses access memory; MSR (PSTATE.PAN) has no role.
             rules::Form::WindowAccess { .. } => assert!(memory && !control, "{}", insn.key()),
-            // A9a: SIMD&FP register-only forms name a V register, never memory,
-            // flags or control flow.
+            // A9a, A18: SIMD&FP register-only forms name a V register (MRS of
+            // FPCR/FPSR reads the floating-point control registers instead), never
+            // memory or control flow. The A18 compares and conditional selects read
+            // or write NZCV.
             rules::Form::Simd => {
                 assert!(!memory && !control, "{}", insn.key());
                 assert!(
-                    roles.iter().any(|role| matches!(
-                        role,
-                        A64OperandRole::VecRead { .. } | A64OperandRole::VecWrite { .. }
-                    )),
-                    "{}",
-                    insn.key()
-                );
-                assert!(
-                    !roles.iter().any(|role| matches!(
-                        role,
-                        A64OperandRole::FlagsRead | A64OperandRole::FlagsWrite
-                    )),
+                    insn.key().starts_with("MRS.")
+                        || roles.iter().any(|role| matches!(
+                            role,
+                            A64OperandRole::VecRead { .. } | A64OperandRole::VecWrite { .. }
+                        )),
                     "{}",
                     insn.key()
                 );

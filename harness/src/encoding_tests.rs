@@ -25,6 +25,7 @@ fn encoding_matches_llvm_for_handwritten_cases() {
     cases.extend(bti_carry_crc_encoding_cases());
     cases.extend(lse_msr_encoding_cases());
     cases.extend(simd_encoding_cases());
+    cases.extend(fp_encoding_cases());
     // Generated keys: the subset.toml forms, with each field-instance form
     // replaced by its `<form>@<instance>` keys.
     let decode_forms = crate::shared::arm64::GENERATED_A64_SUBSET
@@ -4265,7 +4266,13 @@ fn simd_encoding_cases() -> Vec<EncodingCase> {
             "tbl v3.8b, {v31.16b}, v5.8b",
         ),
     ];
-    CASES
+    cases_from_fields(CASES)
+}
+
+/// Cases written as `(form, [(field, value)], asm)`: the word is the form's fixed
+/// bits plus the listed fields, and must decode as that form.
+fn cases_from_fields(cases: &[(&'static str, &[(&str, u32)], &str)]) -> Vec<EncodingCase> {
+    cases
         .iter()
         .map(|&(form, fields, asm)| {
             let spec = crate::shared::arm64::GENERATED_A64_SUBSET
@@ -4293,7 +4300,9 @@ fn simd_encoding_cases() -> Vec<EncodingCase> {
                 word = (word & !field.mask) | bits;
             };
             for &(name, value) in fields {
-                if name == "imm8" {
+                // The A9a modified-immediate diagrams split `imm8` into `abcdefgh`
+                // fields; FMOV (scalar, immediate) has the one `imm8` field.
+                if name == "imm8" && spec.field("h").is_some() {
                     for (bit, name) in ["h", "g", "f", "e", "d", "c", "b", "a"].iter().enumerate() {
                         set(name, (value >> bit) & 1);
                     }
@@ -4308,6 +4317,1012 @@ fn simd_encoding_cases() -> Vec<EncodingCase> {
             case(form, format!("    {asm}"), expected)
         })
         .collect()
+}
+
+/// A18: scalar floating point, the register-offset SIMD&FP loads/stores (every
+/// extend and shift) and MRS of FPCR/FPSR.
+fn fp_encoding_cases() -> Vec<EncodingCase> {
+    const CASES: &[(&str, &[(&str, u32)], &str)] = &[
+        (
+            "FADD_float.FADD_S_floatdp2",
+            &[("Rm", 14), ("Rn", 6), ("Rd", 7)],
+            "fadd s7, s6, s14",
+        ),
+        (
+            "FADD_float.FADD_D_floatdp2",
+            &[("Rm", 25), ("Rn", 11), ("Rd", 14)],
+            "fadd d14, d11, d25",
+        ),
+        (
+            "FSUB_float.FSUB_S_floatdp2",
+            &[("Rm", 4), ("Rn", 16), ("Rd", 21)],
+            "fsub s21, s16, s4",
+        ),
+        (
+            "FSUB_float.FSUB_D_floatdp2",
+            &[("Rm", 15), ("Rn", 21), ("Rd", 28)],
+            "fsub d28, d21, d15",
+        ),
+        (
+            "FMUL_float.FMUL_S_floatdp2",
+            &[("Rm", 26), ("Rn", 26), ("Rd", 3)],
+            "fmul s3, s26, s26",
+        ),
+        (
+            "FMUL_float.FMUL_D_floatdp2",
+            &[("Rm", 5), ("Rn", 31), ("Rd", 10)],
+            "fmul d10, d31, d5",
+        ),
+        (
+            "FNMUL_float.FNMUL_S_floatdp2",
+            &[("Rm", 16), ("Rn", 4), ("Rd", 17)],
+            "fnmul s17, s4, s16",
+        ),
+        (
+            "FNMUL_float.FNMUL_D_floatdp2",
+            &[("Rm", 27), ("Rn", 9), ("Rd", 24)],
+            "fnmul d24, d9, d27",
+        ),
+        (
+            "FDIV_float.FDIV_S_floatdp2",
+            &[("Rm", 6), ("Rn", 14), ("Rd", 31)],
+            "fdiv s31, s14, s6",
+        ),
+        (
+            "FDIV_float.FDIV_D_floatdp2",
+            &[("Rm", 17), ("Rn", 19), ("Rd", 6)],
+            "fdiv d6, d19, d17",
+        ),
+        (
+            "FMAX_float.FMAX_S_floatdp2",
+            &[("Rm", 28), ("Rn", 24), ("Rd", 13)],
+            "fmax s13, s24, s28",
+        ),
+        (
+            "FMAX_float.FMAX_D_floatdp2",
+            &[("Rm", 7), ("Rn", 29), ("Rd", 20)],
+            "fmax d20, d29, d7",
+        ),
+        (
+            "FMIN_float.FMIN_S_floatdp2",
+            &[("Rm", 18), ("Rn", 2), ("Rd", 27)],
+            "fmin s27, s2, s18",
+        ),
+        (
+            "FMIN_float.FMIN_D_floatdp2",
+            &[("Rm", 29), ("Rn", 7), ("Rd", 2)],
+            "fmin d2, d7, d29",
+        ),
+        (
+            "FMAXNM_float.FMAXNM_S_floatdp2",
+            &[("Rm", 8), ("Rn", 12), ("Rd", 9)],
+            "fmaxnm s9, s12, s8",
+        ),
+        (
+            "FMAXNM_float.FMAXNM_D_floatdp2",
+            &[("Rm", 19), ("Rn", 17), ("Rd", 16)],
+            "fmaxnm d16, d17, d19",
+        ),
+        (
+            "FMINNM_float.FMINNM_S_floatdp2",
+            &[("Rm", 30), ("Rn", 22), ("Rd", 23)],
+            "fminnm s23, s22, s30",
+        ),
+        (
+            "FMINNM_float.FMINNM_D_floatdp2",
+            &[("Rm", 9), ("Rn", 27), ("Rd", 30)],
+            "fminnm d30, d27, d9",
+        ),
+        (
+            "FMADD_float.FMADD_S_floatdp3",
+            &[("Rm", 20), ("Ra", 25), ("Rn", 0), ("Rd", 5)],
+            "fmadd s5, s0, s20, s25",
+        ),
+        (
+            "FMADD_float.FMADD_D_floatdp3",
+            &[("Rm", 31), ("Ra", 6), ("Rn", 5), ("Rd", 12)],
+            "fmadd d12, d5, d31, d6",
+        ),
+        (
+            "FMSUB_float.FMSUB_S_floatdp3",
+            &[("Rm", 10), ("Ra", 19), ("Rn", 10), ("Rd", 19)],
+            "fmsub s19, s10, s10, s19",
+        ),
+        (
+            "FMSUB_float.FMSUB_D_floatdp3",
+            &[("Rm", 21), ("Ra", 0), ("Rn", 15), ("Rd", 26)],
+            "fmsub d26, d15, d21, d0",
+        ),
+        (
+            "FNMADD_float.FNMADD_S_floatdp3",
+            &[("Rm", 0), ("Ra", 13), ("Rn", 20), ("Rd", 1)],
+            "fnmadd s1, s20, s0, s13",
+        ),
+        (
+            "FNMADD_float.FNMADD_D_floatdp3",
+            &[("Rm", 11), ("Ra", 26), ("Rn", 25), ("Rd", 8)],
+            "fnmadd d8, d25, d11, d26",
+        ),
+        (
+            "FNMSUB_float.FNMSUB_S_floatdp3",
+            &[("Rm", 22), ("Ra", 7), ("Rn", 30), ("Rd", 15)],
+            "fnmsub s15, s30, s22, s7",
+        ),
+        (
+            "FNMSUB_float.FNMSUB_D_floatdp3",
+            &[("Rm", 1), ("Ra", 20), ("Rn", 3), ("Rd", 22)],
+            "fnmsub d22, d3, d1, d20",
+        ),
+        (
+            "FABS_float.FABS_S_floatdp1",
+            &[("Rn", 8), ("Rd", 29)],
+            "fabs s29, s8",
+        ),
+        (
+            "FABS_float.FABS_D_floatdp1",
+            &[("Rn", 13), ("Rd", 4)],
+            "fabs d4, d13",
+        ),
+        (
+            "FNEG_float.FNEG_S_floatdp1",
+            &[("Rn", 18), ("Rd", 11)],
+            "fneg s11, s18",
+        ),
+        (
+            "FNEG_float.FNEG_D_floatdp1",
+            &[("Rn", 23), ("Rd", 18)],
+            "fneg d18, d23",
+        ),
+        (
+            "FSQRT_float.FSQRT_S_floatdp1",
+            &[("Rn", 28), ("Rd", 25)],
+            "fsqrt s25, s28",
+        ),
+        (
+            "FSQRT_float.FSQRT_D_floatdp1",
+            &[("Rn", 1), ("Rd", 0)],
+            "fsqrt d0, d1",
+        ),
+        (
+            "FRINTN_float.FRINTN_S_floatdp1",
+            &[("Rn", 6), ("Rd", 7)],
+            "frintn s7, s6",
+        ),
+        (
+            "FRINTN_float.FRINTN_D_floatdp1",
+            &[("Rn", 11), ("Rd", 14)],
+            "frintn d14, d11",
+        ),
+        (
+            "FRINTP_float.FRINTP_S_floatdp1",
+            &[("Rn", 16), ("Rd", 21)],
+            "frintp s21, s16",
+        ),
+        (
+            "FRINTP_float.FRINTP_D_floatdp1",
+            &[("Rn", 21), ("Rd", 28)],
+            "frintp d28, d21",
+        ),
+        (
+            "FRINTM_float.FRINTM_S_floatdp1",
+            &[("Rn", 26), ("Rd", 3)],
+            "frintm s3, s26",
+        ),
+        (
+            "FRINTM_float.FRINTM_D_floatdp1",
+            &[("Rn", 31), ("Rd", 10)],
+            "frintm d10, d31",
+        ),
+        (
+            "FRINTZ_float.FRINTZ_S_floatdp1",
+            &[("Rn", 4), ("Rd", 17)],
+            "frintz s17, s4",
+        ),
+        (
+            "FRINTZ_float.FRINTZ_D_floatdp1",
+            &[("Rn", 9), ("Rd", 24)],
+            "frintz d24, d9",
+        ),
+        (
+            "FRINTA_float.FRINTA_S_floatdp1",
+            &[("Rn", 14), ("Rd", 31)],
+            "frinta s31, s14",
+        ),
+        (
+            "FRINTA_float.FRINTA_D_floatdp1",
+            &[("Rn", 19), ("Rd", 6)],
+            "frinta d6, d19",
+        ),
+        (
+            "FRINTX_float.FRINTX_S_floatdp1",
+            &[("Rn", 24), ("Rd", 13)],
+            "frintx s13, s24",
+        ),
+        (
+            "FRINTX_float.FRINTX_D_floatdp1",
+            &[("Rn", 29), ("Rd", 20)],
+            "frintx d20, d29",
+        ),
+        (
+            "FRINTI_float.FRINTI_S_floatdp1",
+            &[("Rn", 2), ("Rd", 27)],
+            "frinti s27, s2",
+        ),
+        (
+            "FRINTI_float.FRINTI_D_floatdp1",
+            &[("Rn", 7), ("Rd", 2)],
+            "frinti d2, d7",
+        ),
+        (
+            "FCVT_float.FCVT_DS_floatdp1",
+            &[("Rn", 12), ("Rd", 9)],
+            "fcvt d9, s12",
+        ),
+        (
+            "FCVT_float.FCVT_SD_floatdp1",
+            &[("Rn", 17), ("Rd", 16)],
+            "fcvt s16, d17",
+        ),
+        (
+            "FCMP_float.FCMP_S_floatcmp",
+            &[("Rm", 30), ("Rn", 22)],
+            "fcmp s22, s30",
+        ),
+        (
+            "FCMP_float.FCMP_SZ_floatcmp",
+            &[("Rn", 27)],
+            "fcmp s27, #0.0",
+        ),
+        (
+            "FCMP_float.FCMP_D_floatcmp",
+            &[("Rm", 20), ("Rn", 0)],
+            "fcmp d0, d20",
+        ),
+        (
+            "FCMP_float.FCMP_DZ_floatcmp",
+            &[("Rn", 5)],
+            "fcmp d5, #0.0",
+        ),
+        (
+            "FCMPE_float.FCMPE_S_floatcmp",
+            &[("Rm", 10), ("Rn", 10)],
+            "fcmpe s10, s10",
+        ),
+        (
+            "FCMPE_float.FCMPE_SZ_floatcmp",
+            &[("Rn", 15)],
+            "fcmpe s15, #0.0",
+        ),
+        (
+            "FCMPE_float.FCMPE_D_floatcmp",
+            &[("Rm", 0), ("Rn", 20)],
+            "fcmpe d20, d0",
+        ),
+        (
+            "FCMPE_float.FCMPE_DZ_floatcmp",
+            &[("Rn", 25)],
+            "fcmpe d25, #0.0",
+        ),
+        (
+            "FCCMP_float.FCCMP_S_floatccmp",
+            &[("Rm", 22), ("cond", 9), ("Rn", 30), ("nzcv", 9)],
+            "fccmp s30, s22, #9, ls",
+        ),
+        (
+            "FCCMP_float.FCCMP_D_floatccmp",
+            &[("Rm", 1), ("cond", 10), ("Rn", 3), ("nzcv", 10)],
+            "fccmp d3, d1, #10, ge",
+        ),
+        (
+            "FCCMPE_float.FCCMPE_S_floatccmp",
+            &[("Rm", 12), ("cond", 11), ("Rn", 8), ("nzcv", 11)],
+            "fccmpe s8, s12, #11, lt",
+        ),
+        (
+            "FCCMPE_float.FCCMPE_D_floatccmp",
+            &[("Rm", 23), ("cond", 12), ("Rn", 13), ("nzcv", 12)],
+            "fccmpe d13, d23, #12, gt",
+        ),
+        (
+            "FCSEL_float.FCSEL_S_floatsel",
+            &[("Rm", 2), ("cond", 13), ("Rn", 18), ("Rd", 11)],
+            "fcsel s11, s18, s2, le",
+        ),
+        (
+            "FCSEL_float.FCSEL_D_floatsel",
+            &[("Rm", 13), ("cond", 14), ("Rn", 23), ("Rd", 18)],
+            "fcsel d18, d23, d13, al",
+        ),
+        (
+            "FMOV_float_imm.FMOV_S_floatimm",
+            &[("imm8", 112), ("Rd", 25)],
+            "fmov s25, #1.0",
+        ),
+        (
+            "FMOV_float_imm.FMOV_S_floatimm",
+            &[("imm8", 191), ("Rd", 25)],
+            "fmov s25, #-31.0",
+        ),
+        (
+            "FMOV_float_imm.FMOV_D_floatimm",
+            &[("imm8", 112), ("Rd", 0)],
+            "fmov d0, #1.0",
+        ),
+        (
+            "FMOV_float_imm.FMOV_D_floatimm",
+            &[("imm8", 191), ("Rd", 0)],
+            "fmov d0, #-31.0",
+        ),
+        (
+            "FMOV_float_imm.FMOV_D_floatimm",
+            &[("imm8", 0), ("Rd", 0)],
+            "fmov d0, #2.0",
+        ),
+        (
+            "SCVTF_float_int.SCVTF_S32_float2int",
+            &[("Rn", 31), ("Rd", 7)],
+            "scvtf s7, wzr",
+        ),
+        (
+            "SCVTF_float_int.SCVTF_D32_float2int",
+            &[("Rn", 11), ("Rd", 14)],
+            "scvtf d14, w11",
+        ),
+        (
+            "SCVTF_float_int.SCVTF_S64_float2int",
+            &[("Rn", 16), ("Rd", 21)],
+            "scvtf s21, x16",
+        ),
+        (
+            "SCVTF_float_int.SCVTF_D64_float2int",
+            &[("Rn", 21), ("Rd", 28)],
+            "scvtf d28, x21",
+        ),
+        (
+            "UCVTF_float_int.UCVTF_S32_float2int",
+            &[("Rn", 26), ("Rd", 3)],
+            "ucvtf s3, w26",
+        ),
+        (
+            "UCVTF_float_int.UCVTF_D32_float2int",
+            &[("Rn", 31), ("Rd", 10)],
+            "ucvtf d10, wzr",
+        ),
+        (
+            "UCVTF_float_int.UCVTF_S64_float2int",
+            &[("Rn", 4), ("Rd", 17)],
+            "ucvtf s17, x4",
+        ),
+        (
+            "UCVTF_float_int.UCVTF_D64_float2int",
+            &[("Rn", 9), ("Rd", 24)],
+            "ucvtf d24, x9",
+        ),
+        (
+            "FCVTZS_float_int.FCVTZS_32S_float2int",
+            &[("Rn", 14), ("Rd", 31)],
+            "fcvtzs w31, s14",
+        ),
+        (
+            "FCVTZS_float_int.FCVTZS_64S_float2int",
+            &[("Rn", 19), ("Rd", 6)],
+            "fcvtzs x6, s19",
+        ),
+        (
+            "FCVTZS_float_int.FCVTZS_32D_float2int",
+            &[("Rn", 24), ("Rd", 31)],
+            "fcvtzs wzr, d24",
+        ),
+        (
+            "FCVTZS_float_int.FCVTZS_64D_float2int",
+            &[("Rn", 29), ("Rd", 20)],
+            "fcvtzs x20, d29",
+        ),
+        (
+            "FCVTZU_float_int.FCVTZU_32S_float2int",
+            &[("Rn", 2), ("Rd", 27)],
+            "fcvtzu w27, s2",
+        ),
+        (
+            "FCVTZU_float_int.FCVTZU_64S_float2int",
+            &[("Rn", 7), ("Rd", 2)],
+            "fcvtzu x2, s7",
+        ),
+        (
+            "FCVTZU_float_int.FCVTZU_32D_float2int",
+            &[("Rn", 12), ("Rd", 9)],
+            "fcvtzu w9, d12",
+        ),
+        (
+            "FCVTZU_float_int.FCVTZU_64D_float2int",
+            &[("Rn", 17), ("Rd", 31)],
+            "fcvtzu xzr, d17",
+        ),
+        (
+            "FCVTNS_float.FCVTNS_32S_float2int",
+            &[("Rn", 22), ("Rd", 23)],
+            "fcvtns w23, s22",
+        ),
+        (
+            "FCVTNS_float.FCVTNS_64S_float2int",
+            &[("Rn", 27), ("Rd", 30)],
+            "fcvtns x30, s27",
+        ),
+        (
+            "FCVTNS_float.FCVTNS_32D_float2int",
+            &[("Rn", 0), ("Rd", 5)],
+            "fcvtns w5, d0",
+        ),
+        (
+            "FCVTNS_float.FCVTNS_64D_float2int",
+            &[("Rn", 5), ("Rd", 12)],
+            "fcvtns x12, d5",
+        ),
+        (
+            "FCVTNU_float.FCVTNU_32S_float2int",
+            &[("Rn", 10), ("Rd", 31)],
+            "fcvtnu wzr, s10",
+        ),
+        (
+            "FCVTNU_float.FCVTNU_64S_float2int",
+            &[("Rn", 15), ("Rd", 26)],
+            "fcvtnu x26, s15",
+        ),
+        (
+            "FCVTNU_float.FCVTNU_32D_float2int",
+            &[("Rn", 20), ("Rd", 1)],
+            "fcvtnu w1, d20",
+        ),
+        (
+            "FCVTNU_float.FCVTNU_64D_float2int",
+            &[("Rn", 25), ("Rd", 8)],
+            "fcvtnu x8, d25",
+        ),
+        (
+            "FCVTMS_float.FCVTMS_32S_float2int",
+            &[("Rn", 30), ("Rd", 15)],
+            "fcvtms w15, s30",
+        ),
+        (
+            "FCVTMS_float.FCVTMS_64S_float2int",
+            &[("Rn", 3), ("Rd", 31)],
+            "fcvtms xzr, s3",
+        ),
+        (
+            "FCVTMS_float.FCVTMS_32D_float2int",
+            &[("Rn", 8), ("Rd", 29)],
+            "fcvtms w29, d8",
+        ),
+        (
+            "FCVTMS_float.FCVTMS_64D_float2int",
+            &[("Rn", 13), ("Rd", 4)],
+            "fcvtms x4, d13",
+        ),
+        (
+            "FCVTMU_float.FCVTMU_32S_float2int",
+            &[("Rn", 18), ("Rd", 11)],
+            "fcvtmu w11, s18",
+        ),
+        (
+            "FCVTMU_float.FCVTMU_64S_float2int",
+            &[("Rn", 23), ("Rd", 18)],
+            "fcvtmu x18, s23",
+        ),
+        (
+            "FCVTMU_float.FCVTMU_32D_float2int",
+            &[("Rn", 28), ("Rd", 31)],
+            "fcvtmu wzr, d28",
+        ),
+        (
+            "FCVTMU_float.FCVTMU_64D_float2int",
+            &[("Rn", 1), ("Rd", 0)],
+            "fcvtmu x0, d1",
+        ),
+        (
+            "FCVTPS_float.FCVTPS_32S_float2int",
+            &[("Rn", 6), ("Rd", 7)],
+            "fcvtps w7, s6",
+        ),
+        (
+            "FCVTPS_float.FCVTPS_64S_float2int",
+            &[("Rn", 11), ("Rd", 14)],
+            "fcvtps x14, s11",
+        ),
+        (
+            "FCVTPS_float.FCVTPS_32D_float2int",
+            &[("Rn", 16), ("Rd", 21)],
+            "fcvtps w21, d16",
+        ),
+        (
+            "FCVTPS_float.FCVTPS_64D_float2int",
+            &[("Rn", 21), ("Rd", 31)],
+            "fcvtps xzr, d21",
+        ),
+        (
+            "FCVTPU_float.FCVTPU_32S_float2int",
+            &[("Rn", 26), ("Rd", 3)],
+            "fcvtpu w3, s26",
+        ),
+        (
+            "FCVTPU_float.FCVTPU_64S_float2int",
+            &[("Rn", 31), ("Rd", 10)],
+            "fcvtpu x10, s31",
+        ),
+        (
+            "FCVTPU_float.FCVTPU_32D_float2int",
+            &[("Rn", 4), ("Rd", 17)],
+            "fcvtpu w17, d4",
+        ),
+        (
+            "FCVTPU_float.FCVTPU_64D_float2int",
+            &[("Rn", 9), ("Rd", 24)],
+            "fcvtpu x24, d9",
+        ),
+        (
+            "FCVTAS_float.FCVTAS_32S_float2int",
+            &[("Rn", 14), ("Rd", 31)],
+            "fcvtas wzr, s14",
+        ),
+        (
+            "FCVTAS_float.FCVTAS_64S_float2int",
+            &[("Rn", 19), ("Rd", 6)],
+            "fcvtas x6, s19",
+        ),
+        (
+            "FCVTAS_float.FCVTAS_32D_float2int",
+            &[("Rn", 24), ("Rd", 13)],
+            "fcvtas w13, d24",
+        ),
+        (
+            "FCVTAS_float.FCVTAS_64D_float2int",
+            &[("Rn", 29), ("Rd", 20)],
+            "fcvtas x20, d29",
+        ),
+        (
+            "FCVTAU_float.FCVTAU_32S_float2int",
+            &[("Rn", 2), ("Rd", 27)],
+            "fcvtau w27, s2",
+        ),
+        (
+            "FCVTAU_float.FCVTAU_64S_float2int",
+            &[("Rn", 7), ("Rd", 31)],
+            "fcvtau xzr, s7",
+        ),
+        (
+            "FCVTAU_float.FCVTAU_32D_float2int",
+            &[("Rn", 12), ("Rd", 9)],
+            "fcvtau w9, d12",
+        ),
+        (
+            "FCVTAU_float.FCVTAU_64D_float2int",
+            &[("Rn", 17), ("Rd", 16)],
+            "fcvtau x16, d17",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_B_ldst_regoff",
+            &[("Rm", 30), ("option", 2), ("S", 0), ("Rn", 22), ("Rt", 23)],
+            "ldr b23, [x22, w30, uxtw]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_B_ldst_regoff",
+            &[("Rm", 30), ("option", 2), ("S", 1), ("Rn", 31), ("Rt", 23)],
+            "ldr b23, [sp, w30, uxtw #0]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_B_ldst_regoff",
+            &[("Rm", 30), ("option", 6), ("S", 0), ("Rn", 31), ("Rt", 23)],
+            "ldr b23, [sp, w30, sxtw]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_B_ldst_regoff",
+            &[("Rm", 30), ("option", 6), ("S", 1), ("Rn", 22), ("Rt", 23)],
+            "ldr b23, [x22, w30, sxtw #0]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_B_ldst_regoff",
+            &[("Rm", 30), ("option", 7), ("S", 0), ("Rn", 22), ("Rt", 23)],
+            "ldr b23, [x22, x30, sxtx]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_B_ldst_regoff",
+            &[("Rm", 30), ("option", 7), ("S", 1), ("Rn", 22), ("Rt", 23)],
+            "ldr b23, [x22, x30, sxtx #0]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+            &[("Rm", 9), ("option", 2), ("S", 0), ("Rn", 27), ("Rt", 30)],
+            "ldr h30, [x27, w9, uxtw]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+            &[("Rm", 9), ("option", 2), ("S", 1), ("Rn", 31), ("Rt", 30)],
+            "ldr h30, [sp, w9, uxtw #1]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+            &[("Rm", 9), ("option", 6), ("S", 0), ("Rn", 31), ("Rt", 30)],
+            "ldr h30, [sp, w9, sxtw]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+            &[("Rm", 9), ("option", 6), ("S", 1), ("Rn", 27), ("Rt", 30)],
+            "ldr h30, [x27, w9, sxtw #1]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+            &[("Rm", 9), ("option", 7), ("S", 0), ("Rn", 27), ("Rt", 30)],
+            "ldr h30, [x27, x9, sxtx]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+            &[("Rm", 9), ("option", 7), ("S", 1), ("Rn", 27), ("Rt", 30)],
+            "ldr h30, [x27, x9, sxtx #1]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+            &[("Rm", 9), ("option", 3), ("S", 0), ("Rn", 31), ("Rt", 30)],
+            "ldr h30, [sp, x9]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+            &[("Rm", 9), ("option", 3), ("S", 1), ("Rn", 27), ("Rt", 30)],
+            "ldr h30, [x27, x9, lsl #1]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+            &[("Rm", 20), ("option", 2), ("S", 0), ("Rn", 0), ("Rt", 5)],
+            "ldr s5, [x0, w20, uxtw]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+            &[("Rm", 20), ("option", 2), ("S", 1), ("Rn", 31), ("Rt", 5)],
+            "ldr s5, [sp, w20, uxtw #2]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+            &[("Rm", 20), ("option", 6), ("S", 0), ("Rn", 31), ("Rt", 5)],
+            "ldr s5, [sp, w20, sxtw]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+            &[("Rm", 20), ("option", 6), ("S", 1), ("Rn", 0), ("Rt", 5)],
+            "ldr s5, [x0, w20, sxtw #2]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+            &[("Rm", 20), ("option", 7), ("S", 0), ("Rn", 0), ("Rt", 5)],
+            "ldr s5, [x0, x20, sxtx]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+            &[("Rm", 20), ("option", 7), ("S", 1), ("Rn", 0), ("Rt", 5)],
+            "ldr s5, [x0, x20, sxtx #2]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+            &[("Rm", 20), ("option", 3), ("S", 0), ("Rn", 31), ("Rt", 5)],
+            "ldr s5, [sp, x20]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+            &[("Rm", 20), ("option", 3), ("S", 1), ("Rn", 0), ("Rt", 5)],
+            "ldr s5, [x0, x20, lsl #2]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+            &[("Rm", 31), ("option", 2), ("S", 0), ("Rn", 5), ("Rt", 12)],
+            "ldr d12, [x5, w31, uxtw]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+            &[("Rm", 31), ("option", 2), ("S", 1), ("Rn", 31), ("Rt", 12)],
+            "ldr d12, [sp, w31, uxtw #3]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+            &[("Rm", 31), ("option", 6), ("S", 0), ("Rn", 31), ("Rt", 12)],
+            "ldr d12, [sp, w31, sxtw]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+            &[("Rm", 31), ("option", 6), ("S", 1), ("Rn", 5), ("Rt", 12)],
+            "ldr d12, [x5, w31, sxtw #3]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+            &[("Rm", 31), ("option", 7), ("S", 0), ("Rn", 5), ("Rt", 12)],
+            "ldr d12, [x5, x31, sxtx]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+            &[("Rm", 31), ("option", 7), ("S", 1), ("Rn", 5), ("Rt", 12)],
+            "ldr d12, [x5, x31, sxtx #3]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+            &[("Rm", 31), ("option", 3), ("S", 0), ("Rn", 31), ("Rt", 12)],
+            "ldr d12, [sp, x31]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+            &[("Rm", 31), ("option", 3), ("S", 1), ("Rn", 5), ("Rt", 12)],
+            "ldr d12, [x5, x31, lsl #3]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+            &[("Rm", 10), ("option", 2), ("S", 0), ("Rn", 10), ("Rt", 19)],
+            "ldr q19, [x10, w10, uxtw]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+            &[("Rm", 10), ("option", 2), ("S", 1), ("Rn", 31), ("Rt", 19)],
+            "ldr q19, [sp, w10, uxtw #4]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+            &[("Rm", 10), ("option", 6), ("S", 0), ("Rn", 31), ("Rt", 19)],
+            "ldr q19, [sp, w10, sxtw]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+            &[("Rm", 10), ("option", 6), ("S", 1), ("Rn", 10), ("Rt", 19)],
+            "ldr q19, [x10, w10, sxtw #4]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+            &[("Rm", 10), ("option", 7), ("S", 0), ("Rn", 10), ("Rt", 19)],
+            "ldr q19, [x10, x10, sxtx]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+            &[("Rm", 10), ("option", 7), ("S", 1), ("Rn", 10), ("Rt", 19)],
+            "ldr q19, [x10, x10, sxtx #4]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+            &[("Rm", 10), ("option", 3), ("S", 0), ("Rn", 31), ("Rt", 19)],
+            "ldr q19, [sp, x10]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+            &[("Rm", 10), ("option", 3), ("S", 1), ("Rn", 10), ("Rt", 19)],
+            "ldr q19, [x10, x10, lsl #4]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_BL_ldst_regoff",
+            &[("Rm", 21), ("S", 0), ("Rn", 31), ("Rt", 26)],
+            "ldr b26, [sp, x21]",
+        ),
+        (
+            "LDR_reg_fpsimd.LDR_BL_ldst_regoff",
+            &[("Rm", 21), ("S", 1), ("Rn", 15), ("Rt", 26)],
+            "ldr b26, [x15, x21, lsl #0]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_B_ldst_regoff",
+            &[("Rm", 0), ("option", 2), ("S", 0), ("Rn", 20), ("Rt", 1)],
+            "str b1, [x20, w0, uxtw]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_B_ldst_regoff",
+            &[("Rm", 0), ("option", 2), ("S", 1), ("Rn", 31), ("Rt", 1)],
+            "str b1, [sp, w0, uxtw #0]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_B_ldst_regoff",
+            &[("Rm", 0), ("option", 6), ("S", 0), ("Rn", 31), ("Rt", 1)],
+            "str b1, [sp, w0, sxtw]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_B_ldst_regoff",
+            &[("Rm", 0), ("option", 6), ("S", 1), ("Rn", 20), ("Rt", 1)],
+            "str b1, [x20, w0, sxtw #0]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_B_ldst_regoff",
+            &[("Rm", 0), ("option", 7), ("S", 0), ("Rn", 20), ("Rt", 1)],
+            "str b1, [x20, x0, sxtx]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_B_ldst_regoff",
+            &[("Rm", 0), ("option", 7), ("S", 1), ("Rn", 20), ("Rt", 1)],
+            "str b1, [x20, x0, sxtx #0]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_H_ldst_regoff",
+            &[("Rm", 11), ("option", 2), ("S", 0), ("Rn", 25), ("Rt", 8)],
+            "str h8, [x25, w11, uxtw]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_H_ldst_regoff",
+            &[("Rm", 11), ("option", 2), ("S", 1), ("Rn", 31), ("Rt", 8)],
+            "str h8, [sp, w11, uxtw #1]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_H_ldst_regoff",
+            &[("Rm", 11), ("option", 6), ("S", 0), ("Rn", 31), ("Rt", 8)],
+            "str h8, [sp, w11, sxtw]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_H_ldst_regoff",
+            &[("Rm", 11), ("option", 6), ("S", 1), ("Rn", 25), ("Rt", 8)],
+            "str h8, [x25, w11, sxtw #1]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_H_ldst_regoff",
+            &[("Rm", 11), ("option", 7), ("S", 0), ("Rn", 25), ("Rt", 8)],
+            "str h8, [x25, x11, sxtx]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_H_ldst_regoff",
+            &[("Rm", 11), ("option", 7), ("S", 1), ("Rn", 25), ("Rt", 8)],
+            "str h8, [x25, x11, sxtx #1]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_H_ldst_regoff",
+            &[("Rm", 11), ("option", 3), ("S", 0), ("Rn", 31), ("Rt", 8)],
+            "str h8, [sp, x11]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_H_ldst_regoff",
+            &[("Rm", 11), ("option", 3), ("S", 1), ("Rn", 25), ("Rt", 8)],
+            "str h8, [x25, x11, lsl #1]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_S_ldst_regoff",
+            &[("Rm", 22), ("option", 2), ("S", 0), ("Rn", 30), ("Rt", 15)],
+            "str s15, [x30, w22, uxtw]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_S_ldst_regoff",
+            &[("Rm", 22), ("option", 2), ("S", 1), ("Rn", 31), ("Rt", 15)],
+            "str s15, [sp, w22, uxtw #2]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_S_ldst_regoff",
+            &[("Rm", 22), ("option", 6), ("S", 0), ("Rn", 31), ("Rt", 15)],
+            "str s15, [sp, w22, sxtw]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_S_ldst_regoff",
+            &[("Rm", 22), ("option", 6), ("S", 1), ("Rn", 30), ("Rt", 15)],
+            "str s15, [x30, w22, sxtw #2]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_S_ldst_regoff",
+            &[("Rm", 22), ("option", 7), ("S", 0), ("Rn", 30), ("Rt", 15)],
+            "str s15, [x30, x22, sxtx]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_S_ldst_regoff",
+            &[("Rm", 22), ("option", 7), ("S", 1), ("Rn", 30), ("Rt", 15)],
+            "str s15, [x30, x22, sxtx #2]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_S_ldst_regoff",
+            &[("Rm", 22), ("option", 3), ("S", 0), ("Rn", 31), ("Rt", 15)],
+            "str s15, [sp, x22]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_S_ldst_regoff",
+            &[("Rm", 22), ("option", 3), ("S", 1), ("Rn", 30), ("Rt", 15)],
+            "str s15, [x30, x22, lsl #2]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_D_ldst_regoff",
+            &[("Rm", 1), ("option", 2), ("S", 0), ("Rn", 3), ("Rt", 22)],
+            "str d22, [x3, w1, uxtw]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_D_ldst_regoff",
+            &[("Rm", 1), ("option", 2), ("S", 1), ("Rn", 31), ("Rt", 22)],
+            "str d22, [sp, w1, uxtw #3]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_D_ldst_regoff",
+            &[("Rm", 1), ("option", 6), ("S", 0), ("Rn", 31), ("Rt", 22)],
+            "str d22, [sp, w1, sxtw]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_D_ldst_regoff",
+            &[("Rm", 1), ("option", 6), ("S", 1), ("Rn", 3), ("Rt", 22)],
+            "str d22, [x3, w1, sxtw #3]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_D_ldst_regoff",
+            &[("Rm", 1), ("option", 7), ("S", 0), ("Rn", 3), ("Rt", 22)],
+            "str d22, [x3, x1, sxtx]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_D_ldst_regoff",
+            &[("Rm", 1), ("option", 7), ("S", 1), ("Rn", 3), ("Rt", 22)],
+            "str d22, [x3, x1, sxtx #3]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_D_ldst_regoff",
+            &[("Rm", 1), ("option", 3), ("S", 0), ("Rn", 31), ("Rt", 22)],
+            "str d22, [sp, x1]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_D_ldst_regoff",
+            &[("Rm", 1), ("option", 3), ("S", 1), ("Rn", 3), ("Rt", 22)],
+            "str d22, [x3, x1, lsl #3]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_Q_ldst_regoff",
+            &[("Rm", 12), ("option", 2), ("S", 0), ("Rn", 8), ("Rt", 29)],
+            "str q29, [x8, w12, uxtw]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_Q_ldst_regoff",
+            &[("Rm", 12), ("option", 2), ("S", 1), ("Rn", 31), ("Rt", 29)],
+            "str q29, [sp, w12, uxtw #4]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_Q_ldst_regoff",
+            &[("Rm", 12), ("option", 6), ("S", 0), ("Rn", 31), ("Rt", 29)],
+            "str q29, [sp, w12, sxtw]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_Q_ldst_regoff",
+            &[("Rm", 12), ("option", 6), ("S", 1), ("Rn", 8), ("Rt", 29)],
+            "str q29, [x8, w12, sxtw #4]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_Q_ldst_regoff",
+            &[("Rm", 12), ("option", 7), ("S", 0), ("Rn", 8), ("Rt", 29)],
+            "str q29, [x8, x12, sxtx]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_Q_ldst_regoff",
+            &[("Rm", 12), ("option", 7), ("S", 1), ("Rn", 8), ("Rt", 29)],
+            "str q29, [x8, x12, sxtx #4]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_Q_ldst_regoff",
+            &[("Rm", 12), ("option", 3), ("S", 0), ("Rn", 31), ("Rt", 29)],
+            "str q29, [sp, x12]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_Q_ldst_regoff",
+            &[("Rm", 12), ("option", 3), ("S", 1), ("Rn", 8), ("Rt", 29)],
+            "str q29, [x8, x12, lsl #4]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_BL_ldst_regoff",
+            &[("Rm", 23), ("S", 0), ("Rn", 31), ("Rt", 4)],
+            "str b4, [sp, x23]",
+        ),
+        (
+            "STR_reg_fpsimd.STR_BL_ldst_regoff",
+            &[("Rm", 23), ("S", 1), ("Rn", 13), ("Rt", 4)],
+            "str b4, [x13, x23, lsl #0]",
+        ),
+    ];
+    let mut cases = cases_from_fields(CASES);
+    cases.extend([
+        case(
+            "MRS.MRS_RS_systemmove@FPCR",
+            "    mrs x1, fpcr",
+            A64Insn::MrsMrsRsSystemmoveFpcr { rt: x(1) },
+        ),
+        case(
+            "MRS.MRS_RS_systemmove@FPCR",
+            "    mrs xzr, fpcr",
+            A64Insn::MrsMrsRsSystemmoveFpcr { rt: x(31) },
+        ),
+        case(
+            "MRS.MRS_RS_systemmove@FPSR",
+            "    mrs x30, fpsr",
+            A64Insn::MrsMrsRsSystemmoveFpsr { rt: x(30) },
+        ),
+        case(
+            "MRS.MRS_RS_systemmove@FPSR",
+            "    mrs xzr, fpsr",
+            A64Insn::MrsMrsRsSystemmoveFpsr { rt: x(31) },
+        ),
+    ]);
+    cases
 }
 
 fn simm9(value: i64) -> A64Imm {

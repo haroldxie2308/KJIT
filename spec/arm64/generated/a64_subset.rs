@@ -1009,6 +1009,12 @@ pub enum A64Insn {
     MrsMrsRsSystemmoveCntvctEl0 {
         rt: A64Reg,
     },
+    MrsMrsRsSystemmoveFpcr {
+        rt: A64Reg,
+    },
+    MrsMrsRsSystemmoveFpsr {
+        rt: A64Reg,
+    },
     MrsMrsRsSystemmoveTpidrEl0 {
         rt: A64Reg,
     },
@@ -3271,6 +3277,578 @@ pub enum A64Insn {
         rn: u8,
         rd: u8,
     },
+    FaddFloatFaddSFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FaddFloatFaddDFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FsubFloatFsubSFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FsubFloatFsubDFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmulFloatFmulSFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmulFloatFmulDFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FnmulFloatFnmulSFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FnmulFloatFnmulDFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FdivFloatFdivSFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FdivFloatFdivDFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmaxFloatFmaxSFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmaxFloatFmaxDFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FminFloatFminSFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FminFloatFminDFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmaxnmFloatFmaxnmSFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmaxnmFloatFmaxnmDFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FminnmFloatFminnmSFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FminnmFloatFminnmDFloatdp2 {
+        rm: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmaddFloatFmaddSFloatdp3 {
+        rm: u8,
+        ra: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmaddFloatFmaddDFloatdp3 {
+        rm: u8,
+        ra: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmsubFloatFmsubSFloatdp3 {
+        rm: u8,
+        ra: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmsubFloatFmsubDFloatdp3 {
+        rm: u8,
+        ra: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FnmaddFloatFnmaddSFloatdp3 {
+        rm: u8,
+        ra: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FnmaddFloatFnmaddDFloatdp3 {
+        rm: u8,
+        ra: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FnmsubFloatFnmsubSFloatdp3 {
+        rm: u8,
+        ra: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FnmsubFloatFnmsubDFloatdp3 {
+        rm: u8,
+        ra: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FabsFloatFabsSFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FabsFloatFabsDFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FnegFloatFnegSFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FnegFloatFnegDFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FsqrtFloatFsqrtSFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FsqrtFloatFsqrtDFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintnFloatFrintnSFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintnFloatFrintnDFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintpFloatFrintpSFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintpFloatFrintpDFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintmFloatFrintmSFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintmFloatFrintmDFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintzFloatFrintzSFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintzFloatFrintzDFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintaFloatFrintaSFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintaFloatFrintaDFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintxFloatFrintxSFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintxFloatFrintxDFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintiFloatFrintiSFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FrintiFloatFrintiDFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FcvtFloatFcvtDsFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FcvtFloatFcvtSdFloatdp1 {
+        rn: u8,
+        rd: u8,
+    },
+    FcmpFloatFcmpSFloatcmp {
+        rm: u8,
+        rn: u8,
+    },
+    FcmpFloatFcmpSzFloatcmp {
+        rn: u8,
+    },
+    FcmpFloatFcmpDFloatcmp {
+        rm: u8,
+        rn: u8,
+    },
+    FcmpFloatFcmpDzFloatcmp {
+        rn: u8,
+    },
+    FcmpeFloatFcmpeSFloatcmp {
+        rm: u8,
+        rn: u8,
+    },
+    FcmpeFloatFcmpeSzFloatcmp {
+        rn: u8,
+    },
+    FcmpeFloatFcmpeDFloatcmp {
+        rm: u8,
+        rn: u8,
+    },
+    FcmpeFloatFcmpeDzFloatcmp {
+        rn: u8,
+    },
+    FccmpFloatFccmpSFloatccmp {
+        rm: u8,
+        cond: u8,
+        rn: u8,
+        nzcv: u8,
+    },
+    FccmpFloatFccmpDFloatccmp {
+        rm: u8,
+        cond: u8,
+        rn: u8,
+        nzcv: u8,
+    },
+    FccmpeFloatFccmpeSFloatccmp {
+        rm: u8,
+        cond: u8,
+        rn: u8,
+        nzcv: u8,
+    },
+    FccmpeFloatFccmpeDFloatccmp {
+        rm: u8,
+        cond: u8,
+        rn: u8,
+        nzcv: u8,
+    },
+    FcselFloatFcselSFloatsel {
+        rm: u8,
+        cond: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FcselFloatFcselDFloatsel {
+        rm: u8,
+        cond: u8,
+        rn: u8,
+        rd: u8,
+    },
+    FmovFloatImmFmovSFloatimm {
+        imm8: A64Imm,
+        rd: u8,
+    },
+    FmovFloatImmFmovDFloatimm {
+        imm8: A64Imm,
+        rd: u8,
+    },
+    ScvtfFloatIntScvtfS32Float2int {
+        rn: A64Reg,
+        rd: u8,
+    },
+    ScvtfFloatIntScvtfD32Float2int {
+        rn: A64Reg,
+        rd: u8,
+    },
+    ScvtfFloatIntScvtfS64Float2int {
+        rn: A64Reg,
+        rd: u8,
+    },
+    ScvtfFloatIntScvtfD64Float2int {
+        rn: A64Reg,
+        rd: u8,
+    },
+    UcvtfFloatIntUcvtfS32Float2int {
+        rn: A64Reg,
+        rd: u8,
+    },
+    UcvtfFloatIntUcvtfD32Float2int {
+        rn: A64Reg,
+        rd: u8,
+    },
+    UcvtfFloatIntUcvtfS64Float2int {
+        rn: A64Reg,
+        rd: u8,
+    },
+    UcvtfFloatIntUcvtfD64Float2int {
+        rn: A64Reg,
+        rd: u8,
+    },
+    FcvtzsFloatIntFcvtzs32sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtzsFloatIntFcvtzs64sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtzsFloatIntFcvtzs32dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtzsFloatIntFcvtzs64dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtzuFloatIntFcvtzu32sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtzuFloatIntFcvtzu64sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtzuFloatIntFcvtzu32dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtzuFloatIntFcvtzu64dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtnsFloatFcvtns32sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtnsFloatFcvtns64sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtnsFloatFcvtns32dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtnsFloatFcvtns64dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtnuFloatFcvtnu32sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtnuFloatFcvtnu64sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtnuFloatFcvtnu32dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtnuFloatFcvtnu64dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtmsFloatFcvtms32sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtmsFloatFcvtms64sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtmsFloatFcvtms32dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtmsFloatFcvtms64dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtmuFloatFcvtmu32sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtmuFloatFcvtmu64sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtmuFloatFcvtmu32dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtmuFloatFcvtmu64dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtpsFloatFcvtps32sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtpsFloatFcvtps64sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtpsFloatFcvtps32dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtpsFloatFcvtps64dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtpuFloatFcvtpu32sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtpuFloatFcvtpu64sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtpuFloatFcvtpu32dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtpuFloatFcvtpu64dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtasFloatFcvtas32sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtasFloatFcvtas64sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtasFloatFcvtas32dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtasFloatFcvtas64dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtauFloatFcvtau32sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtauFloatFcvtau64sFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtauFloatFcvtau32dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    FcvtauFloatFcvtau64dFloat2int {
+        rn: u8,
+        rd: A64Reg,
+    },
+    LdrRegFpsimdLdrBLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    LdrRegFpsimdLdrBlLdstRegoff {
+        rm: A64Reg,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    LdrRegFpsimdLdrHLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    LdrRegFpsimdLdrSLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    LdrRegFpsimdLdrDLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    LdrRegFpsimdLdrQLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    StrRegFpsimdStrBLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    StrRegFpsimdStrBlLdstRegoff {
+        rm: A64Reg,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    StrRegFpsimdStrHLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    StrRegFpsimdStrSLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    StrRegFpsimdStrDLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
+    StrRegFpsimdStrQLdstRegoff {
+        rm: A64Reg,
+        option: u8,
+        s: u8,
+        rn: A64Reg,
+        rt: u8,
+    },
 }
 
 #[allow(dead_code)]
@@ -3473,6 +4051,8 @@ impl A64Insn {
             Self::Rev32IntRev3264Dp1src { .. } => "REV32_int.REV32_64_dp_1src",
             Self::MrsMrsRsSystemmoveCntfrqEl0 { .. } => "MRS.MRS_RS_systemmove@CNTFRQ_EL0",
             Self::MrsMrsRsSystemmoveCntvctEl0 { .. } => "MRS.MRS_RS_systemmove@CNTVCT_EL0",
+            Self::MrsMrsRsSystemmoveFpcr { .. } => "MRS.MRS_RS_systemmove@FPCR",
+            Self::MrsMrsRsSystemmoveFpsr { .. } => "MRS.MRS_RS_systemmove@FPSR",
             Self::MrsMrsRsSystemmoveTpidrEl0 { .. } => "MRS.MRS_RS_systemmove@TPIDR_EL0",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ.TBZ_only_testbranch",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ.TBNZ_only_testbranch",
@@ -3919,6 +4499,130 @@ impl A64Insn {
             Self::Rev64AdvsimdRev64AsimdmiscR { .. } => "REV64_advsimd.REV64_asimdmisc_R",
             Self::CntAdvsimdCntAsimdmiscR { .. } => "CNT_advsimd.CNT_asimdmisc_R",
             Self::TblAdvsimdTblAsimdtblL11 { .. } => "TBL_advsimd.TBL_asimdtbl_L1_1",
+            Self::FaddFloatFaddSFloatdp2 { .. } => "FADD_float.FADD_S_floatdp2",
+            Self::FaddFloatFaddDFloatdp2 { .. } => "FADD_float.FADD_D_floatdp2",
+            Self::FsubFloatFsubSFloatdp2 { .. } => "FSUB_float.FSUB_S_floatdp2",
+            Self::FsubFloatFsubDFloatdp2 { .. } => "FSUB_float.FSUB_D_floatdp2",
+            Self::FmulFloatFmulSFloatdp2 { .. } => "FMUL_float.FMUL_S_floatdp2",
+            Self::FmulFloatFmulDFloatdp2 { .. } => "FMUL_float.FMUL_D_floatdp2",
+            Self::FnmulFloatFnmulSFloatdp2 { .. } => "FNMUL_float.FNMUL_S_floatdp2",
+            Self::FnmulFloatFnmulDFloatdp2 { .. } => "FNMUL_float.FNMUL_D_floatdp2",
+            Self::FdivFloatFdivSFloatdp2 { .. } => "FDIV_float.FDIV_S_floatdp2",
+            Self::FdivFloatFdivDFloatdp2 { .. } => "FDIV_float.FDIV_D_floatdp2",
+            Self::FmaxFloatFmaxSFloatdp2 { .. } => "FMAX_float.FMAX_S_floatdp2",
+            Self::FmaxFloatFmaxDFloatdp2 { .. } => "FMAX_float.FMAX_D_floatdp2",
+            Self::FminFloatFminSFloatdp2 { .. } => "FMIN_float.FMIN_S_floatdp2",
+            Self::FminFloatFminDFloatdp2 { .. } => "FMIN_float.FMIN_D_floatdp2",
+            Self::FmaxnmFloatFmaxnmSFloatdp2 { .. } => "FMAXNM_float.FMAXNM_S_floatdp2",
+            Self::FmaxnmFloatFmaxnmDFloatdp2 { .. } => "FMAXNM_float.FMAXNM_D_floatdp2",
+            Self::FminnmFloatFminnmSFloatdp2 { .. } => "FMINNM_float.FMINNM_S_floatdp2",
+            Self::FminnmFloatFminnmDFloatdp2 { .. } => "FMINNM_float.FMINNM_D_floatdp2",
+            Self::FmaddFloatFmaddSFloatdp3 { .. } => "FMADD_float.FMADD_S_floatdp3",
+            Self::FmaddFloatFmaddDFloatdp3 { .. } => "FMADD_float.FMADD_D_floatdp3",
+            Self::FmsubFloatFmsubSFloatdp3 { .. } => "FMSUB_float.FMSUB_S_floatdp3",
+            Self::FmsubFloatFmsubDFloatdp3 { .. } => "FMSUB_float.FMSUB_D_floatdp3",
+            Self::FnmaddFloatFnmaddSFloatdp3 { .. } => "FNMADD_float.FNMADD_S_floatdp3",
+            Self::FnmaddFloatFnmaddDFloatdp3 { .. } => "FNMADD_float.FNMADD_D_floatdp3",
+            Self::FnmsubFloatFnmsubSFloatdp3 { .. } => "FNMSUB_float.FNMSUB_S_floatdp3",
+            Self::FnmsubFloatFnmsubDFloatdp3 { .. } => "FNMSUB_float.FNMSUB_D_floatdp3",
+            Self::FabsFloatFabsSFloatdp1 { .. } => "FABS_float.FABS_S_floatdp1",
+            Self::FabsFloatFabsDFloatdp1 { .. } => "FABS_float.FABS_D_floatdp1",
+            Self::FnegFloatFnegSFloatdp1 { .. } => "FNEG_float.FNEG_S_floatdp1",
+            Self::FnegFloatFnegDFloatdp1 { .. } => "FNEG_float.FNEG_D_floatdp1",
+            Self::FsqrtFloatFsqrtSFloatdp1 { .. } => "FSQRT_float.FSQRT_S_floatdp1",
+            Self::FsqrtFloatFsqrtDFloatdp1 { .. } => "FSQRT_float.FSQRT_D_floatdp1",
+            Self::FrintnFloatFrintnSFloatdp1 { .. } => "FRINTN_float.FRINTN_S_floatdp1",
+            Self::FrintnFloatFrintnDFloatdp1 { .. } => "FRINTN_float.FRINTN_D_floatdp1",
+            Self::FrintpFloatFrintpSFloatdp1 { .. } => "FRINTP_float.FRINTP_S_floatdp1",
+            Self::FrintpFloatFrintpDFloatdp1 { .. } => "FRINTP_float.FRINTP_D_floatdp1",
+            Self::FrintmFloatFrintmSFloatdp1 { .. } => "FRINTM_float.FRINTM_S_floatdp1",
+            Self::FrintmFloatFrintmDFloatdp1 { .. } => "FRINTM_float.FRINTM_D_floatdp1",
+            Self::FrintzFloatFrintzSFloatdp1 { .. } => "FRINTZ_float.FRINTZ_S_floatdp1",
+            Self::FrintzFloatFrintzDFloatdp1 { .. } => "FRINTZ_float.FRINTZ_D_floatdp1",
+            Self::FrintaFloatFrintaSFloatdp1 { .. } => "FRINTA_float.FRINTA_S_floatdp1",
+            Self::FrintaFloatFrintaDFloatdp1 { .. } => "FRINTA_float.FRINTA_D_floatdp1",
+            Self::FrintxFloatFrintxSFloatdp1 { .. } => "FRINTX_float.FRINTX_S_floatdp1",
+            Self::FrintxFloatFrintxDFloatdp1 { .. } => "FRINTX_float.FRINTX_D_floatdp1",
+            Self::FrintiFloatFrintiSFloatdp1 { .. } => "FRINTI_float.FRINTI_S_floatdp1",
+            Self::FrintiFloatFrintiDFloatdp1 { .. } => "FRINTI_float.FRINTI_D_floatdp1",
+            Self::FcvtFloatFcvtDsFloatdp1 { .. } => "FCVT_float.FCVT_DS_floatdp1",
+            Self::FcvtFloatFcvtSdFloatdp1 { .. } => "FCVT_float.FCVT_SD_floatdp1",
+            Self::FcmpFloatFcmpSFloatcmp { .. } => "FCMP_float.FCMP_S_floatcmp",
+            Self::FcmpFloatFcmpSzFloatcmp { .. } => "FCMP_float.FCMP_SZ_floatcmp",
+            Self::FcmpFloatFcmpDFloatcmp { .. } => "FCMP_float.FCMP_D_floatcmp",
+            Self::FcmpFloatFcmpDzFloatcmp { .. } => "FCMP_float.FCMP_DZ_floatcmp",
+            Self::FcmpeFloatFcmpeSFloatcmp { .. } => "FCMPE_float.FCMPE_S_floatcmp",
+            Self::FcmpeFloatFcmpeSzFloatcmp { .. } => "FCMPE_float.FCMPE_SZ_floatcmp",
+            Self::FcmpeFloatFcmpeDFloatcmp { .. } => "FCMPE_float.FCMPE_D_floatcmp",
+            Self::FcmpeFloatFcmpeDzFloatcmp { .. } => "FCMPE_float.FCMPE_DZ_floatcmp",
+            Self::FccmpFloatFccmpSFloatccmp { .. } => "FCCMP_float.FCCMP_S_floatccmp",
+            Self::FccmpFloatFccmpDFloatccmp { .. } => "FCCMP_float.FCCMP_D_floatccmp",
+            Self::FccmpeFloatFccmpeSFloatccmp { .. } => "FCCMPE_float.FCCMPE_S_floatccmp",
+            Self::FccmpeFloatFccmpeDFloatccmp { .. } => "FCCMPE_float.FCCMPE_D_floatccmp",
+            Self::FcselFloatFcselSFloatsel { .. } => "FCSEL_float.FCSEL_S_floatsel",
+            Self::FcselFloatFcselDFloatsel { .. } => "FCSEL_float.FCSEL_D_floatsel",
+            Self::FmovFloatImmFmovSFloatimm { .. } => "FMOV_float_imm.FMOV_S_floatimm",
+            Self::FmovFloatImmFmovDFloatimm { .. } => "FMOV_float_imm.FMOV_D_floatimm",
+            Self::ScvtfFloatIntScvtfS32Float2int { .. } => "SCVTF_float_int.SCVTF_S32_float2int",
+            Self::ScvtfFloatIntScvtfD32Float2int { .. } => "SCVTF_float_int.SCVTF_D32_float2int",
+            Self::ScvtfFloatIntScvtfS64Float2int { .. } => "SCVTF_float_int.SCVTF_S64_float2int",
+            Self::ScvtfFloatIntScvtfD64Float2int { .. } => "SCVTF_float_int.SCVTF_D64_float2int",
+            Self::UcvtfFloatIntUcvtfS32Float2int { .. } => "UCVTF_float_int.UCVTF_S32_float2int",
+            Self::UcvtfFloatIntUcvtfD32Float2int { .. } => "UCVTF_float_int.UCVTF_D32_float2int",
+            Self::UcvtfFloatIntUcvtfS64Float2int { .. } => "UCVTF_float_int.UCVTF_S64_float2int",
+            Self::UcvtfFloatIntUcvtfD64Float2int { .. } => "UCVTF_float_int.UCVTF_D64_float2int",
+            Self::FcvtzsFloatIntFcvtzs32sFloat2int { .. } => "FCVTZS_float_int.FCVTZS_32S_float2int",
+            Self::FcvtzsFloatIntFcvtzs64sFloat2int { .. } => "FCVTZS_float_int.FCVTZS_64S_float2int",
+            Self::FcvtzsFloatIntFcvtzs32dFloat2int { .. } => "FCVTZS_float_int.FCVTZS_32D_float2int",
+            Self::FcvtzsFloatIntFcvtzs64dFloat2int { .. } => "FCVTZS_float_int.FCVTZS_64D_float2int",
+            Self::FcvtzuFloatIntFcvtzu32sFloat2int { .. } => "FCVTZU_float_int.FCVTZU_32S_float2int",
+            Self::FcvtzuFloatIntFcvtzu64sFloat2int { .. } => "FCVTZU_float_int.FCVTZU_64S_float2int",
+            Self::FcvtzuFloatIntFcvtzu32dFloat2int { .. } => "FCVTZU_float_int.FCVTZU_32D_float2int",
+            Self::FcvtzuFloatIntFcvtzu64dFloat2int { .. } => "FCVTZU_float_int.FCVTZU_64D_float2int",
+            Self::FcvtnsFloatFcvtns32sFloat2int { .. } => "FCVTNS_float.FCVTNS_32S_float2int",
+            Self::FcvtnsFloatFcvtns64sFloat2int { .. } => "FCVTNS_float.FCVTNS_64S_float2int",
+            Self::FcvtnsFloatFcvtns32dFloat2int { .. } => "FCVTNS_float.FCVTNS_32D_float2int",
+            Self::FcvtnsFloatFcvtns64dFloat2int { .. } => "FCVTNS_float.FCVTNS_64D_float2int",
+            Self::FcvtnuFloatFcvtnu32sFloat2int { .. } => "FCVTNU_float.FCVTNU_32S_float2int",
+            Self::FcvtnuFloatFcvtnu64sFloat2int { .. } => "FCVTNU_float.FCVTNU_64S_float2int",
+            Self::FcvtnuFloatFcvtnu32dFloat2int { .. } => "FCVTNU_float.FCVTNU_32D_float2int",
+            Self::FcvtnuFloatFcvtnu64dFloat2int { .. } => "FCVTNU_float.FCVTNU_64D_float2int",
+            Self::FcvtmsFloatFcvtms32sFloat2int { .. } => "FCVTMS_float.FCVTMS_32S_float2int",
+            Self::FcvtmsFloatFcvtms64sFloat2int { .. } => "FCVTMS_float.FCVTMS_64S_float2int",
+            Self::FcvtmsFloatFcvtms32dFloat2int { .. } => "FCVTMS_float.FCVTMS_32D_float2int",
+            Self::FcvtmsFloatFcvtms64dFloat2int { .. } => "FCVTMS_float.FCVTMS_64D_float2int",
+            Self::FcvtmuFloatFcvtmu32sFloat2int { .. } => "FCVTMU_float.FCVTMU_32S_float2int",
+            Self::FcvtmuFloatFcvtmu64sFloat2int { .. } => "FCVTMU_float.FCVTMU_64S_float2int",
+            Self::FcvtmuFloatFcvtmu32dFloat2int { .. } => "FCVTMU_float.FCVTMU_32D_float2int",
+            Self::FcvtmuFloatFcvtmu64dFloat2int { .. } => "FCVTMU_float.FCVTMU_64D_float2int",
+            Self::FcvtpsFloatFcvtps32sFloat2int { .. } => "FCVTPS_float.FCVTPS_32S_float2int",
+            Self::FcvtpsFloatFcvtps64sFloat2int { .. } => "FCVTPS_float.FCVTPS_64S_float2int",
+            Self::FcvtpsFloatFcvtps32dFloat2int { .. } => "FCVTPS_float.FCVTPS_32D_float2int",
+            Self::FcvtpsFloatFcvtps64dFloat2int { .. } => "FCVTPS_float.FCVTPS_64D_float2int",
+            Self::FcvtpuFloatFcvtpu32sFloat2int { .. } => "FCVTPU_float.FCVTPU_32S_float2int",
+            Self::FcvtpuFloatFcvtpu64sFloat2int { .. } => "FCVTPU_float.FCVTPU_64S_float2int",
+            Self::FcvtpuFloatFcvtpu32dFloat2int { .. } => "FCVTPU_float.FCVTPU_32D_float2int",
+            Self::FcvtpuFloatFcvtpu64dFloat2int { .. } => "FCVTPU_float.FCVTPU_64D_float2int",
+            Self::FcvtasFloatFcvtas32sFloat2int { .. } => "FCVTAS_float.FCVTAS_32S_float2int",
+            Self::FcvtasFloatFcvtas64sFloat2int { .. } => "FCVTAS_float.FCVTAS_64S_float2int",
+            Self::FcvtasFloatFcvtas32dFloat2int { .. } => "FCVTAS_float.FCVTAS_32D_float2int",
+            Self::FcvtasFloatFcvtas64dFloat2int { .. } => "FCVTAS_float.FCVTAS_64D_float2int",
+            Self::FcvtauFloatFcvtau32sFloat2int { .. } => "FCVTAU_float.FCVTAU_32S_float2int",
+            Self::FcvtauFloatFcvtau64sFloat2int { .. } => "FCVTAU_float.FCVTAU_64S_float2int",
+            Self::FcvtauFloatFcvtau32dFloat2int { .. } => "FCVTAU_float.FCVTAU_32D_float2int",
+            Self::FcvtauFloatFcvtau64dFloat2int { .. } => "FCVTAU_float.FCVTAU_64D_float2int",
+            Self::LdrRegFpsimdLdrBLdstRegoff { .. } => "LDR_reg_fpsimd.LDR_B_ldst_regoff",
+            Self::LdrRegFpsimdLdrBlLdstRegoff { .. } => "LDR_reg_fpsimd.LDR_BL_ldst_regoff",
+            Self::LdrRegFpsimdLdrHLdstRegoff { .. } => "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+            Self::LdrRegFpsimdLdrSLdstRegoff { .. } => "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+            Self::LdrRegFpsimdLdrDLdstRegoff { .. } => "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+            Self::LdrRegFpsimdLdrQLdstRegoff { .. } => "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+            Self::StrRegFpsimdStrBLdstRegoff { .. } => "STR_reg_fpsimd.STR_B_ldst_regoff",
+            Self::StrRegFpsimdStrBlLdstRegoff { .. } => "STR_reg_fpsimd.STR_BL_ldst_regoff",
+            Self::StrRegFpsimdStrHLdstRegoff { .. } => "STR_reg_fpsimd.STR_H_ldst_regoff",
+            Self::StrRegFpsimdStrSLdstRegoff { .. } => "STR_reg_fpsimd.STR_S_ldst_regoff",
+            Self::StrRegFpsimdStrDLdstRegoff { .. } => "STR_reg_fpsimd.STR_D_ldst_regoff",
+            Self::StrRegFpsimdStrQLdstRegoff { .. } => "STR_reg_fpsimd.STR_Q_ldst_regoff",
         }
     }
 
@@ -4059,6 +4763,8 @@ impl A64Insn {
             Self::Rev32IntRev3264Dp1src { .. } => "REV32",
             Self::MrsMrsRsSystemmoveCntfrqEl0 { .. } => "MRS",
             Self::MrsMrsRsSystemmoveCntvctEl0 { .. } => "MRS",
+            Self::MrsMrsRsSystemmoveFpcr { .. } => "MRS",
+            Self::MrsMrsRsSystemmoveFpsr { .. } => "MRS",
             Self::MrsMrsRsSystemmoveTpidrEl0 { .. } => "MRS",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ",
@@ -4505,6 +5211,130 @@ impl A64Insn {
             Self::Rev64AdvsimdRev64AsimdmiscR { .. } => "REV64",
             Self::CntAdvsimdCntAsimdmiscR { .. } => "CNT",
             Self::TblAdvsimdTblAsimdtblL11 { .. } => "TBL",
+            Self::FaddFloatFaddSFloatdp2 { .. } => "FADD",
+            Self::FaddFloatFaddDFloatdp2 { .. } => "FADD",
+            Self::FsubFloatFsubSFloatdp2 { .. } => "FSUB",
+            Self::FsubFloatFsubDFloatdp2 { .. } => "FSUB",
+            Self::FmulFloatFmulSFloatdp2 { .. } => "FMUL",
+            Self::FmulFloatFmulDFloatdp2 { .. } => "FMUL",
+            Self::FnmulFloatFnmulSFloatdp2 { .. } => "FNMUL",
+            Self::FnmulFloatFnmulDFloatdp2 { .. } => "FNMUL",
+            Self::FdivFloatFdivSFloatdp2 { .. } => "FDIV",
+            Self::FdivFloatFdivDFloatdp2 { .. } => "FDIV",
+            Self::FmaxFloatFmaxSFloatdp2 { .. } => "FMAX",
+            Self::FmaxFloatFmaxDFloatdp2 { .. } => "FMAX",
+            Self::FminFloatFminSFloatdp2 { .. } => "FMIN",
+            Self::FminFloatFminDFloatdp2 { .. } => "FMIN",
+            Self::FmaxnmFloatFmaxnmSFloatdp2 { .. } => "FMAXNM",
+            Self::FmaxnmFloatFmaxnmDFloatdp2 { .. } => "FMAXNM",
+            Self::FminnmFloatFminnmSFloatdp2 { .. } => "FMINNM",
+            Self::FminnmFloatFminnmDFloatdp2 { .. } => "FMINNM",
+            Self::FmaddFloatFmaddSFloatdp3 { .. } => "FMADD",
+            Self::FmaddFloatFmaddDFloatdp3 { .. } => "FMADD",
+            Self::FmsubFloatFmsubSFloatdp3 { .. } => "FMSUB",
+            Self::FmsubFloatFmsubDFloatdp3 { .. } => "FMSUB",
+            Self::FnmaddFloatFnmaddSFloatdp3 { .. } => "FNMADD",
+            Self::FnmaddFloatFnmaddDFloatdp3 { .. } => "FNMADD",
+            Self::FnmsubFloatFnmsubSFloatdp3 { .. } => "FNMSUB",
+            Self::FnmsubFloatFnmsubDFloatdp3 { .. } => "FNMSUB",
+            Self::FabsFloatFabsSFloatdp1 { .. } => "FABS",
+            Self::FabsFloatFabsDFloatdp1 { .. } => "FABS",
+            Self::FnegFloatFnegSFloatdp1 { .. } => "FNEG",
+            Self::FnegFloatFnegDFloatdp1 { .. } => "FNEG",
+            Self::FsqrtFloatFsqrtSFloatdp1 { .. } => "FSQRT",
+            Self::FsqrtFloatFsqrtDFloatdp1 { .. } => "FSQRT",
+            Self::FrintnFloatFrintnSFloatdp1 { .. } => "FRINTN",
+            Self::FrintnFloatFrintnDFloatdp1 { .. } => "FRINTN",
+            Self::FrintpFloatFrintpSFloatdp1 { .. } => "FRINTP",
+            Self::FrintpFloatFrintpDFloatdp1 { .. } => "FRINTP",
+            Self::FrintmFloatFrintmSFloatdp1 { .. } => "FRINTM",
+            Self::FrintmFloatFrintmDFloatdp1 { .. } => "FRINTM",
+            Self::FrintzFloatFrintzSFloatdp1 { .. } => "FRINTZ",
+            Self::FrintzFloatFrintzDFloatdp1 { .. } => "FRINTZ",
+            Self::FrintaFloatFrintaSFloatdp1 { .. } => "FRINTA",
+            Self::FrintaFloatFrintaDFloatdp1 { .. } => "FRINTA",
+            Self::FrintxFloatFrintxSFloatdp1 { .. } => "FRINTX",
+            Self::FrintxFloatFrintxDFloatdp1 { .. } => "FRINTX",
+            Self::FrintiFloatFrintiSFloatdp1 { .. } => "FRINTI",
+            Self::FrintiFloatFrintiDFloatdp1 { .. } => "FRINTI",
+            Self::FcvtFloatFcvtDsFloatdp1 { .. } => "FCVT",
+            Self::FcvtFloatFcvtSdFloatdp1 { .. } => "FCVT",
+            Self::FcmpFloatFcmpSFloatcmp { .. } => "FCMP",
+            Self::FcmpFloatFcmpSzFloatcmp { .. } => "FCMP",
+            Self::FcmpFloatFcmpDFloatcmp { .. } => "FCMP",
+            Self::FcmpFloatFcmpDzFloatcmp { .. } => "FCMP",
+            Self::FcmpeFloatFcmpeSFloatcmp { .. } => "FCMPE",
+            Self::FcmpeFloatFcmpeSzFloatcmp { .. } => "FCMPE",
+            Self::FcmpeFloatFcmpeDFloatcmp { .. } => "FCMPE",
+            Self::FcmpeFloatFcmpeDzFloatcmp { .. } => "FCMPE",
+            Self::FccmpFloatFccmpSFloatccmp { .. } => "FCCMP",
+            Self::FccmpFloatFccmpDFloatccmp { .. } => "FCCMP",
+            Self::FccmpeFloatFccmpeSFloatccmp { .. } => "FCCMPE",
+            Self::FccmpeFloatFccmpeDFloatccmp { .. } => "FCCMPE",
+            Self::FcselFloatFcselSFloatsel { .. } => "FCSEL",
+            Self::FcselFloatFcselDFloatsel { .. } => "FCSEL",
+            Self::FmovFloatImmFmovSFloatimm { .. } => "FMOV",
+            Self::FmovFloatImmFmovDFloatimm { .. } => "FMOV",
+            Self::ScvtfFloatIntScvtfS32Float2int { .. } => "SCVTF",
+            Self::ScvtfFloatIntScvtfD32Float2int { .. } => "SCVTF",
+            Self::ScvtfFloatIntScvtfS64Float2int { .. } => "SCVTF",
+            Self::ScvtfFloatIntScvtfD64Float2int { .. } => "SCVTF",
+            Self::UcvtfFloatIntUcvtfS32Float2int { .. } => "UCVTF",
+            Self::UcvtfFloatIntUcvtfD32Float2int { .. } => "UCVTF",
+            Self::UcvtfFloatIntUcvtfS64Float2int { .. } => "UCVTF",
+            Self::UcvtfFloatIntUcvtfD64Float2int { .. } => "UCVTF",
+            Self::FcvtzsFloatIntFcvtzs32sFloat2int { .. } => "FCVTZS",
+            Self::FcvtzsFloatIntFcvtzs64sFloat2int { .. } => "FCVTZS",
+            Self::FcvtzsFloatIntFcvtzs32dFloat2int { .. } => "FCVTZS",
+            Self::FcvtzsFloatIntFcvtzs64dFloat2int { .. } => "FCVTZS",
+            Self::FcvtzuFloatIntFcvtzu32sFloat2int { .. } => "FCVTZU",
+            Self::FcvtzuFloatIntFcvtzu64sFloat2int { .. } => "FCVTZU",
+            Self::FcvtzuFloatIntFcvtzu32dFloat2int { .. } => "FCVTZU",
+            Self::FcvtzuFloatIntFcvtzu64dFloat2int { .. } => "FCVTZU",
+            Self::FcvtnsFloatFcvtns32sFloat2int { .. } => "FCVTNS",
+            Self::FcvtnsFloatFcvtns64sFloat2int { .. } => "FCVTNS",
+            Self::FcvtnsFloatFcvtns32dFloat2int { .. } => "FCVTNS",
+            Self::FcvtnsFloatFcvtns64dFloat2int { .. } => "FCVTNS",
+            Self::FcvtnuFloatFcvtnu32sFloat2int { .. } => "FCVTNU",
+            Self::FcvtnuFloatFcvtnu64sFloat2int { .. } => "FCVTNU",
+            Self::FcvtnuFloatFcvtnu32dFloat2int { .. } => "FCVTNU",
+            Self::FcvtnuFloatFcvtnu64dFloat2int { .. } => "FCVTNU",
+            Self::FcvtmsFloatFcvtms32sFloat2int { .. } => "FCVTMS",
+            Self::FcvtmsFloatFcvtms64sFloat2int { .. } => "FCVTMS",
+            Self::FcvtmsFloatFcvtms32dFloat2int { .. } => "FCVTMS",
+            Self::FcvtmsFloatFcvtms64dFloat2int { .. } => "FCVTMS",
+            Self::FcvtmuFloatFcvtmu32sFloat2int { .. } => "FCVTMU",
+            Self::FcvtmuFloatFcvtmu64sFloat2int { .. } => "FCVTMU",
+            Self::FcvtmuFloatFcvtmu32dFloat2int { .. } => "FCVTMU",
+            Self::FcvtmuFloatFcvtmu64dFloat2int { .. } => "FCVTMU",
+            Self::FcvtpsFloatFcvtps32sFloat2int { .. } => "FCVTPS",
+            Self::FcvtpsFloatFcvtps64sFloat2int { .. } => "FCVTPS",
+            Self::FcvtpsFloatFcvtps32dFloat2int { .. } => "FCVTPS",
+            Self::FcvtpsFloatFcvtps64dFloat2int { .. } => "FCVTPS",
+            Self::FcvtpuFloatFcvtpu32sFloat2int { .. } => "FCVTPU",
+            Self::FcvtpuFloatFcvtpu64sFloat2int { .. } => "FCVTPU",
+            Self::FcvtpuFloatFcvtpu32dFloat2int { .. } => "FCVTPU",
+            Self::FcvtpuFloatFcvtpu64dFloat2int { .. } => "FCVTPU",
+            Self::FcvtasFloatFcvtas32sFloat2int { .. } => "FCVTAS",
+            Self::FcvtasFloatFcvtas64sFloat2int { .. } => "FCVTAS",
+            Self::FcvtasFloatFcvtas32dFloat2int { .. } => "FCVTAS",
+            Self::FcvtasFloatFcvtas64dFloat2int { .. } => "FCVTAS",
+            Self::FcvtauFloatFcvtau32sFloat2int { .. } => "FCVTAU",
+            Self::FcvtauFloatFcvtau64sFloat2int { .. } => "FCVTAU",
+            Self::FcvtauFloatFcvtau32dFloat2int { .. } => "FCVTAU",
+            Self::FcvtauFloatFcvtau64dFloat2int { .. } => "FCVTAU",
+            Self::LdrRegFpsimdLdrBLdstRegoff { .. } => "LDR",
+            Self::LdrRegFpsimdLdrBlLdstRegoff { .. } => "LDR",
+            Self::LdrRegFpsimdLdrHLdstRegoff { .. } => "LDR",
+            Self::LdrRegFpsimdLdrSLdstRegoff { .. } => "LDR",
+            Self::LdrRegFpsimdLdrDLdstRegoff { .. } => "LDR",
+            Self::LdrRegFpsimdLdrQLdstRegoff { .. } => "LDR",
+            Self::StrRegFpsimdStrBLdstRegoff { .. } => "STR",
+            Self::StrRegFpsimdStrBlLdstRegoff { .. } => "STR",
+            Self::StrRegFpsimdStrHLdstRegoff { .. } => "STR",
+            Self::StrRegFpsimdStrSLdstRegoff { .. } => "STR",
+            Self::StrRegFpsimdStrDLdstRegoff { .. } => "STR",
+            Self::StrRegFpsimdStrQLdstRegoff { .. } => "STR",
         }
     }
 
@@ -4645,6 +5475,8 @@ impl A64Insn {
             Self::Rev32IntRev3264Dp1src { .. } => "REV32 <Xd> , <Xn>",
             Self::MrsMrsRsSystemmoveCntfrqEl0 { .. } => "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
             Self::MrsMrsRsSystemmoveCntvctEl0 { .. } => "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+            Self::MrsMrsRsSystemmoveFpcr { .. } => "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+            Self::MrsMrsRsSystemmoveFpsr { .. } => "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
             Self::MrsMrsRsSystemmoveTpidrEl0 { .. } => "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
             Self::TbzTbzOnlyTestbranch { .. } => "TBZ <R> <t> , # <imm> , <label>",
             Self::TbnzTbnzOnlyTestbranch { .. } => "TBNZ <R> <t> , # <imm> , <label>",
@@ -5091,6 +5923,130 @@ impl A64Insn {
             Self::Rev64AdvsimdRev64AsimdmiscR { .. } => "REV64 <Vd> . <T> , <Vn> . <T>",
             Self::CntAdvsimdCntAsimdmiscR { .. } => "CNT <Vd> . <T> , <Vn> . <T>",
             Self::TblAdvsimdTblAsimdtblL11 { .. } => "TBL <Vd> . <Ta> , { <Vn> .16B }, <Vm> . <Ta>",
+            Self::FaddFloatFaddSFloatdp2 { .. } => "FADD <Sd> , <Sn> , <Sm>",
+            Self::FaddFloatFaddDFloatdp2 { .. } => "FADD <Dd> , <Dn> , <Dm>",
+            Self::FsubFloatFsubSFloatdp2 { .. } => "FSUB <Sd> , <Sn> , <Sm>",
+            Self::FsubFloatFsubDFloatdp2 { .. } => "FSUB <Dd> , <Dn> , <Dm>",
+            Self::FmulFloatFmulSFloatdp2 { .. } => "FMUL <Sd> , <Sn> , <Sm>",
+            Self::FmulFloatFmulDFloatdp2 { .. } => "FMUL <Dd> , <Dn> , <Dm>",
+            Self::FnmulFloatFnmulSFloatdp2 { .. } => "FNMUL <Sd> , <Sn> , <Sm>",
+            Self::FnmulFloatFnmulDFloatdp2 { .. } => "FNMUL <Dd> , <Dn> , <Dm>",
+            Self::FdivFloatFdivSFloatdp2 { .. } => "FDIV <Sd> , <Sn> , <Sm>",
+            Self::FdivFloatFdivDFloatdp2 { .. } => "FDIV <Dd> , <Dn> , <Dm>",
+            Self::FmaxFloatFmaxSFloatdp2 { .. } => "FMAX <Sd> , <Sn> , <Sm>",
+            Self::FmaxFloatFmaxDFloatdp2 { .. } => "FMAX <Dd> , <Dn> , <Dm>",
+            Self::FminFloatFminSFloatdp2 { .. } => "FMIN <Sd> , <Sn> , <Sm>",
+            Self::FminFloatFminDFloatdp2 { .. } => "FMIN <Dd> , <Dn> , <Dm>",
+            Self::FmaxnmFloatFmaxnmSFloatdp2 { .. } => "FMAXNM <Sd> , <Sn> , <Sm>",
+            Self::FmaxnmFloatFmaxnmDFloatdp2 { .. } => "FMAXNM <Dd> , <Dn> , <Dm>",
+            Self::FminnmFloatFminnmSFloatdp2 { .. } => "FMINNM <Sd> , <Sn> , <Sm>",
+            Self::FminnmFloatFminnmDFloatdp2 { .. } => "FMINNM <Dd> , <Dn> , <Dm>",
+            Self::FmaddFloatFmaddSFloatdp3 { .. } => "FMADD <Sd> , <Sn> , <Sm> , <Sa>",
+            Self::FmaddFloatFmaddDFloatdp3 { .. } => "FMADD <Dd> , <Dn> , <Dm> , <Da>",
+            Self::FmsubFloatFmsubSFloatdp3 { .. } => "FMSUB <Sd> , <Sn> , <Sm> , <Sa>",
+            Self::FmsubFloatFmsubDFloatdp3 { .. } => "FMSUB <Dd> , <Dn> , <Dm> , <Da>",
+            Self::FnmaddFloatFnmaddSFloatdp3 { .. } => "FNMADD <Sd> , <Sn> , <Sm> , <Sa>",
+            Self::FnmaddFloatFnmaddDFloatdp3 { .. } => "FNMADD <Dd> , <Dn> , <Dm> , <Da>",
+            Self::FnmsubFloatFnmsubSFloatdp3 { .. } => "FNMSUB <Sd> , <Sn> , <Sm> , <Sa>",
+            Self::FnmsubFloatFnmsubDFloatdp3 { .. } => "FNMSUB <Dd> , <Dn> , <Dm> , <Da>",
+            Self::FabsFloatFabsSFloatdp1 { .. } => "FABS <Sd> , <Sn>",
+            Self::FabsFloatFabsDFloatdp1 { .. } => "FABS <Dd> , <Dn>",
+            Self::FnegFloatFnegSFloatdp1 { .. } => "FNEG <Sd> , <Sn>",
+            Self::FnegFloatFnegDFloatdp1 { .. } => "FNEG <Dd> , <Dn>",
+            Self::FsqrtFloatFsqrtSFloatdp1 { .. } => "FSQRT <Sd> , <Sn>",
+            Self::FsqrtFloatFsqrtDFloatdp1 { .. } => "FSQRT <Dd> , <Dn>",
+            Self::FrintnFloatFrintnSFloatdp1 { .. } => "FRINTN <Sd> , <Sn>",
+            Self::FrintnFloatFrintnDFloatdp1 { .. } => "FRINTN <Dd> , <Dn>",
+            Self::FrintpFloatFrintpSFloatdp1 { .. } => "FRINTP <Sd> , <Sn>",
+            Self::FrintpFloatFrintpDFloatdp1 { .. } => "FRINTP <Dd> , <Dn>",
+            Self::FrintmFloatFrintmSFloatdp1 { .. } => "FRINTM <Sd> , <Sn>",
+            Self::FrintmFloatFrintmDFloatdp1 { .. } => "FRINTM <Dd> , <Dn>",
+            Self::FrintzFloatFrintzSFloatdp1 { .. } => "FRINTZ <Sd> , <Sn>",
+            Self::FrintzFloatFrintzDFloatdp1 { .. } => "FRINTZ <Dd> , <Dn>",
+            Self::FrintaFloatFrintaSFloatdp1 { .. } => "FRINTA <Sd> , <Sn>",
+            Self::FrintaFloatFrintaDFloatdp1 { .. } => "FRINTA <Dd> , <Dn>",
+            Self::FrintxFloatFrintxSFloatdp1 { .. } => "FRINTX <Sd> , <Sn>",
+            Self::FrintxFloatFrintxDFloatdp1 { .. } => "FRINTX <Dd> , <Dn>",
+            Self::FrintiFloatFrintiSFloatdp1 { .. } => "FRINTI <Sd> , <Sn>",
+            Self::FrintiFloatFrintiDFloatdp1 { .. } => "FRINTI <Dd> , <Dn>",
+            Self::FcvtFloatFcvtDsFloatdp1 { .. } => "FCVT <Dd> , <Sn>",
+            Self::FcvtFloatFcvtSdFloatdp1 { .. } => "FCVT <Sd> , <Dn>",
+            Self::FcmpFloatFcmpSFloatcmp { .. } => "FCMP <Sn> , <Sm>",
+            Self::FcmpFloatFcmpSzFloatcmp { .. } => "FCMP <Sn> , #0.0",
+            Self::FcmpFloatFcmpDFloatcmp { .. } => "FCMP <Dn> , <Dm>",
+            Self::FcmpFloatFcmpDzFloatcmp { .. } => "FCMP <Dn> , #0.0",
+            Self::FcmpeFloatFcmpeSFloatcmp { .. } => "FCMPE <Sn> , <Sm>",
+            Self::FcmpeFloatFcmpeSzFloatcmp { .. } => "FCMPE <Sn> , #0.0",
+            Self::FcmpeFloatFcmpeDFloatcmp { .. } => "FCMPE <Dn> , <Dm>",
+            Self::FcmpeFloatFcmpeDzFloatcmp { .. } => "FCMPE <Dn> , #0.0",
+            Self::FccmpFloatFccmpSFloatccmp { .. } => "FCCMP <Sn> , <Sm> , # <nzcv> , <cond>",
+            Self::FccmpFloatFccmpDFloatccmp { .. } => "FCCMP <Dn> , <Dm> , # <nzcv> , <cond>",
+            Self::FccmpeFloatFccmpeSFloatccmp { .. } => "FCCMPE <Sn> , <Sm> , # <nzcv> , <cond>",
+            Self::FccmpeFloatFccmpeDFloatccmp { .. } => "FCCMPE <Dn> , <Dm> , # <nzcv> , <cond>",
+            Self::FcselFloatFcselSFloatsel { .. } => "FCSEL <Sd> , <Sn> , <Sm> , <cond>",
+            Self::FcselFloatFcselDFloatsel { .. } => "FCSEL <Dd> , <Dn> , <Dm> , <cond>",
+            Self::FmovFloatImmFmovSFloatimm { .. } => "FMOV <Sd> , # <imm>",
+            Self::FmovFloatImmFmovDFloatimm { .. } => "FMOV <Dd> , # <imm>",
+            Self::ScvtfFloatIntScvtfS32Float2int { .. } => "SCVTF <Sd> , <Wn>",
+            Self::ScvtfFloatIntScvtfD32Float2int { .. } => "SCVTF <Dd> , <Wn>",
+            Self::ScvtfFloatIntScvtfS64Float2int { .. } => "SCVTF <Sd> , <Xn>",
+            Self::ScvtfFloatIntScvtfD64Float2int { .. } => "SCVTF <Dd> , <Xn>",
+            Self::UcvtfFloatIntUcvtfS32Float2int { .. } => "UCVTF <Sd> , <Wn>",
+            Self::UcvtfFloatIntUcvtfD32Float2int { .. } => "UCVTF <Dd> , <Wn>",
+            Self::UcvtfFloatIntUcvtfS64Float2int { .. } => "UCVTF <Sd> , <Xn>",
+            Self::UcvtfFloatIntUcvtfD64Float2int { .. } => "UCVTF <Dd> , <Xn>",
+            Self::FcvtzsFloatIntFcvtzs32sFloat2int { .. } => "FCVTZS <Wd> , <Sn>",
+            Self::FcvtzsFloatIntFcvtzs64sFloat2int { .. } => "FCVTZS <Xd> , <Sn>",
+            Self::FcvtzsFloatIntFcvtzs32dFloat2int { .. } => "FCVTZS <Wd> , <Dn>",
+            Self::FcvtzsFloatIntFcvtzs64dFloat2int { .. } => "FCVTZS <Xd> , <Dn>",
+            Self::FcvtzuFloatIntFcvtzu32sFloat2int { .. } => "FCVTZU <Wd> , <Sn>",
+            Self::FcvtzuFloatIntFcvtzu64sFloat2int { .. } => "FCVTZU <Xd> , <Sn>",
+            Self::FcvtzuFloatIntFcvtzu32dFloat2int { .. } => "FCVTZU <Wd> , <Dn>",
+            Self::FcvtzuFloatIntFcvtzu64dFloat2int { .. } => "FCVTZU <Xd> , <Dn>",
+            Self::FcvtnsFloatFcvtns32sFloat2int { .. } => "FCVTNS <Wd> , <Sn>",
+            Self::FcvtnsFloatFcvtns64sFloat2int { .. } => "FCVTNS <Xd> , <Sn>",
+            Self::FcvtnsFloatFcvtns32dFloat2int { .. } => "FCVTNS <Wd> , <Dn>",
+            Self::FcvtnsFloatFcvtns64dFloat2int { .. } => "FCVTNS <Xd> , <Dn>",
+            Self::FcvtnuFloatFcvtnu32sFloat2int { .. } => "FCVTNU <Wd> , <Sn>",
+            Self::FcvtnuFloatFcvtnu64sFloat2int { .. } => "FCVTNU <Xd> , <Sn>",
+            Self::FcvtnuFloatFcvtnu32dFloat2int { .. } => "FCVTNU <Wd> , <Dn>",
+            Self::FcvtnuFloatFcvtnu64dFloat2int { .. } => "FCVTNU <Xd> , <Dn>",
+            Self::FcvtmsFloatFcvtms32sFloat2int { .. } => "FCVTMS <Wd> , <Sn>",
+            Self::FcvtmsFloatFcvtms64sFloat2int { .. } => "FCVTMS <Xd> , <Sn>",
+            Self::FcvtmsFloatFcvtms32dFloat2int { .. } => "FCVTMS <Wd> , <Dn>",
+            Self::FcvtmsFloatFcvtms64dFloat2int { .. } => "FCVTMS <Xd> , <Dn>",
+            Self::FcvtmuFloatFcvtmu32sFloat2int { .. } => "FCVTMU <Wd> , <Sn>",
+            Self::FcvtmuFloatFcvtmu64sFloat2int { .. } => "FCVTMU <Xd> , <Sn>",
+            Self::FcvtmuFloatFcvtmu32dFloat2int { .. } => "FCVTMU <Wd> , <Dn>",
+            Self::FcvtmuFloatFcvtmu64dFloat2int { .. } => "FCVTMU <Xd> , <Dn>",
+            Self::FcvtpsFloatFcvtps32sFloat2int { .. } => "FCVTPS <Wd> , <Sn>",
+            Self::FcvtpsFloatFcvtps64sFloat2int { .. } => "FCVTPS <Xd> , <Sn>",
+            Self::FcvtpsFloatFcvtps32dFloat2int { .. } => "FCVTPS <Wd> , <Dn>",
+            Self::FcvtpsFloatFcvtps64dFloat2int { .. } => "FCVTPS <Xd> , <Dn>",
+            Self::FcvtpuFloatFcvtpu32sFloat2int { .. } => "FCVTPU <Wd> , <Sn>",
+            Self::FcvtpuFloatFcvtpu64sFloat2int { .. } => "FCVTPU <Xd> , <Sn>",
+            Self::FcvtpuFloatFcvtpu32dFloat2int { .. } => "FCVTPU <Wd> , <Dn>",
+            Self::FcvtpuFloatFcvtpu64dFloat2int { .. } => "FCVTPU <Xd> , <Dn>",
+            Self::FcvtasFloatFcvtas32sFloat2int { .. } => "FCVTAS <Wd> , <Sn>",
+            Self::FcvtasFloatFcvtas64sFloat2int { .. } => "FCVTAS <Xd> , <Sn>",
+            Self::FcvtasFloatFcvtas32dFloat2int { .. } => "FCVTAS <Wd> , <Dn>",
+            Self::FcvtasFloatFcvtas64dFloat2int { .. } => "FCVTAS <Xd> , <Dn>",
+            Self::FcvtauFloatFcvtau32sFloat2int { .. } => "FCVTAU <Wd> , <Sn>",
+            Self::FcvtauFloatFcvtau64sFloat2int { .. } => "FCVTAU <Xd> , <Sn>",
+            Self::FcvtauFloatFcvtau32dFloat2int { .. } => "FCVTAU <Wd> , <Dn>",
+            Self::FcvtauFloatFcvtau64dFloat2int { .. } => "FCVTAU <Xd> , <Dn>",
+            Self::LdrRegFpsimdLdrBLdstRegoff { .. } => "LDR <Bt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+            Self::LdrRegFpsimdLdrBlLdstRegoff { .. } => "LDR <Bt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+            Self::LdrRegFpsimdLdrHLdstRegoff { .. } => "LDR <Ht> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::LdrRegFpsimdLdrSLdstRegoff { .. } => "LDR <St> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::LdrRegFpsimdLdrDLdstRegoff { .. } => "LDR <Dt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::LdrRegFpsimdLdrQLdstRegoff { .. } => "LDR <Qt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::StrRegFpsimdStrBLdstRegoff { .. } => "STR <Bt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+            Self::StrRegFpsimdStrBlLdstRegoff { .. } => "STR <Bt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+            Self::StrRegFpsimdStrHLdstRegoff { .. } => "STR <Ht> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::StrRegFpsimdStrSLdstRegoff { .. } => "STR <St> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::StrRegFpsimdStrDLdstRegoff { .. } => "STR <Dt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+            Self::StrRegFpsimdStrQLdstRegoff { .. } => "STR <Qt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
         }
     }
 
@@ -6139,6 +7095,16 @@ impl A64Insn {
             Self::MrsMrsRsSystemmoveCntvctEl0 { rt } => {
                 let mut word = 0xd53be040;
                 word |= encode_a64_field("MRS.MRS_RS_systemmove@CNTVCT_EL0", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MrsMrsRsSystemmoveFpcr { rt } => {
+                let mut word = 0xd53b4400;
+                word |= encode_a64_field("MRS.MRS_RS_systemmove@FPCR", "Rt", rt.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::MrsMrsRsSystemmoveFpsr { rt } => {
+                let mut word = 0xd53b4420;
+                word |= encode_a64_field("MRS.MRS_RS_systemmove@FPSR", "Rt", rt.enc() as u32, 5, 0)?;
                 Ok(word)
             }
             Self::MrsMrsRsSystemmoveTpidrEl0 { rt } => {
@@ -9433,6 +10399,826 @@ impl A64Insn {
                 word |= encode_a64_field("TBL_advsimd.TBL_asimdtbl_L1_1", "Rd", rd as u32, 5, 0)?;
                 Ok(word)
             }
+            Self::FaddFloatFaddSFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e202800;
+                word |= encode_a64_field("FADD_float.FADD_S_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FADD_float.FADD_S_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FADD_float.FADD_S_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FaddFloatFaddDFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e602800;
+                word |= encode_a64_field("FADD_float.FADD_D_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FADD_float.FADD_D_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FADD_float.FADD_D_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FsubFloatFsubSFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e203800;
+                word |= encode_a64_field("FSUB_float.FSUB_S_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FSUB_float.FSUB_S_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FSUB_float.FSUB_S_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FsubFloatFsubDFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e603800;
+                word |= encode_a64_field("FSUB_float.FSUB_D_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FSUB_float.FSUB_D_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FSUB_float.FSUB_D_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmulFloatFmulSFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e200800;
+                word |= encode_a64_field("FMUL_float.FMUL_S_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMUL_float.FMUL_S_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMUL_float.FMUL_S_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmulFloatFmulDFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e600800;
+                word |= encode_a64_field("FMUL_float.FMUL_D_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMUL_float.FMUL_D_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMUL_float.FMUL_D_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FnmulFloatFnmulSFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e208800;
+                word |= encode_a64_field("FNMUL_float.FNMUL_S_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FNMUL_float.FNMUL_S_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FNMUL_float.FNMUL_S_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FnmulFloatFnmulDFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e608800;
+                word |= encode_a64_field("FNMUL_float.FNMUL_D_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FNMUL_float.FNMUL_D_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FNMUL_float.FNMUL_D_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FdivFloatFdivSFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e201800;
+                word |= encode_a64_field("FDIV_float.FDIV_S_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FDIV_float.FDIV_S_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FDIV_float.FDIV_S_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FdivFloatFdivDFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e601800;
+                word |= encode_a64_field("FDIV_float.FDIV_D_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FDIV_float.FDIV_D_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FDIV_float.FDIV_D_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmaxFloatFmaxSFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e204800;
+                word |= encode_a64_field("FMAX_float.FMAX_S_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMAX_float.FMAX_S_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMAX_float.FMAX_S_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmaxFloatFmaxDFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e604800;
+                word |= encode_a64_field("FMAX_float.FMAX_D_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMAX_float.FMAX_D_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMAX_float.FMAX_D_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FminFloatFminSFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e205800;
+                word |= encode_a64_field("FMIN_float.FMIN_S_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMIN_float.FMIN_S_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMIN_float.FMIN_S_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FminFloatFminDFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e605800;
+                word |= encode_a64_field("FMIN_float.FMIN_D_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMIN_float.FMIN_D_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMIN_float.FMIN_D_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmaxnmFloatFmaxnmSFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e206800;
+                word |= encode_a64_field("FMAXNM_float.FMAXNM_S_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMAXNM_float.FMAXNM_S_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMAXNM_float.FMAXNM_S_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmaxnmFloatFmaxnmDFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e606800;
+                word |= encode_a64_field("FMAXNM_float.FMAXNM_D_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMAXNM_float.FMAXNM_D_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMAXNM_float.FMAXNM_D_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FminnmFloatFminnmSFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e207800;
+                word |= encode_a64_field("FMINNM_float.FMINNM_S_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMINNM_float.FMINNM_S_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMINNM_float.FMINNM_S_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FminnmFloatFminnmDFloatdp2 { rm, rn, rd } => {
+                let mut word = 0x1e607800;
+                word |= encode_a64_field("FMINNM_float.FMINNM_D_floatdp2", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMINNM_float.FMINNM_D_floatdp2", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMINNM_float.FMINNM_D_floatdp2", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmaddFloatFmaddSFloatdp3 { rm, ra, rn, rd } => {
+                let mut word = 0x1f000000;
+                word |= encode_a64_field("FMADD_float.FMADD_S_floatdp3", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMADD_float.FMADD_S_floatdp3", "Ra", ra as u32, 5, 10)?;
+                word |= encode_a64_field("FMADD_float.FMADD_S_floatdp3", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMADD_float.FMADD_S_floatdp3", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmaddFloatFmaddDFloatdp3 { rm, ra, rn, rd } => {
+                let mut word = 0x1f400000;
+                word |= encode_a64_field("FMADD_float.FMADD_D_floatdp3", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMADD_float.FMADD_D_floatdp3", "Ra", ra as u32, 5, 10)?;
+                word |= encode_a64_field("FMADD_float.FMADD_D_floatdp3", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMADD_float.FMADD_D_floatdp3", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmsubFloatFmsubSFloatdp3 { rm, ra, rn, rd } => {
+                let mut word = 0x1f008000;
+                word |= encode_a64_field("FMSUB_float.FMSUB_S_floatdp3", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMSUB_float.FMSUB_S_floatdp3", "Ra", ra as u32, 5, 10)?;
+                word |= encode_a64_field("FMSUB_float.FMSUB_S_floatdp3", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMSUB_float.FMSUB_S_floatdp3", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmsubFloatFmsubDFloatdp3 { rm, ra, rn, rd } => {
+                let mut word = 0x1f408000;
+                word |= encode_a64_field("FMSUB_float.FMSUB_D_floatdp3", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FMSUB_float.FMSUB_D_floatdp3", "Ra", ra as u32, 5, 10)?;
+                word |= encode_a64_field("FMSUB_float.FMSUB_D_floatdp3", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FMSUB_float.FMSUB_D_floatdp3", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FnmaddFloatFnmaddSFloatdp3 { rm, ra, rn, rd } => {
+                let mut word = 0x1f200000;
+                word |= encode_a64_field("FNMADD_float.FNMADD_S_floatdp3", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FNMADD_float.FNMADD_S_floatdp3", "Ra", ra as u32, 5, 10)?;
+                word |= encode_a64_field("FNMADD_float.FNMADD_S_floatdp3", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FNMADD_float.FNMADD_S_floatdp3", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FnmaddFloatFnmaddDFloatdp3 { rm, ra, rn, rd } => {
+                let mut word = 0x1f600000;
+                word |= encode_a64_field("FNMADD_float.FNMADD_D_floatdp3", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FNMADD_float.FNMADD_D_floatdp3", "Ra", ra as u32, 5, 10)?;
+                word |= encode_a64_field("FNMADD_float.FNMADD_D_floatdp3", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FNMADD_float.FNMADD_D_floatdp3", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FnmsubFloatFnmsubSFloatdp3 { rm, ra, rn, rd } => {
+                let mut word = 0x1f208000;
+                word |= encode_a64_field("FNMSUB_float.FNMSUB_S_floatdp3", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FNMSUB_float.FNMSUB_S_floatdp3", "Ra", ra as u32, 5, 10)?;
+                word |= encode_a64_field("FNMSUB_float.FNMSUB_S_floatdp3", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FNMSUB_float.FNMSUB_S_floatdp3", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FnmsubFloatFnmsubDFloatdp3 { rm, ra, rn, rd } => {
+                let mut word = 0x1f608000;
+                word |= encode_a64_field("FNMSUB_float.FNMSUB_D_floatdp3", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FNMSUB_float.FNMSUB_D_floatdp3", "Ra", ra as u32, 5, 10)?;
+                word |= encode_a64_field("FNMSUB_float.FNMSUB_D_floatdp3", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FNMSUB_float.FNMSUB_D_floatdp3", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FabsFloatFabsSFloatdp1 { rn, rd } => {
+                let mut word = 0x1e20c000;
+                word |= encode_a64_field("FABS_float.FABS_S_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FABS_float.FABS_S_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FabsFloatFabsDFloatdp1 { rn, rd } => {
+                let mut word = 0x1e60c000;
+                word |= encode_a64_field("FABS_float.FABS_D_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FABS_float.FABS_D_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FnegFloatFnegSFloatdp1 { rn, rd } => {
+                let mut word = 0x1e214000;
+                word |= encode_a64_field("FNEG_float.FNEG_S_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FNEG_float.FNEG_S_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FnegFloatFnegDFloatdp1 { rn, rd } => {
+                let mut word = 0x1e614000;
+                word |= encode_a64_field("FNEG_float.FNEG_D_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FNEG_float.FNEG_D_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FsqrtFloatFsqrtSFloatdp1 { rn, rd } => {
+                let mut word = 0x1e21c000;
+                word |= encode_a64_field("FSQRT_float.FSQRT_S_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FSQRT_float.FSQRT_S_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FsqrtFloatFsqrtDFloatdp1 { rn, rd } => {
+                let mut word = 0x1e61c000;
+                word |= encode_a64_field("FSQRT_float.FSQRT_D_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FSQRT_float.FSQRT_D_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintnFloatFrintnSFloatdp1 { rn, rd } => {
+                let mut word = 0x1e244000;
+                word |= encode_a64_field("FRINTN_float.FRINTN_S_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTN_float.FRINTN_S_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintnFloatFrintnDFloatdp1 { rn, rd } => {
+                let mut word = 0x1e644000;
+                word |= encode_a64_field("FRINTN_float.FRINTN_D_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTN_float.FRINTN_D_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintpFloatFrintpSFloatdp1 { rn, rd } => {
+                let mut word = 0x1e24c000;
+                word |= encode_a64_field("FRINTP_float.FRINTP_S_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTP_float.FRINTP_S_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintpFloatFrintpDFloatdp1 { rn, rd } => {
+                let mut word = 0x1e64c000;
+                word |= encode_a64_field("FRINTP_float.FRINTP_D_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTP_float.FRINTP_D_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintmFloatFrintmSFloatdp1 { rn, rd } => {
+                let mut word = 0x1e254000;
+                word |= encode_a64_field("FRINTM_float.FRINTM_S_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTM_float.FRINTM_S_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintmFloatFrintmDFloatdp1 { rn, rd } => {
+                let mut word = 0x1e654000;
+                word |= encode_a64_field("FRINTM_float.FRINTM_D_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTM_float.FRINTM_D_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintzFloatFrintzSFloatdp1 { rn, rd } => {
+                let mut word = 0x1e25c000;
+                word |= encode_a64_field("FRINTZ_float.FRINTZ_S_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTZ_float.FRINTZ_S_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintzFloatFrintzDFloatdp1 { rn, rd } => {
+                let mut word = 0x1e65c000;
+                word |= encode_a64_field("FRINTZ_float.FRINTZ_D_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTZ_float.FRINTZ_D_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintaFloatFrintaSFloatdp1 { rn, rd } => {
+                let mut word = 0x1e264000;
+                word |= encode_a64_field("FRINTA_float.FRINTA_S_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTA_float.FRINTA_S_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintaFloatFrintaDFloatdp1 { rn, rd } => {
+                let mut word = 0x1e664000;
+                word |= encode_a64_field("FRINTA_float.FRINTA_D_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTA_float.FRINTA_D_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintxFloatFrintxSFloatdp1 { rn, rd } => {
+                let mut word = 0x1e274000;
+                word |= encode_a64_field("FRINTX_float.FRINTX_S_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTX_float.FRINTX_S_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintxFloatFrintxDFloatdp1 { rn, rd } => {
+                let mut word = 0x1e674000;
+                word |= encode_a64_field("FRINTX_float.FRINTX_D_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTX_float.FRINTX_D_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintiFloatFrintiSFloatdp1 { rn, rd } => {
+                let mut word = 0x1e27c000;
+                word |= encode_a64_field("FRINTI_float.FRINTI_S_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTI_float.FRINTI_S_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FrintiFloatFrintiDFloatdp1 { rn, rd } => {
+                let mut word = 0x1e67c000;
+                word |= encode_a64_field("FRINTI_float.FRINTI_D_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FRINTI_float.FRINTI_D_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtFloatFcvtDsFloatdp1 { rn, rd } => {
+                let mut word = 0x1e22c000;
+                word |= encode_a64_field("FCVT_float.FCVT_DS_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVT_float.FCVT_DS_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtFloatFcvtSdFloatdp1 { rn, rd } => {
+                let mut word = 0x1e624000;
+                word |= encode_a64_field("FCVT_float.FCVT_SD_floatdp1", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVT_float.FCVT_SD_floatdp1", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcmpFloatFcmpSFloatcmp { rm, rn } => {
+                let mut word = 0x1e202000;
+                word |= encode_a64_field("FCMP_float.FCMP_S_floatcmp", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FCMP_float.FCMP_S_floatcmp", "Rn", rn as u32, 5, 5)?;
+                Ok(word)
+            }
+            Self::FcmpFloatFcmpSzFloatcmp { rn } => {
+                let mut word = 0x1e202008;
+                word |= encode_a64_field("FCMP_float.FCMP_SZ_floatcmp", "Rn", rn as u32, 5, 5)?;
+                Ok(word)
+            }
+            Self::FcmpFloatFcmpDFloatcmp { rm, rn } => {
+                let mut word = 0x1e602000;
+                word |= encode_a64_field("FCMP_float.FCMP_D_floatcmp", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FCMP_float.FCMP_D_floatcmp", "Rn", rn as u32, 5, 5)?;
+                Ok(word)
+            }
+            Self::FcmpFloatFcmpDzFloatcmp { rn } => {
+                let mut word = 0x1e602008;
+                word |= encode_a64_field("FCMP_float.FCMP_DZ_floatcmp", "Rn", rn as u32, 5, 5)?;
+                Ok(word)
+            }
+            Self::FcmpeFloatFcmpeSFloatcmp { rm, rn } => {
+                let mut word = 0x1e202010;
+                word |= encode_a64_field("FCMPE_float.FCMPE_S_floatcmp", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FCMPE_float.FCMPE_S_floatcmp", "Rn", rn as u32, 5, 5)?;
+                Ok(word)
+            }
+            Self::FcmpeFloatFcmpeSzFloatcmp { rn } => {
+                let mut word = 0x1e202018;
+                word |= encode_a64_field("FCMPE_float.FCMPE_SZ_floatcmp", "Rn", rn as u32, 5, 5)?;
+                Ok(word)
+            }
+            Self::FcmpeFloatFcmpeDFloatcmp { rm, rn } => {
+                let mut word = 0x1e602010;
+                word |= encode_a64_field("FCMPE_float.FCMPE_D_floatcmp", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FCMPE_float.FCMPE_D_floatcmp", "Rn", rn as u32, 5, 5)?;
+                Ok(word)
+            }
+            Self::FcmpeFloatFcmpeDzFloatcmp { rn } => {
+                let mut word = 0x1e602018;
+                word |= encode_a64_field("FCMPE_float.FCMPE_DZ_floatcmp", "Rn", rn as u32, 5, 5)?;
+                Ok(word)
+            }
+            Self::FccmpFloatFccmpSFloatccmp { rm, cond, rn, nzcv } => {
+                let mut word = 0x1e200400;
+                word |= encode_a64_field("FCCMP_float.FCCMP_S_floatccmp", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FCCMP_float.FCCMP_S_floatccmp", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("FCCMP_float.FCCMP_S_floatccmp", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCCMP_float.FCCMP_S_floatccmp", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::FccmpFloatFccmpDFloatccmp { rm, cond, rn, nzcv } => {
+                let mut word = 0x1e600400;
+                word |= encode_a64_field("FCCMP_float.FCCMP_D_floatccmp", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FCCMP_float.FCCMP_D_floatccmp", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("FCCMP_float.FCCMP_D_floatccmp", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCCMP_float.FCCMP_D_floatccmp", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::FccmpeFloatFccmpeSFloatccmp { rm, cond, rn, nzcv } => {
+                let mut word = 0x1e200410;
+                word |= encode_a64_field("FCCMPE_float.FCCMPE_S_floatccmp", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FCCMPE_float.FCCMPE_S_floatccmp", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("FCCMPE_float.FCCMPE_S_floatccmp", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCCMPE_float.FCCMPE_S_floatccmp", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::FccmpeFloatFccmpeDFloatccmp { rm, cond, rn, nzcv } => {
+                let mut word = 0x1e600410;
+                word |= encode_a64_field("FCCMPE_float.FCCMPE_D_floatccmp", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FCCMPE_float.FCCMPE_D_floatccmp", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("FCCMPE_float.FCCMPE_D_floatccmp", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCCMPE_float.FCCMPE_D_floatccmp", "nzcv", nzcv as u32, 4, 0)?;
+                Ok(word)
+            }
+            Self::FcselFloatFcselSFloatsel { rm, cond, rn, rd } => {
+                let mut word = 0x1e200c00;
+                word |= encode_a64_field("FCSEL_float.FCSEL_S_floatsel", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FCSEL_float.FCSEL_S_floatsel", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("FCSEL_float.FCSEL_S_floatsel", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCSEL_float.FCSEL_S_floatsel", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcselFloatFcselDFloatsel { rm, cond, rn, rd } => {
+                let mut word = 0x1e600c00;
+                word |= encode_a64_field("FCSEL_float.FCSEL_D_floatsel", "Rm", rm as u32, 5, 16)?;
+                word |= encode_a64_field("FCSEL_float.FCSEL_D_floatsel", "cond", cond as u32, 4, 12)?;
+                word |= encode_a64_field("FCSEL_float.FCSEL_D_floatsel", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCSEL_float.FCSEL_D_floatsel", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmovFloatImmFmovSFloatimm { imm8, rd } => {
+                let mut word = 0x1e201000;
+                word |= encode_a64_field("FMOV_float_imm.FMOV_S_floatimm", "imm8", imm8.raw(), 8, 13)?;
+                word |= encode_a64_field("FMOV_float_imm.FMOV_S_floatimm", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FmovFloatImmFmovDFloatimm { imm8, rd } => {
+                let mut word = 0x1e601000;
+                word |= encode_a64_field("FMOV_float_imm.FMOV_D_floatimm", "imm8", imm8.raw(), 8, 13)?;
+                word |= encode_a64_field("FMOV_float_imm.FMOV_D_floatimm", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::ScvtfFloatIntScvtfS32Float2int { rn, rd } => {
+                let mut word = 0x1e220000;
+                word |= encode_a64_field("SCVTF_float_int.SCVTF_S32_float2int", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SCVTF_float_int.SCVTF_S32_float2int", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::ScvtfFloatIntScvtfD32Float2int { rn, rd } => {
+                let mut word = 0x1e620000;
+                word |= encode_a64_field("SCVTF_float_int.SCVTF_D32_float2int", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SCVTF_float_int.SCVTF_D32_float2int", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::ScvtfFloatIntScvtfS64Float2int { rn, rd } => {
+                let mut word = 0x9e220000;
+                word |= encode_a64_field("SCVTF_float_int.SCVTF_S64_float2int", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SCVTF_float_int.SCVTF_S64_float2int", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::ScvtfFloatIntScvtfD64Float2int { rn, rd } => {
+                let mut word = 0x9e620000;
+                word |= encode_a64_field("SCVTF_float_int.SCVTF_D64_float2int", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("SCVTF_float_int.SCVTF_D64_float2int", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UcvtfFloatIntUcvtfS32Float2int { rn, rd } => {
+                let mut word = 0x1e230000;
+                word |= encode_a64_field("UCVTF_float_int.UCVTF_S32_float2int", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UCVTF_float_int.UCVTF_S32_float2int", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UcvtfFloatIntUcvtfD32Float2int { rn, rd } => {
+                let mut word = 0x1e630000;
+                word |= encode_a64_field("UCVTF_float_int.UCVTF_D32_float2int", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UCVTF_float_int.UCVTF_D32_float2int", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UcvtfFloatIntUcvtfS64Float2int { rn, rd } => {
+                let mut word = 0x9e230000;
+                word |= encode_a64_field("UCVTF_float_int.UCVTF_S64_float2int", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UCVTF_float_int.UCVTF_S64_float2int", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::UcvtfFloatIntUcvtfD64Float2int { rn, rd } => {
+                let mut word = 0x9e630000;
+                word |= encode_a64_field("UCVTF_float_int.UCVTF_D64_float2int", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("UCVTF_float_int.UCVTF_D64_float2int", "Rd", rd as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtzsFloatIntFcvtzs32sFloat2int { rn, rd } => {
+                let mut word = 0x1e380000;
+                word |= encode_a64_field("FCVTZS_float_int.FCVTZS_32S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTZS_float_int.FCVTZS_32S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtzsFloatIntFcvtzs64sFloat2int { rn, rd } => {
+                let mut word = 0x9e380000;
+                word |= encode_a64_field("FCVTZS_float_int.FCVTZS_64S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTZS_float_int.FCVTZS_64S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtzsFloatIntFcvtzs32dFloat2int { rn, rd } => {
+                let mut word = 0x1e780000;
+                word |= encode_a64_field("FCVTZS_float_int.FCVTZS_32D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTZS_float_int.FCVTZS_32D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtzsFloatIntFcvtzs64dFloat2int { rn, rd } => {
+                let mut word = 0x9e780000;
+                word |= encode_a64_field("FCVTZS_float_int.FCVTZS_64D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTZS_float_int.FCVTZS_64D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtzuFloatIntFcvtzu32sFloat2int { rn, rd } => {
+                let mut word = 0x1e390000;
+                word |= encode_a64_field("FCVTZU_float_int.FCVTZU_32S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTZU_float_int.FCVTZU_32S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtzuFloatIntFcvtzu64sFloat2int { rn, rd } => {
+                let mut word = 0x9e390000;
+                word |= encode_a64_field("FCVTZU_float_int.FCVTZU_64S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTZU_float_int.FCVTZU_64S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtzuFloatIntFcvtzu32dFloat2int { rn, rd } => {
+                let mut word = 0x1e790000;
+                word |= encode_a64_field("FCVTZU_float_int.FCVTZU_32D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTZU_float_int.FCVTZU_32D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtzuFloatIntFcvtzu64dFloat2int { rn, rd } => {
+                let mut word = 0x9e790000;
+                word |= encode_a64_field("FCVTZU_float_int.FCVTZU_64D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTZU_float_int.FCVTZU_64D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtnsFloatFcvtns32sFloat2int { rn, rd } => {
+                let mut word = 0x1e200000;
+                word |= encode_a64_field("FCVTNS_float.FCVTNS_32S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTNS_float.FCVTNS_32S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtnsFloatFcvtns64sFloat2int { rn, rd } => {
+                let mut word = 0x9e200000;
+                word |= encode_a64_field("FCVTNS_float.FCVTNS_64S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTNS_float.FCVTNS_64S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtnsFloatFcvtns32dFloat2int { rn, rd } => {
+                let mut word = 0x1e600000;
+                word |= encode_a64_field("FCVTNS_float.FCVTNS_32D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTNS_float.FCVTNS_32D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtnsFloatFcvtns64dFloat2int { rn, rd } => {
+                let mut word = 0x9e600000;
+                word |= encode_a64_field("FCVTNS_float.FCVTNS_64D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTNS_float.FCVTNS_64D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtnuFloatFcvtnu32sFloat2int { rn, rd } => {
+                let mut word = 0x1e210000;
+                word |= encode_a64_field("FCVTNU_float.FCVTNU_32S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTNU_float.FCVTNU_32S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtnuFloatFcvtnu64sFloat2int { rn, rd } => {
+                let mut word = 0x9e210000;
+                word |= encode_a64_field("FCVTNU_float.FCVTNU_64S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTNU_float.FCVTNU_64S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtnuFloatFcvtnu32dFloat2int { rn, rd } => {
+                let mut word = 0x1e610000;
+                word |= encode_a64_field("FCVTNU_float.FCVTNU_32D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTNU_float.FCVTNU_32D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtnuFloatFcvtnu64dFloat2int { rn, rd } => {
+                let mut word = 0x9e610000;
+                word |= encode_a64_field("FCVTNU_float.FCVTNU_64D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTNU_float.FCVTNU_64D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtmsFloatFcvtms32sFloat2int { rn, rd } => {
+                let mut word = 0x1e300000;
+                word |= encode_a64_field("FCVTMS_float.FCVTMS_32S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTMS_float.FCVTMS_32S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtmsFloatFcvtms64sFloat2int { rn, rd } => {
+                let mut word = 0x9e300000;
+                word |= encode_a64_field("FCVTMS_float.FCVTMS_64S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTMS_float.FCVTMS_64S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtmsFloatFcvtms32dFloat2int { rn, rd } => {
+                let mut word = 0x1e700000;
+                word |= encode_a64_field("FCVTMS_float.FCVTMS_32D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTMS_float.FCVTMS_32D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtmsFloatFcvtms64dFloat2int { rn, rd } => {
+                let mut word = 0x9e700000;
+                word |= encode_a64_field("FCVTMS_float.FCVTMS_64D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTMS_float.FCVTMS_64D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtmuFloatFcvtmu32sFloat2int { rn, rd } => {
+                let mut word = 0x1e310000;
+                word |= encode_a64_field("FCVTMU_float.FCVTMU_32S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTMU_float.FCVTMU_32S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtmuFloatFcvtmu64sFloat2int { rn, rd } => {
+                let mut word = 0x9e310000;
+                word |= encode_a64_field("FCVTMU_float.FCVTMU_64S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTMU_float.FCVTMU_64S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtmuFloatFcvtmu32dFloat2int { rn, rd } => {
+                let mut word = 0x1e710000;
+                word |= encode_a64_field("FCVTMU_float.FCVTMU_32D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTMU_float.FCVTMU_32D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtmuFloatFcvtmu64dFloat2int { rn, rd } => {
+                let mut word = 0x9e710000;
+                word |= encode_a64_field("FCVTMU_float.FCVTMU_64D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTMU_float.FCVTMU_64D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtpsFloatFcvtps32sFloat2int { rn, rd } => {
+                let mut word = 0x1e280000;
+                word |= encode_a64_field("FCVTPS_float.FCVTPS_32S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTPS_float.FCVTPS_32S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtpsFloatFcvtps64sFloat2int { rn, rd } => {
+                let mut word = 0x9e280000;
+                word |= encode_a64_field("FCVTPS_float.FCVTPS_64S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTPS_float.FCVTPS_64S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtpsFloatFcvtps32dFloat2int { rn, rd } => {
+                let mut word = 0x1e680000;
+                word |= encode_a64_field("FCVTPS_float.FCVTPS_32D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTPS_float.FCVTPS_32D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtpsFloatFcvtps64dFloat2int { rn, rd } => {
+                let mut word = 0x9e680000;
+                word |= encode_a64_field("FCVTPS_float.FCVTPS_64D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTPS_float.FCVTPS_64D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtpuFloatFcvtpu32sFloat2int { rn, rd } => {
+                let mut word = 0x1e290000;
+                word |= encode_a64_field("FCVTPU_float.FCVTPU_32S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTPU_float.FCVTPU_32S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtpuFloatFcvtpu64sFloat2int { rn, rd } => {
+                let mut word = 0x9e290000;
+                word |= encode_a64_field("FCVTPU_float.FCVTPU_64S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTPU_float.FCVTPU_64S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtpuFloatFcvtpu32dFloat2int { rn, rd } => {
+                let mut word = 0x1e690000;
+                word |= encode_a64_field("FCVTPU_float.FCVTPU_32D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTPU_float.FCVTPU_32D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtpuFloatFcvtpu64dFloat2int { rn, rd } => {
+                let mut word = 0x9e690000;
+                word |= encode_a64_field("FCVTPU_float.FCVTPU_64D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTPU_float.FCVTPU_64D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtasFloatFcvtas32sFloat2int { rn, rd } => {
+                let mut word = 0x1e240000;
+                word |= encode_a64_field("FCVTAS_float.FCVTAS_32S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTAS_float.FCVTAS_32S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtasFloatFcvtas64sFloat2int { rn, rd } => {
+                let mut word = 0x9e240000;
+                word |= encode_a64_field("FCVTAS_float.FCVTAS_64S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTAS_float.FCVTAS_64S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtasFloatFcvtas32dFloat2int { rn, rd } => {
+                let mut word = 0x1e640000;
+                word |= encode_a64_field("FCVTAS_float.FCVTAS_32D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTAS_float.FCVTAS_32D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtasFloatFcvtas64dFloat2int { rn, rd } => {
+                let mut word = 0x9e640000;
+                word |= encode_a64_field("FCVTAS_float.FCVTAS_64D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTAS_float.FCVTAS_64D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtauFloatFcvtau32sFloat2int { rn, rd } => {
+                let mut word = 0x1e250000;
+                word |= encode_a64_field("FCVTAU_float.FCVTAU_32S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTAU_float.FCVTAU_32S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtauFloatFcvtau64sFloat2int { rn, rd } => {
+                let mut word = 0x9e250000;
+                word |= encode_a64_field("FCVTAU_float.FCVTAU_64S_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTAU_float.FCVTAU_64S_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtauFloatFcvtau32dFloat2int { rn, rd } => {
+                let mut word = 0x1e650000;
+                word |= encode_a64_field("FCVTAU_float.FCVTAU_32D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTAU_float.FCVTAU_32D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::FcvtauFloatFcvtau64dFloat2int { rn, rd } => {
+                let mut word = 0x9e650000;
+                word |= encode_a64_field("FCVTAU_float.FCVTAU_64D_float2int", "Rn", rn as u32, 5, 5)?;
+                word |= encode_a64_field("FCVTAU_float.FCVTAU_64D_float2int", "Rd", rd.enc() as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrRegFpsimdLdrBLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x3c600800;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_B_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_B_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_B_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_B_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_B_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrRegFpsimdLdrBlLdstRegoff { rm, s, rn, rt } => {
+                let mut word = 0x3c606800;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_BL_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_BL_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_BL_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_BL_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrRegFpsimdLdrHLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x7c600800;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_H_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_H_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_H_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_H_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_H_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrRegFpsimdLdrSLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0xbc600800;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_S_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_S_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_S_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_S_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_S_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrRegFpsimdLdrDLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0xfc600800;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_D_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_D_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_D_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_D_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_D_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::LdrRegFpsimdLdrQLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x3ce00800;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_Q_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_Q_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_Q_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_Q_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("LDR_reg_fpsimd.LDR_Q_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrRegFpsimdStrBLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x3c200800;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_B_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_B_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_B_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_B_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_B_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrRegFpsimdStrBlLdstRegoff { rm, s, rn, rt } => {
+                let mut word = 0x3c206800;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_BL_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_BL_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_BL_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_BL_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrRegFpsimdStrHLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x7c200800;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_H_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_H_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_H_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_H_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_H_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrRegFpsimdStrSLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0xbc200800;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_S_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_S_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_S_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_S_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_S_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrRegFpsimdStrDLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0xfc200800;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_D_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_D_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_D_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_D_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_D_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
+            Self::StrRegFpsimdStrQLdstRegoff { rm, option, s, rn, rt } => {
+                let mut word = 0x3ca00800;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_Q_ldst_regoff", "Rm", rm.enc() as u32, 5, 16)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_Q_ldst_regoff", "option", option as u32, 3, 13)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_Q_ldst_regoff", "S", s as u32, 1, 12)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_Q_ldst_regoff", "Rn", rn.enc() as u32, 5, 5)?;
+                word |= encode_a64_field("STR_reg_fpsimd.STR_Q_ldst_regoff", "Rt", rt as u32, 5, 0)?;
+                Ok(word)
+            }
         }
     }
 
@@ -9774,6 +11560,8 @@ impl A64Insn {
             Self::Rev32IntRev3264Dp1src { rd, .. } if field == "Rd" => Some(*rd),
             Self::MrsMrsRsSystemmoveCntfrqEl0 { rt, .. } if field == "Rt" => Some(*rt),
             Self::MrsMrsRsSystemmoveCntvctEl0 { rt, .. } if field == "Rt" => Some(*rt),
+            Self::MrsMrsRsSystemmoveFpcr { rt, .. } if field == "Rt" => Some(*rt),
+            Self::MrsMrsRsSystemmoveFpsr { rt, .. } if field == "Rt" => Some(*rt),
             Self::MrsMrsRsSystemmoveTpidrEl0 { rt, .. } if field == "Rt" => Some(*rt),
             Self::TbzTbzOnlyTestbranch { rt, .. } if field == "Rt" => Some(*rt),
             Self::TbnzTbnzOnlyTestbranch { rt, .. } if field == "Rt" => Some(*rt),
@@ -10616,6 +12404,78 @@ impl A64Insn {
             Self::FmovFloatGenFmovV64iFloat2int { rn, .. } if field == "Rn" => Some(*rn),
             Self::FmovFloatGenFmov64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
             Self::FmovFloatGenFmov64vxFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::ScvtfFloatIntScvtfS32Float2int { rn, .. } if field == "Rn" => Some(*rn),
+            Self::ScvtfFloatIntScvtfD32Float2int { rn, .. } if field == "Rn" => Some(*rn),
+            Self::ScvtfFloatIntScvtfS64Float2int { rn, .. } if field == "Rn" => Some(*rn),
+            Self::ScvtfFloatIntScvtfD64Float2int { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UcvtfFloatIntUcvtfS32Float2int { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UcvtfFloatIntUcvtfD32Float2int { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UcvtfFloatIntUcvtfS64Float2int { rn, .. } if field == "Rn" => Some(*rn),
+            Self::UcvtfFloatIntUcvtfD64Float2int { rn, .. } if field == "Rn" => Some(*rn),
+            Self::FcvtzsFloatIntFcvtzs32sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtzsFloatIntFcvtzs64sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtzsFloatIntFcvtzs32dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtzsFloatIntFcvtzs64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtzuFloatIntFcvtzu32sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtzuFloatIntFcvtzu64sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtzuFloatIntFcvtzu32dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtzuFloatIntFcvtzu64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtnsFloatFcvtns32sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtnsFloatFcvtns64sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtnsFloatFcvtns32dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtnsFloatFcvtns64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtnuFloatFcvtnu32sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtnuFloatFcvtnu64sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtnuFloatFcvtnu32dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtnuFloatFcvtnu64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtmsFloatFcvtms32sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtmsFloatFcvtms64sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtmsFloatFcvtms32dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtmsFloatFcvtms64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtmuFloatFcvtmu32sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtmuFloatFcvtmu64sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtmuFloatFcvtmu32dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtmuFloatFcvtmu64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtpsFloatFcvtps32sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtpsFloatFcvtps64sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtpsFloatFcvtps32dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtpsFloatFcvtps64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtpuFloatFcvtpu32sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtpuFloatFcvtpu64sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtpuFloatFcvtpu32dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtpuFloatFcvtpu64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtasFloatFcvtas32sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtasFloatFcvtas64sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtasFloatFcvtas32dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtasFloatFcvtas64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtauFloatFcvtau32sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtauFloatFcvtau64sFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtauFloatFcvtau32dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::FcvtauFloatFcvtau64dFloat2int { rd, .. } if field == "Rd" => Some(*rd),
+            Self::LdrRegFpsimdLdrBLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrRegFpsimdLdrBLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrRegFpsimdLdrBlLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrRegFpsimdLdrBlLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrRegFpsimdLdrHLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrRegFpsimdLdrHLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrRegFpsimdLdrSLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrRegFpsimdLdrSLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrRegFpsimdLdrDLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrRegFpsimdLdrDLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::LdrRegFpsimdLdrQLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::LdrRegFpsimdLdrQLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrRegFpsimdStrBLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrRegFpsimdStrBLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrRegFpsimdStrBlLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrRegFpsimdStrBlLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrRegFpsimdStrHLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrRegFpsimdStrHLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrRegFpsimdStrSLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrRegFpsimdStrSLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrRegFpsimdStrDLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrRegFpsimdStrDLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
+            Self::StrRegFpsimdStrQLdstRegoff { rm, .. } if field == "Rm" => Some(*rm),
+            Self::StrRegFpsimdStrQLdstRegoff { rn, .. } if field == "Rn" => Some(*rn),
             _ => None,
         }
     }
@@ -12115,6 +13975,14 @@ impl A64Insn {
             Self::MrsMrsRsSystemmoveCntvctEl0 { .. } if field == "Rt" => {
                 validate_a64_rewrite_field("MRS.MRS_RS_systemmove@CNTVCT_EL0", "Rt", encoded, 5)?;
                 Ok(Self::MrsMrsRsSystemmoveCntvctEl0 { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::MrsMrsRsSystemmoveFpcr { .. } if field == "Rt" => {
+                validate_a64_rewrite_field("MRS.MRS_RS_systemmove@FPCR", "Rt", encoded, 5)?;
+                Ok(Self::MrsMrsRsSystemmoveFpcr { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::MrsMrsRsSystemmoveFpsr { .. } if field == "Rt" => {
+                validate_a64_rewrite_field("MRS.MRS_RS_systemmove@FPSR", "Rt", encoded, 5)?;
+                Ok(Self::MrsMrsRsSystemmoveFpsr { rt: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
             }
             Self::MrsMrsRsSystemmoveTpidrEl0 { .. } if field == "Rt" => {
                 validate_a64_rewrite_field("MRS.MRS_RS_systemmove@TPIDR_EL0", "Rt", encoded, 5)?;
@@ -15484,6 +17352,294 @@ impl A64Insn {
                 validate_a64_rewrite_field("FMOV_float_gen.FMOV_64VX_float2int", "Rd", encoded, 5)?;
                 Ok(Self::FmovFloatGenFmov64vxFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
             }
+            Self::ScvtfFloatIntScvtfS32Float2int { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SCVTF_float_int.SCVTF_S32_float2int", "Rn", encoded, 5)?;
+                Ok(Self::ScvtfFloatIntScvtfS32Float2int { rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::ScvtfFloatIntScvtfD32Float2int { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SCVTF_float_int.SCVTF_D32_float2int", "Rn", encoded, 5)?;
+                Ok(Self::ScvtfFloatIntScvtfD32Float2int { rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::ScvtfFloatIntScvtfS64Float2int { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SCVTF_float_int.SCVTF_S64_float2int", "Rn", encoded, 5)?;
+                Ok(Self::ScvtfFloatIntScvtfS64Float2int { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::ScvtfFloatIntScvtfD64Float2int { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("SCVTF_float_int.SCVTF_D64_float2int", "Rn", encoded, 5)?;
+                Ok(Self::ScvtfFloatIntScvtfD64Float2int { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UcvtfFloatIntUcvtfS32Float2int { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UCVTF_float_int.UCVTF_S32_float2int", "Rn", encoded, 5)?;
+                Ok(Self::UcvtfFloatIntUcvtfS32Float2int { rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UcvtfFloatIntUcvtfD32Float2int { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UCVTF_float_int.UCVTF_D32_float2int", "Rn", encoded, 5)?;
+                Ok(Self::UcvtfFloatIntUcvtfD32Float2int { rn: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UcvtfFloatIntUcvtfS64Float2int { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UCVTF_float_int.UCVTF_S64_float2int", "Rn", encoded, 5)?;
+                Ok(Self::UcvtfFloatIntUcvtfS64Float2int { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::UcvtfFloatIntUcvtfD64Float2int { rd, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("UCVTF_float_int.UCVTF_D64_float2int", "Rn", encoded, 5)?;
+                Ok(Self::UcvtfFloatIntUcvtfD64Float2int { rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), rd })
+            }
+            Self::FcvtzsFloatIntFcvtzs32sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTZS_float_int.FCVTZS_32S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtzsFloatIntFcvtzs32sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtzsFloatIntFcvtzs64sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTZS_float_int.FCVTZS_64S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtzsFloatIntFcvtzs64sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtzsFloatIntFcvtzs32dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTZS_float_int.FCVTZS_32D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtzsFloatIntFcvtzs32dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtzsFloatIntFcvtzs64dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTZS_float_int.FCVTZS_64D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtzsFloatIntFcvtzs64dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtzuFloatIntFcvtzu32sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTZU_float_int.FCVTZU_32S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtzuFloatIntFcvtzu32sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtzuFloatIntFcvtzu64sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTZU_float_int.FCVTZU_64S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtzuFloatIntFcvtzu64sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtzuFloatIntFcvtzu32dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTZU_float_int.FCVTZU_32D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtzuFloatIntFcvtzu32dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtzuFloatIntFcvtzu64dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTZU_float_int.FCVTZU_64D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtzuFloatIntFcvtzu64dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtnsFloatFcvtns32sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTNS_float.FCVTNS_32S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtnsFloatFcvtns32sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtnsFloatFcvtns64sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTNS_float.FCVTNS_64S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtnsFloatFcvtns64sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtnsFloatFcvtns32dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTNS_float.FCVTNS_32D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtnsFloatFcvtns32dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtnsFloatFcvtns64dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTNS_float.FCVTNS_64D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtnsFloatFcvtns64dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtnuFloatFcvtnu32sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTNU_float.FCVTNU_32S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtnuFloatFcvtnu32sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtnuFloatFcvtnu64sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTNU_float.FCVTNU_64S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtnuFloatFcvtnu64sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtnuFloatFcvtnu32dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTNU_float.FCVTNU_32D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtnuFloatFcvtnu32dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtnuFloatFcvtnu64dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTNU_float.FCVTNU_64D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtnuFloatFcvtnu64dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtmsFloatFcvtms32sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTMS_float.FCVTMS_32S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtmsFloatFcvtms32sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtmsFloatFcvtms64sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTMS_float.FCVTMS_64S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtmsFloatFcvtms64sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtmsFloatFcvtms32dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTMS_float.FCVTMS_32D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtmsFloatFcvtms32dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtmsFloatFcvtms64dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTMS_float.FCVTMS_64D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtmsFloatFcvtms64dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtmuFloatFcvtmu32sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTMU_float.FCVTMU_32S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtmuFloatFcvtmu32sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtmuFloatFcvtmu64sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTMU_float.FCVTMU_64S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtmuFloatFcvtmu64sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtmuFloatFcvtmu32dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTMU_float.FCVTMU_32D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtmuFloatFcvtmu32dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtmuFloatFcvtmu64dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTMU_float.FCVTMU_64D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtmuFloatFcvtmu64dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtpsFloatFcvtps32sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTPS_float.FCVTPS_32S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtpsFloatFcvtps32sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtpsFloatFcvtps64sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTPS_float.FCVTPS_64S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtpsFloatFcvtps64sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtpsFloatFcvtps32dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTPS_float.FCVTPS_32D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtpsFloatFcvtps32dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtpsFloatFcvtps64dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTPS_float.FCVTPS_64D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtpsFloatFcvtps64dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtpuFloatFcvtpu32sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTPU_float.FCVTPU_32S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtpuFloatFcvtpu32sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtpuFloatFcvtpu64sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTPU_float.FCVTPU_64S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtpuFloatFcvtpu64sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtpuFloatFcvtpu32dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTPU_float.FCVTPU_32D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtpuFloatFcvtpu32dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtpuFloatFcvtpu64dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTPU_float.FCVTPU_64D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtpuFloatFcvtpu64dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtasFloatFcvtas32sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTAS_float.FCVTAS_32S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtasFloatFcvtas32sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtasFloatFcvtas64sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTAS_float.FCVTAS_64S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtasFloatFcvtas64sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtasFloatFcvtas32dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTAS_float.FCVTAS_32D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtasFloatFcvtas32dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtasFloatFcvtas64dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTAS_float.FCVTAS_64D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtasFloatFcvtas64dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtauFloatFcvtau32sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTAU_float.FCVTAU_32S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtauFloatFcvtau32sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtauFloatFcvtau64sFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTAU_float.FCVTAU_64S_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtauFloatFcvtau64sFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtauFloatFcvtau32dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTAU_float.FCVTAU_32D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtauFloatFcvtau32dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::W32, A64Reg31Mode::Xzr) })
+            }
+            Self::FcvtauFloatFcvtau64dFloat2int { rn, .. } if field == "Rd" => {
+                validate_a64_rewrite_field("FCVTAU_float.FCVTAU_64D_float2int", "Rd", encoded, 5)?;
+                Ok(Self::FcvtauFloatFcvtau64dFloat2int { rn, rd: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr) })
+            }
+            Self::LdrRegFpsimdLdrBLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_B_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrBLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrRegFpsimdLdrBLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_B_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrBLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrRegFpsimdLdrBlLdstRegoff { s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_BL_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrBlLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), s, rn, rt })
+            }
+            Self::LdrRegFpsimdLdrBlLdstRegoff { rm, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_BL_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrBlLdstRegoff { rm, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrRegFpsimdLdrHLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_H_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrHLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrRegFpsimdLdrHLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_H_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrHLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrRegFpsimdLdrSLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_S_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrSLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrRegFpsimdLdrSLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_S_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrSLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrRegFpsimdLdrDLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_D_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrDLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrRegFpsimdLdrDLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_D_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrDLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::LdrRegFpsimdLdrQLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_Q_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrQLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::LdrRegFpsimdLdrQLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("LDR_reg_fpsimd.LDR_Q_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::LdrRegFpsimdLdrQLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrRegFpsimdStrBLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_B_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrBLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::StrRegFpsimdStrBLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_B_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrBLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrRegFpsimdStrBlLdstRegoff { s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_BL_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrBlLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), s, rn, rt })
+            }
+            Self::StrRegFpsimdStrBlLdstRegoff { rm, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_BL_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrBlLdstRegoff { rm, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrRegFpsimdStrHLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_H_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrHLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::StrRegFpsimdStrHLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_H_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrHLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrRegFpsimdStrSLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_S_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrSLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::StrRegFpsimdStrSLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_S_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrSLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrRegFpsimdStrDLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_D_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrDLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::StrRegFpsimdStrDLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_D_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrDLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
+            Self::StrRegFpsimdStrQLdstRegoff { option, s, rn, rt, .. } if field == "Rm" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_Q_ldst_regoff", "Rm", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrQLdstRegoff { rm: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Xzr), option, s, rn, rt })
+            }
+            Self::StrRegFpsimdStrQLdstRegoff { rm, option, s, rt, .. } if field == "Rn" => {
+                validate_a64_rewrite_field("STR_reg_fpsimd.STR_Q_ldst_regoff", "Rn", encoded, 5)?;
+                Ok(Self::StrRegFpsimdStrQLdstRegoff { rm, option, s, rn: A64Reg::new(encoded as u8, A64RegWidth::X64, A64Reg31Mode::Sp), rt })
+            }
             _ => Err(A64RewriteError::UnsupportedField {
                 insn: insn_key,
                 field,
@@ -15693,6 +17849,8 @@ impl A64Insn {
             Self::Rev32IntRev3264Dp1src { .. } => OPERANDS_REV32_INT_REV32_64_DP_1SRC,
             Self::MrsMrsRsSystemmoveCntfrqEl0 { .. } => OPERANDS_MRS_MRS_RS_SYSTEMMOVE_CNTFRQ_EL0,
             Self::MrsMrsRsSystemmoveCntvctEl0 { .. } => OPERANDS_MRS_MRS_RS_SYSTEMMOVE_CNTVCT_EL0,
+            Self::MrsMrsRsSystemmoveFpcr { .. } => OPERANDS_MRS_MRS_RS_SYSTEMMOVE_FPCR,
+            Self::MrsMrsRsSystemmoveFpsr { .. } => OPERANDS_MRS_MRS_RS_SYSTEMMOVE_FPSR,
             Self::MrsMrsRsSystemmoveTpidrEl0 { .. } => OPERANDS_MRS_MRS_RS_SYSTEMMOVE_TPIDR_EL0,
             Self::TbzTbzOnlyTestbranch { .. } => OPERANDS_TBZ_TBZ_ONLY_TESTBRANCH,
             Self::TbnzTbnzOnlyTestbranch { .. } => OPERANDS_TBNZ_TBNZ_ONLY_TESTBRANCH,
@@ -16139,6 +18297,130 @@ impl A64Insn {
             Self::Rev64AdvsimdRev64AsimdmiscR { .. } => OPERANDS_REV64_ADVSIMD_REV64_ASIMDMISC_R,
             Self::CntAdvsimdCntAsimdmiscR { .. } => OPERANDS_CNT_ADVSIMD_CNT_ASIMDMISC_R,
             Self::TblAdvsimdTblAsimdtblL11 { .. } => OPERANDS_TBL_ADVSIMD_TBL_ASIMDTBL_L1_1,
+            Self::FaddFloatFaddSFloatdp2 { .. } => OPERANDS_FADD_FLOAT_FADD_S_FLOATDP2,
+            Self::FaddFloatFaddDFloatdp2 { .. } => OPERANDS_FADD_FLOAT_FADD_D_FLOATDP2,
+            Self::FsubFloatFsubSFloatdp2 { .. } => OPERANDS_FSUB_FLOAT_FSUB_S_FLOATDP2,
+            Self::FsubFloatFsubDFloatdp2 { .. } => OPERANDS_FSUB_FLOAT_FSUB_D_FLOATDP2,
+            Self::FmulFloatFmulSFloatdp2 { .. } => OPERANDS_FMUL_FLOAT_FMUL_S_FLOATDP2,
+            Self::FmulFloatFmulDFloatdp2 { .. } => OPERANDS_FMUL_FLOAT_FMUL_D_FLOATDP2,
+            Self::FnmulFloatFnmulSFloatdp2 { .. } => OPERANDS_FNMUL_FLOAT_FNMUL_S_FLOATDP2,
+            Self::FnmulFloatFnmulDFloatdp2 { .. } => OPERANDS_FNMUL_FLOAT_FNMUL_D_FLOATDP2,
+            Self::FdivFloatFdivSFloatdp2 { .. } => OPERANDS_FDIV_FLOAT_FDIV_S_FLOATDP2,
+            Self::FdivFloatFdivDFloatdp2 { .. } => OPERANDS_FDIV_FLOAT_FDIV_D_FLOATDP2,
+            Self::FmaxFloatFmaxSFloatdp2 { .. } => OPERANDS_FMAX_FLOAT_FMAX_S_FLOATDP2,
+            Self::FmaxFloatFmaxDFloatdp2 { .. } => OPERANDS_FMAX_FLOAT_FMAX_D_FLOATDP2,
+            Self::FminFloatFminSFloatdp2 { .. } => OPERANDS_FMIN_FLOAT_FMIN_S_FLOATDP2,
+            Self::FminFloatFminDFloatdp2 { .. } => OPERANDS_FMIN_FLOAT_FMIN_D_FLOATDP2,
+            Self::FmaxnmFloatFmaxnmSFloatdp2 { .. } => OPERANDS_FMAXNM_FLOAT_FMAXNM_S_FLOATDP2,
+            Self::FmaxnmFloatFmaxnmDFloatdp2 { .. } => OPERANDS_FMAXNM_FLOAT_FMAXNM_D_FLOATDP2,
+            Self::FminnmFloatFminnmSFloatdp2 { .. } => OPERANDS_FMINNM_FLOAT_FMINNM_S_FLOATDP2,
+            Self::FminnmFloatFminnmDFloatdp2 { .. } => OPERANDS_FMINNM_FLOAT_FMINNM_D_FLOATDP2,
+            Self::FmaddFloatFmaddSFloatdp3 { .. } => OPERANDS_FMADD_FLOAT_FMADD_S_FLOATDP3,
+            Self::FmaddFloatFmaddDFloatdp3 { .. } => OPERANDS_FMADD_FLOAT_FMADD_D_FLOATDP3,
+            Self::FmsubFloatFmsubSFloatdp3 { .. } => OPERANDS_FMSUB_FLOAT_FMSUB_S_FLOATDP3,
+            Self::FmsubFloatFmsubDFloatdp3 { .. } => OPERANDS_FMSUB_FLOAT_FMSUB_D_FLOATDP3,
+            Self::FnmaddFloatFnmaddSFloatdp3 { .. } => OPERANDS_FNMADD_FLOAT_FNMADD_S_FLOATDP3,
+            Self::FnmaddFloatFnmaddDFloatdp3 { .. } => OPERANDS_FNMADD_FLOAT_FNMADD_D_FLOATDP3,
+            Self::FnmsubFloatFnmsubSFloatdp3 { .. } => OPERANDS_FNMSUB_FLOAT_FNMSUB_S_FLOATDP3,
+            Self::FnmsubFloatFnmsubDFloatdp3 { .. } => OPERANDS_FNMSUB_FLOAT_FNMSUB_D_FLOATDP3,
+            Self::FabsFloatFabsSFloatdp1 { .. } => OPERANDS_FABS_FLOAT_FABS_S_FLOATDP1,
+            Self::FabsFloatFabsDFloatdp1 { .. } => OPERANDS_FABS_FLOAT_FABS_D_FLOATDP1,
+            Self::FnegFloatFnegSFloatdp1 { .. } => OPERANDS_FNEG_FLOAT_FNEG_S_FLOATDP1,
+            Self::FnegFloatFnegDFloatdp1 { .. } => OPERANDS_FNEG_FLOAT_FNEG_D_FLOATDP1,
+            Self::FsqrtFloatFsqrtSFloatdp1 { .. } => OPERANDS_FSQRT_FLOAT_FSQRT_S_FLOATDP1,
+            Self::FsqrtFloatFsqrtDFloatdp1 { .. } => OPERANDS_FSQRT_FLOAT_FSQRT_D_FLOATDP1,
+            Self::FrintnFloatFrintnSFloatdp1 { .. } => OPERANDS_FRINTN_FLOAT_FRINTN_S_FLOATDP1,
+            Self::FrintnFloatFrintnDFloatdp1 { .. } => OPERANDS_FRINTN_FLOAT_FRINTN_D_FLOATDP1,
+            Self::FrintpFloatFrintpSFloatdp1 { .. } => OPERANDS_FRINTP_FLOAT_FRINTP_S_FLOATDP1,
+            Self::FrintpFloatFrintpDFloatdp1 { .. } => OPERANDS_FRINTP_FLOAT_FRINTP_D_FLOATDP1,
+            Self::FrintmFloatFrintmSFloatdp1 { .. } => OPERANDS_FRINTM_FLOAT_FRINTM_S_FLOATDP1,
+            Self::FrintmFloatFrintmDFloatdp1 { .. } => OPERANDS_FRINTM_FLOAT_FRINTM_D_FLOATDP1,
+            Self::FrintzFloatFrintzSFloatdp1 { .. } => OPERANDS_FRINTZ_FLOAT_FRINTZ_S_FLOATDP1,
+            Self::FrintzFloatFrintzDFloatdp1 { .. } => OPERANDS_FRINTZ_FLOAT_FRINTZ_D_FLOATDP1,
+            Self::FrintaFloatFrintaSFloatdp1 { .. } => OPERANDS_FRINTA_FLOAT_FRINTA_S_FLOATDP1,
+            Self::FrintaFloatFrintaDFloatdp1 { .. } => OPERANDS_FRINTA_FLOAT_FRINTA_D_FLOATDP1,
+            Self::FrintxFloatFrintxSFloatdp1 { .. } => OPERANDS_FRINTX_FLOAT_FRINTX_S_FLOATDP1,
+            Self::FrintxFloatFrintxDFloatdp1 { .. } => OPERANDS_FRINTX_FLOAT_FRINTX_D_FLOATDP1,
+            Self::FrintiFloatFrintiSFloatdp1 { .. } => OPERANDS_FRINTI_FLOAT_FRINTI_S_FLOATDP1,
+            Self::FrintiFloatFrintiDFloatdp1 { .. } => OPERANDS_FRINTI_FLOAT_FRINTI_D_FLOATDP1,
+            Self::FcvtFloatFcvtDsFloatdp1 { .. } => OPERANDS_FCVT_FLOAT_FCVT_DS_FLOATDP1,
+            Self::FcvtFloatFcvtSdFloatdp1 { .. } => OPERANDS_FCVT_FLOAT_FCVT_SD_FLOATDP1,
+            Self::FcmpFloatFcmpSFloatcmp { .. } => OPERANDS_FCMP_FLOAT_FCMP_S_FLOATCMP,
+            Self::FcmpFloatFcmpSzFloatcmp { .. } => OPERANDS_FCMP_FLOAT_FCMP_SZ_FLOATCMP,
+            Self::FcmpFloatFcmpDFloatcmp { .. } => OPERANDS_FCMP_FLOAT_FCMP_D_FLOATCMP,
+            Self::FcmpFloatFcmpDzFloatcmp { .. } => OPERANDS_FCMP_FLOAT_FCMP_DZ_FLOATCMP,
+            Self::FcmpeFloatFcmpeSFloatcmp { .. } => OPERANDS_FCMPE_FLOAT_FCMPE_S_FLOATCMP,
+            Self::FcmpeFloatFcmpeSzFloatcmp { .. } => OPERANDS_FCMPE_FLOAT_FCMPE_SZ_FLOATCMP,
+            Self::FcmpeFloatFcmpeDFloatcmp { .. } => OPERANDS_FCMPE_FLOAT_FCMPE_D_FLOATCMP,
+            Self::FcmpeFloatFcmpeDzFloatcmp { .. } => OPERANDS_FCMPE_FLOAT_FCMPE_DZ_FLOATCMP,
+            Self::FccmpFloatFccmpSFloatccmp { .. } => OPERANDS_FCCMP_FLOAT_FCCMP_S_FLOATCCMP,
+            Self::FccmpFloatFccmpDFloatccmp { .. } => OPERANDS_FCCMP_FLOAT_FCCMP_D_FLOATCCMP,
+            Self::FccmpeFloatFccmpeSFloatccmp { .. } => OPERANDS_FCCMPE_FLOAT_FCCMPE_S_FLOATCCMP,
+            Self::FccmpeFloatFccmpeDFloatccmp { .. } => OPERANDS_FCCMPE_FLOAT_FCCMPE_D_FLOATCCMP,
+            Self::FcselFloatFcselSFloatsel { .. } => OPERANDS_FCSEL_FLOAT_FCSEL_S_FLOATSEL,
+            Self::FcselFloatFcselDFloatsel { .. } => OPERANDS_FCSEL_FLOAT_FCSEL_D_FLOATSEL,
+            Self::FmovFloatImmFmovSFloatimm { .. } => OPERANDS_FMOV_FLOAT_IMM_FMOV_S_FLOATIMM,
+            Self::FmovFloatImmFmovDFloatimm { .. } => OPERANDS_FMOV_FLOAT_IMM_FMOV_D_FLOATIMM,
+            Self::ScvtfFloatIntScvtfS32Float2int { .. } => OPERANDS_SCVTF_FLOAT_INT_SCVTF_S32_FLOAT2INT,
+            Self::ScvtfFloatIntScvtfD32Float2int { .. } => OPERANDS_SCVTF_FLOAT_INT_SCVTF_D32_FLOAT2INT,
+            Self::ScvtfFloatIntScvtfS64Float2int { .. } => OPERANDS_SCVTF_FLOAT_INT_SCVTF_S64_FLOAT2INT,
+            Self::ScvtfFloatIntScvtfD64Float2int { .. } => OPERANDS_SCVTF_FLOAT_INT_SCVTF_D64_FLOAT2INT,
+            Self::UcvtfFloatIntUcvtfS32Float2int { .. } => OPERANDS_UCVTF_FLOAT_INT_UCVTF_S32_FLOAT2INT,
+            Self::UcvtfFloatIntUcvtfD32Float2int { .. } => OPERANDS_UCVTF_FLOAT_INT_UCVTF_D32_FLOAT2INT,
+            Self::UcvtfFloatIntUcvtfS64Float2int { .. } => OPERANDS_UCVTF_FLOAT_INT_UCVTF_S64_FLOAT2INT,
+            Self::UcvtfFloatIntUcvtfD64Float2int { .. } => OPERANDS_UCVTF_FLOAT_INT_UCVTF_D64_FLOAT2INT,
+            Self::FcvtzsFloatIntFcvtzs32sFloat2int { .. } => OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_32S_FLOAT2INT,
+            Self::FcvtzsFloatIntFcvtzs64sFloat2int { .. } => OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_64S_FLOAT2INT,
+            Self::FcvtzsFloatIntFcvtzs32dFloat2int { .. } => OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_32D_FLOAT2INT,
+            Self::FcvtzsFloatIntFcvtzs64dFloat2int { .. } => OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_64D_FLOAT2INT,
+            Self::FcvtzuFloatIntFcvtzu32sFloat2int { .. } => OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_32S_FLOAT2INT,
+            Self::FcvtzuFloatIntFcvtzu64sFloat2int { .. } => OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_64S_FLOAT2INT,
+            Self::FcvtzuFloatIntFcvtzu32dFloat2int { .. } => OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_32D_FLOAT2INT,
+            Self::FcvtzuFloatIntFcvtzu64dFloat2int { .. } => OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_64D_FLOAT2INT,
+            Self::FcvtnsFloatFcvtns32sFloat2int { .. } => OPERANDS_FCVTNS_FLOAT_FCVTNS_32S_FLOAT2INT,
+            Self::FcvtnsFloatFcvtns64sFloat2int { .. } => OPERANDS_FCVTNS_FLOAT_FCVTNS_64S_FLOAT2INT,
+            Self::FcvtnsFloatFcvtns32dFloat2int { .. } => OPERANDS_FCVTNS_FLOAT_FCVTNS_32D_FLOAT2INT,
+            Self::FcvtnsFloatFcvtns64dFloat2int { .. } => OPERANDS_FCVTNS_FLOAT_FCVTNS_64D_FLOAT2INT,
+            Self::FcvtnuFloatFcvtnu32sFloat2int { .. } => OPERANDS_FCVTNU_FLOAT_FCVTNU_32S_FLOAT2INT,
+            Self::FcvtnuFloatFcvtnu64sFloat2int { .. } => OPERANDS_FCVTNU_FLOAT_FCVTNU_64S_FLOAT2INT,
+            Self::FcvtnuFloatFcvtnu32dFloat2int { .. } => OPERANDS_FCVTNU_FLOAT_FCVTNU_32D_FLOAT2INT,
+            Self::FcvtnuFloatFcvtnu64dFloat2int { .. } => OPERANDS_FCVTNU_FLOAT_FCVTNU_64D_FLOAT2INT,
+            Self::FcvtmsFloatFcvtms32sFloat2int { .. } => OPERANDS_FCVTMS_FLOAT_FCVTMS_32S_FLOAT2INT,
+            Self::FcvtmsFloatFcvtms64sFloat2int { .. } => OPERANDS_FCVTMS_FLOAT_FCVTMS_64S_FLOAT2INT,
+            Self::FcvtmsFloatFcvtms32dFloat2int { .. } => OPERANDS_FCVTMS_FLOAT_FCVTMS_32D_FLOAT2INT,
+            Self::FcvtmsFloatFcvtms64dFloat2int { .. } => OPERANDS_FCVTMS_FLOAT_FCVTMS_64D_FLOAT2INT,
+            Self::FcvtmuFloatFcvtmu32sFloat2int { .. } => OPERANDS_FCVTMU_FLOAT_FCVTMU_32S_FLOAT2INT,
+            Self::FcvtmuFloatFcvtmu64sFloat2int { .. } => OPERANDS_FCVTMU_FLOAT_FCVTMU_64S_FLOAT2INT,
+            Self::FcvtmuFloatFcvtmu32dFloat2int { .. } => OPERANDS_FCVTMU_FLOAT_FCVTMU_32D_FLOAT2INT,
+            Self::FcvtmuFloatFcvtmu64dFloat2int { .. } => OPERANDS_FCVTMU_FLOAT_FCVTMU_64D_FLOAT2INT,
+            Self::FcvtpsFloatFcvtps32sFloat2int { .. } => OPERANDS_FCVTPS_FLOAT_FCVTPS_32S_FLOAT2INT,
+            Self::FcvtpsFloatFcvtps64sFloat2int { .. } => OPERANDS_FCVTPS_FLOAT_FCVTPS_64S_FLOAT2INT,
+            Self::FcvtpsFloatFcvtps32dFloat2int { .. } => OPERANDS_FCVTPS_FLOAT_FCVTPS_32D_FLOAT2INT,
+            Self::FcvtpsFloatFcvtps64dFloat2int { .. } => OPERANDS_FCVTPS_FLOAT_FCVTPS_64D_FLOAT2INT,
+            Self::FcvtpuFloatFcvtpu32sFloat2int { .. } => OPERANDS_FCVTPU_FLOAT_FCVTPU_32S_FLOAT2INT,
+            Self::FcvtpuFloatFcvtpu64sFloat2int { .. } => OPERANDS_FCVTPU_FLOAT_FCVTPU_64S_FLOAT2INT,
+            Self::FcvtpuFloatFcvtpu32dFloat2int { .. } => OPERANDS_FCVTPU_FLOAT_FCVTPU_32D_FLOAT2INT,
+            Self::FcvtpuFloatFcvtpu64dFloat2int { .. } => OPERANDS_FCVTPU_FLOAT_FCVTPU_64D_FLOAT2INT,
+            Self::FcvtasFloatFcvtas32sFloat2int { .. } => OPERANDS_FCVTAS_FLOAT_FCVTAS_32S_FLOAT2INT,
+            Self::FcvtasFloatFcvtas64sFloat2int { .. } => OPERANDS_FCVTAS_FLOAT_FCVTAS_64S_FLOAT2INT,
+            Self::FcvtasFloatFcvtas32dFloat2int { .. } => OPERANDS_FCVTAS_FLOAT_FCVTAS_32D_FLOAT2INT,
+            Self::FcvtasFloatFcvtas64dFloat2int { .. } => OPERANDS_FCVTAS_FLOAT_FCVTAS_64D_FLOAT2INT,
+            Self::FcvtauFloatFcvtau32sFloat2int { .. } => OPERANDS_FCVTAU_FLOAT_FCVTAU_32S_FLOAT2INT,
+            Self::FcvtauFloatFcvtau64sFloat2int { .. } => OPERANDS_FCVTAU_FLOAT_FCVTAU_64S_FLOAT2INT,
+            Self::FcvtauFloatFcvtau32dFloat2int { .. } => OPERANDS_FCVTAU_FLOAT_FCVTAU_32D_FLOAT2INT,
+            Self::FcvtauFloatFcvtau64dFloat2int { .. } => OPERANDS_FCVTAU_FLOAT_FCVTAU_64D_FLOAT2INT,
+            Self::LdrRegFpsimdLdrBLdstRegoff { .. } => OPERANDS_LDR_REG_FPSIMD_LDR_B_LDST_REGOFF,
+            Self::LdrRegFpsimdLdrBlLdstRegoff { .. } => OPERANDS_LDR_REG_FPSIMD_LDR_BL_LDST_REGOFF,
+            Self::LdrRegFpsimdLdrHLdstRegoff { .. } => OPERANDS_LDR_REG_FPSIMD_LDR_H_LDST_REGOFF,
+            Self::LdrRegFpsimdLdrSLdstRegoff { .. } => OPERANDS_LDR_REG_FPSIMD_LDR_S_LDST_REGOFF,
+            Self::LdrRegFpsimdLdrDLdstRegoff { .. } => OPERANDS_LDR_REG_FPSIMD_LDR_D_LDST_REGOFF,
+            Self::LdrRegFpsimdLdrQLdstRegoff { .. } => OPERANDS_LDR_REG_FPSIMD_LDR_Q_LDST_REGOFF,
+            Self::StrRegFpsimdStrBLdstRegoff { .. } => OPERANDS_STR_REG_FPSIMD_STR_B_LDST_REGOFF,
+            Self::StrRegFpsimdStrBlLdstRegoff { .. } => OPERANDS_STR_REG_FPSIMD_STR_BL_LDST_REGOFF,
+            Self::StrRegFpsimdStrHLdstRegoff { .. } => OPERANDS_STR_REG_FPSIMD_STR_H_LDST_REGOFF,
+            Self::StrRegFpsimdStrSLdstRegoff { .. } => OPERANDS_STR_REG_FPSIMD_STR_S_LDST_REGOFF,
+            Self::StrRegFpsimdStrDLdstRegoff { .. } => OPERANDS_STR_REG_FPSIMD_STR_D_LDST_REGOFF,
+            Self::StrRegFpsimdStrQLdstRegoff { .. } => OPERANDS_STR_REG_FPSIMD_STR_Q_LDST_REGOFF,
         }
     }
 }
@@ -17183,6 +19465,16 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
     }
     if (word & 0xffffffe0) == 0xd53be040 {
         return Some(A64Insn::MrsMrsRsSystemmoveCntvctEl0 {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffffffe0) == 0xd53b4400 {
+        return Some(A64Insn::MrsMrsRsSystemmoveFpcr {
+            rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffffffe0) == 0xd53b4420 {
+        return Some(A64Insn::MrsMrsRsSystemmoveFpsr {
             rt: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
         });
     }
@@ -20339,6 +22631,826 @@ pub fn decode_a64_insn(word: u32) -> Option<A64Insn> {
             rd: ((word & 0x0000001f) >> 0) as u8,
         });
     }
+    if (word & 0xffe0fc00) == 0x1e202800 {
+        return Some(A64Insn::FaddFloatFaddSFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e602800 {
+        return Some(A64Insn::FaddFloatFaddDFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e203800 {
+        return Some(A64Insn::FsubFloatFsubSFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e603800 {
+        return Some(A64Insn::FsubFloatFsubDFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e200800 {
+        return Some(A64Insn::FmulFloatFmulSFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e600800 {
+        return Some(A64Insn::FmulFloatFmulDFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e208800 {
+        return Some(A64Insn::FnmulFloatFnmulSFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e608800 {
+        return Some(A64Insn::FnmulFloatFnmulDFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e201800 {
+        return Some(A64Insn::FdivFloatFdivSFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e601800 {
+        return Some(A64Insn::FdivFloatFdivDFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e204800 {
+        return Some(A64Insn::FmaxFloatFmaxSFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e604800 {
+        return Some(A64Insn::FmaxFloatFmaxDFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e205800 {
+        return Some(A64Insn::FminFloatFminSFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e605800 {
+        return Some(A64Insn::FminFloatFminDFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e206800 {
+        return Some(A64Insn::FmaxnmFloatFmaxnmSFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e606800 {
+        return Some(A64Insn::FmaxnmFloatFmaxnmDFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e207800 {
+        return Some(A64Insn::FminnmFloatFminnmSFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc00) == 0x1e607800 {
+        return Some(A64Insn::FminnmFloatFminnmDFloatdp2 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe08000) == 0x1f000000 {
+        return Some(A64Insn::FmaddFloatFmaddSFloatdp3 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            ra: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe08000) == 0x1f400000 {
+        return Some(A64Insn::FmaddFloatFmaddDFloatdp3 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            ra: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe08000) == 0x1f008000 {
+        return Some(A64Insn::FmsubFloatFmsubSFloatdp3 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            ra: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe08000) == 0x1f408000 {
+        return Some(A64Insn::FmsubFloatFmsubDFloatdp3 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            ra: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe08000) == 0x1f200000 {
+        return Some(A64Insn::FnmaddFloatFnmaddSFloatdp3 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            ra: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe08000) == 0x1f600000 {
+        return Some(A64Insn::FnmaddFloatFnmaddDFloatdp3 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            ra: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe08000) == 0x1f208000 {
+        return Some(A64Insn::FnmsubFloatFnmsubSFloatdp3 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            ra: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe08000) == 0x1f608000 {
+        return Some(A64Insn::FnmsubFloatFnmsubDFloatdp3 {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            ra: ((word & 0x00007c00) >> 10) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e20c000 {
+        return Some(A64Insn::FabsFloatFabsSFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e60c000 {
+        return Some(A64Insn::FabsFloatFabsDFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e214000 {
+        return Some(A64Insn::FnegFloatFnegSFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e614000 {
+        return Some(A64Insn::FnegFloatFnegDFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e21c000 {
+        return Some(A64Insn::FsqrtFloatFsqrtSFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e61c000 {
+        return Some(A64Insn::FsqrtFloatFsqrtDFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e244000 {
+        return Some(A64Insn::FrintnFloatFrintnSFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e644000 {
+        return Some(A64Insn::FrintnFloatFrintnDFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e24c000 {
+        return Some(A64Insn::FrintpFloatFrintpSFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e64c000 {
+        return Some(A64Insn::FrintpFloatFrintpDFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e254000 {
+        return Some(A64Insn::FrintmFloatFrintmSFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e654000 {
+        return Some(A64Insn::FrintmFloatFrintmDFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e25c000 {
+        return Some(A64Insn::FrintzFloatFrintzSFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e65c000 {
+        return Some(A64Insn::FrintzFloatFrintzDFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e264000 {
+        return Some(A64Insn::FrintaFloatFrintaSFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e664000 {
+        return Some(A64Insn::FrintaFloatFrintaDFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e274000 {
+        return Some(A64Insn::FrintxFloatFrintxSFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e674000 {
+        return Some(A64Insn::FrintxFloatFrintxDFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e27c000 {
+        return Some(A64Insn::FrintiFloatFrintiSFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e67c000 {
+        return Some(A64Insn::FrintiFloatFrintiDFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e22c000 {
+        return Some(A64Insn::FcvtFloatFcvtDsFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e624000 {
+        return Some(A64Insn::FcvtFloatFcvtSdFloatdp1 {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0fc1f) == 0x1e202000 {
+        return Some(A64Insn::FcmpFloatFcmpSFloatcmp {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+        });
+    }
+    if (word & 0xfffffc1f) == 0x1e202008 {
+        return Some(A64Insn::FcmpFloatFcmpSzFloatcmp {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+        });
+    }
+    if (word & 0xffe0fc1f) == 0x1e602000 {
+        return Some(A64Insn::FcmpFloatFcmpDFloatcmp {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+        });
+    }
+    if (word & 0xfffffc1f) == 0x1e602008 {
+        return Some(A64Insn::FcmpFloatFcmpDzFloatcmp {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+        });
+    }
+    if (word & 0xffe0fc1f) == 0x1e202010 {
+        return Some(A64Insn::FcmpeFloatFcmpeSFloatcmp {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+        });
+    }
+    if (word & 0xfffffc1f) == 0x1e202018 {
+        return Some(A64Insn::FcmpeFloatFcmpeSzFloatcmp {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+        });
+    }
+    if (word & 0xffe0fc1f) == 0x1e602010 {
+        return Some(A64Insn::FcmpeFloatFcmpeDFloatcmp {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+        });
+    }
+    if (word & 0xfffffc1f) == 0x1e602018 {
+        return Some(A64Insn::FcmpeFloatFcmpeDzFloatcmp {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0x1e200400 {
+        return Some(A64Insn::FccmpFloatFccmpSFloatccmp {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0x1e600400 {
+        return Some(A64Insn::FccmpFloatFccmpDFloatccmp {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0x1e200410 {
+        return Some(A64Insn::FccmpeFloatFccmpeSFloatccmp {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c10) == 0x1e600410 {
+        return Some(A64Insn::FccmpeFloatFccmpeDFloatccmp {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            nzcv: ((word & 0x0000000f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0x1e200c00 {
+        return Some(A64Insn::FcselFloatFcselSFloatsel {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0x1e600c00 {
+        return Some(A64Insn::FcselFloatFcselDFloatsel {
+            rm: ((word & 0x001f0000) >> 16) as u8,
+            cond: ((word & 0x0000f000) >> 12) as u8,
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe01fe0) == 0x1e201000 {
+        return Some(A64Insn::FmovFloatImmFmovSFloatimm {
+            imm8: A64Imm::signed(((word & 0x001fe000) >> 13) as u32, 8),
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe01fe0) == 0x1e601000 {
+        return Some(A64Insn::FmovFloatImmFmovDFloatimm {
+            imm8: A64Imm::signed(((word & 0x001fe000) >> 13) as u32, 8),
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e220000 {
+        return Some(A64Insn::ScvtfFloatIntScvtfS32Float2int {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e620000 {
+        return Some(A64Insn::ScvtfFloatIntScvtfD32Float2int {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e220000 {
+        return Some(A64Insn::ScvtfFloatIntScvtfS64Float2int {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e620000 {
+        return Some(A64Insn::ScvtfFloatIntScvtfD64Float2int {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e230000 {
+        return Some(A64Insn::UcvtfFloatIntUcvtfS32Float2int {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e630000 {
+        return Some(A64Insn::UcvtfFloatIntUcvtfD32Float2int {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e230000 {
+        return Some(A64Insn::UcvtfFloatIntUcvtfS64Float2int {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e630000 {
+        return Some(A64Insn::UcvtfFloatIntUcvtfD64Float2int {
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            rd: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e380000 {
+        return Some(A64Insn::FcvtzsFloatIntFcvtzs32sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e380000 {
+        return Some(A64Insn::FcvtzsFloatIntFcvtzs64sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e780000 {
+        return Some(A64Insn::FcvtzsFloatIntFcvtzs32dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e780000 {
+        return Some(A64Insn::FcvtzsFloatIntFcvtzs64dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e390000 {
+        return Some(A64Insn::FcvtzuFloatIntFcvtzu32sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e390000 {
+        return Some(A64Insn::FcvtzuFloatIntFcvtzu64sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e790000 {
+        return Some(A64Insn::FcvtzuFloatIntFcvtzu32dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e790000 {
+        return Some(A64Insn::FcvtzuFloatIntFcvtzu64dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e200000 {
+        return Some(A64Insn::FcvtnsFloatFcvtns32sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e200000 {
+        return Some(A64Insn::FcvtnsFloatFcvtns64sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e600000 {
+        return Some(A64Insn::FcvtnsFloatFcvtns32dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e600000 {
+        return Some(A64Insn::FcvtnsFloatFcvtns64dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e210000 {
+        return Some(A64Insn::FcvtnuFloatFcvtnu32sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e210000 {
+        return Some(A64Insn::FcvtnuFloatFcvtnu64sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e610000 {
+        return Some(A64Insn::FcvtnuFloatFcvtnu32dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e610000 {
+        return Some(A64Insn::FcvtnuFloatFcvtnu64dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e300000 {
+        return Some(A64Insn::FcvtmsFloatFcvtms32sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e300000 {
+        return Some(A64Insn::FcvtmsFloatFcvtms64sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e700000 {
+        return Some(A64Insn::FcvtmsFloatFcvtms32dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e700000 {
+        return Some(A64Insn::FcvtmsFloatFcvtms64dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e310000 {
+        return Some(A64Insn::FcvtmuFloatFcvtmu32sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e310000 {
+        return Some(A64Insn::FcvtmuFloatFcvtmu64sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e710000 {
+        return Some(A64Insn::FcvtmuFloatFcvtmu32dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e710000 {
+        return Some(A64Insn::FcvtmuFloatFcvtmu64dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e280000 {
+        return Some(A64Insn::FcvtpsFloatFcvtps32sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e280000 {
+        return Some(A64Insn::FcvtpsFloatFcvtps64sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e680000 {
+        return Some(A64Insn::FcvtpsFloatFcvtps32dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e680000 {
+        return Some(A64Insn::FcvtpsFloatFcvtps64dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e290000 {
+        return Some(A64Insn::FcvtpuFloatFcvtpu32sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e290000 {
+        return Some(A64Insn::FcvtpuFloatFcvtpu64sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e690000 {
+        return Some(A64Insn::FcvtpuFloatFcvtpu32dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e690000 {
+        return Some(A64Insn::FcvtpuFloatFcvtpu64dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e240000 {
+        return Some(A64Insn::FcvtasFloatFcvtas32sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e240000 {
+        return Some(A64Insn::FcvtasFloatFcvtas64sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e640000 {
+        return Some(A64Insn::FcvtasFloatFcvtas32dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e640000 {
+        return Some(A64Insn::FcvtasFloatFcvtas64dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e250000 {
+        return Some(A64Insn::FcvtauFloatFcvtau32sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e250000 {
+        return Some(A64Insn::FcvtauFloatFcvtau64sFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x1e650000 {
+        return Some(A64Insn::FcvtauFloatFcvtau32dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::W32, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xfffffc00) == 0x9e650000 {
+        return Some(A64Insn::FcvtauFloatFcvtau64dFloat2int {
+            rn: ((word & 0x000003e0) >> 5) as u8,
+            rd: A64Reg::new(((word & 0x0000001f) >> 0) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        });
+    }
+    if (word & 0xffe00c00) == 0x3c600800 && (word & 0x0000e000) != 0x00006000 {
+        return Some(A64Insn::LdrRegFpsimdLdrBLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0ec00) == 0x3c606800 {
+        return Some(A64Insn::LdrRegFpsimdLdrBlLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0x7c600800 {
+        return Some(A64Insn::LdrRegFpsimdLdrHLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0xbc600800 {
+        return Some(A64Insn::LdrRegFpsimdLdrSLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0xfc600800 {
+        return Some(A64Insn::LdrRegFpsimdLdrDLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0x3ce00800 {
+        return Some(A64Insn::LdrRegFpsimdLdrQLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0x3c200800 && (word & 0x0000e000) != 0x00006000 {
+        return Some(A64Insn::StrRegFpsimdStrBLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe0ec00) == 0x3c206800 {
+        return Some(A64Insn::StrRegFpsimdStrBlLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0x7c200800 {
+        return Some(A64Insn::StrRegFpsimdStrHLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0xbc200800 {
+        return Some(A64Insn::StrRegFpsimdStrSLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0xfc200800 {
+        return Some(A64Insn::StrRegFpsimdStrDLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
+    if (word & 0xffe00c00) == 0x3ca00800 {
+        return Some(A64Insn::StrRegFpsimdStrQLdstRegoff {
+            rm: A64Reg::new(((word & 0x001f0000) >> 16) as u8, A64RegWidth::X64, A64Reg31Mode::Xzr),
+            option: ((word & 0x0000e000) >> 13) as u8,
+            s: ((word & 0x00001000) >> 12) as u8,
+            rn: A64Reg::new(((word & 0x000003e0) >> 5) as u8, A64RegWidth::X64, A64Reg31Mode::Sp),
+            rt: ((word & 0x0000001f) >> 0) as u8,
+        });
+    }
     None
 }
 
@@ -22779,6 +25891,38 @@ pub const FIELDS_MRS_MRS_RS_SYSTEMMOVE_CNTVCT_EL0: &[GeneratedFieldSpec] = &[
 
 #[allow(dead_code)]
 pub const OPERANDS_MRS_MRS_RS_SYSTEMMOVE_CNTVCT_EL0: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MRS_MRS_RS_SYSTEMMOVE_FPCR: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "L", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "o0", hi: 19, lo: 19, width: 1, mask: 0x00080000 },
+    GeneratedFieldSpec { name: "op1", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "CRn", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "CRm", hi: 11, lo: 8, width: 4, mask: 0x00000f00 },
+    GeneratedFieldSpec { name: "op2", hi: 7, lo: 5, width: 3, mask: 0x000000e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MRS_MRS_RS_SYSTEMMOVE_FPCR: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_MRS_MRS_RS_SYSTEMMOVE_FPSR: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "L", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "o0", hi: 19, lo: 19, width: 1, mask: 0x00080000 },
+    GeneratedFieldSpec { name: "op1", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "CRn", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "CRm", hi: 11, lo: 8, width: 4, mask: 0x00000f00 },
+    GeneratedFieldSpec { name: "op2", hi: 7, lo: 5, width: 3, mask: 0x000000e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_MRS_MRS_RS_SYSTEMMOVE_FPSR: &[A64OperandRole] = &[
     A64OperandRole::RegWrite { field: "Rt", width: A64RegWidth::X64 },
 ];
 
@@ -31623,6 +34767,2236 @@ pub const OPERANDS_TBL_ADVSIMD_TBL_ASIMDTBL_L1_1: &[A64OperandRole] = &[
 ];
 
 #[allow(dead_code)]
+pub const FIELDS_FADD_FLOAT_FADD_S_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FADD_FLOAT_FADD_S_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FADD_FLOAT_FADD_D_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FADD_FLOAT_FADD_D_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FSUB_FLOAT_FSUB_S_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FSUB_FLOAT_FSUB_S_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FSUB_FLOAT_FSUB_D_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FSUB_FLOAT_FSUB_D_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMUL_FLOAT_FMUL_S_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMUL_FLOAT_FMUL_S_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMUL_FLOAT_FMUL_D_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMUL_FLOAT_FMUL_D_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FNMUL_FLOAT_FNMUL_S_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FNMUL_FLOAT_FNMUL_S_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FNMUL_FLOAT_FNMUL_D_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FNMUL_FLOAT_FNMUL_D_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FDIV_FLOAT_FDIV_S_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "opcode", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FDIV_FLOAT_FDIV_S_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FDIV_FLOAT_FDIV_D_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "opcode", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FDIV_FLOAT_FDIV_D_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMAX_FLOAT_FMAX_S_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 13, lo: 12, width: 2, mask: 0x00003000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMAX_FLOAT_FMAX_S_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMAX_FLOAT_FMAX_D_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 13, lo: 12, width: 2, mask: 0x00003000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMAX_FLOAT_FMAX_D_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMIN_FLOAT_FMIN_S_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 13, lo: 12, width: 2, mask: 0x00003000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMIN_FLOAT_FMIN_S_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMIN_FLOAT_FMIN_D_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 13, lo: 12, width: 2, mask: 0x00003000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMIN_FLOAT_FMIN_D_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMAXNM_FLOAT_FMAXNM_S_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 13, lo: 12, width: 2, mask: 0x00003000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMAXNM_FLOAT_FMAXNM_S_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMAXNM_FLOAT_FMAXNM_D_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 13, lo: 12, width: 2, mask: 0x00003000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMAXNM_FLOAT_FMAXNM_D_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMINNM_FLOAT_FMINNM_S_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 13, lo: 12, width: 2, mask: 0x00003000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMINNM_FLOAT_FMINNM_S_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMINNM_FLOAT_FMINNM_D_FLOATDP2: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 13, lo: 12, width: 2, mask: 0x00003000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMINNM_FLOAT_FMINNM_D_FLOATDP2: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMADD_FLOAT_FMADD_S_FLOATDP3: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "o1", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMADD_FLOAT_FMADD_S_FLOATDP3: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Ra" },
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMADD_FLOAT_FMADD_D_FLOATDP3: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "o1", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMADD_FLOAT_FMADD_D_FLOATDP3: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Ra" },
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMSUB_FLOAT_FMSUB_S_FLOATDP3: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "o1", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMSUB_FLOAT_FMSUB_S_FLOATDP3: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Ra" },
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMSUB_FLOAT_FMSUB_D_FLOATDP3: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "o1", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMSUB_FLOAT_FMSUB_D_FLOATDP3: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Ra" },
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FNMADD_FLOAT_FNMADD_S_FLOATDP3: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "o1", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FNMADD_FLOAT_FNMADD_S_FLOATDP3: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Ra" },
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FNMADD_FLOAT_FNMADD_D_FLOATDP3: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "o1", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FNMADD_FLOAT_FNMADD_D_FLOATDP3: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Ra" },
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FNMSUB_FLOAT_FNMSUB_S_FLOATDP3: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "o1", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FNMSUB_FLOAT_FNMSUB_S_FLOATDP3: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Ra" },
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FNMSUB_FLOAT_FNMSUB_D_FLOATDP3: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "o1", hi: 21, lo: 21, width: 1, mask: 0x00200000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "o0", hi: 15, lo: 15, width: 1, mask: 0x00008000 },
+    GeneratedFieldSpec { name: "Ra", hi: 14, lo: 10, width: 5, mask: 0x00007c00 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FNMSUB_FLOAT_FNMSUB_D_FLOATDP3: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Ra" },
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FABS_FLOAT_FABS_S_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "opc", hi: 16, lo: 15, width: 2, mask: 0x00018000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FABS_FLOAT_FABS_S_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FABS_FLOAT_FABS_D_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "opc", hi: 16, lo: 15, width: 2, mask: 0x00018000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FABS_FLOAT_FABS_D_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FNEG_FLOAT_FNEG_S_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "opc", hi: 16, lo: 15, width: 2, mask: 0x00018000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FNEG_FLOAT_FNEG_S_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FNEG_FLOAT_FNEG_D_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "opc", hi: 16, lo: 15, width: 2, mask: 0x00018000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FNEG_FLOAT_FNEG_D_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FSQRT_FLOAT_FSQRT_S_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "opc", hi: 16, lo: 15, width: 2, mask: 0x00018000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FSQRT_FLOAT_FSQRT_S_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FSQRT_FLOAT_FSQRT_D_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "opc", hi: 16, lo: 15, width: 2, mask: 0x00018000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FSQRT_FLOAT_FSQRT_D_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTN_FLOAT_FRINTN_S_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTN_FLOAT_FRINTN_S_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTN_FLOAT_FRINTN_D_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTN_FLOAT_FRINTN_D_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTP_FLOAT_FRINTP_S_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTP_FLOAT_FRINTP_S_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTP_FLOAT_FRINTP_D_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTP_FLOAT_FRINTP_D_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTM_FLOAT_FRINTM_S_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTM_FLOAT_FRINTM_S_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTM_FLOAT_FRINTM_D_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTM_FLOAT_FRINTM_D_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTZ_FLOAT_FRINTZ_S_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTZ_FLOAT_FRINTZ_S_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTZ_FLOAT_FRINTZ_D_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTZ_FLOAT_FRINTZ_D_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTA_FLOAT_FRINTA_S_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTA_FLOAT_FRINTA_S_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTA_FLOAT_FRINTA_D_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTA_FLOAT_FRINTA_D_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTX_FLOAT_FRINTX_S_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTX_FLOAT_FRINTX_S_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTX_FLOAT_FRINTX_D_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTX_FLOAT_FRINTX_D_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTI_FLOAT_FRINTI_S_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTI_FLOAT_FRINTI_S_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FRINTI_FLOAT_FRINTI_D_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 17, lo: 15, width: 3, mask: 0x00038000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FRINTI_FLOAT_FRINTI_D_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVT_FLOAT_FCVT_DS_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "opc", hi: 16, lo: 15, width: 2, mask: 0x00018000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVT_FLOAT_FCVT_DS_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVT_FLOAT_FCVT_SD_FLOATDP1: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "opc", hi: 16, lo: 15, width: 2, mask: 0x00018000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVT_FLOAT_FCVT_SD_FLOATDP1: &[A64OperandRole] = &[
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCMP_FLOAT_FCMP_S_FLOATCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 14, width: 2, mask: 0x0000c000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "opc", hi: 4, lo: 3, width: 2, mask: 0x00000018 },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCMP_FLOAT_FCMP_S_FLOATCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCMP_FLOAT_FCMP_SZ_FLOATCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 14, width: 2, mask: 0x0000c000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "opc", hi: 4, lo: 3, width: 2, mask: 0x00000018 },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCMP_FLOAT_FCMP_SZ_FLOATCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCMP_FLOAT_FCMP_D_FLOATCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 14, width: 2, mask: 0x0000c000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "opc", hi: 4, lo: 3, width: 2, mask: 0x00000018 },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCMP_FLOAT_FCMP_D_FLOATCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCMP_FLOAT_FCMP_DZ_FLOATCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 14, width: 2, mask: 0x0000c000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "opc", hi: 4, lo: 3, width: 2, mask: 0x00000018 },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCMP_FLOAT_FCMP_DZ_FLOATCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCMPE_FLOAT_FCMPE_S_FLOATCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 14, width: 2, mask: 0x0000c000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "opc", hi: 4, lo: 3, width: 2, mask: 0x00000018 },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCMPE_FLOAT_FCMPE_S_FLOATCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCMPE_FLOAT_FCMPE_SZ_FLOATCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 14, width: 2, mask: 0x0000c000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "opc", hi: 4, lo: 3, width: 2, mask: 0x00000018 },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCMPE_FLOAT_FCMPE_SZ_FLOATCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCMPE_FLOAT_FCMPE_D_FLOATCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 14, width: 2, mask: 0x0000c000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "opc", hi: 4, lo: 3, width: 2, mask: 0x00000018 },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCMPE_FLOAT_FCMPE_D_FLOATCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCMPE_FLOAT_FCMPE_DZ_FLOATCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "op", hi: 15, lo: 14, width: 2, mask: 0x0000c000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "opc", hi: 4, lo: 3, width: 2, mask: 0x00000018 },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCMPE_FLOAT_FCMPE_DZ_FLOATCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCCMP_FLOAT_FCCMP_S_FLOATCCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "op", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCCMP_FLOAT_FCCMP_S_FLOATCCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCCMP_FLOAT_FCCMP_D_FLOATCCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "op", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCCMP_FLOAT_FCCMP_D_FLOATCCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCCMPE_FLOAT_FCCMPE_S_FLOATCCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "op", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCCMPE_FLOAT_FCCMPE_S_FLOATCCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCCMPE_FLOAT_FCCMPE_D_FLOATCCMP: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "op", hi: 4, lo: 4, width: 1, mask: 0x00000010 },
+    GeneratedFieldSpec { name: "nzcv", hi: 3, lo: 0, width: 4, mask: 0x0000000f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCCMPE_FLOAT_FCCMPE_D_FLOATCCMP: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::FlagsWrite,
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCSEL_FLOAT_FCSEL_S_FLOATSEL: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCSEL_FLOAT_FCSEL_S_FLOATSEL: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCSEL_FLOAT_FCSEL_D_FLOATSEL: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "cond", hi: 15, lo: 12, width: 4, mask: 0x0000f000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCSEL_FLOAT_FCSEL_D_FLOATSEL: &[A64OperandRole] = &[
+    A64OperandRole::FlagsRead,
+    A64OperandRole::VecRead { field: "Rm" },
+    A64OperandRole::VecRead { field: "Rn" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMOV_FLOAT_IMM_FMOV_S_FLOATIMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm8", hi: 20, lo: 13, width: 8, mask: 0x001fe000 },
+    GeneratedFieldSpec { name: "imm5", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMOV_FLOAT_IMM_FMOV_S_FLOATIMM: &[A64OperandRole] = &[
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FMOV_FLOAT_IMM_FMOV_D_FLOATIMM: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "M", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "imm8", hi: 20, lo: 13, width: 8, mask: 0x001fe000 },
+    GeneratedFieldSpec { name: "imm5", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FMOV_FLOAT_IMM_FMOV_D_FLOATIMM: &[A64OperandRole] = &[
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SCVTF_FLOAT_INT_SCVTF_S32_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SCVTF_FLOAT_INT_SCVTF_S32_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SCVTF_FLOAT_INT_SCVTF_D32_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SCVTF_FLOAT_INT_SCVTF_D32_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SCVTF_FLOAT_INT_SCVTF_S64_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SCVTF_FLOAT_INT_SCVTF_S64_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_SCVTF_FLOAT_INT_SCVTF_D64_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_SCVTF_FLOAT_INT_SCVTF_D64_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UCVTF_FLOAT_INT_UCVTF_S32_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UCVTF_FLOAT_INT_UCVTF_S32_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UCVTF_FLOAT_INT_UCVTF_D32_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UCVTF_FLOAT_INT_UCVTF_D32_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UCVTF_FLOAT_INT_UCVTF_S64_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UCVTF_FLOAT_INT_UCVTF_S64_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_UCVTF_FLOAT_INT_UCVTF_D64_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_UCVTF_FLOAT_INT_UCVTF_D64_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rd" },
+    A64OperandRole::VecWrite { field: "Rd" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTZS_FLOAT_INT_FCVTZS_32S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_32S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTZS_FLOAT_INT_FCVTZS_64S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_64S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTZS_FLOAT_INT_FCVTZS_32D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_32D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTZS_FLOAT_INT_FCVTZS_64D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_64D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTZU_FLOAT_INT_FCVTZU_32S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_32S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTZU_FLOAT_INT_FCVTZU_64S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_64S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTZU_FLOAT_INT_FCVTZU_32D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_32D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTZU_FLOAT_INT_FCVTZU_64D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_64D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTNS_FLOAT_FCVTNS_32S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTNS_FLOAT_FCVTNS_32S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTNS_FLOAT_FCVTNS_64S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTNS_FLOAT_FCVTNS_64S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTNS_FLOAT_FCVTNS_32D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTNS_FLOAT_FCVTNS_32D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTNS_FLOAT_FCVTNS_64D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTNS_FLOAT_FCVTNS_64D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTNU_FLOAT_FCVTNU_32S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTNU_FLOAT_FCVTNU_32S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTNU_FLOAT_FCVTNU_64S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTNU_FLOAT_FCVTNU_64S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTNU_FLOAT_FCVTNU_32D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTNU_FLOAT_FCVTNU_32D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTNU_FLOAT_FCVTNU_64D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTNU_FLOAT_FCVTNU_64D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTMS_FLOAT_FCVTMS_32S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTMS_FLOAT_FCVTMS_32S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTMS_FLOAT_FCVTMS_64S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTMS_FLOAT_FCVTMS_64S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTMS_FLOAT_FCVTMS_32D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTMS_FLOAT_FCVTMS_32D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTMS_FLOAT_FCVTMS_64D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTMS_FLOAT_FCVTMS_64D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTMU_FLOAT_FCVTMU_32S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTMU_FLOAT_FCVTMU_32S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTMU_FLOAT_FCVTMU_64S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTMU_FLOAT_FCVTMU_64S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTMU_FLOAT_FCVTMU_32D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTMU_FLOAT_FCVTMU_32D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTMU_FLOAT_FCVTMU_64D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTMU_FLOAT_FCVTMU_64D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTPS_FLOAT_FCVTPS_32S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTPS_FLOAT_FCVTPS_32S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTPS_FLOAT_FCVTPS_64S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTPS_FLOAT_FCVTPS_64S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTPS_FLOAT_FCVTPS_32D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTPS_FLOAT_FCVTPS_32D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTPS_FLOAT_FCVTPS_64D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTPS_FLOAT_FCVTPS_64D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTPU_FLOAT_FCVTPU_32S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTPU_FLOAT_FCVTPU_32S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTPU_FLOAT_FCVTPU_64S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTPU_FLOAT_FCVTPU_64S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTPU_FLOAT_FCVTPU_32D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTPU_FLOAT_FCVTPU_32D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTPU_FLOAT_FCVTPU_64D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTPU_FLOAT_FCVTPU_64D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTAS_FLOAT_FCVTAS_32S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTAS_FLOAT_FCVTAS_32S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTAS_FLOAT_FCVTAS_64S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTAS_FLOAT_FCVTAS_64S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTAS_FLOAT_FCVTAS_32D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTAS_FLOAT_FCVTAS_32D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTAS_FLOAT_FCVTAS_64D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTAS_FLOAT_FCVTAS_64D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTAU_FLOAT_FCVTAU_32S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTAU_FLOAT_FCVTAU_32S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTAU_FLOAT_FCVTAU_64S_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTAU_FLOAT_FCVTAU_64S_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTAU_FLOAT_FCVTAU_32D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTAU_FLOAT_FCVTAU_32D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::W32 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_FCVTAU_FLOAT_FCVTAU_64D_FLOAT2INT: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "sf", hi: 31, lo: 31, width: 1, mask: 0x80000000 },
+    GeneratedFieldSpec { name: "S", hi: 29, lo: 29, width: 1, mask: 0x20000000 },
+    GeneratedFieldSpec { name: "ftype", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "rmode", hi: 20, lo: 19, width: 2, mask: 0x00180000 },
+    GeneratedFieldSpec { name: "opcode", hi: 18, lo: 16, width: 3, mask: 0x00070000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rd", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_FCVTAU_FLOAT_FCVTAU_64D_FLOAT2INT: &[A64OperandRole] = &[
+    A64OperandRole::RegWrite { field: "Rd", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rn" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDR_REG_FPSIMD_LDR_B_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_REG_FPSIMD_LDR_B_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecWrite { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDR_REG_FPSIMD_LDR_BL_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_REG_FPSIMD_LDR_BL_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecWrite { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDR_REG_FPSIMD_LDR_H_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_REG_FPSIMD_LDR_H_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecWrite { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDR_REG_FPSIMD_LDR_S_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_REG_FPSIMD_LDR_S_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecWrite { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDR_REG_FPSIMD_LDR_D_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_REG_FPSIMD_LDR_D_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecWrite { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_LDR_REG_FPSIMD_LDR_Q_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_LDR_REG_FPSIMD_LDR_Q_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecWrite { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STR_REG_FPSIMD_STR_B_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STR_REG_FPSIMD_STR_B_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STR_REG_FPSIMD_STR_BL_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STR_REG_FPSIMD_STR_BL_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STR_REG_FPSIMD_STR_H_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STR_REG_FPSIMD_STR_H_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STR_REG_FPSIMD_STR_S_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STR_REG_FPSIMD_STR_S_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STR_REG_FPSIMD_STR_D_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STR_REG_FPSIMD_STR_D_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rt" },
+];
+
+#[allow(dead_code)]
+pub const FIELDS_STR_REG_FPSIMD_STR_Q_LDST_REGOFF: &[GeneratedFieldSpec] = &[
+    GeneratedFieldSpec { name: "size", hi: 31, lo: 30, width: 2, mask: 0xc0000000 },
+    GeneratedFieldSpec { name: "VR", hi: 26, lo: 26, width: 1, mask: 0x04000000 },
+    GeneratedFieldSpec { name: "opc", hi: 23, lo: 22, width: 2, mask: 0x00c00000 },
+    GeneratedFieldSpec { name: "Rm", hi: 20, lo: 16, width: 5, mask: 0x001f0000 },
+    GeneratedFieldSpec { name: "option", hi: 15, lo: 13, width: 3, mask: 0x0000e000 },
+    GeneratedFieldSpec { name: "S", hi: 12, lo: 12, width: 1, mask: 0x00001000 },
+    GeneratedFieldSpec { name: "Rn", hi: 9, lo: 5, width: 5, mask: 0x000003e0 },
+    GeneratedFieldSpec { name: "Rt", hi: 4, lo: 0, width: 5, mask: 0x0000001f },
+];
+
+#[allow(dead_code)]
+pub const OPERANDS_STR_REG_FPSIMD_STR_Q_LDST_REGOFF: &[A64OperandRole] = &[
+    A64OperandRole::MemBase { field: "Rn" },
+    A64OperandRole::Memory,
+    A64OperandRole::RegRead { field: "Rm", width: A64RegWidth::X64 },
+    A64OperandRole::RegRead { field: "Rn", width: A64RegWidth::X64 },
+    A64OperandRole::VecRead { field: "Rt" },
+];
+
+#[allow(dead_code)]
 pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
     GeneratedInsnSpec {
         key: "ADR.ADR_only_pcreladdr",
@@ -33377,6 +38751,32 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         excludes: &[],
         fields: FIELDS_MRS_MRS_RS_SYSTEMMOVE_CNTVCT_EL0,
         operands: OPERANDS_MRS_MRS_RS_SYSTEMMOVE_CNTVCT_EL0,
+        asm: "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+    },
+    GeneratedInsnSpec {
+        key: "MRS.MRS_RS_systemmove@FPCR",
+        mnemonic: "MRS",
+        heading: "MRS",
+        title: "MRS -- A64",
+        encoding_label: "",
+        mask: 0xffffffe0,
+        value: 0xd53b4400,
+        excludes: &[],
+        fields: FIELDS_MRS_MRS_RS_SYSTEMMOVE_FPCR,
+        operands: OPERANDS_MRS_MRS_RS_SYSTEMMOVE_FPCR,
+        asm: "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
+    },
+    GeneratedInsnSpec {
+        key: "MRS.MRS_RS_systemmove@FPSR",
+        mnemonic: "MRS",
+        heading: "MRS",
+        title: "MRS -- A64",
+        encoding_label: "",
+        mask: 0xffffffe0,
+        value: 0xd53b4420,
+        excludes: &[],
+        fields: FIELDS_MRS_MRS_RS_SYSTEMMOVE_FPSR,
+        operands: OPERANDS_MRS_MRS_RS_SYSTEMMOVE_FPSR,
         asm: "MRS <Xt> , ( <systemreg> |S <op0> _ <op1> _ <Cn> _ <Cm> _ <op2> )",
     },
     GeneratedInsnSpec {
@@ -39176,6 +44576,1618 @@ pub const GENERATED_A64_SUBSET: &[GeneratedInsnSpec] = &[
         fields: FIELDS_TBL_ADVSIMD_TBL_ASIMDTBL_L1_1,
         operands: OPERANDS_TBL_ADVSIMD_TBL_ASIMDTBL_L1_1,
         asm: "TBL <Vd> . <Ta> , { <Vn> .16B }, <Vm> . <Ta>",
+    },
+    GeneratedInsnSpec {
+        key: "FADD_float.FADD_S_floatdp2",
+        mnemonic: "FADD",
+        heading: "FADD (scalar)",
+        title: "FADD (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e202800,
+        excludes: &[],
+        fields: FIELDS_FADD_FLOAT_FADD_S_FLOATDP2,
+        operands: OPERANDS_FADD_FLOAT_FADD_S_FLOATDP2,
+        asm: "FADD <Sd> , <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FADD_float.FADD_D_floatdp2",
+        mnemonic: "FADD",
+        heading: "FADD (scalar)",
+        title: "FADD (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e602800,
+        excludes: &[],
+        fields: FIELDS_FADD_FLOAT_FADD_D_FLOATDP2,
+        operands: OPERANDS_FADD_FLOAT_FADD_D_FLOATDP2,
+        asm: "FADD <Dd> , <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FSUB_float.FSUB_S_floatdp2",
+        mnemonic: "FSUB",
+        heading: "FSUB (scalar)",
+        title: "FSUB (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e203800,
+        excludes: &[],
+        fields: FIELDS_FSUB_FLOAT_FSUB_S_FLOATDP2,
+        operands: OPERANDS_FSUB_FLOAT_FSUB_S_FLOATDP2,
+        asm: "FSUB <Sd> , <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FSUB_float.FSUB_D_floatdp2",
+        mnemonic: "FSUB",
+        heading: "FSUB (scalar)",
+        title: "FSUB (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e603800,
+        excludes: &[],
+        fields: FIELDS_FSUB_FLOAT_FSUB_D_FLOATDP2,
+        operands: OPERANDS_FSUB_FLOAT_FSUB_D_FLOATDP2,
+        asm: "FSUB <Dd> , <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMUL_float.FMUL_S_floatdp2",
+        mnemonic: "FMUL",
+        heading: "FMUL (scalar)",
+        title: "FMUL (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e200800,
+        excludes: &[],
+        fields: FIELDS_FMUL_FLOAT_FMUL_S_FLOATDP2,
+        operands: OPERANDS_FMUL_FLOAT_FMUL_S_FLOATDP2,
+        asm: "FMUL <Sd> , <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMUL_float.FMUL_D_floatdp2",
+        mnemonic: "FMUL",
+        heading: "FMUL (scalar)",
+        title: "FMUL (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e600800,
+        excludes: &[],
+        fields: FIELDS_FMUL_FLOAT_FMUL_D_FLOATDP2,
+        operands: OPERANDS_FMUL_FLOAT_FMUL_D_FLOATDP2,
+        asm: "FMUL <Dd> , <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FNMUL_float.FNMUL_S_floatdp2",
+        mnemonic: "FNMUL",
+        heading: "FNMUL (scalar)",
+        title: "FNMUL (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e208800,
+        excludes: &[],
+        fields: FIELDS_FNMUL_FLOAT_FNMUL_S_FLOATDP2,
+        operands: OPERANDS_FNMUL_FLOAT_FNMUL_S_FLOATDP2,
+        asm: "FNMUL <Sd> , <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FNMUL_float.FNMUL_D_floatdp2",
+        mnemonic: "FNMUL",
+        heading: "FNMUL (scalar)",
+        title: "FNMUL (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e608800,
+        excludes: &[],
+        fields: FIELDS_FNMUL_FLOAT_FNMUL_D_FLOATDP2,
+        operands: OPERANDS_FNMUL_FLOAT_FNMUL_D_FLOATDP2,
+        asm: "FNMUL <Dd> , <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FDIV_float.FDIV_S_floatdp2",
+        mnemonic: "FDIV",
+        heading: "FDIV (scalar)",
+        title: "FDIV (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e201800,
+        excludes: &[],
+        fields: FIELDS_FDIV_FLOAT_FDIV_S_FLOATDP2,
+        operands: OPERANDS_FDIV_FLOAT_FDIV_S_FLOATDP2,
+        asm: "FDIV <Sd> , <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FDIV_float.FDIV_D_floatdp2",
+        mnemonic: "FDIV",
+        heading: "FDIV (scalar)",
+        title: "FDIV (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e601800,
+        excludes: &[],
+        fields: FIELDS_FDIV_FLOAT_FDIV_D_FLOATDP2,
+        operands: OPERANDS_FDIV_FLOAT_FDIV_D_FLOATDP2,
+        asm: "FDIV <Dd> , <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMAX_float.FMAX_S_floatdp2",
+        mnemonic: "FMAX",
+        heading: "FMAX (scalar)",
+        title: "FMAX (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e204800,
+        excludes: &[],
+        fields: FIELDS_FMAX_FLOAT_FMAX_S_FLOATDP2,
+        operands: OPERANDS_FMAX_FLOAT_FMAX_S_FLOATDP2,
+        asm: "FMAX <Sd> , <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMAX_float.FMAX_D_floatdp2",
+        mnemonic: "FMAX",
+        heading: "FMAX (scalar)",
+        title: "FMAX (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e604800,
+        excludes: &[],
+        fields: FIELDS_FMAX_FLOAT_FMAX_D_FLOATDP2,
+        operands: OPERANDS_FMAX_FLOAT_FMAX_D_FLOATDP2,
+        asm: "FMAX <Dd> , <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMIN_float.FMIN_S_floatdp2",
+        mnemonic: "FMIN",
+        heading: "FMIN (scalar)",
+        title: "FMIN (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e205800,
+        excludes: &[],
+        fields: FIELDS_FMIN_FLOAT_FMIN_S_FLOATDP2,
+        operands: OPERANDS_FMIN_FLOAT_FMIN_S_FLOATDP2,
+        asm: "FMIN <Sd> , <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMIN_float.FMIN_D_floatdp2",
+        mnemonic: "FMIN",
+        heading: "FMIN (scalar)",
+        title: "FMIN (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e605800,
+        excludes: &[],
+        fields: FIELDS_FMIN_FLOAT_FMIN_D_FLOATDP2,
+        operands: OPERANDS_FMIN_FLOAT_FMIN_D_FLOATDP2,
+        asm: "FMIN <Dd> , <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMAXNM_float.FMAXNM_S_floatdp2",
+        mnemonic: "FMAXNM",
+        heading: "FMAXNM (scalar)",
+        title: "FMAXNM (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e206800,
+        excludes: &[],
+        fields: FIELDS_FMAXNM_FLOAT_FMAXNM_S_FLOATDP2,
+        operands: OPERANDS_FMAXNM_FLOAT_FMAXNM_S_FLOATDP2,
+        asm: "FMAXNM <Sd> , <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMAXNM_float.FMAXNM_D_floatdp2",
+        mnemonic: "FMAXNM",
+        heading: "FMAXNM (scalar)",
+        title: "FMAXNM (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e606800,
+        excludes: &[],
+        fields: FIELDS_FMAXNM_FLOAT_FMAXNM_D_FLOATDP2,
+        operands: OPERANDS_FMAXNM_FLOAT_FMAXNM_D_FLOATDP2,
+        asm: "FMAXNM <Dd> , <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMINNM_float.FMINNM_S_floatdp2",
+        mnemonic: "FMINNM",
+        heading: "FMINNM (scalar)",
+        title: "FMINNM (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e207800,
+        excludes: &[],
+        fields: FIELDS_FMINNM_FLOAT_FMINNM_S_FLOATDP2,
+        operands: OPERANDS_FMINNM_FLOAT_FMINNM_S_FLOATDP2,
+        asm: "FMINNM <Sd> , <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMINNM_float.FMINNM_D_floatdp2",
+        mnemonic: "FMINNM",
+        heading: "FMINNM (scalar)",
+        title: "FMINNM (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc00,
+        value: 0x1e607800,
+        excludes: &[],
+        fields: FIELDS_FMINNM_FLOAT_FMINNM_D_FLOATDP2,
+        operands: OPERANDS_FMINNM_FLOAT_FMINNM_D_FLOATDP2,
+        asm: "FMINNM <Dd> , <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMADD_float.FMADD_S_floatdp3",
+        mnemonic: "FMADD",
+        heading: "FMADD",
+        title: "FMADD -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe08000,
+        value: 0x1f000000,
+        excludes: &[],
+        fields: FIELDS_FMADD_FLOAT_FMADD_S_FLOATDP3,
+        operands: OPERANDS_FMADD_FLOAT_FMADD_S_FLOATDP3,
+        asm: "FMADD <Sd> , <Sn> , <Sm> , <Sa>",
+    },
+    GeneratedInsnSpec {
+        key: "FMADD_float.FMADD_D_floatdp3",
+        mnemonic: "FMADD",
+        heading: "FMADD",
+        title: "FMADD -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe08000,
+        value: 0x1f400000,
+        excludes: &[],
+        fields: FIELDS_FMADD_FLOAT_FMADD_D_FLOATDP3,
+        operands: OPERANDS_FMADD_FLOAT_FMADD_D_FLOATDP3,
+        asm: "FMADD <Dd> , <Dn> , <Dm> , <Da>",
+    },
+    GeneratedInsnSpec {
+        key: "FMSUB_float.FMSUB_S_floatdp3",
+        mnemonic: "FMSUB",
+        heading: "FMSUB",
+        title: "FMSUB -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe08000,
+        value: 0x1f008000,
+        excludes: &[],
+        fields: FIELDS_FMSUB_FLOAT_FMSUB_S_FLOATDP3,
+        operands: OPERANDS_FMSUB_FLOAT_FMSUB_S_FLOATDP3,
+        asm: "FMSUB <Sd> , <Sn> , <Sm> , <Sa>",
+    },
+    GeneratedInsnSpec {
+        key: "FMSUB_float.FMSUB_D_floatdp3",
+        mnemonic: "FMSUB",
+        heading: "FMSUB",
+        title: "FMSUB -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe08000,
+        value: 0x1f408000,
+        excludes: &[],
+        fields: FIELDS_FMSUB_FLOAT_FMSUB_D_FLOATDP3,
+        operands: OPERANDS_FMSUB_FLOAT_FMSUB_D_FLOATDP3,
+        asm: "FMSUB <Dd> , <Dn> , <Dm> , <Da>",
+    },
+    GeneratedInsnSpec {
+        key: "FNMADD_float.FNMADD_S_floatdp3",
+        mnemonic: "FNMADD",
+        heading: "FNMADD",
+        title: "FNMADD -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe08000,
+        value: 0x1f200000,
+        excludes: &[],
+        fields: FIELDS_FNMADD_FLOAT_FNMADD_S_FLOATDP3,
+        operands: OPERANDS_FNMADD_FLOAT_FNMADD_S_FLOATDP3,
+        asm: "FNMADD <Sd> , <Sn> , <Sm> , <Sa>",
+    },
+    GeneratedInsnSpec {
+        key: "FNMADD_float.FNMADD_D_floatdp3",
+        mnemonic: "FNMADD",
+        heading: "FNMADD",
+        title: "FNMADD -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe08000,
+        value: 0x1f600000,
+        excludes: &[],
+        fields: FIELDS_FNMADD_FLOAT_FNMADD_D_FLOATDP3,
+        operands: OPERANDS_FNMADD_FLOAT_FNMADD_D_FLOATDP3,
+        asm: "FNMADD <Dd> , <Dn> , <Dm> , <Da>",
+    },
+    GeneratedInsnSpec {
+        key: "FNMSUB_float.FNMSUB_S_floatdp3",
+        mnemonic: "FNMSUB",
+        heading: "FNMSUB",
+        title: "FNMSUB -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe08000,
+        value: 0x1f208000,
+        excludes: &[],
+        fields: FIELDS_FNMSUB_FLOAT_FNMSUB_S_FLOATDP3,
+        operands: OPERANDS_FNMSUB_FLOAT_FNMSUB_S_FLOATDP3,
+        asm: "FNMSUB <Sd> , <Sn> , <Sm> , <Sa>",
+    },
+    GeneratedInsnSpec {
+        key: "FNMSUB_float.FNMSUB_D_floatdp3",
+        mnemonic: "FNMSUB",
+        heading: "FNMSUB",
+        title: "FNMSUB -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe08000,
+        value: 0x1f608000,
+        excludes: &[],
+        fields: FIELDS_FNMSUB_FLOAT_FNMSUB_D_FLOATDP3,
+        operands: OPERANDS_FNMSUB_FLOAT_FNMSUB_D_FLOATDP3,
+        asm: "FNMSUB <Dd> , <Dn> , <Dm> , <Da>",
+    },
+    GeneratedInsnSpec {
+        key: "FABS_float.FABS_S_floatdp1",
+        mnemonic: "FABS",
+        heading: "FABS (scalar)",
+        title: "FABS (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e20c000,
+        excludes: &[],
+        fields: FIELDS_FABS_FLOAT_FABS_S_FLOATDP1,
+        operands: OPERANDS_FABS_FLOAT_FABS_S_FLOATDP1,
+        asm: "FABS <Sd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FABS_float.FABS_D_floatdp1",
+        mnemonic: "FABS",
+        heading: "FABS (scalar)",
+        title: "FABS (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e60c000,
+        excludes: &[],
+        fields: FIELDS_FABS_FLOAT_FABS_D_FLOATDP1,
+        operands: OPERANDS_FABS_FLOAT_FABS_D_FLOATDP1,
+        asm: "FABS <Dd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FNEG_float.FNEG_S_floatdp1",
+        mnemonic: "FNEG",
+        heading: "FNEG (scalar)",
+        title: "FNEG (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e214000,
+        excludes: &[],
+        fields: FIELDS_FNEG_FLOAT_FNEG_S_FLOATDP1,
+        operands: OPERANDS_FNEG_FLOAT_FNEG_S_FLOATDP1,
+        asm: "FNEG <Sd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FNEG_float.FNEG_D_floatdp1",
+        mnemonic: "FNEG",
+        heading: "FNEG (scalar)",
+        title: "FNEG (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e614000,
+        excludes: &[],
+        fields: FIELDS_FNEG_FLOAT_FNEG_D_FLOATDP1,
+        operands: OPERANDS_FNEG_FLOAT_FNEG_D_FLOATDP1,
+        asm: "FNEG <Dd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FSQRT_float.FSQRT_S_floatdp1",
+        mnemonic: "FSQRT",
+        heading: "FSQRT (scalar)",
+        title: "FSQRT (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e21c000,
+        excludes: &[],
+        fields: FIELDS_FSQRT_FLOAT_FSQRT_S_FLOATDP1,
+        operands: OPERANDS_FSQRT_FLOAT_FSQRT_S_FLOATDP1,
+        asm: "FSQRT <Sd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FSQRT_float.FSQRT_D_floatdp1",
+        mnemonic: "FSQRT",
+        heading: "FSQRT (scalar)",
+        title: "FSQRT (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e61c000,
+        excludes: &[],
+        fields: FIELDS_FSQRT_FLOAT_FSQRT_D_FLOATDP1,
+        operands: OPERANDS_FSQRT_FLOAT_FSQRT_D_FLOATDP1,
+        asm: "FSQRT <Dd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTN_float.FRINTN_S_floatdp1",
+        mnemonic: "FRINTN",
+        heading: "FRINTN (scalar)",
+        title: "FRINTN (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e244000,
+        excludes: &[],
+        fields: FIELDS_FRINTN_FLOAT_FRINTN_S_FLOATDP1,
+        operands: OPERANDS_FRINTN_FLOAT_FRINTN_S_FLOATDP1,
+        asm: "FRINTN <Sd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTN_float.FRINTN_D_floatdp1",
+        mnemonic: "FRINTN",
+        heading: "FRINTN (scalar)",
+        title: "FRINTN (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e644000,
+        excludes: &[],
+        fields: FIELDS_FRINTN_FLOAT_FRINTN_D_FLOATDP1,
+        operands: OPERANDS_FRINTN_FLOAT_FRINTN_D_FLOATDP1,
+        asm: "FRINTN <Dd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTP_float.FRINTP_S_floatdp1",
+        mnemonic: "FRINTP",
+        heading: "FRINTP (scalar)",
+        title: "FRINTP (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e24c000,
+        excludes: &[],
+        fields: FIELDS_FRINTP_FLOAT_FRINTP_S_FLOATDP1,
+        operands: OPERANDS_FRINTP_FLOAT_FRINTP_S_FLOATDP1,
+        asm: "FRINTP <Sd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTP_float.FRINTP_D_floatdp1",
+        mnemonic: "FRINTP",
+        heading: "FRINTP (scalar)",
+        title: "FRINTP (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e64c000,
+        excludes: &[],
+        fields: FIELDS_FRINTP_FLOAT_FRINTP_D_FLOATDP1,
+        operands: OPERANDS_FRINTP_FLOAT_FRINTP_D_FLOATDP1,
+        asm: "FRINTP <Dd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTM_float.FRINTM_S_floatdp1",
+        mnemonic: "FRINTM",
+        heading: "FRINTM (scalar)",
+        title: "FRINTM (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e254000,
+        excludes: &[],
+        fields: FIELDS_FRINTM_FLOAT_FRINTM_S_FLOATDP1,
+        operands: OPERANDS_FRINTM_FLOAT_FRINTM_S_FLOATDP1,
+        asm: "FRINTM <Sd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTM_float.FRINTM_D_floatdp1",
+        mnemonic: "FRINTM",
+        heading: "FRINTM (scalar)",
+        title: "FRINTM (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e654000,
+        excludes: &[],
+        fields: FIELDS_FRINTM_FLOAT_FRINTM_D_FLOATDP1,
+        operands: OPERANDS_FRINTM_FLOAT_FRINTM_D_FLOATDP1,
+        asm: "FRINTM <Dd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTZ_float.FRINTZ_S_floatdp1",
+        mnemonic: "FRINTZ",
+        heading: "FRINTZ (scalar)",
+        title: "FRINTZ (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e25c000,
+        excludes: &[],
+        fields: FIELDS_FRINTZ_FLOAT_FRINTZ_S_FLOATDP1,
+        operands: OPERANDS_FRINTZ_FLOAT_FRINTZ_S_FLOATDP1,
+        asm: "FRINTZ <Sd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTZ_float.FRINTZ_D_floatdp1",
+        mnemonic: "FRINTZ",
+        heading: "FRINTZ (scalar)",
+        title: "FRINTZ (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e65c000,
+        excludes: &[],
+        fields: FIELDS_FRINTZ_FLOAT_FRINTZ_D_FLOATDP1,
+        operands: OPERANDS_FRINTZ_FLOAT_FRINTZ_D_FLOATDP1,
+        asm: "FRINTZ <Dd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTA_float.FRINTA_S_floatdp1",
+        mnemonic: "FRINTA",
+        heading: "FRINTA (scalar)",
+        title: "FRINTA (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e264000,
+        excludes: &[],
+        fields: FIELDS_FRINTA_FLOAT_FRINTA_S_FLOATDP1,
+        operands: OPERANDS_FRINTA_FLOAT_FRINTA_S_FLOATDP1,
+        asm: "FRINTA <Sd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTA_float.FRINTA_D_floatdp1",
+        mnemonic: "FRINTA",
+        heading: "FRINTA (scalar)",
+        title: "FRINTA (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e664000,
+        excludes: &[],
+        fields: FIELDS_FRINTA_FLOAT_FRINTA_D_FLOATDP1,
+        operands: OPERANDS_FRINTA_FLOAT_FRINTA_D_FLOATDP1,
+        asm: "FRINTA <Dd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTX_float.FRINTX_S_floatdp1",
+        mnemonic: "FRINTX",
+        heading: "FRINTX (scalar)",
+        title: "FRINTX (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e274000,
+        excludes: &[],
+        fields: FIELDS_FRINTX_FLOAT_FRINTX_S_FLOATDP1,
+        operands: OPERANDS_FRINTX_FLOAT_FRINTX_S_FLOATDP1,
+        asm: "FRINTX <Sd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTX_float.FRINTX_D_floatdp1",
+        mnemonic: "FRINTX",
+        heading: "FRINTX (scalar)",
+        title: "FRINTX (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e674000,
+        excludes: &[],
+        fields: FIELDS_FRINTX_FLOAT_FRINTX_D_FLOATDP1,
+        operands: OPERANDS_FRINTX_FLOAT_FRINTX_D_FLOATDP1,
+        asm: "FRINTX <Dd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTI_float.FRINTI_S_floatdp1",
+        mnemonic: "FRINTI",
+        heading: "FRINTI (scalar)",
+        title: "FRINTI (scalar) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e27c000,
+        excludes: &[],
+        fields: FIELDS_FRINTI_FLOAT_FRINTI_S_FLOATDP1,
+        operands: OPERANDS_FRINTI_FLOAT_FRINTI_S_FLOATDP1,
+        asm: "FRINTI <Sd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FRINTI_float.FRINTI_D_floatdp1",
+        mnemonic: "FRINTI",
+        heading: "FRINTI (scalar)",
+        title: "FRINTI (scalar) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e67c000,
+        excludes: &[],
+        fields: FIELDS_FRINTI_FLOAT_FRINTI_D_FLOATDP1,
+        operands: OPERANDS_FRINTI_FLOAT_FRINTI_D_FLOATDP1,
+        asm: "FRINTI <Dd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVT_float.FCVT_DS_floatdp1",
+        mnemonic: "FCVT",
+        heading: "FCVT",
+        title: "FCVT -- A64",
+        encoding_label: "Single-precision to double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e22c000,
+        excludes: &[],
+        fields: FIELDS_FCVT_FLOAT_FCVT_DS_FLOATDP1,
+        operands: OPERANDS_FCVT_FLOAT_FCVT_DS_FLOATDP1,
+        asm: "FCVT <Dd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVT_float.FCVT_SD_floatdp1",
+        mnemonic: "FCVT",
+        heading: "FCVT",
+        title: "FCVT -- A64",
+        encoding_label: "Double-precision to single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e624000,
+        excludes: &[],
+        fields: FIELDS_FCVT_FLOAT_FCVT_SD_FLOATDP1,
+        operands: OPERANDS_FCVT_FLOAT_FCVT_SD_FLOATDP1,
+        asm: "FCVT <Sd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCMP_float.FCMP_S_floatcmp",
+        mnemonic: "FCMP",
+        heading: "FCMP",
+        title: "FCMP -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc1f,
+        value: 0x1e202000,
+        excludes: &[],
+        fields: FIELDS_FCMP_FLOAT_FCMP_S_FLOATCMP,
+        operands: OPERANDS_FCMP_FLOAT_FCMP_S_FLOATCMP,
+        asm: "FCMP <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FCMP_float.FCMP_SZ_floatcmp",
+        mnemonic: "FCMP",
+        heading: "FCMP",
+        title: "FCMP -- A64",
+        encoding_label: "Single-precision, zero",
+        mask: 0xfffffc1f,
+        value: 0x1e202008,
+        excludes: &[],
+        fields: FIELDS_FCMP_FLOAT_FCMP_SZ_FLOATCMP,
+        operands: OPERANDS_FCMP_FLOAT_FCMP_SZ_FLOATCMP,
+        asm: "FCMP <Sn> , #0.0",
+    },
+    GeneratedInsnSpec {
+        key: "FCMP_float.FCMP_D_floatcmp",
+        mnemonic: "FCMP",
+        heading: "FCMP",
+        title: "FCMP -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc1f,
+        value: 0x1e602000,
+        excludes: &[],
+        fields: FIELDS_FCMP_FLOAT_FCMP_D_FLOATCMP,
+        operands: OPERANDS_FCMP_FLOAT_FCMP_D_FLOATCMP,
+        asm: "FCMP <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FCMP_float.FCMP_DZ_floatcmp",
+        mnemonic: "FCMP",
+        heading: "FCMP",
+        title: "FCMP -- A64",
+        encoding_label: "Double-precision, zero",
+        mask: 0xfffffc1f,
+        value: 0x1e602008,
+        excludes: &[],
+        fields: FIELDS_FCMP_FLOAT_FCMP_DZ_FLOATCMP,
+        operands: OPERANDS_FCMP_FLOAT_FCMP_DZ_FLOATCMP,
+        asm: "FCMP <Dn> , #0.0",
+    },
+    GeneratedInsnSpec {
+        key: "FCMPE_float.FCMPE_S_floatcmp",
+        mnemonic: "FCMPE",
+        heading: "FCMPE",
+        title: "FCMPE -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe0fc1f,
+        value: 0x1e202010,
+        excludes: &[],
+        fields: FIELDS_FCMPE_FLOAT_FCMPE_S_FLOATCMP,
+        operands: OPERANDS_FCMPE_FLOAT_FCMPE_S_FLOATCMP,
+        asm: "FCMPE <Sn> , <Sm>",
+    },
+    GeneratedInsnSpec {
+        key: "FCMPE_float.FCMPE_SZ_floatcmp",
+        mnemonic: "FCMPE",
+        heading: "FCMPE",
+        title: "FCMPE -- A64",
+        encoding_label: "Single-precision, zero",
+        mask: 0xfffffc1f,
+        value: 0x1e202018,
+        excludes: &[],
+        fields: FIELDS_FCMPE_FLOAT_FCMPE_SZ_FLOATCMP,
+        operands: OPERANDS_FCMPE_FLOAT_FCMPE_SZ_FLOATCMP,
+        asm: "FCMPE <Sn> , #0.0",
+    },
+    GeneratedInsnSpec {
+        key: "FCMPE_float.FCMPE_D_floatcmp",
+        mnemonic: "FCMPE",
+        heading: "FCMPE",
+        title: "FCMPE -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe0fc1f,
+        value: 0x1e602010,
+        excludes: &[],
+        fields: FIELDS_FCMPE_FLOAT_FCMPE_D_FLOATCMP,
+        operands: OPERANDS_FCMPE_FLOAT_FCMPE_D_FLOATCMP,
+        asm: "FCMPE <Dn> , <Dm>",
+    },
+    GeneratedInsnSpec {
+        key: "FCMPE_float.FCMPE_DZ_floatcmp",
+        mnemonic: "FCMPE",
+        heading: "FCMPE",
+        title: "FCMPE -- A64",
+        encoding_label: "Double-precision, zero",
+        mask: 0xfffffc1f,
+        value: 0x1e602018,
+        excludes: &[],
+        fields: FIELDS_FCMPE_FLOAT_FCMPE_DZ_FLOATCMP,
+        operands: OPERANDS_FCMPE_FLOAT_FCMPE_DZ_FLOATCMP,
+        asm: "FCMPE <Dn> , #0.0",
+    },
+    GeneratedInsnSpec {
+        key: "FCCMP_float.FCCMP_S_floatccmp",
+        mnemonic: "FCCMP",
+        heading: "FCCMP",
+        title: "FCCMP -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe00c10,
+        value: 0x1e200400,
+        excludes: &[],
+        fields: FIELDS_FCCMP_FLOAT_FCCMP_S_FLOATCCMP,
+        operands: OPERANDS_FCCMP_FLOAT_FCCMP_S_FLOATCCMP,
+        asm: "FCCMP <Sn> , <Sm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "FCCMP_float.FCCMP_D_floatccmp",
+        mnemonic: "FCCMP",
+        heading: "FCCMP",
+        title: "FCCMP -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe00c10,
+        value: 0x1e600400,
+        excludes: &[],
+        fields: FIELDS_FCCMP_FLOAT_FCCMP_D_FLOATCCMP,
+        operands: OPERANDS_FCCMP_FLOAT_FCCMP_D_FLOATCCMP,
+        asm: "FCCMP <Dn> , <Dm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "FCCMPE_float.FCCMPE_S_floatccmp",
+        mnemonic: "FCCMPE",
+        heading: "FCCMPE",
+        title: "FCCMPE -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe00c10,
+        value: 0x1e200410,
+        excludes: &[],
+        fields: FIELDS_FCCMPE_FLOAT_FCCMPE_S_FLOATCCMP,
+        operands: OPERANDS_FCCMPE_FLOAT_FCCMPE_S_FLOATCCMP,
+        asm: "FCCMPE <Sn> , <Sm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "FCCMPE_float.FCCMPE_D_floatccmp",
+        mnemonic: "FCCMPE",
+        heading: "FCCMPE",
+        title: "FCCMPE -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe00c10,
+        value: 0x1e600410,
+        excludes: &[],
+        fields: FIELDS_FCCMPE_FLOAT_FCCMPE_D_FLOATCCMP,
+        operands: OPERANDS_FCCMPE_FLOAT_FCCMPE_D_FLOATCCMP,
+        asm: "FCCMPE <Dn> , <Dm> , # <nzcv> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "FCSEL_float.FCSEL_S_floatsel",
+        mnemonic: "FCSEL",
+        heading: "FCSEL",
+        title: "FCSEL -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe00c00,
+        value: 0x1e200c00,
+        excludes: &[],
+        fields: FIELDS_FCSEL_FLOAT_FCSEL_S_FLOATSEL,
+        operands: OPERANDS_FCSEL_FLOAT_FCSEL_S_FLOATSEL,
+        asm: "FCSEL <Sd> , <Sn> , <Sm> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "FCSEL_float.FCSEL_D_floatsel",
+        mnemonic: "FCSEL",
+        heading: "FCSEL",
+        title: "FCSEL -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe00c00,
+        value: 0x1e600c00,
+        excludes: &[],
+        fields: FIELDS_FCSEL_FLOAT_FCSEL_D_FLOATSEL,
+        operands: OPERANDS_FCSEL_FLOAT_FCSEL_D_FLOATSEL,
+        asm: "FCSEL <Dd> , <Dn> , <Dm> , <cond>",
+    },
+    GeneratedInsnSpec {
+        key: "FMOV_float_imm.FMOV_S_floatimm",
+        mnemonic: "FMOV",
+        heading: "FMOV (scalar, immediate)",
+        title: "FMOV (scalar, immediate) -- A64",
+        encoding_label: "Single-precision",
+        mask: 0xffe01fe0,
+        value: 0x1e201000,
+        excludes: &[],
+        fields: FIELDS_FMOV_FLOAT_IMM_FMOV_S_FLOATIMM,
+        operands: OPERANDS_FMOV_FLOAT_IMM_FMOV_S_FLOATIMM,
+        asm: "FMOV <Sd> , # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "FMOV_float_imm.FMOV_D_floatimm",
+        mnemonic: "FMOV",
+        heading: "FMOV (scalar, immediate)",
+        title: "FMOV (scalar, immediate) -- A64",
+        encoding_label: "Double-precision",
+        mask: 0xffe01fe0,
+        value: 0x1e601000,
+        excludes: &[],
+        fields: FIELDS_FMOV_FLOAT_IMM_FMOV_D_FLOATIMM,
+        operands: OPERANDS_FMOV_FLOAT_IMM_FMOV_D_FLOATIMM,
+        asm: "FMOV <Dd> , # <imm>",
+    },
+    GeneratedInsnSpec {
+        key: "SCVTF_float_int.SCVTF_S32_float2int",
+        mnemonic: "SCVTF",
+        heading: "SCVTF (scalar, integer)",
+        title: "SCVTF (scalar, integer) -- A64",
+        encoding_label: "32-bit to single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e220000,
+        excludes: &[],
+        fields: FIELDS_SCVTF_FLOAT_INT_SCVTF_S32_FLOAT2INT,
+        operands: OPERANDS_SCVTF_FLOAT_INT_SCVTF_S32_FLOAT2INT,
+        asm: "SCVTF <Sd> , <Wn>",
+    },
+    GeneratedInsnSpec {
+        key: "SCVTF_float_int.SCVTF_D32_float2int",
+        mnemonic: "SCVTF",
+        heading: "SCVTF (scalar, integer)",
+        title: "SCVTF (scalar, integer) -- A64",
+        encoding_label: "32-bit to double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e620000,
+        excludes: &[],
+        fields: FIELDS_SCVTF_FLOAT_INT_SCVTF_D32_FLOAT2INT,
+        operands: OPERANDS_SCVTF_FLOAT_INT_SCVTF_D32_FLOAT2INT,
+        asm: "SCVTF <Dd> , <Wn>",
+    },
+    GeneratedInsnSpec {
+        key: "SCVTF_float_int.SCVTF_S64_float2int",
+        mnemonic: "SCVTF",
+        heading: "SCVTF (scalar, integer)",
+        title: "SCVTF (scalar, integer) -- A64",
+        encoding_label: "64-bit to single-precision",
+        mask: 0xfffffc00,
+        value: 0x9e220000,
+        excludes: &[],
+        fields: FIELDS_SCVTF_FLOAT_INT_SCVTF_S64_FLOAT2INT,
+        operands: OPERANDS_SCVTF_FLOAT_INT_SCVTF_S64_FLOAT2INT,
+        asm: "SCVTF <Sd> , <Xn>",
+    },
+    GeneratedInsnSpec {
+        key: "SCVTF_float_int.SCVTF_D64_float2int",
+        mnemonic: "SCVTF",
+        heading: "SCVTF (scalar, integer)",
+        title: "SCVTF (scalar, integer) -- A64",
+        encoding_label: "64-bit to double-precision",
+        mask: 0xfffffc00,
+        value: 0x9e620000,
+        excludes: &[],
+        fields: FIELDS_SCVTF_FLOAT_INT_SCVTF_D64_FLOAT2INT,
+        operands: OPERANDS_SCVTF_FLOAT_INT_SCVTF_D64_FLOAT2INT,
+        asm: "SCVTF <Dd> , <Xn>",
+    },
+    GeneratedInsnSpec {
+        key: "UCVTF_float_int.UCVTF_S32_float2int",
+        mnemonic: "UCVTF",
+        heading: "UCVTF (scalar, integer)",
+        title: "UCVTF (scalar, integer) -- A64",
+        encoding_label: "32-bit to single-precision",
+        mask: 0xfffffc00,
+        value: 0x1e230000,
+        excludes: &[],
+        fields: FIELDS_UCVTF_FLOAT_INT_UCVTF_S32_FLOAT2INT,
+        operands: OPERANDS_UCVTF_FLOAT_INT_UCVTF_S32_FLOAT2INT,
+        asm: "UCVTF <Sd> , <Wn>",
+    },
+    GeneratedInsnSpec {
+        key: "UCVTF_float_int.UCVTF_D32_float2int",
+        mnemonic: "UCVTF",
+        heading: "UCVTF (scalar, integer)",
+        title: "UCVTF (scalar, integer) -- A64",
+        encoding_label: "32-bit to double-precision",
+        mask: 0xfffffc00,
+        value: 0x1e630000,
+        excludes: &[],
+        fields: FIELDS_UCVTF_FLOAT_INT_UCVTF_D32_FLOAT2INT,
+        operands: OPERANDS_UCVTF_FLOAT_INT_UCVTF_D32_FLOAT2INT,
+        asm: "UCVTF <Dd> , <Wn>",
+    },
+    GeneratedInsnSpec {
+        key: "UCVTF_float_int.UCVTF_S64_float2int",
+        mnemonic: "UCVTF",
+        heading: "UCVTF (scalar, integer)",
+        title: "UCVTF (scalar, integer) -- A64",
+        encoding_label: "64-bit to single-precision",
+        mask: 0xfffffc00,
+        value: 0x9e230000,
+        excludes: &[],
+        fields: FIELDS_UCVTF_FLOAT_INT_UCVTF_S64_FLOAT2INT,
+        operands: OPERANDS_UCVTF_FLOAT_INT_UCVTF_S64_FLOAT2INT,
+        asm: "UCVTF <Sd> , <Xn>",
+    },
+    GeneratedInsnSpec {
+        key: "UCVTF_float_int.UCVTF_D64_float2int",
+        mnemonic: "UCVTF",
+        heading: "UCVTF (scalar, integer)",
+        title: "UCVTF (scalar, integer) -- A64",
+        encoding_label: "64-bit to double-precision",
+        mask: 0xfffffc00,
+        value: 0x9e630000,
+        excludes: &[],
+        fields: FIELDS_UCVTF_FLOAT_INT_UCVTF_D64_FLOAT2INT,
+        operands: OPERANDS_UCVTF_FLOAT_INT_UCVTF_D64_FLOAT2INT,
+        asm: "UCVTF <Dd> , <Xn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTZS_float_int.FCVTZS_32S_float2int",
+        mnemonic: "FCVTZS",
+        heading: "FCVTZS (scalar, integer)",
+        title: "FCVTZS (scalar, integer) -- A64",
+        encoding_label: "Single-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e380000,
+        excludes: &[],
+        fields: FIELDS_FCVTZS_FLOAT_INT_FCVTZS_32S_FLOAT2INT,
+        operands: OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_32S_FLOAT2INT,
+        asm: "FCVTZS <Wd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTZS_float_int.FCVTZS_64S_float2int",
+        mnemonic: "FCVTZS",
+        heading: "FCVTZS (scalar, integer)",
+        title: "FCVTZS (scalar, integer) -- A64",
+        encoding_label: "Single-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e380000,
+        excludes: &[],
+        fields: FIELDS_FCVTZS_FLOAT_INT_FCVTZS_64S_FLOAT2INT,
+        operands: OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_64S_FLOAT2INT,
+        asm: "FCVTZS <Xd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTZS_float_int.FCVTZS_32D_float2int",
+        mnemonic: "FCVTZS",
+        heading: "FCVTZS (scalar, integer)",
+        title: "FCVTZS (scalar, integer) -- A64",
+        encoding_label: "Double-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e780000,
+        excludes: &[],
+        fields: FIELDS_FCVTZS_FLOAT_INT_FCVTZS_32D_FLOAT2INT,
+        operands: OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_32D_FLOAT2INT,
+        asm: "FCVTZS <Wd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTZS_float_int.FCVTZS_64D_float2int",
+        mnemonic: "FCVTZS",
+        heading: "FCVTZS (scalar, integer)",
+        title: "FCVTZS (scalar, integer) -- A64",
+        encoding_label: "Double-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e780000,
+        excludes: &[],
+        fields: FIELDS_FCVTZS_FLOAT_INT_FCVTZS_64D_FLOAT2INT,
+        operands: OPERANDS_FCVTZS_FLOAT_INT_FCVTZS_64D_FLOAT2INT,
+        asm: "FCVTZS <Xd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTZU_float_int.FCVTZU_32S_float2int",
+        mnemonic: "FCVTZU",
+        heading: "FCVTZU (scalar, integer)",
+        title: "FCVTZU (scalar, integer) -- A64",
+        encoding_label: "Single-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e390000,
+        excludes: &[],
+        fields: FIELDS_FCVTZU_FLOAT_INT_FCVTZU_32S_FLOAT2INT,
+        operands: OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_32S_FLOAT2INT,
+        asm: "FCVTZU <Wd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTZU_float_int.FCVTZU_64S_float2int",
+        mnemonic: "FCVTZU",
+        heading: "FCVTZU (scalar, integer)",
+        title: "FCVTZU (scalar, integer) -- A64",
+        encoding_label: "Single-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e390000,
+        excludes: &[],
+        fields: FIELDS_FCVTZU_FLOAT_INT_FCVTZU_64S_FLOAT2INT,
+        operands: OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_64S_FLOAT2INT,
+        asm: "FCVTZU <Xd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTZU_float_int.FCVTZU_32D_float2int",
+        mnemonic: "FCVTZU",
+        heading: "FCVTZU (scalar, integer)",
+        title: "FCVTZU (scalar, integer) -- A64",
+        encoding_label: "Double-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e790000,
+        excludes: &[],
+        fields: FIELDS_FCVTZU_FLOAT_INT_FCVTZU_32D_FLOAT2INT,
+        operands: OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_32D_FLOAT2INT,
+        asm: "FCVTZU <Wd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTZU_float_int.FCVTZU_64D_float2int",
+        mnemonic: "FCVTZU",
+        heading: "FCVTZU (scalar, integer)",
+        title: "FCVTZU (scalar, integer) -- A64",
+        encoding_label: "Double-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e790000,
+        excludes: &[],
+        fields: FIELDS_FCVTZU_FLOAT_INT_FCVTZU_64D_FLOAT2INT,
+        operands: OPERANDS_FCVTZU_FLOAT_INT_FCVTZU_64D_FLOAT2INT,
+        asm: "FCVTZU <Xd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTNS_float.FCVTNS_32S_float2int",
+        mnemonic: "FCVTNS",
+        heading: "FCVTNS (scalar)",
+        title: "FCVTNS (scalar) -- A64",
+        encoding_label: "Single-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e200000,
+        excludes: &[],
+        fields: FIELDS_FCVTNS_FLOAT_FCVTNS_32S_FLOAT2INT,
+        operands: OPERANDS_FCVTNS_FLOAT_FCVTNS_32S_FLOAT2INT,
+        asm: "FCVTNS <Wd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTNS_float.FCVTNS_64S_float2int",
+        mnemonic: "FCVTNS",
+        heading: "FCVTNS (scalar)",
+        title: "FCVTNS (scalar) -- A64",
+        encoding_label: "Single-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e200000,
+        excludes: &[],
+        fields: FIELDS_FCVTNS_FLOAT_FCVTNS_64S_FLOAT2INT,
+        operands: OPERANDS_FCVTNS_FLOAT_FCVTNS_64S_FLOAT2INT,
+        asm: "FCVTNS <Xd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTNS_float.FCVTNS_32D_float2int",
+        mnemonic: "FCVTNS",
+        heading: "FCVTNS (scalar)",
+        title: "FCVTNS (scalar) -- A64",
+        encoding_label: "Double-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e600000,
+        excludes: &[],
+        fields: FIELDS_FCVTNS_FLOAT_FCVTNS_32D_FLOAT2INT,
+        operands: OPERANDS_FCVTNS_FLOAT_FCVTNS_32D_FLOAT2INT,
+        asm: "FCVTNS <Wd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTNS_float.FCVTNS_64D_float2int",
+        mnemonic: "FCVTNS",
+        heading: "FCVTNS (scalar)",
+        title: "FCVTNS (scalar) -- A64",
+        encoding_label: "Double-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e600000,
+        excludes: &[],
+        fields: FIELDS_FCVTNS_FLOAT_FCVTNS_64D_FLOAT2INT,
+        operands: OPERANDS_FCVTNS_FLOAT_FCVTNS_64D_FLOAT2INT,
+        asm: "FCVTNS <Xd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTNU_float.FCVTNU_32S_float2int",
+        mnemonic: "FCVTNU",
+        heading: "FCVTNU (scalar)",
+        title: "FCVTNU (scalar) -- A64",
+        encoding_label: "Single-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e210000,
+        excludes: &[],
+        fields: FIELDS_FCVTNU_FLOAT_FCVTNU_32S_FLOAT2INT,
+        operands: OPERANDS_FCVTNU_FLOAT_FCVTNU_32S_FLOAT2INT,
+        asm: "FCVTNU <Wd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTNU_float.FCVTNU_64S_float2int",
+        mnemonic: "FCVTNU",
+        heading: "FCVTNU (scalar)",
+        title: "FCVTNU (scalar) -- A64",
+        encoding_label: "Single-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e210000,
+        excludes: &[],
+        fields: FIELDS_FCVTNU_FLOAT_FCVTNU_64S_FLOAT2INT,
+        operands: OPERANDS_FCVTNU_FLOAT_FCVTNU_64S_FLOAT2INT,
+        asm: "FCVTNU <Xd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTNU_float.FCVTNU_32D_float2int",
+        mnemonic: "FCVTNU",
+        heading: "FCVTNU (scalar)",
+        title: "FCVTNU (scalar) -- A64",
+        encoding_label: "Double-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e610000,
+        excludes: &[],
+        fields: FIELDS_FCVTNU_FLOAT_FCVTNU_32D_FLOAT2INT,
+        operands: OPERANDS_FCVTNU_FLOAT_FCVTNU_32D_FLOAT2INT,
+        asm: "FCVTNU <Wd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTNU_float.FCVTNU_64D_float2int",
+        mnemonic: "FCVTNU",
+        heading: "FCVTNU (scalar)",
+        title: "FCVTNU (scalar) -- A64",
+        encoding_label: "Double-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e610000,
+        excludes: &[],
+        fields: FIELDS_FCVTNU_FLOAT_FCVTNU_64D_FLOAT2INT,
+        operands: OPERANDS_FCVTNU_FLOAT_FCVTNU_64D_FLOAT2INT,
+        asm: "FCVTNU <Xd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTMS_float.FCVTMS_32S_float2int",
+        mnemonic: "FCVTMS",
+        heading: "FCVTMS (scalar)",
+        title: "FCVTMS (scalar) -- A64",
+        encoding_label: "Single-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e300000,
+        excludes: &[],
+        fields: FIELDS_FCVTMS_FLOAT_FCVTMS_32S_FLOAT2INT,
+        operands: OPERANDS_FCVTMS_FLOAT_FCVTMS_32S_FLOAT2INT,
+        asm: "FCVTMS <Wd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTMS_float.FCVTMS_64S_float2int",
+        mnemonic: "FCVTMS",
+        heading: "FCVTMS (scalar)",
+        title: "FCVTMS (scalar) -- A64",
+        encoding_label: "Single-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e300000,
+        excludes: &[],
+        fields: FIELDS_FCVTMS_FLOAT_FCVTMS_64S_FLOAT2INT,
+        operands: OPERANDS_FCVTMS_FLOAT_FCVTMS_64S_FLOAT2INT,
+        asm: "FCVTMS <Xd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTMS_float.FCVTMS_32D_float2int",
+        mnemonic: "FCVTMS",
+        heading: "FCVTMS (scalar)",
+        title: "FCVTMS (scalar) -- A64",
+        encoding_label: "Double-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e700000,
+        excludes: &[],
+        fields: FIELDS_FCVTMS_FLOAT_FCVTMS_32D_FLOAT2INT,
+        operands: OPERANDS_FCVTMS_FLOAT_FCVTMS_32D_FLOAT2INT,
+        asm: "FCVTMS <Wd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTMS_float.FCVTMS_64D_float2int",
+        mnemonic: "FCVTMS",
+        heading: "FCVTMS (scalar)",
+        title: "FCVTMS (scalar) -- A64",
+        encoding_label: "Double-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e700000,
+        excludes: &[],
+        fields: FIELDS_FCVTMS_FLOAT_FCVTMS_64D_FLOAT2INT,
+        operands: OPERANDS_FCVTMS_FLOAT_FCVTMS_64D_FLOAT2INT,
+        asm: "FCVTMS <Xd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTMU_float.FCVTMU_32S_float2int",
+        mnemonic: "FCVTMU",
+        heading: "FCVTMU (scalar)",
+        title: "FCVTMU (scalar) -- A64",
+        encoding_label: "Single-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e310000,
+        excludes: &[],
+        fields: FIELDS_FCVTMU_FLOAT_FCVTMU_32S_FLOAT2INT,
+        operands: OPERANDS_FCVTMU_FLOAT_FCVTMU_32S_FLOAT2INT,
+        asm: "FCVTMU <Wd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTMU_float.FCVTMU_64S_float2int",
+        mnemonic: "FCVTMU",
+        heading: "FCVTMU (scalar)",
+        title: "FCVTMU (scalar) -- A64",
+        encoding_label: "Single-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e310000,
+        excludes: &[],
+        fields: FIELDS_FCVTMU_FLOAT_FCVTMU_64S_FLOAT2INT,
+        operands: OPERANDS_FCVTMU_FLOAT_FCVTMU_64S_FLOAT2INT,
+        asm: "FCVTMU <Xd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTMU_float.FCVTMU_32D_float2int",
+        mnemonic: "FCVTMU",
+        heading: "FCVTMU (scalar)",
+        title: "FCVTMU (scalar) -- A64",
+        encoding_label: "Double-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e710000,
+        excludes: &[],
+        fields: FIELDS_FCVTMU_FLOAT_FCVTMU_32D_FLOAT2INT,
+        operands: OPERANDS_FCVTMU_FLOAT_FCVTMU_32D_FLOAT2INT,
+        asm: "FCVTMU <Wd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTMU_float.FCVTMU_64D_float2int",
+        mnemonic: "FCVTMU",
+        heading: "FCVTMU (scalar)",
+        title: "FCVTMU (scalar) -- A64",
+        encoding_label: "Double-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e710000,
+        excludes: &[],
+        fields: FIELDS_FCVTMU_FLOAT_FCVTMU_64D_FLOAT2INT,
+        operands: OPERANDS_FCVTMU_FLOAT_FCVTMU_64D_FLOAT2INT,
+        asm: "FCVTMU <Xd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTPS_float.FCVTPS_32S_float2int",
+        mnemonic: "FCVTPS",
+        heading: "FCVTPS (scalar)",
+        title: "FCVTPS (scalar) -- A64",
+        encoding_label: "Single-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e280000,
+        excludes: &[],
+        fields: FIELDS_FCVTPS_FLOAT_FCVTPS_32S_FLOAT2INT,
+        operands: OPERANDS_FCVTPS_FLOAT_FCVTPS_32S_FLOAT2INT,
+        asm: "FCVTPS <Wd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTPS_float.FCVTPS_64S_float2int",
+        mnemonic: "FCVTPS",
+        heading: "FCVTPS (scalar)",
+        title: "FCVTPS (scalar) -- A64",
+        encoding_label: "Single-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e280000,
+        excludes: &[],
+        fields: FIELDS_FCVTPS_FLOAT_FCVTPS_64S_FLOAT2INT,
+        operands: OPERANDS_FCVTPS_FLOAT_FCVTPS_64S_FLOAT2INT,
+        asm: "FCVTPS <Xd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTPS_float.FCVTPS_32D_float2int",
+        mnemonic: "FCVTPS",
+        heading: "FCVTPS (scalar)",
+        title: "FCVTPS (scalar) -- A64",
+        encoding_label: "Double-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e680000,
+        excludes: &[],
+        fields: FIELDS_FCVTPS_FLOAT_FCVTPS_32D_FLOAT2INT,
+        operands: OPERANDS_FCVTPS_FLOAT_FCVTPS_32D_FLOAT2INT,
+        asm: "FCVTPS <Wd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTPS_float.FCVTPS_64D_float2int",
+        mnemonic: "FCVTPS",
+        heading: "FCVTPS (scalar)",
+        title: "FCVTPS (scalar) -- A64",
+        encoding_label: "Double-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e680000,
+        excludes: &[],
+        fields: FIELDS_FCVTPS_FLOAT_FCVTPS_64D_FLOAT2INT,
+        operands: OPERANDS_FCVTPS_FLOAT_FCVTPS_64D_FLOAT2INT,
+        asm: "FCVTPS <Xd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTPU_float.FCVTPU_32S_float2int",
+        mnemonic: "FCVTPU",
+        heading: "FCVTPU (scalar)",
+        title: "FCVTPU (scalar) -- A64",
+        encoding_label: "Single-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e290000,
+        excludes: &[],
+        fields: FIELDS_FCVTPU_FLOAT_FCVTPU_32S_FLOAT2INT,
+        operands: OPERANDS_FCVTPU_FLOAT_FCVTPU_32S_FLOAT2INT,
+        asm: "FCVTPU <Wd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTPU_float.FCVTPU_64S_float2int",
+        mnemonic: "FCVTPU",
+        heading: "FCVTPU (scalar)",
+        title: "FCVTPU (scalar) -- A64",
+        encoding_label: "Single-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e290000,
+        excludes: &[],
+        fields: FIELDS_FCVTPU_FLOAT_FCVTPU_64S_FLOAT2INT,
+        operands: OPERANDS_FCVTPU_FLOAT_FCVTPU_64S_FLOAT2INT,
+        asm: "FCVTPU <Xd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTPU_float.FCVTPU_32D_float2int",
+        mnemonic: "FCVTPU",
+        heading: "FCVTPU (scalar)",
+        title: "FCVTPU (scalar) -- A64",
+        encoding_label: "Double-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e690000,
+        excludes: &[],
+        fields: FIELDS_FCVTPU_FLOAT_FCVTPU_32D_FLOAT2INT,
+        operands: OPERANDS_FCVTPU_FLOAT_FCVTPU_32D_FLOAT2INT,
+        asm: "FCVTPU <Wd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTPU_float.FCVTPU_64D_float2int",
+        mnemonic: "FCVTPU",
+        heading: "FCVTPU (scalar)",
+        title: "FCVTPU (scalar) -- A64",
+        encoding_label: "Double-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e690000,
+        excludes: &[],
+        fields: FIELDS_FCVTPU_FLOAT_FCVTPU_64D_FLOAT2INT,
+        operands: OPERANDS_FCVTPU_FLOAT_FCVTPU_64D_FLOAT2INT,
+        asm: "FCVTPU <Xd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTAS_float.FCVTAS_32S_float2int",
+        mnemonic: "FCVTAS",
+        heading: "FCVTAS (scalar)",
+        title: "FCVTAS (scalar) -- A64",
+        encoding_label: "Single-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e240000,
+        excludes: &[],
+        fields: FIELDS_FCVTAS_FLOAT_FCVTAS_32S_FLOAT2INT,
+        operands: OPERANDS_FCVTAS_FLOAT_FCVTAS_32S_FLOAT2INT,
+        asm: "FCVTAS <Wd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTAS_float.FCVTAS_64S_float2int",
+        mnemonic: "FCVTAS",
+        heading: "FCVTAS (scalar)",
+        title: "FCVTAS (scalar) -- A64",
+        encoding_label: "Single-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e240000,
+        excludes: &[],
+        fields: FIELDS_FCVTAS_FLOAT_FCVTAS_64S_FLOAT2INT,
+        operands: OPERANDS_FCVTAS_FLOAT_FCVTAS_64S_FLOAT2INT,
+        asm: "FCVTAS <Xd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTAS_float.FCVTAS_32D_float2int",
+        mnemonic: "FCVTAS",
+        heading: "FCVTAS (scalar)",
+        title: "FCVTAS (scalar) -- A64",
+        encoding_label: "Double-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e640000,
+        excludes: &[],
+        fields: FIELDS_FCVTAS_FLOAT_FCVTAS_32D_FLOAT2INT,
+        operands: OPERANDS_FCVTAS_FLOAT_FCVTAS_32D_FLOAT2INT,
+        asm: "FCVTAS <Wd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTAS_float.FCVTAS_64D_float2int",
+        mnemonic: "FCVTAS",
+        heading: "FCVTAS (scalar)",
+        title: "FCVTAS (scalar) -- A64",
+        encoding_label: "Double-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e640000,
+        excludes: &[],
+        fields: FIELDS_FCVTAS_FLOAT_FCVTAS_64D_FLOAT2INT,
+        operands: OPERANDS_FCVTAS_FLOAT_FCVTAS_64D_FLOAT2INT,
+        asm: "FCVTAS <Xd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTAU_float.FCVTAU_32S_float2int",
+        mnemonic: "FCVTAU",
+        heading: "FCVTAU (scalar)",
+        title: "FCVTAU (scalar) -- A64",
+        encoding_label: "Single-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e250000,
+        excludes: &[],
+        fields: FIELDS_FCVTAU_FLOAT_FCVTAU_32S_FLOAT2INT,
+        operands: OPERANDS_FCVTAU_FLOAT_FCVTAU_32S_FLOAT2INT,
+        asm: "FCVTAU <Wd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTAU_float.FCVTAU_64S_float2int",
+        mnemonic: "FCVTAU",
+        heading: "FCVTAU (scalar)",
+        title: "FCVTAU (scalar) -- A64",
+        encoding_label: "Single-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e250000,
+        excludes: &[],
+        fields: FIELDS_FCVTAU_FLOAT_FCVTAU_64S_FLOAT2INT,
+        operands: OPERANDS_FCVTAU_FLOAT_FCVTAU_64S_FLOAT2INT,
+        asm: "FCVTAU <Xd> , <Sn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTAU_float.FCVTAU_32D_float2int",
+        mnemonic: "FCVTAU",
+        heading: "FCVTAU (scalar)",
+        title: "FCVTAU (scalar) -- A64",
+        encoding_label: "Double-precision to 32-bit",
+        mask: 0xfffffc00,
+        value: 0x1e650000,
+        excludes: &[],
+        fields: FIELDS_FCVTAU_FLOAT_FCVTAU_32D_FLOAT2INT,
+        operands: OPERANDS_FCVTAU_FLOAT_FCVTAU_32D_FLOAT2INT,
+        asm: "FCVTAU <Wd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "FCVTAU_float.FCVTAU_64D_float2int",
+        mnemonic: "FCVTAU",
+        heading: "FCVTAU (scalar)",
+        title: "FCVTAU (scalar) -- A64",
+        encoding_label: "Double-precision to 64-bit",
+        mask: 0xfffffc00,
+        value: 0x9e650000,
+        excludes: &[],
+        fields: FIELDS_FCVTAU_FLOAT_FCVTAU_64D_FLOAT2INT,
+        operands: OPERANDS_FCVTAU_FLOAT_FCVTAU_64D_FLOAT2INT,
+        asm: "FCVTAU <Xd> , <Dn>",
+    },
+    GeneratedInsnSpec {
+        key: "LDR_reg_fpsimd.LDR_B_ldst_regoff",
+        mnemonic: "LDR",
+        heading: "LDR (register, SIMD&FP)",
+        title: "LDR (register, SIMD&FP) -- A64",
+        encoding_label: "8-bit with extended register offset",
+        mask: 0xffe00c00,
+        value: 0x3c600800,
+        excludes: &[(0x0000e000, 0x00006000)],
+        fields: FIELDS_LDR_REG_FPSIMD_LDR_B_LDST_REGOFF,
+        operands: OPERANDS_LDR_REG_FPSIMD_LDR_B_LDST_REGOFF,
+        asm: "LDR <Bt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDR_reg_fpsimd.LDR_BL_ldst_regoff",
+        mnemonic: "LDR",
+        heading: "LDR (register, SIMD&FP)",
+        title: "LDR (register, SIMD&FP) -- A64",
+        encoding_label: "8-bit with shifted register offset",
+        mask: 0xffe0ec00,
+        value: 0x3c606800,
+        excludes: &[],
+        fields: FIELDS_LDR_REG_FPSIMD_LDR_BL_LDST_REGOFF,
+        operands: OPERANDS_LDR_REG_FPSIMD_LDR_BL_LDST_REGOFF,
+        asm: "LDR <Bt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+        mnemonic: "LDR",
+        heading: "LDR (register, SIMD&FP)",
+        title: "LDR (register, SIMD&FP) -- A64",
+        encoding_label: "16-bit",
+        mask: 0xffe00c00,
+        value: 0x7c600800,
+        excludes: &[],
+        fields: FIELDS_LDR_REG_FPSIMD_LDR_H_LDST_REGOFF,
+        operands: OPERANDS_LDR_REG_FPSIMD_LDR_H_LDST_REGOFF,
+        asm: "LDR <Ht> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+        mnemonic: "LDR",
+        heading: "LDR (register, SIMD&FP)",
+        title: "LDR (register, SIMD&FP) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0xbc600800,
+        excludes: &[],
+        fields: FIELDS_LDR_REG_FPSIMD_LDR_S_LDST_REGOFF,
+        operands: OPERANDS_LDR_REG_FPSIMD_LDR_S_LDST_REGOFF,
+        asm: "LDR <St> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+        mnemonic: "LDR",
+        heading: "LDR (register, SIMD&FP)",
+        title: "LDR (register, SIMD&FP) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0xfc600800,
+        excludes: &[],
+        fields: FIELDS_LDR_REG_FPSIMD_LDR_D_LDST_REGOFF,
+        operands: OPERANDS_LDR_REG_FPSIMD_LDR_D_LDST_REGOFF,
+        asm: "LDR <Dt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+        mnemonic: "LDR",
+        heading: "LDR (register, SIMD&FP)",
+        title: "LDR (register, SIMD&FP) -- A64",
+        encoding_label: "128-bit",
+        mask: 0xffe00c00,
+        value: 0x3ce00800,
+        excludes: &[],
+        fields: FIELDS_LDR_REG_FPSIMD_LDR_Q_LDST_REGOFF,
+        operands: OPERANDS_LDR_REG_FPSIMD_LDR_Q_LDST_REGOFF,
+        asm: "LDR <Qt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "STR_reg_fpsimd.STR_B_ldst_regoff",
+        mnemonic: "STR",
+        heading: "STR (register, SIMD&FP)",
+        title: "STR (register, SIMD&FP) -- A64",
+        encoding_label: "8-bit with extended register offset",
+        mask: 0xffe00c00,
+        value: 0x3c200800,
+        excludes: &[(0x0000e000, 0x00006000)],
+        fields: FIELDS_STR_REG_FPSIMD_STR_B_LDST_REGOFF,
+        operands: OPERANDS_STR_REG_FPSIMD_STR_B_LDST_REGOFF,
+        asm: "STR <Bt> , [ <Xn|SP> , ( <Wm> | <Xm> ), <extend> { <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STR_reg_fpsimd.STR_BL_ldst_regoff",
+        mnemonic: "STR",
+        heading: "STR (register, SIMD&FP)",
+        title: "STR (register, SIMD&FP) -- A64",
+        encoding_label: "8-bit with shifted register offset",
+        mask: 0xffe0ec00,
+        value: 0x3c206800,
+        excludes: &[],
+        fields: FIELDS_STR_REG_FPSIMD_STR_BL_LDST_REGOFF,
+        operands: OPERANDS_STR_REG_FPSIMD_STR_BL_LDST_REGOFF,
+        asm: "STR <Bt> , [ <Xn|SP> , <Xm> {, LSL <amount> }]",
+    },
+    GeneratedInsnSpec {
+        key: "STR_reg_fpsimd.STR_H_ldst_regoff",
+        mnemonic: "STR",
+        heading: "STR (register, SIMD&FP)",
+        title: "STR (register, SIMD&FP) -- A64",
+        encoding_label: "16-bit",
+        mask: 0xffe00c00,
+        value: 0x7c200800,
+        excludes: &[],
+        fields: FIELDS_STR_REG_FPSIMD_STR_H_LDST_REGOFF,
+        operands: OPERANDS_STR_REG_FPSIMD_STR_H_LDST_REGOFF,
+        asm: "STR <Ht> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "STR_reg_fpsimd.STR_S_ldst_regoff",
+        mnemonic: "STR",
+        heading: "STR (register, SIMD&FP)",
+        title: "STR (register, SIMD&FP) -- A64",
+        encoding_label: "32-bit",
+        mask: 0xffe00c00,
+        value: 0xbc200800,
+        excludes: &[],
+        fields: FIELDS_STR_REG_FPSIMD_STR_S_LDST_REGOFF,
+        operands: OPERANDS_STR_REG_FPSIMD_STR_S_LDST_REGOFF,
+        asm: "STR <St> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "STR_reg_fpsimd.STR_D_ldst_regoff",
+        mnemonic: "STR",
+        heading: "STR (register, SIMD&FP)",
+        title: "STR (register, SIMD&FP) -- A64",
+        encoding_label: "64-bit",
+        mask: 0xffe00c00,
+        value: 0xfc200800,
+        excludes: &[],
+        fields: FIELDS_STR_REG_FPSIMD_STR_D_LDST_REGOFF,
+        operands: OPERANDS_STR_REG_FPSIMD_STR_D_LDST_REGOFF,
+        asm: "STR <Dt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
+    },
+    GeneratedInsnSpec {
+        key: "STR_reg_fpsimd.STR_Q_ldst_regoff",
+        mnemonic: "STR",
+        heading: "STR (register, SIMD&FP)",
+        title: "STR (register, SIMD&FP) -- A64",
+        encoding_label: "128-bit",
+        mask: 0xffe00c00,
+        value: 0x3ca00800,
+        excludes: &[],
+        fields: FIELDS_STR_REG_FPSIMD_STR_Q_LDST_REGOFF,
+        operands: OPERANDS_STR_REG_FPSIMD_STR_Q_LDST_REGOFF,
+        asm: "STR <Qt> , [ <Xn|SP> , ( <Wm> | <Xm> ){, <extend> { <amount> }}]",
     },
 ];
 

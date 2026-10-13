@@ -220,7 +220,8 @@ u64 kjit_frag_table(const struct kjit_frag *f);
 bool kjit_frag_uses_fpsimd(const struct kjit_frag *f);
 void kjit_bad_status(u64 status, u64 pc);
 u64 kjit_call_fragment(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
-u64 kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
+bool kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 base,
+			       u64 *status);
 u64 kjit_fpsimd_run_max_ns(void);
 void kjit_profile(u64 pc, u32 kind);
 u64 kjit_hook_calls(void);
@@ -1697,6 +1698,15 @@ asm(
 static DEFINE_PER_CPU(u64, kjit_fpsimd_max_ticks);
 
 /*
+ * FPCR's trap-enable bits: IOE, DZE, OFE, UFE, IXE (bits 8-12) and IDE (bit 15).
+ * A bit set on a CPU that implements trapped floating-point exceptions makes a
+ * floating-point instruction that raises that exception take an FP exception
+ * (synchronous, to the current EL) instead of setting a FPSR flag. CPUs without
+ * trapping support read them as zero.
+ */
+#define KJIT_FPCR_TRAP_ENABLES (GENMASK(12, 8) | BIT(15))
+
+/*
  * kjit_call_fragment() for a fragment that uses FP/SIMD: its code reads and
  * writes V0-V31, FPCR and FPSR as the user's own registers (docs/pipeline.md,
  * "FP/SIMD in fragments (A9)", Kernel). One bracket per runtime entry (chained
@@ -1708,6 +1718,15 @@ static DEFINE_PER_CPU(u64, kjit_fpsimd_max_ticks);
  *
  * - kernel_neon_begin(): saves the user state to thread.uw if it is live in
  *   the registers, takes the registers, flushes this CPU's binding.
+ * - FPCR trap enables (A18): the user's FPCR is read from thread.uw, which
+ *   kernel_neon_begin() has just brought up to date. If any trap-enable bit is
+ *   set the run is declined: the fragment would execute floating-point
+ *   instructions at EL1 with that FPCR, and one that raises an enabled exception
+ *   would take an FP exception in the kernel instead of the user's SIGFPE.
+ *   Nothing was loaded or written, so the bracket just closes
+ *   (kernel_neon_end(): the user state stays in thread.uw with
+ *   TIF_FOREIGN_FPSTATE set, as after any kernel-mode NEON section that did not
+ *   touch it) and userspace executes natively from the entry pc.
  * - fpsimd_load_state(): the user state (thread.uw, authoritative now: no SVE
  *   or SME, kjit_fpsimd_supported()) into the registers.
  * - pagefault_disable(): a user-access fault must not sleep or run a
@@ -1743,19 +1762,24 @@ static DEFINE_PER_CPU(u64, kjit_fpsimd_max_ticks);
  * the per-CPU maximum are on the CPU the bracket ends on. A bracket is
  * "preempted" when the task's context-switch counters changed inside it.
  */
-u64 kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 base)
+bool kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 base,
+			       u64 *status)
 {
 	struct user_fpsimd_state kbuf;
 	struct user_fpsimd_state *uw = &current->thread.uw.fpsimd_state;
 	unsigned long switches;
-	u64 t0, ticks, status;
+	u64 t0, ticks;
 
 	kernel_neon_begin(&kbuf);
+	if (uw->fpcr & KJIT_FPCR_TRAP_ENABLES) {
+		kernel_neon_end(&kbuf);
+		return false;
+	}
 	switches = current->nvcsw + current->nivcsw;
 	t0 = arch_timer_read_counter();
 	fpsimd_load_state(uw);
 	pagefault_disable();
-	status = kjit_call_fragment(regs, extra, entry, base);
+	*status = kjit_call_fragment(regs, extra, entry, base);
 	pagefault_enable();
 
 	preempt_disable();
@@ -1771,7 +1795,7 @@ u64 kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 b
 
 	if (switches)
 		kjit_rs_note(KJIT_NOTE_FPSIMD_PREEMPTED, 1);
-	return status;
+	return true;
 }
 
 /* The longest FP/SIMD bracket on any CPU so far, in ns. */

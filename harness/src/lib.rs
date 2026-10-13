@@ -7,6 +7,7 @@ pub mod golden;
 pub mod arm64;
 pub mod cached_run;
 pub mod code_cache;
+pub(crate) mod fp;
 pub mod fuzz;
 pub mod model;
 // Platform gate, not a skip: the native oracle executes AArch64 code on the host
@@ -32,7 +33,6 @@ mod verify_mutation_tests;
 
 use std::fmt;
 
-use crate::shared::arm64::A64OperandRole;
 use crate::shared::emit::layout::ExecutionFragment;
 use crate::shared::trans::cfg::{admit_at, RuntimeExitReason};
 use crate::shared::trans::input::{
@@ -172,6 +172,28 @@ pub fn default_fixture_state() -> MachineState {
 /// mapped (`with_text_mapped`). Shared by the fixture suites, `check-case` and `session-dump`.
 pub fn fixture_state(text_base: u64, text: &[u8]) -> Result<MachineState, String> {
     with_text_mapped(&default_fixture_state(), text_base, text)
+}
+
+/// The initial state of the fixture case named `symbol`: `fixture_state`, with the
+/// FPCR the symbol asks for (A18). A fixture cannot set FPCR itself (`msr fpcr` is
+/// not in the subset), so a case symbol with a `_fpcr<HEX>_` segment, e.g.
+/// `frint_rmode_p_fpcr800000_mark`, starts with that FPCR. Any other symbol starts
+/// with FPCR 0. The value must lie in `FPCR_USER_BITS`.
+pub fn case_state(symbol: &str, text_base: u64, text: &[u8]) -> Result<MachineState, String> {
+    let mut state = fixture_state(text_base, text)?;
+    if let Some((_, tail)) = symbol.rsplit_once("_fpcr") {
+        let digits = tail.split('_').next().unwrap_or_default();
+        let fpcr = u64::from_str_radix(digits, 16)
+            .map_err(|err| format!("case `{symbol}`: `_fpcr{digits}_` is not a hex FPCR: {err}"))?;
+        if fpcr & !model::FPCR_USER_BITS != 0 {
+            return Err(format!(
+                "case `{symbol}`: FPCR {fpcr:#x} has bits outside FPCR_USER_BITS ({:#x})",
+                model::FPCR_USER_BITS
+            ));
+        }
+        state.fpcr = fpcr;
+    }
+    Ok(state)
 }
 
 /// `state` with the text a user page, as a process maps it: read-only (and
@@ -352,25 +374,15 @@ pub fn run_differential(
     // The kernel runs only verified fragments; so does every differential run.
     let verified = verify_encoded_fragment(&fragment, &encoded_fragment)
         .map_err(|err| DifferentialError::Verify(format!("{err:?}")))?;
-    // A9a: the verifier's `uses_fpsimd`, derived from the bytes alone, agrees with
-    // the translator's own view (some instruction names a V register).
-    let names_v_register = fragment.insns.iter().any(|insn| {
-        insn.operand_roles().iter().any(|role| {
-            matches!(
-                role,
-                A64OperandRole::VecRead { .. } | A64OperandRole::VecWrite { .. }
-            )
-        })
-    });
-    if verified.uses_fpsimd != names_v_register {
+    // A9a, A18: the verifier's `uses_fpsimd`, derived from the bytes alone, agrees
+    // with the translator's own view (some instruction names a V register or reads
+    // FPCR/FPSR).
+    let names_fp_state = fragment.insns.iter().any(|insn| insn.uses_fpsimd_state());
+    if verified.uses_fpsimd != names_fp_state {
         return Err(DifferentialError::Verify(format!(
-            "uses_fpsimd = {} but the fragment {} a V register",
+            "uses_fpsimd = {} but the fragment {} FP/SIMD state",
             verified.uses_fpsimd,
-            if names_v_register {
-                "names"
-            } else {
-                "never names"
-            }
+            if names_fp_state { "names" } else { "never names" }
         )));
     }
     let mut runtime = URuntime::new(fragment, initial_state.clone());

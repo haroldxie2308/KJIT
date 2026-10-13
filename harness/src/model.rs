@@ -6,9 +6,11 @@ use crate::shared::trans::cfg::RuntimeExitReason;
 
 pub const PAGE_SIZE: u64 = 4096;
 
-/// FPCR bits user code can set and read back on the native oracle's hardware
-/// (A9a): AHP, DN, FZ, RMode, FZ16. The trap enables are RAZ/WI there and
-/// Len/Stride are RES0, so generated states stay inside this mask.
+/// FPCR bits generated states use (A9a): AHP, DN, FZ, RMode, FZ16. Never the trap
+/// enables: a CPU that implements trapping would take an FP exception, which the
+/// interpreter does not model and the kernel declines to run (A18, "FPCR trap
+/// enables" in `kjit_call_fragment_fpsimd`); some hosts keep the bits without ever
+/// trapping, so reading them back says nothing. Len/Stride are RES0.
 pub const FPCR_USER_BITS: u64 = 0x07c8_0000;
 /// FPSR bits user code can set and read back (A9a): QC and the cumulative
 /// exception flags IDC, IXC, UFC, OFC, DZC, IOC.

@@ -8,6 +8,10 @@ use std::process::Command;
 
 /// One assembled fixture case, as `compile-asm-fixture.sh` resolved it.
 pub(crate) struct CompiledCase {
+    /// The case symbol (`HOT_SVC_SYMBOL`): `crate::case_state` reads the initial
+    /// FPCR off it.
+    #[cfg(test)]
+    pub(crate) symbol: String,
     pub(crate) text_base: u64,
     pub(crate) text_bytes: Vec<u8>,
     pub(crate) entry_pc: u64,
@@ -23,6 +27,8 @@ pub(crate) fn compile_case(
     let vars = compile_fixture(root, fixture, out_dir, Some(symbol))?;
     let bin_path = required(&vars, "COMPILED_BIN_PATH")?;
     Ok(CompiledCase {
+        #[cfg(test)]
+        symbol: symbol.to_string(),
         text_base: parse_u64("COMPILED_TEXT_BASE", required(&vars, "COMPILED_TEXT_BASE")?)?,
         entry_pc: parse_u64("COMPILED_ENTRY_PC", required(&vars, "COMPILED_ENTRY_PC")?)?,
         text_bytes: std::fs::read(bin_path)
