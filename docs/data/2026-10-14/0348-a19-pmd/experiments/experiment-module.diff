@@ -1,0 +1,137 @@
+--- /Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/a19/kjit_glue.c	2026-10-13 23:04:12
++++ /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/src-exp/kjit_glue.c	2026-10-13 23:18:07
+@@ -2659,9 +2659,125 @@
+ 		pr_err("kjit: CPU%u: a timer erratum workaround emulates EL0 CNTVCT_EL0 reads; refusing\n",
+ 		       cpu);
+ 		return -ENODEV;
++	}
++	return 0;
++}
++
++/* ------------------------------------------------------------------------- */
++/* EXPERIMENT (A19, never merged): linear-alias probe and helper-failure knob  */
++
++extern unsigned int kjit_exp_rox_fail;
++int kjit_exp_probe_w(void *p, u32 v);
++int kjit_exp_probe_r(void *p, u32 *v);	/* EXPERIMENT kernel-side knob (arch/arm64/kernel/kjit.c) */
++
++static int exp_rox_fail_set(void *data, u64 val)
++{
++	WRITE_ONCE(kjit_exp_rox_fail, val);
++	return 0;
++}
++
++static int exp_rox_fail_get(void *data, u64 *val)
++{
++	*val = READ_ONCE(kjit_exp_rox_fail);
++	return 0;
++}
++DEFINE_DEBUGFS_ATTRIBUTE(exp_rox_fail_fops, exp_rox_fail_get, exp_rox_fail_set, "%llu\n");
++
++/* init_mm is not exported: the kernel tables are TTBR1's. */
++static u64 exp_walk(unsigned long addr, int *level)
++{
++	pgd_t *pgdp = (pgd_t *)__va(read_sysreg(ttbr1_el1) & GENMASK_ULL(47, 12)) + pgd_index(addr);
++	p4d_t *p4dp;
++	pud_t *pudp, pud;
++	pmd_t *pmdp, pmd;
++	pte_t *ptep;
++
++	*level = 0;
++	if (pgd_none(pgdp_get(pgdp)))
++		return 0;
++	p4dp = p4d_offset(pgdp, addr);
++	if (p4d_none(p4dp_get(p4dp)))
++		return 0;
++	pudp = pud_offset(p4dp, addr);
++	pud = pudp_get(pudp);
++	if (pud_none(pud))
++		return 0;
++	if (pud_leaf(pud)) {
++		*level = 1;
++		return pud_val(pud);
++	}
++	pmdp = pmd_offset(pudp, addr);
++	pmd = pmdp_get(pmdp);
++	if (pmd_none(pmd))
++		return 0;
++	if (pmd_leaf(pmd)) {
++		*level = 2;
++		return pmd_val(pmd);
++	}
++	ptep = pte_offset_kernel(pmdp, addr);
++	*level = 3;
++	return pte_val(__ptep_get(ptep));
++}
++
++/*
++ * Per chunk: the vmalloc mapping (level of the first page's descriptor, its
++ * bits) and, for every page, its linear-map alias: the descriptor (valid? RDONLY?) and a
++ * nofault read and a nofault write through the alias. The write stores BRK to the page's last
++ * word, only if no slot covers it (the page holds BRK there), so a write that wrongly succeeds
++ * changes nothing. A control page from the page allocator must be writable (the probe can see a write).
++ */
++static int exp_alias_show(struct seq_file *m, void *unused)
++{
++	struct kjit_arena_chunk *c;
++	struct page *ctl = alloc_page(GFP_KERNEL);
++	u32 brk = AARCH64_BREAK_FAULT, v;
++
++	if (!ctl)
++		return -ENOMEM;
++	seq_printf(m, "control: write %d read %d\n",
++		   (int)kjit_exp_probe_w(page_address(ctl) + 4092, brk),
++		   (int)kjit_exp_probe_r(page_address(ctl) + 4092, &v));
++	__free_page(ctl);
++	mutex_lock(&kjit_arena_lock);
++	list_for_each_entry(c, &kjit_arena_chunks, node) {
++		unsigned int pages = KJIT_ARENA_CHUNK / PAGE_SIZE, i, valid = 0, ro = 0, lm_pte = 0, lm_blk = 0,
++			     rd_ok = 0, rd_fault = 0, wr_ok = 0, wr_fault = 0, wr_skipped = 0;
++		int vl, ll;
++		u64 vd = exp_walk((unsigned long)c->base, &vl);
++
++		for (i = 0; i < pages; i++) {
++			unsigned long va = (unsigned long)c->base + (unsigned long)i * PAGE_SIZE;
++			void *lin = page_address(vmalloc_to_page((void *)va));
++			u64 ld = exp_walk((unsigned long)lin, &ll);
++			unsigned int g = (i * PAGE_SIZE + PAGE_SIZE - 4) / KJIT_ARENA_GRANULE;
++
++			if (ld & PTE_VALID)
++				valid++;
++			if (ld & PTE_RDONLY)
++				ro++;
++			if (ll == 3)
++				lm_pte++;
++			else if (ll == 2)
++				lm_blk++;
++			if (kjit_exp_probe_r(lin + PAGE_SIZE - 4, &v))
++				rd_fault++;
++			else
++				rd_ok++;
++			if (test_bit(g, c->map))
++				wr_skipped++;
++			else if (kjit_exp_probe_w(lin + PAGE_SIZE - 4, brk))
++				wr_fault++;
++			else
++				wr_ok++;
++		}
++		seq_printf(m, "chunk %px pmd %u vm_level %d vm_desc %016llx alias_pages %u alias_pte %u alias_block %u alias_valid %u alias_rdonly %u read_ok %u read_fault %u write_ok %u write_fault %u write_skipped %u\n",
++			   c->base, c->pmd, vl, vd, pages, lm_pte, lm_blk, valid, ro, rd_ok, rd_fault, wr_ok,
++			   wr_fault, wr_skipped);
+ 	}
++	mutex_unlock(&kjit_arena_lock);
+ 	return 0;
+ }
++DEFINE_SHOW_ATTRIBUTE(exp_alias);
+ 
+ int kjit_glue_init(void)
+ {
+@@ -2702,6 +2818,8 @@
+ 	debugfs_create_file("ibtc_slots", 0600, kjit_debugfs, NULL, &kjit_ibtc_slots_fops);
+ 	debugfs_create_file_unsafe("neon_noise_us", 0600, kjit_debugfs, NULL, &kjit_neon_noise_fops);
+ 	debugfs_create_file("neon_noise_hits", 0400, kjit_debugfs, NULL, &kjit_neon_hits_fops);
++	debugfs_create_file_unsafe("exp_rox_fail", 0600, kjit_debugfs, NULL, &exp_rox_fail_fops);	/* EXPERIMENT */
++	debugfs_create_file("exp_alias", 0400, kjit_debugfs, NULL, &exp_alias_fops);	/* EXPERIMENT */
+ 
+ 	ret = kjit_register_hook(&kjit_hook_ops);
+ 	if (ret) {

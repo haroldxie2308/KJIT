@@ -1,0 +1,5 @@
+label=a19-mutation kpti=0 profile=kjit-guest
+append=console=ttyAMA0 panic=-1 nokaslr
+waited_s=0 load1_before=3.68
+cmd=mount -t debugfs debugfs /sys/kernel/debug; K=/sys/kernel/debug/kjit; echo 1 > $K/enable; echo "== EXPECT=arena"; KJIT_EXPECT=arena /opt/kjit-tests/arena_churn 3 4; echo "exit=$?"; echo "== no expectation"; /opt/kjit-tests/arena_churn 3 4; echo "exit=$?"; grep arena $K/stats
+load1_after=3.68 guest_run_status=1

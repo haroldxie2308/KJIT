@@ -1,0 +1,175 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Tue, 13 Oct 2026 23:00:00 +0800
+Subject: [PATCH] arm64: kjit: provide a 2 MiB PMD-mapped ROX block for the
+ runtime's arena
+
+The KJIT runtime keeps fragment images in 2 MiB chunks of one packed,
+always read-only, executable arena (docs/pipeline.md, "Image placement
+(A17, packed arena)"). A chunk from execmem_alloc() is mapped by 512
+4 KiB PTEs, and the hot fragments of a real program span a few hundred of
+them, each an iTLB entry. One PMD leaf maps the same chunk with one
+entry. Measured on the runtime's server workload, that is 0.05-0.18 us
+less per request.
+
+The runtime cannot build that mapping itself: __vmalloc_node_range() is
+not exported, and the linear-map alias of a vmalloc block of
+VM_ALLOW_HUGE_VMAP is not made read-only by any in-tree path
+(change_memory_common() refuses such areas), so a block would stay
+writable through the linear map under rodata=full. Add the pair the
+runtime calls instead, both EXPORT_SYMBOL_GPL:
+
+  kjit_rox_block_alloc()  a 2 MiB, 2 MiB aligned block in the vmalloc
+                          range, mapped by one PMD leaf, PAGE_KERNEL_ROX
+                          from creation (VM_ALLOW_HUGE_VMAP |
+                          VM_FLUSH_RESET_PERMS), filled with BRK through
+                          aarch64_insn_set(). When can_set_direct_map(),
+                          the linear alias of its pages is unmapped before
+                          the return. NULL, with nothing left mapped, when
+                          vmalloc could not build a PMD leaf (no order-9
+                          block free) or on any other failure.
+  kjit_rox_block_free()   vfree(); VM_FLUSH_RESET_PERMS maps the alias
+                          again.
+
+The alias is unmapped rather than read-only: vm_reset_perms() already
+does exactly that to the pages of every VM_FLUSH_RESET_PERMS area on free,
+with set_direct_map_invalid_noflush(), and no in-tree function makes a
+linear-map page read-only for an area that is not VM_ALLOC. Writes
+through the alias fault either way. No new state, lock or Kconfig.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+
+diff --git a/arch/arm64/kernel/kjit.c b/arch/arm64/kernel/kjit.c
+--- a/arch/arm64/kernel/kjit.c
++++ b/arch/arm64/kernel/kjit.c
+@@ -28,11 +28,19 @@
+ #include <linux/hardirq.h>
+ #include <linux/jump_label.h>
+ #include <linux/kjit.h>
++#include <linux/mm.h>
+ #include <linux/mutex.h>
+ #include <linux/rcupdate.h>
++#include <linux/set_memory.h>
++#include <linux/sizes.h>
+ #include <linux/slab.h>
+ #include <linux/srcu.h>
+ #include <linux/task_work.h>
++#include <linux/vmalloc.h>
++
++#include <asm/insn.h>
++#include <asm/text-patching.h>
++#include <asm/tlbflush.h>
+ 
+ DEFINE_STATIC_KEY_FALSE(kjit_hook_enabled);
+ 
+@@ -203,3 +211,96 @@ const struct exception_table_entry *search_kjit_extables(unsigned long addr)
+ 	srcu_read_unlock(&kjit_hook_srcu, idx);
+ 	return e;
+ }
++
++/*
++ * aarch64_insn_set() holds patch_lock with interrupts off for a whole call,
++ * and every call ends in an icache flush that sends an IPI to every CPU. The
++ * block is filled in pieces of this size to bound the first.
++ */
++#define KJIT_ROX_BLOCK_FILL	SZ_64K
++
++/**
++ * kjit_rox_block_alloc - a 2 MiB block of read-only, executable memory mapped
++ *	by one PMD leaf
++ *
++ * The block is 2 MiB aligned in the vmalloc range, backed by one order-9 page
++ * block, and read-only and executable from the moment it exists: there is no
++ * writable mapping of it, ever. It is filled with BRK through the text patcher
++ * before it is returned, so a branch into a part nobody wrote traps.
++ *
++ * When the kernel enforces read-only linear aliases (can_set_direct_map(), the
++ * linear map is then page-granular), the linear alias of every page is also
++ * unmapped before this returns, so the block cannot be written through it.
++ * Unmapped rather than read-only: there is no in-tree entry point that makes
++ * a linear-map page read-only for a block that is not a VM_ALLOC area
++ * (change_memory_common() refuses VM_ALLOW_HUGE_VMAP areas, and
++ * __change_memory_common() is static), while set_direct_map_valid_noflush()
++ * is what vm_reset_perms() already does to the same pages when the block is
++ * freed. Nothing legitimate reads the alias of vmalloc memory.
++ *
++ * Returns NULL, with nothing left mapped or allocated, when no order-9 block
++ * is available (vmalloc then falls back to 4 KiB pages, which this refuses),
++ * or on any other failure. May sleep.
++ */
++void *kjit_rox_block_alloc(void)
++{
++	const unsigned int pmd_order = PMD_SHIFT - PAGE_SHIFT;
++	struct vm_struct *area;
++	void *block;
++	size_t off;
++
++	block = __vmalloc_node_range(PMD_SIZE, PMD_SIZE, VMALLOC_START, VMALLOC_END, GFP_KERNEL,
++				     PAGE_KERNEL_ROX, VM_ALLOW_HUGE_VMAP | VM_FLUSH_RESET_PERMS,
++				     NUMA_NO_NODE, __builtin_return_address(0));
++	if (!block)
++		return NULL;
++
++	/* Not one PMD leaf: 4 KiB pages after a failed order-9 allocation. */
++	area = find_vm_area(block);
++	if (WARN_ON_ONCE(!area) || area->page_order != pmd_order)
++		goto fail;
++
++	for (off = 0; off < PMD_SIZE; off += KJIT_ROX_BLOCK_FILL) {
++		/* Fails only for a misaligned address: the block is 2 MiB aligned. */
++		if (WARN_ON_ONCE(!aarch64_insn_set(block + off, AARCH64_BREAK_FAULT,
++						   KJIT_ROX_BLOCK_FILL)))
++			goto fail;
++		cond_resched();
++	}
++
++	/*
++	 * The pages are one physically contiguous, 2 MiB aligned run, so the
++	 * alias is one contiguous range. A failure leaves some pages
++	 * unmapped; vfree() maps every page of the block again.
++	 */
++	if (can_set_direct_map()) {
++		unsigned long alias = (unsigned long)page_address(vmalloc_to_page(block));
++
++		if (WARN_ON_ONCE(set_direct_map_valid_noflush(vmalloc_to_page(block),
++							      1U << pmd_order, false)))
++			goto fail;
++		/* A stale TLB entry of the old RW alias would still allow writes. */
++		flush_tlb_kernel_range(alias, alias + PMD_SIZE);
++	}
++	return block;
++
++fail:
++	/* VM_FLUSH_RESET_PERMS: the linear alias is mapped again, then the pages are freed. */
++	vfree(block);
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(kjit_rox_block_alloc);
++
++/**
++ * kjit_rox_block_free - free a block of kjit_rox_block_alloc()
++ * @block: the address it returned
++ *
++ * Nothing may execute from or branch into the block any more. The linear alias
++ * is mapped again (VM_FLUSH_RESET_PERMS) before the pages are released. May
++ * sleep.
++ */
++void kjit_rox_block_free(void *block)
++{
++	vfree(block);
++}
++EXPORT_SYMBOL_GPL(kjit_rox_block_free);
+diff --git a/include/linux/kjit.h b/include/linux/kjit.h
+--- a/include/linux/kjit.h
++++ b/include/linux/kjit.h
+@@ -65,6 +65,8 @@ void kjit_hook_call_srcu(struct rcu_head *head, rcu_callback_t cb);
+ void kjit_hook_srcu_barrier(void);
+ long kjit_call_after_syscall(struct pt_regs *regs);
+ int kjit_queue_task_work(struct kjit_task_work *work);
++void *kjit_rox_block_alloc(void);
++void kjit_rox_block_free(void *block);
+ const struct exception_table_entry *search_kjit_extables(unsigned long addr);
+ #else
+ static inline const struct exception_table_entry *
+-- 
+2.43.0

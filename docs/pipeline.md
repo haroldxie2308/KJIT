@@ -2057,7 +2057,7 @@ and one module shape is simpler than a K0-only build.
    `flush_icache_range`).
 10. **0010**: `kjit_rox_block_alloc()` / `kjit_rox_block_free()` in
    `arch/arm64/kernel/kjit.c`, both `EXPORT_SYMBOL_GPL`: a 2 MiB ROX block
-   mapped by one PMD leaf, filled with BRK, with a read-only linear alias
+   mapped by one PMD leaf, filled with BRK, with its linear alias unmapped
    under `rodata=full` (A19, section 8, Chunk mapping). No new state.
 
 ### kjit_after_syscall decision
@@ -2234,12 +2234,18 @@ and one module shape is simpler than a K0-only build.
     leaf, `PAGE_KERNEL_ROX` from creation (`__vmalloc_node_range` with
     `VM_ALLOW_HUGE_VMAP | VM_FLUSH_RESET_PERMS`).
   - Contents: the kernel helper fills the block with `AARCH64_BREAK_FAULT`
-    through the text patcher (`aarch64_insn_set`) before it returns it.
+    through the text patcher (`aarch64_insn_set`, 64 KiB per call with
+    `cond_resched` between calls: each call holds `patch_lock` with
+    interrupts off) before it returns it.
   - Linear alias: when the kernel enforces read-only aliases
-    (`can_set_direct_map()`, i.e. `rodata=full`), the helper makes the alias
-    of every page read-only before it returns the block. `vfree`'s
-    `VM_FLUSH_RESET_PERMS` restores the alias on free. So W^X holds through
-    every mapping, as with A17's `set_memory_rox`.
+    (`can_set_direct_map()`, i.e. `rodata=full`), the helper unmaps the alias
+    of every page (`set_direct_map_valid_noflush(.., false)`, then
+    `flush_tlb_kernel_range` of the alias) before it returns the block.
+    Reads and writes through it both fault. Unmapped rather than read-only:
+    no in-tree entry point makes a linear page of a non-`VM_ALLOC` area
+    read-only, while this is the state `vm_reset_perms()` already puts the
+    pages in on free. `vfree`'s `VM_FLUSH_RESET_PERMS` maps the alias again
+    on free. So W^X holds through every mapping.
   - Failure: the helper returns `NULL` and leaves nothing mapped, when it
     cannot get an order-9 block or the area is not PMD-mapped (the helper
     checks `vm_area_page_order`). Fallback: the arena takes the A17 4 KiB

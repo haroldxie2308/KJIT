@@ -27,10 +27,13 @@
  *     1000 more per round. Code left in a freed slot would add something else.
  *
  * KJIT_EXPECT=arena also checks the arena: the parent (which runs no
- * translated code itself) samples arena_chunks and arena_bytes while the
- * workers run and requires fragments installed and retired and the arena in use;
- * after the last worker has exited both gauges must return to 0 (the free
- * work runs after grace periods: polled, up to 30 s).
+ * translated code itself) samples arena_chunks, arena_chunks_pmd and
+ * arena_bytes while the workers run and requires fragments installed and
+ * retired and the arena in use, every chunk PMD-mapped (A19: the guest has
+ * memory to spare, so the kernel helper's 2 MiB block always succeeds; the
+ * 4 KiB fallback is a degraded path this check refuses to miss); after the
+ * last worker has exited the gauges must return to 0 (the free work runs
+ * after grace periods: polled, up to 30 s).
  *
  *   arena_churn [seconds] [workers]     storm length, default 3 and 4
  */
@@ -252,11 +255,42 @@ static void sleep_ms(long ms)
 	nanosleep(&ts, NULL);
 }
 
+struct arena_gauges {
+	long long chunks, pmd, bytes;
+};
+
+/* The three gauges from one read of the stats file, so they are one snapshot of the write side's counters. */
+static struct arena_gauges arena_gauges(void)
+{
+	struct arena_gauges g = { -1, -1, -1 };
+	char line[128], key[64];
+	long long value;
+	FILE *f = fopen(KJIT_DEBUGFS "/stats", "r");
+
+	if (!f)
+		die("open stats: %s", strerror(errno));
+	while (fgets(line, sizeof(line), f)) {
+		if (sscanf(line, "%63s %lld", key, &value) != 2)
+			continue;
+		if (!strcmp(key, "arena_chunks"))
+			g.chunks = value;
+		else if (!strcmp(key, "arena_chunks_pmd"))
+			g.pmd = value;
+		else if (!strcmp(key, "arena_bytes"))
+			g.bytes = value;
+	}
+	fclose(f);
+	if (g.chunks < 0 || g.pmd < 0 || g.bytes < 0)
+		die("arena_churn: an arena gauge is missing from the stats file");
+	return g;
+}
+
 int main(int argc, char **argv)
 {
 	long seconds = argc > 1 ? atol(argv[1]) : 3;
 	long workers = argc > 2 ? atol(argv[2]) : 4;
-	long long installs0 = 0, invalidated0 = 0, peak_bytes = 0, peak_chunks = 0;
+	long long installs0 = 0, invalidated0 = 0, peak_bytes = 0, peak_chunks = 0, prev_chunks = 0,
+		  pmd_checked = 0;
 	bool arena = kjit_expect("arena");
 	pid_t *pids;
 	long alive;
@@ -311,10 +345,22 @@ int main(int argc, char **argv)
 			alive--;
 		}
 		if (arena) {
-			long long b = kjit_stat("arena_bytes"), c = kjit_stat("arena_chunks");
+			struct arena_gauges g = arena_gauges();
 
-			peak_bytes = b > peak_bytes ? b : peak_bytes;
-			peak_chunks = c > peak_chunks ? c : peak_chunks;
+			peak_bytes = g.bytes > peak_bytes ? g.bytes : peak_bytes;
+			peak_chunks = g.chunks > peak_chunks ? g.chunks : peak_chunks;
+			/*
+			 * A chunk is counted in arena_chunks and in arena_chunks_pmd by two
+			 * increments under one lock; a snapshot taken between them is
+			 * skipped by requiring the chunk count to be the same as 20 ms ago.
+			 */
+			if (g.chunks && g.chunks == prev_chunks) {
+				if (g.pmd != g.chunks)
+					die("arena_churn: arena_chunks=%lld but arena_chunks_pmd=%lld: a chunk is not PMD-mapped",
+					    g.chunks, g.pmd);
+				pmd_checked++;
+			}
+			prev_chunks = g.chunks;
 		}
 		sleep_ms(20);
 	}
@@ -324,27 +370,31 @@ int main(int argc, char **argv)
 	if (arena) {
 		long long installs = kjit_stat("translate_ok") - installs0;
 		long long invalidated = kjit_stat("invalidated_fragments") - invalidated0;
-		long long bytes = -1, chunks = -1;
+		struct arena_gauges g = { -1, -1, -1 };
+		long long bytes, chunks;
 
 		/* The slots of the last fragments are released after a grace period. */
 		for (int i = 0; i < 300; i++) {
-			bytes = kjit_stat("arena_bytes");
-			chunks = kjit_stat("arena_chunks");
-			if (!bytes && !chunks)
+			g = arena_gauges();
+			if (!g.bytes && !g.chunks && !g.pmd)
 				break;
 			sleep_ms(100);
 		}
+		bytes = g.bytes;
+		chunks = g.chunks;
 		fprintf(stderr,
-			"arena_churn: installs=%lld invalidated=%lld peak arena_bytes=%lld peak arena_chunks=%lld after exit: arena_bytes=%lld arena_chunks=%lld\n",
-			installs, invalidated, peak_bytes, peak_chunks, bytes, chunks);
+			"arena_churn: installs=%lld invalidated=%lld peak arena_bytes=%lld peak arena_chunks=%lld pmd-checked samples=%lld after exit: arena_bytes=%lld arena_chunks=%lld arena_chunks_pmd=%lld\n",
+			installs, invalidated, peak_bytes, peak_chunks, pmd_checked, bytes, chunks, g.pmd);
 		if (installs < 100 || invalidated < 100)
 			die("arena_churn: only %lld installs and %lld invalidations: no churn", installs,
 			    invalidated);
 		if (peak_bytes < 1 || peak_chunks < 1)
 			die("arena_churn: the arena was never seen in use");
-		if (bytes || chunks)
-			die("arena_churn: arena_bytes=%lld arena_chunks=%lld 30 s after the last worker exited, want 0",
-			    bytes, chunks);
+		if (!pmd_checked)
+			die("arena_churn: no stable sample of the arena saw arena_chunks_pmd");
+		if (bytes || chunks || g.pmd)
+			die("arena_churn: arena_bytes=%lld arena_chunks=%lld arena_chunks_pmd=%lld 30 s after the last worker exited, want 0",
+			    bytes, chunks, g.pmd);
 	}
 	printf("done\n");
 	return 0;
