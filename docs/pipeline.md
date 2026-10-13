@@ -2055,6 +2055,10 @@ and one module shape is simpler than a K0-only build.
    `EXPORT_SYMBOL_GPL(aarch64_insn_set)` for the packed image arena (A17):
    the BPF prog pack's arm64 writers (fixmap alias under `patch_lock`, then
    `flush_icache_range`).
+10. **0010**: `kjit_rox_block_alloc()` / `kjit_rox_block_free()` in
+   `arch/arm64/kernel/kjit.c`, both `EXPORT_SYMBOL_GPL`: a 2 MiB ROX block
+   mapped by one PMD leaf, filled with BRK, with a read-only linear alias
+   under `rodata=full` (A19, section 8, Chunk mapping). No new state.
 
 ### kjit_after_syscall decision
 
@@ -2161,11 +2165,12 @@ and one module shape is simpler than a K0-only build.
   its own and quadratic bookkeeping).
 - **Image placement (A17, packed arena).** A fragment's image is a slot in a
   shared, packed, always-ROX arena. One arena serves every mm.
-  - Chunks: `KJIT_ARENA_CHUNK` = 2 MiB, each one
-    `execmem_alloc(EXECMEM_BPF)`. A new chunk is filled with
-    `AARCH64_BREAK_FAULT` while it is still writable, then made ROX once
-    (`set_memory_rox`). Its pages are never writable again through the chunk
-    mapping. At most `KJIT_ARENA_MAX_CHUNKS` = 64 chunks (128 MiB) exist; when
+  - Chunks: `KJIT_ARENA_CHUNK` = 2 MiB. Since A19 a chunk is mapped by one
+    PMD block when the kernel can provide one (Chunk mapping (A19), below).
+    Otherwise the A17 path is used: one `execmem_alloc(EXECMEM_BPF)` with
+    4 KiB pages, filled with `AARCH64_BREAK_FAULT` while still writable, then
+    made ROX once (`set_memory_rox`). Either way, its pages are never
+    writable again through the chunk mapping. At most `KJIT_ARENA_MAX_CHUNKS` = 64 chunks (128 MiB) exist; when
     a chunk would exceed that, the install gets `-ENOSPC`.
   - Slots: an image is code, then one `exception_table_entry` per fault site
     (`EX_TYPE_UACCESS_ERR_ZERO`, both registers 31). It takes
@@ -2222,6 +2227,37 @@ and one module shape is simpler than a K0-only build.
       6 ways): 1.8 us per SET request ([2026-10-11 03:03](journal/2026-10-11.md)).
   - Guard: K2 runs `code_speed sites64`. The KJIT-on time per iteration must
     stay below 2x KJIT-off.
+- **Chunk mapping (A19).** A chunk comes from `kjit_rox_block_alloc()`
+  (kernel patch 0010, `arch/arm64/kernel/kjit.c`, `EXPORT_SYMBOL_GPL`) when
+  that succeeds. It is freed with `kjit_rox_block_free()`.
+  - The block: 2 MiB, 2 MiB-aligned in the vmalloc range, mapped by ONE PMD
+    leaf, `PAGE_KERNEL_ROX` from creation (`__vmalloc_node_range` with
+    `VM_ALLOW_HUGE_VMAP | VM_FLUSH_RESET_PERMS`).
+  - Contents: the kernel helper fills the block with `AARCH64_BREAK_FAULT`
+    through the text patcher (`aarch64_insn_set`) before it returns it.
+  - Linear alias: when the kernel enforces read-only aliases
+    (`can_set_direct_map()`, i.e. `rodata=full`), the helper makes the alias
+    of every page read-only before it returns the block. `vfree`'s
+    `VM_FLUSH_RESET_PERMS` restores the alias on free. So W^X holds through
+    every mapping, as with A17's `set_memory_rox`.
+  - Failure: the helper returns `NULL` and leaves nothing mapped, when it
+    cannot get an order-9 block or the area is not PMD-mapped (the helper
+    checks `vm_area_page_order`). Fallback: the arena takes the A17 4 KiB
+    path for that chunk. A fragmented memory still gets a correct chunk,
+    only a slower one. The stats file gauge `arena_chunks_pmd` counts the
+    PMD-mapped chunks among `arena_chunks`.
+  - Descriptor attributes other than the block size match the A17 chunk's.
+    In particular no PTE_GP: `CONFIG_ARM64_BTI_KERNEL` is off
+    (kjit-invariants), and fragments have no BTI landing pads.
+  - A16 links: chunks anywhere in vmalloc may be more than 128 MiB apart. A
+    cross-chunk link out of range stays a `nop` (`link_out_of_range`), as
+    before.
+  - Why: the A17 chunk is mapped with 512 PTEs, and redis's hot fragments
+    span about 160 of them. Under HVF an iTLB miss is a two-stage walk. A
+    PMD-mapped chunk measured 0.05-0.18 us (median 0.12) per redis request
+    below A17's chunk, 0/16 boots positive. A 2 MiB-aligned 4 KiB control
+    showed the gain is the mapping size
+    ([2026-10-13 22:54](journal/2026-10-13.md)).
 - Locks: `kjit_mm.lock` -> `kjit_frags_lock` (spinlocks, no allocation under
   either: both are taken inside mmu_notifier invalidation). `kjit_mm_lock` and
   the `kjit_arena_lock` mutex are never nested with them.
