@@ -39,6 +39,50 @@ pub struct Generated {
     pub state: MachineState,
 }
 
+/// Doubles and singles (bit patterns) that exercise floating-point corner cases:
+/// zeros, ones, ties for the rounding modes, the values around integer conversion
+/// limits, infinities, quiet and signalling NaNs, denormals.
+const FP_DOUBLES: [u64; 20] = [
+    0x0000_0000_0000_0000, // +0
+    0x8000_0000_0000_0000, // -0
+    0x3ff0_0000_0000_0000, // 1.0
+    0xbff0_0000_0000_0000, // -1.0
+    0x3fe0_0000_0000_0000, // 0.5
+    0x3ff8_0000_0000_0000, // 1.5
+    0x4004_0000_0000_0000, // 2.5
+    0xc004_0000_0000_0000, // -2.5
+    0x4059_0000_0000_0000, // 100.0
+    0x3ff0_0000_0000_0001, // 1 + 2^-52
+    0x41e0_0000_0000_0000, // 2^31
+    0x43e0_0000_0000_0000, // 2^63
+    0x43f0_0000_0000_0000, // 2^64
+    0x7ff0_0000_0000_0000, // +inf
+    0xfff0_0000_0000_0000, // -inf
+    0x7ff8_0000_0000_0000, // quiet NaN
+    0x7ff4_0000_0000_0000, // signalling NaN
+    0x0000_0000_0000_0001, // smallest denormal
+    0x000f_ffff_ffff_ffff, // largest denormal
+    0x7fef_ffff_ffff_ffff, // largest finite
+];
+const FP_SINGLES: [u64; 16] = [
+    0x0000_0000, // +0
+    0x8000_0000, // -0
+    0x3f80_0000, // 1.0
+    0xbf80_0000, // -1.0
+    0x3f00_0000, // 0.5
+    0x3fc0_0000, // 1.5
+    0x4020_0000, // 2.5
+    0xc020_0000, // -2.5
+    0x4f00_0000, // 2^31
+    0x5f00_0000, // 2^63
+    0x7f80_0000, // +inf
+    0xff80_0000, // -inf
+    0x7fc0_0000, // quiet NaN
+    0x7fa0_0000, // signalling NaN
+    0x0000_0001, // smallest denormal
+    0x7f7f_ffff, // largest finite
+];
+
 const RESERVED: [u8; 3] = [9, 10, 11];
 const STACK_BACKED: [u8; 6] = [12, 13, 14, 15, 16, 17];
 const FRAME: [u8; 2] = [29, 30];
@@ -303,12 +347,24 @@ impl Gen<'_> {
     }
 
     /// A V register value: zero, all ones, one repeated lane, a random value with
-    /// some zero bytes (what string routines search for), or fully random.
+    /// some zero bytes (what string routines search for), scalar floating-point
+    /// operands (A18: values that hit rounding, NaN, infinity and denormal cases,
+    /// which random bits almost never do), or fully random.
     fn random_vector(&mut self) -> u128 {
         let wide = |rng: &mut Rng| u128::from(rng.next_u64()) | (u128::from(rng.next_u64()) << 64);
-        match self.rng.below(10) {
+        match self.rng.below(12) {
             0 => 0,
             1 => u128::MAX,
+            10 | 11 => {
+                // The low 64 bits are one double or two singles from the tables; the
+                // upper half is a random value the scalar operations must ignore.
+                let low = if self.rng.chance(500) {
+                    self.rng.pick(&FP_DOUBLES)
+                } else {
+                    (self.rng.pick(&FP_SINGLES) << 32) | self.rng.pick(&FP_SINGLES)
+                };
+                u128::from(low) | (wide(&mut *self.rng) << 64)
+            }
             2 => {
                 let lane = u128::from(self.rng.next_u64());
                 let bits = 8 << self.rng.below(4);

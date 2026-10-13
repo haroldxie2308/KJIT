@@ -21,7 +21,7 @@ use crate::model::{AccessKind, HaltReason, MachineState, Privilege};
 use crate::runtime::{URuntime, URuntimeHalt};
 use crate::shared::abi::RetStatus;
 use crate::{
-    compile_fixture_fragment, fixture_state, fragment_instance_cap, run_entry_fixture,
+    case_state, compile_fixture_fragment, fragment_instance_cap, run_entry_fixture,
     run_original_with_mocked_svc,
 };
 
@@ -36,7 +36,7 @@ struct CaseFailure {
 #[test]
 fn every_asm_fixture_case_matches_original() {
     run_every_case("interp", &mut |case| {
-        let initial_state = fixture_state(case.text_base, &case.text_bytes)?;
+        let initial_state = case_state(&case.symbol, case.text_base, &case.text_bytes)?;
         let report = run_entry_fixture(
             "asm-fixture",
             case.text_base,
@@ -111,7 +111,7 @@ fn check_cached_case(
 fn every_asm_fixture_case_matches_native() {
     let session = crate::native::NativeSession::new().expect("set up native runner");
     run_every_case("native", &mut |case| {
-        let initial_state = fixture_state(case.text_base, &case.text_bytes)?;
+        let initial_state = case_state(&case.symbol, case.text_base, &case.text_bytes)?;
         let single = crate::native::check_case(
             &session,
             case.text_base,

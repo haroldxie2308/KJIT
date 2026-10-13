@@ -201,6 +201,10 @@ while [ "$i" -le "$iterations" ]; do
     # A13: the bracket invalidates the task's CPU binding (thread.fpsimd_cpu);
     # a task moved between CPUs around a bracket must get its new state back.
     onoff fp_stale fpsimd 0 "$T/fp_stale" 300
+    # A18: an FPCR that enables floating-point traps declines the bracket (the
+    # fragment would trap at EL1); the loop must give native results. On a CPU
+    # without trap support the bits read back 0 and the counter check is skipped.
+    onoff fp_trap fptrap 0 "$T/fp_trap" 20000
     # lat_probe runs (SCHED_FIFO works); its numbers beside a load come from
     # fp-bracket.sh lat, not from here.
     "$T/nojit" "$T/lat_probe" 2 1000 50 > lat_probe.out || fail "lat_probe"

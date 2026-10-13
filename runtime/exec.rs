@@ -74,9 +74,15 @@ impl Running {
 
     /// Runs the fragment from `entry` (the host address of one of its verified
     /// entries); `extra` receives x10/x11 and gets the dispatch table. Returns
-    /// the status in x0.
-    fn call(&self, regs: *mut PtRegs, extra: &mut [u64; EXTRA_PARAMS_WORDS], entry: u64) -> u64 {
-        stats::inc(Stat::FragmentEntries);
+    /// the status in x0, or `None` when nothing ran: the user's FPCR enables
+    /// floating-point traps, so an FP/SIMD fragment is declined (counted in
+    /// `run_declined` and `fpsimd_trap_declined`) and `regs` is as it was.
+    fn call(
+        &self,
+        regs: *mut PtRegs,
+        extra: &mut [u64; EXTRA_PARAMS_WORDS],
+        entry: u64,
+    ) -> Option<u64> {
         extra[EXTRA_PARAM_IBTC_TABLE_INDEX] = self.table;
         // SAFETY (both calls): `entry` is the host of a label of this
         // fragment; `extra` receives x10/x11 (epilogue `stp x10, x11, [x1]`)
@@ -84,10 +90,26 @@ impl Running {
         // use FP/SIMD only runs inside the FP/SIMD bracket (kjit_glue.c), which
         // loads the user's FP/SIMD state into the registers for the run.
         if self.fpsimd {
+            let mut status = 0u64;
+            if !unsafe {
+                ffi::kjit_call_fragment_fpsimd(
+                    regs,
+                    extra.as_mut_ptr(),
+                    entry,
+                    self.base,
+                    &mut status,
+                )
+            } {
+                stats::inc(Stat::RunDeclined);
+                stats::inc(Stat::FpsimdTrapDeclined);
+                return None;
+            }
+            stats::inc(Stat::FragmentEntries);
             stats::inc(Stat::FpsimdEntries);
-            unsafe { ffi::kjit_call_fragment_fpsimd(regs, extra.as_mut_ptr(), entry, self.base) }
+            Some(status)
         } else {
-            unsafe { ffi::kjit_call_fragment(regs, extra.as_mut_ptr(), entry, self.base) }
+            stats::inc(Stat::FragmentEntries);
+            Some(unsafe { ffi::kjit_call_fragment(regs, extra.as_mut_ptr(), entry, self.base) })
         }
     }
 
@@ -133,14 +155,20 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
     // SAFETY: reads a module parameter.
     let budget = unsafe { ffi::kjit_chain_budget() };
     let (ret, entries) = run_chain(regs, run, entry, budget);
-    stats::note_chain(entries);
+    // `None`: the first entry was declined, no fragment ran.
+    if let Some(entries) = entries {
+        stats::note_chain(entries);
+    }
     ret
 }
 
 /// Runs `run` from `entry` and chains through branch exits while the run
-/// conditions hold, for at most `budget` fragment entries (the first one
-/// always runs): the `chain_budget` of docs/pipeline.md, "Chaining rules".
-/// Returns the hook's result and the number of entries made.
+/// conditions hold, for at most `budget` fragment entries (the first one is
+/// attempted whatever the budget; an FP/SIMD fragment is declined, at any entry,
+/// when the user's FPCR enables floating-point traps): the `chain_budget` of
+/// docs/pipeline.md, "Chaining rules".
+/// Returns the hook's result and the number of entries made (`None`: the first
+/// entry was declined, `Running::call`).
 ///
 /// Since A11 an "entry" is a runtime round trip: a branch whose target is in
 /// the run's dispatch table continues inside the fragment code and is neither
@@ -152,14 +180,23 @@ fn run_chain(
     mut run: Running,
     mut entry: u64,
     budget: u32,
-) -> (c_long, NonZeroU32) {
+) -> (c_long, Option<NonZeroU32>) {
     // SAFETY: as in `kjit_rs_after_syscall`.
     let pc = unsafe { (*regs).pc };
     let mut entries = NonZeroU32::MIN;
+    // The user pc the next entry starts at: `pc`, then each chained branch target.
+    let mut resume_pc = pc;
 
     loop {
         let mut extra = [0u64; EXTRA_PARAMS_WORDS];
-        let status = run.call(regs, &mut extra, entry);
+        let Some(status) = run.call(regs, &mut extra, entry) else {
+            // Declined (FPCR trap enables): the user state in `regs` is exact up
+            // to `resume_pc` (the epilogue of the previous run wrote it back, a
+            // branch exit's link register included); userspace executes from there.
+            // SAFETY: as above.
+            unsafe { (*regs).pc = resume_pc };
+            return (TO_USER, NonZeroU32::new(entries.get() - 1));
+        };
         let (param0, param1) = (extra[0], extra[1]);
 
         match status {
@@ -175,12 +212,12 @@ fn run_chain(
                     // SAFETY: as above.
                     unsafe { (*regs).pc = param1 };
                     stats::inc(Stat::SyscallsInKernel);
-                    return (scno as c_long, entries);
+                    return (scno as c_long, Some(entries));
                 }
                 stats::inc(Stat::SvcDeclined);
                 // SAFETY: as above. Userspace re-executes the SVC itself.
                 unsafe { (*regs).pc = param1.wrapping_sub(4) };
-                return (TO_USER, entries);
+                return (TO_USER, Some(entries));
             }
             BL | BLR | BR | RET => {
                 stats::inc(match status {
@@ -200,6 +237,7 @@ fn run_chain(
                     if let Some(next) = run.link(target) {
                         ibtc::note_miss(seen, target);
                         entry = next;
+                        resume_pc = target;
                         entries = entries.saturating_add(1);
                         stats::inc(Stat::Chains);
                         continue;
@@ -214,6 +252,7 @@ fn run_chain(
                             ibtc::note_miss(seen, target);
                         }
                         run = next;
+                        resume_pc = target;
                         entries = entries.saturating_add(1);
                         stats::inc(Stat::Chains);
                         continue;
@@ -228,7 +267,7 @@ fn run_chain(
                 ibtc::note_miss(seen, target);
                 // SAFETY: as above.
                 unsafe { (*regs).pc = target };
-                return (TO_USER, entries);
+                return (TO_USER, Some(entries));
             }
             // Never re-entered at x11: userspace executes that instruction (and
             // takes its fault, or runs the back-edge) natively.
@@ -249,7 +288,7 @@ fn run_chain(
                 }
                 // SAFETY: as above.
                 unsafe { (*regs).pc = param1 };
-                return (TO_USER, entries);
+                return (TO_USER, Some(entries));
             }
             _ => {
                 stats::inc(Stat::ExitInvalid);
@@ -257,7 +296,7 @@ fn run_chain(
                 unsafe { ffi::kjit_bad_status(status, pc) };
                 // SAFETY: as above.
                 unsafe { (*regs).pc = param1 };
-                return (TO_USER, entries);
+                return (TO_USER, Some(entries));
             }
         }
     }

@@ -7,8 +7,8 @@ use crate::shared::abi::{
 };
 use crate::shared::arm64::ergo::{ldst64_offset, mem_off, scaled_simm, simm, sp, uimm, x, xzr};
 use crate::shared::arm64::{
-    A64Atomic, A64FpSimdMem, A64FpSimdWriteback, A64Insn, A64Mem, A64OperandRole, A64Reg,
-    A64Reg31Mode, A64RegWidth, IrInsn,
+    A64Atomic, A64FpSimdIndex, A64FpSimdMem, A64FpSimdWriteback, A64Insn, A64Mem, A64OperandRole,
+    A64Reg, A64Reg31Mode, A64RegWidth, IrInsn,
 };
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::rephrase::{
@@ -958,6 +958,14 @@ impl WindowInsn {
             Self::FpSimd(mem) => mem.offset,
         }
     }
+
+    /// A18 register-offset SIMD&FP forms: the address is `base + ExtendReg(index)`.
+    const fn index(self) -> Option<A64FpSimdIndex> {
+        match self {
+            Self::Atomic(_) => None,
+            Self::FpSimd(mem) => mem.index,
+        }
+    }
 }
 
 /// How one window access (A8, A9a) is lowered (see `emit_window`).
@@ -968,7 +976,8 @@ struct WindowLowering {
     /// and the access uses as its base. A stack-backed base's own fill scratch
     /// when the offset is 0, else a fresh scratch loaded from `addr_base`.
     addr: u8,
-    /// `sA = <mapped base> + offset` (`mov` for offset 0; `add`/`sub` otherwise).
+    /// `sA = <mapped base> + offset` (`mov` for offset 0; `add`/`sub` otherwise), or
+    /// for a register-offset form `sA = <mapped base> + ExtendReg(<mapped index>)`.
     addr_base: Option<A64Reg>,
     /// `sB`: the range check's result; also the SP / block alignment check's
     /// scratch, which run first.
@@ -1230,7 +1239,10 @@ impl RewritePlan {
     fn plan_window(&mut self, insn: WindowInsn) -> SharedResult<WindowLowering, RegVirtError> {
         let base = insn.base();
         let base_class = classify_reg(base);
-        let (addr, addr_base) = if base_class == RegClass::StackBacked && insn.offset() == 0 {
+        let (addr, addr_base) = if base_class == RegClass::StackBacked
+            && insn.offset() == 0
+            && insn.index().is_none()
+        {
             // Mapped by the `MemBase` role in `build`; missing is a translator bug.
             let mapping = self.stack_mapping(base.enc).ok_or(
                 RegVirtError::StackBackedRewriteNotImplemented {
@@ -1313,8 +1325,20 @@ impl RewritePlan {
             }
         }
         if let Some(base) = lowering.addr_base {
-            match lowering.insn.offset() {
-                0 => push_rephrased(
+            match (lowering.insn.index(), lowering.insn.offset()) {
+                // A18: `add sA, <base>, <index>, <extend> #shift` (ADD extended
+                // register, the address arithmetic of the register-offset form).
+                (Some(index), _) => push_rephrased(
+                    out,
+                    helper(A64Insn::AddAddsubExtAdd64AddsubExt {
+                        rm: x(self.phys(index.reg).enc),
+                        option: index.option,
+                        imm3: uimm(u32::from(index.shift), 3),
+                        rn: A64Reg::x_sp(base.enc),
+                        rd: A64Reg::x_sp(sa),
+                    }),
+                )?,
+                (None, 0) => push_rephrased(
                     out,
                     helper(A64Insn::OrrLogShiftOrr64LogShift {
                         shift: 0,
@@ -1324,7 +1348,7 @@ impl RewritePlan {
                         rd: x(sa),
                     }),
                 )?,
-                offset => self.push_add_sub_imm(out, helper, sa, base.enc, offset)?,
+                (None, offset) => self.push_add_sub_imm(out, helper, sa, base.enc, offset)?,
             }
         }
         if let (true, WindowInsn::Atomic(atomic)) = (lowering.block_check, lowering.insn) {
@@ -3568,6 +3592,103 @@ mod tests {
         );
     }
 
+    /// A18: register-offset SIMD&FP loads/stores run their base-only encoding as a
+    /// window access (docs/pipeline.md, "Scalar floating point (A18)"): the address
+    /// `base + ExtendReg(index)` in sA by `add sA, <base>, <index>, <extend> #shift`,
+    /// then the range check and the base-only access; no writeback.
+    #[test]
+    fn simd_register_offset_lowers_to_add_range_check_access() {
+        let add_ext = |rd: u8, rn: A64Reg, rm: u8, option: u8, shift: u32| {
+            helper(A64Insn::AddAddsubExtAdd64AddsubExt {
+                rm: x(rm),
+                option,
+                imm3: uimm(shift, 3),
+                rn,
+                rd: A64Reg::x_sp(rd),
+            })
+        };
+        let d_pos = |rt: u8, base: u8| A64Insn::LdrImmFpsimdLdrDLdstPos {
+            rt,
+            mem: mem_off(A64Reg::x_sp(base), scaled_uimm(0, 12, 3)),
+        };
+
+        // ldr d0, [x1, x2, lsl #3] (the redis AOF word shape): sA = x12, sB = x13.
+        let mut expected = vec![add_ext(12, A64Reg::x_sp(1), 2, 0b011, 3)];
+        expected.extend(range_check(12, 13));
+        expected.extend(window_access(d_pos(0, 12)));
+        assert_eq!(
+            lowered(A64Insn::LdrRegFpsimdLdrDLdstRegoff {
+                rm: x(2),
+                option: 0b011,
+                s: 1,
+                rn: A64Reg::x_sp(1),
+                rt: 0,
+            })
+            .to_vec(),
+            expected
+        );
+
+        // str q3, [x13, x14, sxtw #4]: base and index stack-backed (x12, x13), so sA
+        // is a third scratch (x14) and sB the fourth (x15): the whole scratch pool.
+        let mut expected = vec![fill(12, 13), fill(13, 14)];
+        expected.push(add_ext(14, A64Reg::x_sp(12), 13, 0b110, 4));
+        expected.extend(range_check(14, 15));
+        expected.extend(window_access(A64Insn::StrImmFpsimdStrQLdstPos {
+            rt: 3,
+            mem: mem_off(A64Reg::x_sp(14), scaled_uimm(0, 12, 4)),
+        }));
+        assert_eq!(
+            lowered(A64Insn::StrRegFpsimdStrQLdstRegoff {
+                rm: x(14),
+                option: 0b110,
+                s: 1,
+                rn: A64Reg::x_sp(13),
+                rt: 3,
+            })
+            .to_vec(),
+            expected
+        );
+
+        // ldr s1, [sp, w2, uxtw #2]: SP check through sB, then sA = x17 + w2 << 2.
+        let mut expected = sp_align_check(13).to_vec();
+        expected.push(add_ext(12, A64Reg::x_sp(17), 2, 0b010, 2));
+        expected.extend(range_check(12, 13));
+        expected.extend(window_access(A64Insn::LdrImmFpsimdLdrSLdstPos {
+            rt: 1,
+            mem: mem_off(A64Reg::x_sp(12), scaled_uimm(0, 12, 2)),
+        }));
+        assert_eq!(
+            lowered(A64Insn::LdrRegFpsimdLdrSLdstRegoff {
+                rm: x(2),
+                option: 0b010,
+                s: 1,
+                rn: sp(),
+                rt: 1,
+            })
+            .to_vec(),
+            expected
+        );
+
+        // ldr b5, [x29, xzr]: user x29 is x16; the zero index stays XZR; the `*BL`
+        // byte form (option LSL, S = 0) is the same lowering.
+        let mut expected = vec![add_ext(12, A64Reg::x_sp(16), 31, 0b011, 0)];
+        expected.extend(range_check(12, 13));
+        expected.extend(window_access(A64Insn::LdrImmFpsimdLdrBLdstPos {
+            rt: 5,
+            mem: mem_off(A64Reg::x_sp(12), uimm(0, 12)),
+        }));
+        assert_eq!(
+            lowered(A64Insn::LdrRegFpsimdLdrBlLdstRegoff {
+                rm: xzr(),
+                s: 0,
+                rn: A64Reg::x_sp(29),
+                rt: 5,
+            })
+            .to_vec(),
+            expected
+        );
+    }
+
     /// A9a: register-only SIMD&FP forms are emitted unchanged except for their
     /// general-register operands; V registers are never mapped.
     #[test]
@@ -3628,6 +3749,56 @@ mod tests {
         );
     }
 
+    /// A18: scalar floating-point forms are copied as they are; only their general
+    /// registers are mapped (a V number equal to a stack-backed register is not).
+    #[test]
+    fn scalar_fp_forms_remap_only_general_registers() {
+        // fadd d14, d12, d13 names V12-V14: untouched, no fills or spills.
+        let fadd = A64Insn::FaddFloatFaddDFloatdp2 {
+            rm: 13,
+            rn: 12,
+            rd: 14,
+        };
+        assert_eq!(lowered(fadd).to_vec(), vec![original(fadd)]);
+        // fcmpe d12, #0.0 writes NZCV only.
+        let fcmpe = A64Insn::FcmpeFloatFcmpeDzFloatcmp { rn: 12 };
+        assert_eq!(lowered(fcmpe).to_vec(), vec![original(fcmpe)]);
+
+        // ucvtf d0, x13 (the redis event loop): the stack-backed source is filled into x12.
+        assert_eq!(
+            lowered(A64Insn::UcvtfFloatIntUcvtfD64Float2int { rn: x(13), rd: 0 }).to_vec(),
+            vec![
+                fill(12, 13),
+                original(A64Insn::UcvtfFloatIntUcvtfD64Float2int { rn: x(12), rd: 0 }),
+            ]
+        );
+        // fcvtzs w14, d1: written into scratch, spilled.
+        assert_eq!(
+            lowered(A64Insn::FcvtzsFloatIntFcvtzs32dFloat2int {
+                rn: 1,
+                rd: A64Reg::w(14),
+            })
+            .to_vec(),
+            vec![
+                original(A64Insn::FcvtzsFloatIntFcvtzs32dFloat2int {
+                    rn: 1,
+                    rd: A64Reg::w(12),
+                }),
+                spill(12, 14),
+            ]
+        );
+        // fcvtau xzr, s2 and mrs x29, fpcr: XZR stays, user x29 is x16.
+        let fcvtau = A64Insn::FcvtauFloatFcvtau64sFloat2int {
+            rn: 2,
+            rd: A64Reg::new(31, A64RegWidth::X64, A64Reg31Mode::Xzr),
+        };
+        assert_eq!(lowered(fcvtau).to_vec(), vec![original(fcvtau)]);
+        assert_eq!(
+            lowered(A64Insn::MrsMrsRsSystemmoveFpcr { rt: x(29) }).to_vec(),
+            vec![original(A64Insn::MrsMrsRsSystemmoveFpcr { rt: x(16) })]
+        );
+    }
+
     /// A9a: every SIMD&FP load/store form with every register class in its base
     /// (and LD1/ST1 post-index register): admitted, one base-only window access
     /// on the range-checked register, only scratch written
@@ -3647,7 +3818,13 @@ mod tests {
             if base_insn.fpsimd_mem().is_none() {
                 continue;
             }
+            // LD1/ST1 post-indexed by a register (writeback), or the A18 register
+            // offset (an index, no writeback).
             let has_index = base_insn.get_reg("Rm").is_some();
+            let post_index_reg = matches!(
+                base_insn.fpsimd_mem().unwrap().writeback,
+                Some(crate::shared::arm64::A64FpSimdWriteback::Reg(_))
+            );
             for rn in regs {
                 for rm in if has_index { &regs[..9] } else { &regs[..1] } {
                     let mut insn = base_insn.set_reg("Rn", A64Reg::x_sp(rn)).unwrap();
@@ -3655,7 +3832,7 @@ mod tests {
                         insn = insn.set_reg("Rm", x(*rm)).unwrap();
                     }
                     let admitted = admit_insn(ir(insn));
-                    if has_index && *rm == rn && rn != 31 {
+                    if post_index_reg && *rm == rn && rn != 31 {
                         // Post-index register == base: rejected like any writeback
                         // overlap (conservative: an Unsupported exit is exact).
                         assert!(admitted.is_err(), "{insn:?}");
@@ -3722,7 +3899,9 @@ mod tests {
                 }
             }
         }
-        assert_eq!(checked, (82 - 8) * 10 + 8 * (10 * 9 - 9));
+        // 74 forms without an index, 8 LD1/ST1 post-index by register (base != index),
+        // 12 register-offset forms (every base and index pair).
+        assert_eq!(checked, 74 * 10 + 8 * (10 * 9 - 9) + 12 * 10 * 9);
     }
 
     /// A9a: SIMD&FP LDP with `t == t2` is CONSTRAINED UNPREDICTABLE: rejected.

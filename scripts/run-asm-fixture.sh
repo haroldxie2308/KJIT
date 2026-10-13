@@ -61,4 +61,4 @@ printf 'entry_pc: %s\n' "$COMPILED_ENTRY_PC"
 cargo run \
     --manifest-path "$ROOT_DIR/harness/Cargo.toml" \
     --bin check-case \
-    -- "$COMPILED_BIN_PATH" "$COMPILED_TEXT_BASE" "$COMPILED_ENTRY_PC"
+    -- "$COMPILED_BIN_PATH" "$COMPILED_TEXT_BASE" "$COMPILED_ENTRY_PC" "$COMPILED_HOT_SVC_SYMBOL"

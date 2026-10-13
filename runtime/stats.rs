@@ -29,7 +29,8 @@ pub(crate) enum Stat {
     ChainCap,
     /// Hook calls that ended before their next fragment entry because a run
     /// condition failed (pending exit work such as `need_resched` or a signal,
-    /// a traced or compat task): at the hook, for any task's syscall, or at a
+    /// a traced or compat task) or, `fpsimd_trap_declined`, the user's FPCR enables
+    /// floating-point traps: at the hook, for any task's syscall, or at a
     /// branch exit the chain budget allowed to chain.
     RunDeclined,
     ExitSvc,
@@ -105,6 +106,10 @@ pub(crate) enum Stat {
     /// Translations refused because they use FP/SIMD on a CPU with SVE/SME
     /// (or without FP/SIMD).
     FpsimdRefusedSveSme,
+    /// Runs of FP/SIMD fragments declined because the user's FPCR enables
+    /// floating-point traps (a subset of `run_declined`): userspace executes the
+    /// code natively.
+    FpsimdTrapDeclined,
     /// Dispatch-table slot stores (A11), per table: one resolution of a branch
     /// target may store into `table_all` and `table_nofp`. Bumped through
     /// `kjit_rs_note`.
@@ -190,6 +195,7 @@ const NAMES: [&str; COUNT] = [
     "fpsimd_preempted",
     "fpsimd_exit_mem",
     "fpsimd_refused_sve_sme",
+    "fpsimd_trap_declined",
     "ibtc_insert",
     "ibtc_replace",
     "ibtc_clear",

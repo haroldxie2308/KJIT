@@ -23,7 +23,7 @@ use crate::shared::arm64::ergo::{
 };
 use crate::shared::arm64::{A64Insn, A64Mem, A64OperandRole, A64Reg, A64Reg31Mode};
 use crate::shared::verify::{verify_fragment, VerifyRule, BODY_OFFSET};
-use crate::{compile_fixture_fragment, encode_fragment, fixture_state, FragmentTables};
+use crate::{case_state, compile_fixture_fragment, encode_fragment, FragmentTables};
 
 /// Words outside the generated subset (test-only raw encodings).
 const FOREIGN_WORDS: &[(&str, u32)] = &[
@@ -49,7 +49,6 @@ const FOREIGN_WORDS: &[(&str, u32)] = &[
     ("stlr x0, [x1, #-8]! (LRCPC3)", 0xd980_0820),
     ("ldapur x0, [x1, #8] (LRCPC2)", 0xd940_8020),
     ("ldr q0, <literal>", 0x9c00_0000),
-    ("str q0, [x1, x2]", 0x3ca2_6820),
     ("ldnp x0, x1, [x2]", 0xa840_0440),
     ("prfum pldl1keep, [x0, #1]", 0xf880_1000),
     ("rprfm pldkeep, x22, [x30]", 0xf8b6_4bd8),
@@ -86,9 +85,10 @@ const HINT_WORDS: &[(&str, u32)] = &[
     ("chkfeat x16", 0xd503_251f),
 ];
 
-/// System-register reads next to the allowlisted MRS instances (A10: TPIDR_EL0,
-/// CNTVCT_EL0, CNTFRQ_EL0). None decodes: rule 1 rejects each anywhere, so no
-/// other system register is ever read at EL1.
+/// System-register accesses next to the allowlisted MRS instances (A10: TPIDR_EL0,
+/// CNTVCT_EL0, CNTFRQ_EL0; A18: FPCR, FPSR). None decodes: rule 1 rejects each
+/// anywhere, so no other system register is ever read at EL1 and FPCR/FPSR are
+/// never written.
 const MRS_OTHER_WORDS: &[(&str, u32)] = &[
     ("mrs x0, cntpct_el0", 0xd53b_e020),
     ("mrs x0, cntpctss_el0", 0xd53b_e0a0),
@@ -102,7 +102,9 @@ const MRS_OTHER_WORDS: &[(&str, u32)] = &[
     ("mrs x0, midr_el1", 0xd538_0000),
     ("mrs x0, ctr_el0", 0xd53b_0020),
     ("mrs x0, nzcv", 0xd53b_4200),
-    ("mrs x0, fpcr", 0xd53b_4400),
+    ("mrs x0, fpmr", 0xd53b_4440),
+    ("msr fpcr, x0", 0xd51b_4400),
+    ("msr fpsr, x0", 0xd51b_4420),
     ("mrs x0, s2_3_c14_c0_2 (CNTVCT_EL0 with o0 = 0)", 0xd533_e040),
     ("msr cntvct_el0, x0", 0xd51b_e040),
 ];
@@ -185,8 +187,9 @@ const SIMD_WINDOW_WORDS: &[(&str, u32)] = &[
     ("ld1 {v0.16b}, [sp]", 0x4c40_73e0),
 ];
 
-/// A9a SIMD&FP load/store encodings translation never emits (an offset,
-/// pre/post-index, unscaled, or LD1/ST1 post-index): rejected anywhere, window
+/// SIMD&FP load/store encodings translation never emits (A9a: an offset,
+/// pre/post-index, unscaled, or LD1/ST1 post-index; A18: register offset, which it
+/// lowers to an `add` into sA and the base-only access): rejected anywhere, window
 /// positions included.
 const SIMD_USER_ONLY_WORDS: &[(&str, u32)] = &[
     ("ldr d0, [x1, #8]", 0xfd40_0420),
@@ -197,6 +200,12 @@ const SIMD_USER_ONLY_WORDS: &[(&str, u32)] = &[
     ("ld1 {v0.16b}, [x1], #16", 0x4cdf_7020),
     ("st1 {v0.2d}, [x1], x2", 0x4c82_7c20),
     ("str q0, [sp, #16]", 0x3d80_07e0),
+    ("str q0, [x1, x2]", 0x3ca2_6820),
+    ("ldr d0, [x1, x2, lsl #3]", 0xfc62_7820),
+    ("ldr b0, [x1, w2, sxtw]", 0x3c62_c820),
+    ("ldr b0, [x1, x2, lsl #0]", 0x3c62_7820),
+    ("str h3, [sp, w4, uxtw #1]", 0x7c24_5be3),
+    ("ldr s1, [x2, x3, sxtx #2]", 0xbc63_f841),
 ];
 
 /// A9a SIMD&FP register forms that write a general register: into x29 they are
@@ -205,6 +214,8 @@ const SIMD_FP_WRITES: &[(&str, u32)] = &[
     ("umov x29, v0.d[0]", 0x4e08_3c1d),
     ("fmov x29, d1", 0x9e66_003d),
     ("fmov w29, s1", 0x1e26_003d),
+    ("fcvtzs x29, d1", 0x9e78_003d),
+    ("fcvtau w29, s1", 0x1e25_003d),
 ];
 
 /// Unprivileged forms beyond `LDTR`/`STTR` (A7b), for insertion without a
@@ -548,7 +559,7 @@ impl Suite {
         }
         for (what, word) in SIMD_USER_ONLY_WORDS {
             self.replace_everywhere(
-                "insert SIMD&FP load/store with offset / writeback (A9a)",
+                "insert SIMD&FP load/store with offset / writeback / register offset (A9a, A18)",
                 fixture,
                 *word,
                 what,
@@ -1231,6 +1242,16 @@ impl Suite {
                 ("mov sA, x0", mov_reg(sa.enc(), 0)),
                 ("add sA, sA, #1", add_imm(sa.enc(), sa.enc(), 1)),
                 (
+                    "add sA, x0, x1, lsl #3",
+                    A64Insn::AddAddsubExtAdd64AddsubExt {
+                        rm: x(1),
+                        option: 0b011,
+                        imm3: uimm(3, 3),
+                        rn: x(0),
+                        rd: x(sa.enc()),
+                    },
+                ),
+                (
                     "movz sB, #0",
                     A64Insn::MovzMovz64Movewide {
                         hw: 0,
@@ -1301,6 +1322,54 @@ impl Suite {
                     enc(insn),
                     what,
                 );
+            }
+
+            // A18: a register-offset lowering computes the address with
+            // `add sA, <base>, <index>, <extend> #shift` right before the range
+            // check. The verifier ties neither the add nor its operands to the access
+            // (the range check covers whatever sA holds), so what must be rejected is
+            // the add leaving that place or touching state it must not.
+            if let Some(A64Insn::AddAddsubExtAdd64AddsubExt { rm, option, imm3, rn, rd }) =
+                fixture.decoded(ubfx - 1).filter(|insn| {
+                    simd
+                        && matches!(insn, A64Insn::AddAddsubExtAdd64AddsubExt { rd, .. }
+                            if rd.enc() == sa.enc())
+                })
+            {
+                let add = ubfx - 1;
+                // Moved past the range check or the access: the check is no longer
+                // right before the access it guards.
+                for (a, b) in [(add, ubfx), (add, cbnz), (add, atomic)] {
+                    let mut words = fixture.words.clone();
+                    words.swap(a, b);
+                    self.expect_reject(
+                        "regoff address add moved past the range check (A18)",
+                        fixture,
+                        format!("swap {:#x} and {:#x}, {}", a * 4, b * 4, at(atomic)),
+                        &words,
+                        &fixture.tables,
+                    );
+                }
+                // Writing SP or the kernel frame pointer instead of sA, or reading
+                // SP / the kernel frame pointer as the base (kernel values).
+                let with = |rn: A64Reg, rd: A64Reg| {
+                    enc(A64Insn::AddAddsubExtAdd64AddsubExt { rm, option, imm3, rn, rd })
+                };
+                let altered = [
+                    ("add sp, <base>, <index>", with(rn, A64Reg::x_sp(31))),
+                    ("add x29, <base>, <index>", with(rn, x(29))),
+                    ("add sA, sp, <index>", with(A64Reg::x_sp(31), rd)),
+                    ("add sA, x29, <index>", with(x(29), rd)),
+                ];
+                for (what, word) in altered {
+                    self.replace(
+                        "regoff address add altered to touch SP / the frame pointer (A18)",
+                        fixture,
+                        add,
+                        word,
+                        what,
+                    );
+                }
             }
 
             // cbnz retargeted to a word that is not a forward exit-group start (any
@@ -3294,7 +3363,7 @@ fn verifier_rejects_every_mutation_of_every_fixture_fragment() {
             case.text_base,
             case.text_bytes.clone(),
             case.entry_pc,
-            &fixture_state(case.text_base, &case.text_bytes)?,
+            &case_state(&case.symbol, case.text_base, &case.text_bytes)?,
         )?;
         let code = encode_fragment(&fragment)?;
         fixtures.push(Fixture {

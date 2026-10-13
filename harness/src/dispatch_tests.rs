@@ -14,7 +14,7 @@ use crate::model::{HaltReason, MachineState};
 use crate::runtime::URuntimeHalt;
 use crate::shared::abi::{ibtc_slot_index, ibtc_victim_index, RetStatus};
 use crate::shared::trans::cfg::{admit_at, RuntimeExitReason};
-use crate::{fixture_state, MockCodeProvider};
+use crate::{case_state, MockCodeProvider};
 
 fn case(fixture: &str, symbol: &str) -> (CompiledCase, MachineState) {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -35,7 +35,8 @@ fn case(fixture: &str, symbol: &str) -> (CompiledCase, MachineState) {
     )
     .unwrap_or_else(|err| panic!("compile {fixture} {symbol}: {err}"));
     std::fs::remove_dir_all(&out_dir).expect("remove dispatch test work dir");
-    let state = fixture_state(compiled.text_base, &compiled.text_bytes).expect("fixture state");
+    let state =
+        case_state(symbol, compiled.text_base, &compiled.text_bytes).expect("fixture state");
     (compiled, state)
 }
 

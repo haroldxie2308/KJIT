@@ -1,4 +1,5 @@
 use crate::arm64::decode_bit_masks;
+use crate::fp::expand_imm8;
 use crate::shared::arm64::{
     A64Condition, A64FpSimdWriteback, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode, A64RegWidth,
 };
@@ -1029,6 +1030,132 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
         | Rev64AdvsimdRev64AsimdmiscR { .. }
         | CntAdvsimdCntAsimdmiscR { .. }
         | TblAdvsimdTblAsimdtblL11 { .. } => pretty_simd(insn),
+        FaddFloatFaddSFloatdp2 { .. }
+        | FaddFloatFaddDFloatdp2 { .. }
+        | FsubFloatFsubSFloatdp2 { .. }
+        | FsubFloatFsubDFloatdp2 { .. }
+        | FmulFloatFmulSFloatdp2 { .. }
+        | FmulFloatFmulDFloatdp2 { .. }
+        | FnmulFloatFnmulSFloatdp2 { .. }
+        | FnmulFloatFnmulDFloatdp2 { .. }
+        | FdivFloatFdivSFloatdp2 { .. }
+        | FdivFloatFdivDFloatdp2 { .. }
+        | FmaxFloatFmaxSFloatdp2 { .. }
+        | FmaxFloatFmaxDFloatdp2 { .. }
+        | FminFloatFminSFloatdp2 { .. }
+        | FminFloatFminDFloatdp2 { .. }
+        | FmaxnmFloatFmaxnmSFloatdp2 { .. }
+        | FmaxnmFloatFmaxnmDFloatdp2 { .. }
+        | FminnmFloatFminnmSFloatdp2 { .. }
+        | FminnmFloatFminnmDFloatdp2 { .. }
+        | FmaddFloatFmaddSFloatdp3 { .. }
+        | FmaddFloatFmaddDFloatdp3 { .. }
+        | FmsubFloatFmsubSFloatdp3 { .. }
+        | FmsubFloatFmsubDFloatdp3 { .. }
+        | FnmaddFloatFnmaddSFloatdp3 { .. }
+        | FnmaddFloatFnmaddDFloatdp3 { .. }
+        | FnmsubFloatFnmsubSFloatdp3 { .. }
+        | FnmsubFloatFnmsubDFloatdp3 { .. }
+        | FabsFloatFabsSFloatdp1 { .. }
+        | FabsFloatFabsDFloatdp1 { .. }
+        | FnegFloatFnegSFloatdp1 { .. }
+        | FnegFloatFnegDFloatdp1 { .. }
+        | FsqrtFloatFsqrtSFloatdp1 { .. }
+        | FsqrtFloatFsqrtDFloatdp1 { .. }
+        | FrintnFloatFrintnSFloatdp1 { .. }
+        | FrintnFloatFrintnDFloatdp1 { .. }
+        | FrintpFloatFrintpSFloatdp1 { .. }
+        | FrintpFloatFrintpDFloatdp1 { .. }
+        | FrintmFloatFrintmSFloatdp1 { .. }
+        | FrintmFloatFrintmDFloatdp1 { .. }
+        | FrintzFloatFrintzSFloatdp1 { .. }
+        | FrintzFloatFrintzDFloatdp1 { .. }
+        | FrintaFloatFrintaSFloatdp1 { .. }
+        | FrintaFloatFrintaDFloatdp1 { .. }
+        | FrintxFloatFrintxSFloatdp1 { .. }
+        | FrintxFloatFrintxDFloatdp1 { .. }
+        | FrintiFloatFrintiSFloatdp1 { .. }
+        | FrintiFloatFrintiDFloatdp1 { .. }
+        | FcvtFloatFcvtDsFloatdp1 { .. }
+        | FcvtFloatFcvtSdFloatdp1 { .. }
+        | FcmpFloatFcmpSFloatcmp { .. }
+        | FcmpFloatFcmpSzFloatcmp { .. }
+        | FcmpFloatFcmpDFloatcmp { .. }
+        | FcmpFloatFcmpDzFloatcmp { .. }
+        | FcmpeFloatFcmpeSFloatcmp { .. }
+        | FcmpeFloatFcmpeSzFloatcmp { .. }
+        | FcmpeFloatFcmpeDFloatcmp { .. }
+        | FcmpeFloatFcmpeDzFloatcmp { .. }
+        | FccmpFloatFccmpSFloatccmp { .. }
+        | FccmpFloatFccmpDFloatccmp { .. }
+        | FccmpeFloatFccmpeSFloatccmp { .. }
+        | FccmpeFloatFccmpeDFloatccmp { .. }
+        | FcselFloatFcselSFloatsel { .. }
+        | FcselFloatFcselDFloatsel { .. }
+        | FmovFloatImmFmovSFloatimm { .. }
+        | FmovFloatImmFmovDFloatimm { .. }
+        | ScvtfFloatIntScvtfS32Float2int { .. }
+        | ScvtfFloatIntScvtfD32Float2int { .. }
+        | ScvtfFloatIntScvtfS64Float2int { .. }
+        | ScvtfFloatIntScvtfD64Float2int { .. }
+        | UcvtfFloatIntUcvtfS32Float2int { .. }
+        | UcvtfFloatIntUcvtfD32Float2int { .. }
+        | UcvtfFloatIntUcvtfS64Float2int { .. }
+        | UcvtfFloatIntUcvtfD64Float2int { .. }
+        | FcvtzsFloatIntFcvtzs32sFloat2int { .. }
+        | FcvtzsFloatIntFcvtzs64sFloat2int { .. }
+        | FcvtzsFloatIntFcvtzs32dFloat2int { .. }
+        | FcvtzsFloatIntFcvtzs64dFloat2int { .. }
+        | FcvtzuFloatIntFcvtzu32sFloat2int { .. }
+        | FcvtzuFloatIntFcvtzu64sFloat2int { .. }
+        | FcvtzuFloatIntFcvtzu32dFloat2int { .. }
+        | FcvtzuFloatIntFcvtzu64dFloat2int { .. }
+        | FcvtnsFloatFcvtns32sFloat2int { .. }
+        | FcvtnsFloatFcvtns64sFloat2int { .. }
+        | FcvtnsFloatFcvtns32dFloat2int { .. }
+        | FcvtnsFloatFcvtns64dFloat2int { .. }
+        | FcvtnuFloatFcvtnu32sFloat2int { .. }
+        | FcvtnuFloatFcvtnu64sFloat2int { .. }
+        | FcvtnuFloatFcvtnu32dFloat2int { .. }
+        | FcvtnuFloatFcvtnu64dFloat2int { .. }
+        | FcvtmsFloatFcvtms32sFloat2int { .. }
+        | FcvtmsFloatFcvtms64sFloat2int { .. }
+        | FcvtmsFloatFcvtms32dFloat2int { .. }
+        | FcvtmsFloatFcvtms64dFloat2int { .. }
+        | FcvtmuFloatFcvtmu32sFloat2int { .. }
+        | FcvtmuFloatFcvtmu64sFloat2int { .. }
+        | FcvtmuFloatFcvtmu32dFloat2int { .. }
+        | FcvtmuFloatFcvtmu64dFloat2int { .. }
+        | FcvtpsFloatFcvtps32sFloat2int { .. }
+        | FcvtpsFloatFcvtps64sFloat2int { .. }
+        | FcvtpsFloatFcvtps32dFloat2int { .. }
+        | FcvtpsFloatFcvtps64dFloat2int { .. }
+        | FcvtpuFloatFcvtpu32sFloat2int { .. }
+        | FcvtpuFloatFcvtpu64sFloat2int { .. }
+        | FcvtpuFloatFcvtpu32dFloat2int { .. }
+        | FcvtpuFloatFcvtpu64dFloat2int { .. }
+        | FcvtasFloatFcvtas32sFloat2int { .. }
+        | FcvtasFloatFcvtas64sFloat2int { .. }
+        | FcvtasFloatFcvtas32dFloat2int { .. }
+        | FcvtasFloatFcvtas64dFloat2int { .. }
+        | FcvtauFloatFcvtau32sFloat2int { .. }
+        | FcvtauFloatFcvtau64sFloat2int { .. }
+        | FcvtauFloatFcvtau32dFloat2int { .. }
+        | FcvtauFloatFcvtau64dFloat2int { .. }
+        | LdrRegFpsimdLdrBLdstRegoff { .. }
+        | LdrRegFpsimdLdrHLdstRegoff { .. }
+        | LdrRegFpsimdLdrSLdstRegoff { .. }
+        | LdrRegFpsimdLdrDLdstRegoff { .. }
+        | LdrRegFpsimdLdrQLdstRegoff { .. }
+        | LdrRegFpsimdLdrBlLdstRegoff { .. }
+        | StrRegFpsimdStrBLdstRegoff { .. }
+        | StrRegFpsimdStrHLdstRegoff { .. }
+        | StrRegFpsimdStrSLdstRegoff { .. }
+        | StrRegFpsimdStrDLdstRegoff { .. }
+        | StrRegFpsimdStrQLdstRegoff { .. }
+        | StrRegFpsimdStrBlLdstRegoff { .. }
+        | MrsMrsRsSystemmoveFpcr { .. }
+        | MrsMrsRsSystemmoveFpsr { .. } => pretty_fp(insn),
         MsrImmMsrSiPstate { crm } => format!("msr pan, #{crm}"),
         BlBlOnlyBranchImm { imm26 } => pretty_branch("bl", pc, imm26),
         BrBr64BranchReg { rn } => format!("br {}", reg_name(rn)),
@@ -1036,6 +1163,265 @@ pub fn pretty_insn(insn: A64Insn, pc: Option<u64>) -> String {
         RetRet64rBranchReg { rn } if rn.enc() == 30 => "ret".to_string(),
         RetRet64rBranchReg { rn } => format!("ret {}", reg_name(rn)),
         SvcSvcExException { imm16 } => format!("svc {}", imm(imm16.value())),
+    }
+}
+
+/// A18 scalar floating-point forms, register-offset SIMD&FP loads/stores and MRS of
+/// FPCR/FPSR, in LLVM's syntax (for traces and reproducer comments).
+fn pretty_fp(insn: A64Insn) -> String {
+    use A64Insn::*;
+    let mnemonic = insn.mnemonic().to_lowercase();
+    // `FADD_S_floatdp2` -> `S`, `FCVTZS_32D_float2int` -> `32D`, `FCMP_SZ_floatcmp`
+    // -> `SZ`, `LDR_BL_ldst_regoff` -> `BL`.
+    let kind = insn
+        .key()
+        .split('.')
+        .nth(1)
+        .and_then(|e| e.split('_').nth(1))
+        .unwrap_or("?")
+        .to_lowercase();
+    // The scalar register letter: the first letter of the precision / transfer size,
+    // the last of a conversion's (`32d`).
+    let first = &kind[..1];
+    let last = &kind[kind.len() - 1..];
+    let scale = |letter: &str| match letter {
+        "b" => 0,
+        "h" => 1,
+        "s" => 2,
+        "d" => 3,
+        _ => 4,
+    };
+    match insn {
+        FaddFloatFaddSFloatdp2 { rm, rn, rd }
+        | FaddFloatFaddDFloatdp2 { rm, rn, rd }
+        | FsubFloatFsubSFloatdp2 { rm, rn, rd }
+        | FsubFloatFsubDFloatdp2 { rm, rn, rd }
+        | FmulFloatFmulSFloatdp2 { rm, rn, rd }
+        | FmulFloatFmulDFloatdp2 { rm, rn, rd }
+        | FnmulFloatFnmulSFloatdp2 { rm, rn, rd }
+        | FnmulFloatFnmulDFloatdp2 { rm, rn, rd }
+        | FdivFloatFdivSFloatdp2 { rm, rn, rd }
+        | FdivFloatFdivDFloatdp2 { rm, rn, rd }
+        | FmaxFloatFmaxSFloatdp2 { rm, rn, rd }
+        | FmaxFloatFmaxDFloatdp2 { rm, rn, rd }
+        | FminFloatFminSFloatdp2 { rm, rn, rd }
+        | FminFloatFminDFloatdp2 { rm, rn, rd }
+        | FmaxnmFloatFmaxnmSFloatdp2 { rm, rn, rd }
+        | FmaxnmFloatFmaxnmDFloatdp2 { rm, rn, rd }
+        | FminnmFloatFminnmSFloatdp2 { rm, rn, rd }
+        | FminnmFloatFminnmDFloatdp2 { rm, rn, rd } => {
+            format!("{mnemonic} {first}{rd}, {first}{rn}, {first}{rm}")
+        }
+        FmaddFloatFmaddSFloatdp3 { rm, ra, rn, rd }
+        | FmaddFloatFmaddDFloatdp3 { rm, ra, rn, rd }
+        | FmsubFloatFmsubSFloatdp3 { rm, ra, rn, rd }
+        | FmsubFloatFmsubDFloatdp3 { rm, ra, rn, rd }
+        | FnmaddFloatFnmaddSFloatdp3 { rm, ra, rn, rd }
+        | FnmaddFloatFnmaddDFloatdp3 { rm, ra, rn, rd }
+        | FnmsubFloatFnmsubSFloatdp3 { rm, ra, rn, rd }
+        | FnmsubFloatFnmsubDFloatdp3 { rm, ra, rn, rd } => {
+            format!("{mnemonic} {first}{rd}, {first}{rn}, {first}{rm}, {first}{ra}")
+        }
+        FabsFloatFabsSFloatdp1 { rn, rd }
+        | FabsFloatFabsDFloatdp1 { rn, rd }
+        | FnegFloatFnegSFloatdp1 { rn, rd }
+        | FnegFloatFnegDFloatdp1 { rn, rd }
+        | FsqrtFloatFsqrtSFloatdp1 { rn, rd }
+        | FsqrtFloatFsqrtDFloatdp1 { rn, rd }
+        | FrintnFloatFrintnSFloatdp1 { rn, rd }
+        | FrintnFloatFrintnDFloatdp1 { rn, rd }
+        | FrintpFloatFrintpSFloatdp1 { rn, rd }
+        | FrintpFloatFrintpDFloatdp1 { rn, rd }
+        | FrintmFloatFrintmSFloatdp1 { rn, rd }
+        | FrintmFloatFrintmDFloatdp1 { rn, rd }
+        | FrintzFloatFrintzSFloatdp1 { rn, rd }
+        | FrintzFloatFrintzDFloatdp1 { rn, rd }
+        | FrintaFloatFrintaSFloatdp1 { rn, rd }
+        | FrintaFloatFrintaDFloatdp1 { rn, rd }
+        | FrintxFloatFrintxSFloatdp1 { rn, rd }
+        | FrintxFloatFrintxDFloatdp1 { rn, rd }
+        | FrintiFloatFrintiSFloatdp1 { rn, rd }
+        | FrintiFloatFrintiDFloatdp1 { rn, rd } => {
+            format!("{mnemonic} {first}{rd}, {first}{rn}")
+        }
+        FcvtFloatFcvtDsFloatdp1 { rn, rd } => format!("fcvt d{rd}, s{rn}"),
+        FcvtFloatFcvtSdFloatdp1 { rn, rd } => format!("fcvt s{rd}, d{rn}"),
+        FcmpFloatFcmpSFloatcmp { rm, rn }
+        | FcmpFloatFcmpDFloatcmp { rm, rn }
+        | FcmpeFloatFcmpeSFloatcmp { rm, rn }
+        | FcmpeFloatFcmpeDFloatcmp { rm, rn } => {
+            format!("{mnemonic} {first}{rn}, {first}{rm}")
+        }
+        FcmpFloatFcmpSzFloatcmp { rn }
+        | FcmpFloatFcmpDzFloatcmp { rn }
+        | FcmpeFloatFcmpeSzFloatcmp { rn }
+        | FcmpeFloatFcmpeDzFloatcmp { rn } => format!("{mnemonic} {first}{rn}, #0.0"),
+        FccmpFloatFccmpSFloatccmp { rm, cond, rn, nzcv }
+        | FccmpFloatFccmpDFloatccmp { rm, cond, rn, nzcv }
+        | FccmpeFloatFccmpeSFloatccmp { rm, cond, rn, nzcv }
+        | FccmpeFloatFccmpeDFloatccmp { rm, cond, rn, nzcv } => {
+            format!(
+                "{mnemonic} {first}{rn}, {first}{rm}, #{nzcv}, {}",
+                condition_name(cond)
+            )
+        }
+        FcselFloatFcselSFloatsel { rm, cond, rn, rd }
+        | FcselFloatFcselDFloatsel { rm, cond, rn, rd } => {
+            format!(
+                "{mnemonic} {first}{rd}, {first}{rn}, {first}{rm}, {}",
+                condition_name(cond)
+            )
+        }
+        FmovFloatImmFmovSFloatimm { imm8, rd } | FmovFloatImmFmovDFloatimm { imm8, rd } => {
+            // Printed as the constant the 8-bit immediate encodes.
+            let value = if first == "s" {
+                f64::from(f32::from_bits(expand_imm8(32, imm8.raw() as u8) as u32))
+            } else {
+                f64::from_bits(expand_imm8(64, imm8.raw() as u8))
+            };
+            format!("fmov {first}{rd}, #{value:?}")
+        }
+        ScvtfFloatIntScvtfS32Float2int { rn, rd }
+        | ScvtfFloatIntScvtfD32Float2int { rn, rd }
+        | ScvtfFloatIntScvtfS64Float2int { rn, rd }
+        | ScvtfFloatIntScvtfD64Float2int { rn, rd }
+        | UcvtfFloatIntUcvtfS32Float2int { rn, rd }
+        | UcvtfFloatIntUcvtfD32Float2int { rn, rd }
+        | UcvtfFloatIntUcvtfS64Float2int { rn, rd }
+        | UcvtfFloatIntUcvtfD64Float2int { rn, rd } => {
+            format!("{mnemonic} {first}{rd}, {}", reg_name(rn))
+        }
+        FcvtzsFloatIntFcvtzs32sFloat2int { rn, rd }
+        | FcvtzsFloatIntFcvtzs64sFloat2int { rn, rd }
+        | FcvtzsFloatIntFcvtzs32dFloat2int { rn, rd }
+        | FcvtzsFloatIntFcvtzs64dFloat2int { rn, rd }
+        | FcvtzuFloatIntFcvtzu32sFloat2int { rn, rd }
+        | FcvtzuFloatIntFcvtzu64sFloat2int { rn, rd }
+        | FcvtzuFloatIntFcvtzu32dFloat2int { rn, rd }
+        | FcvtzuFloatIntFcvtzu64dFloat2int { rn, rd }
+        | FcvtnsFloatFcvtns32sFloat2int { rn, rd }
+        | FcvtnsFloatFcvtns64sFloat2int { rn, rd }
+        | FcvtnsFloatFcvtns32dFloat2int { rn, rd }
+        | FcvtnsFloatFcvtns64dFloat2int { rn, rd }
+        | FcvtnuFloatFcvtnu32sFloat2int { rn, rd }
+        | FcvtnuFloatFcvtnu64sFloat2int { rn, rd }
+        | FcvtnuFloatFcvtnu32dFloat2int { rn, rd }
+        | FcvtnuFloatFcvtnu64dFloat2int { rn, rd }
+        | FcvtmsFloatFcvtms32sFloat2int { rn, rd }
+        | FcvtmsFloatFcvtms64sFloat2int { rn, rd }
+        | FcvtmsFloatFcvtms32dFloat2int { rn, rd }
+        | FcvtmsFloatFcvtms64dFloat2int { rn, rd }
+        | FcvtmuFloatFcvtmu32sFloat2int { rn, rd }
+        | FcvtmuFloatFcvtmu64sFloat2int { rn, rd }
+        | FcvtmuFloatFcvtmu32dFloat2int { rn, rd }
+        | FcvtmuFloatFcvtmu64dFloat2int { rn, rd }
+        | FcvtpsFloatFcvtps32sFloat2int { rn, rd }
+        | FcvtpsFloatFcvtps64sFloat2int { rn, rd }
+        | FcvtpsFloatFcvtps32dFloat2int { rn, rd }
+        | FcvtpsFloatFcvtps64dFloat2int { rn, rd }
+        | FcvtpuFloatFcvtpu32sFloat2int { rn, rd }
+        | FcvtpuFloatFcvtpu64sFloat2int { rn, rd }
+        | FcvtpuFloatFcvtpu32dFloat2int { rn, rd }
+        | FcvtpuFloatFcvtpu64dFloat2int { rn, rd }
+        | FcvtasFloatFcvtas32sFloat2int { rn, rd }
+        | FcvtasFloatFcvtas64sFloat2int { rn, rd }
+        | FcvtasFloatFcvtas32dFloat2int { rn, rd }
+        | FcvtasFloatFcvtas64dFloat2int { rn, rd }
+        | FcvtauFloatFcvtau32sFloat2int { rn, rd }
+        | FcvtauFloatFcvtau64sFloat2int { rn, rd }
+        | FcvtauFloatFcvtau32dFloat2int { rn, rd }
+        | FcvtauFloatFcvtau64dFloat2int { rn, rd } => {
+            format!("{mnemonic} {}, {last}{rn}", reg_name(rd))
+        }
+        LdrRegFpsimdLdrBLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrRegFpsimdLdrHLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrRegFpsimdLdrSLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrRegFpsimdLdrDLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | LdrRegFpsimdLdrQLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | StrRegFpsimdStrBLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | StrRegFpsimdStrHLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | StrRegFpsimdStrSLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | StrRegFpsimdStrDLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        }
+        | StrRegFpsimdStrQLdstRegoff {
+            rm,
+            option,
+            s,
+            rn,
+            rt,
+        } => {
+            format!(
+                "{mnemonic} {first}{rt}, [{}, {}]",
+                reg_name(rn),
+                index_operand(rm, option, if s == 1 { scale(first) } else { 0 })
+            )
+        }
+        LdrRegFpsimdLdrBlLdstRegoff { rm, s, rn, rt }
+        | StrRegFpsimdStrBlLdstRegoff { rm, s, rn, rt } => {
+            // S = 1 spells the (zero) shift out.
+            let amount = if s == 1 { ", lsl #0" } else { "" };
+            format!(
+                "{mnemonic} b{rt}, [{}, {}{amount}]",
+                reg_name(rn),
+                index_operand(rm, 0b011, 0)
+            )
+        }
+        MrsMrsRsSystemmoveFpcr { rt } => format!("mrs {}, fpcr", reg_name(rt)),
+        MrsMrsRsSystemmoveFpsr { rt } => format!("mrs {}, fpsr", reg_name(rt)),
+        other => unreachable!("{} is not an A18 form", other.key()),
     }
 }
 

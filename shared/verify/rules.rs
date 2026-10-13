@@ -64,9 +64,9 @@ pub(super) enum Form {
         rn: A64Reg,
         fpsimd: bool,
     },
-    /// A9a SIMD&FP register-only form: V registers, FPCR/FPSR (none of the A9a
-    /// forms touches them) and the general registers its roles name. Allowed
-    /// anywhere; a fragment containing one `uses_fpsimd`.
+    /// A SIMD&FP register-only form (A9a, A18 scalar floating point, and MRS of
+    /// FPCR/FPSR): V registers, NZCV, FPCR/FPSR and the general registers its roles
+    /// name. Allowed anywhere; a fragment containing one `uses_fpsimd`.
     Simd,
     /// Any `MSR (immediate)` the generated subset decodes (PSTATE.PAN, whatever the
     /// immediate): never allowed in a fragment (A15: only the trampoline writes PAN).
@@ -447,7 +447,21 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         | A64Insn::St1AdvsimdMultSt1AsisdlsepI3I3 { .. }
         | A64Insn::St1AdvsimdMultSt1AsisdlsepR3R3 { .. }
         | A64Insn::St1AdvsimdMultSt1AsisdlsepI4I4 { .. }
-        | A64Insn::St1AdvsimdMultSt1AsisdlsepR4R4 { .. } => Form::UserOnly,
+        | A64Insn::St1AdvsimdMultSt1AsisdlsepR4R4 { .. }
+        // A18 register-offset SIMD&FP loads/stores: translation computes the address
+        // in sA and runs the base-only encoding, so one in a fragment is never valid.
+        | A64Insn::LdrRegFpsimdLdrBLdstRegoff { .. }
+        | A64Insn::LdrRegFpsimdLdrBlLdstRegoff { .. }
+        | A64Insn::LdrRegFpsimdLdrHLdstRegoff { .. }
+        | A64Insn::LdrRegFpsimdLdrSLdstRegoff { .. }
+        | A64Insn::LdrRegFpsimdLdrDLdstRegoff { .. }
+        | A64Insn::LdrRegFpsimdLdrQLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrBLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrBlLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrHLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrSLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrDLdstRegoff { .. }
+        | A64Insn::StrRegFpsimdStrQLdstRegoff { .. } => Form::UserOnly,
         // A9a SIMD&FP register-only forms: read/write V registers and possibly
         // general registers (roles), never memory, flags or control flow.
         A64Insn::DupAdvsimdEltDupAsisdoneOnly { .. }
@@ -524,7 +538,127 @@ pub(super) fn classify(insn: A64Insn) -> Form {
         | A64Insn::Rev32AdvsimdRev32AsimdmiscR { .. }
         | A64Insn::Rev64AdvsimdRev64AsimdmiscR { .. }
         | A64Insn::CntAdvsimdCntAsimdmiscR { .. }
-        | A64Insn::TblAdvsimdTblAsimdtblL11 { .. } => Form::Simd,
+        | A64Insn::TblAdvsimdTblAsimdtblL11 { .. }
+        // A18 scalar floating point, single and double precision: V registers, NZCV
+        // (FCMP/FCCMP write it, FCCMP/FCSEL read it), FPCR/FPSR (rounding and
+        // trap-disabled exception behaviour; the bracket loaded the user's, and the
+        // cumulative flags are written back with it) and the general registers its
+        // roles name. MRS of FPCR/FPSR reads the same registers, so it needs the
+        // bracket too.
+        | A64Insn::MrsMrsRsSystemmoveFpcr { .. }
+        | A64Insn::MrsMrsRsSystemmoveFpsr { .. }
+        | A64Insn::FaddFloatFaddSFloatdp2 { .. }
+        | A64Insn::FaddFloatFaddDFloatdp2 { .. }
+        | A64Insn::FsubFloatFsubSFloatdp2 { .. }
+        | A64Insn::FsubFloatFsubDFloatdp2 { .. }
+        | A64Insn::FmulFloatFmulSFloatdp2 { .. }
+        | A64Insn::FmulFloatFmulDFloatdp2 { .. }
+        | A64Insn::FnmulFloatFnmulSFloatdp2 { .. }
+        | A64Insn::FnmulFloatFnmulDFloatdp2 { .. }
+        | A64Insn::FdivFloatFdivSFloatdp2 { .. }
+        | A64Insn::FdivFloatFdivDFloatdp2 { .. }
+        | A64Insn::FmaxFloatFmaxSFloatdp2 { .. }
+        | A64Insn::FmaxFloatFmaxDFloatdp2 { .. }
+        | A64Insn::FminFloatFminSFloatdp2 { .. }
+        | A64Insn::FminFloatFminDFloatdp2 { .. }
+        | A64Insn::FmaxnmFloatFmaxnmSFloatdp2 { .. }
+        | A64Insn::FmaxnmFloatFmaxnmDFloatdp2 { .. }
+        | A64Insn::FminnmFloatFminnmSFloatdp2 { .. }
+        | A64Insn::FminnmFloatFminnmDFloatdp2 { .. }
+        | A64Insn::FmaddFloatFmaddSFloatdp3 { .. }
+        | A64Insn::FmaddFloatFmaddDFloatdp3 { .. }
+        | A64Insn::FmsubFloatFmsubSFloatdp3 { .. }
+        | A64Insn::FmsubFloatFmsubDFloatdp3 { .. }
+        | A64Insn::FnmaddFloatFnmaddSFloatdp3 { .. }
+        | A64Insn::FnmaddFloatFnmaddDFloatdp3 { .. }
+        | A64Insn::FnmsubFloatFnmsubSFloatdp3 { .. }
+        | A64Insn::FnmsubFloatFnmsubDFloatdp3 { .. }
+        | A64Insn::FabsFloatFabsSFloatdp1 { .. }
+        | A64Insn::FabsFloatFabsDFloatdp1 { .. }
+        | A64Insn::FnegFloatFnegSFloatdp1 { .. }
+        | A64Insn::FnegFloatFnegDFloatdp1 { .. }
+        | A64Insn::FsqrtFloatFsqrtSFloatdp1 { .. }
+        | A64Insn::FsqrtFloatFsqrtDFloatdp1 { .. }
+        | A64Insn::FrintnFloatFrintnSFloatdp1 { .. }
+        | A64Insn::FrintnFloatFrintnDFloatdp1 { .. }
+        | A64Insn::FrintpFloatFrintpSFloatdp1 { .. }
+        | A64Insn::FrintpFloatFrintpDFloatdp1 { .. }
+        | A64Insn::FrintmFloatFrintmSFloatdp1 { .. }
+        | A64Insn::FrintmFloatFrintmDFloatdp1 { .. }
+        | A64Insn::FrintzFloatFrintzSFloatdp1 { .. }
+        | A64Insn::FrintzFloatFrintzDFloatdp1 { .. }
+        | A64Insn::FrintaFloatFrintaSFloatdp1 { .. }
+        | A64Insn::FrintaFloatFrintaDFloatdp1 { .. }
+        | A64Insn::FrintxFloatFrintxSFloatdp1 { .. }
+        | A64Insn::FrintxFloatFrintxDFloatdp1 { .. }
+        | A64Insn::FrintiFloatFrintiSFloatdp1 { .. }
+        | A64Insn::FrintiFloatFrintiDFloatdp1 { .. }
+        | A64Insn::FcvtFloatFcvtDsFloatdp1 { .. }
+        | A64Insn::FcvtFloatFcvtSdFloatdp1 { .. }
+        | A64Insn::FcmpFloatFcmpSFloatcmp { .. }
+        | A64Insn::FcmpFloatFcmpSzFloatcmp { .. }
+        | A64Insn::FcmpFloatFcmpDFloatcmp { .. }
+        | A64Insn::FcmpFloatFcmpDzFloatcmp { .. }
+        | A64Insn::FcmpeFloatFcmpeSFloatcmp { .. }
+        | A64Insn::FcmpeFloatFcmpeSzFloatcmp { .. }
+        | A64Insn::FcmpeFloatFcmpeDFloatcmp { .. }
+        | A64Insn::FcmpeFloatFcmpeDzFloatcmp { .. }
+        | A64Insn::FccmpFloatFccmpSFloatccmp { .. }
+        | A64Insn::FccmpFloatFccmpDFloatccmp { .. }
+        | A64Insn::FccmpeFloatFccmpeSFloatccmp { .. }
+        | A64Insn::FccmpeFloatFccmpeDFloatccmp { .. }
+        | A64Insn::FcselFloatFcselSFloatsel { .. }
+        | A64Insn::FcselFloatFcselDFloatsel { .. }
+        | A64Insn::FmovFloatImmFmovSFloatimm { .. }
+        | A64Insn::FmovFloatImmFmovDFloatimm { .. }
+        | A64Insn::ScvtfFloatIntScvtfS32Float2int { .. }
+        | A64Insn::ScvtfFloatIntScvtfD32Float2int { .. }
+        | A64Insn::ScvtfFloatIntScvtfS64Float2int { .. }
+        | A64Insn::ScvtfFloatIntScvtfD64Float2int { .. }
+        | A64Insn::UcvtfFloatIntUcvtfS32Float2int { .. }
+        | A64Insn::UcvtfFloatIntUcvtfD32Float2int { .. }
+        | A64Insn::UcvtfFloatIntUcvtfS64Float2int { .. }
+        | A64Insn::UcvtfFloatIntUcvtfD64Float2int { .. }
+        | A64Insn::FcvtzsFloatIntFcvtzs32sFloat2int { .. }
+        | A64Insn::FcvtzsFloatIntFcvtzs64sFloat2int { .. }
+        | A64Insn::FcvtzsFloatIntFcvtzs32dFloat2int { .. }
+        | A64Insn::FcvtzsFloatIntFcvtzs64dFloat2int { .. }
+        | A64Insn::FcvtzuFloatIntFcvtzu32sFloat2int { .. }
+        | A64Insn::FcvtzuFloatIntFcvtzu64sFloat2int { .. }
+        | A64Insn::FcvtzuFloatIntFcvtzu32dFloat2int { .. }
+        | A64Insn::FcvtzuFloatIntFcvtzu64dFloat2int { .. }
+        | A64Insn::FcvtnsFloatFcvtns32sFloat2int { .. }
+        | A64Insn::FcvtnsFloatFcvtns64sFloat2int { .. }
+        | A64Insn::FcvtnsFloatFcvtns32dFloat2int { .. }
+        | A64Insn::FcvtnsFloatFcvtns64dFloat2int { .. }
+        | A64Insn::FcvtnuFloatFcvtnu32sFloat2int { .. }
+        | A64Insn::FcvtnuFloatFcvtnu64sFloat2int { .. }
+        | A64Insn::FcvtnuFloatFcvtnu32dFloat2int { .. }
+        | A64Insn::FcvtnuFloatFcvtnu64dFloat2int { .. }
+        | A64Insn::FcvtmsFloatFcvtms32sFloat2int { .. }
+        | A64Insn::FcvtmsFloatFcvtms64sFloat2int { .. }
+        | A64Insn::FcvtmsFloatFcvtms32dFloat2int { .. }
+        | A64Insn::FcvtmsFloatFcvtms64dFloat2int { .. }
+        | A64Insn::FcvtmuFloatFcvtmu32sFloat2int { .. }
+        | A64Insn::FcvtmuFloatFcvtmu64sFloat2int { .. }
+        | A64Insn::FcvtmuFloatFcvtmu32dFloat2int { .. }
+        | A64Insn::FcvtmuFloatFcvtmu64dFloat2int { .. }
+        | A64Insn::FcvtpsFloatFcvtps32sFloat2int { .. }
+        | A64Insn::FcvtpsFloatFcvtps64sFloat2int { .. }
+        | A64Insn::FcvtpsFloatFcvtps32dFloat2int { .. }
+        | A64Insn::FcvtpsFloatFcvtps64dFloat2int { .. }
+        | A64Insn::FcvtpuFloatFcvtpu32sFloat2int { .. }
+        | A64Insn::FcvtpuFloatFcvtpu64sFloat2int { .. }
+        | A64Insn::FcvtpuFloatFcvtpu32dFloat2int { .. }
+        | A64Insn::FcvtpuFloatFcvtpu64dFloat2int { .. }
+        | A64Insn::FcvtasFloatFcvtas32sFloat2int { .. }
+        | A64Insn::FcvtasFloatFcvtas64sFloat2int { .. }
+        | A64Insn::FcvtasFloatFcvtas32dFloat2int { .. }
+        | A64Insn::FcvtasFloatFcvtas64dFloat2int { .. }
+        | A64Insn::FcvtauFloatFcvtau32sFloat2int { .. }
+        | A64Insn::FcvtauFloatFcvtau64sFloat2int { .. }
+        | A64Insn::FcvtauFloatFcvtau32dFloat2int { .. }
+        | A64Insn::FcvtauFloatFcvtau64dFloat2int { .. } => Form::Simd,
         A64Insn::MsrImmMsrSiPstate { .. } => Form::Msr,
 
         A64Insn::LdrImmGenLdr32LdstImmpost { mem, .. }

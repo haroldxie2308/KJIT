@@ -6,7 +6,6 @@ use crate::shared::abi::{
     EXTRA_PARAMS_BYTES, EXTRA_PARAM_IBTC_TABLE_OFFSET, IBTC_TABLE_BYTES, PROLOGUE_LEN_BYTES,
     RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG, RUNTIME_FRAME_SIZE_BYTES,
 };
-use crate::shared::arm64::A64OperandRole;
 use crate::shared::emit::layout::ExecutionFragment;
 
 pub const DEFAULT_BASE_PC: u64 = 0x400000;
@@ -163,14 +162,7 @@ impl URuntime {
             .map(|&(pc, _)| pc)
             .expect("a compiled fragment's entry offset is one of its labels");
         // The translator's view of FP/SIMD use: this fragment was not verified here.
-        let uses_fpsimd = fragment.insns.iter().any(|insn| {
-            insn.operand_roles().iter().any(|role| {
-                matches!(
-                    role,
-                    A64OperandRole::VecRead { .. } | A64OperandRole::VecWrite { .. }
-                )
-            })
-        });
+        let uses_fpsimd = fragment.insns.iter().any(|insn| insn.uses_fpsimd_state());
         let mut cache = CodeCache::new(
             DEFAULT_CACHE_LAYOUT,
             None,

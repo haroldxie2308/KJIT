@@ -1,0 +1,20 @@
+k4-campaign: campaign: guest-run (log /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a18/runs/k4-kjit-guest-20261013-235109/campaign.log)
+
+k4-campaign: profile=kjit-guest out=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a18/runs/k4-kjit-guest-20261013-235109
+k4-campaign: campaign    PASS: 1 iterations; 10 adversarial tests, 1 consistency checks; dmesg clean
+k4-campaign: benchmark (last iteration, /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a18/runs/k4-kjit-guest-20261013-235109/campaign/campaign/iter-1/bench.log):
+k4-campaign:   k4-bench: default (redis-benchmark -q -n 100000 ):
+k4-campaign:   k4:   default: in_kernel=3352341/4500999 syscalls (74.5%) entries=6496328 chains=1999598 chain_cap=0 translated=512 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4-campaign:   k4:   default: exits svc=3352341 bl=12522 blr=1100860 br=2000221 ret=30286 mem=80 unsupported=18 budget=0 invalid=0 svc_declined=0
+k4-campaign:   k4:   default: unsupported_top (word(exits/entry_stops)): 0xd503203f(18/0) 
+k4-campaign:   k4-bench: pipelined (redis-benchmark -q -n 100000 -P 16):
+k4-campaign:   k4:   pipelined: in_kernel=120302/288883 syscalls (41.6%) entries=385223 chains=125027 chain_cap=0 translated=0 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4-campaign:   k4:   pipelined: exits svc=120302 bl=259 blr=68988 br=125027 ret=22162 mem=105 unsupported=32 budget=48348 invalid=0 svc_declined=0
+k4-campaign:   k4:   pipelined: unsupported_top (word(exits/entry_stops)): 0xd503203f(32/0) 
+k4-campaign:   k4-bench: clients256 (redis-benchmark -q -n 100000 -c 256):
+k4-campaign:   k4:   clients256: in_kernel=3301815/4467193 syscalls (73.9%) entries=6451152 chains=2000441 chain_cap=0 translated=0 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4-campaign:   k4:   clients256: exits svc=3301815 bl=2900 blr=1099634 br=2000441 ret=46186 mem=145 unsupported=31 budget=0 invalid=0 svc_declined=0
+k4-campaign:   k4:   clients256: unsupported_top (word(exits/entry_stops)): 0xd503203f(31/0) 
+k4-campaign:   k4-bench: consistency PASS: dbsize 10044 digest 603e069a26083ceb1309ded3186769f0b0809e09 readback sha256 362731776718583235c4f1394cb708151a5c09052efd2c0ace0f6f0f7392fb50 
+k4-campaign:   k4-bench: ALL PASS
+k4-campaign: RESULT PASS

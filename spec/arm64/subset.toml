@@ -599,6 +599,134 @@ forms = [
   "REV64_advsimd.REV64_asimdmisc_R",
   "CNT_advsimd.CNT_asimdmisc_R",
   "TBL_advsimd.TBL_asimdtbl_L1_1",
+  # A18: scalar floating point (docs/pipeline.md, "Scalar floating point (A18)"),
+  # single and double precision only (FEAT_FP16 and BFloat16 forms are not admitted:
+  # they would be an EL1 UNDEF on a CPU without them), and the register-offset
+  # SIMD&FP loads/stores (window accesses like the A9a immediate forms).
+  "FADD_float.FADD_S_floatdp2",
+  "FADD_float.FADD_D_floatdp2",
+  "FSUB_float.FSUB_S_floatdp2",
+  "FSUB_float.FSUB_D_floatdp2",
+  "FMUL_float.FMUL_S_floatdp2",
+  "FMUL_float.FMUL_D_floatdp2",
+  "FNMUL_float.FNMUL_S_floatdp2",
+  "FNMUL_float.FNMUL_D_floatdp2",
+  "FDIV_float.FDIV_S_floatdp2",
+  "FDIV_float.FDIV_D_floatdp2",
+  "FMAX_float.FMAX_S_floatdp2",
+  "FMAX_float.FMAX_D_floatdp2",
+  "FMIN_float.FMIN_S_floatdp2",
+  "FMIN_float.FMIN_D_floatdp2",
+  "FMAXNM_float.FMAXNM_S_floatdp2",
+  "FMAXNM_float.FMAXNM_D_floatdp2",
+  "FMINNM_float.FMINNM_S_floatdp2",
+  "FMINNM_float.FMINNM_D_floatdp2",
+  "FMADD_float.FMADD_S_floatdp3",
+  "FMADD_float.FMADD_D_floatdp3",
+  "FMSUB_float.FMSUB_S_floatdp3",
+  "FMSUB_float.FMSUB_D_floatdp3",
+  "FNMADD_float.FNMADD_S_floatdp3",
+  "FNMADD_float.FNMADD_D_floatdp3",
+  "FNMSUB_float.FNMSUB_S_floatdp3",
+  "FNMSUB_float.FNMSUB_D_floatdp3",
+  "FABS_float.FABS_S_floatdp1",
+  "FABS_float.FABS_D_floatdp1",
+  "FNEG_float.FNEG_S_floatdp1",
+  "FNEG_float.FNEG_D_floatdp1",
+  "FSQRT_float.FSQRT_S_floatdp1",
+  "FSQRT_float.FSQRT_D_floatdp1",
+  "FRINTN_float.FRINTN_S_floatdp1",
+  "FRINTN_float.FRINTN_D_floatdp1",
+  "FRINTP_float.FRINTP_S_floatdp1",
+  "FRINTP_float.FRINTP_D_floatdp1",
+  "FRINTM_float.FRINTM_S_floatdp1",
+  "FRINTM_float.FRINTM_D_floatdp1",
+  "FRINTZ_float.FRINTZ_S_floatdp1",
+  "FRINTZ_float.FRINTZ_D_floatdp1",
+  "FRINTA_float.FRINTA_S_floatdp1",
+  "FRINTA_float.FRINTA_D_floatdp1",
+  "FRINTX_float.FRINTX_S_floatdp1",
+  "FRINTX_float.FRINTX_D_floatdp1",
+  "FRINTI_float.FRINTI_S_floatdp1",
+  "FRINTI_float.FRINTI_D_floatdp1",
+  "FCVT_float.FCVT_DS_floatdp1",
+  "FCVT_float.FCVT_SD_floatdp1",
+  "FCMP_float.FCMP_S_floatcmp",
+  "FCMP_float.FCMP_SZ_floatcmp",
+  "FCMP_float.FCMP_D_floatcmp",
+  "FCMP_float.FCMP_DZ_floatcmp",
+  "FCMPE_float.FCMPE_S_floatcmp",
+  "FCMPE_float.FCMPE_SZ_floatcmp",
+  "FCMPE_float.FCMPE_D_floatcmp",
+  "FCMPE_float.FCMPE_DZ_floatcmp",
+  "FCCMP_float.FCCMP_S_floatccmp",
+  "FCCMP_float.FCCMP_D_floatccmp",
+  "FCCMPE_float.FCCMPE_S_floatccmp",
+  "FCCMPE_float.FCCMPE_D_floatccmp",
+  "FCSEL_float.FCSEL_S_floatsel",
+  "FCSEL_float.FCSEL_D_floatsel",
+  "FMOV_float_imm.FMOV_S_floatimm",
+  "FMOV_float_imm.FMOV_D_floatimm",
+  "SCVTF_float_int.SCVTF_S32_float2int",
+  "SCVTF_float_int.SCVTF_D32_float2int",
+  "SCVTF_float_int.SCVTF_S64_float2int",
+  "SCVTF_float_int.SCVTF_D64_float2int",
+  "UCVTF_float_int.UCVTF_S32_float2int",
+  "UCVTF_float_int.UCVTF_D32_float2int",
+  "UCVTF_float_int.UCVTF_S64_float2int",
+  "UCVTF_float_int.UCVTF_D64_float2int",
+  "FCVTZS_float_int.FCVTZS_32S_float2int",
+  "FCVTZS_float_int.FCVTZS_64S_float2int",
+  "FCVTZS_float_int.FCVTZS_32D_float2int",
+  "FCVTZS_float_int.FCVTZS_64D_float2int",
+  "FCVTZU_float_int.FCVTZU_32S_float2int",
+  "FCVTZU_float_int.FCVTZU_64S_float2int",
+  "FCVTZU_float_int.FCVTZU_32D_float2int",
+  "FCVTZU_float_int.FCVTZU_64D_float2int",
+  "FCVTNS_float.FCVTNS_32S_float2int",
+  "FCVTNS_float.FCVTNS_64S_float2int",
+  "FCVTNS_float.FCVTNS_32D_float2int",
+  "FCVTNS_float.FCVTNS_64D_float2int",
+  "FCVTNU_float.FCVTNU_32S_float2int",
+  "FCVTNU_float.FCVTNU_64S_float2int",
+  "FCVTNU_float.FCVTNU_32D_float2int",
+  "FCVTNU_float.FCVTNU_64D_float2int",
+  "FCVTMS_float.FCVTMS_32S_float2int",
+  "FCVTMS_float.FCVTMS_64S_float2int",
+  "FCVTMS_float.FCVTMS_32D_float2int",
+  "FCVTMS_float.FCVTMS_64D_float2int",
+  "FCVTMU_float.FCVTMU_32S_float2int",
+  "FCVTMU_float.FCVTMU_64S_float2int",
+  "FCVTMU_float.FCVTMU_32D_float2int",
+  "FCVTMU_float.FCVTMU_64D_float2int",
+  "FCVTPS_float.FCVTPS_32S_float2int",
+  "FCVTPS_float.FCVTPS_64S_float2int",
+  "FCVTPS_float.FCVTPS_32D_float2int",
+  "FCVTPS_float.FCVTPS_64D_float2int",
+  "FCVTPU_float.FCVTPU_32S_float2int",
+  "FCVTPU_float.FCVTPU_64S_float2int",
+  "FCVTPU_float.FCVTPU_32D_float2int",
+  "FCVTPU_float.FCVTPU_64D_float2int",
+  "FCVTAS_float.FCVTAS_32S_float2int",
+  "FCVTAS_float.FCVTAS_64S_float2int",
+  "FCVTAS_float.FCVTAS_32D_float2int",
+  "FCVTAS_float.FCVTAS_64D_float2int",
+  "FCVTAU_float.FCVTAU_32S_float2int",
+  "FCVTAU_float.FCVTAU_64S_float2int",
+  "FCVTAU_float.FCVTAU_32D_float2int",
+  "FCVTAU_float.FCVTAU_64D_float2int",
+  "LDR_reg_fpsimd.LDR_B_ldst_regoff",
+  "LDR_reg_fpsimd.LDR_BL_ldst_regoff",
+  "LDR_reg_fpsimd.LDR_H_ldst_regoff",
+  "LDR_reg_fpsimd.LDR_S_ldst_regoff",
+  "LDR_reg_fpsimd.LDR_D_ldst_regoff",
+  "LDR_reg_fpsimd.LDR_Q_ldst_regoff",
+  "STR_reg_fpsimd.STR_B_ldst_regoff",
+  "STR_reg_fpsimd.STR_BL_ldst_regoff",
+  "STR_reg_fpsimd.STR_H_ldst_regoff",
+  "STR_reg_fpsimd.STR_S_ldst_regoff",
+  "STR_reg_fpsimd.STR_D_ldst_regoff",
+  "STR_reg_fpsimd.STR_Q_ldst_regoff",
 ]
 
 # Fixed operand values, per exact form. A constrained field is removed from the
@@ -629,6 +757,12 @@ forms = [
 # 0100 is fixed by the diagram). Every other PSTATE field stays undecodable. The
 # verifier rejects any msr in a fragment (A15).
 "MSR_imm.MSR_SI_pstate" = { op1 = 0, op2 = 4 }
+# FCMP/FCMPE against zero (A18): Rm is a should-be-zero ("(0)") field their decode
+# never reads; any other value is CONSTRAINED UNPREDICTABLE, so only 0 decodes.
+"FCMP_float.FCMP_SZ_floatcmp" = { Rm = 0 }
+"FCMP_float.FCMP_DZ_floatcmp" = { Rm = 0 }
+"FCMPE_float.FCMPE_SZ_floatcmp" = { Rm = 0 }
+"FCMPE_float.FCMPE_DZ_floatcmp" = { Rm = 0 }
 
 # Exact instances of one encoding, each generated as its own variant (key
 # `<form>@<instance>`), pinned like a field constraint. Words matching no
@@ -644,9 +778,15 @@ forms = [
 #   CNTFRQ is one value. EL0 reads them directly only while
 #   CNTKCTL_EL1.EL0VCTEN is set and no timer erratum traps and emulates them;
 #   kjit.ko refuses to load otherwise (docs/pipeline.md, "Counter reads (A10)").
+# - FPCR (S3_3_C4_C4_0), FPSR (S3_3_C4_C4_1), A18: the user's values are loaded into the
+#   registers by the FP/SIMD bracket (docs/pipeline.md, "FP/SIMD in fragments (A9)"),
+#   so the fragment reads them as at EL0. MSR of either stays undecodable. The
+#   verifier treats the results as user values.
 # CNTVCTSS_EL0 (FEAT_ECV) is not admitted: UNDEFINED without ECV, which the
 # development hosts lack.
 [decode.field_instances."MRS.MRS_RS_systemmove"]
 TPIDR_EL0 = { o0 = 1, op1 = 3, CRn = 13, CRm = 0, op2 = 2 }
 CNTFRQ_EL0 = { o0 = 1, op1 = 3, CRn = 14, CRm = 0, op2 = 0 }
 CNTVCT_EL0 = { o0 = 1, op1 = 3, CRn = 14, CRm = 0, op2 = 2 }
+FPCR = { o0 = 1, op1 = 3, CRn = 4, CRm = 4, op2 = 0 }
+FPSR = { o0 = 1, op1 = 3, CRn = 4, CRm = 4, op2 = 1 }

@@ -118,12 +118,16 @@ extern "C" {
     pub(crate) fn kjit_bad_status(status: u64, pc: u64);
     pub(crate) fn kjit_call_fragment(regs: *mut PtRegs, extra: *mut u64, entry: u64, base: u64)
         -> u64;
+    /// `kjit_call_fragment` inside the FP/SIMD bracket. Returns false, with nothing
+    /// run and `status` untouched, when the user's FPCR enables floating-point
+    /// traps; true with the fragment's status in `status` otherwise.
     pub(crate) fn kjit_call_fragment_fpsimd(
         regs: *mut PtRegs,
         extra: *mut u64,
         entry: u64,
         base: u64,
-    ) -> u64;
+        status: *mut u64,
+    ) -> bool;
     pub(crate) fn kjit_fpsimd_run_max_ns() -> u64;
     pub(crate) fn kjit_profile(pc: u64, kind: u32);
     pub(crate) fn kjit_hook_calls() -> u64;
