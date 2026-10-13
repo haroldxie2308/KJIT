@@ -80,6 +80,7 @@ directory).
 | 2026-10-12 04:15 ROX vs RWX fragment images (`-pairs.csv`: paired differences; `-kb.csv`: kernel micro-benchmarks; `-place.csv`: image VA/PFN histograms; `-ptes.csv`, `-linear-map.csv`: page-table evidence; `-install.csv`: install cost; campaigns a-f, boots `rox-<campaign>-b<N>`) | `2026-10-12/0415-rox-rwx*.csv` | logs |
 | 2026-10-13 02:20 A17 implemented: packed image arena (`-a17-arena.csv`: redis under the UB protocol, KPTI off and forced on, main module vs A17 module, 5 boots each per KPTI setting, interleaved; boots `ub-<module>-std-k<kpti>-b<N>`, tables = `tests/guest/host/ub-arena.py` output; `-gates.csv`: guest gates on both profiles, `arena_churn_version` v1 = first version of the test, v2 = final) | `2026-10-13/0220-a17-arena{,-gates}.csv` | logs |
 | 2026-10-13 15:25 Redis overhead attribution on A17 (`-attrib-a17.csv`: one row per measured run of 15 attribution boots, states off/on/svcn/decl1/decl2/nomod/onT/offT/svcnT/amp*/nop*/onZ/emul, the timers of the T states as `t_*` columns, KPTI off and forced on; `-boots.csv`: per boot host wait/load and the micro items of the boot; `-micro.csv`: code_speed, svc_bench, entry_cost and wake-cost rows of the micro boots; `-ref.csv`: ub-standard.sh boots of the A17 module and of the instrumented module with every knob off; raw logs in `-attrib-a17/`: serial.log, host.txt, fragment lists and final counters per boot, the driver scripts, `progress.txt`, the per-instruction lowering of the E1 traces `attrib-lowering-{set,get}.tsv`, and the module diff) | `2026-10-13/1525-attrib-a17{,-boots,-micro,-ref}.csv` | logs |
+| 2026-10-13 16:45 Redis operating conditions for KJIT (A17) (`.csv`: one row per measured redis run, `setting` k0 = KPTI off, k1 = `kpti=1`, dbg = `kjit-guest-debug`, mitoff = `mitigations=off`, `tag` = the cell set of the boot; `-sys.csv`: null/small-I/O syscall round trip per boot, KJIT off and on, settings also `nobhb`, `ssbd`, `nopauth`; raw logs `-conditions/<boot>/` incl. `cond-count-k0-b1` = native syscalls per request, `cond-d2-dbgkpti-b1` = the debug kernel with `kpti=1`, which does not boot; `tables.md`, `model.md` = `tests/guest/host/cond-summarize.py` / `cond-model.py` output) | `2026-10-13/1645-conditions{,-sys}.csv` | logs |
 
 A new measurement entry adds the data file, the raw-log directory, a row in this table and the
 `Data:` line in the entry.
@@ -88,6 +89,13 @@ A new measurement entry adds the data file, the raw-log directory, a row in this
 
 - 2026-10-13 15:25: the module builds (not stored), the E1 traces (14 MB each, in `.kjit/build/attrib/` of an earlier session; only their lowering
   TSVs are stored), the smoke boot of the instrumentation (deleted), the run directories of the boots (kjit.ko copies, qemu state; deleted after the export).
+- 2026-10-13 16:45: the discovery and smoke boots of the sweep tooling (one boot per kernel setting for the null
+  syscall, a smoke boot per cell type, a smoke boot of the debug profile; superseded by the `s1` and sweep boots), the
+  two sweep boots that failed on the first version of the `redis-benchmark` output parser (`MSET (10 keys):` title;
+  deleted, re-run), the queue logs of the driver, and the first-run order in which the other agent's guests held the
+  host (`host.txt` `waited_s` is the wait inside `ub-run.sh` after the driver's own 0.2 s poll, so it is 0 for most
+  boots; the real waits were up to about 40 minutes). The first boots `dens-k0-b1`, `dens-k1-b1` ran an earlier
+  version of `cond-sweep.sh` without the `subs=` field and without the null-syscall block.
 - 2026-10-13 02:20: the module builds (not stored), the first run of the mutation check against the first version of
   `arena_churn` (the first version did not detect it; it was rewritten with callees of different sizes and the check
   repeated, `arena_churn-mutation-neighbour-granule.log`), the K2/K3 runs of the first version of the test (same pass lines).

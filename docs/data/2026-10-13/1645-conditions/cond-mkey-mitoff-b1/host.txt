@@ -1,0 +1,5 @@
+label=cond-mkey-mitoff-b1 kpti=0 profile=kjit-guest
+append=console=ttyAMA0 panic=-1 nokaslr rodata=off mitigations=off
+waited_s=0 load1_before=3.97
+cmd=sh /kjit/cond-info.sh 5; sh /kjit/cond-sweep.sh /tmp/cond 2 set_c50_p1_d1:base:set:1000000:50:1:1:2:0:1-3:tcp get_c50_p1_d1:base:get:1000000:50:1:1:2:0:1-3:tcp set_c50_p16_d1:base:set:2000000:50:16:1:2:0:1-3:tcp get_c50_p16_d1:base:get:2000000:50:16:1:2:0:1-3:tcp
+load1_after=3.86 guest_run_status=0

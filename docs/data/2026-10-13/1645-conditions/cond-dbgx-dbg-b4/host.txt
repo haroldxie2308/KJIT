@@ -1,0 +1,5 @@
+label=cond-dbgx-dbg-b4 kpti=0 profile=kjit-guest-debug
+append=console=ttyAMA0 panic=-1 nokaslr rodata=off 
+waited_s=0 load1_before=4.74
+cmd=sh /kjit/cond-info.sh 5; sh /kjit/cond-sweep.sh /tmp/cond 2 set_c50_p1_d1:base:set:500000:50:1:1:2:0:1-3:tcp get_c50_p1_d1:base:get:500000:50:1:1:2:0:1-3:tcp set_c50_p4_d1:base:set:500000:50:4:1:2:0:1-3:tcp get_c50_p4_d1:base:get:500000:50:4:1:2:0:1-3:tcp set_c50_p16_d1:base:set:1000000:50:16:1:2:0:1-3:tcp get_c50_p16_d1:base:get:1000000:50:16:1:2:0:1-3:tcp get_c50_p1_d1_t0:base:get:300000:50:1:1:0:0:1-3:tcp incr_c50_p1:base:incr:300000:50:1:1:2:0:1-3:tcp pingi_c50_p1:base:ping_inline:300000:50:1:1:2:0:1-3:tcp aofalw_set_c50_p1:aof_always:set:150000:50:1:1:2:0:1-3:tcp unix_get_c50_p1:unix:get:500000:50:1:1:2:0:1-3:unix unix_set_c50_p1_d1:unix:set:500000:50:1:1:2:0:1-3:unix unix_get_c50_p1_d1:unix:get:500000:50:1:1:2:0:1-3:unix unix_get_c50_p4_d1:unix:get:500000:50:4:1:2:0:1-3:unix pub0_c1:base:pub0r:20000:1:1:1:0:0:1-3:tcp pub16l_c1:base:pub16l:10000:1:1:1:0:0:1-3:tcp
+load1_after=4.21 guest_run_status=0

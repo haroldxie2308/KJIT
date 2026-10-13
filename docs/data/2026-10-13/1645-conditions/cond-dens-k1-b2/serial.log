@@ -1,0 +1,517 @@
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1+ (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #5 SMP PREEMPT Mon Oct 12 15:57:14 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] CPU features: kernel page table isolation forced ON by kpti command line option
+[    0.000000] CPU features: detected: Kernel page table isolation (KPTI)
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr rodata=off kpti=1
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013b400000-0x000000013b800000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000115] Console: colour dummy device 80x25
+[    0.000122] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000123] pid_max: default: 32768 minimum: 301
+[    0.000259] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000268] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000349] VFS: Finished mounting rootfs on nullfs
+[    0.000558] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000669] rcu: Hierarchical SRCU implementation.
+[    0.000669] rcu: 	Max phase no-delay instances is 1000.
+[    0.000688] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000723] smp: Bringing up secondary CPUs ...
+[    0.000944] Detected PIPT I-cache on CPU1
+[    0.001035] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001303] Detected PIPT I-cache on CPU2
+[    0.001397] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001609] Detected PIPT I-cache on CPU3
+[    0.001716] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.001795] smp: Brought up 1 node, 4 CPUs
+[    0.001797] SMP: Total of 4 processors activated.
+[    0.001797] CPU: All CPU(s) started at EL1
+[    0.001798] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.001798] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.001799] CPU features: detected: CRC32 instructions
+[    0.001799] CPU features: detected: Data independent timing control (DIT)
+[    0.001799] CPU features: detected: E0PD
+[    0.001800] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.001800] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.001801] CPU features: detected: LSE atomic instructions
+[    0.001801] CPU features: detected: Privileged Access Never
+[    0.001801] CPU features: detected: Speculation barrier (SB)
+[    0.001802] CPU features: detected: TLB range maintenance instructions
+[    0.001802] CPU features: detected: XNX
+[    0.001883] alternatives: applying system-wide alternatives
+[    0.003004] Memory: 3915220K/4194304K available (5248K kernel code, 754K rwdata, 2360K rodata, 576K init, 405K bss, 275904K reserved, 0K cma-reserved)
+[    0.003380] devtmpfs: initialized
+[    0.003625] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003631] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003709] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003714] 30384 pages in range for non-PLT usage
+[    0.003715] 521904 pages in range for PLT usage
+[    0.003771] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.004090] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.004141] ASID allocator initialised with 128 entries
+[    0.004151] Serial: AMBA PL011 UART driver
+[    0.004618] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.004739] printk: console [ttyAMA0] enabled
+[    0.010900] vgaarb: loaded
+[    0.011325] clocksource: Switched to clocksource arch_sys_counter
+[    0.023493] NET: Registered PF_INET protocol family
+[    0.023568] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.024019] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.024031] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.024034] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.024085] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.024262] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.024300] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.024349] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.024358] PCI: CLS 0 bytes, default 64
+[    0.024608] Unpacking initramfs...
+[    0.028474] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.028598] 9p: Installing v9fs 9p2000 file system support
+[    0.032557] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.032655] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.032658] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.032686] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.032699] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.032737] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.032824] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.032882] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.032884] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.032884] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.032886] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.033262] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.033965] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.034195] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.034199] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.034209] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.034211] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.034956] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.035139] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.035144] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.035160] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.035843] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.036018] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.036022] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.036031] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.036329] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.036331] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.036368] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.036384] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.036415] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.036421] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.036431] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.036444] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.036448] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.036453] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.036488] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.036490] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.036491] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.037981] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.038940] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.039886] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.079742] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.079754] rtc-pl031 9010000.pl031: setting system clock to 2026-10-13T03:46:45 UTC (1791863205)
+[    0.079977] NET: Registered PF_INET6 protocol family
+[    0.080492] Segment Routing with IPv6
+[    0.080495] In-situ OAM (IOAM) with IPv6
+[    0.080512] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.080617] NET: Registered PF_PACKET protocol family
+[    0.080625] 9pnet: Installing 9P2000 support
+[    0.086459] clk: Disabling unused clocks
+[    0.162386] Freeing initrd memory: 189072K
+[    0.163121] Freeing unused kernel memory: 576K
+[    0.163158] Kernel memory protection disabled.
+[    0.163191] Run /init as init process
+[    0.180606] kjit: loading out-of-tree module taints kernel.
+[    0.181564] rust_kjit: ######## Rust KJIT inits ########
+[    0.181641] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+cond: cmdline: console=ttyAMA0 panic=-1 nokaslr rodata=off kpti=1
+cond: vuln gather_data_sampling: Not affected
+cond: vuln ghostwrite: Not affected
+cond: vuln indirect_target_selection: Not affected
+cond: vuln itlb_multihit: Not affected
+cond: vuln l1tf: Not affected
+cond: vuln mds: Not affected
+cond: vuln meltdown: Not affected
+cond: vuln mmio_stale_data: Not affected
+cond: vuln old_microcode: Not affected
+cond: vuln reg_file_data_sampling: Not affected
+cond: vuln retbleed: Not affected
+cond: vuln spec_rstack_overflow: Not affected
+cond: vuln spec_store_bypass: Vulnerable
+cond: vuln spectre_v1: Mitigation: __user pointer sanitization
+cond: vuln spectre_v2: Mitigation: CSV2, but not BHB
+cond: vuln srbds: Not affected
+cond: vuln tsa: Not affected
+cond: vuln tsx_async_abort: Not affected
+cond: vuln vmscape: Not affected
+cond: dmesg: [    0.000000] CPU features: detected: Spectre-v4
+cond: dmesg: [    0.000000] CPU features: detected: Spectre-BHB
+cond: dmesg: [    0.000000] CPU features: kernel page table isolation forced ON by kpti command line option
+cond: dmesg: [    0.000000] CPU features: detected: Kernel page table isolation (KPTI)
+cond: kernel: 7.1.0-rc1+ cpus: 4
+ub: cmdline: console=ttyAMA0 panic=-1 nokaslr rodata=off kpti=1
+ub: meltdown: Not affected
+ub: spectre_v2: Mitigation: CSV2, but not BHB
+ub: kpti dmesg: [    0.000000] CPU features: kernel page table isolation forced ON by kpti command line option
+[    0.000000] CPU features: detected: Kernel page table isolation (KPTI)
+ub: kernel: 7.1.0-rc1+ cpus: 4
+ub: chain_budget: 1024 hot_threshold: 64
+ub off rep 0 mode=getppid size=1 enabled=0 ns_per_iter=213.09 ns_per_syscall=213.09
+ub off rep 1 mode=getppid size=1 enabled=0 ns_per_iter=206.18 ns_per_syscall=206.18
+ub off rep 2 mode=getppid size=1 enabled=0 ns_per_iter=210.06 ns_per_syscall=210.06
+ub off rep 3 mode=getppid size=1 enabled=0 ns_per_iter=208.07 ns_per_syscall=208.07
+ub off rep 4 mode=getppid size=1 enabled=0 ns_per_iter=204.98 ns_per_syscall=204.98
+ub off result mode=getppid size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=1 median_ns_per_iter=208.07 median_ns_per_syscall=208.07 min_ns_per_syscall=204.98
+ub off counters getppid hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=getppid size=1 enabled=1 ns_per_iter=68.25 ns_per_syscall=68.25
+ub on rep 1 mode=getppid size=1 enabled=1 ns_per_iter=67.47 ns_per_syscall=67.47
+ub on rep 2 mode=getppid size=1 enabled=1 ns_per_iter=68.88 ns_per_syscall=68.88
+ub on rep 3 mode=getppid size=1 enabled=1 ns_per_iter=68.18 ns_per_syscall=68.18
+ub on rep 4 mode=getppid size=1 enabled=1 ns_per_iter=66.70 ns_per_syscall=66.70
+ub on result mode=getppid size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=1 median_ns_per_iter=68.18 median_ns_per_syscall=68.18 min_ns_per_syscall=66.70
+ub on counters getppid hook_calls=999825 syscalls_in_kernel=999755 fragment_entries=999760 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=999755 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=getppid size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=raw_zn size=1 enabled=0 ns_per_iter=449.57 ns_per_syscall=224.79
+ub off rep 1 mode=raw_zn size=1 enabled=0 ns_per_iter=439.51 ns_per_syscall=219.76
+ub off rep 2 mode=raw_zn size=1 enabled=0 ns_per_iter=444.13 ns_per_syscall=222.06
+ub off rep 3 mode=raw_zn size=1 enabled=0 ns_per_iter=442.16 ns_per_syscall=221.08
+ub off rep 4 mode=raw_zn size=1 enabled=0 ns_per_iter=441.09 ns_per_syscall=220.55
+ub off result mode=raw_zn size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=442.16 median_ns_per_syscall=221.08 min_ns_per_syscall=219.76
+ub off counters raw_zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=raw_zn size=1 enabled=1 ns_per_iter=162.55 ns_per_syscall=81.27
+ub on rep 1 mode=raw_zn size=1 enabled=1 ns_per_iter=161.20 ns_per_syscall=80.60
+ub on rep 2 mode=raw_zn size=1 enabled=1 ns_per_iter=163.52 ns_per_syscall=81.76
+ub on rep 3 mode=raw_zn size=1 enabled=1 ns_per_iter=162.78 ns_per_syscall=81.39
+ub on rep 4 mode=raw_zn size=1 enabled=1 ns_per_iter=159.77 ns_per_syscall=79.88
+ub on result mode=raw_zn size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=162.55 median_ns_per_syscall=81.27 min_ns_per_syscall=79.88
+ub on counters raw_zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999515 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=raw_zn size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=raw_pipe size=1 enabled=0 ns_per_iter=481.29 ns_per_syscall=240.65
+ub off rep 1 mode=raw_pipe size=1 enabled=0 ns_per_iter=486.17 ns_per_syscall=243.08
+ub off rep 2 mode=raw_pipe size=1 enabled=0 ns_per_iter=483.92 ns_per_syscall=241.96
+ub off rep 3 mode=raw_pipe size=1 enabled=0 ns_per_iter=484.54 ns_per_syscall=242.27
+ub off rep 4 mode=raw_pipe size=1 enabled=0 ns_per_iter=489.82 ns_per_syscall=244.91
+ub off result mode=raw_pipe size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=484.54 median_ns_per_syscall=242.27 min_ns_per_syscall=240.65
+ub off counters raw_pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=raw_pipe size=1 enabled=1 ns_per_iter=380.04 ns_per_syscall=190.02
+ub on rep 1 mode=raw_pipe size=1 enabled=1 ns_per_iter=231.40 ns_per_syscall=115.70
+ub on rep 2 mode=raw_pipe size=1 enabled=1 ns_per_iter=203.61 ns_per_syscall=101.81
+ub on rep 3 mode=raw_pipe size=1 enabled=1 ns_per_iter=203.33 ns_per_syscall=101.66
+ub on rep 4 mode=raw_pipe size=1 enabled=1 ns_per_iter=201.47 ns_per_syscall=100.73
+ub on result mode=raw_pipe size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=203.61 median_ns_per_syscall=101.81 min_ns_per_syscall=100.73
+ub on counters raw_pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999515 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=raw_pipe size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=zn size=1 enabled=0 ns_per_iter=453.43 ns_per_syscall=226.72
+ub off rep 1 mode=zn size=1 enabled=0 ns_per_iter=457.89 ns_per_syscall=228.95
+ub off rep 2 mode=zn size=1 enabled=0 ns_per_iter=452.29 ns_per_syscall=226.14
+ub off rep 3 mode=zn size=1 enabled=0 ns_per_iter=452.54 ns_per_syscall=226.27
+ub off rep 4 mode=zn size=1 enabled=0 ns_per_iter=450.83 ns_per_syscall=225.42
+ub off result mode=zn size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=452.54 median_ns_per_syscall=226.27 min_ns_per_syscall=225.42
+ub off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=zn size=1 enabled=1 ns_per_iter=162.50 ns_per_syscall=81.25
+ub on rep 1 mode=zn size=1 enabled=1 ns_per_iter=162.35 ns_per_syscall=81.18
+ub on rep 2 mode=zn size=1 enabled=1 ns_per_iter=162.24 ns_per_syscall=81.12
+ub on rep 3 mode=zn size=1 enabled=1 ns_per_iter=161.26 ns_per_syscall=80.63
+ub on rep 4 mode=zn size=1 enabled=1 ns_per_iter=161.66 ns_per_syscall=80.83
+ub on result mode=zn size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=162.24 median_ns_per_syscall=81.12 min_ns_per_syscall=80.63
+ub on counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=zn size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=pipe size=1 enabled=0 ns_per_iter=492.08 ns_per_syscall=246.04
+ub off rep 1 mode=pipe size=1 enabled=0 ns_per_iter=489.41 ns_per_syscall=244.70
+ub off rep 2 mode=pipe size=1 enabled=0 ns_per_iter=489.85 ns_per_syscall=244.92
+ub off rep 3 mode=pipe size=1 enabled=0 ns_per_iter=496.14 ns_per_syscall=248.07
+ub off rep 4 mode=pipe size=1 enabled=0 ns_per_iter=493.54 ns_per_syscall=246.77
+ub off result mode=pipe size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=492.08 median_ns_per_syscall=246.04 min_ns_per_syscall=244.70
+ub off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=pipe size=1 enabled=1 ns_per_iter=210.34 ns_per_syscall=105.17
+ub on rep 1 mode=pipe size=1 enabled=1 ns_per_iter=205.39 ns_per_syscall=102.70
+ub on rep 2 mode=pipe size=1 enabled=1 ns_per_iter=219.14 ns_per_syscall=109.57
+ub on rep 3 mode=pipe size=1 enabled=1 ns_per_iter=299.31 ns_per_syscall=149.66
+ub on rep 4 mode=pipe size=1 enabled=1 ns_per_iter=290.03 ns_per_syscall=145.02
+ub on result mode=pipe size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=219.14 median_ns_per_syscall=109.57 min_ns_per_syscall=102.70
+ub on counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=pipe size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=zn size=16 enabled=0 ns_per_iter=560.21 ns_per_syscall=280.11
+ub off rep 1 mode=zn size=16 enabled=0 ns_per_iter=497.68 ns_per_syscall=248.84
+ub off rep 2 mode=zn size=16 enabled=0 ns_per_iter=479.05 ns_per_syscall=239.53
+ub off rep 3 mode=zn size=16 enabled=0 ns_per_iter=466.42 ns_per_syscall=233.21
+ub off rep 4 mode=zn size=16 enabled=0 ns_per_iter=462.70 ns_per_syscall=231.35
+ub off result mode=zn size=16 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=479.05 median_ns_per_syscall=239.53 min_ns_per_syscall=231.35
+ub off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=zn size=16 enabled=1 ns_per_iter=172.89 ns_per_syscall=86.44
+ub on rep 1 mode=zn size=16 enabled=1 ns_per_iter=164.94 ns_per_syscall=82.47
+ub on rep 2 mode=zn size=16 enabled=1 ns_per_iter=170.48 ns_per_syscall=85.24
+ub on rep 3 mode=zn size=16 enabled=1 ns_per_iter=170.54 ns_per_syscall=85.27
+ub on rep 4 mode=zn size=16 enabled=1 ns_per_iter=166.01 ns_per_syscall=83.00
+ub on result mode=zn size=16 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=170.48 median_ns_per_syscall=85.24 min_ns_per_syscall=82.47
+ub on counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=zn size=16 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=pipe size=16 enabled=0 ns_per_iter=530.96 ns_per_syscall=265.48
+ub off rep 1 mode=pipe size=16 enabled=0 ns_per_iter=497.53 ns_per_syscall=248.77
+ub off rep 2 mode=pipe size=16 enabled=0 ns_per_iter=491.32 ns_per_syscall=245.66
+ub off rep 3 mode=pipe size=16 enabled=0 ns_per_iter=492.60 ns_per_syscall=246.30
+ub off rep 4 mode=pipe size=16 enabled=0 ns_per_iter=494.28 ns_per_syscall=247.14
+ub off result mode=pipe size=16 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=494.28 median_ns_per_syscall=247.14 min_ns_per_syscall=245.66
+ub off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=pipe size=16 enabled=1 ns_per_iter=209.99 ns_per_syscall=104.99
+ub on rep 1 mode=pipe size=16 enabled=1 ns_per_iter=204.51 ns_per_syscall=102.26
+ub on rep 2 mode=pipe size=16 enabled=1 ns_per_iter=210.29 ns_per_syscall=105.15
+ub on rep 3 mode=pipe size=16 enabled=1 ns_per_iter=206.51 ns_per_syscall=103.26
+ub on rep 4 mode=pipe size=16 enabled=1 ns_per_iter=205.00 ns_per_syscall=102.50
+ub on result mode=pipe size=16 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=206.51 median_ns_per_syscall=103.26 min_ns_per_syscall=102.26
+ub on counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=pipe size=16 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=zn size=64 enabled=0 ns_per_iter=455.43 ns_per_syscall=227.72
+ub off rep 1 mode=zn size=64 enabled=0 ns_per_iter=449.72 ns_per_syscall=224.86
+ub off rep 2 mode=zn size=64 enabled=0 ns_per_iter=450.56 ns_per_syscall=225.28
+ub off rep 3 mode=zn size=64 enabled=0 ns_per_iter=451.46 ns_per_syscall=225.73
+ub off rep 4 mode=zn size=64 enabled=0 ns_per_iter=456.95 ns_per_syscall=228.47
+ub off result mode=zn size=64 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=451.46 median_ns_per_syscall=225.73 min_ns_per_syscall=224.86
+ub off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=zn size=64 enabled=1 ns_per_iter=164.27 ns_per_syscall=82.13
+ub on rep 1 mode=zn size=64 enabled=1 ns_per_iter=162.63 ns_per_syscall=81.32
+ub on rep 2 mode=zn size=64 enabled=1 ns_per_iter=161.50 ns_per_syscall=80.75
+ub on rep 3 mode=zn size=64 enabled=1 ns_per_iter=161.45 ns_per_syscall=80.72
+ub on rep 4 mode=zn size=64 enabled=1 ns_per_iter=162.50 ns_per_syscall=81.25
+ub on result mode=zn size=64 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=162.50 median_ns_per_syscall=81.25 min_ns_per_syscall=80.72
+ub on counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=zn size=64 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=pipe size=64 enabled=0 ns_per_iter=491.02 ns_per_syscall=245.51
+ub off rep 1 mode=pipe size=64 enabled=0 ns_per_iter=490.04 ns_per_syscall=245.02
+ub off rep 2 mode=pipe size=64 enabled=0 ns_per_iter=498.62 ns_per_syscall=249.31
+ub off rep 3 mode=pipe size=64 enabled=0 ns_per_iter=492.66 ns_per_syscall=246.33
+ub off rep 4 mode=pipe size=64 enabled=0 ns_per_iter=491.61 ns_per_syscall=245.80
+ub off result mode=pipe size=64 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=491.61 median_ns_per_syscall=245.80 min_ns_per_syscall=245.02
+ub off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=pipe size=64 enabled=1 ns_per_iter=204.88 ns_per_syscall=102.44
+ub on rep 1 mode=pipe size=64 enabled=1 ns_per_iter=205.68 ns_per_syscall=102.84
+ub on rep 2 mode=pipe size=64 enabled=1 ns_per_iter=205.15 ns_per_syscall=102.58
+ub on rep 3 mode=pipe size=64 enabled=1 ns_per_iter=204.68 ns_per_syscall=102.34
+ub on rep 4 mode=pipe size=64 enabled=1 ns_per_iter=205.09 ns_per_syscall=102.55
+ub on result mode=pipe size=64 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=205.09 median_ns_per_syscall=102.55 min_ns_per_syscall=102.34
+ub on counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=pipe size=64 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub: done
+cond: cmdline: console=ttyAMA0 panic=-1 nokaslr rodata=off kpti=1
+cond: kernel: 7.1.0-rc1+ cpus: 4 redis: Redis server v=7.0.15 sha=00000000:0 malloc=jemalloc-5.2.1 bits=64 build=fe67efb337924bf0
+cond: reps=2 chain_budget=1024 hz_ticks=100 cells: set_c50_p1_d1:base:set:1000000:50:1:1:2:0:1-3:tcp get_c50_p1_d1:base:get:1000000:50:1:1:2:0:1-3:tcp set_c50_p1_d1024:base:set:1000000:50:1:1024:2:0:1-3:tcp get_c50_p1_d1024:base:get:1000000:50:1:1024:2:0:1-3:tcp set_c50_p4_d1:base:set:1000000:50:4:1:2:0:1-3:tcp get_c50_p4_d1:base:get:1000000:50:4:1:2:0:1-3:tcp set_c50_p16_d1:base:set:2000000:50:16:1:2:0:1-3:tcp get_c50_p16_d1:base:get:2000000:50:16:1:2:0:1-3:tcp set_c1_p1_d1:base:set:100000:1:1:1:0:0:1-3:tcp get_c1_p1_d1:base:get:100000:1:1:1:0:0:1-3:tcp set_c10_p1_d1:base:set:500000:10:1:1:2:0:1-3:tcp get_c10_p1_d1:base:get:500000:10:1:1:2:0:1-3:tcp set_c50_p1_d1_t0:base:set:500000:50:1:1:0:0:1-3:tcp get_c50_p1_d1_t0:base:get:500000:50:1:1:0:0:1-3:tcp incr_c50_p1:base:incr:600000:50:1:1:2:0:1-3:tcp lpush_c50_p1:base:lpush:600000:50:1:1:2:0:1-3:tcp pingi_c50_p1:base:ping_inline:600000:50:1:1:2:0:1-3:tcp pingm_c50_p1:base:ping_mbulk:600000:50:1:1:2:0:1-3:tcp mset_c50_p1:base:mset:500000:50:1:1:2:0:1-3:tcp aofalw_set_c50_p1:aof_always:set:300000:50:1:1:2:0:1-3:tcp aofalw_set_c50_p16:aof_always:set:600000:50:16:1:2:0:1-3:tcp aofalw_incr_c50_p1:aof_always:incr:300000:50:1:1:2:0:1-3:tcp aofesec_set_c50_p1:aof_everysec:set:600000:50:1:1:2:0:1-3:tcp aofesec_set_c50_p16:aof_everysec:set:600000:50:16:1:2:0:1-3:tcp aofno_set_c50_p1:aof_no:set:600000:50:1:1:2:0:1-3:tcp aof9p_set_c50_p1:aof9p_always:set:60000:50:1:1:2:0:1-3:tcp unix_set_c50_p1:unix:set:1000000:50:1:1:2:0:1-3:unix unix_get_c50_p1:unix:get:1000000:50:1:1:2:0:1-3:unix
+cond: module: 64 hot_threshold, 100 hot_window_ms
+cond: cell set_c50_p1_d1: server tasks allowed CPUs:       5 0 
+cond: translate_ok after server warm-up: 321
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=307503.06 wall_cs=325 ticks_u=68 ticks_s=225 sched_ms=2930.405520 nvol=1517 ninv=147 c0_busy=292 c0_idle=32 ipi_c0=1524 ipi_other=5001 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=266595.59 wall_cs=387 ticks_u=3 ticks_s=350 sched_ms=3533.053550 nvol=776 ninv=135 c0_busy=357 c0_idle=50 ipi_c0=797 ipi_other=19091 hook_calls=2058507 syscalls_in_kernel=1998189 fragment_entries=3057153 exit_svc=1998189 exit_bl=727 exit_blr=46 exit_br=1000473 exit_ret=1437 exit_mem=1 exit_unsupported=56280 exit_budget=0 run_declined=46 svc_declined=0 fpsimd_entries=1000002 translate_ok=3 invalidated_fragments=0
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=266595.59 wall_cs=387 ticks_u=3 ticks_s=364 sched_ms=3664.109291 nvol=1012 ninv=194 c0_busy=370 c0_idle=34 ipi_c0=1032 ipi_other=18252 hook_calls=2071522 syscalls_in_kernel=1998059 fragment_entries=3070168 exit_svc=1998060 exit_bl=648 exit_blr=45 exit_br=1000001 exit_ret=2111 exit_mem=0 exit_unsupported=69303 exit_budget=0 run_declined=45 svc_declined=1 fpsimd_entries=1000001 translate_ok=1 invalidated_fragments=0
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=307597.66 wall_cs=326 ticks_u=74 ticks_s=225 sched_ms=2984.869530 nvol=1514 ninv=138 c0_busy=298 c0_idle=26 ipi_c0=1525 ipi_other=4783 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=set_c50_p1_d1 0x9e630160(193614/0) 0xd503203f(26/0) 
+cond: cell get_c50_p1_d1: server tasks allowed CPUs:       5 0 
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=332889.50 wall_cs=301 ticks_u=70 ticks_s=212 sched_ms=2817.109303 nvol=1492 ninv=247 c0_busy=285 c0_idle=19 ipi_c0=1490 ipi_other=3750 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=307597.66 wall_cs=338 ticks_u=3 ticks_s=317 sched_ms=3203.628702 nvol=679 ninv=213 c0_busy=321 c0_idle=31 ipi_c0=698 ipi_other=13285 hook_calls=2070183 syscalls_in_kernel=1998547 fragment_entries=3068845 exit_svc=1998547 exit_bl=561 exit_blr=37 exit_br=1000001 exit_ret=1585 exit_mem=13 exit_unsupported=68101 exit_budget=0 run_declined=41 svc_declined=0 fpsimd_entries=1000002 translate_ok=2 invalidated_fragments=0
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=285469.59 wall_cs=363 ticks_u=2 ticks_s=321 sched_ms=3231.416788 nvol=734 ninv=192 c0_busy=326 c0_idle=53 ipi_c0=767 ipi_other=13678 hook_calls=2065521 syscalls_in_kernel=1999469 fragment_entries=3064158 exit_svc=1999470 exit_bl=557 exit_blr=48 exit_br=1000000 exit_ret=347 exit_mem=11 exit_unsupported=63725 exit_budget=0 run_declined=54 svc_declined=1 fpsimd_entries=1000000 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=333000.34 wall_cs=300 ticks_u=71 ticks_s=219 sched_ms=2896.660142 nvol=1459 ninv=7 c0_busy=290 c0_idle=10 ipi_c0=1463 ipi_other=3791 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=get_c50_p1_d1 0x9e630160(146172/0) 0xd503203f(21/0) 
+cond: cell set_c50_p1_d1024: server tasks allowed CPUs:       5 0 
+cond run cell=set_c50_p1_d1024 srv=base test=set n=1000000 c=50 p=1 d=1024 thr=2 subs=0 rep=1 order=off,on state=off rps=285469.59 wall_cs=350 ticks_u=88 ticks_s=231 sched_ms=3193.497822 nvol=979 ninv=146 c0_busy=321 c0_idle=30 ipi_c0=983 ipi_other=9288 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p1_d1024 srv=base test=set n=1000000 c=50 p=1 d=1024 thr=2 subs=0 rep=1 order=off,on state=on rps=249937.52 wall_cs=411 ticks_u=5 ticks_s=386 sched_ms=3922.007375 nvol=821 ninv=174 c0_busy=394 c0_idle=33 ipi_c0=840 ipi_other=29515 hook_calls=2050448 syscalls_in_kernel=1999181 fragment_entries=3049091 exit_svc=1999182 exit_bl=867 exit_blr=46 exit_br=1000001 exit_ret=355 exit_mem=0 exit_unsupported=48640 exit_budget=0 run_declined=43 svc_declined=1 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p1_d1024 srv=base test=set n=1000000 c=50 p=1 d=1024 thr=2 subs=0 rep=2 order=on,off state=on rps=249937.52 wall_cs=413 ticks_u=3 ticks_s=370 sched_ms=3736.509569 nvol=630 ninv=9 c0_busy=373 c0_idle=52 ipi_c0=651 ipi_other=29209 hook_calls=2049433 syscalls_in_kernel=1999211 fragment_entries=3048068 exit_svc=1999211 exit_bl=820 exit_blr=49 exit_br=1000001 exit_ret=357 exit_mem=0 exit_unsupported=47630 exit_budget=0 run_declined=47 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p1_d1024 srv=base test=set n=1000000 c=50 p=1 d=1024 thr=2 subs=0 rep=2 order=on,off state=off rps=285469.59 wall_cs=351 ticks_u=88 ticks_s=239 sched_ms=3273.720268 nvol=1049 ninv=291 c0_busy=329 c0_idle=22 ipi_c0=1058 ipi_other=6698 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=set_c50_p1_d1024 0x9e630160(105793/0) 0xd503203f(47/0) 
+cond: cell get_c50_p1_d1024: server tasks allowed CPUs:       5 0 
+cond run cell=get_c50_p1_d1024 srv=base test=get n=1000000 c=50 p=1 d=1024 thr=2 subs=0 rep=1 order=off,on state=off rps=307597.66 wall_cs=326 ticks_u=73 ticks_s=227 sched_ms=2993.986002 nvol=1456 ninv=118 c0_busy=300 c0_idle=25 ipi_c0=1463 ipi_other=5018 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p1_d1024 srv=base test=get n=1000000 c=50 p=1 d=1024 thr=2 subs=0 rep=1 order=off,on state=on rps=285632.69 wall_cs=362 ticks_u=4 ticks_s=330 sched_ms=3348.203453 nvol=705 ninv=153 c0_busy=336 c0_idle=41 ipi_c0=724 ipi_other=16058 hook_calls=2062427 syscalls_in_kernel=1999461 fragment_entries=3061081 exit_svc=1999461 exit_bl=570 exit_blr=41 exit_br=1000001 exit_ret=348 exit_mem=6 exit_unsupported=60654 exit_budget=0 run_declined=43 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p1_d1024 srv=base test=get n=1000000 c=50 p=1 d=1024 thr=2 subs=0 rep=2 order=on,off state=on rps=285632.69 wall_cs=364 ticks_u=3 ticks_s=327 sched_ms=3306.250987 nvol=705 ninv=145 c0_busy=330 c0_idle=46 ipi_c0=734 ipi_other=15018 hook_calls=2063689 syscalls_in_kernel=1999462 fragment_entries=3062344 exit_svc=1999463 exit_bl=571 exit_blr=38 exit_br=1000001 exit_ret=348 exit_mem=14 exit_unsupported=61909 exit_budget=0 run_declined=41 svc_declined=1 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p1_d1024 srv=base test=get n=1000000 c=50 p=1 d=1024 thr=2 subs=0 rep=2 order=on,off state=off rps=285632.69 wall_cs=351 ticks_u=77 ticks_s=240 sched_ms=3172.208744 nvol=1351 ninv=289 c0_busy=319 c0_idle=32 ipi_c0=1357 ipi_other=5899 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=get_c50_p1_d1024 0x9e630160(135974/0) 0xd503203f(22/0) 
+cond: cell set_c50_p4_d1: server tasks allowed CPUs:       5 0 
+cond run cell=set_c50_p4_d1 srv=base test=set n=1000000 c=50 p=4 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=800000.00 wall_cs=126 ticks_u=49 ticks_s=55 sched_ms=1037.805162 nvol=100 ninv=25 c0_busy=104 c0_idle=21 ipi_c0=111 ipi_other=9653 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p4_d1 srv=base test=set n=1000000 c=50 p=4 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=665779.00 wall_cs=164 ticks_u=1 ticks_s=142 sched_ms=1429.114207 nvol=69 ninv=36 c0_busy=142 c0_idle=34 ipi_c0=92 ipi_other=14362 hook_calls=512041 syscalls_in_kernel=499425 fragment_entries=760734 exit_svc=499425 exit_bl=591 exit_blr=20 exit_br=250001 exit_ret=329 exit_mem=7 exit_unsupported=10361 exit_budget=0 run_declined=43 svc_declined=0 fpsimd_entries=250001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p4_d1 srv=base test=set n=1000000 c=50 p=4 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=666222.50 wall_cs=163 ticks_u=0 ticks_s=143 sched_ms=1442.227586 nvol=93 ninv=29 c0_busy=144 c0_idle=34 ipi_c0=112 ipi_other=14049 hook_calls=512214 syscalls_in_kernel=499417 fragment_entries=760897 exit_svc=499417 exit_bl=605 exit_blr=29 exit_br=250001 exit_ret=328 exit_mem=4 exit_unsupported=10513 exit_budget=0 run_declined=52 svc_declined=0 fpsimd_entries=250001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p4_d1 srv=base test=set n=1000000 c=50 p=4 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=798722.06 wall_cs=125 ticks_u=51 ticks_s=55 sched_ms=1060.099575 nvol=134 ninv=26 c0_busy=106 c0_idle=20 ipi_c0=141 ipi_other=9690 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=set_c50_p4_d1 0x9e630160(22907/0) 0xd503203f(29/0) 
+cond: cell get_c50_p4_d1: server tasks allowed CPUs:       5 0 
+cond run cell=get_c50_p4_d1 srv=base test=get n=1000000 c=50 p=4 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=799360.50 wall_cs=125 ticks_u=39 ticks_s=60 sched_ms=997.161579 nvol=187 ninv=31 c0_busy=100 c0_idle=26 ipi_c0=197 ipi_other=7909 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p4_d1 srv=base test=get n=1000000 c=50 p=4 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=798722.06 wall_cs=139 ticks_u=1 ticks_s=124 sched_ms=1245.597995 nvol=69 ninv=35 c0_busy=124 c0_idle=28 ipi_c0=82 ipi_other=12902 hook_calls=512289 syscalls_in_kernel=499556 fragment_entries=760971 exit_svc=499556 exit_bl=458 exit_blr=31 exit_br=250001 exit_ret=324 exit_mem=0 exit_unsupported=10601 exit_budget=0 run_declined=56 svc_declined=0 fpsimd_entries=250001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p4_d1 srv=base test=get n=1000000 c=50 p=4 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=800000.00 wall_cs=139 ticks_u=1 ticks_s=124 sched_ms=1245.718951 nvol=73 ninv=23 c0_busy=125 c0_idle=29 ipi_c0=88 ipi_other=13037 hook_calls=512288 syscalls_in_kernel=499566 fragment_entries=760990 exit_svc=499567 exit_bl=457 exit_blr=16 exit_br=250001 exit_ret=325 exit_mem=0 exit_unsupported=10624 exit_budget=0 run_declined=40 svc_declined=1 fpsimd_entries=250001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p4_d1 srv=base test=get n=1000000 c=50 p=4 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=999000.94 wall_cs=101 ticks_u=41 ticks_s=55 sched_ms=967.968786 nvol=191 ninv=35 c0_busy=98 c0_idle=3 ipi_c0=196 ipi_other=8110 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=get_c50_p4_d1 0x9e630160(23425/0) 0xd503203f(26/0) 
+cond: cell set_c50_p16_d1: server tasks allowed CPUs:       5 0 
+cond run cell=set_c50_p16_d1 srv=base test=set n=2000000 c=50 p=16 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=1598721.00 wall_cs=126 ticks_u=74 ticks_s=35 sched_ms=1096.291329 nvol=35 ninv=10 c0_busy=109 c0_idle=16 ipi_c0=48 ipi_other=9204 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p16_d1 srv=base test=set n=2000000 c=50 p=16 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=1331558.00 wall_cs=163 ticks_u=35 ticks_s=114 sched_ms=1495.419368 nvol=13 ninv=2 c0_busy=150 c0_idle=26 ipi_c0=32 ipi_other=10091 hook_calls=256650 syscalls_in_kernel=129994 fragment_entries=380338 exit_svc=129994 exit_bl=212 exit_blr=12 exit_br=125001 exit_ret=326 exit_mem=0 exit_unsupported=26 exit_budget=124767 run_declined=48 svc_declined=0 fpsimd_entries=125001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p16_d1 srv=base test=set n=2000000 c=50 p=16 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=1141552.50 wall_cs=188 ticks_u=32 ticks_s=121 sched_ms=1521.572744 nvol=18 ninv=16 c0_busy=153 c0_idle=50 ipi_c0=37 ipi_other=10041 hook_calls=256668 syscalls_in_kernel=130004 fragment_entries=380351 exit_svc=130004 exit_bl=245 exit_blr=8 exit_br=125001 exit_ret=334 exit_mem=0 exit_unsupported=15 exit_budget=124744 run_declined=47 svc_declined=0 fpsimd_entries=125000 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p16_d1 srv=base test=set n=2000000 c=50 p=16 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=1597444.12 wall_cs=127 ticks_u=69 ticks_s=40 sched_ms=1086.843330 nvol=40 ninv=22 c0_busy=109 c0_idle=17 ipi_c0=56 ipi_other=9153 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=set_c50_p16_d1 0xd503203f(42/0) 
+cond: cell get_c50_p16_d1: server tasks allowed CPUs:       5 0 
+cond run cell=get_c50_p16_d1 srv=base test=get n=2000000 c=50 p=16 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=1594896.38 wall_cs=126 ticks_u=65 ticks_s=34 sched_ms=982.565662 nvol=112 ninv=10 c0_busy=96 c0_idle=28 ipi_c0=132 ipi_other=8479 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p16_d1 srv=base test=get n=2000000 c=50 p=16 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=1140901.25 wall_cs=189 ticks_u=18 ticks_s=144 sched_ms=1620.696829 nvol=47 ninv=39 c0_busy=161 c0_idle=40 ipi_c0=76 ipi_other=9620 hook_calls=256737 syscalls_in_kernel=130070 fragment_entries=380420 exit_svc=130070 exit_bl=391 exit_blr=12 exit_br=125001 exit_ret=329 exit_mem=0 exit_unsupported=7 exit_budget=124610 run_declined=50 svc_declined=0 fpsimd_entries=125001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p16_d1 srv=base test=get n=2000000 c=50 p=16 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=1332445.00 wall_cs=163 ticks_u=16 ticks_s=132 sched_ms=1477.254870 nvol=20 ninv=15 c0_busy=148 c0_idle=28 ipi_c0=40 ipi_other=10021 hook_calls=256662 syscalls_in_kernel=130002 fragment_entries=380350 exit_svc=130002 exit_bl=319 exit_blr=12 exit_br=125001 exit_ret=327 exit_mem=0 exit_unsupported=17 exit_budget=124672 run_declined=52 svc_declined=0 fpsimd_entries=125001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p16_d1 srv=base test=get n=2000000 c=50 p=16 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=1598721.00 wall_cs=125 ticks_u=68 ticks_s=33 sched_ms=1012.662414 nvol=99 ninv=1 c0_busy=101 c0_idle=25 ipi_c0=114 ipi_other=8198 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=get_c50_p16_d1 0xd503203f(27/0) 
+cond: cell set_c1_p1_d1: server tasks allowed CPUs:       5 0 
+cond run cell=set_c1_p1_d1 srv=base test=set n=100000 c=1 p=1 d=1 thr=0 subs=0 rep=1 order=off,on state=off rps=13049.72 wall_cs=766 ticks_u=44 ticks_s=164 sched_ms=2084.928792 nvol=99941 ninv=42 c0_busy=133 c0_idle=509 ipi_c0=100058 ipi_other=100317 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c1_p1_d1 srv=base test=set n=100000 c=1 p=1 d=1 thr=0 subs=0 rep=1 order=off,on state=on rps=12471.94 wall_cs=814 ticks_u=22 ticks_s=251 sched_ms=2727.430233 nvol=99924 ninv=47 c0_busy=191 c0_idle=505 ipi_c0=100055 ipi_other=100345 hook_calls=301301 syscalls_in_kernel=200002 fragment_entries=400106 exit_svc=200002 exit_bl=18 exit_blr=82 exit_br=100001 exit_ret=98 exit_mem=0 exit_unsupported=99905 exit_budget=0 run_declined=42 svc_declined=0 fpsimd_entries=100001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c1_p1_d1 srv=base test=set n=100000 c=1 p=1 d=1 thr=0 subs=0 rep=2 order=on,off state=on rps=12059.82 wall_cs=841 ticks_u=19 ticks_s=246 sched_ms=2654.018376 nvol=99946 ninv=38 c0_busy=181 c0_idle=541 ipi_c0=100091 ipi_other=100442 hook_calls=301309 syscalls_in_kernel=200002 fragment_entries=400108 exit_svc=200002 exit_bl=14 exit_blr=84 exit_br=100001 exit_ret=101 exit_mem=0 exit_unsupported=99906 exit_budget=0 run_declined=42 svc_declined=0 fpsimd_entries=100001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c1_p1_d1 srv=base test=set n=100000 c=1 p=1 d=1 thr=0 subs=0 rep=2 order=on,off state=off rps=13331.56 wall_cs=750 ticks_u=40 ticks_s=170 sched_ms=2093.188282 nvol=99949 ninv=8 c0_busy=137 c0_idle=492 ipi_c0=100063 ipi_other=100244 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=set_c1_p1_d1 0x9e630160(299707/0) 0xd503203f(6/0) 
+cond: cell get_c1_p1_d1: server tasks allowed CPUs:       5 0 
+cond run cell=get_c1_p1_d1 srv=base test=get n=100000 c=1 p=1 d=1 thr=0 subs=0 rep=1 order=off,on state=off rps=13473.46 wall_cs=742 ticks_u=39 ticks_s=160 sched_ms=1982.423019 nvol=99958 ninv=9 c0_busy=128 c0_idle=497 ipi_c0=100059 ipi_other=100246 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c1_p1_d1 srv=base test=get n=100000 c=1 p=1 d=1 thr=0 subs=0 rep=1 order=off,on state=on rps=12132.98 wall_cs=836 ticks_u=20 ticks_s=237 sched_ms=2569.306390 nvol=99942 ninv=54 c0_busy=169 c0_idle=543 ipi_c0=100097 ipi_other=100450 hook_calls=301306 syscalls_in_kernel=200002 fragment_entries=400108 exit_svc=200002 exit_bl=15 exit_blr=84 exit_br=100001 exit_ret=100 exit_mem=0 exit_unsupported=99906 exit_budget=0 run_declined=41 svc_declined=0 fpsimd_entries=100001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c1_p1_d1 srv=base test=get n=100000 c=1 p=1 d=1 thr=0 subs=0 rep=2 order=on,off state=on rps=11816.14 wall_cs=859 ticks_u=25 ticks_s=236 sched_ms=2605.503353 nvol=99942 ninv=26 c0_busy=161 c0_idle=562 ipi_c0=100076 ipi_other=100392 hook_calls=301313 syscalls_in_kernel=200002 fragment_entries=400109 exit_svc=200002 exit_bl=16 exit_blr=87 exit_br=100001 exit_ret=101 exit_mem=0 exit_unsupported=99902 exit_budget=0 run_declined=42 svc_declined=0 fpsimd_entries=100001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c1_p1_d1 srv=base test=get n=100000 c=1 p=1 d=1 thr=0 subs=0 rep=2 order=on,off state=off rps=14357.50 wall_cs=697 ticks_u=36 ticks_s=166 sched_ms=2021.948161 nvol=99954 ninv=8 c0_busy=143 c0_idle=446 ipi_c0=100023 ipi_other=100151 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=get_c1_p1_d1 0x9e630160(304684/0) 0xd503203f(18/0) 
+cond: cell set_c10_p1_d1: server tasks allowed CPUs:       5 0 
+cond run cell=set_c10_p1_d1 srv=base test=set n=500000 c=10 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=105152.47 wall_cs=476 ticks_u=58 ticks_s=199 sched_ms=2562.100642 nvol=36463 ninv=12 c0_busy=260 c0_idle=197 ipi_c0=36501 ipi_other=75579 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c10_p1_d1 srv=base test=set n=500000 c=10 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=83263.95 wall_cs=613 ticks_u=6 ticks_s=340 sched_ms=3469.007176 nvol=40705 ninv=152 c0_busy=342 c0_idle=255 ipi_c0=40752 ipi_other=94825 hook_calls=1095080 syscalls_in_kernel=999980 fragment_entries=1593877 exit_svc=999980 exit_bl=27 exit_blr=65 exit_br=500001 exit_ret=132 exit_mem=0 exit_unsupported=93672 exit_budget=0 run_declined=46 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c10_p1_d1 srv=base test=set n=500000 c=10 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=86865.88 wall_cs=588 ticks_u=3 ticks_s=322 sched_ms=3249.735242 nvol=40707 ninv=169 c0_busy=327 c0_idle=252 ipi_c0=40737 ipi_other=94673 hook_calls=1094333 syscalls_in_kernel=999977 fragment_entries=1593117 exit_svc=999977 exit_bl=21 exit_blr=58 exit_br=500001 exit_ret=131 exit_mem=9 exit_unsupported=92920 exit_budget=0 run_declined=42 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c10_p1_d1 srv=base test=set n=500000 c=10 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=111061.76 wall_cs=450 ticks_u=62 ticks_s=185 sched_ms=2471.485286 nvol=36542 ninv=132 c0_busy=243 c0_idle=182 ipi_c0=36570 ipi_other=74503 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=set_c10_p1_d1 0x9e630160(225296/0) 0xd503203f(19/0) 
+cond: cell get_c10_p1_d1: server tasks allowed CPUs:       5 0 
+cond run cell=get_c10_p1_d1 srv=base test=get n=500000 c=10 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=111061.76 wall_cs=452 ticks_u=53 ticks_s=185 sched_ms=2376.055123 nvol=35221 ninv=111 c0_busy=246 c0_idle=193 ipi_c0=35251 ipi_other=69166 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c10_p1_d1 srv=base test=get n=500000 c=10 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=79948.83 wall_cs=638 ticks_u=7 ticks_s=348 sched_ms=3559.942204 nvol=40136 ninv=145 c0_busy=349 c0_idle=270 ipi_c0=40185 ipi_other=94010 hook_calls=1095781 syscalls_in_kernel=999975 fragment_entries=1594583 exit_svc=999975 exit_bl=20 exit_blr=62 exit_br=500001 exit_ret=137 exit_mem=9 exit_unsupported=94379 exit_budget=0 run_declined=42 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c10_p1_d1 srv=base test=get n=500000 c=10 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=86820.63 wall_cs=589 ticks_u=4 ticks_s=325 sched_ms=3287.189160 nvol=41188 ninv=137 c0_busy=323 c0_idle=247 ipi_c0=41229 ipi_other=93923 hook_calls=1094300 syscalls_in_kernel=999977 fragment_entries=1593109 exit_svc=999977 exit_bl=21 exit_blr=62 exit_br=500001 exit_ret=129 exit_mem=9 exit_unsupported=92910 exit_budget=0 run_declined=44 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c10_p1_d1 srv=base test=get n=500000 c=10 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=117508.81 wall_cs=426 ticks_u=55 ticks_s=177 sched_ms=2310.516109 nvol=33830 ninv=12 c0_busy=250 c0_idle=176 ipi_c0=33851 ipi_other=66365 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=get_c10_p1_d1 0x9e630160(225348/0) 0xd503203f(27/0) 
+cond: cell set_c50_p1_d1_t0: server tasks allowed CPUs:       5 0 
+cond run cell=set_c50_p1_d1_t0 srv=base test=set n=500000 c=50 p=1 d=1 thr=0 subs=0 rep=1 order=off,on state=off rps=199441.56 wall_cs=252 ticks_u=51 ticks_s=120 sched_ms=1718.102937 nvol=22159 ninv=5 c0_busy=160 c0_idle=71 ipi_c0=22181 ipi_other=166 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p1_d1_t0 srv=base test=set n=500000 c=50 p=1 d=1 thr=0 subs=0 rep=1 order=off,on state=on rps=204164.97 wall_cs=258 ticks_u=4 ticks_s=202 sched_ms=2052.511374 nvol=10417 ninv=74 c0_busy=210 c0_idle=62 ipi_c0=10437 ipi_other=217 hook_calls=1149041 syscalls_in_kernel=999734 fragment_entries=1647687 exit_svc=999734 exit_bl=342 exit_blr=55 exit_br=500001 exit_ret=337 exit_mem=27 exit_unsupported=147191 exit_budget=0 run_declined=69 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p1_d1_t0 srv=base test=set n=500000 c=50 p=1 d=1 thr=0 subs=0 rep=2 order=on,off state=on rps=204582.66 wall_cs=258 ticks_u=5 ticks_s=199 sched_ms=2046.290420 nvol=10721 ninv=70 c0_busy=198 c0_idle=64 ipi_c0=10740 ipi_other=207 hook_calls=1151629 syscalls_in_kernel=999704 fragment_entries=1650290 exit_svc=999704 exit_bl=401 exit_blr=42 exit_br=500001 exit_ret=338 exit_mem=4 exit_unsupported=149800 exit_budget=0 run_declined=56 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0
+cond run cell=set_c50_p1_d1_t0 srv=base test=set n=500000 c=50 p=1 d=1 thr=0 subs=0 rep=2 order=on,off state=off rps=198334.00 wall_cs=252 ticks_u=48 ticks_s=125 sched_ms=1735.724091 nvol=21454 ninv=63 c0_busy=162 c0_idle=70 ipi_c0=21472 ipi_other=179 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=set_c50_p1_d1_t0 0x9e630160(357543/0) 0xd503203f(5/0) 
+cond: cell get_c50_p1_d1_t0: server tasks allowed CPUs:       5 0 
+cond run cell=get_c50_p1_d1_t0 srv=base test=get n=500000 c=50 p=1 d=1 thr=0 subs=0 rep=1 order=off,on state=off rps=196772.94 wall_cs=254 ticks_u=48 ticks_s=123 sched_ms=1705.461248 nvol=21567 ninv=209 c0_busy=167 c0_idle=75 ipi_c0=21602 ipi_other=72 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p1_d1_t0 srv=base test=get n=500000 c=50 p=1 d=1 thr=0 subs=0 rep=1 order=off,on state=on rps=204248.38 wall_cs=257 ticks_u=2 ticks_s=186 sched_ms=1888.984344 nvol=14075 ninv=212 c0_busy=191 c0_idle=77 ipi_c0=14122 ipi_other=136 hook_calls=1130220 syscalls_in_kernel=999732 fragment_entries=1628984 exit_svc=999732 exit_bl=350 exit_blr=37 exit_br=500001 exit_ret=438 exit_mem=0 exit_unsupported=128426 exit_budget=0 run_declined=51 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p1_d1_t0 srv=base test=get n=500000 c=50 p=1 d=1 thr=0 subs=0 rep=2 order=on,off state=on rps=205423.17 wall_cs=255 ticks_u=5 ticks_s=185 sched_ms=1897.360129 nvol=13524 ninv=64 c0_busy=193 c0_idle=73 ipi_c0=13547 ipi_other=203 hook_calls=1133354 syscalls_in_kernel=999734 fragment_entries=1632126 exit_svc=999734 exit_bl=339 exit_blr=33 exit_br=500001 exit_ret=438 exit_mem=0 exit_unsupported=131581 exit_budget=0 run_declined=49 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0
+cond run cell=get_c50_p1_d1_t0 srv=base test=get n=500000 c=50 p=1 d=1 thr=0 subs=0 rep=2 order=on,off state=off rps=174520.06 wall_cs=287 ticks_u=57 ticks_s=135 sched_ms=1927.108025 nvol=24299 ninv=4 c0_busy=177 c0_idle=83 ipi_c0=24317 ipi_other=284 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=get_c50_p1_d1_t0 0x9e630160(313792/0) 0xd503203f(8/0) 
+cond: cell incr_c50_p1: server tasks allowed CPUs:       5 0 
+cond run cell=incr_c50_p1 srv=base test=incr n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=299700.28 wall_cs=201 ticks_u=43 ticks_s=134 sched_ms=1764.986912 nvol=631 ninv=79 c0_busy=179 c0_idle=24 ipi_c0=645 ipi_other=2735 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=incr_c50_p1 srv=base test=incr n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=266548.22 wall_cs=237 ticks_u=0 ticks_s=198 sched_ms=1988.566413 nvol=441 ninv=2 c0_busy=200 c0_idle=53 ipi_c0=464 ipi_other=12197 hook_calls=1231742 syscalls_in_kernel=1199636 fragment_entries=1830518 exit_svc=1199636 exit_bl=365 exit_blr=29 exit_br=600001 exit_ret=438 exit_mem=0 exit_unsupported=30049 exit_budget=0 run_declined=49 svc_declined=0 fpsimd_entries=600001 translate_ok=0 invalidated_fragments=0
+cond run cell=incr_c50_p1 srv=base test=incr n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=266311.59 wall_cs=238 ticks_u=0 ticks_s=207 sched_ms=2073.456660 nvol=504 ninv=101 c0_busy=206 c0_idle=43 ipi_c0=530 ipi_other=12581 hook_calls=1232482 syscalls_in_kernel=1199642 fragment_entries=1831251 exit_svc=1199642 exit_bl=367 exit_blr=41 exit_br=600001 exit_ret=438 exit_mem=10 exit_unsupported=30752 exit_budget=0 run_declined=58 svc_declined=0 fpsimd_entries=600001 translate_ok=0 invalidated_fragments=0
+cond run cell=incr_c50_p1 srv=base test=incr n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=239520.95 wall_cs=250 ticks_u=42 ticks_s=160 sched_ms=2013.099813 nvol=1204 ninv=107 c0_busy=204 c0_idle=48 ipi_c0=1215 ipi_other=3947 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=incr_c50_p1 0x9e630160(70789/0) 0xd503203f(35/0) 
+cond: cell lpush_c50_p1: server tasks allowed CPUs:       5 0 
+cond run cell=lpush_c50_p1 srv=base test=lpush n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=299700.28 wall_cs=200 ticks_u=55 ticks_s=141 sched_ms=1964.895549 nvol=627 ninv=87 c0_busy=197 c0_idle=4 ipi_c0=629 ipi_other=7062 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=lpush_c50_p1 srv=base test=lpush n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=239712.34 wall_cs=262 ticks_u=3 ticks_s=233 sched_ms=2353.581816 nvol=462 ninv=97 c0_busy=235 c0_idle=40 ipi_c0=481 ipi_other=18599 hook_calls=1230667 syscalls_in_kernel=1190571 fragment_entries=1829985 exit_svc=1190571 exit_bl=961 exit_blr=36 exit_br=600548 exit_ret=2770 exit_mem=22 exit_unsupported=35077 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=600548 translate_ok=4 invalidated_fragments=0
+cond run cell=lpush_c50_p1 srv=base test=lpush n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=266311.59 wall_cs=238 ticks_u=1 ticks_s=222 sched_ms=2234.667284 nvol=364 ninv=78 c0_busy=225 c0_idle=27 ipi_c0=384 ipi_other=19736 hook_calls=1230110 syscalls_in_kernel=1191650 fragment_entries=1829539 exit_svc=1191650 exit_bl=1084 exit_blr=36 exit_br=600723 exit_ret=1726 exit_mem=22 exit_unsupported=34298 exit_budget=0 run_declined=53 svc_declined=0 fpsimd_entries=600723 translate_ok=4 invalidated_fragments=0
+cond run cell=lpush_c50_p1 srv=base test=lpush n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=266548.22 wall_cs=225 ticks_u=53 ticks_s=146 sched_ms=1990.126187 nvol=725 ninv=159 c0_busy=202 c0_idle=26 ipi_c0=739 ipi_other=6215 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=lpush_c50_p1 0x9e630160(65294/0) 0xfc6c79c0(15222/0) 0xd503203f(14/0) 
+cond: cell pingi_c50_p1: server tasks allowed CPUs:       5 0 
+cond run cell=pingi_c50_p1 srv=base test=ping_inline n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=299700.28 wall_cs=200 ticks_u=45 ticks_s=134 sched_ms=1775.368868 nvol=647 ninv=146 c0_busy=180 c0_idle=23 ipi_c0=668 ipi_other=2981 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=pingi_c50_p1 srv=base test=ping_inline n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=266429.84 wall_cs=237 ticks_u=0 ticks_s=203 sched_ms=2035.497730 nvol=486 ninv=128 c0_busy=206 c0_idle=48 ipi_c0=508 ipi_other=14362 hook_calls=1230728 syscalls_in_kernel=1199611 fragment_entries=1829512 exit_svc=1199611 exit_bl=68 exit_blr=34 exit_br=600011 exit_ret=775 exit_mem=4 exit_unsupported=29009 exit_budget=0 run_declined=51 svc_declined=0 fpsimd_entries=600011 translate_ok=0 invalidated_fragments=0
+cond run cell=pingi_c50_p1 srv=base test=ping_inline n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=266429.84 wall_cs=237 ticks_u=0 ticks_s=202 sched_ms=2021.049362 nvol=523 ninv=107 c0_busy=202 c0_idle=50 ipi_c0=550 ipi_other=14788 hook_calls=1230572 syscalls_in_kernel=1199615 fragment_entries=1829344 exit_svc=1199615 exit_bl=74 exit_blr=41 exit_br=600008 exit_ret=775 exit_mem=0 exit_unsupported=28831 exit_budget=0 run_declined=59 svc_declined=0 fpsimd_entries=600008 translate_ok=0 invalidated_fragments=0
+cond run cell=pingi_c50_p1 srv=base test=ping_inline n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=299850.09 wall_cs=200 ticks_u=40 ticks_s=135 sched_ms=1758.007409 nvol=526 ninv=140 c0_busy=176 c0_idle=24 ipi_c0=541 ipi_other=2538 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=pingi_c50_p1 0x9e630160(67550/0) 0xd503203f(5/0) 
+cond: cell pingm_c50_p1: server tasks allowed CPUs:       5 0 
+cond run cell=pingm_c50_p1 srv=base test=ping_mbulk n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=299700.28 wall_cs=201 ticks_u=38 ticks_s=137 sched_ms=1751.339962 nvol=756 ninv=135 c0_busy=177 c0_idle=25 ipi_c0=774 ipi_other=2464 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=pingm_c50_p1 srv=base test=ping_mbulk n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=299850.09 wall_cs=214 ticks_u=0 ticks_s=193 sched_ms=1936.323285 nvol=562 ninv=45 c0_busy=191 c0_idle=35 ipi_c0=582 ipi_other=4699 hook_calls=1242711 syscalls_in_kernel=1199720 fragment_entries=1841497 exit_svc=1199721 exit_bl=113 exit_blr=34 exit_br=600011 exit_ret=609 exit_mem=0 exit_unsupported=41009 exit_budget=0 run_declined=52 svc_declined=1 fpsimd_entries=600011 translate_ok=0 invalidated_fragments=0
+cond run cell=pingm_c50_p1 srv=base test=ping_mbulk n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=299401.22 wall_cs=213 ticks_u=2 ticks_s=185 sched_ms=1867.211376 nvol=553 ninv=140 c0_busy=185 c0_idle=40 ipi_c0=571 ipi_other=3883 hook_calls=1242459 syscalls_in_kernel=1199750 fragment_entries=1841245 exit_svc=1199750 exit_bl=90 exit_blr=33 exit_br=600010 exit_ret=609 exit_mem=6 exit_unsupported=40747 exit_budget=0 run_declined=53 svc_declined=0 fpsimd_entries=600010 translate_ok=0 invalidated_fragments=0
+cond run cell=pingm_c50_p1 srv=base test=ping_mbulk n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=300000.00 wall_cs=200 ticks_u=40 ticks_s=137 sched_ms=1771.917015 nvol=1100 ninv=160 c0_busy=177 c0_idle=23 ipi_c0=1109 ipi_other=2240 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=pingm_c50_p1 0x9e630160(95139/0) 0xd503203f(19/0) 
+cond: cell mset_c50_p1: server tasks allowed CPUs:       5 0 
+cond run cell=mset_c50_p1 srv=base test=mset n=500000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=222123.52 wall_cs=225 ticks_u=91 ticks_s=117 sched_ms=2086.731771 nvol=180 ninv=90 c0_busy=209 c0_idle=17 ipi_c0=198 ipi_other=20975 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=mset_c50_p1 srv=base test=mset n=500000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=153657.05 wall_cs=337 ticks_u=2 ticks_s=299 sched_ms=3008.744944 nvol=76 ninv=55 c0_busy=301 c0_idle=48 ipi_c0=103 ipi_other=31527 hook_calls=1022024 syscalls_in_kernel=998762 fragment_entries=1520788 exit_svc=998762 exit_bl=290 exit_blr=43 exit_br=500013 exit_ret=1476 exit_mem=0 exit_unsupported=20204 exit_budget=0 run_declined=53 svc_declined=0 fpsimd_entries=500012 translate_ok=0 invalidated_fragments=0
+cond run cell=mset_c50_p1 srv=base test=mset n=500000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=166611.14 wall_cs=313 ticks_u=0 ticks_s=292 sched_ms=2922.830282 nvol=61 ninv=4 c0_busy=292 c0_idle=35 ipi_c0=82 ipi_other=31691 hook_calls=1021962 syscalls_in_kernel=998802 fragment_entries=1520727 exit_svc=998803 exit_bl=259 exit_blr=43 exit_br=500009 exit_ret=1441 exit_mem=19 exit_unsupported=20153 exit_budget=0 run_declined=54 svc_declined=1 fpsimd_entries=500009 translate_ok=0 invalidated_fragments=0
+cond run cell=mset_c50_p1 srv=base test=mset n=500000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=222123.52 wall_cs=226 ticks_u=95 ticks_s=115 sched_ms=2106.471196 nvol=205 ninv=88 c0_busy=212 c0_idle=15 ipi_c0=218 ipi_other=20311 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=mset_c50_p1 0x9e630160(48330/0) 0xd503203f(21/0) 
+cond: cell aofalw_set_c50_p1: server tasks allowed CPUs:       5 0 
+cond: translate_ok after server warm-up: 763
+cond run cell=aofalw_set_c50_p1 srv=aof_always test=set n=300000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=239808.14 wall_cs=126 ticks_u=32 ticks_s=68 sched_ms=998.399747 nvol=238 ninv=0 c0_busy=100 c0_idle=25 ipi_c0=252 ipi_other=6291 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=aofalw_set_c50_p1 srv=aof_always test=set n=300000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=199733.69 wall_cs=163 ticks_u=12 ticks_s=118 sched_ms=1297.232654 nvol=85 ninv=70 c0_busy=129 c0_idle=47 ipi_c0=111 ipi_other=13037 hook_calls=641412 syscalls_in_kernel=339741 fragment_entries=953356 exit_svc=339741 exit_bl=222 exit_blr=9 exit_br=300001 exit_ret=13529 exit_mem=0 exit_unsupported=299854 exit_budget=0 run_declined=48 svc_declined=0 fpsimd_entries=313254 translate_ok=0 invalidated_fragments=0
+cond run cell=aofalw_set_c50_p1 srv=aof_always test=set n=300000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=199733.69 wall_cs=164 ticks_u=13 ticks_s=122 sched_ms=1355.350286 nvol=124 ninv=47 c0_busy=137 c0_idle=42 ipi_c0=147 ipi_other=13390 hook_calls=640958 syscalls_in_kernel=339275 fragment_entries=952736 exit_svc=339275 exit_bl=238 exit_blr=15 exit_br=300001 exit_ret=13374 exit_mem=0 exit_unsupported=299833 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=313097 translate_ok=0 invalidated_fragments=0
+cond run cell=aofalw_set_c50_p1 srv=aof_always test=set n=300000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=240000.00 wall_cs=125 ticks_u=32 ticks_s=68 sched_ms=998.527580 nvol=207 ninv=44 c0_busy=100 c0_idle=26 ipi_c0=215 ipi_other=5793 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=aofalw_set_c50_p1 0xfc6c79c0(1086402/0) 0xd503203f(5/0) 
+cond: cell aofalw_set_c50_p16: server tasks allowed CPUs:       5 0 
+cond run cell=aofalw_set_c50_p16 srv=aof_always test=set n=600000 c=50 p=16 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=1197604.88 wall_cs=51 ticks_u=34 ticks_s=15 sched_ms=493.609250 nvol=15 ninv=7 c0_busy=51 c0_idle=1 ipi_c0=16 ipi_other=2967 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=aofalw_set_c50_p16 srv=aof_always test=set n=600000 c=50 p=16 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=798934.75 wall_cs=89 ticks_u=30 ticks_s=24 sched_ms=533.114333 nvol=18 ninv=5 c0_busy=52 c0_idle=50 ipi_c0=38 ipi_other=3095 hook_calls=81131 syscalls_in_kernel=41928 fragment_entries=118824 exit_svc=41928 exit_bl=140 exit_blr=18 exit_br=37501 exit_ret=1764 exit_mem=0 exit_unsupported=37473 exit_budget=0 run_declined=55 svc_declined=0 fpsimd_entries=38995 translate_ok=0 invalidated_fragments=0
+cond run cell=aofalw_set_c50_p16 srv=aof_always test=set n=600000 c=50 p=16 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=797872.38 wall_cs=88 ticks_u=33 ticks_s=21 sched_ms=540.640621 nvol=15 ninv=2 c0_busy=54 c0_idle=48 ipi_c0=36 ipi_other=3105 hook_calls=81119 syscalls_in_kernel=41949 fragment_entries=118821 exit_svc=41949 exit_bl=115 exit_blr=8 exit_br=37501 exit_ret=1766 exit_mem=12 exit_unsupported=37470 exit_budget=0 run_declined=44 svc_declined=0 fpsimd_entries=38997 translate_ok=0 invalidated_fragments=0
+cond run cell=aofalw_set_c50_p16 srv=aof_always test=set n=600000 c=50 p=16 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=1200000.00 wall_cs=50 ticks_u=35 ticks_s=14 sched_ms=483.510164 nvol=15 ninv=3 c0_busy=48 c0_idle=3 ipi_c0=15 ipi_other=2960 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=aofalw_set_c50_p16 0xfc6c79c0(87428/0) 
+cond: cell aofalw_incr_c50_p1: server tasks allowed CPUs:       5 0 
+cond run cell=aofalw_incr_c50_p1 srv=aof_always test=incr n=300000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=299700.28 wall_cs=100 ticks_u=24 ticks_s=74 sched_ms=974.508497 nvol=212 ninv=45 c0_busy=97 c0_idle=3 ipi_c0=211 ipi_other=4799 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=aofalw_incr_c50_p1 srv=aof_always test=incr n=300000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=199733.69 wall_cs=164 ticks_u=12 ticks_s=116 sched_ms=1284.306576 nvol=111 ninv=39 c0_busy=130 c0_idle=47 ipi_c0=133 ipi_other=12718 hook_calls=641516 syscalls_in_kernel=339835 fragment_entries=953486 exit_svc=339835 exit_bl=192 exit_blr=15 exit_br=300001 exit_ret=13560 exit_mem=0 exit_unsupported=299883 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=313285 translate_ok=0 invalidated_fragments=0
+cond run cell=aofalw_incr_c50_p1 srv=aof_always test=incr n=300000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=199866.75 wall_cs=165 ticks_u=11 ticks_s=121 sched_ms=1326.924659 nvol=125 ninv=46 c0_busy=133 c0_idle=45 ipi_c0=151 ipi_other=12775 hook_calls=641675 syscalls_in_kernel=339985 fragment_entries=953683 exit_svc=339985 exit_bl=182 exit_blr=21 exit_br=300000 exit_ret=13609 exit_mem=3 exit_unsupported=299883 exit_budget=0 run_declined=60 svc_declined=0 fpsimd_entries=313332 translate_ok=0 invalidated_fragments=0
+cond run cell=aofalw_incr_c50_p1 srv=aof_always test=incr n=300000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=240000.00 wall_cs=125 ticks_u=24 ticks_s=78 sched_ms=1022.052863 nvol=229 ninv=37 c0_busy=102 c0_idle=23 ipi_c0=242 ipi_other=4965 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=aofalw_incr_c50_p1 0xfc6c79c0(798529/0) 0xd503203f(5/0) 
+cond: cell aofesec_set_c50_p1: server tasks allowed CPUs:       5 0 
+cond: translate_ok after server warm-up: 1058
+cond run cell=aofesec_set_c50_p1 srv=aof_everysec test=set n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=239808.14 wall_cs=251 ticks_u=64 ticks_s=174 sched_ms=2375.224585 nvol=836 ninv=72 c0_busy=239 c0_idle=13 ipi_c0=835 ipi_other=13564 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=aofesec_set_c50_p1 srv=aof_everysec test=set n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=184445.12 wall_cs=341 ticks_u=35 ticks_s=268 sched_ms=3033.874491 nvol=425 ninv=99 c0_busy=304 c0_idle=50 ipi_c0=444 ipi_other=25974 hook_calls=1256361 syscalls_in_kernel=654378 fragment_entries=1882297 exit_svc=654378 exit_bl=1026 exit_blr=5 exit_br=600001 exit_ret=27607 exit_mem=1 exit_unsupported=599279 exit_budget=0 run_declined=44 svc_declined=0 fpsimd_entries=627314 translate_ok=0 invalidated_fragments=0
+cond run cell=aofesec_set_c50_p1 srv=aof_everysec test=set n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=199866.75 wall_cs=313 ticks_u=30 ticks_s=244 sched_ms=2744.823085 nvol=264 ninv=86 c0_busy=274 c0_idle=53 ipi_c0=282 ipi_other=25687 hook_calls=1255157 syscalls_in_kernel=653234 fragment_entries=1880483 exit_svc=653234 exit_bl=851 exit_blr=12 exit_br=600001 exit_ret=26995 exit_mem=7 exit_unsupported=599383 exit_budget=0 run_declined=51 svc_declined=0 fpsimd_entries=626704 translate_ok=0 invalidated_fragments=0
+cond run cell=aofesec_set_c50_p1 srv=aof_everysec test=set n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=266548.22 wall_cs=226 ticks_u=65 ticks_s=146 sched_ms=2115.796824 nvol=485 ninv=89 c0_busy=212 c0_idle=14 ipi_c0=496 ipi_other=14008 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=aofesec_set_c50_p1 0xfc6c79c0(1984933/0) 0xd503203f(12/0) 
+cond: cell aofesec_set_c50_p16: server tasks allowed CPUs:       6 0 
+cond run cell=aofesec_set_c50_p16 srv=aof_everysec test=set n=600000 c=50 p=16 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=1197604.88 wall_cs=51 ticks_u=36 ticks_s=11 sched_ms=478.554245 nvol=18 ninv=7 c0_busy=49 c0_idle=3 ipi_c0=23 ipi_other=3020 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=aofesec_set_c50_p16 srv=aof_everysec test=set n=600000 c=50 p=16 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=797872.38 wall_cs=89 ticks_u=36 ticks_s=18 sched_ms=541.742123 nvol=17 ninv=7 c0_busy=53 c0_idle=48 ipi_c0=35 ipi_other=3073 hook_calls=79649 syscalls_in_kernel=40461 fragment_entries=117329 exit_svc=40461 exit_bl=112 exit_blr=13 exit_br=37501 exit_ret=1765 exit_mem=0 exit_unsupported=37477 exit_budget=0 run_declined=51 svc_declined=0 fpsimd_entries=38997 translate_ok=0 invalidated_fragments=0
+cond run cell=aofesec_set_c50_p16 srv=aof_everysec test=set n=600000 c=50 p=16 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=798934.75 wall_cs=87 ticks_u=37 ticks_s=19 sched_ms=551.893290 nvol=21 ninv=13 c0_busy=56 c0_idle=45 ipi_c0=38 ipi_other=3043 hook_calls=79651 syscalls_in_kernel=40448 fragment_entries=117327 exit_svc=40448 exit_bl=128 exit_blr=11 exit_br=37501 exit_ret=1766 exit_mem=0 exit_unsupported=37473 exit_budget=0 run_declined=50 svc_declined=0 fpsimd_entries=38997 translate_ok=0 invalidated_fragments=0
+cond run cell=aofesec_set_c50_p16 srv=aof_everysec test=set n=600000 c=50 p=16 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=1197604.88 wall_cs=50 ticks_u=32 ticks_s=15 sched_ms=474.947911 nvol=15 ninv=13 c0_busy=47 c0_idle=3 ipi_c0=15 ipi_other=3049 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=aofesec_set_c50_p16 0xfc6c79c0(87428/0) 0xd503203f(1/0) 
+cond: cell aofno_set_c50_p1: server tasks allowed CPUs:       5 0 
+cond: translate_ok after server warm-up: 1335
+cond run cell=aofno_set_c50_p1 srv=aof_no test=set n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=266548.22 wall_cs=226 ticks_u=61 ticks_s=145 sched_ms=2061.427236 nvol=490 ninv=74 c0_busy=207 c0_idle=19 ipi_c0=499 ipi_other=13645 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=aofno_set_c50_p1 srv=aof_no test=set n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=217944.06 wall_cs=289 ticks_u=31 ticks_s=228 sched_ms=2584.137947 nvol=147 ninv=116 c0_busy=258 c0_idle=44 ipi_c0=173 ipi_other=26106 hook_calls=1254461 syscalls_in_kernel=652712 fragment_entries=1879480 exit_svc=652712 exit_bl=408 exit_blr=19 exit_br=600001 exit_ret=26660 exit_mem=3 exit_unsupported=599677 exit_budget=0 run_declined=57 svc_declined=0 fpsimd_entries=626372 translate_ok=0 invalidated_fragments=0
+cond run cell=aofno_set_c50_p1 srv=aof_no test=set n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=184558.59 wall_cs=338 ticks_u=33 ticks_s=285 sched_ms=3176.094063 nvol=410 ninv=91 c0_busy=313 c0_idle=34 ipi_c0=429 ipi_other=26665 hook_calls=1255692 syscalls_in_kernel=653958 fragment_entries=1881348 exit_svc=653958 exit_bl=400 exit_blr=4 exit_br=600001 exit_ret=27290 exit_mem=3 exit_unsupported=599692 exit_budget=0 run_declined=43 svc_declined=0 fpsimd_entries=626998 translate_ok=0 invalidated_fragments=0
+cond run cell=aofno_set_c50_p1 srv=aof_no test=set n=600000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=266429.84 wall_cs=225 ticks_u=57 ticks_s=150 sched_ms=2070.307954 nvol=490 ninv=72 c0_busy=208 c0_idle=19 ipi_c0=503 ipi_other=12617 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=aofno_set_c50_p1 0xfc6c79c0(1985903/0) 0xd503203f(20/0) 
+cond: cell aof9p_set_c50_p1: server tasks allowed CPUs:       5 0 
+cond: translate_ok after server warm-up: 1615
+cond run cell=aof9p_set_c50_p1 srv=aof9p_always test=set n=60000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=79787.23 wall_cs=75 ticks_u=8 ticks_s=25 sched_ms=317.774463 nvol=4499 ninv=1913 c0_busy=25 c0_idle=40 ipi_c0=25 ipi_other=4667 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=aof9p_set_c50_p1 srv=aof9p_always test=set n=60000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=79787.23 wall_cs=89 ticks_u=5 ticks_s=29 sched_ms=349.046776 nvol=4623 ninv=1994 c0_busy=29 c0_idle=64 ipi_c0=28 ipi_other=4804 hook_calls=128561 syscalls_in_kernel=66921 fragment_entries=189569 exit_svc=66921 exit_bl=101 exit_blr=13 exit_br=60001 exit_ret=2576 exit_mem=0 exit_unsupported=59957 exit_budget=0 run_declined=51 svc_declined=0 fpsimd_entries=62308 translate_ok=0 invalidated_fragments=0
+cond run cell=aof9p_set_c50_p1 srv=aof9p_always test=set n=60000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=79893.48 wall_cs=88 ticks_u=4 ticks_s=30 sched_ms=346.319095 nvol=4630 ninv=2018 c0_busy=31 c0_idle=65 ipi_c0=33 ipi_other=4740 hook_calls=128565 syscalls_in_kernel=66931 fragment_entries=189581 exit_svc=66931 exit_bl=99 exit_blr=9 exit_br=60001 exit_ret=2580 exit_mem=0 exit_unsupported=59961 exit_budget=0 run_declined=48 svc_declined=0 fpsimd_entries=62312 translate_ok=0 invalidated_fragments=0
+cond run cell=aof9p_set_c50_p1 srv=aof9p_always test=set n=60000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=79893.48 wall_cs=76 ticks_u=7 ticks_s=24 sched_ms=303.800533 nvol=4553 ninv=1974 c0_busy=23 c0_idle=43 ipi_c0=22 ipi_other=4640 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=aof9p_set_c50_p1 0xfc6c79c0(226813/0) 0xd503203f(3/0) 
+cond: cell unix_set_c50_p1: server tasks allowed CPUs:       5 0 
+cond: translate_ok after server warm-up: 1902
+cond run cell=unix_set_c50_p1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=333111.25 wall_cs=300 ticks_u=85 ticks_s=137 sched_ms=2213.686510 nvol=11653 ninv=4 c0_busy=235 c0_idle=74 ipi_c0=11674 ipi_other=9318 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=unix_set_c50_p1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=363240.09 wall_cs=288 ticks_u=3 ticks_s=220 sched_ms=2234.334055 nvol=6364 ninv=3 c0_busy=242 c0_idle=75 ipi_c0=6388 ipi_other=11145 hook_calls=2114937 syscalls_in_kernel=1999386 fragment_entries=3113651 exit_svc=1999386 exit_bl=662 exit_blr=30 exit_br=1000001 exit_ret=243 exit_mem=0 exit_unsupported=113329 exit_budget=0 run_declined=41 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0
+cond run cell=unix_set_c50_p1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=307503.06 wall_cs=337 ticks_u=7 ticks_s=258 sched_ms=2649.091658 nvol=8015 ninv=181 c0_busy=278 c0_idle=83 ipi_c0=8037 ipi_other=13586 hook_calls=2109349 syscalls_in_kernel=1999383 fragment_entries=3108061 exit_svc=1999383 exit_bl=673 exit_blr=34 exit_br=1000001 exit_ret=245 exit_mem=6 exit_unsupported=107719 exit_budget=0 run_declined=41 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0
+cond run cell=unix_set_c50_p1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=307408.53 wall_cs=326 ticks_u=97 ticks_s=151 sched_ms=2478.606844 nvol=14136 ninv=3 c0_busy=254 c0_idle=70 ipi_c0=14151 ipi_other=11856 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=unix_set_c50_p1 0x9e630160(349637/0) 0xd503203f(50/0) 
+cond: cell unix_get_c50_p1: server tasks allowed CPUs:       5 0 
+cond run cell=unix_get_c50_p1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=off rps=307597.66 wall_cs=325 ticks_u=96 ticks_s=134 sched_ms=2302.837072 nvol=16499 ninv=2 c0_busy=236 c0_idle=87 ipi_c0=16519 ipi_other=11412 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond run cell=unix_get_c50_p1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,on state=on rps=307597.66 wall_cs=338 ticks_u=6 ticks_s=244 sched_ms=2495.801607 nvol=8529 ninv=40 c0_busy=254 c0_idle=98 ipi_c0=8553 ipi_other=12114 hook_calls=2130883 syscalls_in_kernel=1999501 fragment_entries=3129591 exit_svc=1999501 exit_bl=543 exit_blr=32 exit_br=1000001 exit_ret=248 exit_mem=0 exit_unsupported=129266 exit_budget=0 run_declined=42 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0
+cond run cell=unix_get_c50_p1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=on rps=363240.09 wall_cs=288 ticks_u=3 ticks_s=210 sched_ms=2130.506866 nvol=6342 ninv=164 c0_busy=231 c0_idle=86 ipi_c0=6371 ipi_other=9787 hook_calls=2131501 syscalls_in_kernel=1999519 fragment_entries=3130223 exit_svc=1999519 exit_bl=532 exit_blr=28 exit_br=1000001 exit_ret=241 exit_mem=4 exit_unsupported=129898 exit_budget=0 run_declined=42 svc_declined=0 fpsimd_entries=1000001 translate_ok=0 invalidated_fragments=0
+cond run cell=unix_get_c50_p1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=on,off state=off rps=333000.34 wall_cs=300 ticks_u=86 ticks_s=124 sched_ms=2100.748294 nvol=15423 ninv=4 c0_busy=222 c0_idle=83 ipi_c0=15447 ipi_other=10264 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0
+cond unsup cell=unix_get_c50_p1 0x9e630160(285096/0) 0xd503203f(26/0) 
+cond: done
+[  599.012088] kjit: 0 of 1919 translation requests still queued at unload (freed by the kernel)
+[  599.036713] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[  599.054722] reboot: Power down

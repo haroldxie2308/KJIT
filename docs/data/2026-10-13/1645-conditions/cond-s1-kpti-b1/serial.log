@@ -1,0 +1,374 @@
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1+ (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #5 SMP PREEMPT Mon Oct 12 15:57:14 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] CPU features: kernel page table isolation forced ON by kpti command line option
+[    0.000000] CPU features: detected: Kernel page table isolation (KPTI)
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr rodata=off kpti=1
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013b400000-0x000000013b800000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000093] Console: colour dummy device 80x25
+[    0.000098] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000100] pid_max: default: 32768 minimum: 301
+[    0.000225] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000237] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000313] VFS: Finished mounting rootfs on nullfs
+[    0.000466] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000569] rcu: Hierarchical SRCU implementation.
+[    0.000569] rcu: 	Max phase no-delay instances is 1000.
+[    0.000586] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000619] smp: Bringing up secondary CPUs ...
+[    0.000805] Detected PIPT I-cache on CPU1
+[    0.000878] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001100] Detected PIPT I-cache on CPU2
+[    0.001184] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001375] Detected PIPT I-cache on CPU3
+[    0.001476] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.001562] smp: Brought up 1 node, 4 CPUs
+[    0.001563] SMP: Total of 4 processors activated.
+[    0.001563] CPU: All CPU(s) started at EL1
+[    0.001564] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.001564] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.001565] CPU features: detected: CRC32 instructions
+[    0.001565] CPU features: detected: Data independent timing control (DIT)
+[    0.001565] CPU features: detected: E0PD
+[    0.001566] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.001566] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.001567] CPU features: detected: LSE atomic instructions
+[    0.001567] CPU features: detected: Privileged Access Never
+[    0.001567] CPU features: detected: Speculation barrier (SB)
+[    0.001568] CPU features: detected: TLB range maintenance instructions
+[    0.001568] CPU features: detected: XNX
+[    0.001728] alternatives: applying system-wide alternatives
+[    0.002923] Memory: 3915220K/4194304K available (5248K kernel code, 754K rwdata, 2360K rodata, 576K init, 405K bss, 275904K reserved, 0K cma-reserved)
+[    0.003164] devtmpfs: initialized
+[    0.003412] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003417] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003436] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003441] 30384 pages in range for non-PLT usage
+[    0.003442] 521904 pages in range for PLT usage
+[    0.003498] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.003961] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.004032] ASID allocator initialised with 128 entries
+[    0.004040] Serial: AMBA PL011 UART driver
+[    0.004441] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.004600] printk: console [ttyAMA0] enabled
+[    0.010160] vgaarb: loaded
+[    0.010277] clocksource: Switched to clocksource arch_sys_counter
+[    0.020993] NET: Registered PF_INET protocol family
+[    0.021111] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.021546] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.021555] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.021558] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.021620] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.021798] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.021829] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.021870] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.021880] PCI: CLS 0 bytes, default 64
+[    0.022202] Unpacking initramfs...
+[    0.026810] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.027002] 9p: Installing v9fs 9p2000 file system support
+[    0.030702] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.030709] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.030712] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.030713] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.030719] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.030730] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.030745] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.030746] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.030747] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.030747] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.030748] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.030800] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.031072] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.031271] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.031274] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.031280] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.031281] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.031684] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.031811] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.031813] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.031819] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.032231] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.032391] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.032397] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.032409] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.032776] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.032777] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.032802] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.032845] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.032864] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.032869] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.032874] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.032880] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.032888] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.032893] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.032898] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.032899] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.032900] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.033677] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.034554] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.035338] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.090885] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.090906] rtc-pl031 9010000.pl031: setting system clock to 2026-10-13T06:30:06 UTC (1791873006)
+[    0.091012] NET: Registered PF_INET6 protocol family
+[    0.091481] Segment Routing with IPv6
+[    0.091484] In-situ OAM (IOAM) with IPv6
+[    0.091497] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.091557] NET: Registered PF_PACKET protocol family
+[    0.091611] 9pnet: Installing 9P2000 support
+[    0.096428] clk: Disabling unused clocks
+[    0.117750] Freeing initrd memory: 189072K
+[    0.118200] Freeing unused kernel memory: 576K
+[    0.118242] Kernel memory protection disabled.
+[    0.118254] Run /init as init process
+[    0.135218] kjit: loading out-of-tree module taints kernel.
+[    0.136197] rust_kjit: ######## Rust KJIT inits ########
+[    0.136253] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+cond: cmdline: console=ttyAMA0 panic=-1 nokaslr rodata=off kpti=1
+cond: vuln gather_data_sampling: Not affected
+cond: vuln ghostwrite: Not affected
+cond: vuln indirect_target_selection: Not affected
+cond: vuln itlb_multihit: Not affected
+cond: vuln l1tf: Not affected
+cond: vuln mds: Not affected
+cond: vuln meltdown: Not affected
+cond: vuln mmio_stale_data: Not affected
+cond: vuln old_microcode: Not affected
+cond: vuln reg_file_data_sampling: Not affected
+cond: vuln retbleed: Not affected
+cond: vuln spec_rstack_overflow: Not affected
+cond: vuln spec_store_bypass: Vulnerable
+cond: vuln spectre_v1: Mitigation: __user pointer sanitization
+cond: vuln spectre_v2: Mitigation: CSV2, but not BHB
+cond: vuln srbds: Not affected
+cond: vuln tsa: Not affected
+cond: vuln tsx_async_abort: Not affected
+cond: vuln vmscape: Not affected
+cond: dmesg: [    0.000000] CPU features: detected: Spectre-v4
+cond: dmesg: [    0.000000] CPU features: detected: Spectre-BHB
+cond: dmesg: [    0.000000] CPU features: kernel page table isolation forced ON by kpti command line option
+cond: dmesg: [    0.000000] CPU features: detected: Kernel page table isolation (KPTI)
+cond: kernel: 7.1.0-rc1+ cpus: 4
+ub: cmdline: console=ttyAMA0 panic=-1 nokaslr rodata=off kpti=1
+ub: meltdown: Not affected
+ub: spectre_v2: Mitigation: CSV2, but not BHB
+ub: kpti dmesg: [    0.000000] CPU features: kernel page table isolation forced ON by kpti command line option
+[    0.000000] CPU features: detected: Kernel page table isolation (KPTI)
+ub: kernel: 7.1.0-rc1+ cpus: 4
+ub: chain_budget: 1024 hot_threshold: 64
+ub off rep 0 mode=getppid size=1 enabled=0 ns_per_iter=207.03 ns_per_syscall=207.03
+ub off rep 1 mode=getppid size=1 enabled=0 ns_per_iter=210.84 ns_per_syscall=210.84
+ub off rep 2 mode=getppid size=1 enabled=0 ns_per_iter=208.50 ns_per_syscall=208.50
+ub off rep 3 mode=getppid size=1 enabled=0 ns_per_iter=205.85 ns_per_syscall=205.85
+ub off rep 4 mode=getppid size=1 enabled=0 ns_per_iter=206.84 ns_per_syscall=206.84
+ub off rep 5 mode=getppid size=1 enabled=0 ns_per_iter=205.90 ns_per_syscall=205.90
+ub off rep 6 mode=getppid size=1 enabled=0 ns_per_iter=206.83 ns_per_syscall=206.83
+ub off result mode=getppid size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=206.84 median_ns_per_syscall=206.84 min_ns_per_syscall=205.85
+ub off counters getppid hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=getppid size=1 enabled=1 ns_per_iter=68.72 ns_per_syscall=68.72
+ub on rep 1 mode=getppid size=1 enabled=1 ns_per_iter=67.00 ns_per_syscall=67.00
+ub on rep 2 mode=getppid size=1 enabled=1 ns_per_iter=68.29 ns_per_syscall=68.29
+ub on rep 3 mode=getppid size=1 enabled=1 ns_per_iter=67.06 ns_per_syscall=67.06
+ub on rep 4 mode=getppid size=1 enabled=1 ns_per_iter=66.96 ns_per_syscall=66.96
+ub on rep 5 mode=getppid size=1 enabled=1 ns_per_iter=68.21 ns_per_syscall=68.21
+ub on rep 6 mode=getppid size=1 enabled=1 ns_per_iter=67.15 ns_per_syscall=67.15
+ub on result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=67.15 median_ns_per_syscall=67.15 min_ns_per_syscall=66.96
+ub on counters getppid hook_calls=1399729 syscalls_in_kernel=1399657 fragment_entries=1399664 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1399657 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=getppid size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=raw_zn size=1 enabled=0 ns_per_iter=446.92 ns_per_syscall=223.46
+ub off rep 1 mode=raw_zn size=1 enabled=0 ns_per_iter=446.85 ns_per_syscall=223.43
+ub off rep 2 mode=raw_zn size=1 enabled=0 ns_per_iter=447.41 ns_per_syscall=223.71
+ub off rep 3 mode=raw_zn size=1 enabled=0 ns_per_iter=443.71 ns_per_syscall=221.85
+ub off rep 4 mode=raw_zn size=1 enabled=0 ns_per_iter=448.56 ns_per_syscall=224.28
+ub off rep 5 mode=raw_zn size=1 enabled=0 ns_per_iter=446.31 ns_per_syscall=223.15
+ub off rep 6 mode=raw_zn size=1 enabled=0 ns_per_iter=449.55 ns_per_syscall=224.78
+ub off result mode=raw_zn size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=446.92 median_ns_per_syscall=223.46 min_ns_per_syscall=221.85
+ub off counters raw_zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=raw_zn size=1 enabled=1 ns_per_iter=163.44 ns_per_syscall=81.72
+ub on rep 1 mode=raw_zn size=1 enabled=1 ns_per_iter=161.83 ns_per_syscall=80.91
+ub on rep 2 mode=raw_zn size=1 enabled=1 ns_per_iter=162.01 ns_per_syscall=81.01
+ub on rep 3 mode=raw_zn size=1 enabled=1 ns_per_iter=161.72 ns_per_syscall=80.86
+ub on rep 4 mode=raw_zn size=1 enabled=1 ns_per_iter=161.81 ns_per_syscall=80.91
+ub on rep 5 mode=raw_zn size=1 enabled=1 ns_per_iter=160.86 ns_per_syscall=80.43
+ub on rep 6 mode=raw_zn size=1 enabled=1 ns_per_iter=162.57 ns_per_syscall=81.28
+ub on result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=161.83 median_ns_per_syscall=80.91 min_ns_per_syscall=80.43
+ub on counters raw_zn hook_calls=2799386 syscalls_in_kernel=2799314 fragment_entries=2799321 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2799314 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=raw_zn size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=raw_pipe size=1 enabled=0 ns_per_iter=489.34 ns_per_syscall=244.67
+ub off rep 1 mode=raw_pipe size=1 enabled=0 ns_per_iter=484.07 ns_per_syscall=242.03
+ub off rep 2 mode=raw_pipe size=1 enabled=0 ns_per_iter=485.72 ns_per_syscall=242.86
+ub off rep 3 mode=raw_pipe size=1 enabled=0 ns_per_iter=482.52 ns_per_syscall=241.26
+ub off rep 4 mode=raw_pipe size=1 enabled=0 ns_per_iter=483.16 ns_per_syscall=241.58
+ub off rep 5 mode=raw_pipe size=1 enabled=0 ns_per_iter=484.83 ns_per_syscall=242.42
+ub off rep 6 mode=raw_pipe size=1 enabled=0 ns_per_iter=489.50 ns_per_syscall=244.75
+ub off result mode=raw_pipe size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=484.83 median_ns_per_syscall=242.42 min_ns_per_syscall=241.26
+ub off counters raw_pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=raw_pipe size=1 enabled=1 ns_per_iter=202.80 ns_per_syscall=101.40
+ub on rep 1 mode=raw_pipe size=1 enabled=1 ns_per_iter=201.81 ns_per_syscall=100.90
+ub on rep 2 mode=raw_pipe size=1 enabled=1 ns_per_iter=203.98 ns_per_syscall=101.99
+ub on rep 3 mode=raw_pipe size=1 enabled=1 ns_per_iter=202.00 ns_per_syscall=101.00
+ub on rep 4 mode=raw_pipe size=1 enabled=1 ns_per_iter=203.63 ns_per_syscall=101.82
+ub on rep 5 mode=raw_pipe size=1 enabled=1 ns_per_iter=204.58 ns_per_syscall=102.29
+ub on rep 6 mode=raw_pipe size=1 enabled=1 ns_per_iter=209.57 ns_per_syscall=104.78
+ub on result mode=raw_pipe size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=203.63 median_ns_per_syscall=101.82 min_ns_per_syscall=100.90
+ub on counters raw_pipe hook_calls=2799386 syscalls_in_kernel=2799314 fragment_entries=2799321 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2799314 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=7 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=raw_pipe size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=zn size=1 enabled=0 ns_per_iter=463.35 ns_per_syscall=231.67
+ub off rep 1 mode=zn size=1 enabled=0 ns_per_iter=458.46 ns_per_syscall=229.23
+ub off rep 2 mode=zn size=1 enabled=0 ns_per_iter=460.45 ns_per_syscall=230.23
+ub off rep 3 mode=zn size=1 enabled=0 ns_per_iter=458.97 ns_per_syscall=229.49
+ub off rep 4 mode=zn size=1 enabled=0 ns_per_iter=462.87 ns_per_syscall=231.43
+ub off rep 5 mode=zn size=1 enabled=0 ns_per_iter=458.73 ns_per_syscall=229.37
+ub off rep 6 mode=zn size=1 enabled=0 ns_per_iter=463.16 ns_per_syscall=231.58
+ub off result mode=zn size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=460.45 median_ns_per_syscall=230.23 min_ns_per_syscall=229.23
+ub off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=zn size=1 enabled=1 ns_per_iter=168.57 ns_per_syscall=84.29
+ub on rep 1 mode=zn size=1 enabled=1 ns_per_iter=168.22 ns_per_syscall=84.11
+ub on rep 2 mode=zn size=1 enabled=1 ns_per_iter=167.02 ns_per_syscall=83.51
+ub on rep 3 mode=zn size=1 enabled=1 ns_per_iter=170.20 ns_per_syscall=85.10
+ub on rep 4 mode=zn size=1 enabled=1 ns_per_iter=165.79 ns_per_syscall=82.89
+ub on rep 5 mode=zn size=1 enabled=1 ns_per_iter=167.28 ns_per_syscall=83.64
+ub on rep 6 mode=zn size=1 enabled=1 ns_per_iter=170.14 ns_per_syscall=85.07
+ub on result mode=zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=168.22 median_ns_per_syscall=84.11 min_ns_per_syscall=82.89
+ub on counters zn hook_calls=2799386 syscalls_in_kernel=2799314 fragment_entries=2799337 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2799314 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=23 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=zn size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=pipe size=1 enabled=0 ns_per_iter=501.96 ns_per_syscall=250.98
+ub off rep 1 mode=pipe size=1 enabled=0 ns_per_iter=507.75 ns_per_syscall=253.88
+ub off rep 2 mode=pipe size=1 enabled=0 ns_per_iter=501.61 ns_per_syscall=250.80
+ub off rep 3 mode=pipe size=1 enabled=0 ns_per_iter=500.77 ns_per_syscall=250.39
+ub off rep 4 mode=pipe size=1 enabled=0 ns_per_iter=492.88 ns_per_syscall=246.44
+ub off rep 5 mode=pipe size=1 enabled=0 ns_per_iter=491.15 ns_per_syscall=245.58
+ub off rep 6 mode=pipe size=1 enabled=0 ns_per_iter=492.64 ns_per_syscall=246.32
+ub off result mode=pipe size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=500.77 median_ns_per_syscall=250.39 min_ns_per_syscall=245.58
+ub off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=pipe size=1 enabled=1 ns_per_iter=205.93 ns_per_syscall=102.96
+ub on rep 1 mode=pipe size=1 enabled=1 ns_per_iter=206.36 ns_per_syscall=103.18
+ub on rep 2 mode=pipe size=1 enabled=1 ns_per_iter=205.32 ns_per_syscall=102.66
+ub on rep 3 mode=pipe size=1 enabled=1 ns_per_iter=205.22 ns_per_syscall=102.61
+ub on rep 4 mode=pipe size=1 enabled=1 ns_per_iter=206.24 ns_per_syscall=103.12
+ub on rep 5 mode=pipe size=1 enabled=1 ns_per_iter=205.37 ns_per_syscall=102.68
+ub on rep 6 mode=pipe size=1 enabled=1 ns_per_iter=203.23 ns_per_syscall=101.62
+ub on result mode=pipe size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=205.37 median_ns_per_syscall=102.68 min_ns_per_syscall=101.62
+ub on counters pipe hook_calls=2799386 syscalls_in_kernel=2799314 fragment_entries=2799337 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2799314 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=23 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=pipe size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=zn size=16 enabled=0 ns_per_iter=456.69 ns_per_syscall=228.34
+ub off rep 1 mode=zn size=16 enabled=0 ns_per_iter=451.57 ns_per_syscall=225.78
+ub off rep 2 mode=zn size=16 enabled=0 ns_per_iter=456.67 ns_per_syscall=228.34
+ub off rep 3 mode=zn size=16 enabled=0 ns_per_iter=451.98 ns_per_syscall=225.99
+ub off rep 4 mode=zn size=16 enabled=0 ns_per_iter=454.04 ns_per_syscall=227.02
+ub off rep 5 mode=zn size=16 enabled=0 ns_per_iter=452.41 ns_per_syscall=226.20
+ub off rep 6 mode=zn size=16 enabled=0 ns_per_iter=456.29 ns_per_syscall=228.15
+ub off result mode=zn size=16 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=454.04 median_ns_per_syscall=227.02 min_ns_per_syscall=225.78
+ub off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=zn size=16 enabled=1 ns_per_iter=162.75 ns_per_syscall=81.38
+ub on rep 1 mode=zn size=16 enabled=1 ns_per_iter=165.50 ns_per_syscall=82.75
+ub on rep 2 mode=zn size=16 enabled=1 ns_per_iter=165.59 ns_per_syscall=82.79
+ub on rep 3 mode=zn size=16 enabled=1 ns_per_iter=164.04 ns_per_syscall=82.02
+ub on rep 4 mode=zn size=16 enabled=1 ns_per_iter=164.32 ns_per_syscall=82.16
+ub on rep 5 mode=zn size=16 enabled=1 ns_per_iter=163.14 ns_per_syscall=81.57
+ub on rep 6 mode=zn size=16 enabled=1 ns_per_iter=163.89 ns_per_syscall=81.95
+ub on result mode=zn size=16 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=164.04 median_ns_per_syscall=82.02 min_ns_per_syscall=81.38
+ub on counters zn hook_calls=2799386 syscalls_in_kernel=2799314 fragment_entries=2799337 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2799314 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=23 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=zn size=16 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=pipe size=16 enabled=0 ns_per_iter=493.76 ns_per_syscall=246.88
+ub off rep 1 mode=pipe size=16 enabled=0 ns_per_iter=491.74 ns_per_syscall=245.87
+ub off rep 2 mode=pipe size=16 enabled=0 ns_per_iter=488.48 ns_per_syscall=244.24
+ub off rep 3 mode=pipe size=16 enabled=0 ns_per_iter=492.39 ns_per_syscall=246.19
+ub off rep 4 mode=pipe size=16 enabled=0 ns_per_iter=491.24 ns_per_syscall=245.62
+ub off rep 5 mode=pipe size=16 enabled=0 ns_per_iter=491.55 ns_per_syscall=245.77
+ub off rep 6 mode=pipe size=16 enabled=0 ns_per_iter=491.20 ns_per_syscall=245.60
+ub off result mode=pipe size=16 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=491.55 median_ns_per_syscall=245.77 min_ns_per_syscall=244.24
+ub off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=pipe size=16 enabled=1 ns_per_iter=208.22 ns_per_syscall=104.11
+ub on rep 1 mode=pipe size=16 enabled=1 ns_per_iter=205.09 ns_per_syscall=102.54
+ub on rep 2 mode=pipe size=16 enabled=1 ns_per_iter=204.75 ns_per_syscall=102.38
+ub on rep 3 mode=pipe size=16 enabled=1 ns_per_iter=212.55 ns_per_syscall=106.27
+ub on rep 4 mode=pipe size=16 enabled=1 ns_per_iter=206.69 ns_per_syscall=103.34
+ub on rep 5 mode=pipe size=16 enabled=1 ns_per_iter=207.20 ns_per_syscall=103.60
+ub on rep 6 mode=pipe size=16 enabled=1 ns_per_iter=205.08 ns_per_syscall=102.54
+ub on result mode=pipe size=16 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=206.69 median_ns_per_syscall=103.34 min_ns_per_syscall=102.38
+ub on counters pipe hook_calls=2799386 syscalls_in_kernel=2799314 fragment_entries=2799337 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2799314 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=23 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=pipe size=16 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=zn size=64 enabled=0 ns_per_iter=455.83 ns_per_syscall=227.91
+ub off rep 1 mode=zn size=64 enabled=0 ns_per_iter=452.81 ns_per_syscall=226.40
+ub off rep 2 mode=zn size=64 enabled=0 ns_per_iter=451.48 ns_per_syscall=225.74
+ub off rep 3 mode=zn size=64 enabled=0 ns_per_iter=458.08 ns_per_syscall=229.04
+ub off rep 4 mode=zn size=64 enabled=0 ns_per_iter=453.11 ns_per_syscall=226.55
+ub off rep 5 mode=zn size=64 enabled=0 ns_per_iter=453.24 ns_per_syscall=226.62
+ub off rep 6 mode=zn size=64 enabled=0 ns_per_iter=451.57 ns_per_syscall=225.79
+ub off result mode=zn size=64 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=453.11 median_ns_per_syscall=226.55 min_ns_per_syscall=225.74
+ub off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=zn size=64 enabled=1 ns_per_iter=165.69 ns_per_syscall=82.85
+ub on rep 1 mode=zn size=64 enabled=1 ns_per_iter=165.14 ns_per_syscall=82.57
+ub on rep 2 mode=zn size=64 enabled=1 ns_per_iter=165.22 ns_per_syscall=82.61
+ub on rep 3 mode=zn size=64 enabled=1 ns_per_iter=165.06 ns_per_syscall=82.53
+ub on rep 4 mode=zn size=64 enabled=1 ns_per_iter=164.76 ns_per_syscall=82.38
+ub on rep 5 mode=zn size=64 enabled=1 ns_per_iter=164.51 ns_per_syscall=82.26
+ub on rep 6 mode=zn size=64 enabled=1 ns_per_iter=167.85 ns_per_syscall=83.93
+ub on result mode=zn size=64 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=165.14 median_ns_per_syscall=82.57 min_ns_per_syscall=82.26
+ub on counters zn hook_calls=2799386 syscalls_in_kernel=2799314 fragment_entries=2799337 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2799314 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=23 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=zn size=64 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=pipe size=64 enabled=0 ns_per_iter=492.27 ns_per_syscall=246.14
+ub off rep 1 mode=pipe size=64 enabled=0 ns_per_iter=493.42 ns_per_syscall=246.71
+ub off rep 2 mode=pipe size=64 enabled=0 ns_per_iter=493.97 ns_per_syscall=246.98
+ub off rep 3 mode=pipe size=64 enabled=0 ns_per_iter=495.16 ns_per_syscall=247.58
+ub off rep 4 mode=pipe size=64 enabled=0 ns_per_iter=494.46 ns_per_syscall=247.23
+ub off rep 5 mode=pipe size=64 enabled=0 ns_per_iter=491.14 ns_per_syscall=245.57
+ub off rep 6 mode=pipe size=64 enabled=0 ns_per_iter=491.11 ns_per_syscall=245.55
+ub off result mode=pipe size=64 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=493.42 median_ns_per_syscall=246.71 min_ns_per_syscall=245.55
+ub off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=pipe size=64 enabled=1 ns_per_iter=206.70 ns_per_syscall=103.35
+ub on rep 1 mode=pipe size=64 enabled=1 ns_per_iter=205.79 ns_per_syscall=102.89
+ub on rep 2 mode=pipe size=64 enabled=1 ns_per_iter=205.37 ns_per_syscall=102.69
+ub on rep 3 mode=pipe size=64 enabled=1 ns_per_iter=206.18 ns_per_syscall=103.09
+ub on rep 4 mode=pipe size=64 enabled=1 ns_per_iter=206.02 ns_per_syscall=103.01
+ub on rep 5 mode=pipe size=64 enabled=1 ns_per_iter=205.36 ns_per_syscall=102.68
+ub on rep 6 mode=pipe size=64 enabled=1 ns_per_iter=212.22 ns_per_syscall=106.11
+ub on result mode=pipe size=64 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=206.02 median_ns_per_syscall=103.01 min_ns_per_syscall=102.68
+ub on counters pipe hook_calls=2799386 syscalls_in_kernel=2799314 fragment_entries=2799337 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2799314 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=23 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=pipe size=64 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub: done
+[    8.626033] kjit: 0 of 41 translation requests still queued at unload (freed by the kernel)
+[    8.659623] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[    8.678693] reboot: Power down
