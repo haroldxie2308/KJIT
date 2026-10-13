@@ -1,0 +1,29 @@
+diff --git a/arch/arm64/kernel/kjit.c b/arch/arm64/kernel/kjit.c
+index bb145cb788a4..7c1d6f3fc403 100644
+--- a/arch/arm64/kernel/kjit.c
++++ b/arch/arm64/kernel/kjit.c
+@@ -218,6 +218,15 @@ const struct exception_table_entry *search_kjit_extables(unsigned long addr)
+  */
+ #define KJIT_ROX_BLOCK_FILL	SZ_64K
+ 
++unsigned int kjit_exp_rox_fail;	/* EXPERIMENT */
++EXPORT_SYMBOL_GPL(kjit_exp_rox_fail);
++
++/* EXPERIMENT: nofault write/read of one word, to probe the linear alias */
++int kjit_exp_probe_w(void *p, u32 v) { return copy_to_kernel_nofault(p, &v, 4); }
++EXPORT_SYMBOL_GPL(kjit_exp_probe_w);
++int kjit_exp_probe_r(void *p, u32 *v) { return copy_from_kernel_nofault(v, p, 4); }
++EXPORT_SYMBOL_GPL(kjit_exp_probe_r);
++
+ /**
+  * kjit_rox_block_alloc - a 2 MiB block of read-only, executable memory mapped
+  *	by one PMD leaf
+@@ -276,6 +285,8 @@ void *kjit_rox_block_alloc(void)
+ 	    WARN_ON_ONCE(set_direct_map_valid_noflush(vmalloc_to_page(block), 1U << pmd_order,
+ 						      false)))
+ 		goto fail;
++	if (READ_ONCE(kjit_exp_rox_fail))	/* EXPERIMENT: fail after the alias is unmapped */
++		goto fail;
+ 	return block;
+ 
+ fail:

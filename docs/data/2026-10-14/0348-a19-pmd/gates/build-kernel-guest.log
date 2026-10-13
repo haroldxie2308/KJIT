@@ -1,0 +1,787 @@
+Configured rust-analyzer:
+  component: rust-analyzer-aarch64-unknown-linux-gnu
+  binary:    /usr/local/rustup/toolchains/1.85.0-aarch64-unknown-linux-gnu/bin/rust-analyzer
+  link:      /workspace/.kjit/bin/rust-analyzer
+Neovim is configured. For full Rust-for-Linux LSP quality, run:
+  make prepare
+  make rust-analyzer
+KDIR=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit KJIT_PATCHED_KDIR=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19 KJIT_KERNEL_PROFILE=kjit-guest KBUILD_OUTPUT=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest KJIT_MODULE_DIR=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest/kjit-module bash ./scripts/setup-kernel-build.sh --build
+Patched kernel tree up to date: /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit
+make[1]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit'
+make[2]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest'
+Rust is available!
+make[2]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest'
+make[1]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit'
+make[1]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit'
+make[2]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest'
+#
+# configuration written to .config
+#
+Using .config as base
+Merging /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit/kernel/configs/tiny.config
+Value of CONFIG_CC_OPTIMIZE_FOR_SIZE is redefined by fragment /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit/kernel/configs/tiny.config:
+Previous value: # CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+New value: CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+
+Value of CONFIG_SLUB_TINY is redefined by fragment /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit/kernel/configs/tiny.config:
+Previous value: # CONFIG_SLUB_TINY is not set
+New value: CONFIG_SLUB_TINY=y
+
+#
+# merged configuration written to .config (needs make)
+#
+#
+# configuration written to .config
+#
+make[2]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest'
+make[1]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit'
+Using /tmp/tmp.mJC1Dmr56V as base
+Merging /workspace/kernel-config/tiny-qemu-base.conf
+Value of CONFIG_IKCONFIG is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_IKCONFIG is not set
+New value: CONFIG_IKCONFIG=y
+
+Value of CONFIG_CGROUPS is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_CGROUPS is not set
+New value: CONFIG_CGROUPS=y
+
+Value of CONFIG_BLK_DEV_INITRD is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_BLK_DEV_INITRD is not set
+New value: CONFIG_BLK_DEV_INITRD=y
+
+Value of CONFIG_FHANDLE is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_FHANDLE is not set
+New value: CONFIG_FHANDLE=y
+
+Value of CONFIG_PRINTK is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_PRINTK is not set
+New value: CONFIG_PRINTK=y
+
+Value of CONFIG_MODULES is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_MODULES is not set
+New value: CONFIG_MODULES=y
+
+Value of CONFIG_BINFMT_ELF is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_BINFMT_ELF is not set
+New value: CONFIG_BINFMT_ELF=y
+
+Value of CONFIG_NET is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_NET is not set
+New value: CONFIG_NET=y
+
+Value of CONFIG_PCI is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_PCI is not set
+New value: CONFIG_PCI=y
+
+Value of CONFIG_DEVTMPFS is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_DEVTMPFS is not set
+New value: CONFIG_DEVTMPFS=y
+
+Value of CONFIG_TTY is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_TTY is not set
+New value: CONFIG_TTY=y
+
+Value of CONFIG_VIRTIO_MENU is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_VIRTIO_MENU is not set
+New value: CONFIG_VIRTIO_MENU=y
+
+Value of CONFIG_AUTOFS_FS is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_AUTOFS_FS is not set
+New value: CONFIG_AUTOFS_FS=y
+
+Value of CONFIG_PROC_FS is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_PROC_FS is not set
+New value: CONFIG_PROC_FS=y
+
+Value of CONFIG_SYSFS is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_SYSFS is not set
+New value: CONFIG_SYSFS=y
+
+Value of CONFIG_MAGIC_SYSRQ is redefined by fragment /workspace/kernel-config/tiny-qemu-base.conf:
+Previous value: # CONFIG_MAGIC_SYSRQ is not set
+New value: CONFIG_MAGIC_SYSRQ=y
+
+Merging /workspace/kernel-config/tiny-qemu-rust.conf
+Value of CONFIG_KALLSYMS is redefined by fragment /workspace/kernel-config/tiny-qemu-rust.conf:
+Previous value: # CONFIG_KALLSYMS is not set
+New value: CONFIG_KALLSYMS=y
+
+Value of CONFIG_RUST is redefined by fragment /workspace/kernel-config/tiny-qemu-rust.conf:
+Previous value: # CONFIG_RUST is not set
+New value: CONFIG_RUST=y
+
+Merging /workspace/kernel-config/tiny-qemu-debug.conf
+Value of CONFIG_DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT is redefined by fragment /workspace/kernel-config/tiny-qemu-debug.conf:
+Previous value: # CONFIG_DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT is not set
+New value: CONFIG_DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT=y
+
+Merging /workspace/kernel-config/kjit-guest.conf
+Value of CONFIG_SYSVIPC is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_SYSVIPC is not set
+New value: CONFIG_SYSVIPC=y
+
+Value of CONFIG_NO_HZ_IDLE is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_NO_HZ_IDLE is not set
+New value: CONFIG_NO_HZ_IDLE=y
+
+Value of CONFIG_HIGH_RES_TIMERS is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_HIGH_RES_TIMERS is not set
+New value: CONFIG_HIGH_RES_TIMERS=y
+
+Value of CONFIG_PREEMPT is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_PREEMPT is not set
+New value: CONFIG_PREEMPT=y
+
+Value of CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE is not set
+New value: CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE=y
+
+Value of CONFIG_MULTIUSER is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_MULTIUSER is not set
+New value: CONFIG_MULTIUSER=y
+
+Value of CONFIG_POSIX_TIMERS is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_POSIX_TIMERS is not set
+New value: CONFIG_POSIX_TIMERS=y
+
+Value of CONFIG_BUG is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_BUG is not set
+New value: CONFIG_BUG=y
+
+Value of CONFIG_FUTEX is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_FUTEX is not set
+New value: CONFIG_FUTEX=y
+
+Value of CONFIG_EPOLL is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_EPOLL is not set
+New value: CONFIG_EPOLL=y
+
+Value of CONFIG_SIGNALFD is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_SIGNALFD is not set
+New value: CONFIG_SIGNALFD=y
+
+Value of CONFIG_TIMERFD is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_TIMERFD is not set
+New value: CONFIG_TIMERFD=y
+
+Value of CONFIG_EVENTFD is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_EVENTFD is not set
+New value: CONFIG_EVENTFD=y
+
+Value of CONFIG_SHMEM is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_SHMEM is not set
+New value: CONFIG_SHMEM=y
+
+Value of CONFIG_AIO is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_AIO is not set
+New value: CONFIG_AIO=y
+
+Value of CONFIG_ADVISE_SYSCALLS is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_ADVISE_SYSCALLS is not set
+New value: CONFIG_ADVISE_SYSCALLS=y
+
+Value of CONFIG_MEMBARRIER is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_MEMBARRIER is not set
+New value: CONFIG_MEMBARRIER=y
+
+Value of CONFIG_RSEQ is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_RSEQ is not set
+New value: CONFIG_RSEQ=y
+
+Value of CONFIG_UNMAP_KERNEL_AT_EL0 is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_UNMAP_KERNEL_AT_EL0 is not set
+New value: CONFIG_UNMAP_KERNEL_AT_EL0=y
+
+Value of CONFIG_MITIGATE_SPECTRE_BRANCH_HISTORY is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_MITIGATE_SPECTRE_BRANCH_HISTORY is not set
+New value: CONFIG_MITIGATE_SPECTRE_BRANCH_HISTORY=y
+
+Value of CONFIG_ARM64_PTR_AUTH is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_ARM64_PTR_AUTH is not set
+New value: CONFIG_ARM64_PTR_AUTH=y
+
+Value of CONFIG_ARM64_BTI is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_ARM64_BTI is not set
+New value: CONFIG_ARM64_BTI=y
+
+Value of CONFIG_ARM64_E0PD is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_ARM64_E0PD is not set
+New value: CONFIG_ARM64_E0PD=y
+
+Value of CONFIG_SECCOMP is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_SECCOMP is not set
+New value: CONFIG_SECCOMP=y
+
+Value of CONFIG_STACKPROTECTOR is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_STACKPROTECTOR is not set
+New value: CONFIG_STACKPROTECTOR=y
+
+Value of CONFIG_BINFMT_SCRIPT is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_BINFMT_SCRIPT is not set
+New value: CONFIG_BINFMT_SCRIPT=y
+
+Value of CONFIG_COREDUMP is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_COREDUMP is not set
+New value: CONFIG_COREDUMP=y
+
+Value of CONFIG_SLUB_TINY is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: CONFIG_SLUB_TINY=y
+New value: # CONFIG_SLUB_TINY is not set
+
+Value of CONFIG_HW_RANDOM is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_HW_RANDOM is not set
+New value: CONFIG_HW_RANDOM=y
+
+Value of CONFIG_RTC_CLASS is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_RTC_CLASS is not set
+New value: CONFIG_RTC_CLASS=y
+
+Value of CONFIG_FILE_LOCKING is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_FILE_LOCKING is not set
+New value: CONFIG_FILE_LOCKING=y
+
+Value of CONFIG_INOTIFY_USER is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_INOTIFY_USER is not set
+New value: CONFIG_INOTIFY_USER=y
+
+Value of CONFIG_DEBUG_FS is redefined by fragment /workspace/kernel-config/kjit-guest.conf:
+Previous value: # CONFIG_DEBUG_FS is not set
+New value: CONFIG_DEBUG_FS=y
+
+Merging /workspace/kernel-config/kjit-invariants.conf
+Value of CONFIG_ARM64_VA_BITS_48 is redefined by fragment /workspace/kernel-config/kjit-invariants.conf:
+Previous value: # CONFIG_ARM64_VA_BITS_48 is not set
+New value: CONFIG_ARM64_VA_BITS_48=y
+
+#
+# merged configuration written to /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest/.config (needs make)
+#
+make[1]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit'
+make[2]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest'
+#
+# configuration written to .config
+#
+make[2]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest'
+make[1]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit'
+Config check: all 110 requested options present in /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest/.config
+make[1]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit'
+make[2]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest'
+  SYNC    include/config/auto.conf.cmd
+whoami: cannot find name for user ID 501
+make[2]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest'
+make[1]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit'
+make[1]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit'
+make[2]: Entering directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest'
+whoami: cannot find name for user ID 501
+  AR      certs/built-in.a
+  AR      usr/built-in.a
+  AR      crypto/built-in.a
+  AR      arch/arm64/lib/lib.a
+  AR      arch/arm64/lib/built-in.a
+  AR      security/built-in.a
+  AR      drivers/cache/built-in.a
+  AR      ipc/built-in.a
+  AR      rust/built-in.a
+  AR      sound/built-in.a
+  AR      virt/lib/built-in.a
+  AR      virt/built-in.a
+  AR      init/built-in.a
+  AR      drivers/bus/mhi/built-in.a
+  AR      drivers/bus/built-in.a
+  AR      drivers/phy/built-in.a
+  AR      drivers/pwm/built-in.a
+  AR      drivers/leds/blink/built-in.a
+  AR      drivers/leds/simatic/built-in.a
+  AR      drivers/leds/built-in.a
+  AR      arch/arm64/net/built-in.a
+  AR      net/ethernet/built-in.a
+  AR      net/802/built-in.a
+  AR      arch/arm64/mm/built-in.a
+  AR      net/sched/built-in.a
+  AR      net/bpf/built-in.a
+  AR      drivers/irqchip/built-in.a
+  AR      drivers/video/console/built-in.a
+  AR      drivers/video/backlight/built-in.a
+  AR      net/netlink/built-in.a
+  AR      drivers/video/fbdev/core/built-in.a
+  AR      drivers/video/fbdev/omap/built-in.a
+  AR      drivers/video/fbdev/omap2/omapfb/dss/built-in.a
+  AR      drivers/video/fbdev/omap2/omapfb/displays/built-in.a
+  AR      drivers/video/fbdev/omap2/omapfb/built-in.a
+  AR      drivers/video/fbdev/omap2/built-in.a
+  AR      drivers/video/fbdev/built-in.a
+  AR      drivers/video/built-in.a
+  AR      drivers/idle/built-in.a
+  AR      drivers/char/ipmi/built-in.a
+  AR      drivers/amba/built-in.a
+  AR      drivers/clk/actions/built-in.a
+  AR      drivers/clk/analogbits/built-in.a
+  AR      drivers/clk/aspeed/built-in.a
+  AR      drivers/clk/bcm/built-in.a
+  AR      drivers/clk/imgtec/built-in.a
+  AR      drivers/clk/imx/built-in.a
+  AR      drivers/clk/ingenic/built-in.a
+  AR      arch/arm64/kernel/pi/built-in.a
+  AR      drivers/clk/keystone/built-in.a
+  AR      arch/arm64/kernel/probes/built-in.a
+  AR      drivers/clk/mediatek/built-in.a
+  AR      drivers/clk/microchip/built-in.a
+  AR      drivers/clk/mstar/built-in.a
+  AR      drivers/clk/mvebu/built-in.a
+  AR      drivers/clk/ralink/built-in.a
+  AR      drivers/clk/renesas/built-in.a
+  AR      drivers/clk/socfpga/built-in.a
+  AR      arch/arm64/kernel/built-in.a
+  AR      drivers/clk/sophgo/built-in.a
+  AR      drivers/pci/msi/built-in.a
+  AR      drivers/clk/spacemit/built-in.a
+  AR      arch/arm64/built-in.a
+  AR      drivers/clk/sprd/built-in.a
+  AR      drivers/clk/starfive/built-in.a
+  AR      drivers/clk/sunxi-ng/built-in.a
+  AR      drivers/clk/tenstorrent/built-in.a
+  AR      drivers/clk/ti/built-in.a
+  AR      drivers/clk/versatile/built-in.a
+  AR      drivers/clk/xilinx/built-in.a
+  AR      drivers/clk/built-in.a
+  AR      drivers/soc/apple/built-in.a
+  AR      drivers/soc/aspeed/built-in.a
+  AR      drivers/soc/bcm/built-in.a
+  AR      drivers/soc/fsl/built-in.a
+  AR      drivers/soc/fujitsu/built-in.a
+  AR      drivers/soc/hisilicon/built-in.a
+  AR      drivers/pci/pcie/built-in.a
+  AR      drivers/soc/imx/built-in.a
+  AR      drivers/pci/pwrctrl/built-in.a
+  AR      drivers/soc/ixp4xx/built-in.a
+  AR      drivers/soc/loongson/built-in.a
+  AR      drivers/soc/mediatek/built-in.a
+  AR      drivers/soc/microchip/built-in.a
+  AR      drivers/soc/nuvoton/built-in.a
+  AR      drivers/soc/pxa/built-in.a
+  AR      drivers/soc/amlogic/built-in.a
+  AR      drivers/soc/qcom/built-in.a
+  AR      drivers/soc/renesas/built-in.a
+  AR      drivers/pci/controller/dwc/built-in.a
+  AR      kernel/sched/built-in.a
+  AR      drivers/soc/rockchip/built-in.a
+  AR      drivers/pci/controller/mobiveil/built-in.a
+  AR      drivers/pci/controller/plda/built-in.a
+  AR      drivers/soc/sophgo/built-in.a
+  AR      drivers/pci/controller/built-in.a
+  AR      drivers/soc/sunxi/built-in.a
+  AR      drivers/pci/switch/built-in.a
+  AR      drivers/soc/ti/built-in.a
+  AR      drivers/soc/versatile/built-in.a
+  AR      drivers/soc/vt8500/built-in.a
+  AR      kernel/locking/built-in.a
+  AR      drivers/pci/built-in.a
+  AR      drivers/soc/xilinx/built-in.a
+  AR      drivers/soc/built-in.a
+  AR      kernel/power/built-in.a
+  AR      kernel/printk/built-in.a
+  AR      drivers/char/hw_random/built-in.a
+  AR      drivers/char/agp/built-in.a
+  AR      drivers/char/built-in.a
+  AR      drivers/virtio/built-in.a
+  AR      drivers/iommu/iommufd/built-in.a
+  AR      drivers/iommu/arm/arm-smmu/built-in.a
+  AR      drivers/iommu/arm/arm-smmu-v3/built-in.a
+  AR      drivers/iommu/arm/built-in.a
+  AR      drivers/gpu/host1x/built-in.a
+  AR      drivers/iommu/built-in.a
+  CC      net/ipv4/udp.o
+  AR      net/ethtool/built-in.a
+  AR      drivers/gpu/vga/built-in.a
+  CC      net/ipv4/udp_offload.o
+  CC      net/ipv4/arp.o
+  AR      drivers/gpu/drm/tests/built-in.a
+  AR      drivers/gpu/drm/arm/built-in.a
+  AR      drivers/gpu/drm/clients/built-in.a
+  AR      drivers/gpu/drm/display/built-in.a
+  AR      drivers/gpu/drm/renesas/rcar-du/built-in.a
+  AR      drivers/gpu/drm/renesas/rz-du/built-in.a
+  AR      drivers/gpu/drm/renesas/built-in.a
+  AR      drivers/gpu/drm/omapdrm/built-in.a
+  AR      drivers/gpu/drm/tilcdc/built-in.a
+  AR      drivers/gpu/drm/imx/built-in.a
+  AR      drivers/gpu/drm/panel/built-in.a
+  AR      drivers/gpu/drm/bridge/analogix/built-in.a
+  AR      drivers/gpu/drm/bridge/cadence/built-in.a
+  AR      drivers/gpu/drm/bridge/imx/built-in.a
+  AR      drivers/gpu/drm/bridge/synopsys/built-in.a
+  AR      drivers/gpu/drm/bridge/built-in.a
+  AR      drivers/gpu/drm/hisilicon/built-in.a
+  AR      drivers/gpu/drm/mxsfb/built-in.a
+  AR      drivers/gpu/drm/sysfb/built-in.a
+  CC      mm/execmem.o
+  AR      drivers/gpu/drm/tiny/built-in.a
+  AR      drivers/gpu/drm/xlnx/built-in.a
+  AR      fs/notify/dnotify/built-in.a
+  AR      drivers/gpu/drm/gud/built-in.a
+  AR      drivers/gpu/drm/sitronix/built-in.a
+  AR      drivers/gpu/drm/solomon/built-in.a
+  AR      drivers/gpu/drm/built-in.a
+  AR      drivers/gpu/tests/built-in.a
+  AR      drivers/gpu/built-in.a
+  AR      fs/notify/inotify/built-in.a
+  AR      drivers/tty/vt/built-in.a
+  AR      fs/notify/fanotify/built-in.a
+  AR      fs/notify/built-in.a
+  AR      fs/iomap/built-in.a
+  AR      fs/quota/built-in.a
+  AR      drivers/tty/hvc/built-in.a
+  AR      kernel/irq/built-in.a
+  AR      drivers/tty/ipwireless/built-in.a
+  AR      lib/kunit/built-in.a
+  AR      net/core/built-in.a
+  AR      kernel/rcu/built-in.a
+  AR      lib/crc/tests/built-in.a
+  AR      kernel/livepatch/built-in.a
+  AR      lib/crc/built-in.a
+  AR      kernel/liveupdate/built-in.a
+  CC      net/ipv4/icmp.o
+  AR      lib/math/tests/built-in.a
+  AR      lib/math/built-in.a
+  AR      drivers/tty/serial/8250/built-in.a
+  AR      drivers/tty/serial/built-in.a
+  AR      fs/kernfs/built-in.a
+  AR      drivers/tty/built-in.a
+  AR      lib/crypto/built-in.a
+  AR      lib/tests/built-in.a
+  AR      lib/vdso/built-in.a
+  AR      lib/raid/xor/tests/built-in.a
+  AR      lib/raid/xor/built-in.a
+  AR      lib/raid/built-in.a
+  AR      kernel/dma/built-in.a
+  AR      net/unix/built-in.a
+  AR      kernel/unwind/built-in.a
+  AR      mm/built-in.a
+  AR      kernel/entry/built-in.a
+  AR      lib/zlib_inflate/built-in.a
+  AR      lib/lzo/built-in.a
+  CC      net/ipv4/devinet.o
+  AR      lib/lz4/built-in.a
+  CC      net/ipv4/af_inet.o
+  AR      lib/zstd/built-in.a
+  AR      fs/sysfs/built-in.a
+  AR      kernel/module/built-in.a
+  CC      net/ipv4/igmp.o
+  AR      lib/xz/built-in.a
+  AR      lib/dim/built-in.a
+  AR      fs/devpts/built-in.a
+  AR      lib/lib.a
+  AR      lib/built-in.a
+  AR      fs/ramfs/built-in.a
+  AR      fs/proc/built-in.a
+  AR      net/packet/built-in.a
+  AR      fs/exportfs/built-in.a
+  AR      net/dsa/built-in.a
+  AR      fs/unicode/built-in.a
+  AR      net/wireless/tests/built-in.a
+  AR      drivers/block/built-in.a
+  AR      net/wireless/built-in.a
+  CC      net/ipv4/fib_frontend.o
+  CC      net/ipv4/fib_semantics.o
+  AR      drivers/base/power/built-in.a
+  AR      drivers/base/firmware_loader/builtin/built-in.a
+  AR      drivers/base/firmware_loader/built-in.a
+  AR      kernel/futex/built-in.a
+  AR      drivers/base/test/built-in.a
+  AR      drivers/base/built-in.a
+  AR      drivers/misc/eeprom/built-in.a
+  AR      drivers/misc/cb710/built-in.a
+  AR      drivers/misc/lis3lv02d/built-in.a
+  AR      drivers/misc/cardreader/built-in.a
+  AR      drivers/misc/keba/built-in.a
+  AR      drivers/misc/amd-sbi/built-in.a
+  AR      drivers/misc/built-in.a
+  AR      drivers/mfd/built-in.a
+  AR      drivers/nfc/built-in.a
+  AR      drivers/dax/hmem/built-in.a
+  AR      drivers/dax/built-in.a
+  AR      drivers/cxl/core/built-in.a
+  AR      drivers/cxl/built-in.a
+  AR      drivers/macintosh/built-in.a
+  AR      drivers/scsi/built-in.a
+  AR      drivers/nvme/common/built-in.a
+  AR      drivers/nvme/host/built-in.a
+  AR      drivers/nvme/target/built-in.a
+  AR      drivers/nvme/built-in.a
+  CC      net/ipv4/fib_trie.o
+  AR      fs/netfs/built-in.a
+  AR      drivers/net/phy/mediatek/built-in.a
+  AR      drivers/net/phy/qcom/built-in.a
+  AR      drivers/net/phy/built-in.a
+  AR      drivers/net/pse-pd/built-in.a
+  AR      drivers/net/mdio/built-in.a
+  AR      drivers/firewire/built-in.a
+  AR      drivers/net/pcs/built-in.a
+  AR      drivers/net/built-in.a
+  AR      drivers/cdrom/built-in.a
+  AR      drivers/auxdisplay/built-in.a
+  AR      kernel/time/built-in.a
+  AR      drivers/usb/built-in.a
+  AR      kernel/bpf/built-in.a
+  AR      kernel/cgroup/built-in.a
+  CC      net/ipv4/fib_notifier.o
+  CC      kernel/extable.o
+  AR      drivers/input/serio/built-in.a
+  AR      fs/autofs/built-in.a
+  AR      net/9p/built-in.a
+  CC      net/ipv4/inet_fragment.o
+  AR      drivers/input/keyboard/built-in.a
+  AR      drivers/rtc/built-in.a
+  CC      net/ipv4/ping.o
+  CC      net/ipv4/ip_tunnel_core.o
+  AR      drivers/i2c/algos/built-in.a
+  AR      drivers/i2c/busses/built-in.a
+  AR      drivers/i2c/muxes/built-in.a
+  AR      drivers/i2c/built-in.a
+  CC      net/sysctl_net.o
+  AR      drivers/input/mouse/built-in.a
+  AR      fs/9p/built-in.a
+  AR      drivers/input/built-in.a
+  AR      fs/hostfs/built-in.a
+  AR      drivers/i3c/built-in.a
+  AR      drivers/media/i2c/built-in.a
+  AR      drivers/media/tuners/built-in.a
+  AR      drivers/media/rc/keymaps/built-in.a
+  AR      drivers/media/rc/built-in.a
+  AR      drivers/media/common/b2c2/built-in.a
+  AR      drivers/media/common/saa7146/built-in.a
+  AR      drivers/media/common/siano/built-in.a
+  AR      fs/debugfs/built-in.a
+  AR      drivers/media/common/v4l2-tpg/built-in.a
+  AR      drivers/media/common/videobuf2/built-in.a
+  AR      drivers/media/common/built-in.a
+  AR      drivers/media/platform/allegro-dvt/built-in.a
+  AR      fs/built-in.a
+  AR      drivers/media/platform/amlogic/c3/isp/built-in.a
+  AR      drivers/media/platform/amlogic/c3/mipi-adapter/built-in.a
+  AR      net/ipv6/built-in.a
+  AR      drivers/media/platform/amlogic/c3/mipi-csi2/built-in.a
+  AR      drivers/media/platform/amlogic/c3/built-in.a
+  AR      drivers/media/platform/amphion/built-in.a
+  AR      drivers/media/platform/amlogic/meson-ge2d/built-in.a
+  CC      net/ipv4/gre_offload.o
+  AR      drivers/media/platform/amlogic/built-in.a
+  AR      drivers/media/platform/arm/mali-c55/built-in.a
+  CC      net/ipv4/metrics.o
+  AR      drivers/media/platform/arm/built-in.a
+  AR      drivers/media/platform/aspeed/built-in.a
+  AR      drivers/media/platform/atmel/built-in.a
+  AR      drivers/media/platform/broadcom/built-in.a
+  AR      drivers/media/platform/cadence/built-in.a
+  AR      drivers/media/platform/chips-media/coda/built-in.a
+  AR      drivers/media/platform/imagination/built-in.a
+  AR      drivers/media/platform/chips-media/wave5/built-in.a
+  AR      drivers/media/platform/chips-media/built-in.a
+  AR      drivers/media/platform/intel/built-in.a
+  GZIP    kernel/config_data.gz
+  CC      kernel/seccomp.o
+  AR      drivers/media/platform/marvell/built-in.a
+  AR      drivers/media/platform/mediatek/jpeg/built-in.a
+  AR      drivers/media/platform/mediatek/mdp/built-in.a
+  AR      drivers/media/platform/microchip/built-in.a
+  AR      drivers/media/platform/mediatek/vpu/built-in.a
+  AR      drivers/media/platform/mediatek/vcodec/common/built-in.a
+  AR      drivers/media/platform/mediatek/vcodec/encoder/built-in.a
+  AR      drivers/media/platform/mediatek/vcodec/decoder/built-in.a
+  AR      drivers/media/platform/mediatek/vcodec/built-in.a
+  AR      drivers/media/pci/ttpci/built-in.a
+  AR      drivers/media/platform/mediatek/mdp3/built-in.a
+  AR      drivers/media/pci/b2c2/built-in.a
+  AR      drivers/media/platform/mediatek/built-in.a
+  AR      drivers/media/pci/pluto2/built-in.a
+  AR      drivers/media/platform/nuvoton/built-in.a
+  AR      drivers/media/pci/dm1105/built-in.a
+  AR      drivers/media/platform/nvidia/tegra-vde/built-in.a
+  AR      drivers/media/pci/pt1/built-in.a
+  AR      drivers/media/platform/nvidia/built-in.a
+  AR      drivers/media/pci/pt3/built-in.a
+  AR      drivers/media/platform/nxp/dw100/built-in.a
+  AR      drivers/media/pci/mantis/built-in.a
+  AR      drivers/media/platform/nxp/imx-jpeg/built-in.a
+  AR      drivers/media/pci/ngene/built-in.a
+  AR      drivers/ptp/built-in.a
+  AR      drivers/media/platform/nxp/imx8-isi/built-in.a
+  AR      drivers/media/pci/ddbridge/built-in.a
+  AR      drivers/media/pci/saa7146/built-in.a
+  AR      drivers/media/platform/nxp/built-in.a
+  AR      drivers/media/pci/smipcie/built-in.a
+  AR      drivers/media/usb/b2c2/built-in.a
+  AR      drivers/media/pci/netup_unidvb/built-in.a
+  AR      drivers/media/platform/qcom/camss/built-in.a
+  AR      drivers/media/usb/dvb-usb/built-in.a
+  AR      drivers/media/platform/qcom/iris/built-in.a
+  AR      drivers/media/pci/intel/ipu3/built-in.a
+  AR      drivers/media/usb/dvb-usb-v2/built-in.a
+  AR      drivers/media/platform/qcom/venus/built-in.a
+  AR      drivers/media/platform/qcom/built-in.a
+  AR      drivers/media/pci/intel/ivsc/built-in.a
+  AR      drivers/media/usb/s2255/built-in.a
+  AR      drivers/media/pci/intel/built-in.a
+  AR      drivers/media/usb/siano/built-in.a
+  AR      drivers/media/pci/built-in.a
+  AR      drivers/media/platform/raspberrypi/pisp_be/built-in.a
+  AR      drivers/media/usb/ttusb-budget/built-in.a
+  AR      drivers/media/platform/raspberrypi/rp1-cfe/built-in.a
+  AR      drivers/media/platform/raspberrypi/built-in.a
+  AR      drivers/media/usb/ttusb-dec/built-in.a
+  AR      drivers/media/usb/built-in.a
+  AR      drivers/media/mmc/siano/built-in.a
+  AR      drivers/media/mmc/built-in.a
+  AR      drivers/media/platform/renesas/rcar-isp/built-in.a
+  AR      drivers/media/platform/renesas/rcar-vin/built-in.a
+  AR      drivers/media/platform/renesas/rzg2l-cru/built-in.a
+  AR      drivers/power/reset/built-in.a
+  AR      drivers/media/platform/rockchip/rga/built-in.a
+  AR      drivers/media/platform/renesas/rzv2h-ivc/built-in.a
+  AR      drivers/media/platform/rockchip/rkcif/built-in.a
+  AR      drivers/media/platform/renesas/vsp1/built-in.a
+  AR      drivers/media/platform/renesas/built-in.a
+  AR      drivers/media/platform/rockchip/rkisp1/built-in.a
+  AR      drivers/mmc/built-in.a
+  AR      drivers/media/platform/rockchip/rkvdec/built-in.a
+  AR      drivers/media/platform/rockchip/built-in.a
+  AR      drivers/ufs/built-in.a
+  AR      drivers/media/platform/samsung/exynos-gsc/built-in.a
+  AR      drivers/media/platform/st/sti/bdisp/built-in.a
+  AR      drivers/media/platform/st/sti/delta/built-in.a
+  AR      drivers/media/platform/samsung/exynos4-is/built-in.a
+  AR      drivers/media/platform/st/sti/hva/built-in.a
+  AR      drivers/media/platform/samsung/s3c-camif/built-in.a
+  CC      net/ipv4/netlink.o
+  AR      drivers/media/platform/samsung/s5p-g2d/built-in.a
+  AR      drivers/media/platform/st/stm32/built-in.a
+  AR      drivers/media/platform/st/built-in.a
+  AR      drivers/media/platform/samsung/s5p-jpeg/built-in.a
+  AR      drivers/media/platform/samsung/s5p-mfc/built-in.a
+  AR      drivers/media/platform/sunxi/sun4i-csi/built-in.a
+  AR      drivers/media/platform/samsung/built-in.a
+  AR      drivers/power/supply/built-in.a
+  AR      drivers/media/platform/sunxi/sun6i-csi/built-in.a
+  AR      drivers/power/built-in.a
+  AR      drivers/media/platform/synopsys/hdmirx/built-in.a
+  AR      drivers/media/platform/sunxi/sun6i-mipi-csi2/built-in.a
+  AR      drivers/media/platform/synopsys/built-in.a
+  AR      drivers/media/platform/sunxi/sun8i-a83t-mipi-csi2/built-in.a
+  AR      drivers/firmware/arm_ffa/built-in.a
+  AR      drivers/media/platform/sunxi/sun8i-di/built-in.a
+  AR      drivers/media/platform/sunxi/sun8i-rotate/built-in.a
+  AR      drivers/firmware/arm_scmi/built-in.a
+  AR      drivers/media/platform/sunxi/built-in.a
+  AR      drivers/firmware/broadcom/built-in.a
+  AR      drivers/media/platform/ti/am437x/built-in.a
+  AR      drivers/firmware/cirrus/test/built-in.a
+  AR      drivers/firmware/cirrus/built-in.a
+  AR      drivers/media/firewire/built-in.a
+  AR      drivers/media/platform/ti/cal/built-in.a
+  AR      drivers/firmware/meson/built-in.a
+  AR      drivers/media/spi/built-in.a
+  AR      drivers/media/platform/ti/vpe/built-in.a
+  AR      drivers/firmware/microchip/built-in.a
+  AR      drivers/media/platform/ti/davinci/built-in.a
+  AR      drivers/firmware/efi/built-in.a
+  CC      kernel/jump_label.o
+  CC      drivers/clocksource/timer-probe.o
+  AR      drivers/media/platform/ti/j721e-csi2rx/built-in.a
+  AR      drivers/firmware/imx/built-in.a
+  AR      drivers/media/platform/ti/omap/built-in.a
+  AR      drivers/media/platform/ti/omap3isp/built-in.a
+  AR      drivers/media/platform/ti/built-in.a
+  AR      drivers/media/platform/verisilicon/built-in.a
+  AR      drivers/media/platform/via/built-in.a
+  AR      drivers/media/platform/xilinx/built-in.a
+  AR      drivers/media/platform/built-in.a
+  AR      drivers/firmware/psci/built-in.a
+  CC      net/ipv4/nexthop.o
+  AR      drivers/firmware/qcom/built-in.a
+  AR      drivers/firmware/samsung/built-in.a
+  AR      drivers/media/test-drivers/built-in.a
+  CC      drivers/hid/hid-input.o
+  AR      drivers/media/built-in.a
+  CC      drivers/hid/hid-quirks.o
+  AR      drivers/firmware/smccc/built-in.a
+  AR      drivers/firmware/tegra/built-in.a
+  AR      drivers/firmware/xilinx/built-in.a
+  AR      drivers/firmware/built-in.a
+  CC      drivers/of/device.o
+  CC      net/ipv4/udp_tunnel_stub.o
+  CC      net/ipv4/ip_tunnel.o
+  CC      drivers/clocksource/arm_arch_timer.o
+  CC      kernel/context_tracking.o
+  CC      drivers/hid/hid-debug.o
+  CC      drivers/hid/hid-generic.o
+  AR      drivers/platform/built-in.a
+  CC      net/ipv4/sysctl_net_ipv4.o
+  CC      drivers/of/module.o
+  CC      drivers/clocksource/arm_arch_timer_mmio.o
+  CC      drivers/clocksource/dummy_timer.o
+  CC      kernel/iomem.o
+  CC      kernel/rseq.o
+  CC      net/ipv4/proc.o
+  AR      drivers/virt/vboxguest/built-in.a
+  AR      drivers/virt/coco/built-in.a
+  AR      drivers/virt/built-in.a
+  AR      drivers/hwtracing/intel_th/built-in.a
+  CC      net/ipv4/tunnel4.o
+  CC      drivers/of/platform.o
+  CC      net/ipv4/ipconfig.o
+  AR      drivers/hid/built-in.a
+  AR      drivers/android/built-in.a
+  CC      net/ipv4/inet_diag.o
+  CC      net/ipv4/tcp_diag.o
+  AR      drivers/clocksource/built-in.a
+  AR      drivers/nvmem/layouts/built-in.a
+  CC      drivers/nvmem/core.o
+  CC      net/ipv4/tcp_cubic.o
+  CC      drivers/of/property.o
+  CC      kernel/configs.o
+  CC      drivers/of/kobj.o
+  CC      drivers/of/fdt.o
+  CC      drivers/nvmem/layouts.o
+  DTC     drivers/of/empty_root.dtb
+  CC      drivers/of/fdt_address.o
+  CC      drivers/of/address.o
+  CC      drivers/of/irq.o
+  CC      drivers/of/of_reserved_mem.o
+  AR      kernel/built-in.a
+  AR      drivers/resctrl/built-in.a
+  WRAP    drivers/of/empty_root.dtb.S
+  AS      drivers/of/empty_root.dtb.o
+  AR      net/ipv4/built-in.a
+  AR      net/built-in.a
+  AR      drivers/nvmem/built-in.a
+  AR      drivers/of/built-in.a
+  AR      drivers/built-in.a
+  AR      built-in.a
+  AR      vmlinux.a
+  LD      vmlinux.o
+  MODPOST Module.symvers
+  CC      .vmlinux.export.o
+  UPD     include/generated/utsversion.h
+  CC      init/version-timestamp.o
+  KSYMS   .tmp_vmlinux0.kallsyms.S
+  AS      .tmp_vmlinux0.kallsyms.o
+  LD      .tmp_vmlinux1
+  NM      .tmp_vmlinux1.syms
+  KSYMS   .tmp_vmlinux1.kallsyms.S
+  AS      .tmp_vmlinux1.kallsyms.o
+  LD      .tmp_vmlinux2
+  NM      .tmp_vmlinux2.syms
+  KSYMS   .tmp_vmlinux2.kallsyms.S
+  AS      .tmp_vmlinux2.kallsyms.o
+  LD      vmlinux.unstripped
+  NM      System.map
+  SORTTAB vmlinux.unstripped
+  OBJCOPY vmlinux
+  GEN     modules.builtin.modinfo
+  GEN     modules.builtin
+  OBJCOPY arch/arm64/boot/Image
+make[2]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest'
+make[1]: Leaving directory '/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit'
+Kernel source: /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/linux-kjit
+Kernel build:  /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest
+Kernel image:  /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/kjit-guest/arch/arm64/boot/Image

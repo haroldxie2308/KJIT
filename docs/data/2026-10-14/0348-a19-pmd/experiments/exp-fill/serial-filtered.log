@@ -1,0 +1,14 @@
+== cmdline: console=ttyAMA0 panic=-1 nokaslr
+-- fail=1: 12 churn runs done: arena_chunks 0 arena_chunks_pmd 0 arena_bytes 0 
+3355443200 bytes (3.4 GB, 3.1 GiB) copied, 1.06578 s, 3.1 GB/s
+Mem:            4003        3476         537        3393        3404         527
+-- fail=1: memory filled and released
+-- fail=0: 12 churn runs done: arena_chunks 0 arena_chunks_pmd 0 arena_bytes 0 
+3355443200 bytes (3.4 GB, 3.1 GiB) copied, 1.19984 s, 2.8 GB/s
+Mem:            4003        3454         559        3393        3404         549
+-- fail=0: memory filled and released
+== dmesg splat scan
+none
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[   30.820888] reboot: Power down

@@ -13,7 +13,7 @@ requests. Prints, per KPTI setting, size and test (markdown):
     off, baseline-on - off (the same boot, the same rep, off and on alternate inside a rep), each
     as median [Q1..Q3] over all pairs (us per request, negative = the first costs less), and
     "x/y" = boots with a positive per-boot median;
-  - the arena gauges after the runs (tested module).
+  - the arena gauges after the runs (tested module; arena_chunks_pmd, A19, is "-" for a module without it).
 --csv writes one row per measured run (docs/data/README.md conventions: kjit off|on, req_per_s).
 
 Standard library only.
@@ -27,7 +27,7 @@ import sys
 COUNTERS = ("hook_calls syscalls_in_kernel fragment_entries exit_svc exit_bl exit_blr exit_br exit_ret "
             "exit_mem exit_unsupported exit_budget run_declined svc_declined fpsimd_entries translate_ok "
             "invalidated_fragments link_made link_restored link_out_of_range link_class_refused "
-            "link_sites_linked link_sites_pending arena_chunks arena_bytes").split()
+            "link_sites_linked link_sites_pending arena_chunks arena_chunks_pmd arena_bytes").split()
 
 
 def kv(line):
@@ -141,8 +141,8 @@ def main():
                       f"{pairs_text(base_off)} | {rt} |")
         print()
         print(f"{test_m} KJIT on, after the runs (gauges), median [min..max] over runs; fragment entries per request")
-        print("| -d | test | arena_chunks | arena_bytes | fragment entries/req | translate_ok sum | invalidated sum |")
-        print("|---|---|---|---|---|---|---|")
+        print("| -d | test | arena_chunks | arena_chunks_pmd | arena_bytes | fragment entries/req | translate_ok sum | invalidated sum |")
+        print("|---|---|---|---|---|---|---|---|")
         for size in sizes:
             for test in ("set", "get"):
                 on = [r for r in sel if (r["module"], r["size"], r["test"], r["kjit"]) == (test_m, size, test, "on")]
@@ -150,7 +150,9 @@ def main():
                     continue
                 ch = [r["arena_chunks"] for r in on]
                 by = [r["arena_bytes"] for r in on]
-                print(f"| {size} | {test.upper()} | {statistics.median(ch):.0f} [{min(ch)}..{max(ch)}] | "
+                pm = [r["arena_chunks_pmd"] for r in on if r["arena_chunks_pmd"] != ""]
+                pm_text = f"{statistics.median(pm):.0f} [{min(pm)}..{max(pm)}]" if pm else "-"
+                print(f"| {size} | {test.upper()} | {statistics.median(ch):.0f} [{min(ch)}..{max(ch)}] | {pm_text} | "
                       f"{statistics.median(by):.0f} [{min(by)}..{max(by)}] | "
                       f"{statistics.median(r['fragment_entries'] / r['requests'] for r in on):.3f} | "
                       f"{sum(r['translate_ok'] for r in on)} | {sum(r['invalidated_fragments'] for r in on)} |")

@@ -1,0 +1,78 @@
+== cmdline: console=ttyAMA0 panic=-1 nokaslr
+-- before
+MemFree:         3730912 kB
+VmallocUsed:        1888 kB
+vmallocinfo chunk areas: 0
+arena_chunks 0
+arena_chunks_pmd 0
+arena_bytes 0
+-- fail=0 (helper succeeds): stats[    3.133975] rust_kjit: kjit: pc 0x450000: installed 628 bytes, 0 fault sites, 27 entries, 0 link sites, text 0x450000..0x45006c, fpsimd false
+
+arena_chunks 1
+arena_chunks_pmd 1
+arena_bytes 1117968
+-- fail=0 (helper succeeds): exp_alias[    3.153778] rust_kjit: kjit: pc 0x440000: installed 576 bytes, 0 fault sites, 14 entries, 0 link sites, text 0x440000..0x440038, fpsimd false
+
+control: write 0 read 0[    3.184967] rust_kjit: kjit: pc 0x450000: installed 628 bytes, 0 fault sites, 27 entries, 0 link sites, text 0x450000..0x45006c, fpsimd false
+
+chunk ffff800081200000 pmd 1 vm_level 2 vm_desc 00c000004ba00781 alias_pages 512 alias_pte 512 alias_block 0 alias_valid 0 alias_rdonly 0 read_ok 0 read_fault 512 write_ok 0 write_fault 251 write_skipped 261[    3.187953] rust_kjit: kjit: pc 0x470000: installed 1048 bytes, 0 fault sites, 132 entries, 0 link sites, text 0x470000..0x470210, fpsimd false
+
+-- fail=0 (helper succeeds): vmallocinfo[    3.204442] rust_kjit: kjit: pc 0x4a0350: installed 952 bytes, 2 fault sites, 6 entries, 1 link sites, text 0x4a000c..0x4a0364, fpsimd false
+
+churn exit=0 arena_churn: worker 1: 17953 storm batches arena_churn: worker 3: 17816 storm batches arena_churn: worker 0: 16702 storm
+-- after fail=0 churn
+MemFree:         3784776 kB
+VmallocUsed:        2316 kB
+vmallocinfo chunk areas: 0
+arena_chunks 0
+arena_chunks_pmd 0
+arena_bytes 0
+-- fail=1 (helper fails after the alias is unmapped; glue falls back): stats[   11.235053] rust_kjit: kjit: pc 0x470000: installed 1048 bytes, 0 fault sites, 132 entries, 0 link sites, text 0x470000..0x470210, fpsimd false
+
+arena_chunks 1[   11.244869] rust_kjit: kjit: pc 0x450000: installed 628 bytes, 0 fault sites, 27 entries, 0 link sites, text 0x450000..0x45006c, fpsimd false
+
+arena_chunks_pmd 0[   11.246406] rust_kjit: kjit: pc 0x4900a8: installed 952 bytes, 2 fault sites, 6 entries, 1 link sites, text 0x49000c..0x4900bc, fpsimd false
+
+arena_bytes 1128784[   11.249328] rust_kjit: kjit: pc 0x430000: installed 548 bytes, 0 fault sites, 7 entries, 0 link sites, text 0x430000..0x43001c, fpsimd false
+
+-- fail=1 (helper fails after the alias is unmapped; glue falls back): exp_alias[   11.261671] rust_kjit: kjit: pc 0x4900a8: installed 952 bytes, 2 fault sites, 6 entries, 1 link sites, text 0x49000c..0x4900bc, fpsimd false
+
+control: write 0 read 0
+chunk ffff800080ccd000 pmd 0 vm_level 3 vm_desc 00c000004fc00783 alias_pages 512 alias_pte 512 alias_block 0 alias_valid 512 alias_rdonly 512 read_ok 512 read_fault 0 write_ok 0 write_fault 237 write_skipped 275
+-- fail=1 (helper fails after the alias is unmapped; glue falls back): vmallocinfo[   11.264872] rust_kjit: kjit: pc 0x470000: installed 1048 bytes, 0 fault sites, 132 entries, 0 link sites, text 0x470000..0x470210, fpsimd false
+
+churn exit=0 arena_churn: worker 1: 17080 storm batches arena_churn: worker 3: 18977 storm batches arena_churn: worker 2: 21010 storm
+-- after fail=1 churn
+MemFree:         3833952 kB
+VmallocUsed:        2348 kB
+vmallocinfo chunk areas: 0
+arena_chunks 0
+arena_chunks_pmd 0
+arena_bytes 0
+-- fail=0 again: stats[   19.264086] rust_kjit: kjit: pc 0x430000: installed 548 bytes, 0 fault sites, 7 entries, 0 link sites, text 0x430000..0x43001c, fpsimd false
+
+arena_chunks 1[   19.272557] rust_kjit: kjit: pc 0x440000: installed 576 bytes, 0 fault sites, 14 entries, 0 link sites, text 0x440000..0x440038, fpsimd false
+
+arena_chunks_pmd 1[   19.273525] rust_kjit: kjit: pc 0x470000: installed 1048 bytes, 0 fault sites, 132 entries, 0 link sites, text 0x470000..0x470210, fpsimd false
+
+arena_bytes 1060736[   19.288758] rust_kjit: kjit: pc 0x430000: installed 548 bytes, 0 fault sites, 7 entries, 0 link sites, text 0x430000..0x43001c, fpsimd false
+
+-- fail=0 again: exp_alias[   19.297877] rust_kjit: kjit: pc 0x470000: installed 1048 bytes, 0 fault sites, 132 entries, 0 link sites, text 0x470000..0x470210, fpsimd false
+
+control: write 0 read 0[   19.302701] rust_kjit: kjit: pc 0x430000: installed 548 bytes, 0 fault sites, 7 entries, 0 link sites, text 0x430000..0x43001c, fpsimd false
+
+chunk ffff800081200000 pmd 1 vm_level 2 vm_desc 00c0000054800781 alias_pages 512 alias_pte 512 alias_block 0 alias_valid 0 alias_rdonly 0 read_ok 0 read_fault 512 write_ok 0 write_fault 252 write_skipped 260
+-- fail=0 again: vmallocinfo
+churn exit=0 arena_churn: worker 0: 15976 storm batches arena_churn: worker 1: 17797 storm batches arena_churn: worker 3: 19521 storm
+-- end
+MemFree:         3859056 kB
+VmallocUsed:        2428 kB
+vmallocinfo chunk areas: 0
+arena_chunks 0
+arena_chunks_pmd 0
+arena_bytes 0
+== dmesg splat scan
+none
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[   24.297903] reboot: Power down

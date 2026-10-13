@@ -1,0 +1,11 @@
+--- /Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/a19/kjit_glue.c	2026-10-13 23:04:12
++++ /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/src-mut/kjit_glue.c	2026-10-14 03:48:03
+@@ -580,7 +580,7 @@
+ 
+ 	if (!c)
+ 		return ERR_PTR(-ENOMEM);
+-	c->base = kjit_rox_block_alloc();
++	c->base = NULL; /* MUTATION */
+ 	if (c->base) {
+ 		c->pmd = true;
+ 		return c;

@@ -1,0 +1,287 @@
+KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19 bash ./scripts/mk-guest-rootfs.sh
+Guest rootfs: /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/guest-rootfs/rootfs.cpio (185M); tests: a11-baseline.sh alias_loop arena_churn bl_link_race call_loop code_speed entry_cost epoll_echo fault_segv fork_cow fp-bracket.sh fp_budget fp_fault fp_loop fp_preempt fp_regs fp_signal fp_stale fp_switch gen_data jit_churn k4-adversarial.sh k4-bench.sh k4-campaign.sh k4-lib.sh k4-suite.sh lat_probe link_race mem_loop munmap_race nojit pipe_ring ptrace_loop redis-smoke.sh run-k2.sh run-k3.sh seccomp_loop signal_loop svc_bench tight_loop toy_loop ub-bench.sh ub-redis-cpu.sh ub-standard.sh unload-stress.sh unload_fault 
+KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19 bash ./scripts/guest-run.sh --profile kjit-guest \
+		--timeout 3600 -- "sh /opt/kjit-tests/run-k2.sh 1"
+guest-run: profile=kjit-guest run-dir=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/runs/kjit-guest-20261013-232453
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1+ (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #5 SMP PREEMPT Tue Oct 13 15:22:39 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013ac00000-0x000000013b000000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000105] Console: colour dummy device 80x25
+[    0.000112] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000116] pid_max: default: 32768 minimum: 301
+[    0.000248] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000257] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000334] VFS: Finished mounting rootfs on nullfs
+[    0.000477] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000588] rcu: Hierarchical SRCU implementation.
+[    0.000588] rcu: 	Max phase no-delay instances is 1000.
+[    0.000607] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000642] smp: Bringing up secondary CPUs ...
+[    0.000831] Detected PIPT I-cache on CPU1
+[    0.000907] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001196] Detected PIPT I-cache on CPU2
+[    0.001306] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001566] Detected PIPT I-cache on CPU3
+[    0.001677] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.001812] smp: Brought up 1 node, 4 CPUs
+[    0.001813] SMP: Total of 4 processors activated.
+[    0.001813] CPU: All CPU(s) started at EL1
+[    0.001814] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.001814] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.001815] CPU features: detected: CRC32 instructions
+[    0.001815] CPU features: detected: Data independent timing control (DIT)
+[    0.001815] CPU features: detected: E0PD
+[    0.001816] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.001816] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.001816] CPU features: detected: LSE atomic instructions
+[    0.001817] CPU features: detected: Privileged Access Never
+[    0.001817] CPU features: detected: Speculation barrier (SB)
+[    0.001817] CPU features: detected: TLB range maintenance instructions
+[    0.001818] CPU features: detected: XNX
+[    0.002034] alternatives: applying system-wide alternatives
+[    0.004103] Memory: 3907032K/4194304K available (5248K kernel code, 754K rwdata, 2360K rodata, 576K init, 405K bss, 284092K reserved, 0K cma-reserved)
+[    0.004853] devtmpfs: initialized
+[    0.005807] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.005812] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.005828] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.005846] 30384 pages in range for non-PLT usage
+[    0.005847] 521904 pages in range for PLT usage
+[    0.006033] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.006465] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.006525] ASID allocator initialised with 256 entries
+[    0.006535] Serial: AMBA PL011 UART driver
+[    0.006926] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.007054] printk: console [ttyAMA0] enabled
+[    0.014985] vgaarb: loaded
+[    0.015825] clocksource: Switched to clocksource arch_sys_counter
+[    0.018402] NET: Registered PF_INET protocol family
+[    0.018498] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.018991] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.018997] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.019000] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.019104] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.019612] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.019647] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.019687] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.019697] PCI: CLS 0 bytes, default 64
+[    0.019876] Unpacking initramfs...
+[    0.024575] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.024646] 9p: Installing v9fs 9p2000 file system support
+[    0.028129] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.028137] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.028140] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.028141] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.028148] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.028159] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.028179] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.028180] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.028181] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.028182] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.028182] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.028218] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.029370] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.029518] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.029668] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.029784] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.029806] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.030324] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.030626] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.030634] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.030649] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.031359] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.031606] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.031626] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.031672] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.032964] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.032969] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.033039] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.033090] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.033109] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.033114] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.033118] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.033122] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.033126] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.033131] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.033141] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.033142] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.033143] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.034462] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.035923] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.036922] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.045065] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.045072] rtc-pl031 9010000.pl031: setting system clock to 2026-10-13T15:24:53 UTC (1791905093)
+[    0.045200] NET: Registered PF_INET6 protocol family
+[    0.065062] Segment Routing with IPv6
+[    0.065067] In-situ OAM (IOAM) with IPv6
+[    0.065083] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.065224] NET: Registered PF_PACKET protocol family
+[    0.065339] 9pnet: Installing 9P2000 support
+[    0.073641] clk: Disabling unused clocks
+[    0.166748] Freeing initrd memory: 189072K
+[    0.167407] Freeing unused kernel memory: 576K
+[    0.167481] Run /init as init process
+kjit-init: insmod kjit.ko ok
+k2:   toy_loop: in_kernel=199951 entries=199988 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=0 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   toy_loop: 199951 of 200000 syscalls in kernel (99.98%)
+k2:   mem_loop: in_kernel=40000 entries=60036 exit_mem=0 exit_budget=0 exit_unsupported=19999 fpsimd_entries=0 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   tight_loop: in_kernel=0 entries=2036 exit_mem=0 exit_budget=2000 exit_unsupported=0 fpsimd_entries=0 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   call_loop: in_kernel=0 entries=2045 exit_mem=0 exit_budget=2000 exit_unsupported=0 fpsimd_entries=0 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   call_loop: exit_budget=2000 run_declined=0 outer=2000
+k2:   alias_loop: in_kernel=0 entries=2048060 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=0 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   alias_loop: chain_cap=2000 run_declined=0 chain_max=1024 chain_budget=1024 ibtc_replace=8183990
+k2:   link_race storm: in_kernel=2933312 entries=5184862 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=1 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   link_race: storm: entries=5184862 invalidated=850 ibtc_clear=1696
+k2:   link_race: steady: 2004 fragment entries for 2000 rounds of 256 calls
+k2:   bl_link_race: storm: link_made=1893 link_restored=1262
+k2:   bl_link_race: steady: link_sites_linked=1
+k2:   arena_churn: worker 3: 8753 storm batches
+k2:   arena_churn: worker 0: 10271 storm batches
+k2:   arena_churn: worker 1: 7186 storm batches
+k2:   arena_churn: worker 2: 7374 storm batches
+k2:   arena_churn: installs=4058 invalidated=3378 peak arena_bytes=1188000 peak arena_chunks=1 pmd-checked samples=138 after exit: arena_bytes=0 arena_chunks=0 arena_chunks_pmd=0
+k2:   signal_loop: in_kernel=399906 entries=399956 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=0 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   signal_loop: 29 alarms handled
+k2:   fp_loop: in_kernel=39990 entries=40027 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=39991 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   fp_regs: in_kernel=199951 entries=199988 exit_mem=0 exit_budget=0 exit_unsupported=1 fpsimd_entries=199952 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   fp_switch: in_kernel=79980 entries=79995 exit_mem=0 exit_budget=0 exit_unsupported=2 fpsimd_entries=79982 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   fp_signal: in_kernel=399897 entries=399982 exit_mem=0 exit_budget=0 exit_unsupported=1 fpsimd_entries=399944 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   fp_signal: 55 alarms handled
+k2:   fp_fault demand: in_kernel=511 entries=1060 exit_mem=512 exit_budget=0 exit_unsupported=0 fpsimd_entries=1024 fpsimd_preempted=0 fpsimd_exit_mem=512
+k2:   fp_preempt: in_kernel=15984 entries=16023 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=16000 fpsimd_preempted=55 fpsimd_exit_mem=0
+k2:   fp_preempt: 55 brackets switched out
+k2:   fp_preempt: in_kernel=15980 entries=16020 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=16000 fpsimd_preempted=476 fpsimd_exit_mem=0
+k2:   fp_preempt_noise: 25103 NEON softirq rounds interrupted a bracket
+k2:   fp_stale: in_kernel=300 entries=3653 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=301 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   lat cpus=4 samples=6819 interval_us=1000 p50_us=128.5 p99_us=3140.5 p999_us=6465.6 max_us=24178.5 gt100us=3850 gt1ms=580 gt5ms=25 max_cpu=3
+k2:   fpsimd_run_max_ns=33027000 before fp_budget
+k2:   fp_budget: in_kernel=0 entries=436 exit_mem=0 exit_budget=400 exit_unsupported=0 fpsimd_entries=400 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   fpsimd_run_max_ns=33027000 after fp_budget
+k2:   munmap_race: in_kernel=3261656 entries=3262135 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=0 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   Segmentation fault
+k2:   seccomp_loop: in_kernel=0 entries=0 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=0 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   ptrace_loop: in_kernel=0 entries=0 exit_mem=0 exit_budget=0 exit_unsupported=0 fpsimd_entries=0 fpsimd_preempted=0 fpsimd_exit_mem=0
+k2:   placement guard: sites64 off 281.65 ns, on 243.51 ns per outer iteration, ratio 0.86 (max 2)
+Killed
+Killed
+Killed
+Killed
+k2: iteration 1 PASS
+k2: stats
+k2:   syscalls_in_kernel 16426574
+k2:   fragment_entries 50466377
+k2:   chains 6109632
+k2:   chain_cap 5968
+k2:   run_declined 41069
+k2:   exit_svc 16426638
+k2:   exit_bl 4370037
+k2:   exit_blr 8328052
+k2:   exit_br 0
+k2:   exit_ret 21072856
+k2:   exit_mem 518
+k2:   exit_unsupported 20003
+k2:   exit_budget 248273
+k2:   exit_invalid 0
+k2:   svc_declined 64
+k2:   translate_ok 23078
+k2:   translate_exists 1294
+k2:   translate_text_unreadable 0
+k2:   translate_entry_unsupported 194
+k2:   translate_compile_failed 0
+k2:   translate_encode_failed 0
+k2:   translate_verify_rejected 0
+k2:   translate_verify_falls_off_end 0
+k2:   translate_raced 1
+k2:   translate_capped 0
+k2:   translate_install_failed 0
+k2:   invalidated_fragments 11521
+k2:   released_fragments 11557
+k2:   svc_sites_scanned 11623
+k2:   auto_mm_created 9
+k2:   auto_mm_setup_failed 0
+k2:   auto_prof_full 0
+k2:   auto_hot_negative 0
+k2:   auto_hot_capped 0
+k2:   auto_hot_queue_full 0
+k2:   auto_req_svc_resume 1
+k2:   auto_req_exit_target 65
+k2:   auto_req_dropped 0
+k2:   auto_req_stale 0
+k2:   auto_neg_added 0
+k2:   auto_neg_evicted 0
+k2:   auto_translate_ns 94216120
+k2:   unsupported_top_dropped 0
+k2:   unsupported_bad_word 0
+k2:   fpsimd_entries 762600
+k2:   fpsimd_preempted 531
+k2:   fpsimd_exit_mem 515
+k2:   fpsimd_refused_sve_sme 0
+k2:   ibtc_insert 24428078
+k2:   ibtc_replace 24423560
+k2:   ibtc_clear 4518
+k2:   ibtc_fpsimd_boundary 0
+k2:   ibtc_miss_cold 27659052
+k2:   ibtc_miss_conflict 6111860
+k2:   ibtc_miss_other 33
+k2:   link_made 8835
+k2:   link_restored 5140
+k2:   link_out_of_range 0
+k2:   link_class_refused 0
+k2:   hook_calls 50337675
+k2:   fpsimd_run_max_ns 33027000
+k2:   chain_max 1024
+k2:   chain_hist_1_1 44347040
+k2:   chain_hist_2_3 3736
+k2:   chain_hist_512_1023 1
+k2:   chain_hist_1024_2047 5968
+k2:   link_sites_linked 0
+k2:   link_sites_pending 0
+k2:   arena_chunks 1
+k2:   arena_chunks_pmd 1
+k2:   arena_bytes 161408
+k2: ALL PASS (1 iterations, auto=0)
+k2: left toy_loop 438 hot for rmmod (22170544 syscalls in kernel so far)
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[   36.157848] reboot: Power down
+guest-run: PASS (/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/runs/kjit-guest-20261013-232453/serial.log)

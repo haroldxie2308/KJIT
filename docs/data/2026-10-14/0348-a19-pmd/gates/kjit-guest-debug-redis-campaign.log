@@ -1,0 +1,24 @@
+KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19 bash ./scripts/mk-guest-rootfs.sh
+Guest rootfs: /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/guest-rootfs/rootfs.cpio (185M); tests: a11-baseline.sh alias_loop arena_churn bl_link_race call_loop code_speed entry_cost epoll_echo fault_segv fork_cow fp-bracket.sh fp_budget fp_fault fp_loop fp_preempt fp_regs fp_signal fp_stale fp_switch gen_data jit_churn k4-adversarial.sh k4-bench.sh k4-campaign.sh k4-lib.sh k4-suite.sh lat_probe link_race mem_loop munmap_race nojit pipe_ring ptrace_loop redis-smoke.sh run-k2.sh run-k3.sh seccomp_loop signal_loop svc_bench tight_loop toy_loop ub-bench.sh ub-redis-cpu.sh ub-standard.sh unload-stress.sh unload_fault 
+KJIT_BUILD_ROOT=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19 bash ./scripts/redis-campaign.sh --profile kjit-guest-debug \
+		--iterations 1 --requests 100000 --no-suite
+k4-campaign: campaign: guest-run (log /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/runs/k4-kjit-guest-debug-20261013-233735/campaign.log)
+
+k4-campaign: profile=kjit-guest-debug out=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/runs/k4-kjit-guest-debug-20261013-233735
+k4-campaign: campaign    PASS: 1 iterations; 10 adversarial tests, 1 consistency checks; dmesg clean
+k4-campaign: benchmark (last iteration, /Volumes/CaseSentitiveLocal/KJIT/.kjit/build-a19/runs/k4-kjit-guest-debug-20261013-233735/campaign/campaign/iter-1/bench.log):
+k4-campaign:   k4-bench: default (redis-benchmark -q -n 100000 ):
+k4-campaign:   k4:   default: in_kernel=3648141/5171562 syscalls (70.5%) entries=7165086 chains=1999248 chain_cap=0 translated=512 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4-campaign:   k4:   default: exits svc=3648141 bl=118353 blr=500797 br=2000395 ret=32352 mem=62 unsupported=864986 budget=0 invalid=0 svc_declined=0
+k4-campaign:   k4:   default: unsupported_top (word(exits/entry_stops)): 0x9e630160(662386/0) 0xfc6c79c0(103988/0) 0x1e682100(98538/0) 0xd503203f(74/0) 
+k4-campaign:   k4-bench: pipelined (redis-benchmark -q -n 100000 -P 16):
+k4-campaign:   k4:   pipelined: in_kernel=140085/312754 syscalls (44.8%) entries=408846 chains=125001 chain_cap=0 translated=0 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4-campaign:   k4:   pipelined: exits svc=140085 bl=8623 blr=32466 br=125001 ret=22793 mem=34 unsupported=17438 budget=62406 invalid=0 svc_declined=0
+k4-campaign:   k4:   pipelined: unsupported_top (word(exits/entry_stops)): 0xfc6c79c0(8426/0) 0x1e682100(6247/0) 0x9e630160(2699/0) 0xd503203f(66/0) 
+k4-campaign:   k4-bench: clients256 (redis-benchmark -q -n 100000 -c 256):
+k4-campaign:   k4:   clients256: in_kernel=3608707/5153802 syscalls (70.0%) entries=7132861 chains=2000001 chain_cap=0 translated=0 (entry_unsupported=0 compile=0 verify=0 capped=0 neg=0) invalidated=0 released=0
+k4-campaign:   k4:   clients256: exits svc=3608707 bl=109661 blr=499134 br=2000001 ret=49370 mem=896 unsupported=865092 budget=0 invalid=0 svc_declined=0
+k4-campaign:   k4:   clients256: unsupported_top (word(exits/entry_stops)): 0x9e630160(660381/0) 0xfc6c79c0(104626/0) 0x1e682100(99938/0) 0xd503203f(147/0) 
+k4-campaign:   k4-bench: consistency PASS: dbsize 10044 digest 603e069a26083ceb1309ded3186769f0b0809e09 readback sha256 362731776718583235c4f1394cb708151a5c09052efd2c0ace0f6f0f7392fb50 
+k4-campaign:   k4-bench: ALL PASS
+k4-campaign: RESULT PASS

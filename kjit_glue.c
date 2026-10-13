@@ -42,8 +42,12 @@
  *             of one shared arena of 2 MiB ROX chunks, first fit under
  *             kjit_arena_lock (a mutex over the chunk list and the bitmaps;
  *             never held together with kjit_mm.lock or kjit_frags_lock). A
- *             chunk is filled with BRK and made ROX once; slots are written
- *             with aarch64_insn_copy() (kernel-patches/0009) at install and
+ *             chunk is one PMD-mapped block of kjit_rox_block_alloc()
+ *             (kernel-patches/0010) or, when the kernel cannot provide one,
+ *             an execmem allocation; either way it is filled with BRK and
+ *             ROX before its first slot is handed out, and freed (with the
+ *             matching function) when its last slot is released. Slots are
+ *             written with aarch64_insn_copy() (kernel-patches/0009) at install and
  *             filled with BRK by aarch64_insn_set() when the free work
  *             releases them. Both flush the I-cache and IPI every CPU, so
  *             slots are only written from process context, no spinlock held,
@@ -294,6 +298,8 @@ static_assert(offsetof(struct kjit_label, host) == 8);
 #define KJIT_ARENA_GRANULES (KJIT_ARENA_CHUNK / KJIT_ARENA_GRANULE)
 #define KJIT_ARENA_MAX_CHUNKS 64
 static_assert(KJIT_ARENA_CHUNK % PAGE_SIZE == 0);
+/* The size of the block kjit_rox_block_alloc() returns (kernel-patches/0010). */
+static_assert(KJIT_ARENA_CHUNK == SZ_2M);
 static_assert(KJIT_ARENA_GRANULE % sizeof(u32) == 0);
 
 /*
@@ -519,19 +525,20 @@ static atomic64_t kjit_req_queued = ATOMIC64_INIT(0);
 static atomic64_t kjit_req_ran = ATOMIC64_INIT(0);
 
 /* ------------------------------------------------------------------------- */
-/* Image arena (A17)                                                           */
+/* Image arena (A17, A19)                                                      */
 
 /*
- * docs/pipeline.md, "Image placement (A17, packed arena)". Everything here
- * runs in process context with no spinlock held and interrupts on: a chunk is
- * allocated and made ROX, and slots are written and filled with BRK through
- * the text patcher, whose icache flush IPIs every CPU.
+ * docs/pipeline.md, "Image placement (A17, packed arena)", "Chunk mapping
+ * (A19)". Everything here runs in process context with no spinlock held and
+ * interrupts on: a chunk is allocated and made ROX, and slots are written and
+ * filled with BRK through the text patcher, whose icache flush IPIs every CPU.
  */
 
-/* The slots of one execmem allocation. @used, @map: kjit_arena_lock. */
+/* The slots of one chunk. @used, @map: kjit_arena_lock. */
 struct kjit_arena_chunk {
 	struct list_head node;		/* kjit_arena_chunks */
-	void *base;			/* ROX from creation to execmem_free() */
+	void *base;			/* ROX from creation to its free function */
+	bool pmd;			/* a PMD-mapped block (kjit_rox_block_free) or execmem (execmem_free) */
 	unsigned int used;		/* granules in use */
 	unsigned long map[BITS_TO_LONGS(KJIT_ARENA_GRANULES)];	/* 1 = in use */
 };
@@ -539,8 +546,12 @@ struct kjit_arena_chunk {
 static DEFINE_MUTEX(kjit_arena_lock);
 /* New chunks at the tail, so the first fit fills the oldest chunk first. */
 static LIST_HEAD(kjit_arena_chunks);
-/* Gauges (stats file), written under kjit_arena_lock: chunks, and bytes in live slots. */
+/*
+ * Gauges (stats file), written under kjit_arena_lock: chunks, the PMD-mapped
+ * ones among them, and bytes in live slots.
+ */
 static atomic_long_t kjit_arena_nchunks = ATOMIC_LONG_INIT(0);
+static atomic_long_t kjit_arena_npmd = ATOMIC_LONG_INIT(0);
 static atomic_long_t kjit_arena_nbytes = ATOMIC_LONG_INIT(0);
 
 /*
@@ -559,6 +570,9 @@ static size_t kjit_image_size(u32 code_len, u32 n_sites)
  * mapping again. The BRK fill gets the same icache flush as every later write,
  * so a branch into a slot that was never written traps instead of running a
  * stale line of whatever the pages held before.
+ *
+ * "Chunk mapping (A19)": the chunk is a PMD-mapped block of the kernel helper
+ * when there is one; the helper has filled and protected it.
  */
 static struct kjit_arena_chunk *kjit_arena_chunk_new(void)
 {
@@ -567,6 +581,18 @@ static struct kjit_arena_chunk *kjit_arena_chunk_new(void)
 
 	if (!c)
 		return ERR_PTR(-ENOMEM);
+	c->base = kjit_rox_block_alloc();
+	if (c->base) {
+		c->pmd = true;
+		return c;
+	}
+	/*
+	 * Fallback: the helper returns NULL when the kernel has no free
+	 * order-9 block (a fragmented memory) or could not set the block up. A
+	 * chunk of 4 KiB pages is still a correct, ROX chunk, only a slower one
+	 * (one iTLB entry per page); the helper left nothing behind, so there
+	 * is nothing to undo, and the next chunk tries the PMD block again.
+	 */
 	c->base = execmem_alloc(EXECMEM_BPF, KJIT_ARENA_CHUNK);
 	if (!c->base) {
 		kvfree(c);
@@ -615,6 +641,8 @@ static void *kjit_arena_alloc(size_t size)
 	}
 	list_add_tail(&c->node, &kjit_arena_chunks);
 	atomic_long_inc(&kjit_arena_nchunks);
+	if (c->pmd)
+		atomic_long_inc(&kjit_arena_npmd);
 	start = 0;
 found:
 	bitmap_set(c->map, start, granules);
@@ -654,6 +682,8 @@ static void kjit_arena_free(void *slot, size_t size)
 			if (!c->used) {
 				list_del(&c->node);
 				atomic_long_dec(&kjit_arena_nchunks);
+				if (c->pmd)
+					atomic_long_dec(&kjit_arena_npmd);
 				empty = c;
 			}
 			break;
@@ -663,8 +693,11 @@ static void kjit_arena_free(void *slot, size_t size)
 	WARN_ON_ONCE(list_entry_is_head(c, &kjit_arena_chunks, node));
 	mutex_unlock(&kjit_arena_lock);
 	if (empty) {
-		/* VM_FLUSH_RESET_PERMS (execmem) restores the linear map on vfree. */
-		execmem_free(empty->base);
+		/* Both restore the linear map of the pages (VM_FLUSH_RESET_PERMS) on vfree. */
+		if (empty->pmd)
+			kjit_rox_block_free(empty->base);
+		else
+			execmem_free(empty->base);
 		kvfree(empty);
 	}
 }
@@ -2454,9 +2487,10 @@ static ssize_t kjit_stats_read(struct file *file, char __user *ubuf, size_t coun
 	len += scnprintf(buf + len, size - len, "link_sites_linked %ld\nlink_sites_pending %ld\n",
 			 atomic_long_read(&kjit_links_linked),
 			 atomic_long_read(&kjit_links_pending));
-	/* Gauges (A17): arena chunks, and bytes in live slots. */
-	len += scnprintf(buf + len, size - len, "arena_chunks %ld\narena_bytes %ld\n",
+	/* Gauges (A17, A19): arena chunks, the PMD-mapped ones among them, and bytes in live slots. */
+	len += scnprintf(buf + len, size - len, "arena_chunks %ld\narena_chunks_pmd %ld\narena_bytes %ld\n",
 			 atomic_long_read(&kjit_arena_nchunks),
+			 atomic_long_read(&kjit_arena_npmd),
 			 atomic_long_read(&kjit_arena_nbytes));
 	ret = simple_read_from_buffer(ubuf, count, ppos, buf, len);
 	kfree(buf);
@@ -2758,7 +2792,7 @@ void kjit_glue_exit(void)
 	/* Every fragment is retired: no link record is left linked or pending (A16). */
 	WARN_ON(atomic_long_read(&kjit_links_linked) || atomic_long_read(&kjit_links_pending));
 	/* ...and every slot is released and every chunk freed (A17). */
-	WARN_ON(atomic_long_read(&kjit_arena_nchunks) || atomic_long_read(&kjit_arena_nbytes) ||
-		!list_empty(&kjit_arena_chunks));
+	WARN_ON(atomic_long_read(&kjit_arena_nchunks) || atomic_long_read(&kjit_arena_npmd) ||
+		atomic_long_read(&kjit_arena_nbytes) || !list_empty(&kjit_arena_chunks));
 	cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
 }
