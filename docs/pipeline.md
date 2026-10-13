@@ -947,7 +947,8 @@ Translator:
   registers live in hardware while a fragment runs. GPR operands of FP/SIMD
   forms (`fmov x, d`, `dup v, w`, `umov`, addressing) go through reg-virt as
   usual. `ExecutionFragment` needs no FP flag; the verifier computes it.
-- In scope (157 forms in `subset.toml`; 82 loads/stores, 75 register-only):
+- In scope (157 forms in `subset.toml` as of A9; A18 adds scalar floating
+  point and register-offset SIMD&FP loads/stores, below):
   FP/SIMD loads/stores (LDR/STR/LDUR/STUR q/d/s/h/b imm forms, LDP/STP q/d/s,
   LD1/ST1 multiple structures 1-4 regs, no-writeback and post-index), DUP
   (element, general), INS/UMOV/MOV element, MOVI/MVNI, FMOV (general<->FP,
@@ -955,9 +956,8 @@ Translator:
   BIT/BIF/BSL/NOT (vector), ADD/SUB (vector), ADDP/UMAXP/UMINP/ADDV/UMAXV/UMINV,
   SHRN/USHR/SHL/USHLL/XTN, EXT, REV16/32/64 (vector), CNT, TBL (1 reg).
   Out (Unsupported exit): half-precision FMOV (FEAT_FP16: an EL1 UNDEF on a CPU
-  without it would be an oops), floating-point arithmetic/conversion/compare
-  (their rounding/exception semantics need FPCR/FPSR modelling that nothing
-  requires yet), register-offset and literal SIMD&FP loads/stores, LD2-4,
+  without it would be an oops), half-precision arithmetic, literal SIMD&FP
+  loads/stores, LD2-4,
   single-structure and replicate loads, LDNP/STNP, TBL/TBX with 2-4 table
   registers, ORR/BIC (vector, immediate), FMOV (vector, immediate), saturating
   arithmetic.
@@ -1094,6 +1094,58 @@ Kernel (A9b, bracket revised by A13):
   - ptrace: a traced task never runs fragments, so a tracer's FP regset access
     never races a run. exec: `flush_thread()` sets the flag, and the new mm has
     no fragments.
+
+### Scalar floating point (A18)
+
+Adds the floating-point data-processing forms and SIMD&FP register-offset
+loads and stores that block redis paths (`ucvtf d0, x11` and `fcmpe d1, d0`
+in the event loop; `ldr d0, [x14, x12, lsl #3]` on the AOF path; `scvtf`,
+`fmadd`, `fadd`, `fmul`, `fsub`, `str s0, [x0, x3, lsl #2]` in libm and libc).
+They are then translated, not `Unsupported` exits.
+
+- Forms (`subset.toml`, single and double precision only; every half-precision
+  and BFloat16 form stays out):
+  - FADD, FSUB, FMUL, FNMUL, FDIV, FMAX, FMIN, FMAXNM, FMINNM;
+  - FMADD, FMSUB, FNMADD, FNMSUB;
+  - FABS, FNEG, FSQRT, FRINTN/P/M/Z/A/X/I;
+  - FCVT between S and D;
+  - FCMP and FCMPE (register, zero), FCCMP, FCCMPE, FCSEL;
+  - FMOV (scalar, immediate);
+  - SCVTF and UCVTF (scalar, from a 32- or 64-bit GPR);
+  - FCVTZS, FCVTZU, FCVTNS, FCVTNU, FCVTMS, FCVTMU, FCVTPS, FCVTPU, FCVTAS,
+    FCVTAU (scalar, to a 32- or 64-bit GPR);
+  - LDR and STR (register, SIMD&FP) for b, h, s, d and q, with every extend
+    and shift the form allows;
+  - MRS of FPCR and FPSR. MSR of either stays out.
+- Lowering:
+  - Register-only forms are copied as they are. V registers, FPCR, FPSR and
+    NZCV are live user state in hardware during a bracketed run (A9). Their
+    GPR operands go through reg-virt like every other GPR operand.
+  - Register-offset loads and stores are window accesses like the A9
+    immediate forms. Reg-virt computes the address into sA
+    (`add sA, <mapped Rn>, <mapped Rm>, <extend/shift>`; fills as usual). The
+    range check follows, then the base-only access. The SP-base alignment
+    check applies when Rn is SP.
+- Why it is exact: a bracketed run executes these words at EL1 with the
+  user's FPCR loaded, so rounding, NaN, flush-to-zero and FPSR cumulative
+  flags behave as at EL0. Two things can differ, and both are excluded:
+  - FEAT_FP16 forms would UNDEF at EL1 on a CPU without them. They are not
+    admitted.
+  - Trapped floating-point exceptions: an enabled trap (FPCR IOE, DZE, OFE,
+    UFE, IXE, IDE; bits 8-12 and 15) on a CPU that implements trapping would
+    take an FP exception at EL1. `kjit_call_fragment_fpsimd()` reads the
+    user FPCR from `thread.uw.fpsimd_state` after `kernel_neon_begin` and
+    before `fpsimd_load_state`. If any trap-enable bit is set, it runs
+    nothing, closes the bracket and returns "declined": userspace resumes at
+    the entry pc (`run_declined`, plus the new stat `fpsimd_trap_declined`).
+    A fragment cannot change FPCR, because MSR FPCR is not admitted.
+- Harness: the interpreter executes each admitted scalar FP form on the host
+  CPU. AArch64 is the only supported host. It uses inline asm per form, with
+  the state's FPCR written and FPSR read back, so rounding modes, NaNs and
+  flags are the hardware's. It does not reimplement IEEE 754. The fuzzer gets
+  the forms from the generated metadata as usual.
+- Verifier: the new forms set `uses_fpsimd`. Register-offset SIMD&FP accesses
+  are window accesses under rule 8, like the A9 forms.
 
 ### Counter reads (A10)
 
@@ -2072,7 +2124,8 @@ and one module shape is simpler than a K0-only build.
 - Stats for the bracket: `fpsimd_entries` (brackets), `fpsimd_preempted`
   (brackets during which the task was switched out: `nvcsw + nivcsw` changed),
   `fpsimd_exit_mem` (Mem exits of FP/SIMD runs, all taken with page faults
-  disabled), `fpsimd_refused_sve_sme`, `fpsimd_run_max_ns` (the longest bracket
+  disabled), `fpsimd_trap_declined` (brackets declined for an enabled FP trap,
+  A18), `fpsimd_refused_sve_sme`, `fpsimd_run_max_ns` (the longest bracket
   since load, wall clock including time switched out: per-CPU maximum of CNTVCT
   deltas converted with CNTFRQ, recorded on the CPU the bracket ends on; not
   reset by debugfs). `fpsimd_restores` was removed with A13: every bracket
@@ -2634,8 +2687,8 @@ Translator coverage:
 
 - Not translated (take the `Unsupported` exit and run natively): exclusives
   (LDXR/STXR family), `CASP`, FEAT_LSE128/LSUI forms, LDNP/STNP, PRFUM, RPRFM,
-  floating-point arithmetic/conversion/compare, register-offset and literal
-  SIMD&FP loads/stores, LD2-4, single-structure and replicate loads, TBL/TBX with
+  half-precision floating point, literal SIMD&FP loads/stores, LD2-4,
+  single-structure and replicate loads, TBL/TBX with
   2-4 registers, half-precision FMOV, PAC hints and every HINT other than NOP and
   BTI, `MRS` of anything but TPIDR_EL0/CNTVCT_EL0/CNTFRQ_EL0, `dc zva`, `MSR` other
   than PAN. Words seen blocking redis paths after A10: SIMD&FP register-offset
