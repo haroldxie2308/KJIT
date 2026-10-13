@@ -1,0 +1,1377 @@
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1+ (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #1 SMP PREEMPT Tue Oct 13 12:07:22 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr rodata=off
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013b400000-0x000000013b800000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000098] Console: colour dummy device 80x25
+[    0.000104] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000111] pid_max: default: 32768 minimum: 301
+[    0.000239] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000247] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000320] VFS: Finished mounting rootfs on nullfs
+[    0.000457] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000557] rcu: Hierarchical SRCU implementation.
+[    0.000557] rcu: 	Max phase no-delay instances is 1000.
+[    0.000575] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000608] smp: Bringing up secondary CPUs ...
+[    0.000791] Detected PIPT I-cache on CPU1
+[    0.000881] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001168] Detected PIPT I-cache on CPU2
+[    0.001264] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001498] Detected PIPT I-cache on CPU3
+[    0.001616] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.001693] smp: Brought up 1 node, 4 CPUs
+[    0.001694] SMP: Total of 4 processors activated.
+[    0.001695] CPU: All CPU(s) started at EL1
+[    0.001695] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.001696] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.001696] CPU features: detected: CRC32 instructions
+[    0.001697] CPU features: detected: Data independent timing control (DIT)
+[    0.001697] CPU features: detected: E0PD
+[    0.001698] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.001698] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.001699] CPU features: detected: LSE atomic instructions
+[    0.001699] CPU features: detected: Privileged Access Never
+[    0.001699] CPU features: detected: Speculation barrier (SB)
+[    0.001700] CPU features: detected: TLB range maintenance instructions
+[    0.001700] CPU features: detected: XNX
+[    0.001792] alternatives: applying system-wide alternatives
+[    0.002793] Memory: 3915208K/4194304K available (5248K kernel code, 754K rwdata, 2360K rodata, 576K init, 405K bss, 275916K reserved, 0K cma-reserved)
+[    0.003075] devtmpfs: initialized
+[    0.003340] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003344] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003360] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003366] 30384 pages in range for non-PLT usage
+[    0.003366] 521904 pages in range for PLT usage
+[    0.003425] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.003800] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.003863] ASID allocator initialised with 256 entries
+[    0.003871] Serial: AMBA PL011 UART driver
+[    0.004375] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.004556] printk: console [ttyAMA0] enabled
+[    0.009834] vgaarb: loaded
+[    0.010073] clocksource: Switched to clocksource arch_sys_counter
+[    0.021688] NET: Registered PF_INET protocol family
+[    0.021806] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.022389] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.022402] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.022406] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.022467] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.022664] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.022706] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.022747] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.022755] PCI: CLS 0 bytes, default 64
+[    0.023118] Unpacking initramfs...
+[    0.026620] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.026804] 9p: Installing v9fs 9p2000 file system support
+[    0.030411] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.030418] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.030420] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.030421] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.030427] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.030436] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.030455] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.030456] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.030457] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.030457] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.030458] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.030479] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.030719] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.030823] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.030826] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.030835] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.030837] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.031122] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.031309] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.031312] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.031322] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.031589] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.031759] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.031761] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.031790] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.032173] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.032174] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.032192] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.032209] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.032226] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.032232] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.032237] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.032240] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.032244] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.032248] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.032256] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.032257] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.032258] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.032995] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.033615] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.036105] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.042829] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.042837] rtc-pl031 9010000.pl031: setting system clock to 2026-10-13T13:21:59 UTC (1791897719)
+[    0.042960] NET: Registered PF_INET6 protocol family
+[    0.043338] Segment Routing with IPv6
+[    0.043341] In-situ OAM (IOAM) with IPv6
+[    0.043348] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.043466] NET: Registered PF_PACKET protocol family
+[    0.043472] 9pnet: Installing 9P2000 support
+[    0.049304] clk: Disabling unused clocks
+[    0.124629] Freeing initrd memory: 189084K
+[    0.125281] Freeing unused kernel memory: 576K
+[    0.125341] Kernel memory protection disabled.
+[    0.125358] Run /init as init process
+[    0.139479] kjit: loading out-of-tree module taints kernel.
+[    0.140242] rust_kjit: ######## Rust KJIT inits ########
+[    0.140313] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+hugesweep: cmdline: console=ttyAMA0 panic=-1 nokaslr rodata=off
+hugesweep: kpti dmesg: none
+hugesweep: kernel: 7.1.0-rc1+ cpus: 4 redis: Redis server v=7.0.15 sha=00000000:0 malloc=jemalloc-5.2.1 bits=64 build=fe67efb337924bf0
+hugesweep: sizes='1 1024' requests=500000 reps=6 warm=300000 chain_budget=1024 hz_ticks=100 kb=1
+hugesweep: module: 64 hot_threshold, 100 hot_window_ms
+hugesweep: server tasks allowed CPUs:       5 0 
+hugesweep: warm-up at pmd, -d 1, 500000 requests
+hugesweep: translate_ok after warm-up: 292
+hugesweep chunks size=0 rep=0 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 4c600000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c000004c600781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=0 rep=0 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep run size=1 rep=1 pos=0 state=off test=set requests=500000 rps=399680.25 wall_cs=126 utime_ticks=33 stime_ticks=90 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=269 link_sites_pending=199 arena_chunks=1 arena_bytes=634640 exp_huge=1
+hugesweep run size=1 rep=1 pos=0 state=off test=get requests=500000 rps=399361.03 wall_cs=125 utime_ticks=33 stime_ticks=80 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=269 link_sites_pending=199 arena_chunks=1 arena_bytes=634640 exp_huge=1
+hugesweep kb size=1 rep=1 state=off bench=getppid_1 ns_per_syscall=130.67
+hugesweep kb size=1 rep=1 state=off bench=raw_pipe_64 ns_per_syscall=165.44
+hugesweep kb size=1 rep=1 state=off bench=raw_zn_64 ns_per_syscall=148.29
+hugesweep run size=1 rep=1 pos=1 state=k4 test=set requests=500000 rps=332889.50 wall_cs=168 utime_ticks=1 stime_ticks=145 clk_tck=100 hook_calls=1023557 syscalls_in_kernel=999454 fragment_entries=1522469 exit_svc=999454 exit_bl=769 exit_blr=26 exit_br=500001 exit_ret=327 exit_mem=0 exit_unsupported=21892 exit_budget=0 run_declined=48 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=269 link_sites_pending=199 arena_chunks=1 arena_bytes=634640 exp_huge=0
+hugesweep run size=1 rep=1 pos=1 state=k4 test=get requests=500000 rps=333111.25 wall_cs=168 utime_ticks=0 stime_ticks=143 clk_tck=100 hook_calls=1024156 syscalls_in_kernel=999448 fragment_entries=1523054 exit_svc=999448 exit_bl=724 exit_blr=24 exit_br=500001 exit_ret=330 exit_mem=0 exit_unsupported=22527 exit_budget=0 run_declined=48 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=269 link_sites_pending=199 arena_chunks=1 arena_bytes=634640 exp_huge=0
+hugesweep chunks size=1 rep=1 state=k4 chunk ffff80008104d000 huge 0 va_align_2m 0 pa0 51a00000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000051a00783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=1 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=1 state=k4 bench=getppid_1 ns_per_syscall=133.97
+hugesweep kb size=1 rep=1 state=k4 bench=raw_pipe_64 ns_per_syscall=171.87
+hugesweep kb size=1 rep=1 state=k4 bench=raw_zn_64 ns_per_syscall=149.64
+hugesweep run size=1 rep=1 pos=2 state=pmd test=set requests=500000 rps=333111.25 wall_cs=168 utime_ticks=1 stime_ticks=139 clk_tck=100 hook_calls=1023100 syscalls_in_kernel=999459 fragment_entries=1522005 exit_svc=999459 exit_bl=749 exit_blr=29 exit_br=500001 exit_ret=330 exit_mem=10 exit_unsupported=21427 exit_budget=0 run_declined=53 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep run size=1 rep=1 pos=2 state=pmd test=get requests=500000 rps=332889.50 wall_cs=168 utime_ticks=0 stime_ticks=140 clk_tck=100 hook_calls=1025189 syscalls_in_kernel=999449 fragment_entries=1524094 exit_svc=999450 exit_bl=726 exit_blr=29 exit_br=500001 exit_ret=330 exit_mem=3 exit_unsupported=23555 exit_budget=0 run_declined=53 svc_declined=1 fpsimd_entries=500000 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep chunks size=1 rep=1 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 52600000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c0000052600781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=1 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=1 state=pmd bench=getppid_1 ns_per_syscall=132.10
+hugesweep kb size=1 rep=1 state=pmd bench=raw_pipe_64 ns_per_syscall=168.67
+hugesweep kb size=1 rep=1 state=pmd bench=raw_zn_64 ns_per_syscall=148.31
+hugesweep run size=1 rep=2 pos=0 state=k4 test=set requests=500000 rps=333111.25 wall_cs=167 utime_ticks=1 stime_ticks=147 clk_tck=100 hook_calls=1023058 syscalls_in_kernel=999432 fragment_entries=1521949 exit_svc=999432 exit_bl=788 exit_blr=35 exit_br=500001 exit_ret=327 exit_mem=6 exit_unsupported=21360 exit_budget=0 run_declined=60 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep run size=1 rep=2 pos=0 state=k4 test=get requests=500000 rps=333111.25 wall_cs=168 utime_ticks=1 stime_ticks=146 clk_tck=100 hook_calls=1022627 syscalls_in_kernel=999503 fragment_entries=1521536 exit_svc=999505 exit_bl=650 exit_blr=27 exit_br=500001 exit_ret=329 exit_mem=3 exit_unsupported=21021 exit_budget=0 run_declined=49 svc_declined=2 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep chunks size=1 rep=2 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 52400000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000052400783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=2 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=2 state=k4 bench=getppid_1 ns_per_syscall=130.53
+hugesweep kb size=1 rep=2 state=k4 bench=raw_pipe_64 ns_per_syscall=168.42
+hugesweep kb size=1 rep=2 state=k4 bench=raw_zn_64 ns_per_syscall=148.28
+hugesweep run size=1 rep=2 pos=1 state=pmd test=set requests=500000 rps=333111.25 wall_cs=168 utime_ticks=1 stime_ticks=145 clk_tck=100 hook_calls=1024259 syscalls_in_kernel=999460 fragment_entries=1523166 exit_svc=999460 exit_bl=740 exit_blr=31 exit_br=500001 exit_ret=327 exit_mem=0 exit_unsupported=22607 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep run size=1 rep=2 pos=1 state=pmd test=get requests=500000 rps=333111.25 wall_cs=167 utime_ticks=1 stime_ticks=140 clk_tck=100 hook_calls=1022891 syscalls_in_kernel=999530 fragment_entries=1521795 exit_svc=999530 exit_bl=628 exit_blr=32 exit_br=500001 exit_ret=328 exit_mem=0 exit_unsupported=21276 exit_budget=0 run_declined=55 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep chunks size=1 rep=2 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 54800000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c0000054800781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=2 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=2 state=pmd bench=getppid_1 ns_per_syscall=131.17
+hugesweep kb size=1 rep=2 state=pmd bench=raw_pipe_64 ns_per_syscall=168.20
+hugesweep kb size=1 rep=2 state=pmd bench=raw_zn_64 ns_per_syscall=148.69
+hugesweep run size=1 rep=2 pos=2 state=off test=set requests=500000 rps=399680.25 wall_cs=125 utime_ticks=30 stime_ticks=91 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep run size=1 rep=2 pos=2 state=off test=get requests=500000 rps=399680.25 wall_cs=126 utime_ticks=34 stime_ticks=85 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep kb size=1 rep=2 state=off bench=getppid_1 ns_per_syscall=131.05
+hugesweep kb size=1 rep=2 state=off bench=raw_pipe_64 ns_per_syscall=168.55
+hugesweep kb size=1 rep=2 state=off bench=raw_zn_64 ns_per_syscall=149.33
+hugesweep run size=1 rep=3 pos=0 state=pmd test=set requests=500000 rps=333111.25 wall_cs=169 utime_ticks=1 stime_ticks=146 clk_tck=100 hook_calls=1023952 syscalls_in_kernel=999500 fragment_entries=1522861 exit_svc=999502 exit_bl=705 exit_blr=26 exit_br=500000 exit_ret=327 exit_mem=12 exit_unsupported=22289 exit_budget=0 run_declined=49 svc_declined=2 fpsimd_entries=500000 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep run size=1 rep=3 pos=0 state=pmd test=get requests=500000 rps=332889.50 wall_cs=167 utime_ticks=1 stime_ticks=139 clk_tck=100 hook_calls=1023281 syscalls_in_kernel=999501 fragment_entries=1522188 exit_svc=999501 exit_bl=670 exit_blr=26 exit_br=500001 exit_ret=330 exit_mem=6 exit_unsupported=21654 exit_budget=0 run_declined=50 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep chunks size=1 rep=3 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 54800000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c0000054800781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=3 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=3 state=pmd bench=getppid_1 ns_per_syscall=130.90
+hugesweep kb size=1 rep=3 state=pmd bench=raw_pipe_64 ns_per_syscall=167.39
+hugesweep kb size=1 rep=3 state=pmd bench=raw_zn_64 ns_per_syscall=148.85
+hugesweep run size=1 rep=3 pos=1 state=off test=set requests=500000 rps=333333.34 wall_cs=151 utime_ticks=31 stime_ticks=93 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep run size=1 rep=3 pos=1 state=off test=get requests=500000 rps=399361.03 wall_cs=125 utime_ticks=30 stime_ticks=84 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep kb size=1 rep=3 state=off bench=getppid_1 ns_per_syscall=130.67
+hugesweep kb size=1 rep=3 state=off bench=raw_pipe_64 ns_per_syscall=168.68
+hugesweep kb size=1 rep=3 state=off bench=raw_zn_64 ns_per_syscall=148.09
+hugesweep run size=1 rep=3 pos=2 state=k4 test=set requests=500000 rps=333111.25 wall_cs=169 utime_ticks=1 stime_ticks=148 clk_tck=100 hook_calls=1023957 syscalls_in_kernel=999486 fragment_entries=1522871 exit_svc=999486 exit_bl=745 exit_blr=21 exit_br=500001 exit_ret=329 exit_mem=0 exit_unsupported=22289 exit_budget=0 run_declined=43 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep run size=1 rep=3 pos=2 state=k4 test=get requests=500000 rps=285388.12 wall_cs=193 utime_ticks=1 stime_ticks=160 clk_tck=100 hook_calls=1023296 syscalls_in_kernel=999444 fragment_entries=1522195 exit_svc=999444 exit_bl=717 exit_blr=33 exit_br=500000 exit_ret=331 exit_mem=1 exit_unsupported=21669 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=500000 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep chunks size=1 rep=3 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 54a00000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000054a00783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=3 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=3 state=k4 bench=getppid_1 ns_per_syscall=130.01
+hugesweep kb size=1 rep=3 state=k4 bench=raw_pipe_64 ns_per_syscall=168.86
+hugesweep kb size=1 rep=3 state=k4 bench=raw_zn_64 ns_per_syscall=147.79
+hugesweep run size=1 rep=4 pos=0 state=off test=set requests=500000 rps=399680.25 wall_cs=126 utime_ticks=34 stime_ticks=83 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep run size=1 rep=4 pos=0 state=off test=get requests=500000 rps=399680.25 wall_cs=125 utime_ticks=28 stime_ticks=86 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep kb size=1 rep=4 state=off bench=getppid_1 ns_per_syscall=129.91
+hugesweep kb size=1 rep=4 state=off bench=raw_pipe_64 ns_per_syscall=168.81
+hugesweep kb size=1 rep=4 state=off bench=raw_zn_64 ns_per_syscall=148.19
+hugesweep run size=1 rep=4 pos=1 state=pmd test=set requests=500000 rps=333111.25 wall_cs=169 utime_ticks=0 stime_ticks=148 clk_tck=100 hook_calls=1023685 syscalls_in_kernel=999435 fragment_entries=1522592 exit_svc=999435 exit_bl=765 exit_blr=30 exit_br=500001 exit_ret=327 exit_mem=0 exit_unsupported=22034 exit_budget=0 run_declined=53 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=269 link_sites_pending=199 arena_chunks=1 arena_bytes=634640 exp_huge=1
+hugesweep run size=1 rep=4 pos=1 state=pmd test=get requests=500000 rps=332889.50 wall_cs=171 utime_ticks=0 stime_ticks=136 clk_tck=100 hook_calls=1022555 syscalls_in_kernel=999528 fragment_entries=1521467 exit_svc=999528 exit_bl=624 exit_blr=24 exit_br=500001 exit_ret=330 exit_mem=0 exit_unsupported=20960 exit_budget=0 run_declined=47 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=269 link_sites_pending=199 arena_chunks=1 arena_bytes=634640 exp_huge=1
+hugesweep chunks size=1 rep=4 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 52000000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c0000052000781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=4 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=4 state=pmd bench=getppid_1 ns_per_syscall=133.82
+hugesweep kb size=1 rep=4 state=pmd bench=raw_pipe_64 ns_per_syscall=170.45
+hugesweep kb size=1 rep=4 state=pmd bench=raw_zn_64 ns_per_syscall=148.55
+hugesweep run size=1 rep=4 pos=2 state=k4 test=set requests=500000 rps=285388.12 wall_cs=193 utime_ticks=1 stime_ticks=154 clk_tck=100 hook_calls=1023476 syscalls_in_kernel=999447 fragment_entries=1522378 exit_svc=999447 exit_bl=783 exit_blr=33 exit_br=500001 exit_ret=329 exit_mem=0 exit_unsupported=21785 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=269 link_sites_pending=199 arena_chunks=1 arena_bytes=634640 exp_huge=0
+hugesweep run size=1 rep=4 pos=2 state=k4 test=get requests=500000 rps=333111.25 wall_cs=169 utime_ticks=0 stime_ticks=148 clk_tck=100 hook_calls=1023014 syscalls_in_kernel=999486 fragment_entries=1521919 exit_svc=999486 exit_bl=691 exit_blr=30 exit_br=500001 exit_ret=329 exit_mem=5 exit_unsupported=21377 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=269 link_sites_pending=199 arena_chunks=1 arena_bytes=634640 exp_huge=0
+hugesweep chunks size=1 rep=4 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 52200000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000052200783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=4 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=4 state=k4 bench=getppid_1 ns_per_syscall=130.23
+hugesweep kb size=1 rep=4 state=k4 bench=raw_pipe_64 ns_per_syscall=168.30
+hugesweep kb size=1 rep=4 state=k4 bench=raw_zn_64 ns_per_syscall=149.50
+hugesweep run size=1 rep=5 pos=0 state=pmd test=set requests=500000 rps=332889.50 wall_cs=169 utime_ticks=0 stime_ticks=140 clk_tck=100 hook_calls=1023391 syscalls_in_kernel=999524 fragment_entries=1522295 exit_svc=999524 exit_bl=684 exit_blr=30 exit_br=500001 exit_ret=330 exit_mem=12 exit_unsupported=21714 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep run size=1 rep=5 pos=0 state=pmd test=get requests=500000 rps=332889.50 wall_cs=168 utime_ticks=1 stime_ticks=132 clk_tck=100 hook_calls=1022399 syscalls_in_kernel=999552 fragment_entries=1521300 exit_svc=999552 exit_bl=607 exit_blr=32 exit_br=500001 exit_ret=331 exit_mem=9 exit_unsupported=20768 exit_budget=0 run_declined=56 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=1
+hugesweep chunks size=1 rep=5 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 51c00000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c0000051c00781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=5 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=5 state=pmd bench=getppid_1 ns_per_syscall=130.61
+hugesweep kb size=1 rep=5 state=pmd bench=raw_pipe_64 ns_per_syscall=167.92
+hugesweep kb size=1 rep=5 state=pmd bench=raw_zn_64 ns_per_syscall=148.31
+hugesweep run size=1 rep=5 pos=1 state=k4 test=set requests=500000 rps=285551.09 wall_cs=194 utime_ticks=0 stime_ticks=152 clk_tck=100 hook_calls=1023791 syscalls_in_kernel=999471 fragment_entries=1522693 exit_svc=999472 exit_bl=733 exit_blr=32 exit_br=500001 exit_ret=331 exit_mem=0 exit_unsupported=22124 exit_budget=0 run_declined=55 svc_declined=1 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep run size=1 rep=5 pos=1 state=k4 test=get requests=500000 rps=332889.50 wall_cs=170 utime_ticks=0 stime_ticks=141 clk_tck=100 hook_calls=1023027 syscalls_in_kernel=999582 fragment_entries=1521931 exit_svc=999583 exit_bl=586 exit_blr=31 exit_br=500001 exit_ret=327 exit_mem=1 exit_unsupported=21402 exit_budget=0 run_declined=56 svc_declined=1 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep chunks size=1 rep=5 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 51e00000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000051e00783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=5 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=5 state=k4 bench=getppid_1 ns_per_syscall=130.05
+hugesweep kb size=1 rep=5 state=k4 bench=raw_pipe_64 ns_per_syscall=169.11
+hugesweep kb size=1 rep=5 state=k4 bench=raw_zn_64 ns_per_syscall=149.33
+hugesweep run size=1 rep=5 pos=2 state=off test=set requests=500000 rps=333111.25 wall_cs=150 utime_ticks=34 stime_ticks=89 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep run size=1 rep=5 pos=2 state=off test=get requests=500000 rps=399680.25 wall_cs=126 utime_ticks=30 stime_ticks=85 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep kb size=1 rep=5 state=off bench=getppid_1 ns_per_syscall=130.85
+hugesweep kb size=1 rep=5 state=off bench=raw_pipe_64 ns_per_syscall=168.73
+hugesweep kb size=1 rep=5 state=off bench=raw_zn_64 ns_per_syscall=151.91
+hugesweep run size=1 rep=6 pos=0 state=k4 test=set requests=500000 rps=285551.09 wall_cs=194 utime_ticks=2 stime_ticks=159 clk_tck=100 hook_calls=1023840 syscalls_in_kernel=999438 fragment_entries=1522737 exit_svc=999439 exit_bl=791 exit_blr=35 exit_br=500001 exit_ret=330 exit_mem=2 exit_unsupported=22139 exit_budget=0 run_declined=58 svc_declined=1 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep run size=1 rep=6 pos=0 state=k4 test=get requests=500000 rps=332889.50 wall_cs=169 utime_ticks=2 stime_ticks=143 clk_tck=100 hook_calls=1023242 syscalls_in_kernel=999549 fragment_entries=1522155 exit_svc=999549 exit_bl=620 exit_blr=23 exit_br=500001 exit_ret=327 exit_mem=0 exit_unsupported=21635 exit_budget=0 run_declined=47 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep chunks size=1 rep=6 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 51e00000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000051e00783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=6 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=6 state=k4 bench=getppid_1 ns_per_syscall=130.70
+hugesweep kb size=1 rep=6 state=k4 bench=raw_pipe_64 ns_per_syscall=167.62
+hugesweep kb size=1 rep=6 state=k4 bench=raw_zn_64 ns_per_syscall=147.64
+hugesweep run size=1 rep=6 pos=1 state=off test=set requests=500000 rps=333111.25 wall_cs=150 utime_ticks=36 stime_ticks=88 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep run size=1 rep=6 pos=1 state=off test=get requests=500000 rps=399361.03 wall_cs=126 utime_ticks=24 stime_ticks=93 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=270 link_sites_pending=199 arena_chunks=1 arena_bytes=635440 exp_huge=0
+hugesweep kb size=1 rep=6 state=off bench=getppid_1 ns_per_syscall=131.08
+hugesweep kb size=1 rep=6 state=off bench=raw_pipe_64 ns_per_syscall=167.64
+hugesweep kb size=1 rep=6 state=off bench=raw_zn_64 ns_per_syscall=147.92
+hugesweep run size=1 rep=6 pos=2 state=pmd test=set requests=500000 rps=332889.50 wall_cs=169 utime_ticks=1 stime_ticks=146 clk_tck=100 hook_calls=1023487 syscalls_in_kernel=999368 fragment_entries=1522399 exit_svc=999368 exit_bl=843 exit_blr=27 exit_br=500001 exit_ret=327 exit_mem=2 exit_unsupported=21831 exit_budget=0 run_declined=53 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=269 link_sites_pending=199 arena_chunks=1 arena_bytes=634640 exp_huge=1
+hugesweep run size=1 rep=6 pos=2 state=pmd test=get requests=500000 rps=332889.50 wall_cs=169 utime_ticks=1 stime_ticks=131 clk_tck=100 hook_calls=1022207 syscalls_in_kernel=999596 fragment_entries=1521115 exit_svc=999597 exit_bl=558 exit_blr=24 exit_br=500000 exit_ret=331 exit_mem=1 exit_unsupported=20604 exit_budget=0 run_declined=55 svc_declined=1 fpsimd_entries=500000 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=269 link_sites_pending=199 arena_chunks=1 arena_bytes=634640 exp_huge=1
+hugesweep chunks size=1 rep=6 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 51400000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c0000051400781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1 rep=6 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1 rep=6 state=pmd bench=getppid_1 ns_per_syscall=129.86
+hugesweep kb size=1 rep=6 state=pmd bench=raw_pipe_64 ns_per_syscall=168.75
+hugesweep kb size=1 rep=6 state=pmd bench=raw_zn_64 ns_per_syscall=148.60
+hugesweep run size=1024 rep=1 pos=0 state=off test=set requests=500000 rps=333111.25 wall_cs=151 utime_ticks=34 stime_ticks=92 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep run size=1024 rep=1 pos=0 state=off test=get requests=500000 rps=400000.00 wall_cs=125 utime_ticks=33 stime_ticks=83 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep kb size=1024 rep=1 state=off bench=getppid_1 ns_per_syscall=130.44
+hugesweep kb size=1024 rep=1 state=off bench=raw_pipe_64 ns_per_syscall=167.29
+hugesweep kb size=1024 rep=1 state=off bench=raw_zn_64 ns_per_syscall=148.12
+hugesweep run size=1024 rep=1 pos=1 state=k4 test=set requests=500000 rps=285388.12 wall_cs=193 utime_ticks=2 stime_ticks=161 clk_tck=100 hook_calls=1023556 syscalls_in_kernel=999342 fragment_entries=1522256 exit_svc=999342 exit_bl=916 exit_blr=33 exit_br=500001 exit_ret=330 exit_mem=3 exit_unsupported=21631 exit_budget=0 run_declined=58 svc_declined=0 fpsimd_entries=500001 translate_ok=1 invalidated_fragments=0 link_made=1 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=298 link_sites_pending=191 arena_chunks=1 arena_bytes=674720 exp_huge=0
+hugesweep run size=1024 rep=1 pos=1 state=k4 test=get requests=500000 rps=285551.09 wall_cs=194 utime_ticks=1 stime_ticks=148 clk_tck=100 hook_calls=1023345 syscalls_in_kernel=999534 fragment_entries=1522253 exit_svc=999534 exit_bl=618 exit_blr=23 exit_br=500001 exit_ret=333 exit_mem=4 exit_unsupported=21740 exit_budget=0 run_declined=52 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=298 link_sites_pending=191 arena_chunks=1 arena_bytes=674720 exp_huge=0
+hugesweep chunks size=1024 rep=1 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 51e00000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000051e00783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=1 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=1 state=k4 bench=getppid_1 ns_per_syscall=130.76
+hugesweep kb size=1024 rep=1 state=k4 bench=raw_pipe_64 ns_per_syscall=167.74
+hugesweep kb size=1024 rep=1 state=k4 bench=raw_zn_64 ns_per_syscall=147.76
+hugesweep run size=1024 rep=1 pos=2 state=pmd test=set requests=500000 rps=285551.09 wall_cs=193 utime_ticks=0 stime_ticks=150 clk_tck=100 hook_calls=1024466 syscalls_in_kernel=999422 fragment_entries=1523366 exit_svc=999422 exit_bl=837 exit_blr=32 exit_br=500001 exit_ret=331 exit_mem=3 exit_unsupported=22740 exit_budget=0 run_declined=58 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep run size=1024 rep=1 pos=2 state=pmd test=get requests=500000 rps=333333.34 wall_cs=169 utime_ticks=1 stime_ticks=139 clk_tck=100 hook_calls=1022648 syscalls_in_kernel=999543 fragment_entries=1521553 exit_svc=999545 exit_bl=620 exit_blr=29 exit_br=500001 exit_ret=328 exit_mem=14 exit_unsupported=21016 exit_budget=0 run_declined=62 svc_declined=2 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep chunks size=1024 rep=1 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 49c00000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c0000049c00781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=1 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=1 state=pmd bench=getppid_1 ns_per_syscall=130.65
+hugesweep kb size=1024 rep=1 state=pmd bench=raw_pipe_64 ns_per_syscall=167.94
+hugesweep kb size=1024 rep=1 state=pmd bench=raw_zn_64 ns_per_syscall=146.55
+hugesweep run size=1024 rep=2 pos=0 state=k4 test=set requests=500000 rps=285388.12 wall_cs=193 utime_ticks=1 stime_ticks=157 clk_tck=100 hook_calls=1023747 syscalls_in_kernel=999348 fragment_entries=1522652 exit_svc=999348 exit_bl=906 exit_blr=24 exit_br=500001 exit_ret=333 exit_mem=7 exit_unsupported=22033 exit_budget=0 run_declined=52 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=298 link_sites_pending=191 arena_chunks=1 arena_bytes=674720 exp_huge=0
+hugesweep run size=1024 rep=2 pos=0 state=k4 test=get requests=500000 rps=285388.12 wall_cs=195 utime_ticks=1 stime_ticks=148 clk_tck=100 hook_calls=1023109 syscalls_in_kernel=999505 fragment_entries=1521992 exit_svc=999505 exit_bl=658 exit_blr=32 exit_br=500001 exit_ret=333 exit_mem=11 exit_unsupported=21452 exit_budget=0 run_declined=59 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=298 link_sites_pending=191 arena_chunks=1 arena_bytes=674720 exp_huge=0
+hugesweep chunks size=1024 rep=2 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 49000000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000049000783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=2 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=2 state=k4 bench=getppid_1 ns_per_syscall=130.85
+hugesweep kb size=1024 rep=2 state=k4 bench=raw_pipe_64 ns_per_syscall=168.55
+hugesweep kb size=1024 rep=2 state=k4 bench=raw_zn_64 ns_per_syscall=148.14
+hugesweep run size=1024 rep=2 pos=1 state=pmd test=set requests=500000 rps=285388.12 wall_cs=193 utime_ticks=1 stime_ticks=150 clk_tck=100 hook_calls=1024619 syscalls_in_kernel=999397 fragment_entries=1523516 exit_svc=999397 exit_bl=816 exit_blr=35 exit_br=500001 exit_ret=332 exit_mem=16 exit_unsupported=22919 exit_budget=0 run_declined=63 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep run size=1024 rep=2 pos=1 state=pmd test=get requests=500000 rps=332889.50 wall_cs=168 utime_ticks=1 stime_ticks=138 clk_tck=100 hook_calls=1022660 syscalls_in_kernel=999530 fragment_entries=1521572 exit_svc=999530 exit_bl=650 exit_blr=25 exit_br=500001 exit_ret=328 exit_mem=7 exit_unsupported=21031 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep chunks size=1024 rep=2 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 4d000000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c000004d000781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=2 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=2 state=pmd bench=getppid_1 ns_per_syscall=130.87
+hugesweep kb size=1024 rep=2 state=pmd bench=raw_pipe_64 ns_per_syscall=168.62
+hugesweep kb size=1024 rep=2 state=pmd bench=raw_zn_64 ns_per_syscall=148.12
+hugesweep run size=1024 rep=2 pos=2 state=off test=set requests=500000 rps=399680.25 wall_cs=125 utime_ticks=31 stime_ticks=92 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep run size=1024 rep=2 pos=2 state=off test=get requests=500000 rps=399680.25 wall_cs=126 utime_ticks=33 stime_ticks=88 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep kb size=1024 rep=2 state=off bench=getppid_1 ns_per_syscall=131.74
+hugesweep kb size=1024 rep=2 state=off bench=raw_pipe_64 ns_per_syscall=168.42
+hugesweep kb size=1024 rep=2 state=off bench=raw_zn_64 ns_per_syscall=148.86
+hugesweep run size=1024 rep=3 pos=0 state=pmd test=set requests=500000 rps=285551.09 wall_cs=192 utime_ticks=2 stime_ticks=152 clk_tck=100 hook_calls=1024383 syscalls_in_kernel=999351 fragment_entries=1523277 exit_svc=999351 exit_bl=874 exit_blr=37 exit_br=500001 exit_ret=333 exit_mem=4 exit_unsupported=22677 exit_budget=0 run_declined=64 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep run size=1024 rep=3 pos=0 state=pmd test=get requests=500000 rps=333111.25 wall_cs=168 utime_ticks=0 stime_ticks=137 clk_tck=100 hook_calls=1022313 syscalls_in_kernel=999537 fragment_entries=1521220 exit_svc=999537 exit_bl=622 exit_blr=28 exit_br=500001 exit_ret=328 exit_mem=9 exit_unsupported=20695 exit_budget=0 run_declined=56 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep chunks size=1024 rep=3 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 4d000000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c000004d000781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=3 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=3 state=pmd bench=getppid_1 ns_per_syscall=130.32
+hugesweep kb size=1024 rep=3 state=pmd bench=raw_pipe_64 ns_per_syscall=168.91
+hugesweep kb size=1024 rep=3 state=pmd bench=raw_zn_64 ns_per_syscall=148.09
+hugesweep run size=1024 rep=3 pos=1 state=off test=set requests=500000 rps=399680.25 wall_cs=125 utime_ticks=34 stime_ticks=89 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep run size=1024 rep=3 pos=1 state=off test=get requests=500000 rps=399680.25 wall_cs=126 utime_ticks=28 stime_ticks=90 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep kb size=1024 rep=3 state=off bench=getppid_1 ns_per_syscall=130.79
+hugesweep kb size=1024 rep=3 state=off bench=raw_pipe_64 ns_per_syscall=167.78
+hugesweep kb size=1024 rep=3 state=off bench=raw_zn_64 ns_per_syscall=148.02
+hugesweep run size=1024 rep=3 pos=2 state=k4 test=set requests=500000 rps=285388.12 wall_cs=193 utime_ticks=0 stime_ticks=162 clk_tck=100 hook_calls=1023372 syscalls_in_kernel=999413 fragment_entries=1522268 exit_svc=999414 exit_bl=839 exit_blr=39 exit_br=500001 exit_ret=330 exit_mem=3 exit_unsupported=21642 exit_budget=0 run_declined=64 svc_declined=1 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep run size=1024 rep=3 pos=2 state=k4 test=get requests=500000 rps=333111.25 wall_cs=168 utime_ticks=2 stime_ticks=146 clk_tck=100 hook_calls=1022951 syscalls_in_kernel=999539 fragment_entries=1521858 exit_svc=999539 exit_bl=632 exit_blr=29 exit_br=500000 exit_ret=327 exit_mem=4 exit_unsupported=21327 exit_budget=0 run_declined=58 svc_declined=0 fpsimd_entries=500000 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep chunks size=1024 rep=3 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 5ae00000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c000005ae00783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=3 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=3 state=k4 bench=getppid_1 ns_per_syscall=130.81
+hugesweep kb size=1024 rep=3 state=k4 bench=raw_pipe_64 ns_per_syscall=168.66
+hugesweep kb size=1024 rep=3 state=k4 bench=raw_zn_64 ns_per_syscall=148.17
+hugesweep run size=1024 rep=4 pos=0 state=off test=set requests=500000 rps=333111.25 wall_cs=150 utime_ticks=37 stime_ticks=91 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep run size=1024 rep=4 pos=0 state=off test=get requests=500000 rps=332889.50 wall_cs=150 utime_ticks=31 stime_ticks=94 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep kb size=1024 rep=4 state=off bench=getppid_1 ns_per_syscall=129.73
+hugesweep kb size=1024 rep=4 state=off bench=raw_pipe_64 ns_per_syscall=168.14
+hugesweep kb size=1024 rep=4 state=off bench=raw_zn_64 ns_per_syscall=148.30
+hugesweep run size=1024 rep=4 pos=1 state=pmd test=set requests=500000 rps=285714.28 wall_cs=193 utime_ticks=0 stime_ticks=161 clk_tck=100 hook_calls=1024048 syscalls_in_kernel=999333 fragment_entries=1522958 exit_svc=999333 exit_bl=919 exit_blr=24 exit_br=500001 exit_ret=329 exit_mem=4 exit_unsupported=22348 exit_budget=0 run_declined=48 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=298 link_sites_pending=191 arena_chunks=1 arena_bytes=674720 exp_huge=1
+hugesweep run size=1024 rep=4 pos=1 state=pmd test=get requests=500000 rps=333111.25 wall_cs=169 utime_ticks=1 stime_ticks=140 clk_tck=100 hook_calls=1022786 syscalls_in_kernel=999591 fragment_entries=1521694 exit_svc=999591 exit_bl=577 exit_blr=31 exit_br=500001 exit_ret=328 exit_mem=3 exit_unsupported=21163 exit_budget=0 run_declined=59 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=298 link_sites_pending=191 arena_chunks=1 arena_bytes=674720 exp_huge=1
+hugesweep chunks size=1024 rep=4 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 49e00000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c0000049e00781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=4 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=4 state=pmd bench=getppid_1 ns_per_syscall=131.45
+hugesweep kb size=1024 rep=4 state=pmd bench=raw_pipe_64 ns_per_syscall=168.47
+hugesweep kb size=1024 rep=4 state=pmd bench=raw_zn_64 ns_per_syscall=148.89
+hugesweep run size=1024 rep=4 pos=2 state=k4 test=set requests=500000 rps=285551.09 wall_cs=193 utime_ticks=0 stime_ticks=161 clk_tck=100 hook_calls=1023484 syscalls_in_kernel=999371 fragment_entries=1522391 exit_svc=999373 exit_bl=870 exit_blr=28 exit_br=500001 exit_ret=330 exit_mem=1 exit_unsupported=21788 exit_budget=0 run_declined=54 svc_declined=2 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep run size=1024 rep=4 pos=2 state=k4 test=get requests=500000 rps=333111.25 wall_cs=165 utime_ticks=1 stime_ticks=146 clk_tck=100 hook_calls=1023138 syscalls_in_kernel=999569 fragment_entries=1522057 exit_svc=999569 exit_bl=604 exit_blr=18 exit_br=500001 exit_ret=327 exit_mem=8 exit_unsupported=21530 exit_budget=0 run_declined=46 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep chunks size=1024 rep=4 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 48200000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000048200783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=4 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=4 state=k4 bench=getppid_1 ns_per_syscall=130.35
+hugesweep kb size=1024 rep=4 state=k4 bench=raw_pipe_64 ns_per_syscall=169.24
+hugesweep kb size=1024 rep=4 state=k4 bench=raw_zn_64 ns_per_syscall=150.43
+hugesweep run size=1024 rep=5 pos=0 state=pmd test=set requests=500000 rps=285551.09 wall_cs=193 utime_ticks=0 stime_ticks=152 clk_tck=100 hook_calls=1024158 syscalls_in_kernel=999349 fragment_entries=1523042 exit_svc=999349 exit_bl=901 exit_blr=33 exit_br=500001 exit_ret=332 exit_mem=2 exit_unsupported=22424 exit_budget=0 run_declined=59 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep run size=1024 rep=5 pos=0 state=pmd test=get requests=500000 rps=333111.25 wall_cs=169 utime_ticks=1 stime_ticks=137 clk_tck=100 hook_calls=1022336 syscalls_in_kernel=999580 fragment_entries=1521239 exit_svc=999580 exit_bl=600 exit_blr=32 exit_br=500000 exit_ret=330 exit_mem=0 exit_unsupported=20697 exit_budget=0 run_declined=63 svc_declined=0 fpsimd_entries=500000 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep chunks size=1024 rep=5 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 4fe00000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c000004fe00781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=5 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=5 state=pmd bench=getppid_1 ns_per_syscall=129.86
+hugesweep kb size=1024 rep=5 state=pmd bench=raw_pipe_64 ns_per_syscall=168.35
+hugesweep kb size=1024 rep=5 state=pmd bench=raw_zn_64 ns_per_syscall=148.27
+hugesweep run size=1024 rep=5 pos=1 state=k4 test=set requests=500000 rps=285388.12 wall_cs=194 utime_ticks=1 stime_ticks=159 clk_tck=100 hook_calls=1023379 syscalls_in_kernel=999435 fragment_entries=1522283 exit_svc=999435 exit_bl=809 exit_blr=28 exit_br=500001 exit_ret=332 exit_mem=0 exit_unsupported=21678 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep run size=1024 rep=5 pos=1 state=k4 test=get requests=500000 rps=332889.50 wall_cs=167 utime_ticks=0 stime_ticks=145 clk_tck=100 hook_calls=1022854 syscalls_in_kernel=999536 fragment_entries=1521761 exit_svc=999537 exit_bl=639 exit_blr=30 exit_br=500001 exit_ret=327 exit_mem=1 exit_unsupported=21226 exit_budget=0 run_declined=56 svc_declined=1 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep chunks size=1024 rep=5 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 48000000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000048000783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=5 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=5 state=k4 bench=getppid_1 ns_per_syscall=130.02
+hugesweep kb size=1024 rep=5 state=k4 bench=raw_pipe_64 ns_per_syscall=167.77
+hugesweep kb size=1024 rep=5 state=k4 bench=raw_zn_64 ns_per_syscall=148.45
+hugesweep run size=1024 rep=5 pos=2 state=off test=set requests=500000 rps=332889.50 wall_cs=151 utime_ticks=34 stime_ticks=93 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep run size=1024 rep=5 pos=2 state=off test=get requests=500000 rps=400000.00 wall_cs=125 utime_ticks=25 stime_ticks=94 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep kb size=1024 rep=5 state=off bench=getppid_1 ns_per_syscall=132.23
+hugesweep kb size=1024 rep=5 state=off bench=raw_pipe_64 ns_per_syscall=168.32
+hugesweep kb size=1024 rep=5 state=off bench=raw_zn_64 ns_per_syscall=148.35
+hugesweep run size=1024 rep=6 pos=0 state=k4 test=set requests=500000 rps=285388.12 wall_cs=193 utime_ticks=1 stime_ticks=156 clk_tck=100 hook_calls=1023557 syscalls_in_kernel=999393 fragment_entries=1522452 exit_svc=999393 exit_bl=863 exit_blr=33 exit_br=499999 exit_ret=333 exit_mem=4 exit_unsupported=21827 exit_budget=0 run_declined=62 svc_declined=0 fpsimd_entries=499999 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep run size=1024 rep=6 pos=0 state=k4 test=get requests=500000 rps=333111.25 wall_cs=166 utime_ticks=1 stime_ticks=149 clk_tck=100 hook_calls=1022949 syscalls_in_kernel=999559 fragment_entries=1521860 exit_svc=999560 exit_bl=616 exit_blr=26 exit_br=500001 exit_ret=327 exit_mem=3 exit_unsupported=21327 exit_budget=0 run_declined=52 svc_declined=1 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep chunks size=1024 rep=6 state=k4 chunk ffff80008101d000 huge 0 va_align_2m 0 pa0 48000000 pa_align_2m 1 pfn_contig_pages 512 first_level 3 first_cont 0 first_desc 00c0000048000783 vm_pmd_pages 0 vm_pte_pages 512 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=6 state=k4 chunks 1 exp_huge 0 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=6 state=k4 bench=getppid_1 ns_per_syscall=132.01
+hugesweep kb size=1024 rep=6 state=k4 bench=raw_pipe_64 ns_per_syscall=168.84
+hugesweep kb size=1024 rep=6 state=k4 bench=raw_zn_64 ns_per_syscall=148.92
+hugesweep run size=1024 rep=6 pos=1 state=off test=set requests=500000 rps=333111.25 wall_cs=150 utime_ticks=40 stime_ticks=87 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep run size=1024 rep=6 pos=1 state=off test=get requests=500000 rps=332889.50 wall_cs=151 utime_ticks=35 stime_ticks=103 clk_tck=100 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=0
+hugesweep kb size=1024 rep=6 state=off bench=getppid_1 ns_per_syscall=131.87
+hugesweep kb size=1024 rep=6 state=off bench=raw_pipe_64 ns_per_syscall=168.67
+hugesweep kb size=1024 rep=6 state=off bench=raw_zn_64 ns_per_syscall=148.61
+hugesweep run size=1024 rep=6 pos=2 state=pmd test=set requests=500000 rps=285551.09 wall_cs=192 utime_ticks=1 stime_ticks=149 clk_tck=100 hook_calls=1024317 syscalls_in_kernel=999378 fragment_entries=1523217 exit_svc=999378 exit_bl=890 exit_blr=32 exit_br=500001 exit_ret=333 exit_mem=3 exit_unsupported=22580 exit_budget=0 run_declined=57 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep run size=1024 rep=6 pos=2 state=pmd test=get requests=500000 rps=333111.25 wall_cs=168 utime_ticks=0 stime_ticks=143 clk_tck=100 hook_calls=1022867 syscalls_in_kernel=999534 fragment_entries=1521773 exit_svc=999534 exit_bl=629 exit_blr=30 exit_br=500001 exit_ret=327 exit_mem=7 exit_unsupported=21245 exit_budget=0 run_declined=59 svc_declined=0 fpsimd_entries=500001 translate_ok=0 invalidated_fragments=0 link_made=0 link_restored=0 link_out_of_range=0 link_class_refused=0 link_sites_linked=297 link_sites_pending=191 arena_chunks=1 arena_bytes=673920 exp_huge=1
+hugesweep chunks size=1024 rep=6 state=pmd chunk ffff800081200000 huge 1 va_align_2m 1 pa0 5ae00000 pa_align_2m 1 pfn_contig_pages 512 first_level 2 first_cont 0 first_desc 00c000005ae00781 vm_pmd_pages 512 vm_pte_pages 0 vm_cont_pages 0 lm_alias_block_pages 512 lm_alias_pte_pages 0 lm_alias_cont_pages 512 lm_alias_ro_pages 0
+hugesweep chunks size=1024 rep=6 state=pmd chunks 1 exp_huge 1 vmalloc ffff800080000000-fffffdffbf800000
+hugesweep kb size=1024 rep=6 state=pmd bench=getppid_1 ns_per_syscall=130.94
+hugesweep kb size=1024 rep=6 state=pmd bench=raw_pipe_64 ns_per_syscall=168.10
+hugesweep kb size=1024 rep=6 state=pmd bench=raw_zn_64 ns_per_syscall=148.49
+hugesweep: done
+hugemicro: cmdline: console=ttyAMA0 panic=-1 nokaslr rodata=off
+hugemicro: kpti dmesg: none
+hugemicro: kernel: 7.1.0-rc1+ cpus: 4 reps: 5
+hugemicro off rep 0 variant=hash n=128 enabled=0 outer=38077 ns_per_outer=263.09
+hugemicro off rep 1 variant=hash n=128 enabled=0 outer=38077 ns_per_outer=253.76
+hugemicro off rep 2 variant=hash n=128 enabled=0 outer=38077 ns_per_outer=254.36
+hugemicro off rep 3 variant=hash n=128 enabled=0 outer=38077 ns_per_outer=254.57
+hugemicro off rep 4 variant=hash n=128 enabled=0 outer=38077 ns_per_outer=254.04
+hugemicro off result variant=hash n=128 enabled=0 outer=38077 reps=5 insn_per_outer=646 median_ns_per_outer=254.36 min_ns_per_outer=253.76
+hugemicro off counters hash hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=hash n=128 enabled=1 outer=221044 ns_per_outer=175.60
+hugemicro k4 rep 1 variant=hash n=128 enabled=1 outer=221044 ns_per_outer=177.23
+hugemicro k4 rep 2 variant=hash n=128 enabled=1 outer=221044 ns_per_outer=178.09
+hugemicro k4 rep 3 variant=hash n=128 enabled=1 outer=221044 ns_per_outer=177.63
+hugemicro k4 rep 4 variant=hash n=128 enabled=1 outer=221044 ns_per_outer=176.68
+hugemicro k4 result variant=hash n=128 enabled=1 outer=221044 reps=5 insn_per_outer=646 median_ns_per_outer=177.23 min_ns_per_outer=175.60
+hugemicro k4 counters hash hook_calls=1105020 syscalls_in_kernel=1104950 fragment_entries=1104955 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1104950 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=hash n=128 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=hash n=128 enabled=1 outer=238330 ns_per_outer=173.81
+hugemicro pmd rep 1 variant=hash n=128 enabled=1 outer=238330 ns_per_outer=173.48
+hugemicro pmd rep 2 variant=hash n=128 enabled=1 outer=238330 ns_per_outer=173.88
+hugemicro pmd rep 3 variant=hash n=128 enabled=1 outer=238330 ns_per_outer=174.69
+hugemicro pmd rep 4 variant=hash n=128 enabled=1 outer=238330 ns_per_outer=173.90
+hugemicro pmd result variant=hash n=128 enabled=1 outer=238330 reps=5 insn_per_outer=646 median_ns_per_outer=173.88 min_ns_per_outer=173.48
+hugemicro pmd counters hash hook_calls=1191426 syscalls_in_kernel=1191355 fragment_entries=1191360 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1191355 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=1
+hugemicro pmd kjit variant=hash n=128 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=hash n=512 enabled=1 outer=76220 ns_per_outer=543.17
+hugemicro k4 rep 1 variant=hash n=512 enabled=1 outer=76220 ns_per_outer=543.07
+hugemicro k4 rep 2 variant=hash n=512 enabled=1 outer=76220 ns_per_outer=542.15
+hugemicro k4 rep 3 variant=hash n=512 enabled=1 outer=76220 ns_per_outer=542.94
+hugemicro k4 rep 4 variant=hash n=512 enabled=1 outer=76220 ns_per_outer=544.53
+hugemicro k4 result variant=hash n=512 enabled=1 outer=76220 reps=5 insn_per_outer=2566 median_ns_per_outer=543.07 min_ns_per_outer=542.15
+hugemicro k4 counters hash hook_calls=381075 syscalls_in_kernel=381005 fragment_entries=381010 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=381005 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=hash n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=hash n=512 enabled=1 outer=73948 ns_per_outer=547.82
+hugemicro pmd rep 1 variant=hash n=512 enabled=1 outer=73948 ns_per_outer=542.90
+hugemicro pmd rep 2 variant=hash n=512 enabled=1 outer=73948 ns_per_outer=543.64
+hugemicro pmd rep 3 variant=hash n=512 enabled=1 outer=73948 ns_per_outer=549.04
+hugemicro pmd rep 4 variant=hash n=512 enabled=1 outer=73948 ns_per_outer=546.74
+hugemicro pmd result variant=hash n=512 enabled=1 outer=73948 reps=5 insn_per_outer=2566 median_ns_per_outer=546.74 min_ns_per_outer=542.90
+hugemicro pmd counters hash hook_calls=369715 syscalls_in_kernel=369645 fragment_entries=369650 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=369645 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=hash n=512 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=hash n=512 enabled=0 outer=62483 ns_per_outer=630.20
+hugemicro off rep 1 variant=hash n=512 enabled=0 outer=62483 ns_per_outer=623.59
+hugemicro off rep 2 variant=hash n=512 enabled=0 outer=62483 ns_per_outer=625.01
+hugemicro off rep 3 variant=hash n=512 enabled=0 outer=62483 ns_per_outer=623.58
+hugemicro off rep 4 variant=hash n=512 enabled=0 outer=62483 ns_per_outer=622.97
+hugemicro off result variant=hash n=512 enabled=0 outer=62483 reps=5 insn_per_outer=2566 median_ns_per_outer=623.59 min_ns_per_outer=622.97
+hugemicro off counters hash hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=hash n=2048 enabled=1 outer=19879 ns_per_outer=2017.08
+hugemicro pmd rep 1 variant=hash n=2048 enabled=1 outer=19879 ns_per_outer=2023.31
+hugemicro pmd rep 2 variant=hash n=2048 enabled=1 outer=19879 ns_per_outer=2029.96
+hugemicro pmd rep 3 variant=hash n=2048 enabled=1 outer=19879 ns_per_outer=2024.56
+hugemicro pmd rep 4 variant=hash n=2048 enabled=1 outer=19879 ns_per_outer=2059.48
+hugemicro pmd result variant=hash n=2048 enabled=1 outer=19879 reps=5 insn_per_outer=10246 median_ns_per_outer=2024.56 min_ns_per_outer=2017.08
+hugemicro pmd counters hash hook_calls=99440 syscalls_in_kernel=99370 fragment_entries=99375 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=99370 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=hash n=2048 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=hash n=2048 enabled=0 outer=18999 ns_per_outer=2104.15
+hugemicro off rep 1 variant=hash n=2048 enabled=0 outer=18999 ns_per_outer=2117.08
+hugemicro off rep 2 variant=hash n=2048 enabled=0 outer=18999 ns_per_outer=2098.93
+hugemicro off rep 3 variant=hash n=2048 enabled=0 outer=18999 ns_per_outer=2110.25
+hugemicro off rep 4 variant=hash n=2048 enabled=0 outer=18999 ns_per_outer=2113.19
+hugemicro off result variant=hash n=2048 enabled=0 outer=18999 reps=5 insn_per_outer=10246 median_ns_per_outer=2110.25 min_ns_per_outer=2098.93
+hugemicro off counters hash hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=hash n=2048 enabled=1 outer=19736 ns_per_outer=2028.55
+hugemicro k4 rep 1 variant=hash n=2048 enabled=1 outer=19736 ns_per_outer=2009.56
+hugemicro k4 rep 2 variant=hash n=2048 enabled=1 outer=19736 ns_per_outer=2022.65
+hugemicro k4 rep 3 variant=hash n=2048 enabled=1 outer=19736 ns_per_outer=2043.18
+hugemicro k4 rep 4 variant=hash n=2048 enabled=1 outer=19736 ns_per_outer=2027.56
+hugemicro k4 result variant=hash n=2048 enabled=1 outer=19736 reps=5 insn_per_outer=10246 median_ns_per_outer=2027.56 min_ns_per_outer=2009.56
+hugemicro k4 counters hash hook_calls=98725 syscalls_in_kernel=98655 fragment_entries=98660 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=98655 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=hash n=2048 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=strlen n=256 enabled=0 outer=171031 ns_per_outer=229.60
+hugemicro off rep 1 variant=strlen n=256 enabled=0 outer=171031 ns_per_outer=228.52
+hugemicro off rep 2 variant=strlen n=256 enabled=0 outer=171031 ns_per_outer=227.26
+hugemicro off rep 3 variant=strlen n=256 enabled=0 outer=171031 ns_per_outer=227.07
+hugemicro off rep 4 variant=strlen n=256 enabled=0 outer=171031 ns_per_outer=226.98
+hugemicro off result variant=strlen n=256 enabled=0 outer=171031 reps=5 insn_per_outer=518 median_ns_per_outer=227.26 min_ns_per_outer=226.98
+hugemicro off counters strlen hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=strlen n=256 enabled=1 outer=241023 ns_per_outer=163.00
+hugemicro pmd rep 1 variant=strlen n=256 enabled=1 outer=241023 ns_per_outer=161.89
+hugemicro pmd rep 2 variant=strlen n=256 enabled=1 outer=241023 ns_per_outer=162.35
+hugemicro pmd rep 3 variant=strlen n=256 enabled=1 outer=241023 ns_per_outer=163.26
+hugemicro pmd rep 4 variant=strlen n=256 enabled=1 outer=241023 ns_per_outer=161.68
+hugemicro pmd result variant=strlen n=256 enabled=1 outer=241023 reps=5 insn_per_outer=518 median_ns_per_outer=162.35 min_ns_per_outer=161.68
+hugemicro pmd counters strlen hook_calls=1204890 syscalls_in_kernel=1204820 fragment_entries=1204825 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1204820 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=strlen n=256 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=strlen n=256 enabled=1 outer=240542 ns_per_outer=161.88
+hugemicro k4 rep 1 variant=strlen n=256 enabled=1 outer=240542 ns_per_outer=162.58
+hugemicro k4 rep 2 variant=strlen n=256 enabled=1 outer=240542 ns_per_outer=161.76
+hugemicro k4 rep 3 variant=strlen n=256 enabled=1 outer=240542 ns_per_outer=162.13
+hugemicro k4 rep 4 variant=strlen n=256 enabled=1 outer=240542 ns_per_outer=161.74
+hugemicro k4 result variant=strlen n=256 enabled=1 outer=240542 reps=5 insn_per_outer=518 median_ns_per_outer=161.88 min_ns_per_outer=161.74
+hugemicro k4 counters strlen hook_calls=1202485 syscalls_in_kernel=1202415 fragment_entries=1202420 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1202415 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=strlen n=256 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=strlen n=1024 enabled=1 outer=98350 ns_per_outer=409.30
+hugemicro pmd rep 1 variant=strlen n=1024 enabled=1 outer=98350 ns_per_outer=408.43
+hugemicro pmd rep 2 variant=strlen n=1024 enabled=1 outer=98350 ns_per_outer=409.31
+hugemicro pmd rep 3 variant=strlen n=1024 enabled=1 outer=98350 ns_per_outer=411.28
+hugemicro pmd rep 4 variant=strlen n=1024 enabled=1 outer=98350 ns_per_outer=414.10
+hugemicro pmd result variant=strlen n=1024 enabled=1 outer=98350 reps=5 insn_per_outer=2054 median_ns_per_outer=409.31 min_ns_per_outer=408.43
+hugemicro pmd counters strlen hook_calls=491695 syscalls_in_kernel=491625 fragment_entries=491630 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=491625 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=strlen n=1024 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=strlen n=1024 enabled=1 outer=101512 ns_per_outer=407.08
+hugemicro k4 rep 1 variant=strlen n=1024 enabled=1 outer=101512 ns_per_outer=409.26
+hugemicro k4 rep 2 variant=strlen n=1024 enabled=1 outer=101512 ns_per_outer=407.77
+hugemicro k4 rep 3 variant=strlen n=1024 enabled=1 outer=101512 ns_per_outer=407.67
+hugemicro k4 rep 4 variant=strlen n=1024 enabled=1 outer=101512 ns_per_outer=412.19
+hugemicro k4 result variant=strlen n=1024 enabled=1 outer=101512 reps=5 insn_per_outer=2054 median_ns_per_outer=407.77 min_ns_per_outer=407.08
+hugemicro k4 counters strlen hook_calls=507505 syscalls_in_kernel=507435 fragment_entries=507440 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=507435 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=strlen n=1024 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=strlen n=1024 enabled=0 outer=84963 ns_per_outer=475.56
+hugemicro off rep 1 variant=strlen n=1024 enabled=0 outer=84963 ns_per_outer=475.40
+hugemicro off rep 2 variant=strlen n=1024 enabled=0 outer=84963 ns_per_outer=476.15
+hugemicro off rep 3 variant=strlen n=1024 enabled=0 outer=84963 ns_per_outer=477.34
+hugemicro off rep 4 variant=strlen n=1024 enabled=0 outer=84963 ns_per_outer=473.68
+hugemicro off result variant=strlen n=1024 enabled=0 outer=84963 reps=5 insn_per_outer=2054 median_ns_per_outer=475.56 min_ns_per_outer=473.68
+hugemicro off counters strlen hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=strlen n=3072 enabled=1 outer=37381 ns_per_outer=1071.39
+hugemicro k4 rep 1 variant=strlen n=3072 enabled=1 outer=37381 ns_per_outer=1065.32
+hugemicro k4 rep 2 variant=strlen n=3072 enabled=1 outer=37381 ns_per_outer=1067.73
+hugemicro k4 rep 3 variant=strlen n=3072 enabled=1 outer=37381 ns_per_outer=1065.08
+hugemicro k4 rep 4 variant=strlen n=3072 enabled=1 outer=37381 ns_per_outer=1064.74
+hugemicro k4 result variant=strlen n=3072 enabled=1 outer=37381 reps=5 insn_per_outer=6150 median_ns_per_outer=1065.32 min_ns_per_outer=1064.74
+hugemicro k4 counters strlen hook_calls=186925 syscalls_in_kernel=186855 fragment_entries=186860 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=186855 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=strlen n=3072 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=strlen n=3072 enabled=0 outer=34897 ns_per_outer=1131.24
+hugemicro off rep 1 variant=strlen n=3072 enabled=0 outer=34897 ns_per_outer=1130.29
+hugemicro off rep 2 variant=strlen n=3072 enabled=0 outer=34897 ns_per_outer=1147.85
+hugemicro off rep 3 variant=strlen n=3072 enabled=0 outer=34897 ns_per_outer=1145.54
+hugemicro off rep 4 variant=strlen n=3072 enabled=0 outer=34897 ns_per_outer=1135.22
+hugemicro off result variant=strlen n=3072 enabled=0 outer=34897 reps=5 insn_per_outer=6150 median_ns_per_outer=1135.22 min_ns_per_outer=1130.29
+hugemicro off counters strlen hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=strlen n=3072 enabled=1 outer=37394 ns_per_outer=1066.87
+hugemicro pmd rep 1 variant=strlen n=3072 enabled=1 outer=37394 ns_per_outer=1065.46
+hugemicro pmd rep 2 variant=strlen n=3072 enabled=1 outer=37394 ns_per_outer=1065.36
+hugemicro pmd rep 3 variant=strlen n=3072 enabled=1 outer=37394 ns_per_outer=1064.64
+hugemicro pmd rep 4 variant=strlen n=3072 enabled=1 outer=37394 ns_per_outer=1067.34
+hugemicro pmd result variant=strlen n=3072 enabled=1 outer=37394 reps=5 insn_per_outer=6150 median_ns_per_outer=1065.46 min_ns_per_outer=1064.64
+hugemicro pmd counters strlen hook_calls=186990 syscalls_in_kernel=186920 fragment_entries=186925 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=186920 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=strlen n=3072 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=copy n=128 enabled=0 outer=218033 ns_per_outer=179.65
+hugemicro off rep 1 variant=copy n=128 enabled=0 outer=218033 ns_per_outer=177.97
+hugemicro off rep 2 variant=copy n=128 enabled=0 outer=218033 ns_per_outer=178.94
+hugemicro off rep 3 variant=copy n=128 enabled=0 outer=218033 ns_per_outer=182.96
+hugemicro off rep 4 variant=copy n=128 enabled=0 outer=218033 ns_per_outer=181.25
+hugemicro off result variant=copy n=128 enabled=0 outer=218033 reps=5 insn_per_outer=518 median_ns_per_outer=179.65 min_ns_per_outer=177.97
+hugemicro off counters copy hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=copy n=128 enabled=1 outer=374854 ns_per_outer=103.66
+hugemicro k4 rep 1 variant=copy n=128 enabled=1 outer=374854 ns_per_outer=103.75
+hugemicro k4 rep 2 variant=copy n=128 enabled=1 outer=374854 ns_per_outer=103.77
+hugemicro k4 rep 3 variant=copy n=128 enabled=1 outer=374854 ns_per_outer=103.71
+hugemicro k4 rep 4 variant=copy n=128 enabled=1 outer=374854 ns_per_outer=103.63
+hugemicro k4 result variant=copy n=128 enabled=1 outer=374854 reps=5 insn_per_outer=518 median_ns_per_outer=103.71 min_ns_per_outer=103.63
+hugemicro k4 counters copy hook_calls=1873880 syscalls_in_kernel=1873810 fragment_entries=1873815 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1873810 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=copy n=128 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=copy n=128 enabled=1 outer=399500 ns_per_outer=102.27
+hugemicro pmd rep 1 variant=copy n=128 enabled=1 outer=399500 ns_per_outer=102.66
+hugemicro pmd rep 2 variant=copy n=128 enabled=1 outer=399500 ns_per_outer=103.45
+hugemicro pmd rep 3 variant=copy n=128 enabled=1 outer=399500 ns_per_outer=103.57
+hugemicro pmd rep 4 variant=copy n=128 enabled=1 outer=399500 ns_per_outer=103.13
+hugemicro pmd result variant=copy n=128 enabled=1 outer=399500 reps=5 insn_per_outer=518 median_ns_per_outer=103.13 min_ns_per_outer=102.27
+hugemicro pmd counters copy hook_calls=1997080 syscalls_in_kernel=1997010 fragment_entries=1997015 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1997010 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=copy n=128 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=copy n=512 enabled=1 outer=168450 ns_per_outer=239.50
+hugemicro k4 rep 1 variant=copy n=512 enabled=1 outer=168450 ns_per_outer=238.70
+hugemicro k4 rep 2 variant=copy n=512 enabled=1 outer=168450 ns_per_outer=238.19
+hugemicro k4 rep 3 variant=copy n=512 enabled=1 outer=168450 ns_per_outer=239.36
+hugemicro k4 rep 4 variant=copy n=512 enabled=1 outer=168450 ns_per_outer=238.68
+hugemicro k4 result variant=copy n=512 enabled=1 outer=168450 reps=5 insn_per_outer=2054 median_ns_per_outer=238.70 min_ns_per_outer=238.19
+hugemicro k4 counters copy hook_calls=842110 syscalls_in_kernel=842040 fragment_entries=842045 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=842040 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=copy n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=copy n=512 enabled=1 outer=173504 ns_per_outer=239.15
+hugemicro pmd rep 1 variant=copy n=512 enabled=1 outer=173504 ns_per_outer=238.78
+hugemicro pmd rep 2 variant=copy n=512 enabled=1 outer=173504 ns_per_outer=240.34
+hugemicro pmd rep 3 variant=copy n=512 enabled=1 outer=173504 ns_per_outer=240.47
+hugemicro pmd rep 4 variant=copy n=512 enabled=1 outer=173504 ns_per_outer=238.08
+hugemicro pmd result variant=copy n=512 enabled=1 outer=173504 reps=5 insn_per_outer=2054 median_ns_per_outer=239.15 min_ns_per_outer=238.08
+hugemicro pmd counters copy hook_calls=867375 syscalls_in_kernel=867305 fragment_entries=867310 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=867305 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=copy n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=copy n=512 enabled=0 outer=134964 ns_per_outer=307.54
+hugemicro off rep 1 variant=copy n=512 enabled=0 outer=134964 ns_per_outer=306.95
+hugemicro off rep 2 variant=copy n=512 enabled=0 outer=134964 ns_per_outer=306.75
+hugemicro off rep 3 variant=copy n=512 enabled=0 outer=134964 ns_per_outer=307.76
+hugemicro off rep 4 variant=copy n=512 enabled=0 outer=134964 ns_per_outer=306.71
+hugemicro off result variant=copy n=512 enabled=0 outer=134964 reps=5 insn_per_outer=2054 median_ns_per_outer=306.95 min_ns_per_outer=306.71
+hugemicro off counters copy hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=copy n=2048 enabled=1 outer=49561 ns_per_outer=738.03
+hugemicro pmd rep 1 variant=copy n=2048 enabled=1 outer=49561 ns_per_outer=735.70
+hugemicro pmd rep 2 variant=copy n=2048 enabled=1 outer=49561 ns_per_outer=735.16
+hugemicro pmd rep 3 variant=copy n=2048 enabled=1 outer=49561 ns_per_outer=735.81
+hugemicro pmd rep 4 variant=copy n=2048 enabled=1 outer=49561 ns_per_outer=738.54
+hugemicro pmd result variant=copy n=2048 enabled=1 outer=49561 reps=5 insn_per_outer=8198 median_ns_per_outer=735.81 min_ns_per_outer=735.16
+hugemicro pmd counters copy hook_calls=247810 syscalls_in_kernel=247740 fragment_entries=247745 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=247740 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=copy n=2048 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=copy n=2048 enabled=0 outer=49533 ns_per_outer=802.80
+hugemicro off rep 1 variant=copy n=2048 enabled=0 outer=49533 ns_per_outer=800.47
+hugemicro off rep 2 variant=copy n=2048 enabled=0 outer=49533 ns_per_outer=800.72
+hugemicro off rep 3 variant=copy n=2048 enabled=0 outer=49533 ns_per_outer=802.04
+hugemicro off rep 4 variant=copy n=2048 enabled=0 outer=49533 ns_per_outer=803.40
+hugemicro off result variant=copy n=2048 enabled=0 outer=49533 reps=5 insn_per_outer=8198 median_ns_per_outer=802.04 min_ns_per_outer=800.47
+hugemicro off counters copy hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=copy n=2048 enabled=1 outer=54957 ns_per_outer=736.11
+hugemicro k4 rep 1 variant=copy n=2048 enabled=1 outer=54957 ns_per_outer=734.83
+hugemicro k4 rep 2 variant=copy n=2048 enabled=1 outer=54957 ns_per_outer=734.58
+hugemicro k4 rep 3 variant=copy n=2048 enabled=1 outer=54957 ns_per_outer=734.02
+hugemicro k4 rep 4 variant=copy n=2048 enabled=1 outer=54957 ns_per_outer=737.39
+hugemicro k4 result variant=copy n=2048 enabled=1 outer=54957 reps=5 insn_per_outer=8198 median_ns_per_outer=734.83 min_ns_per_outer=734.02
+hugemicro k4 counters copy hook_calls=274785 syscalls_in_kernel=274715 fragment_entries=274720 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=274715 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=copy n=2048 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=copy16 n=512 enabled=0 outer=281114 ns_per_outer=143.18
+hugemicro off rep 1 variant=copy16 n=512 enabled=0 outer=281114 ns_per_outer=142.30
+hugemicro off rep 2 variant=copy16 n=512 enabled=0 outer=281114 ns_per_outer=142.12
+hugemicro off rep 3 variant=copy16 n=512 enabled=0 outer=281114 ns_per_outer=142.12
+hugemicro off rep 4 variant=copy16 n=512 enabled=0 outer=281114 ns_per_outer=143.62
+hugemicro off result variant=copy16 n=512 enabled=0 outer=281114 reps=5 insn_per_outer=134 median_ns_per_outer=142.30 min_ns_per_outer=142.12
+hugemicro off counters copy16 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=copy16 n=512 enabled=1 outer=487555 ns_per_outer=84.77
+hugemicro pmd rep 1 variant=copy16 n=512 enabled=1 outer=487555 ns_per_outer=85.98
+hugemicro pmd rep 2 variant=copy16 n=512 enabled=1 outer=487555 ns_per_outer=84.86
+hugemicro pmd rep 3 variant=copy16 n=512 enabled=1 outer=487555 ns_per_outer=85.35
+hugemicro pmd rep 4 variant=copy16 n=512 enabled=1 outer=487555 ns_per_outer=85.34
+hugemicro pmd result variant=copy16 n=512 enabled=1 outer=487555 reps=5 insn_per_outer=134 median_ns_per_outer=85.34 min_ns_per_outer=84.77
+hugemicro pmd counters copy16 hook_calls=2437245 syscalls_in_kernel=2437175 fragment_entries=2437180 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2437175 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=copy16 n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=copy16 n=512 enabled=1 outer=457796 ns_per_outer=85.52
+hugemicro k4 rep 1 variant=copy16 n=512 enabled=1 outer=457796 ns_per_outer=85.10
+hugemicro k4 rep 2 variant=copy16 n=512 enabled=1 outer=457796 ns_per_outer=85.12
+hugemicro k4 rep 3 variant=copy16 n=512 enabled=1 outer=457796 ns_per_outer=94.19
+hugemicro k4 rep 4 variant=copy16 n=512 enabled=1 outer=457796 ns_per_outer=85.81
+hugemicro k4 result variant=copy16 n=512 enabled=1 outer=457796 reps=5 insn_per_outer=134 median_ns_per_outer=85.52 min_ns_per_outer=85.10
+hugemicro k4 counters copy16 hook_calls=2288490 syscalls_in_kernel=2288420 fragment_entries=2288425 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=2288420 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=copy16 n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=copy16 n=4096 enabled=1 outer=142835 ns_per_outer=209.87
+hugemicro pmd rep 1 variant=copy16 n=4096 enabled=1 outer=142835 ns_per_outer=207.29
+hugemicro pmd rep 2 variant=copy16 n=4096 enabled=1 outer=142835 ns_per_outer=205.32
+hugemicro pmd rep 3 variant=copy16 n=4096 enabled=1 outer=142835 ns_per_outer=206.47
+hugemicro pmd rep 4 variant=copy16 n=4096 enabled=1 outer=142835 ns_per_outer=206.09
+hugemicro pmd result variant=copy16 n=4096 enabled=1 outer=142835 reps=5 insn_per_outer=1030 median_ns_per_outer=206.47 min_ns_per_outer=205.32
+hugemicro pmd counters copy16 hook_calls=714070 syscalls_in_kernel=714000 fragment_entries=714005 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=714000 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=copy16 n=4096 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=copy16 n=4096 enabled=1 outer=180825 ns_per_outer=206.36
+hugemicro k4 rep 1 variant=copy16 n=4096 enabled=1 outer=180825 ns_per_outer=206.36
+hugemicro k4 rep 2 variant=copy16 n=4096 enabled=1 outer=180825 ns_per_outer=205.96
+hugemicro k4 rep 3 variant=copy16 n=4096 enabled=1 outer=180825 ns_per_outer=205.74
+hugemicro k4 rep 4 variant=copy16 n=4096 enabled=1 outer=180825 ns_per_outer=205.04
+hugemicro k4 result variant=copy16 n=4096 enabled=1 outer=180825 reps=5 insn_per_outer=1030 median_ns_per_outer=205.96 min_ns_per_outer=205.04
+hugemicro k4 counters copy16 hook_calls=903970 syscalls_in_kernel=903900 fragment_entries=903905 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=903900 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=copy16 n=4096 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=copy16 n=4096 enabled=0 outer=178571 ns_per_outer=228.24
+hugemicro off rep 1 variant=copy16 n=4096 enabled=0 outer=178571 ns_per_outer=227.18
+hugemicro off rep 2 variant=copy16 n=4096 enabled=0 outer=178571 ns_per_outer=227.60
+hugemicro off rep 3 variant=copy16 n=4096 enabled=0 outer=178571 ns_per_outer=225.49
+hugemicro off rep 4 variant=copy16 n=4096 enabled=0 outer=178571 ns_per_outer=226.93
+hugemicro off result variant=copy16 n=4096 enabled=0 outer=178571 reps=5 insn_per_outer=1030 median_ns_per_outer=227.18 min_ns_per_outer=225.49
+hugemicro off counters copy16 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=simd32 n=512 enabled=1 outer=296296 ns_per_outer=132.57
+hugemicro k4 rep 1 variant=simd32 n=512 enabled=1 outer=296296 ns_per_outer=133.13
+hugemicro k4 rep 2 variant=simd32 n=512 enabled=1 outer=296296 ns_per_outer=132.38
+hugemicro k4 rep 3 variant=simd32 n=512 enabled=1 outer=296296 ns_per_outer=133.37
+hugemicro k4 rep 4 variant=simd32 n=512 enabled=1 outer=296296 ns_per_outer=137.56
+hugemicro k4 result variant=simd32 n=512 enabled=1 outer=296296 reps=5 insn_per_outer=70 median_ns_per_outer=133.13 min_ns_per_outer=132.38
+hugemicro k4 counters simd32 hook_calls=1481185 syscalls_in_kernel=1481115 fragment_entries=1481120 fpsimd_entries=1481120 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1481115 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=simd32 n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=simd32 n=512 enabled=0 outer=293577 ns_per_outer=138.39
+hugemicro off rep 1 variant=simd32 n=512 enabled=0 outer=293577 ns_per_outer=136.46
+hugemicro off rep 2 variant=simd32 n=512 enabled=0 outer=293577 ns_per_outer=137.73
+hugemicro off rep 3 variant=simd32 n=512 enabled=0 outer=293577 ns_per_outer=137.46
+hugemicro off rep 4 variant=simd32 n=512 enabled=0 outer=293577 ns_per_outer=137.58
+hugemicro off result variant=simd32 n=512 enabled=0 outer=293577 reps=5 insn_per_outer=70 median_ns_per_outer=137.58 min_ns_per_outer=136.46
+hugemicro off counters simd32 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=simd32 n=512 enabled=1 outer=305052 ns_per_outer=133.40
+hugemicro pmd rep 1 variant=simd32 n=512 enabled=1 outer=305052 ns_per_outer=133.21
+hugemicro pmd rep 2 variant=simd32 n=512 enabled=1 outer=305052 ns_per_outer=133.31
+hugemicro pmd rep 3 variant=simd32 n=512 enabled=1 outer=305052 ns_per_outer=133.18
+hugemicro pmd rep 4 variant=simd32 n=512 enabled=1 outer=305052 ns_per_outer=133.21
+hugemicro pmd result variant=simd32 n=512 enabled=1 outer=305052 reps=5 insn_per_outer=70 median_ns_per_outer=133.21 min_ns_per_outer=133.18
+hugemicro pmd counters simd32 hook_calls=1524955 syscalls_in_kernel=1524885 fragment_entries=1524890 fpsimd_entries=1524890 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1524885 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=simd32 n=512 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=simd32 n=4096 enabled=0 outer=216264 ns_per_outer=182.91
+hugemicro off rep 1 variant=simd32 n=4096 enabled=0 outer=216264 ns_per_outer=218.57
+hugemicro off rep 2 variant=simd32 n=4096 enabled=0 outer=216264 ns_per_outer=187.70
+hugemicro off rep 3 variant=simd32 n=4096 enabled=0 outer=216264 ns_per_outer=183.33
+hugemicro off rep 4 variant=simd32 n=4096 enabled=0 outer=216264 ns_per_outer=182.07
+hugemicro off result variant=simd32 n=4096 enabled=0 outer=216264 reps=5 insn_per_outer=518 median_ns_per_outer=183.33 min_ns_per_outer=182.07
+hugemicro off counters simd32 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=simd32 n=4096 enabled=1 outer=175727 ns_per_outer=214.97
+hugemicro k4 rep 1 variant=simd32 n=4096 enabled=1 outer=175727 ns_per_outer=210.51
+hugemicro k4 rep 2 variant=simd32 n=4096 enabled=1 outer=175727 ns_per_outer=209.53
+hugemicro k4 rep 3 variant=simd32 n=4096 enabled=1 outer=175727 ns_per_outer=206.88
+hugemicro k4 rep 4 variant=simd32 n=4096 enabled=1 outer=175727 ns_per_outer=217.26
+hugemicro k4 result variant=simd32 n=4096 enabled=1 outer=175727 reps=5 insn_per_outer=518 median_ns_per_outer=210.51 min_ns_per_outer=206.88
+hugemicro k4 counters simd32 hook_calls=878490 syscalls_in_kernel=878420 fragment_entries=878425 fpsimd_entries=878425 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=878420 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=simd32 n=4096 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=simd32 n=4096 enabled=1 outer=175920 ns_per_outer=223.70
+hugemicro pmd rep 1 variant=simd32 n=4096 enabled=1 outer=175920 ns_per_outer=216.01
+hugemicro pmd rep 2 variant=simd32 n=4096 enabled=1 outer=175920 ns_per_outer=215.16
+hugemicro pmd rep 3 variant=simd32 n=4096 enabled=1 outer=175920 ns_per_outer=211.78
+hugemicro pmd rep 4 variant=simd32 n=4096 enabled=1 outer=175920 ns_per_outer=213.45
+hugemicro pmd result variant=simd32 n=4096 enabled=1 outer=175920 reps=5 insn_per_outer=518 median_ns_per_outer=215.16 min_ns_per_outer=211.78
+hugemicro pmd counters simd32 hook_calls=879456 syscalls_in_kernel=879385 fragment_entries=879391 fpsimd_entries=879391 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=879386 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=simd32 n=4096 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=calls n=64 enabled=1 outer=210526 ns_per_outer=187.66
+hugemicro k4 rep 1 variant=calls n=64 enabled=1 outer=210526 ns_per_outer=187.81
+hugemicro k4 rep 2 variant=calls n=64 enabled=1 outer=210526 ns_per_outer=188.63
+hugemicro k4 rep 3 variant=calls n=64 enabled=1 outer=210526 ns_per_outer=187.57
+hugemicro k4 rep 4 variant=calls n=64 enabled=1 outer=210526 ns_per_outer=188.98
+hugemicro k4 result variant=calls n=64 enabled=1 outer=210526 reps=5 insn_per_outer=902 median_ns_per_outer=187.81 min_ns_per_outer=187.57
+hugemicro k4 counters calls hook_calls=1052440 syscalls_in_kernel=1052369 fragment_entries=1052375 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1052370 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=calls n=64 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=calls n=64 enabled=1 outer=213951 ns_per_outer=188.43
+hugemicro pmd rep 1 variant=calls n=64 enabled=1 outer=213951 ns_per_outer=188.77
+hugemicro pmd rep 2 variant=calls n=64 enabled=1 outer=213951 ns_per_outer=187.82
+hugemicro pmd rep 3 variant=calls n=64 enabled=1 outer=213951 ns_per_outer=188.12
+hugemicro pmd rep 4 variant=calls n=64 enabled=1 outer=213951 ns_per_outer=187.59
+hugemicro pmd result variant=calls n=64 enabled=1 outer=213951 reps=5 insn_per_outer=902 median_ns_per_outer=188.12 min_ns_per_outer=187.59
+hugemicro pmd counters calls hook_calls=1069560 syscalls_in_kernel=1069490 fragment_entries=1069495 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1069490 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=calls n=64 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=calls n=64 enabled=0 outer=178770 ns_per_outer=228.20
+hugemicro off rep 1 variant=calls n=64 enabled=0 outer=178770 ns_per_outer=224.90
+hugemicro off rep 2 variant=calls n=64 enabled=0 outer=178770 ns_per_outer=226.15
+hugemicro off rep 3 variant=calls n=64 enabled=0 outer=178770 ns_per_outer=224.72
+hugemicro off rep 4 variant=calls n=64 enabled=0 outer=178770 ns_per_outer=225.06
+hugemicro off result variant=calls n=64 enabled=0 outer=178770 reps=5 insn_per_outer=902 median_ns_per_outer=225.06 min_ns_per_outer=224.72
+hugemicro off counters calls hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=calls n=256 enabled=1 outer=69464 ns_per_outer=574.76
+hugemicro pmd rep 1 variant=calls n=256 enabled=1 outer=69464 ns_per_outer=572.44
+hugemicro pmd rep 2 variant=calls n=256 enabled=1 outer=69464 ns_per_outer=575.99
+hugemicro pmd rep 3 variant=calls n=256 enabled=1 outer=69464 ns_per_outer=575.07
+hugemicro pmd rep 4 variant=calls n=256 enabled=1 outer=69464 ns_per_outer=576.94
+hugemicro pmd result variant=calls n=256 enabled=1 outer=69464 reps=5 insn_per_outer=3590 median_ns_per_outer=575.07 min_ns_per_outer=572.44
+hugemicro pmd counters calls hook_calls=347305 syscalls_in_kernel=347235 fragment_entries=347240 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=347235 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=calls n=256 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=calls n=256 enabled=0 outer=82737 ns_per_outer=499.76
+hugemicro off rep 1 variant=calls n=256 enabled=0 outer=82737 ns_per_outer=501.09
+hugemicro off rep 2 variant=calls n=256 enabled=0 outer=82737 ns_per_outer=496.40
+hugemicro off rep 3 variant=calls n=256 enabled=0 outer=82737 ns_per_outer=500.84
+hugemicro off rep 4 variant=calls n=256 enabled=0 outer=82737 ns_per_outer=499.88
+hugemicro off result variant=calls n=256 enabled=0 outer=82737 reps=5 insn_per_outer=3590 median_ns_per_outer=499.88 min_ns_per_outer=496.40
+hugemicro off counters calls hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=calls n=256 enabled=1 outer=70144 ns_per_outer=577.18
+hugemicro k4 rep 1 variant=calls n=256 enabled=1 outer=70144 ns_per_outer=574.36
+hugemicro k4 rep 2 variant=calls n=256 enabled=1 outer=70144 ns_per_outer=578.11
+hugemicro k4 rep 3 variant=calls n=256 enabled=1 outer=70144 ns_per_outer=578.08
+hugemicro k4 rep 4 variant=calls n=256 enabled=1 outer=70144 ns_per_outer=579.10
+hugemicro k4 result variant=calls n=256 enabled=1 outer=70144 reps=5 insn_per_outer=3590 median_ns_per_outer=578.08 min_ns_per_outer=574.36
+hugemicro k4 counters calls hook_calls=350700 syscalls_in_kernel=350630 fragment_entries=350635 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=350630 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=calls n=256 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=calls n=1000 enabled=0 outer=24211 ns_per_outer=1649.36
+hugemicro off rep 1 variant=calls n=1000 enabled=0 outer=24211 ns_per_outer=1646.30
+hugemicro off rep 2 variant=calls n=1000 enabled=0 outer=24211 ns_per_outer=1646.44
+hugemicro off rep 3 variant=calls n=1000 enabled=0 outer=24211 ns_per_outer=1648.69
+hugemicro off rep 4 variant=calls n=1000 enabled=0 outer=24211 ns_per_outer=1651.31
+hugemicro off result variant=calls n=1000 enabled=0 outer=24211 reps=5 insn_per_outer=14006 median_ns_per_outer=1648.69 min_ns_per_outer=1646.30
+hugemicro off counters calls hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=calls n=1000 enabled=1 outer=19465 ns_per_outer=2081.96
+hugemicro pmd rep 1 variant=calls n=1000 enabled=1 outer=19465 ns_per_outer=2077.72
+hugemicro pmd rep 2 variant=calls n=1000 enabled=1 outer=19465 ns_per_outer=2086.95
+hugemicro pmd rep 3 variant=calls n=1000 enabled=1 outer=19465 ns_per_outer=2085.92
+hugemicro pmd rep 4 variant=calls n=1000 enabled=1 outer=19465 ns_per_outer=2068.34
+hugemicro pmd result variant=calls n=1000 enabled=1 outer=19465 reps=5 insn_per_outer=14006 median_ns_per_outer=2081.96 min_ns_per_outer=2068.34
+hugemicro pmd counters calls hook_calls=97370 syscalls_in_kernel=97300 fragment_entries=97305 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=97300 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=calls n=1000 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=calls n=1000 enabled=1 outer=19302 ns_per_outer=2076.17
+hugemicro k4 rep 1 variant=calls n=1000 enabled=1 outer=19302 ns_per_outer=2062.88
+hugemicro k4 rep 2 variant=calls n=1000 enabled=1 outer=19302 ns_per_outer=2066.47
+hugemicro k4 rep 3 variant=calls n=1000 enabled=1 outer=19302 ns_per_outer=2066.78
+hugemicro k4 rep 4 variant=calls n=1000 enabled=1 outer=19302 ns_per_outer=2081.34
+hugemicro k4 result variant=calls n=1000 enabled=1 outer=19302 reps=5 insn_per_outer=14006 median_ns_per_outer=2066.78 min_ns_per_outer=2062.88
+hugemicro k4 counters calls hook_calls=96555 syscalls_in_kernel=96485 fragment_entries=96490 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=96485 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=calls n=1000 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=callsi n=64 enabled=1 outer=194686 ns_per_outer=208.49
+hugemicro pmd rep 1 variant=callsi n=64 enabled=1 outer=194686 ns_per_outer=207.47
+hugemicro pmd rep 2 variant=callsi n=64 enabled=1 outer=194686 ns_per_outer=209.07
+hugemicro pmd rep 3 variant=callsi n=64 enabled=1 outer=194686 ns_per_outer=208.74
+hugemicro pmd rep 4 variant=callsi n=64 enabled=1 outer=194686 ns_per_outer=206.54
+hugemicro pmd result variant=callsi n=64 enabled=1 outer=194686 reps=5 insn_per_outer=902 median_ns_per_outer=208.49 min_ns_per_outer=206.54
+hugemicro pmd counters callsi hook_calls=973260 syscalls_in_kernel=973190 fragment_entries=973195 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=973190 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=callsi n=64 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=callsi n=64 enabled=1 outer=190099 ns_per_outer=208.79
+hugemicro k4 rep 1 variant=callsi n=64 enabled=1 outer=190099 ns_per_outer=208.60
+hugemicro k4 rep 2 variant=callsi n=64 enabled=1 outer=190099 ns_per_outer=208.24
+hugemicro k4 rep 3 variant=callsi n=64 enabled=1 outer=190099 ns_per_outer=208.87
+hugemicro k4 rep 4 variant=callsi n=64 enabled=1 outer=190099 ns_per_outer=209.41
+hugemicro k4 result variant=callsi n=64 enabled=1 outer=190099 reps=5 insn_per_outer=902 median_ns_per_outer=208.79 min_ns_per_outer=208.24
+hugemicro k4 counters callsi hook_calls=950330 syscalls_in_kernel=950260 fragment_entries=950265 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=950260 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=callsi n=64 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=callsi n=64 enabled=0 outer=177975 ns_per_outer=227.35
+hugemicro off rep 1 variant=callsi n=64 enabled=0 outer=177975 ns_per_outer=227.30
+hugemicro off rep 2 variant=callsi n=64 enabled=0 outer=177975 ns_per_outer=227.33
+hugemicro off rep 3 variant=callsi n=64 enabled=0 outer=177975 ns_per_outer=228.62
+hugemicro off rep 4 variant=callsi n=64 enabled=0 outer=177975 ns_per_outer=226.01
+hugemicro off result variant=callsi n=64 enabled=0 outer=177975 reps=5 insn_per_outer=902 median_ns_per_outer=227.33 min_ns_per_outer=226.01
+hugemicro off counters callsi hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=callsi n=256 enabled=1 outer=61420 ns_per_outer=642.07
+hugemicro k4 rep 1 variant=callsi n=256 enabled=1 outer=61420 ns_per_outer=643.04
+hugemicro k4 rep 2 variant=callsi n=256 enabled=1 outer=61420 ns_per_outer=643.98
+hugemicro k4 rep 3 variant=callsi n=256 enabled=1 outer=61420 ns_per_outer=642.18
+hugemicro k4 rep 4 variant=callsi n=256 enabled=1 outer=61420 ns_per_outer=645.96
+hugemicro k4 result variant=callsi n=256 enabled=1 outer=61420 reps=5 insn_per_outer=3590 median_ns_per_outer=643.04 min_ns_per_outer=642.07
+hugemicro k4 counters callsi hook_calls=307095 syscalls_in_kernel=307025 fragment_entries=307030 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=307025 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=callsi n=256 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=callsi n=256 enabled=0 outer=82616 ns_per_outer=503.07
+hugemicro off rep 1 variant=callsi n=256 enabled=0 outer=82616 ns_per_outer=498.67
+hugemicro off rep 2 variant=callsi n=256 enabled=0 outer=82616 ns_per_outer=501.65
+hugemicro off rep 3 variant=callsi n=256 enabled=0 outer=82616 ns_per_outer=501.96
+hugemicro off rep 4 variant=callsi n=256 enabled=0 outer=82616 ns_per_outer=504.59
+hugemicro off result variant=callsi n=256 enabled=0 outer=82616 reps=5 insn_per_outer=3590 median_ns_per_outer=501.96 min_ns_per_outer=498.67
+hugemicro off counters callsi hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=callsi n=256 enabled=1 outer=62773 ns_per_outer=646.41
+hugemicro pmd rep 1 variant=callsi n=256 enabled=1 outer=62773 ns_per_outer=644.68
+hugemicro pmd rep 2 variant=callsi n=256 enabled=1 outer=62773 ns_per_outer=639.59
+hugemicro pmd rep 3 variant=callsi n=256 enabled=1 outer=62773 ns_per_outer=637.61
+hugemicro pmd rep 4 variant=callsi n=256 enabled=1 outer=62773 ns_per_outer=644.25
+hugemicro pmd result variant=callsi n=256 enabled=1 outer=62773 reps=5 insn_per_outer=3590 median_ns_per_outer=644.25 min_ns_per_outer=637.61
+hugemicro pmd counters callsi hook_calls=313855 syscalls_in_kernel=313785 fragment_entries=313790 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=313785 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=callsi n=256 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=callsi n=1000 enabled=0 outer=24079 ns_per_outer=1646.90
+hugemicro off rep 1 variant=callsi n=1000 enabled=0 outer=24079 ns_per_outer=1656.31
+hugemicro off rep 2 variant=callsi n=1000 enabled=0 outer=24079 ns_per_outer=1649.65
+hugemicro off rep 3 variant=callsi n=1000 enabled=0 outer=24079 ns_per_outer=1645.72
+hugemicro off rep 4 variant=callsi n=1000 enabled=0 outer=24079 ns_per_outer=1646.16
+hugemicro off result variant=callsi n=1000 enabled=0 outer=24079 reps=5 insn_per_outer=14006 median_ns_per_outer=1646.90 min_ns_per_outer=1645.72
+hugemicro off counters callsi hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=callsi n=1000 enabled=1 outer=17354 ns_per_outer=2318.60
+hugemicro k4 rep 1 variant=callsi n=1000 enabled=1 outer=17354 ns_per_outer=2319.25
+hugemicro k4 rep 2 variant=callsi n=1000 enabled=1 outer=17354 ns_per_outer=2317.15
+hugemicro k4 rep 3 variant=callsi n=1000 enabled=1 outer=17354 ns_per_outer=2319.71
+hugemicro k4 rep 4 variant=callsi n=1000 enabled=1 outer=17354 ns_per_outer=2328.68
+hugemicro k4 result variant=callsi n=1000 enabled=1 outer=17354 reps=5 insn_per_outer=14006 median_ns_per_outer=2319.25 min_ns_per_outer=2317.15
+hugemicro k4 counters callsi hook_calls=86815 syscalls_in_kernel=86745 fragment_entries=86750 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=86745 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=callsi n=1000 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=callsi n=1000 enabled=1 outer=17249 ns_per_outer=2315.86
+hugemicro pmd rep 1 variant=callsi n=1000 enabled=1 outer=17249 ns_per_outer=2310.50
+hugemicro pmd rep 2 variant=callsi n=1000 enabled=1 outer=17249 ns_per_outer=2318.38
+hugemicro pmd rep 3 variant=callsi n=1000 enabled=1 outer=17249 ns_per_outer=2324.12
+hugemicro pmd rep 4 variant=callsi n=1000 enabled=1 outer=17249 ns_per_outer=2314.02
+hugemicro pmd result variant=callsi n=1000 enabled=1 outer=17249 reps=5 insn_per_outer=14006 median_ns_per_outer=2315.86 min_ns_per_outer=2310.50
+hugemicro pmd counters callsi hook_calls=86290 syscalls_in_kernel=86220 fragment_entries=86225 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=86220 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=callsi n=1000 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=calls2 n=40 enabled=1 outer=198101 ns_per_outer=209.28
+hugemicro k4 rep 1 variant=calls2 n=40 enabled=1 outer=198101 ns_per_outer=213.12
+hugemicro k4 rep 2 variant=calls2 n=40 enabled=1 outer=198101 ns_per_outer=210.70
+hugemicro k4 rep 3 variant=calls2 n=40 enabled=1 outer=198101 ns_per_outer=210.58
+hugemicro k4 rep 4 variant=calls2 n=40 enabled=1 outer=198101 ns_per_outer=213.89
+hugemicro k4 result variant=calls2 n=40 enabled=1 outer=198101 reps=5 insn_per_outer=926 median_ns_per_outer=210.70 min_ns_per_outer=209.28
+hugemicro k4 counters calls2 hook_calls=990330 syscalls_in_kernel=990260 fragment_entries=990265 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=990260 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=calls2 n=40 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=calls2 n=40 enabled=1 outer=192732 ns_per_outer=209.25
+hugemicro pmd rep 1 variant=calls2 n=40 enabled=1 outer=192732 ns_per_outer=207.97
+hugemicro pmd rep 2 variant=calls2 n=40 enabled=1 outer=192732 ns_per_outer=209.17
+hugemicro pmd rep 3 variant=calls2 n=40 enabled=1 outer=192732 ns_per_outer=208.79
+hugemicro pmd rep 4 variant=calls2 n=40 enabled=1 outer=192732 ns_per_outer=208.63
+hugemicro pmd result variant=calls2 n=40 enabled=1 outer=192732 reps=5 insn_per_outer=926 median_ns_per_outer=208.79 min_ns_per_outer=207.97
+hugemicro pmd counters calls2 hook_calls=963490 syscalls_in_kernel=963420 fragment_entries=963425 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=963420 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=calls2 n=40 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=calls2 n=40 enabled=0 outer=191616 ns_per_outer=216.71
+hugemicro off rep 1 variant=calls2 n=40 enabled=0 outer=191616 ns_per_outer=215.61
+hugemicro off rep 2 variant=calls2 n=40 enabled=0 outer=191616 ns_per_outer=215.59
+hugemicro off rep 3 variant=calls2 n=40 enabled=0 outer=191616 ns_per_outer=215.54
+hugemicro off rep 4 variant=calls2 n=40 enabled=0 outer=191616 ns_per_outer=215.95
+hugemicro off result variant=calls2 n=40 enabled=0 outer=191616 reps=5 insn_per_outer=926 median_ns_per_outer=215.61 min_ns_per_outer=215.54
+hugemicro off counters calls2 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=calls2 n=160 enabled=1 outer=61092 ns_per_outer=660.21
+hugemicro pmd rep 1 variant=calls2 n=160 enabled=1 outer=61092 ns_per_outer=657.45
+hugemicro pmd rep 2 variant=calls2 n=160 enabled=1 outer=61092 ns_per_outer=652.90
+hugemicro pmd rep 3 variant=calls2 n=160 enabled=1 outer=61092 ns_per_outer=658.80
+hugemicro pmd rep 4 variant=calls2 n=160 enabled=1 outer=61092 ns_per_outer=664.99
+hugemicro pmd result variant=calls2 n=160 enabled=1 outer=61092 reps=5 insn_per_outer=3686 median_ns_per_outer=658.80 min_ns_per_outer=652.90
+hugemicro pmd counters calls2 hook_calls=305455 syscalls_in_kernel=305385 fragment_entries=305390 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=305385 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=calls2 n=160 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=calls2 n=160 enabled=0 outer=79424 ns_per_outer=507.28
+hugemicro off rep 1 variant=calls2 n=160 enabled=0 outer=79424 ns_per_outer=504.75
+hugemicro off rep 2 variant=calls2 n=160 enabled=0 outer=79424 ns_per_outer=508.21
+hugemicro off rep 3 variant=calls2 n=160 enabled=0 outer=79424 ns_per_outer=504.75
+hugemicro off rep 4 variant=calls2 n=160 enabled=0 outer=79424 ns_per_outer=508.60
+hugemicro off result variant=calls2 n=160 enabled=0 outer=79424 reps=5 insn_per_outer=3686 median_ns_per_outer=507.28 min_ns_per_outer=504.75
+hugemicro off counters calls2 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=calls2 n=160 enabled=1 outer=61041 ns_per_outer=660.41
+hugemicro k4 rep 1 variant=calls2 n=160 enabled=1 outer=61041 ns_per_outer=657.34
+hugemicro k4 rep 2 variant=calls2 n=160 enabled=1 outer=61041 ns_per_outer=657.42
+hugemicro k4 rep 3 variant=calls2 n=160 enabled=1 outer=61041 ns_per_outer=662.99
+hugemicro k4 rep 4 variant=calls2 n=160 enabled=1 outer=61041 ns_per_outer=656.84
+hugemicro k4 result variant=calls2 n=160 enabled=1 outer=61041 reps=5 insn_per_outer=3686 median_ns_per_outer=657.42 min_ns_per_outer=656.84
+hugemicro k4 counters calls2 hook_calls=305200 syscalls_in_kernel=305130 fragment_entries=305135 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=305130 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=calls2 n=160 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=calls2 n=600 enabled=0 outer=24883 ns_per_outer=1579.90
+hugemicro off rep 1 variant=calls2 n=600 enabled=0 outer=24883 ns_per_outer=1589.43
+hugemicro off rep 2 variant=calls2 n=600 enabled=0 outer=24883 ns_per_outer=1586.58
+hugemicro off rep 3 variant=calls2 n=600 enabled=0 outer=24883 ns_per_outer=1591.85
+hugemicro off rep 4 variant=calls2 n=600 enabled=0 outer=24883 ns_per_outer=1585.54
+hugemicro off result variant=calls2 n=600 enabled=0 outer=24883 reps=5 insn_per_outer=13806 median_ns_per_outer=1586.58 min_ns_per_outer=1579.90
+hugemicro off counters calls2 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=calls2 n=600 enabled=1 outer=17254 ns_per_outer=2313.91
+hugemicro pmd rep 1 variant=calls2 n=600 enabled=1 outer=17254 ns_per_outer=2307.47
+hugemicro pmd rep 2 variant=calls2 n=600 enabled=1 outer=17254 ns_per_outer=2336.75
+hugemicro pmd rep 3 variant=calls2 n=600 enabled=1 outer=17254 ns_per_outer=2409.88
+hugemicro pmd rep 4 variant=calls2 n=600 enabled=1 outer=17254 ns_per_outer=2355.33
+hugemicro pmd result variant=calls2 n=600 enabled=1 outer=17254 reps=5 insn_per_outer=13806 median_ns_per_outer=2336.75 min_ns_per_outer=2307.47
+hugemicro pmd counters calls2 hook_calls=86315 syscalls_in_kernel=86245 fragment_entries=86250 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=86245 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=calls2 n=600 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=calls2 n=600 enabled=1 outer=17963 ns_per_outer=2370.13
+hugemicro k4 rep 1 variant=calls2 n=600 enabled=1 outer=17963 ns_per_outer=2371.22
+hugemicro k4 rep 2 variant=calls2 n=600 enabled=1 outer=17963 ns_per_outer=2367.26
+hugemicro k4 rep 3 variant=calls2 n=600 enabled=1 outer=17963 ns_per_outer=2343.93
+hugemicro k4 rep 4 variant=calls2 n=600 enabled=1 outer=17963 ns_per_outer=2376.02
+hugemicro k4 result variant=calls2 n=600 enabled=1 outer=17963 reps=5 insn_per_outer=13806 median_ns_per_outer=2370.13 min_ns_per_outer=2343.93
+hugemicro k4 counters calls2 hook_calls=89860 syscalls_in_kernel=89790 fragment_entries=89795 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=89790 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=calls2 n=600 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=foot n=16 enabled=1 outer=286909 ns_per_outer=139.14
+hugemicro pmd rep 1 variant=foot n=16 enabled=1 outer=286909 ns_per_outer=136.77
+hugemicro pmd rep 2 variant=foot n=16 enabled=1 outer=286909 ns_per_outer=137.59
+hugemicro pmd rep 3 variant=foot n=16 enabled=1 outer=286909 ns_per_outer=138.70
+hugemicro pmd rep 4 variant=foot n=16 enabled=1 outer=286909 ns_per_outer=138.53
+hugemicro pmd result variant=foot n=16 enabled=1 outer=286909 reps=5 insn_per_outer=470 median_ns_per_outer=138.53 min_ns_per_outer=136.77
+hugemicro pmd counters foot hook_calls=1434260 syscalls_in_kernel=1434190 fragment_entries=1434195 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1434190 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=foot n=16 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=foot n=16 enabled=1 outer=276577 ns_per_outer=137.83
+hugemicro k4 rep 1 variant=foot n=16 enabled=1 outer=276577 ns_per_outer=137.54
+hugemicro k4 rep 2 variant=foot n=16 enabled=1 outer=276577 ns_per_outer=137.96
+hugemicro k4 rep 3 variant=foot n=16 enabled=1 outer=276577 ns_per_outer=139.76
+hugemicro k4 rep 4 variant=foot n=16 enabled=1 outer=276577 ns_per_outer=139.65
+hugemicro k4 result variant=foot n=16 enabled=1 outer=276577 reps=5 insn_per_outer=470 median_ns_per_outer=137.96 min_ns_per_outer=137.54
+hugemicro k4 counters foot hook_calls=1382615 syscalls_in_kernel=1382545 fragment_entries=1382550 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1382545 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=foot n=16 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=foot n=16 enabled=0 outer=178206 ns_per_outer=230.69
+hugemicro off rep 1 variant=foot n=16 enabled=0 outer=178206 ns_per_outer=225.89
+hugemicro off rep 2 variant=foot n=16 enabled=0 outer=178206 ns_per_outer=226.20
+hugemicro off rep 3 variant=foot n=16 enabled=0 outer=178206 ns_per_outer=225.87
+hugemicro off rep 4 variant=foot n=16 enabled=0 outer=178206 ns_per_outer=224.61
+hugemicro off result variant=foot n=16 enabled=0 outer=178206 reps=5 insn_per_outer=470 median_ns_per_outer=225.89 min_ns_per_outer=224.61
+hugemicro off counters foot hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=foot n=32 enabled=1 outer=186443 ns_per_outer=224.39
+hugemicro k4 rep 1 variant=foot n=32 enabled=1 outer=186443 ns_per_outer=225.57
+hugemicro k4 rep 2 variant=foot n=32 enabled=1 outer=186443 ns_per_outer=224.01
+hugemicro k4 rep 3 variant=foot n=32 enabled=1 outer=186443 ns_per_outer=225.45
+hugemicro k4 rep 4 variant=foot n=32 enabled=1 outer=186443 ns_per_outer=226.55
+hugemicro k4 result variant=foot n=32 enabled=1 outer=186443 reps=5 insn_per_outer=934 median_ns_per_outer=225.45 min_ns_per_outer=224.01
+hugemicro k4 counters foot hook_calls=932055 syscalls_in_kernel=931985 fragment_entries=931990 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=931985 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=foot n=32 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=foot n=32 enabled=0 outer=131452 ns_per_outer=306.64
+hugemicro off rep 1 variant=foot n=32 enabled=0 outer=131452 ns_per_outer=307.48
+hugemicro off rep 2 variant=foot n=32 enabled=0 outer=131452 ns_per_outer=305.66
+hugemicro off rep 3 variant=foot n=32 enabled=0 outer=131452 ns_per_outer=306.44
+hugemicro off rep 4 variant=foot n=32 enabled=0 outer=131452 ns_per_outer=306.54
+hugemicro off result variant=foot n=32 enabled=0 outer=131452 reps=5 insn_per_outer=934 median_ns_per_outer=306.54 min_ns_per_outer=305.66
+hugemicro off counters foot hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=foot n=32 enabled=1 outer=189385 ns_per_outer=219.99
+hugemicro pmd rep 1 variant=foot n=32 enabled=1 outer=189385 ns_per_outer=220.41
+hugemicro pmd rep 2 variant=foot n=32 enabled=1 outer=189385 ns_per_outer=220.66
+hugemicro pmd rep 3 variant=foot n=32 enabled=1 outer=189385 ns_per_outer=221.91
+hugemicro pmd rep 4 variant=foot n=32 enabled=1 outer=189385 ns_per_outer=219.21
+hugemicro pmd result variant=foot n=32 enabled=1 outer=189385 reps=5 insn_per_outer=934 median_ns_per_outer=220.41 min_ns_per_outer=219.21
+hugemicro pmd counters foot hook_calls=946760 syscalls_in_kernel=946689 fragment_entries=946694 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=946689 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=1
+hugemicro pmd kjit variant=foot n=32 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=foot n=64 enabled=0 outer=83362 ns_per_outer=482.73
+hugemicro off rep 1 variant=foot n=64 enabled=0 outer=83362 ns_per_outer=484.56
+hugemicro off rep 2 variant=foot n=64 enabled=0 outer=83362 ns_per_outer=486.89
+hugemicro off rep 3 variant=foot n=64 enabled=0 outer=83362 ns_per_outer=495.05
+hugemicro off rep 4 variant=foot n=64 enabled=0 outer=83362 ns_per_outer=485.26
+hugemicro off result variant=foot n=64 enabled=0 outer=83362 reps=5 insn_per_outer=1862 median_ns_per_outer=485.26 min_ns_per_outer=482.73
+hugemicro off counters foot hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=foot n=64 enabled=1 outer=107430 ns_per_outer=384.23
+hugemicro k4 rep 1 variant=foot n=64 enabled=1 outer=107430 ns_per_outer=388.31
+hugemicro k4 rep 2 variant=foot n=64 enabled=1 outer=107430 ns_per_outer=388.65
+hugemicro k4 rep 3 variant=foot n=64 enabled=1 outer=107430 ns_per_outer=388.71
+hugemicro k4 rep 4 variant=foot n=64 enabled=1 outer=107430 ns_per_outer=385.91
+hugemicro k4 result variant=foot n=64 enabled=1 outer=107430 reps=5 insn_per_outer=1862 median_ns_per_outer=388.31 min_ns_per_outer=384.23
+hugemicro k4 counters foot hook_calls=537085 syscalls_in_kernel=537015 fragment_entries=537020 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=537015 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=foot n=64 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=foot n=64 enabled=1 outer=104518 ns_per_outer=386.30
+hugemicro pmd rep 1 variant=foot n=64 enabled=1 outer=104518 ns_per_outer=384.38
+hugemicro pmd rep 2 variant=foot n=64 enabled=1 outer=104518 ns_per_outer=390.61
+hugemicro pmd rep 3 variant=foot n=64 enabled=1 outer=104518 ns_per_outer=386.21
+hugemicro pmd rep 4 variant=foot n=64 enabled=1 outer=104518 ns_per_outer=387.12
+hugemicro pmd result variant=foot n=64 enabled=1 outer=104518 reps=5 insn_per_outer=1862 median_ns_per_outer=386.30 min_ns_per_outer=384.38
+hugemicro pmd counters foot hook_calls=522530 syscalls_in_kernel=522460 fragment_entries=522465 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=522460 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=foot n=64 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=foot n=96 enabled=1 outer=65911 ns_per_outer=553.71
+hugemicro k4 rep 1 variant=foot n=96 enabled=1 outer=65911 ns_per_outer=552.61
+hugemicro k4 rep 2 variant=foot n=96 enabled=1 outer=65911 ns_per_outer=551.46
+hugemicro k4 rep 3 variant=foot n=96 enabled=1 outer=65911 ns_per_outer=552.40
+hugemicro k4 rep 4 variant=foot n=96 enabled=1 outer=65911 ns_per_outer=561.66
+hugemicro k4 result variant=foot n=96 enabled=1 outer=65911 reps=5 insn_per_outer=2790 median_ns_per_outer=552.61 min_ns_per_outer=551.46
+hugemicro k4 counters foot hook_calls=329540 syscalls_in_kernel=329470 fragment_entries=329475 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=329470 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=foot n=96 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=foot n=96 enabled=1 outer=67959 ns_per_outer=551.08
+hugemicro pmd rep 1 variant=foot n=96 enabled=1 outer=67959 ns_per_outer=558.56
+hugemicro pmd rep 2 variant=foot n=96 enabled=1 outer=67959 ns_per_outer=553.96
+hugemicro pmd rep 3 variant=foot n=96 enabled=1 outer=67959 ns_per_outer=551.52
+hugemicro pmd rep 4 variant=foot n=96 enabled=1 outer=67959 ns_per_outer=552.37
+hugemicro pmd result variant=foot n=96 enabled=1 outer=67959 reps=5 insn_per_outer=2790 median_ns_per_outer=552.37 min_ns_per_outer=551.08
+hugemicro pmd counters foot hook_calls=339780 syscalls_in_kernel=339710 fragment_entries=339715 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=339710 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=foot n=96 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=foot n=96 enabled=0 outer=56804 ns_per_outer=651.47
+hugemicro off rep 1 variant=foot n=96 enabled=0 outer=56804 ns_per_outer=649.32
+hugemicro off rep 2 variant=foot n=96 enabled=0 outer=56804 ns_per_outer=649.18
+hugemicro off rep 3 variant=foot n=96 enabled=0 outer=56804 ns_per_outer=649.85
+hugemicro off rep 4 variant=foot n=96 enabled=0 outer=56804 ns_per_outer=649.08
+hugemicro off result variant=foot n=96 enabled=0 outer=56804 reps=5 insn_per_outer=2790 median_ns_per_outer=649.32 min_ns_per_outer=649.08
+hugemicro off counters foot hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=foot n=128 enabled=1 outer=29246 ns_per_outer=719.52
+hugemicro pmd rep 1 variant=foot n=128 enabled=1 outer=29246 ns_per_outer=708.86
+hugemicro pmd rep 2 variant=foot n=128 enabled=1 outer=29246 ns_per_outer=714.86
+hugemicro pmd rep 3 variant=foot n=128 enabled=1 outer=29246 ns_per_outer=733.42
+hugemicro pmd rep 4 variant=foot n=128 enabled=1 outer=29246 ns_per_outer=712.76
+hugemicro pmd result variant=foot n=128 enabled=1 outer=29246 reps=5 insn_per_outer=3718 median_ns_per_outer=714.86 min_ns_per_outer=708.86
+hugemicro pmd counters foot hook_calls=146260 syscalls_in_kernel=146190 fragment_entries=146195 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=146190 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=foot n=128 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=foot n=128 enabled=0 outer=46448 ns_per_outer=822.84
+hugemicro off rep 1 variant=foot n=128 enabled=0 outer=46448 ns_per_outer=829.75
+hugemicro off rep 2 variant=foot n=128 enabled=0 outer=46448 ns_per_outer=824.71
+hugemicro off rep 3 variant=foot n=128 enabled=0 outer=46448 ns_per_outer=825.68
+hugemicro off rep 4 variant=foot n=128 enabled=0 outer=46448 ns_per_outer=819.84
+hugemicro off result variant=foot n=128 enabled=0 outer=46448 reps=5 insn_per_outer=3718 median_ns_per_outer=824.71 min_ns_per_outer=819.84
+hugemicro off counters foot hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=foot n=128 enabled=1 outer=27200 ns_per_outer=709.70
+hugemicro k4 rep 1 variant=foot n=128 enabled=1 outer=27200 ns_per_outer=722.42
+hugemicro k4 rep 2 variant=foot n=128 enabled=1 outer=27200 ns_per_outer=716.71
+hugemicro k4 rep 3 variant=foot n=128 enabled=1 outer=27200 ns_per_outer=716.39
+hugemicro k4 rep 4 variant=foot n=128 enabled=1 outer=27200 ns_per_outer=719.57
+hugemicro k4 result variant=foot n=128 enabled=1 outer=27200 reps=5 insn_per_outer=3718 median_ns_per_outer=716.71 min_ns_per_outer=709.70
+hugemicro k4 counters foot hook_calls=136035 syscalls_in_kernel=135965 fragment_entries=135970 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=135965 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=foot n=128 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=footl n=16 enabled=0 outer=33427 ns_per_outer=599.04
+hugemicro off rep 1 variant=footl n=16 enabled=0 outer=33427 ns_per_outer=459.80
+hugemicro off rep 2 variant=footl n=16 enabled=0 outer=33427 ns_per_outer=446.53
+hugemicro off rep 3 variant=footl n=16 enabled=0 outer=33427 ns_per_outer=451.81
+hugemicro off rep 4 variant=footl n=16 enabled=0 outer=33427 ns_per_outer=452.25
+hugemicro off result variant=footl n=16 enabled=0 outer=33427 reps=5 insn_per_outer=1222 median_ns_per_outer=452.25 min_ns_per_outer=446.53
+hugemicro off counters footl hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=footl n=16 enabled=1 outer=103582 ns_per_outer=368.99
+hugemicro pmd rep 1 variant=footl n=16 enabled=1 outer=103582 ns_per_outer=370.15
+hugemicro pmd rep 2 variant=footl n=16 enabled=1 outer=103582 ns_per_outer=366.05
+hugemicro pmd rep 3 variant=footl n=16 enabled=1 outer=103582 ns_per_outer=368.74
+hugemicro pmd rep 4 variant=footl n=16 enabled=1 outer=103582 ns_per_outer=366.67
+hugemicro pmd result variant=footl n=16 enabled=1 outer=103582 reps=5 insn_per_outer=1222 median_ns_per_outer=368.74 min_ns_per_outer=366.05
+hugemicro pmd counters footl hook_calls=517850 syscalls_in_kernel=517780 fragment_entries=517785 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=517780 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=footl n=16 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=footl n=16 enabled=1 outer=109177 ns_per_outer=367.73
+hugemicro k4 rep 1 variant=footl n=16 enabled=1 outer=109177 ns_per_outer=367.48
+hugemicro k4 rep 2 variant=footl n=16 enabled=1 outer=109177 ns_per_outer=367.78
+hugemicro k4 rep 3 variant=footl n=16 enabled=1 outer=109177 ns_per_outer=374.81
+hugemicro k4 rep 4 variant=footl n=16 enabled=1 outer=109177 ns_per_outer=368.40
+hugemicro k4 result variant=footl n=16 enabled=1 outer=109177 reps=5 insn_per_outer=1222 median_ns_per_outer=367.78 min_ns_per_outer=367.48
+hugemicro k4 counters footl hook_calls=545820 syscalls_in_kernel=545750 fragment_entries=545755 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=545750 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=footl n=16 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=footl n=32 enabled=1 outer=58454 ns_per_outer=684.33
+hugemicro pmd rep 1 variant=footl n=32 enabled=1 outer=58454 ns_per_outer=684.10
+hugemicro pmd rep 2 variant=footl n=32 enabled=1 outer=58454 ns_per_outer=683.13
+hugemicro pmd rep 3 variant=footl n=32 enabled=1 outer=58454 ns_per_outer=682.17
+hugemicro pmd rep 4 variant=footl n=32 enabled=1 outer=58454 ns_per_outer=685.49
+hugemicro pmd result variant=footl n=32 enabled=1 outer=58454 reps=5 insn_per_outer=2438 median_ns_per_outer=684.10 min_ns_per_outer=682.17
+hugemicro pmd counters footl hook_calls=292265 syscalls_in_kernel=292195 fragment_entries=292200 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=292195 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=footl n=32 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=footl n=32 enabled=1 outer=60015 ns_per_outer=683.79
+hugemicro k4 rep 1 variant=footl n=32 enabled=1 outer=60015 ns_per_outer=687.28
+hugemicro k4 rep 2 variant=footl n=32 enabled=1 outer=60015 ns_per_outer=686.22
+hugemicro k4 rep 3 variant=footl n=32 enabled=1 outer=60015 ns_per_outer=687.06
+hugemicro k4 rep 4 variant=footl n=32 enabled=1 outer=60015 ns_per_outer=688.72
+hugemicro k4 result variant=footl n=32 enabled=1 outer=60015 reps=5 insn_per_outer=2438 median_ns_per_outer=687.06 min_ns_per_outer=683.79
+hugemicro k4 counters footl hook_calls=300070 syscalls_in_kernel=300000 fragment_entries=300005 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=300000 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=footl n=32 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=footl n=32 enabled=0 outer=53896 ns_per_outer=772.62
+hugemicro off rep 1 variant=footl n=32 enabled=0 outer=53896 ns_per_outer=768.20
+hugemicro off rep 2 variant=footl n=32 enabled=0 outer=53896 ns_per_outer=767.27
+hugemicro off rep 3 variant=footl n=32 enabled=0 outer=53896 ns_per_outer=770.53
+hugemicro off rep 4 variant=footl n=32 enabled=0 outer=53896 ns_per_outer=772.21
+hugemicro off result variant=footl n=32 enabled=0 outer=53896 reps=5 insn_per_outer=2438 median_ns_per_outer=770.53 min_ns_per_outer=767.27
+hugemicro off counters footl hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=footl n=64 enabled=1 outer=29003 ns_per_outer=1324.79
+hugemicro k4 rep 1 variant=footl n=64 enabled=1 outer=29003 ns_per_outer=1311.11
+hugemicro k4 rep 2 variant=footl n=64 enabled=1 outer=29003 ns_per_outer=1312.62
+hugemicro k4 rep 3 variant=footl n=64 enabled=1 outer=29003 ns_per_outer=1321.83
+hugemicro k4 rep 4 variant=footl n=64 enabled=1 outer=29003 ns_per_outer=1312.83
+hugemicro k4 result variant=footl n=64 enabled=1 outer=29003 reps=5 insn_per_outer=4870 median_ns_per_outer=1312.83 min_ns_per_outer=1311.11
+hugemicro k4 counters footl hook_calls=145045 syscalls_in_kernel=144975 fragment_entries=144980 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=144975 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=footl n=64 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=footl n=64 enabled=0 outer=28507 ns_per_outer=1411.46
+hugemicro off rep 1 variant=footl n=64 enabled=0 outer=28507 ns_per_outer=1411.20
+hugemicro off rep 2 variant=footl n=64 enabled=0 outer=28507 ns_per_outer=1405.79
+hugemicro off rep 3 variant=footl n=64 enabled=0 outer=28507 ns_per_outer=1409.18
+hugemicro off rep 4 variant=footl n=64 enabled=0 outer=28507 ns_per_outer=1406.57
+hugemicro off result variant=footl n=64 enabled=0 outer=28507 reps=5 insn_per_outer=4870 median_ns_per_outer=1409.18 min_ns_per_outer=1405.79
+hugemicro off counters footl hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=footl n=64 enabled=1 outer=30459 ns_per_outer=1316.95
+hugemicro pmd rep 1 variant=footl n=64 enabled=1 outer=30459 ns_per_outer=1313.73
+hugemicro pmd rep 2 variant=footl n=64 enabled=1 outer=30459 ns_per_outer=1314.86
+hugemicro pmd rep 3 variant=footl n=64 enabled=1 outer=30459 ns_per_outer=1303.46
+hugemicro pmd rep 4 variant=footl n=64 enabled=1 outer=30459 ns_per_outer=1316.62
+hugemicro pmd result variant=footl n=64 enabled=1 outer=30459 reps=5 insn_per_outer=4870 median_ns_per_outer=1314.86 min_ns_per_outer=1303.46
+hugemicro pmd counters footl hook_calls=152325 syscalls_in_kernel=152255 fragment_entries=152260 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=152255 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=footl n=64 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=footl n=96 enabled=0 outer=19683 ns_per_outer=2046.17
+hugemicro off rep 1 variant=footl n=96 enabled=0 outer=19683 ns_per_outer=2041.66
+hugemicro off rep 2 variant=footl n=96 enabled=0 outer=19683 ns_per_outer=2046.15
+hugemicro off rep 3 variant=footl n=96 enabled=0 outer=19683 ns_per_outer=2054.08
+hugemicro off rep 4 variant=footl n=96 enabled=0 outer=19683 ns_per_outer=2041.79
+hugemicro off result variant=footl n=96 enabled=0 outer=19683 reps=5 insn_per_outer=7302 median_ns_per_outer=2046.15 min_ns_per_outer=2041.66
+hugemicro off counters footl hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=footl n=96 enabled=1 outer=20701 ns_per_outer=1955.79
+hugemicro k4 rep 1 variant=footl n=96 enabled=1 outer=20701 ns_per_outer=1954.60
+hugemicro k4 rep 2 variant=footl n=96 enabled=1 outer=20701 ns_per_outer=1953.52
+hugemicro k4 rep 3 variant=footl n=96 enabled=1 outer=20701 ns_per_outer=1943.81
+hugemicro k4 rep 4 variant=footl n=96 enabled=1 outer=20701 ns_per_outer=1942.67
+hugemicro k4 result variant=footl n=96 enabled=1 outer=20701 reps=5 insn_per_outer=7302 median_ns_per_outer=1953.52 min_ns_per_outer=1942.67
+hugemicro k4 counters footl hook_calls=103545 syscalls_in_kernel=103475 fragment_entries=103480 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=103475 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=footl n=96 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=footl n=96 enabled=1 outer=21276 ns_per_outer=1945.83
+hugemicro pmd rep 1 variant=footl n=96 enabled=1 outer=21276 ns_per_outer=1945.30
+hugemicro pmd rep 2 variant=footl n=96 enabled=1 outer=21276 ns_per_outer=1957.95
+hugemicro pmd rep 3 variant=footl n=96 enabled=1 outer=21276 ns_per_outer=1946.71
+hugemicro pmd rep 4 variant=footl n=96 enabled=1 outer=21276 ns_per_outer=1950.32
+hugemicro pmd result variant=footl n=96 enabled=1 outer=21276 reps=5 insn_per_outer=7302 median_ns_per_outer=1946.71 min_ns_per_outer=1945.30
+hugemicro pmd counters footl hook_calls=106420 syscalls_in_kernel=106350 fragment_entries=106355 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=106350 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=footl n=96 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro k4 rep 0 variant=footl n=128 enabled=1 outer=11706 ns_per_outer=2548.95
+hugemicro k4 rep 1 variant=footl n=128 enabled=1 outer=11706 ns_per_outer=2630.83
+hugemicro k4 rep 2 variant=footl n=128 enabled=1 outer=11706 ns_per_outer=2572.20
+hugemicro k4 rep 3 variant=footl n=128 enabled=1 outer=11706 ns_per_outer=2571.03
+hugemicro k4 rep 4 variant=footl n=128 enabled=1 outer=11706 ns_per_outer=2593.29
+hugemicro k4 result variant=footl n=128 enabled=1 outer=11706 reps=5 insn_per_outer=9734 median_ns_per_outer=2572.20 min_ns_per_outer=2548.95
+hugemicro k4 counters footl hook_calls=58585 syscalls_in_kernel=58515 fragment_entries=58520 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=58515 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=footl n=128 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro pmd rep 0 variant=footl n=128 enabled=1 outer=11230 ns_per_outer=2564.22
+hugemicro pmd rep 1 variant=footl n=128 enabled=1 outer=11230 ns_per_outer=2603.50
+hugemicro pmd rep 2 variant=footl n=128 enabled=1 outer=11230 ns_per_outer=2573.11
+hugemicro pmd rep 3 variant=footl n=128 enabled=1 outer=11230 ns_per_outer=2578.82
+hugemicro pmd rep 4 variant=footl n=128 enabled=1 outer=11230 ns_per_outer=2586.21
+hugemicro pmd result variant=footl n=128 enabled=1 outer=11230 reps=5 insn_per_outer=9734 median_ns_per_outer=2578.82 min_ns_per_outer=2564.22
+hugemicro pmd counters footl hook_calls=56205 syscalls_in_kernel=56135 fragment_entries=56140 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=56135 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=footl n=128 in_kernel_frac=0.9997 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=footl n=128 enabled=0 outer=14700 ns_per_outer=2694.39
+hugemicro off rep 1 variant=footl n=128 enabled=0 outer=14700 ns_per_outer=2769.88
+hugemicro off rep 2 variant=footl n=128 enabled=0 outer=14700 ns_per_outer=2774.20
+hugemicro off rep 3 variant=footl n=128 enabled=0 outer=14700 ns_per_outer=2741.88
+hugemicro off rep 4 variant=footl n=128 enabled=0 outer=14700 ns_per_outer=2686.11
+hugemicro off result variant=footl n=128 enabled=0 outer=14700 reps=5 insn_per_outer=9734 median_ns_per_outer=2741.88 min_ns_per_outer=2686.11
+hugemicro off counters footl hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 variant=sites64 n=1 enabled=1 outer=269360 ns_per_outer=153.88
+hugemicro pmd rep 1 variant=sites64 n=1 enabled=1 outer=269360 ns_per_outer=153.79
+hugemicro pmd rep 2 variant=sites64 n=1 enabled=1 outer=269360 ns_per_outer=153.60
+hugemicro pmd rep 3 variant=sites64 n=1 enabled=1 outer=269360 ns_per_outer=153.24
+hugemicro pmd rep 4 variant=sites64 n=1 enabled=1 outer=269360 ns_per_outer=153.08
+hugemicro pmd result variant=sites64 n=1 enabled=1 outer=269360 reps=5 insn_per_outer=138 median_ns_per_outer=153.60 min_ns_per_outer=153.08
+hugemicro pmd counters sites64 hook_calls=1346540 syscalls_in_kernel=1346470 fragment_entries=1346475 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1346470 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit variant=sites64 n=1 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 variant=sites64 n=1 enabled=0 outer=233123 ns_per_outer=173.01
+hugemicro off rep 1 variant=sites64 n=1 enabled=0 outer=233123 ns_per_outer=173.46
+hugemicro off rep 2 variant=sites64 n=1 enabled=0 outer=233123 ns_per_outer=177.09
+hugemicro off rep 3 variant=sites64 n=1 enabled=0 outer=233123 ns_per_outer=172.09
+hugemicro off rep 4 variant=sites64 n=1 enabled=0 outer=233123 ns_per_outer=171.64
+hugemicro off result variant=sites64 n=1 enabled=0 outer=233123 reps=5 insn_per_outer=138 median_ns_per_outer=173.01 min_ns_per_outer=171.64
+hugemicro off counters sites64 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 variant=sites64 n=1 enabled=1 outer=269814 ns_per_outer=153.52
+hugemicro k4 rep 1 variant=sites64 n=1 enabled=1 outer=269814 ns_per_outer=155.02
+hugemicro k4 rep 2 variant=sites64 n=1 enabled=1 outer=269814 ns_per_outer=154.74
+hugemicro k4 rep 3 variant=sites64 n=1 enabled=1 outer=269814 ns_per_outer=154.29
+hugemicro k4 rep 4 variant=sites64 n=1 enabled=1 outer=269814 ns_per_outer=153.42
+hugemicro k4 result variant=sites64 n=1 enabled=1 outer=269814 reps=5 insn_per_outer=138 median_ns_per_outer=154.29 min_ns_per_outer=153.42
+hugemicro k4 counters sites64 hook_calls=1348810 syscalls_in_kernel=1348740 fragment_entries=1348745 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1348740 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit variant=sites64 n=1 in_kernel_frac=0.9998 runtime_entries_per_outer=0.9998
+hugemicro off rep 0 mode=getppid size=1 enabled=0 ns_per_iter=146.53 ns_per_syscall=146.53
+hugemicro off rep 1 mode=getppid size=1 enabled=0 ns_per_iter=129.88 ns_per_syscall=129.88
+hugemicro off rep 2 mode=getppid size=1 enabled=0 ns_per_iter=130.50 ns_per_syscall=130.50
+hugemicro off rep 3 mode=getppid size=1 enabled=0 ns_per_iter=129.46 ns_per_syscall=129.46
+hugemicro off rep 4 mode=getppid size=1 enabled=0 ns_per_iter=130.52 ns_per_syscall=130.52
+hugemicro off result mode=getppid size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=1 median_ns_per_iter=130.50 median_ns_per_syscall=130.50 min_ns_per_syscall=129.46
+hugemicro off counters getppid hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 mode=getppid size=1 enabled=1 ns_per_iter=69.20 ns_per_syscall=69.20
+hugemicro pmd rep 1 mode=getppid size=1 enabled=1 ns_per_iter=67.35 ns_per_syscall=67.35
+hugemicro pmd rep 2 mode=getppid size=1 enabled=1 ns_per_iter=66.20 ns_per_syscall=66.20
+hugemicro pmd rep 3 mode=getppid size=1 enabled=1 ns_per_iter=66.20 ns_per_syscall=66.20
+hugemicro pmd rep 4 mode=getppid size=1 enabled=1 ns_per_iter=67.11 ns_per_syscall=67.11
+hugemicro pmd result mode=getppid size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=1 median_ns_per_iter=67.11 median_ns_per_syscall=67.11 min_ns_per_syscall=66.20
+hugemicro pmd counters getppid hook_calls=999825 syscalls_in_kernel=999755 fragment_entries=999760 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=999755 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit mode=getppid size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro k4 rep 0 mode=getppid size=1 enabled=1 ns_per_iter=67.80 ns_per_syscall=67.80
+hugemicro k4 rep 1 mode=getppid size=1 enabled=1 ns_per_iter=67.21 ns_per_syscall=67.21
+hugemicro k4 rep 2 mode=getppid size=1 enabled=1 ns_per_iter=67.20 ns_per_syscall=67.20
+hugemicro k4 rep 3 mode=getppid size=1 enabled=1 ns_per_iter=67.08 ns_per_syscall=67.08
+hugemicro k4 rep 4 mode=getppid size=1 enabled=1 ns_per_iter=66.70 ns_per_syscall=66.70
+hugemicro k4 result mode=getppid size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=1 median_ns_per_iter=67.20 median_ns_per_syscall=67.20 min_ns_per_syscall=66.70
+hugemicro k4 counters getppid hook_calls=999825 syscalls_in_kernel=999755 fragment_entries=999760 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=999755 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit mode=getppid size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro pmd rep 0 mode=raw_zn size=1 enabled=1 ns_per_iter=161.93 ns_per_syscall=80.96
+hugemicro pmd rep 1 mode=raw_zn size=1 enabled=1 ns_per_iter=162.23 ns_per_syscall=81.12
+hugemicro pmd rep 2 mode=raw_zn size=1 enabled=1 ns_per_iter=161.89 ns_per_syscall=80.95
+hugemicro pmd rep 3 mode=raw_zn size=1 enabled=1 ns_per_iter=161.58 ns_per_syscall=80.79
+hugemicro pmd rep 4 mode=raw_zn size=1 enabled=1 ns_per_iter=161.81 ns_per_syscall=80.91
+hugemicro pmd result mode=raw_zn size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=161.89 median_ns_per_syscall=80.95 min_ns_per_syscall=80.79
+hugemicro pmd counters raw_zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999515 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit mode=raw_zn size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro k4 rep 0 mode=raw_zn size=1 enabled=1 ns_per_iter=166.84 ns_per_syscall=83.42
+hugemicro k4 rep 1 mode=raw_zn size=1 enabled=1 ns_per_iter=164.06 ns_per_syscall=82.03
+hugemicro k4 rep 2 mode=raw_zn size=1 enabled=1 ns_per_iter=162.77 ns_per_syscall=81.38
+hugemicro k4 rep 3 mode=raw_zn size=1 enabled=1 ns_per_iter=163.33 ns_per_syscall=81.67
+hugemicro k4 rep 4 mode=raw_zn size=1 enabled=1 ns_per_iter=163.01 ns_per_syscall=81.50
+hugemicro k4 result mode=raw_zn size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=163.33 median_ns_per_syscall=81.67 min_ns_per_syscall=81.38
+hugemicro k4 counters raw_zn hook_calls=1999580 syscalls_in_kernel=1999509 fragment_entries=1999514 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999509 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=1
+hugemicro k4 kjit mode=raw_zn size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro off rep 0 mode=raw_zn size=1 enabled=0 ns_per_iter=299.26 ns_per_syscall=149.63
+hugemicro off rep 1 mode=raw_zn size=1 enabled=0 ns_per_iter=296.98 ns_per_syscall=148.49
+hugemicro off rep 2 mode=raw_zn size=1 enabled=0 ns_per_iter=297.12 ns_per_syscall=148.56
+hugemicro off rep 3 mode=raw_zn size=1 enabled=0 ns_per_iter=296.04 ns_per_syscall=148.02
+hugemicro off rep 4 mode=raw_zn size=1 enabled=0 ns_per_iter=297.00 ns_per_syscall=148.50
+hugemicro off result mode=raw_zn size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=297.00 median_ns_per_syscall=148.50 min_ns_per_syscall=148.02
+hugemicro off counters raw_zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 mode=raw_pipe size=1 enabled=1 ns_per_iter=204.84 ns_per_syscall=102.42
+hugemicro k4 rep 1 mode=raw_pipe size=1 enabled=1 ns_per_iter=206.58 ns_per_syscall=103.29
+hugemicro k4 rep 2 mode=raw_pipe size=1 enabled=1 ns_per_iter=205.78 ns_per_syscall=102.89
+hugemicro k4 rep 3 mode=raw_pipe size=1 enabled=1 ns_per_iter=205.54 ns_per_syscall=102.77
+hugemicro k4 rep 4 mode=raw_pipe size=1 enabled=1 ns_per_iter=205.06 ns_per_syscall=102.53
+hugemicro k4 result mode=raw_pipe size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=205.54 median_ns_per_syscall=102.77 min_ns_per_syscall=102.42
+hugemicro k4 counters raw_pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999515 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit mode=raw_pipe size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro off rep 0 mode=raw_pipe size=1 enabled=0 ns_per_iter=335.22 ns_per_syscall=167.61
+hugemicro off rep 1 mode=raw_pipe size=1 enabled=0 ns_per_iter=335.17 ns_per_syscall=167.59
+hugemicro off rep 2 mode=raw_pipe size=1 enabled=0 ns_per_iter=333.89 ns_per_syscall=166.95
+hugemicro off rep 3 mode=raw_pipe size=1 enabled=0 ns_per_iter=339.49 ns_per_syscall=169.75
+hugemicro off rep 4 mode=raw_pipe size=1 enabled=0 ns_per_iter=335.00 ns_per_syscall=167.50
+hugemicro off result mode=raw_pipe size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=335.17 median_ns_per_syscall=167.59 min_ns_per_syscall=166.95
+hugemicro off counters raw_pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 mode=raw_pipe size=1 enabled=1 ns_per_iter=205.04 ns_per_syscall=102.52
+hugemicro pmd rep 1 mode=raw_pipe size=1 enabled=1 ns_per_iter=205.59 ns_per_syscall=102.79
+hugemicro pmd rep 2 mode=raw_pipe size=1 enabled=1 ns_per_iter=204.99 ns_per_syscall=102.49
+hugemicro pmd rep 3 mode=raw_pipe size=1 enabled=1 ns_per_iter=204.89 ns_per_syscall=102.44
+hugemicro pmd rep 4 mode=raw_pipe size=1 enabled=1 ns_per_iter=204.56 ns_per_syscall=102.28
+hugemicro pmd result mode=raw_pipe size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=204.99 median_ns_per_syscall=102.49 min_ns_per_syscall=102.28
+hugemicro pmd counters raw_pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999515 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit mode=raw_pipe size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro off rep 0 mode=zn size=1 enabled=0 ns_per_iter=305.98 ns_per_syscall=152.99
+hugemicro off rep 1 mode=zn size=1 enabled=0 ns_per_iter=305.38 ns_per_syscall=152.69
+hugemicro off rep 2 mode=zn size=1 enabled=0 ns_per_iter=304.60 ns_per_syscall=152.30
+hugemicro off rep 3 mode=zn size=1 enabled=0 ns_per_iter=306.56 ns_per_syscall=153.28
+hugemicro off rep 4 mode=zn size=1 enabled=0 ns_per_iter=305.39 ns_per_syscall=152.70
+hugemicro off result mode=zn size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=305.39 median_ns_per_syscall=152.70 min_ns_per_syscall=152.30
+hugemicro off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 mode=zn size=1 enabled=1 ns_per_iter=164.72 ns_per_syscall=82.36
+hugemicro k4 rep 1 mode=zn size=1 enabled=1 ns_per_iter=165.32 ns_per_syscall=82.66
+hugemicro k4 rep 2 mode=zn size=1 enabled=1 ns_per_iter=163.50 ns_per_syscall=81.75
+hugemicro k4 rep 3 mode=zn size=1 enabled=1 ns_per_iter=163.22 ns_per_syscall=81.61
+hugemicro k4 rep 4 mode=zn size=1 enabled=1 ns_per_iter=163.85 ns_per_syscall=81.93
+hugemicro k4 result mode=zn size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=163.85 median_ns_per_syscall=81.93 min_ns_per_syscall=81.61
+hugemicro k4 counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit mode=zn size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro pmd rep 0 mode=zn size=1 enabled=1 ns_per_iter=164.05 ns_per_syscall=82.03
+hugemicro pmd rep 1 mode=zn size=1 enabled=1 ns_per_iter=163.19 ns_per_syscall=81.60
+hugemicro pmd rep 2 mode=zn size=1 enabled=1 ns_per_iter=165.81 ns_per_syscall=82.91
+hugemicro pmd rep 3 mode=zn size=1 enabled=1 ns_per_iter=164.22 ns_per_syscall=82.11
+hugemicro pmd rep 4 mode=zn size=1 enabled=1 ns_per_iter=163.85 ns_per_syscall=81.92
+hugemicro pmd result mode=zn size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=164.05 median_ns_per_syscall=82.03 min_ns_per_syscall=81.60
+hugemicro pmd counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit mode=zn size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro k4 rep 0 mode=pipe size=1 enabled=1 ns_per_iter=207.46 ns_per_syscall=103.73
+hugemicro k4 rep 1 mode=pipe size=1 enabled=1 ns_per_iter=208.02 ns_per_syscall=104.01
+hugemicro k4 rep 2 mode=pipe size=1 enabled=1 ns_per_iter=207.60 ns_per_syscall=103.80
+hugemicro k4 rep 3 mode=pipe size=1 enabled=1 ns_per_iter=206.73 ns_per_syscall=103.36
+hugemicro k4 rep 4 mode=pipe size=1 enabled=1 ns_per_iter=207.38 ns_per_syscall=103.69
+hugemicro k4 result mode=pipe size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=207.46 median_ns_per_syscall=103.73 min_ns_per_syscall=103.36
+hugemicro k4 counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit mode=pipe size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro pmd rep 0 mode=pipe size=1 enabled=1 ns_per_iter=206.48 ns_per_syscall=103.24
+hugemicro pmd rep 1 mode=pipe size=1 enabled=1 ns_per_iter=206.08 ns_per_syscall=103.04
+hugemicro pmd rep 2 mode=pipe size=1 enabled=1 ns_per_iter=206.37 ns_per_syscall=103.19
+hugemicro pmd rep 3 mode=pipe size=1 enabled=1 ns_per_iter=206.94 ns_per_syscall=103.47
+hugemicro pmd rep 4 mode=pipe size=1 enabled=1 ns_per_iter=205.50 ns_per_syscall=102.75
+hugemicro pmd result mode=pipe size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=206.37 median_ns_per_syscall=103.19 min_ns_per_syscall=102.75
+hugemicro pmd counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit mode=pipe size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro off rep 0 mode=pipe size=1 enabled=0 ns_per_iter=343.38 ns_per_syscall=171.69
+hugemicro off rep 1 mode=pipe size=1 enabled=0 ns_per_iter=342.99 ns_per_syscall=171.49
+hugemicro off rep 2 mode=pipe size=1 enabled=0 ns_per_iter=342.62 ns_per_syscall=171.31
+hugemicro off rep 3 mode=pipe size=1 enabled=0 ns_per_iter=343.82 ns_per_syscall=171.91
+hugemicro off rep 4 mode=pipe size=1 enabled=0 ns_per_iter=344.65 ns_per_syscall=172.32
+hugemicro off result mode=pipe size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=343.38 median_ns_per_syscall=171.69 min_ns_per_syscall=171.31
+hugemicro off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 mode=zn size=16 enabled=1 ns_per_iter=164.49 ns_per_syscall=82.24
+hugemicro pmd rep 1 mode=zn size=16 enabled=1 ns_per_iter=163.78 ns_per_syscall=81.89
+hugemicro pmd rep 2 mode=zn size=16 enabled=1 ns_per_iter=164.18 ns_per_syscall=82.09
+hugemicro pmd rep 3 mode=zn size=16 enabled=1 ns_per_iter=160.61 ns_per_syscall=80.31
+hugemicro pmd rep 4 mode=zn size=16 enabled=1 ns_per_iter=166.78 ns_per_syscall=83.39
+hugemicro pmd result mode=zn size=16 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=164.18 median_ns_per_syscall=82.09 min_ns_per_syscall=80.31
+hugemicro pmd counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit mode=zn size=16 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro off rep 0 mode=zn size=16 enabled=0 ns_per_iter=301.15 ns_per_syscall=150.57
+hugemicro off rep 1 mode=zn size=16 enabled=0 ns_per_iter=297.34 ns_per_syscall=148.67
+hugemicro off rep 2 mode=zn size=16 enabled=0 ns_per_iter=297.53 ns_per_syscall=148.77
+hugemicro off rep 3 mode=zn size=16 enabled=0 ns_per_iter=306.05 ns_per_syscall=153.03
+hugemicro off rep 4 mode=zn size=16 enabled=0 ns_per_iter=305.16 ns_per_syscall=152.58
+hugemicro off result mode=zn size=16 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=301.15 median_ns_per_syscall=150.57 min_ns_per_syscall=148.67
+hugemicro off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 mode=zn size=16 enabled=1 ns_per_iter=162.51 ns_per_syscall=81.26
+hugemicro k4 rep 1 mode=zn size=16 enabled=1 ns_per_iter=161.96 ns_per_syscall=80.98
+hugemicro k4 rep 2 mode=zn size=16 enabled=1 ns_per_iter=162.19 ns_per_syscall=81.09
+hugemicro k4 rep 3 mode=zn size=16 enabled=1 ns_per_iter=162.12 ns_per_syscall=81.06
+hugemicro k4 rep 4 mode=zn size=16 enabled=1 ns_per_iter=162.04 ns_per_syscall=81.02
+hugemicro k4 result mode=zn size=16 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=162.12 median_ns_per_syscall=81.06 min_ns_per_syscall=80.98
+hugemicro k4 counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit mode=zn size=16 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro off rep 0 mode=pipe size=16 enabled=0 ns_per_iter=344.06 ns_per_syscall=172.03
+hugemicro off rep 1 mode=pipe size=16 enabled=0 ns_per_iter=344.99 ns_per_syscall=172.50
+hugemicro off rep 2 mode=pipe size=16 enabled=0 ns_per_iter=345.10 ns_per_syscall=172.55
+hugemicro off rep 3 mode=pipe size=16 enabled=0 ns_per_iter=343.41 ns_per_syscall=171.71
+hugemicro off rep 4 mode=pipe size=16 enabled=0 ns_per_iter=344.52 ns_per_syscall=172.26
+hugemicro off result mode=pipe size=16 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=344.52 median_ns_per_syscall=172.26 min_ns_per_syscall=171.71
+hugemicro off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 mode=pipe size=16 enabled=1 ns_per_iter=206.79 ns_per_syscall=103.40
+hugemicro pmd rep 1 mode=pipe size=16 enabled=1 ns_per_iter=205.47 ns_per_syscall=102.74
+hugemicro pmd rep 2 mode=pipe size=16 enabled=1 ns_per_iter=208.90 ns_per_syscall=104.45
+hugemicro pmd rep 3 mode=pipe size=16 enabled=1 ns_per_iter=206.02 ns_per_syscall=103.01
+hugemicro pmd rep 4 mode=pipe size=16 enabled=1 ns_per_iter=207.27 ns_per_syscall=103.63
+hugemicro pmd result mode=pipe size=16 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=206.79 median_ns_per_syscall=103.40 min_ns_per_syscall=102.74
+hugemicro pmd counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit mode=pipe size=16 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro k4 rep 0 mode=pipe size=16 enabled=1 ns_per_iter=205.96 ns_per_syscall=102.98
+hugemicro k4 rep 1 mode=pipe size=16 enabled=1 ns_per_iter=205.94 ns_per_syscall=102.97
+hugemicro k4 rep 2 mode=pipe size=16 enabled=1 ns_per_iter=207.05 ns_per_syscall=103.52
+hugemicro k4 rep 3 mode=pipe size=16 enabled=1 ns_per_iter=204.92 ns_per_syscall=102.46
+hugemicro k4 rep 4 mode=pipe size=16 enabled=1 ns_per_iter=205.86 ns_per_syscall=102.93
+hugemicro k4 result mode=pipe size=16 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=205.94 median_ns_per_syscall=102.97 min_ns_per_syscall=102.46
+hugemicro k4 counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit mode=pipe size=16 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro pmd rep 0 mode=zn size=64 enabled=1 ns_per_iter=165.45 ns_per_syscall=82.72
+hugemicro pmd rep 1 mode=zn size=64 enabled=1 ns_per_iter=165.09 ns_per_syscall=82.55
+hugemicro pmd rep 2 mode=zn size=64 enabled=1 ns_per_iter=165.17 ns_per_syscall=82.58
+hugemicro pmd rep 3 mode=zn size=64 enabled=1 ns_per_iter=166.25 ns_per_syscall=83.13
+hugemicro pmd rep 4 mode=zn size=64 enabled=1 ns_per_iter=165.40 ns_per_syscall=82.70
+hugemicro pmd result mode=zn size=64 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=165.40 median_ns_per_syscall=82.70 min_ns_per_syscall=82.55
+hugemicro pmd counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit mode=zn size=64 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro k4 rep 0 mode=zn size=64 enabled=1 ns_per_iter=165.19 ns_per_syscall=82.60
+hugemicro k4 rep 1 mode=zn size=64 enabled=1 ns_per_iter=165.00 ns_per_syscall=82.50
+hugemicro k4 rep 2 mode=zn size=64 enabled=1 ns_per_iter=165.88 ns_per_syscall=82.94
+hugemicro k4 rep 3 mode=zn size=64 enabled=1 ns_per_iter=164.51 ns_per_syscall=82.25
+hugemicro k4 rep 4 mode=zn size=64 enabled=1 ns_per_iter=165.10 ns_per_syscall=82.55
+hugemicro k4 result mode=zn size=64 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=165.10 median_ns_per_syscall=82.55 min_ns_per_syscall=82.25
+hugemicro k4 counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit mode=zn size=64 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro off rep 0 mode=zn size=64 enabled=0 ns_per_iter=305.99 ns_per_syscall=153.00
+hugemicro off rep 1 mode=zn size=64 enabled=0 ns_per_iter=306.39 ns_per_syscall=153.20
+hugemicro off rep 2 mode=zn size=64 enabled=0 ns_per_iter=305.81 ns_per_syscall=152.91
+hugemicro off rep 3 mode=zn size=64 enabled=0 ns_per_iter=306.93 ns_per_syscall=153.46
+hugemicro off rep 4 mode=zn size=64 enabled=0 ns_per_iter=307.36 ns_per_syscall=153.68
+hugemicro off result mode=zn size=64 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=306.39 median_ns_per_syscall=153.20 min_ns_per_syscall=152.91
+hugemicro off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 rep 0 mode=pipe size=64 enabled=1 ns_per_iter=208.75 ns_per_syscall=104.38
+hugemicro k4 rep 1 mode=pipe size=64 enabled=1 ns_per_iter=208.84 ns_per_syscall=104.42
+hugemicro k4 rep 2 mode=pipe size=64 enabled=1 ns_per_iter=208.16 ns_per_syscall=104.08
+hugemicro k4 rep 3 mode=pipe size=64 enabled=1 ns_per_iter=207.64 ns_per_syscall=103.82
+hugemicro k4 rep 4 mode=pipe size=64 enabled=1 ns_per_iter=207.15 ns_per_syscall=103.58
+hugemicro k4 result mode=pipe size=64 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=208.16 median_ns_per_syscall=104.08 min_ns_per_syscall=103.58
+hugemicro k4 counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro k4 kjit mode=pipe size=64 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro off rep 0 mode=pipe size=64 enabled=0 ns_per_iter=346.58 ns_per_syscall=173.29
+hugemicro off rep 1 mode=pipe size=64 enabled=0 ns_per_iter=346.88 ns_per_syscall=173.44
+hugemicro off rep 2 mode=pipe size=64 enabled=0 ns_per_iter=346.42 ns_per_syscall=173.21
+hugemicro off rep 3 mode=pipe size=64 enabled=0 ns_per_iter=345.08 ns_per_syscall=172.54
+hugemicro off rep 4 mode=pipe size=64 enabled=0 ns_per_iter=344.79 ns_per_syscall=172.39
+hugemicro off result mode=pipe size=64 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=346.42 median_ns_per_syscall=173.21 min_ns_per_syscall=172.39
+hugemicro off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd rep 0 mode=pipe size=64 enabled=1 ns_per_iter=207.54 ns_per_syscall=103.77
+hugemicro pmd rep 1 mode=pipe size=64 enabled=1 ns_per_iter=207.36 ns_per_syscall=103.68
+hugemicro pmd rep 2 mode=pipe size=64 enabled=1 ns_per_iter=208.53 ns_per_syscall=104.26
+hugemicro pmd rep 3 mode=pipe size=64 enabled=1 ns_per_iter=207.97 ns_per_syscall=103.99
+hugemicro pmd rep 4 mode=pipe size=64 enabled=1 ns_per_iter=208.23 ns_per_syscall=104.12
+hugemicro pmd result mode=pipe size=64 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=207.97 median_ns_per_syscall=103.99 min_ns_per_syscall=103.68
+hugemicro pmd counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+hugemicro pmd kjit mode=pipe size=64 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+hugemicro: done
+[  386.865202] kjit: 0 of 9287 translation requests still queued at unload (freed by the kernel)
+[  386.887527] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[  386.904792] reboot: Power down

@@ -1,0 +1,287 @@
+diff --git a/kjit_glue.c b/kjit_glue.c
+index f5aca10..b62403b 100644
+--- a/kjit_glue.c
++++ b/kjit_glue.c
+@@ -102,6 +102,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/timekeeping.h>
+ #include <linux/uaccess.h>
++#include <linux/vmalloc.h>
+ #include <linux/workqueue.h>
+ 
+ #include <asm/arch_timer.h>
+@@ -527,9 +528,99 @@ static atomic64_t kjit_req_ran = ATOMIC64_INIT(0);
+  * the text patcher, whose icache flush IPIs every CPU.
+  */
+ 
+-/* The slots of one execmem allocation. @used, @map: kjit_arena_lock. */
++/*
++ * EXPERIMENT (exp/huge-arena, never merged): the chunk can be one 2 MiB PMD
++ * block (exp_huge = 1) instead of an execmem allocation of 4 KiB pages. The
++ * switch changes only through debugfs exp_huge, with KJIT disabled and no
++ * fragment left (exp_huge_set), so a chunk lives and dies in one mode.
++ */
++static u32 exp_huge;
++
++/* init_mm is not exported: the kernel tables are TTBR1's (swapper_pg_dir, KPTI on or off). */
++static pgd_t *exp_pgd_k(unsigned long addr)
++{
++	pgd_t *base = __va(read_sysreg(ttbr1_el1) & GENMASK_ULL(47, 12));
++
++	return base + pgd_index(addr);
++}
++
++/* Walks the kernel tables for @addr: returns the leaf value, its level (3 pte, 2 pmd, 1 pud), 0 if none. */
++static u64 exp_walk(unsigned long addr, int *level, bool *cont)
++{
++	pgd_t *pgdp = exp_pgd_k(addr);
++	p4d_t *p4dp;
++	pud_t *pudp, pud;
++	pmd_t *pmdp, pmd;
++	pte_t *ptep, pte;
++
++	*level = 0;
++	*cont = false;
++	if (pgd_none(pgdp_get(pgdp)))
++		return 0;
++	p4dp = p4d_offset(pgdp, addr);
++	if (p4d_none(p4dp_get(p4dp)))
++		return 0;
++	pudp = pud_offset(p4dp, addr);
++	pud = pudp_get(pudp);
++	if (pud_none(pud))
++		return 0;
++	if (pud_leaf(pud)) {
++		*level = 1;
++		return pud_val(pud);
++	}
++	pmdp = pmd_offset(pudp, addr);
++	pmd = pmdp_get(pmdp);
++	if (pmd_none(pmd))
++		return 0;
++	if (pmd_leaf(pmd)) {
++		*level = 2;
++		*cont = !!(pmd_val(pmd) & PMD_SECT_CONT);
++		return pmd_val(pmd);
++	}
++	ptep = pte_offset_kernel(pmdp, addr);
++	pte = __ptep_get(ptep);
++	*level = 3;
++	*cont = !!(pte_val(pte) & PTE_CONT);
++	return pte_val(pte);
++}
++
++/*
++ * EXPERIMENT: one 2 MiB, 2 MiB-aligned chunk, ROX from the start and mapped by
++ * a single PMD block, or NULL. The pages hold whatever they held (the caller
++ * fills them with BRK through the text patcher). A mapping that is not one
++ * PMD leaf is refused: a chunk that silently fell back to 4 KiB pages would
++ * make the experiment measure the wrong thing.
++ */
++static void *exp_huge_chunk_alloc(u32 mode)
++{
++	int level;
++	bool cont;
++	/*
++	 * mode 1: one PMD block. mode 2 (control): the same allocation without
++	 * VM_ALLOW_HUGE_VMAP, so 4 KiB pages, but 2 MiB-aligned and ROX from the
++	 * start like mode 1, to separate the mapping size from the alignment.
++	 */
++	void *base = __vmalloc_node_range_noprof(KJIT_ARENA_CHUNK, KJIT_ARENA_CHUNK,
++						 VMALLOC_START, VMALLOC_END, GFP_KERNEL,
++						 PAGE_KERNEL_ROX, mode == 1 ? VM_ALLOW_HUGE_VMAP : 0,
++						 NUMA_NO_NODE, __builtin_return_address(0));
++
++	if (!base)
++		return NULL;
++	exp_walk((unsigned long)base, &level, &cont);
++	if (level != (mode == 1 ? 2 : 3) || cont) {
++		pr_err("kjit: exp_huge=%u chunk %px has the wrong mapping (level %d cont %d)\n",
++		       mode, base, level, cont);
++		vfree(base);
++		return NULL;
++	}
++	return base;
++}
++
++/* The slots of one chunk. @used, @map: kjit_arena_lock. */
+ struct kjit_arena_chunk {
+ 	struct list_head node;		/* kjit_arena_chunks */
++	bool huge;			/* EXPERIMENT: PMD block (vfree) instead of execmem */
+ 	void *base;			/* ROX from creation to execmem_free() */
+ 	unsigned int used;		/* granules in use */
+ 	unsigned long map[BITS_TO_LONGS(KJIT_ARENA_GRANULES)];	/* 1 = in use */
+@@ -566,6 +657,29 @@ static struct kjit_arena_chunk *kjit_arena_chunk_new(void)
+ 
+ 	if (!c)
+ 		return ERR_PTR(-ENOMEM);
++	if (READ_ONCE(exp_huge)) {	/* EXPERIMENT */
++		size_t off;
++
++		c->huge = true;
++		c->base = exp_huge_chunk_alloc(READ_ONCE(exp_huge));
++		if (!c->base) {
++			kvfree(c);
++			return ERR_PTR(-ENOMEM);
++		}
++		/*
++		 * Already ROX, so the BRK fill goes through the text patcher; in
++		 * pieces, because it holds patch_lock with interrupts off for a call.
++		 */
++		for (off = 0; off < KJIT_ARENA_CHUNK; off += SZ_64K) {
++			if (WARN_ON_ONCE(!aarch64_insn_set(c->base + off, AARCH64_BREAK_FAULT, SZ_64K))) {
++				vfree(c->base);
++				kvfree(c);
++				return ERR_PTR(-EINVAL);
++			}
++			cond_resched();
++		}
++		return c;
++	}
+ 	c->base = execmem_alloc(EXECMEM_BPF, KJIT_ARENA_CHUNK);
+ 	if (!c->base) {
+ 		kvfree(c);
+@@ -663,7 +777,10 @@ static void kjit_arena_free(void *slot, size_t size)
+ 	mutex_unlock(&kjit_arena_lock);
+ 	if (empty) {
+ 		/* VM_FLUSH_RESET_PERMS (execmem) restores the linear map on vfree. */
+-		execmem_free(empty->base);
++		if (empty->huge)	/* EXPERIMENT: the linear alias was never touched */
++			vfree(empty->base);
++		else
++			execmem_free(empty->base);
+ 		kvfree(empty);
+ 	}
+ }
+@@ -2629,6 +2746,122 @@ static int kjit_counter_cpu_online(unsigned int cpu)
+ 	return 0;
+ }
+ 
++/* ------------------------------------------------------------------------- */
++/* EXPERIMENT (exp/huge-arena, never merged): 4 KiB / PMD arena chunk switch    */
++
++/*
++ * exp_huge selects the next chunk's mapping: 0 = A17's execmem allocation of
++ * 4 KiB pages, 1 = one PMD block, 2 = control: 4 KiB pages, 2 MiB-aligned, ROX from the start. It changes only with KJIT disabled: every
++ * fragment of every mm is dropped (seq++ so a translation in flight cannot
++ * install), the retirements and image frees are waited for, and a chunk that is
++ * left makes the write fail with -EBUSY. Like exp_img of exp/rox-rwx, so modes
++ * pair inside one boot.
++ */
++static int exp_huge_set(void *data, u64 val)
++{
++	struct kjit_mm *kmm;
++	unsigned int bkt;
++	bool any;
++	u64 n = 0;
++
++	if (val > 2)
++		return -EINVAL;
++	if (READ_ONCE(kjit_enabled))
++		return -EBUSY;
++	rcu_read_lock();
++	hash_for_each_rcu(kjit_mm_hash, bkt, kmm, hash_node) {
++		spin_lock(&kmm->lock);
++		kmm->seq++;
++		n += kjit_mm_flush_locked(kmm, 0, ULONG_MAX);
++		spin_unlock(&kmm->lock);
++	}
++	rcu_read_unlock();
++	if (n)
++		kjit_rs_note(KJIT_NOTE_INVALIDATED, n);
++	kjit_hook_srcu_barrier();
++	rcu_barrier();
++	flush_workqueue(kjit_wq);
++	spin_lock(&kjit_frags_lock);
++	any = !list_empty(&kjit_all_frags);
++	spin_unlock(&kjit_frags_lock);
++	if (any || atomic_long_read(&kjit_arena_nchunks))
++		return -EBUSY;
++	WRITE_ONCE(exp_huge, val);
++	return 0;
++}
++
++static int exp_huge_get(void *data, u64 *val)
++{
++	*val = READ_ONCE(exp_huge);
++	return 0;
++}
++DEFINE_DEBUGFS_ATTRIBUTE(exp_huge_fops, exp_huge_get, exp_huge_set, "%llu\n");
++
++/*
++ * Page-table evidence per arena chunk: how the 512 4 KiB pages of its vmalloc
++ * alias are mapped (PMD leaf, PTE, PTE_CONT), whether they are one physically
++ * contiguous 2 MiB-aligned run, the attribute bits of the first page's
++ * descriptor, and how the linear-map alias of every page is mapped and whether
++ * it is read-only.
++ */
++static int exp_chunks_show(struct seq_file *m, void *unused)
++{
++	struct kjit_arena_chunk *c;
++	unsigned int nchunks = 0;
++
++	mutex_lock(&kjit_arena_lock);
++	list_for_each_entry(c, &kjit_arena_chunks, node) {
++		unsigned int vm_pmd = 0, vm_pte = 0, vm_cont = 0, contig = 0, lm_blk = 0, lm_pte = 0,
++			     lm_ro = 0, lm_cont = 0, i;
++		unsigned long pfn0 = 0;
++		u64 d0 = 0;
++		int l0 = 0;
++		bool c0 = false;
++
++		for (i = 0; i < KJIT_ARENA_CHUNK / PAGE_SIZE; i++) {
++			unsigned long va = (unsigned long)c->base + (unsigned long)i * PAGE_SIZE;
++			struct page *pg = vmalloc_to_page((void *)va);
++			int vl, ll;
++			bool vc, lc;
++			u64 vv = exp_walk(va, &vl, &vc);
++			u64 lv = exp_walk((unsigned long)page_address(pg), &ll, &lc);
++
++			if (!i) {
++				d0 = vv;
++				l0 = vl;
++				c0 = vc;
++				pfn0 = page_to_pfn(pg);
++			}
++			if (page_to_pfn(pg) == pfn0 + i)
++				contig++;
++			if (vl == 2)
++				vm_pmd++;
++			else if (vl == 3)
++				vm_pte++;
++			if (vc && vl == 3)
++				vm_cont++;
++			if (ll == 2)
++				lm_blk++;
++			else if (ll == 3)
++				lm_pte++;
++			if (lc)
++				lm_cont++;
++			if (lv & PTE_RDONLY)
++				lm_ro++;
++		}
++		seq_printf(m, "chunk %px huge %u va_align_2m %u pa0 %lx pa_align_2m %u pfn_contig_pages %u first_level %d first_cont %d first_desc %016llx vm_pmd_pages %u vm_pte_pages %u vm_cont_pages %u lm_alias_block_pages %u lm_alias_pte_pages %u lm_alias_cont_pages %u lm_alias_ro_pages %u\n",
++			   c->base, c->huge, IS_ALIGNED((unsigned long)c->base, SZ_2M),
++			   pfn0 << PAGE_SHIFT, IS_ALIGNED(pfn0 << PAGE_SHIFT, SZ_2M), contig, l0, c0,
++			   d0, vm_pmd, vm_pte, vm_cont, lm_blk, lm_pte, lm_cont, lm_ro);
++		nchunks++;
++	}
++	mutex_unlock(&kjit_arena_lock);
++	seq_printf(m, "chunks %u exp_huge %u vmalloc %lx-%lx\n", nchunks, READ_ONCE(exp_huge),
++		   (unsigned long)VMALLOC_START, (unsigned long)VMALLOC_END);
++	return 0;
++}
++DEFINE_SHOW_ATTRIBUTE(exp_chunks);
++
+ int kjit_glue_init(void)
+ {
+ 	int ret, cpu;
+@@ -2668,6 +2901,8 @@ int kjit_glue_init(void)
+ 	debugfs_create_file("ibtc_slots", 0600, kjit_debugfs, NULL, &kjit_ibtc_slots_fops);
+ 	debugfs_create_file_unsafe("neon_noise_us", 0600, kjit_debugfs, NULL, &kjit_neon_noise_fops);
+ 	debugfs_create_file("neon_noise_hits", 0400, kjit_debugfs, NULL, &kjit_neon_hits_fops);
++	debugfs_create_file_unsafe("exp_huge", 0600, kjit_debugfs, NULL, &exp_huge_fops);	/* EXPERIMENT */
++	debugfs_create_file("exp_chunks", 0400, kjit_debugfs, NULL, &exp_chunks_fops);	/* EXPERIMENT */
+ 
+ 	ret = kjit_register_hook(&kjit_hook_ops);
+ 	if (ret) {

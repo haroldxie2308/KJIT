@@ -1,0 +1,5 @@
+label=huge-ctl-k1-b2 kpti=1 profile=kjit-guest
+append=console=ttyAMA0 panic=-1 nokaslr kpti=1 rodata=off
+waited_s=0 load1_before=2.68
+cmd=UB_HUGE_STATES='k4a pmd' UB_HUGE_FIRST=pmd UB_HUGE_WARM=300000 UB_HUGE_KB=1 sh /opt/kjit-tests/huge-sweep.sh /tmp/hs 500000 6 1 1024
+load1_after=3.51 guest_run_status=0

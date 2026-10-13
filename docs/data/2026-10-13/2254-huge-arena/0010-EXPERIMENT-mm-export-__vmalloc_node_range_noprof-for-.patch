@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: haroldxie <xiewenhao2308@icloud.com>
+Date: Tue, 13 Oct 2026 17:00:00 +0800
+Subject: [PATCH] EXPERIMENT: mm: export __vmalloc_node_range_noprof() for the
+ KJIT huge-arena experiment
+
+EXPERIMENT (exp/huge-arena), not for merge as is. The KJIT runtime wants
+one 2 MiB chunk of read-only, executable memory that is mapped by a single
+PMD block (VM_ALLOW_HUGE_VMAP, PAGE_KERNEL_ROX), which execmem_alloc()
+cannot ask for on arm64 (EXECMEM_BPF is PAGE_KERNEL with 4 KiB pages, and
+change_memory_common() refuses VM_ALLOW_HUGE_VMAP areas, so the 4 KiB path
+cannot be converted afterwards). Export the allocator that takes the
+protection and the vm flags. GPL-only.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+---
+ mm/vmalloc.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -4101,6 +4101,7 @@ void *__vmalloc_node_range_noprof(unsigned long size, unsigned long align,
+ 
+ 	return NULL;
+ }
++EXPORT_SYMBOL_GPL(__vmalloc_node_range_noprof);
+ 
+ /**
+  * __vmalloc_node - allocate virtually contiguous memory
+-- 
+2.43.0
