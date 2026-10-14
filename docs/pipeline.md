@@ -226,9 +226,11 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
   `CfgError::RegVirt`. Runtime-exit payloads are not admitted: their only
   user-chosen register is the param0 capture, which accepts every register
   class, so they cannot reject intrinsically.
-- Invariant this rests on: reg-virt rewrites each original instruction
-  independently of its neighbours. A context-sensitive allocator would have to
-  move admission to block level.
+- Invariant this rests on: reg-virt admits each original instruction
+  independently of its neighbours: whether an instruction can be lowered, and
+  its scratch use. The emitted words may depend on block-local state, as A20's
+  SP alignment fact does, but admission never does. A context-sensitive
+  allocator would have to move admission to block level.
 - The harness original-code interpreters call `admit_at` (the raw trace view
   `admit_word`), so they stop exactly where the translated code exits, running
   off the end of the text included. There is no separate "fell off the end"
@@ -336,6 +338,8 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
     of a pair access by a multiple of 16, and `add`/`sub sp, sp, #imm` of a
     multiple of 16.
   - Unknown: at the start of every block, and after any other write to x17.
+    A block is entered only at its start (Entry labels (A20)), so the fact
+    holds on every path to the word.
   - Exact: SP changes only through x17 inside a fragment. A check already
     proved alignment, and an aligned SP plus a multiple of 16 stays aligned.
     So every elided check would have passed, and every access that natively
@@ -357,8 +361,21 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
   by reg-virt like every other exit group, and placed out of line in a cold
   region after the body so nothing falls through into it. One stub per
   original memory instruction; its accesses share it.
-- Stub labels are their own label kind. `vlabels` stay the body-entry map
-  keyed by original PC.
+- Stub labels are their own label kind. `vlabels` stay the body map keyed by
+  original PC: every original instruction's first word, used for tracing and
+  the harness.
+- **Entry labels (A20).** Only `ExecutionFragment::entry_labels` can be
+  entered: the fragment's `entry_pc`, plus the start of every CFG block. They
+  form the entry table the verifier sees, and the labels the runtime keeps
+  (kernel `struct kjit_label`, harness code cache), publishes into dispatch
+  tables and links to. A transfer whose target is in the middle of a block
+  misses there. The runtime finds the target as a block start of another
+  fragment, or the target is profiled and translated as its own entry.
+  - Invariant: a fragment is entered only at a block start. Block-local
+    translation state is therefore sound: A20's SP alignment fact, and any
+    later block-local optimization.
+  - Before A20 every original PC was enterable. That was harmless only while
+    reg-virt kept no state across instructions.
 - Representation: rephrase puts each stub in `RephrasedBlock.cold` (exit groups
   only; reg-virt rejects anything else there). Layout order is prologue,
   epilogue, every block body, then every block's `cold` in block order. Each
@@ -1329,9 +1346,9 @@ stub_offset }], entry_offsets: &[usize], link_sites: &[(usize, u64)] }`
 (A16), all offsets relative to the fragment
 base. `ori_pc` is not part of the input: the stub loads its own resume PC, so the
 table's PC column is not safety-relevant. The harness builds the input from
-`ExecutionFragment` (`FragmentTables::of`): the entry table is `entry_offset`
-plus every `vlabels` offset, because any of them can be the runtime's entry
-address (and, since A11, a dispatch target). `verify_fragment` returns
+`ExecutionFragment` (`FragmentTables::of`): the entry table is the
+`entry_labels` offsets (`entry_offset` included), because exactly those can be
+the runtime's entry address or a dispatch or link target (A20, Entry labels). `verify_fragment` returns
 `VerifyOk { uses_fpsimd: bool }`: true iff some word is `Form::Simd` or a
 `WindowAccess` with `fpsimd`. The kernel uses this value (independent of the
 translator) to decide how to run the fragment; the harness cross-checks it on
@@ -1580,8 +1597,8 @@ region; rule 3's pt_regs fact is its refinement.
   too. `verify_mutation_tests.rs` is the G1 mutation suite: each mutation class
   must be rejected 100%.
 - Kernel (K2): `runtime/translate.rs` runs `verify_fragment` on exactly the
-  bytes, fault-site table and entry table (`entry_offset` + every `vlabels`
-  offset) that `kjit_install` installs; a rejected fragment is counted
+  bytes, fault-site table and entry table (the `entry_labels` offsets) that
+  `kjit_install` installs; a rejected fragment is counted
   (`translate_verify_rejected`, FallsOffEnd separately) and never installed.
 
 ## 7. Harness contracts
@@ -1763,7 +1780,7 @@ no duplicate translation logic.
   `b` range), so cached runs execute linked transfers. The differential compares
   them against the original like any other transfer.
 - `harness/src/code_cache.rs` mirrors the kernel's store: fragments by entry pc,
-  labels as records `{pc, host}` (`vlabels` sorted by pc), the two tables
+  labels as records `{pc, host}` (`entry_labels` sorted by pc), the two tables
   (`table_all`, `table_nofp`, main and victim part), `publish` and `retire`
   through the shared slot planning of section 4 (the same functions the kernel
   calls; `ibtc_insert`/`ibtc_replace`/`ibtc_clear`), `check_invariants`
