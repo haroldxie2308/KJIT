@@ -1972,16 +1972,31 @@ impl Suite {
         }
     }
 
-    /// Rule 10 (A16) mutation classes, for every link slot of the fragment: the slot
-    /// not a `nop`; the table entry moved off the slot (onto the word before, the
-    /// template's first word, the prologue, outside, unaligned), listed twice, or
-    /// aimed at another target PC; the slot a join point; the target move altered
-    /// (a halfword changed) or x13 written a second time between the check and the
-    /// template (a second `movk` of a halfword, `add x13`, a fill into x13).
+    /// Rule 10 (A16, order A20) mutation classes, for every link slot of the fragment
+    /// (`slot; movz/movk x13 x4; template`): the slot not a `nop`; the table entry
+    /// moved off the slot (onto the word before, a move, the template's first word, the
+    /// prologue, outside, unaligned), listed twice, or aimed at another target PC; the
+    /// slot or a move a join point; a move altered (a halfword changed); x13 written a
+    /// second time in the run (a second `movk` of a halfword, `add x13`, a fill into
+    /// x13, a second `movz`); a word between the slot and the moves, or inside the
+    /// run, or between the run and the template; the slot after the moves.
     fn link_slots(&mut self, fixture: &Fixture) {
-        let sub_word = enc(budget_sub());
         for &(slot, target) in &fixture.tables.link_sites {
             let slot_index = slot / 4;
+
+            // The moves: the run of `movz`/`movk x13` right after the slot.
+            let moves: Vec<usize> = (slot_index + 1..fixture.words.len())
+                .take_while(|&index| {
+                    matches!(
+                        fixture.decoded(index),
+                        Some(
+                            A64Insn::MovzMovz64Movewide { rd, .. }
+                                | A64Insn::MovkMovk64Movewide { rd, .. }
+                        ) if rd.enc() == 13
+                    )
+                })
+                .collect();
+            let template = slot_index + 1 + moves.len();
 
             for (what, insn) in [
                 ("movz x9", A64Insn::MovzMovz64Movewide { hw: 0, imm16: uimm(0, 16), rd: x(9) }),
@@ -2019,15 +2034,17 @@ impl Suite {
                 links
             };
 
-            for offset in [
+            let mut other_words = vec![
                 slot - 4,
-                slot + 4,
-                slot + 4 * DISPATCH_TEMPLATE_LEN,
+                template * 4,
+                (template + DISPATCH_TEMPLATE_LEN - 1) * 4,
                 0,
                 BODY_OFFSET - 4,
                 fixture.words.len() * 4,
                 slot + 2,
-            ] {
+            ];
+            other_words.extend(moves.iter().map(|&index| index * 4));
+            for offset in other_words {
                 tables_with(
                     self,
                     "link slot listed at another word (A16)",
@@ -2051,66 +2068,50 @@ impl Suite {
                     with((slot, target ^ (1 << bit))),
                 );
             }
-            {
+            for index in std::iter::once(slot_index).chain(moves.iter().copied()) {
                 let mut tables = clone_tables(&fixture.tables);
-                tables.entry_offsets.push(slot);
+                tables.entry_offsets.push(index * 4);
                 self.expect_reject(
-                    "link slot is a join point (A16)",
+                    "link slot or move is a join point (A16)",
                     fixture,
-                    format!("entry at slot {slot:#x}"),
+                    format!("entry at {:#x}, slot {slot:#x}", index * 4),
                     &fixture.words,
                     &tables,
                 );
             }
 
-            // The target move: the words between the budget check and the slot that
-            // write x13 (a `movz` and `movk`s), found backwards to the check's `sub`.
-            let Some(check) = (0..=16)
-                .map(|back| slot_index - back)
-                .find(|&index| fixture.words[index] == sub_word)
-            else {
-                continue;
-            };
-            let mut moves = Vec::new();
-            for index in check + 2..slot_index {
-                match fixture.decoded(index) {
-                    Some(
-                        A64Insn::MovzMovz64Movewide { rd, imm16, hw }
-                        | A64Insn::MovkMovk64Movewide { rd, imm16, hw },
-                    ) if rd.enc() == 13 => {
-                        moves.push(index);
-                        let altered = match fixture.decoded(index).unwrap() {
-                            A64Insn::MovzMovz64Movewide { .. } => A64Insn::MovzMovz64Movewide {
-                                hw,
-                                imm16: uimm(imm16.raw() ^ 1, 16),
-                                rd,
-                            },
-                            _ => A64Insn::MovkMovk64Movewide {
-                                hw,
-                                imm16: uimm(imm16.raw() ^ 1, 16),
-                                rd,
-                            },
-                        };
-                        self.replace(
-                            "link target move altered (A16)",
-                            fixture,
-                            index,
-                            enc(altered),
-                            "imm16 ^ 1",
-                        );
-                    }
-                    _ => {}
-                }
+            // Each move altered.
+            for &index in &moves {
+                let (rd, imm16, hw, movz) = match fixture.decoded(index).unwrap() {
+                    A64Insn::MovzMovz64Movewide { rd, imm16, hw } => (rd, imm16, hw, true),
+                    A64Insn::MovkMovk64Movewide { rd, imm16, hw } => (rd, imm16, hw, false),
+                    _ => unreachable!("`moves` holds movz/movk words"),
+                };
+                let imm16 = uimm(imm16.raw() ^ 1, 16);
+                let altered = if movz {
+                    A64Insn::MovzMovz64Movewide { hw, imm16, rd }
+                } else {
+                    A64Insn::MovkMovk64Movewide { hw, imm16, rd }
+                };
+                self.replace(
+                    "link target move altered (A16)",
+                    fixture,
+                    index,
+                    enc(altered),
+                    "imm16 ^ 1",
+                );
             }
-            // Another write of x13 in place of any word of the run that is not one.
-            for index in check + 2..slot_index {
-                if moves.contains(&index) {
-                    continue;
-                }
+            // x13 written a second time: another write in place of any move, a second
+            // `movz`, a `movk` of a halfword the run already sets.
+            for &index in &moves {
                 for (what, insn) in [
                     (
                         "movk x13, #1, lsl #48",
                         A64Insn::MovkMovk64Movewide { hw: 3, imm16: uimm(1, 16), rd: x(13) },
+                    ),
+                    (
+                        "movz x13, #1",
+                        A64Insn::MovzMovz64Movewide { hw: 0, imm16: uimm(1, 16), rd: x(13) },
                     ),
                     ("add x13, x13, #0", add_imm(13, 13, 0)),
                     ("ldr x13, [sp, #56]", ldr64(13, sp(), 56)),
@@ -2125,27 +2126,61 @@ impl Suite {
                     );
                 }
             }
-            // A second `movz`, and a `movk` of a halfword the move already sets, in
-            // place of a movk.
-            for &index in moves.iter().skip(1) {
-                for (what, insn) in [
-                    (
-                        "movz x13, #1",
-                        A64Insn::MovzMovz64Movewide { hw: 0, imm16: uimm(1, 16), rd: x(13) },
-                    ),
-                    (
-                        "movk x13, #1, lsl #48",
-                        A64Insn::MovkMovk64Movewide { hw: 3, imm16: uimm(1, 16), rd: x(13) },
-                    ),
-                ] {
-                    self.replace(
-                        "link target set twice (A16)",
+
+            // Words that may not sit between the slot and the moves, inside the run, or
+            // between the run and the template. The slot and the run slide one word over
+            // the link write's last word (the verifier does not care that the write of
+            // x30 is lost), so the fragment keeps its length.
+            let Some(&last_move) = moves.last() else {
+                continue;
+            };
+            let intruders = [
+                ("nop", A64Insn::NopNopHiHints {}),
+                ("movz x9", A64Insn::MovzMovz64Movewide { hw: 0, imm16: uimm(0, 16), rd: x(9) }),
+                ("ldr x12, [sp, #16]", ldr64(12, sp(), 16)),
+                ("add x14, x14, #0", add_imm(14, 14, 0)),
+                ("mov x15, x13", mov_reg(15, 13)),
+                ("movk x13, #1", A64Insn::MovkMovk64Movewide { hw: 0, imm16: uimm(1, 16), rd: x(13) }),
+            ];
+            for (what, insn) in intruders {
+                // `[slot, moves...]` with the intruder inserted at gap `gap` (0 = right
+                // after the slot, `moves.len()` = right before the template), laid over
+                // the words from the link write's last word on; the entry follows the slot.
+                for gap in 0..=moves.len() {
+                    let mut run = vec![fixture.words[slot_index]];
+                    run.extend(moves.iter().map(|&index| fixture.words[index]));
+                    run.insert(1 + gap, enc(insn));
+                    let mut words = fixture.words.clone();
+                    words[slot_index - 1..=last_move].copy_from_slice(&run);
+                    let mut tables = clone_tables(&fixture.tables);
+                    tables.link_sites = others.clone();
+                    tables.link_sites.push(((slot_index - 1) * 4, target));
+                    self.expect_reject(
+                        "link slot run has another word in it (A16)",
                         fixture,
-                        index,
-                        enc(insn),
-                        what,
+                        format!("{what} at gap {gap}, slot {slot:#x}"),
+                        &words,
+                        &tables,
                     );
                 }
+            }
+            // The slot after the moves (the pre-A20 order): [slot, m0..m3] -> [m0..m3,
+            // slot], the entry on the old and on the new slot word.
+            let mut words = fixture.words.clone();
+            words.copy_within(slot_index + 1..=last_move, slot_index);
+            words[last_move] = fixture.words[slot_index];
+            for entry in [slot_index, last_move] {
+                let mut links = others.clone();
+                links.push((entry * 4, target));
+                let mut tables = clone_tables(&fixture.tables);
+                tables.link_sites = links;
+                self.expect_reject(
+                    "link slot after the moves (A16)",
+                    fixture,
+                    format!("entry at {:#x}, slot {slot:#x}", entry * 4),
+                    &words,
+                    &tables,
+                );
             }
         }
     }

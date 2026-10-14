@@ -690,11 +690,11 @@ pub(crate) fn run_counting(
     let mut instance = 0;
     let mut labelled = false;
     for (index, frag) in runtime.cache().fragments.iter().enumerate() {
-        if let Some(label) = frag.label_for_pc(pc) {
+        if let Some(offset) = frag.fragment.body_offset_for_pc(pc) {
             labelled = true;
             instance += executions
                 .get(index)
-                .and_then(|counts| counts.get(label.offset / 4))
+                .and_then(|counts| counts.get(offset / 4))
                 .copied()
                 .unwrap_or(0);
         }
@@ -1070,8 +1070,9 @@ pub fn encode_fragment(fragment: &ExecutionFragment) -> Result<Vec<u8>, String> 
 /// input shape. Built from translator types here; the verifier never sees them.
 pub struct FragmentTables {
     pub fault_sites: Vec<FaultSiteEntry>,
-    /// `entry_offset` and every `vlabels` offset: any of them can be the runtime's
-    /// entry address (`offset_for_pc` after a runtime exit).
+    /// The `entry_labels` offsets (`entry_offset` is one): exactly those can be the
+    /// runtime's entry address (`offset_for_pc` after a runtime exit), a dispatch or a
+    /// link target (docs/pipeline.md, "Entry labels (A20)").
     pub entry_offsets: Vec<usize>,
     /// A16 link slots: `ExecutionFragment::link_sites`.
     pub link_sites: Vec<(usize, u64)>,
@@ -1087,8 +1088,10 @@ impl FragmentTables {
                 stub_offset: site.stub_offset,
             })
             .collect();
-        let entry_offsets = core::iter::once(fragment.entry_offset)
-            .chain(fragment.vlabels.iter().map(|&(_, offset)| offset))
+        let entry_offsets = fragment
+            .entry_labels
+            .iter()
+            .map(|&(_, offset)| offset)
             .collect();
         Self {
             fault_sites,

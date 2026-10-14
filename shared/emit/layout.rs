@@ -1,5 +1,5 @@
 use crate::shared::abi::{
-    append_epilogue, append_prologue, DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES,
+    append_epilogue, append_prologue, DISPATCH_TARGET_REG, DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES,
     DISPATCH_TEMPLATE_MISS_TARGETS, DISPATCH_TEMPLATE_VICTIM_PROBE, EPILOGUE_LEN_BYTES,
     EPILOGUE_OFFSET, PROLOGUE_LEN_BYTES,
 };
@@ -25,8 +25,14 @@ pub struct FaultSite {
 pub struct ExecutionFragment {
     pub insns: SharedVec<A64Insn>,
     pub entry_offset: usize,
-    /// Body-entry map keyed by original PC. Never points into the cold region.
+    /// Body map keyed by original PC: the first word of every original instruction, for
+    /// tracing and the harness. Never points into the cold region. Not an entry table:
+    /// see `entry_labels`.
     pub vlabels: LayoutVLabels,
+    /// The only words the fragment can be entered at (docs/pipeline.md, "Entry labels
+    /// (A20)"): `entry_pc` and the start of every CFG block, sorted by PC. The verifier's
+    /// entry table, the labels the runtime keeps, publishes and links to.
+    pub entry_labels: LayoutVLabels,
     /// Every user access, sorted by `access_offset` (strictly increasing).
     pub fault_sites: SharedVec<FaultSite>,
     /// Every static `BL` site's link slot (A16), in layout order: the byte offset of
@@ -39,7 +45,18 @@ impl ExecutionFragment {
         self.insns.len() * 4
     }
 
+    /// The entry label of `original_pc`: where the runtime continues at that PC inside
+    /// this fragment. `None` for a PC in the middle of a block.
     pub fn offset_for_pc(&self, original_pc: u64) -> Option<usize> {
+        self.entry_labels
+            .binary_search_by_key(&original_pc, |&(pc, _)| pc)
+            .ok()
+            .map(|index| self.entry_labels[index].1)
+    }
+
+    /// The first word of the original instruction at `original_pc`, entry or not (the
+    /// body map `vlabels`): for tracing and instance counting, never an entry.
+    pub fn body_offset_for_pc(&self, original_pc: u64) -> Option<usize> {
         find_vlabel(&self.vlabels, original_pc)
     }
 
@@ -110,8 +127,8 @@ pub enum LayoutError {
     MalformedDispatchTemplate {
         insn_index: usize,
     },
-    /// A link slot (A16) that is not a `nop`, or that no dispatch template follows
-    /// directly.
+    /// A link slot (A16) that is not a `nop`, or that is not followed by one to four
+    /// `movz`/`movk x13` target-move words and then a dispatch template (A20 order).
     MalformedLinkSlot {
         insn_index: usize,
     },
@@ -252,6 +269,7 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
         )?,
         entry_offset: 0,
         vlabels: SharedVec::with_capacity(insn_count, GFP_KERNEL)?,
+        entry_labels: SharedVec::with_capacity(program.len(), GFP_KERNEL)?,
         fault_sites: SharedVec::new(),
         link_sites: SharedVec::new(),
     };
@@ -270,8 +288,10 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
     // (miss branch index, exit-group index, original PC) of every finished one.
     let mut dispatch_start: Option<usize> = None;
     let mut dispatch_misses: SharedVec<(usize, usize, u64)> = SharedVec::new();
-    // Index of the link slot (A16) just laid out: the next word must start a template.
-    let mut link_slot_index: Option<usize> = None;
+    // Link slot (A16, order A20) just laid out: its instruction index and the number of
+    // x13 `movz`/`movk` words seen after it. Only those words, then the template's
+    // first word, may follow.
+    let mut link_slot: Option<(usize, usize)> = None;
     // Original PC whose budget check has been emitted in the current run of
     // instructions with that PC.
     let mut budget_checked_pc = None;
@@ -291,10 +311,18 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
             if rephrased.kind != RephrasedInsnKind::DispatchLookup && dispatch_start.is_some() {
                 return Err(LayoutError::MalformedDispatchTemplate { insn_index });
             }
-            if link_slot_index.take().is_some() && rephrased.kind != RephrasedInsnKind::DispatchLookup {
-                return Err(LayoutError::MalformedLinkSlot {
-                    insn_index: insn_index - 1,
-                });
+            if let Some((slot_index, target_moves)) = link_slot {
+                let target_move = rephrased.kind == RephrasedInsnKind::DispatchTarget
+                    && is_x13_wide_move(rephrased.insn);
+                if target_move && target_moves < 4 {
+                    link_slot = Some((slot_index, target_moves + 1));
+                } else if rephrased.kind == RephrasedInsnKind::DispatchLookup && target_moves > 0 {
+                    link_slot = None;
+                } else {
+                    return Err(LayoutError::MalformedLinkSlot {
+                        insn_index: slot_index,
+                    });
+                }
             }
             let user_access = rephrased.kind == RephrasedInsnKind::UserAccess;
             if user_access != rephrased.insn.is_unprivileged_access() {
@@ -333,15 +361,15 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
                     budget_checked_pc = Some(rephrased.ori_pc);
                 }
             } else if let RephrasedInsnKind::LinkSlot { target_pc } = rephrased.kind {
-                // A16: a `nop` right before the site's template (the next word must be
-                // the template's first, checked when it arrives).
+                // A16: a `nop`, then (A20) the target move and the site's template
+                // (checked as the following words arrive).
                 if !matches!(rephrased.insn, A64Insn::NopNopHiHints {}) {
                     return Err(LayoutError::MalformedLinkSlot { insn_index });
                 }
                 fragment
                     .link_sites
                     .push((output_offset, target_pc), GFP_KERNEL)?;
-                link_slot_index = Some(insn_index);
+                link_slot = Some((insn_index, 0));
             } else if rephrased.kind == RephrasedInsnKind::DispatchLookup {
                 let start = *dispatch_start.get_or_insert(insn_index);
                 let position = insn_index - start;
@@ -394,7 +422,7 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
         }
     }
 
-    if let Some(insn_index) = link_slot_index {
+    if let Some((insn_index, _)) = link_slot {
         return Err(LayoutError::MalformedLinkSlot { insn_index });
     }
     if dispatch_start.is_some() {
@@ -466,10 +494,21 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
         rewrite_branch_to_offset(&mut fragment, insn_index, stub_offset, ori_pc)?;
     }
 
+    // Entry labels (A20): the start of every block that has a body word.
+    for block in &program {
+        if let Some(offset) = find_vlabel(&fragment.vlabels, block.start_addr) {
+            fragment
+                .entry_labels
+                .push((block.start_addr, offset), GFP_KERNEL)?;
+        }
+    }
+    fragment.entry_labels.sort_unstable();
     fragment.entry_offset =
-        find_vlabel(&fragment.vlabels, entry_pc).ok_or(LayoutError::MissingLabel {
-            target_original_pc: entry_pc,
-        })?;
+        fragment
+            .offset_for_pc(entry_pc)
+            .ok_or(LayoutError::MissingLabel {
+                target_original_pc: entry_pc,
+            })?;
 
     resolve_runtime_exit_branches(&mut fragment, &runtime_exit_branches)?;
     resolve_branch_relocs(&mut fragment, &relocs)?;
@@ -479,6 +518,15 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
 /// Lowering relies on physical fall-through: a block with a successor at its own
 /// end (a conditional branch's not-taken path, a split at a branch target) emits
 /// no branch to it. So that successor must be the next block in layout order.
+/// `movz`/`movk x13, #imm` (A20: a BL site's target move after its link slot).
+fn is_x13_wide_move(insn: A64Insn) -> bool {
+    matches!(
+        insn,
+        A64Insn::MovzMovz64Movewide { rd, .. } | A64Insn::MovkMovk64Movewide { rd, .. }
+            if rd.enc == DISPATCH_TARGET_REG
+    )
+}
+
 fn check_fallthrough_adjacency(
     program: &RephrasedProgram,
     order: &[usize],
@@ -788,20 +836,72 @@ mod tests {
         ));
     }
 
-    /// A16: a link slot is listed with its byte offset and target PC, only when a
-    /// template follows it directly; a slot that is not a `nop`, or that anything but a
-    /// template follows, is a layout error.
+    /// A20, "Entry labels": only the entry and block starts are entry labels (sorted by PC);
+    /// `vlabels` keep every original instruction, `offset_for_pc` answers for entry labels
+    /// only and `body_offset_for_pc` for every instruction.
     #[test]
-    fn link_slots_are_listed_when_a_template_follows_them() {
-        use crate::shared::abi::KJIT_DISPATCH_TEMPLATE;
+    fn only_block_starts_are_entry_labels() {
+        let nop = A64Insn::NopNopHiHints {};
+        let block = |start: u64, count: u64| {
+            let mut insns = SharedVec::new();
+            for i in 0..count {
+                insns
+                    .push(RephrasedInsn::original(start + 4 * i, nop), GFP_KERNEL)
+                    .unwrap();
+            }
+            RephrasedBlock {
+                start_addr: start,
+                end_addr: start + 4 * count,
+                prev: SharedVec::new(),
+                next: SharedVec::new(),
+                insns,
+                cold: SharedVec::new(),
+            }
+        };
+        // The entry block first (CFG order), a block at a lower address second: the labels are
+        // sorted by PC whatever the order.
+        let mut program = SharedVec::new();
+        program.push(block(0x2000, 3), GFP_KERNEL).unwrap();
+        program.push(block(0x1000, 2), GFP_KERNEL).unwrap();
+        let layout = layout_program(program).unwrap();
+        // Layout order is by address: 0x1000 block first.
+        let body = body_start_offset();
+        assert_eq!(
+            layout.entry_labels.iter().copied().collect::<Vec<_>>(),
+            [(0x1000, body), (0x2000, body + 8)]
+        );
+        assert_eq!(layout.entry_offset, body + 8);
+        assert_eq!(layout.vlabels.len(), 5);
+        assert_eq!(layout.offset_for_pc(0x2000), Some(body + 8));
+        assert_eq!(layout.offset_for_pc(0x1004), None);
+        assert_eq!(layout.offset_for_pc(0x2008), None);
+        assert_eq!(layout.body_offset_for_pc(0x2008), Some(body + 16));
+        assert_eq!(layout.body_offset_for_pc(0x1004), Some(body + 4));
+    }
 
-        let site = |slot: RephrasedInsn, between: Option<A64Insn>, template: bool| {
+    /// A16, A20: a link slot is listed with its byte offset and target PC, only when
+    /// one to four `movz`/`movk x13` words and then a template follow it; a slot that
+    /// is not a `nop`, or followed by anything else, is a layout error.
+    #[test]
+    fn link_slots_are_listed_when_target_moves_and_a_template_follow_them() {
+        use crate::shared::abi::{DISPATCH_TARGET_REG, KJIT_DISPATCH_TEMPLATE};
+
+        let movz = |rd: u8| A64Insn::MovzMovz64Movewide {
+            hw: 0,
+            imm16: A64Imm::unsigned(1, 16),
+            rd: A64Reg::x(rd),
+        };
+        let movk = |rd: u8| A64Insn::MovkMovk64Movewide {
+            hw: 1,
+            imm16: A64Imm::unsigned(1, 16),
+            rd: A64Reg::x(rd),
+        };
+        let target = |insn| RephrasedInsn::dispatch_target(0x1000, insn);
+        let site = |slot: RephrasedInsn, between: Vec<RephrasedInsn>, template: bool| {
             let mut insns = SharedVec::new();
             insns.push(slot, GFP_KERNEL).unwrap();
-            if let Some(between) = between {
-                insns
-                    .push(RephrasedInsn::synthetic(0x1000, between), GFP_KERNEL)
-                    .unwrap();
+            for insn in between {
+                insns.push(insn, GFP_KERNEL).unwrap();
             }
             if template {
                 for insn in KJIT_DISPATCH_TEMPLATE.iter() {
@@ -816,33 +916,52 @@ mod tests {
             insns
         };
         let nop = A64Insn::NopNopHiHints {};
+        let slot = || RephrasedInsn::link_slot(0x1000, 0x2008);
+        let x13 = DISPATCH_TARGET_REG;
 
-        let layout = layout_program(one_block(site(
-            RephrasedInsn::link_slot(0x1000, 0x2008),
-            None,
-            true,
-        )))
-        .unwrap();
-        assert_eq!(
-            layout.link_sites.iter().copied().collect::<Vec<_>>(),
-            [(body_start_offset(), 0x2008)]
-        );
-        assert_eq!(layout.insns[body_start_offset() / 4], nop);
+        for moves in 1..=4usize {
+            let run = (0..moves)
+                .map(|i| target(if i == 0 { movz(x13) } else { movk(x13) }))
+                .collect::<Vec<_>>();
+            let layout = layout_program(one_block(site(slot(), run, true))).unwrap();
+            assert_eq!(
+                layout.link_sites.iter().copied().collect::<Vec<_>>(),
+                [(body_start_offset(), 0x2008)]
+            );
+            assert_eq!(layout.insns[body_start_offset() / 4], nop);
+        }
 
-        // No template after the slot, another word between, a slot that is no nop.
+        let four = || {
+            vec![target(movz(x13)), target(movk(x13)), target(movk(x13)), target(movk(x13))]
+        };
+        let five = {
+            let mut run = four();
+            run.push(target(movk(x13)));
+            run
+        };
+        let mut moved_slot = four();
+        moved_slot.push(RephrasedInsn::synthetic(0x1000, nop));
+        let mut word_between = vec![target(movz(x13))];
+        word_between.push(RephrasedInsn::synthetic(0x1000, nop));
+        word_between.push(target(movk(x13)));
+        // The template directly after the slot (the pre-A20 order), no template after the
+        // moves, another word between slot and moves or inside the run, a move that is not
+        // x13's or not a dispatch-target word, too long a run, a slot that is no nop.
         for malformed in [
-            site(RephrasedInsn::link_slot(0x1000, 0x2008), None, false),
-            site(RephrasedInsn::link_slot(0x1000, 0x2008), Some(nop), true),
+            site(slot(), vec![], true),
+            site(slot(), four(), false),
+            site(slot(), vec![RephrasedInsn::synthetic(0x1000, nop), target(movz(x13))], true),
+            site(slot(), word_between, true),
+            site(slot(), vec![target(movz(9))], true),
+            site(slot(), vec![RephrasedInsn::synthetic(0x1000, movz(x13))], true),
+            site(slot(), five, true),
+            site(slot(), moved_slot, true),
             site(
                 RephrasedInsn {
-                    insn: A64Insn::MovzMovz64Movewide {
-                        hw: 0,
-                        imm16: A64Imm::unsigned(1, 16),
-                        rd: A64Reg::x(9),
-                    },
-                    ..RephrasedInsn::link_slot(0x1000, 0x2008)
+                    insn: movz(9),
+                    ..slot()
                 },
-                None,
+                vec![target(movz(x13))],
                 true,
             ),
         ] {
@@ -851,15 +970,18 @@ mod tests {
                 Err(LayoutError::MalformedLinkSlot { .. })
             ));
         }
-        // A slot as the block's last word.
-        let mut only_slot = SharedVec::new();
-        only_slot
-            .push(RephrasedInsn::link_slot(0x1000, 0x2008), GFP_KERNEL)
-            .unwrap();
-        assert!(matches!(
-            layout_program(one_block(only_slot)),
-            Err(LayoutError::MalformedLinkSlot { .. })
-        ));
+        // A slot as the block's last word, and a slot and its moves with no template.
+        for tail in [vec![], vec![target(movz(x13))]] {
+            let mut only_slot = SharedVec::new();
+            only_slot.push(slot(), GFP_KERNEL).unwrap();
+            for insn in tail {
+                only_slot.push(insn, GFP_KERNEL).unwrap();
+            }
+            assert!(matches!(
+                layout_program(one_block(only_slot)),
+                Err(LayoutError::MalformedLinkSlot { .. })
+            ));
+        }
     }
 
     #[test]

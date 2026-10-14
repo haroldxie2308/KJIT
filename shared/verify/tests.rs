@@ -2126,13 +2126,14 @@ fn add(rd: u8, rn: u8, imm: u32) -> A64Insn {
     }
 }
 
-/// A BL site as rephrase lowers it: `<check>; x13 <- target; x30 <- resume; nop;
-/// <template>; <exit group>; <stub>`. Returns the body and the slot's body index.
+/// A BL site as rephrase lowers it (A20 order): `<check>; x30 <- resume; nop;
+/// x13 <- target; <template>; <exit group>; <stub>`. Returns the body and the slot's
+/// body index.
 fn bl_site_with(target_move: &[A64Insn]) -> (Vec<A64Insn>, usize) {
-    let mut gap = target_move.to_vec();
-    gap.extend(mov_imm64(30, 0x1004));
+    let mut gap = mov_imm64(30, 0x1004);
     gap.push(NOP);
     let slot = CHECK + gap.len() - 1;
+    gap.extend_from_slice(target_move);
     (dispatch_site(&gap), slot)
 }
 
@@ -2156,9 +2157,10 @@ fn accepts_a_link_slot_whose_template_target_is_the_listed_pc() {
     // A listed slot of the second of two sites.
     let mut body = alloc::vec![NOP, b(1, at(2) as i64)];
     let (site, slot) = {
-        let mut gap = mov_imm64(13, 0x7000);
+        let mut gap = mov_imm64(30, 0x1004);
         gap.push(NOP);
         let slot = 2 + CHECK + gap.len() - 1;
+        gap.extend(mov_imm64(13, 0x7000));
         (dispatch_site_from(2, &gap), slot)
     };
     body.extend(site);
@@ -2169,7 +2171,7 @@ fn accepts_a_link_slot_whose_template_target_is_the_listed_pc() {
 }
 
 #[test]
-fn a_link_slot_must_be_a_nop_before_a_template() {
+fn a_link_slot_must_be_a_nop_before_the_target_move() {
     let target = 0x40_05a0_u64;
     let (body, slot) = bl_site(target);
     let rule = |body: &[A64Insn], slot: usize| Frag::new(body).link(slot, target).rule();
@@ -2180,11 +2182,13 @@ fn a_link_slot_must_be_a_nop_before_a_template() {
         body[slot] = insn;
         assert_eq!(rule(&body, slot), Some(VerifyRule::LinkSite), "{insn:?}");
     }
-    // Listed on another word: before the slot, on the template, on its last word, past
-    // the fragment, in the epilogue, unaligned.
-    let template = slot + 1;
+    // Listed on another word: before the slot (the link write), on a target move, on the
+    // template, on its last word, past the fragment, in the epilogue, unaligned.
+    let template = slot + 5;
     for offset in [
         at(slot - 1),
+        at(slot + 1),
+        at(slot + 4),
         at(template),
         at(template + DISPATCH_TEMPLATE_LEN - 1),
         at(body.len()),
@@ -2225,7 +2229,7 @@ fn a_link_slot_names_the_templates_target_exactly() {
     // The move altered instead: each halfword.
     for hw in 0..4 {
         let mut altered = body.clone();
-        altered[CHECK + hw] = if hw == 0 {
+        altered[slot + 1 + hw] = if hw == 0 {
             movz_hw(13, 3, 1)
         } else {
             movk(13, 3 - hw as u8, 1)
@@ -2260,26 +2264,74 @@ fn a_link_slot_needs_x13_set_once_by_a_movz_and_movks() {
         reject(&[movz_hw(13, 0, 0x5a0), movk(13, 0, 0x5a0), movk(13, 1, 0x40)]),
         Some(VerifyRule::LinkSite)
     );
+    // Five moves cannot set each halfword once.
+    assert_eq!(
+        reject(&[
+            movz_hw(13, 1, 0x40),
+            movk(13, 0, 0x5a0),
+            movk(13, 2, 0),
+            movk(13, 3, 0),
+            movk(13, 0, 0x5a0),
+        ]),
+        Some(VerifyRule::LinkSite)
+    );
     // x13 written another way, before or after the move: a copy, arithmetic, a fill,
-    // a 32-bit movz, a load.
+    // a 32-bit movz, a load. Anything between the slot and the template that is not
+    // part of the move run is rejected, so is anything between the slot and the run.
     for insn in [
         mov_x(13, 30),
         add(13, 13, 0),
         fill(13, 56),
         A64Insn::MovzMovz32Movewide { hw: 0, imm16: uimm(0x5a0, 16), rd: A64Reg::w(13) },
+        NOP,
+        movz(9, 5),
+        fill(14, 32),
+        mov_x(15, 13),
     ] {
         let mut before = alloc::vec![insn];
         before.extend_from_slice(&exact);
         let mut after = exact.to_vec();
         after.push(insn);
-        assert_eq!(reject(&before), Some(VerifyRule::LinkSite), "{insn:?} before");
-        assert_eq!(reject(&after), Some(VerifyRule::LinkSite), "{insn:?} after");
+        let inside = alloc::vec![exact[0], insn, exact[1]];
+        assert_eq!(reject(&before), Some(VerifyRule::LinkSite), "{insn:?} between slot and moves");
+        assert_eq!(reject(&after), Some(VerifyRule::LinkSite), "{insn:?} between moves and template");
+        assert_eq!(reject(&inside), Some(VerifyRule::LinkSite), "{insn:?} inside the moves");
     }
-    // Writes of other registers in the run are fine, x13 only read is too.
-    let mut busy = alloc::vec![fill(14, 32), mov_x(15, 13)];
-    busy.extend_from_slice(&exact);
-    busy.push(movz(9, 5));
-    assert_eq!(reject(&busy), None);
+    // A write of x13 before the slot (in the link write's part of the guarded run) does
+    // not matter: the moves after the slot overwrite it, and a linked transfer leaves x13
+    // dead.
+    let (mut body, slot) = bl_site_with(&exact);
+    body[slot - 1] = movz(13, 0x1234);
+    assert_eq!(Frag::new(&body).link(slot, target).rule(), None);
+}
+
+/// The A20 order: the slot comes first, then the moves. A slot after the moves (the
+/// pre-A20 order), or moves on both sides, is not a link site.
+#[test]
+fn a_link_slot_after_its_moves_is_rejected() {
+    let target = 0x40_05a0_u64;
+    // Pre-A20: x13 <- target; x30 <- resume; nop; <template>.
+    let mut gap = mov_imm64(13, target);
+    gap.extend(mov_imm64(30, 0x1004));
+    gap.push(NOP);
+    let slot = CHECK + gap.len() - 1;
+    let body = dispatch_site(&gap);
+    assert_eq!(Frag::new(&body).link(slot, target).rule(), Some(VerifyRule::LinkSite));
+    // The moves directly before the slot, nothing after it.
+    let mut gap = mov_imm64(30, 0x1004);
+    gap.extend(mov_imm64(13, target));
+    gap.push(NOP);
+    let slot = CHECK + gap.len() - 1;
+    let body = dispatch_site(&gap);
+    assert_eq!(Frag::new(&body).link(slot, target).rule(), Some(VerifyRule::LinkSite));
+    // Moves on both sides of the slot: the run after it alone must give the target.
+    let mut gap = mov_imm64(13, target);
+    gap.push(NOP);
+    let slot = CHECK + gap.len() - 1;
+    gap.extend(mov_imm64(13, 0x9000));
+    let body = dispatch_site(&gap);
+    assert_eq!(Frag::new(&body).link(slot, target).rule(), Some(VerifyRule::LinkSite));
+    assert_eq!(Frag::new(&body).link(slot, 0x9000).rule(), None);
 }
 
 #[test]
@@ -2293,20 +2345,31 @@ fn a_link_slot_is_listed_once_and_is_no_join_point() {
     let mut twice = Frag::new(&body).link(slot, target);
     twice.links.push((at(slot), 0x1000));
     assert_eq!(twice.rule(), Some(VerifyRule::LinkSite));
-    // A join point on the slot: an entry, a branch to it.
-    assert_eq!(
-        Frag::new(&body).entry(slot).link(slot, target).rule(),
-        Some(VerifyRule::LinkSite)
-    );
-    let mut gap = mov_imm64(13, target);
+    // A join point on the slot or on any of the target moves: an entry.
+    for index in slot..slot + 5 {
+        assert_eq!(
+            Frag::new(&body).entry(index).link(slot, target).rule(),
+            Some(VerifyRule::LinkSite),
+            "entry on word {}",
+            index - slot
+        );
+    }
+    // A join point on the slot or on a move: a branch to it.
+    let mut gap = mov_imm64(30, 0x1004);
     gap.push(NOP);
-    let slot = 1 + CHECK + gap.len() - 1;
-    let mut with_branch = alloc::vec![b(0, at(slot) as i64)];
-    with_branch.extend(dispatch_site_from(1, &gap));
-    assert_eq!(
-        Frag::new(&with_branch).link(slot, target).rule(),
-        Some(VerifyRule::LinkSite)
-    );
-    // Not listed, the same branch is the generic rule-6 join point.
-    assert_eq!(Frag::new(&with_branch).rule(), Some(VerifyRule::MissingBudgetCheck));
+    let slot_in_gap = gap.len() - 1;
+    gap.extend(mov_imm64(13, target));
+    let slot = 1 + CHECK + slot_in_gap;
+    for word in slot_in_gap..slot_in_gap + 5 {
+        let mut with_branch = alloc::vec![b(0, at(1 + CHECK + word) as i64)];
+        with_branch.extend(dispatch_site_from(1, &gap));
+        assert_eq!(
+            Frag::new(&with_branch).link(slot, target).rule(),
+            Some(VerifyRule::LinkSite),
+            "branch to word {}",
+            word - slot_in_gap
+        );
+        // Not listed, the same branch is the generic rule-6 join point.
+        assert_eq!(Frag::new(&with_branch).rule(), Some(VerifyRule::MissingBudgetCheck));
+    }
 }

@@ -140,8 +140,10 @@ pub struct TranslationRecord {
     /// Pass 4: the whole fragment.
     pub layout: Vec<LayoutWord>,
     pub entry_offset: usize,
-    /// Body entries by original pc: the labels the cache publishes.
+    /// Body map by original pc (every original instruction's first word).
     pub vlabels: Vec<(u64, usize)>,
+    /// Entry labels (A20): `entry_pc` and every block start; the labels the cache publishes.
+    pub entry_labels: Vec<(u64, usize)>,
     pub fault_sites: Vec<FaultSite>,
     /// A16 link slots: byte offset of the `nop` and the pc its `BL` targets.
     pub link_sites: Vec<(usize, u64)>,
@@ -298,6 +300,7 @@ pub(crate) fn translate(
         layout: Vec::new(),
         entry_offset: 0,
         vlabels: Vec::new(),
+        entry_labels: Vec::new(),
         fault_sites: Vec::new(),
         link_sites: Vec::new(),
         verdict: None,
@@ -364,6 +367,7 @@ fn run_passes(
     }
     record.entry_offset = fragment.entry_offset;
     record.vlabels = fragment.vlabels.iter().copied().collect();
+    record.entry_labels = fragment.entry_labels.iter().copied().collect();
     record.fault_sites = fragment.fault_sites.iter().copied().collect();
     record.link_sites = fragment.link_sites.iter().copied().collect();
     for (index, (insn, origin)) in fragment.insns.iter().zip(&origins).enumerate() {
@@ -437,6 +441,7 @@ pub(crate) fn check_installed(
     }
     let same = fragment.entry_offset == record.entry_offset
         && fragment.vlabels.iter().eq(record.vlabels.iter())
+        && fragment.entry_labels.iter().eq(record.entry_labels.iter())
         && fragment.fault_sites.iter().eq(record.fault_sites.iter())
         && fragment.link_sites.iter().eq(record.link_sites.iter());
     if !same {

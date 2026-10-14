@@ -128,10 +128,11 @@ pub enum VerifyRule {
     /// that is an exit-group start, a join point inside the template (an edge into
     /// word 9 from outside it included), or two overlapping templates.
     DispatchTemplate,
-    /// 10 (A16): a link-site entry whose slot is not a body `nop` directly before a
-    /// dispatch template's first word, that is listed twice or is a join point, or
-    /// whose template's guarded run does not set x13 once, by a `movz` and up to
-    /// three `movk`s, to the entry's target PC.
+    /// 10 (A16, A20): a link-site entry whose slot is not a body `nop` inside a
+    /// dispatch template's guarded run, that is listed twice or is a join point, or
+    /// whose following words up to the template's first word are not exactly one
+    /// `movz` and up to three `movk`s of x13 (each halfword set once) giving the
+    /// entry's target PC, or that contain a join point.
     LinkSite,
     /// 4: the last word can fall through past the fragment.
     FallsOffEnd,
@@ -309,23 +310,32 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
         }
     }
 
-    // Rule 10 (A16): every link slot is a `nop` in front of a template whose target
-    // move is the slot's target PC. Before the generic join check below, so a join
-    // point on a slot is reported as the link-site error it is.
+    // Rule 10 (A16, A20): every link slot is a `nop` inside a template's guarded run,
+    // followed by exactly the `movz`/`movk`s of x13 that set the slot's target PC, then
+    // the template. Before the generic join check below, so a join point on a slot or
+    // a move is reported as the link-site error it is.
     let mut slot_listed = alloc_bools(body.len())?;
     for &(slot_offset, target_pc) in input.link_sites {
         let reject = err(slot_offset, VerifyRule::LinkSite);
         let slot = frag.body_index(slot_offset).ok_or(reject)?;
-        if slot_listed[slot] || join[slot] || !matches!(body[slot], A64Insn::NopNopHiHints {}) {
+        if slot_listed[slot] || !matches!(body[slot], A64Insn::NopNopHiHints {}) {
             return Err(reject);
         }
         slot_listed[slot] = true;
-        let template = slot + 1;
+        let moves = slot + 1;
+        let template = moves
+            + body[moves.min(body.len())..]
+                .iter()
+                .take_while(|insn| is_x13_wide_move(insn))
+                .count();
         if templates.position.get(template) != Some(&Some(0)) {
             return Err(reject);
         }
         let (guard, _) = frag.template_guard(template).ok_or(reject)?;
-        if link_target_of(&frag, guard + BUDGET_CHECK_WORDS, template)? != Some(target_pc) {
+        if guard + BUDGET_CHECK_WORDS > slot
+            || (slot..template).any(|inner| join[inner])
+            || link_target_of(&body[moves..template]) != Some(target_pc)
+        {
             return Err(reject);
         }
     }
@@ -482,9 +492,9 @@ struct Fragment<'a> {
 /// Words of a budget check: `sub x18, x18, #1; cbz x18, <stub>`.
 const BUDGET_CHECK_WORDS: usize = 2;
 
-/// Most words (target move, link write, fills) the budget check's `cbz` may be away
-/// from its dispatch template: BL's 4-word target and 4-word link are the longest
-/// site (8). Bounded so each template's walk back is O(1).
+/// Most words (target move, link write, link slot, fills) the budget check's `cbz` may
+/// be away from its dispatch template: BL's 4-word link write, link slot and 4-word
+/// target move are the longest site (9). Bounded so each template's walk back is O(1).
 const DISPATCH_GUARD_MAX_GAP: usize = 16;
 
 impl Fragment<'_> {
@@ -672,47 +682,46 @@ fn find_dispatch_templates(
     Ok(templates)
 }
 
-/// Rule 10: the value the body words `start..end` (between a budget check and a
-/// dispatch template) leave in `DISPATCH_TARGET_REG`: set by one `movz` (64-bit) and
-/// up to three `movk`s, each halfword set once, and by nothing else. `Ok(None)` if the
-/// run sets it any other way, or not at all.
-fn link_target_of(
-    frag: &Fragment<'_>,
-    start: usize,
-    end: usize,
-) -> Result<Option<u64>, VerifyError> {
+/// Whether `insn` is a 64-bit `movz`/`movk` of `DISPATCH_TARGET_REG`.
+fn is_x13_wide_move(insn: &A64Insn) -> bool {
+    matches!(
+        insn,
+        A64Insn::MovzMovz64Movewide { rd, .. } | A64Insn::MovkMovk64Movewide { rd, .. }
+            if rd.enc() == DISPATCH_TARGET_REG
+    )
+}
+
+/// Rule 10: the value the `movz`/`movk` run `moves` (every word already checked by
+/// `is_x13_wide_move`, between a link slot and its dispatch template) leaves in
+/// `DISPATCH_TARGET_REG`: one `movz` first, then up to three `movk`s, each halfword set
+/// once. `None` if the run starts with a `movk` or sets a halfword twice.
+fn link_target_of(moves: &[A64Insn]) -> Option<u64> {
     let mut value: Option<u64> = None;
     let mut set_halfwords = 0_u8;
-    for (index, insn) in frag.body[start..end].iter().enumerate().map(|(i, insn)| (start + i, insn)) {
+    for insn in moves {
         match insn {
-            A64Insn::MovzMovz64Movewide { hw, imm16, rd } if rd.enc() == DISPATCH_TARGET_REG => {
+            A64Insn::MovzMovz64Movewide { hw, imm16, .. } => {
                 if value.is_some() {
-                    return Ok(None);
+                    return None;
                 }
                 set_halfwords |= 1 << hw;
                 value = Some((imm16.raw() as u64) << (16 * u32::from(*hw)));
             }
-            A64Insn::MovkMovk64Movewide { hw, imm16, rd } if rd.enc() == DISPATCH_TARGET_REG => {
-                let Some(current) = value else {
-                    return Ok(None);
-                };
+            A64Insn::MovkMovk64Movewide { hw, imm16, .. } => {
+                let current = value?;
                 let shift = 16 * u32::from(*hw);
                 if set_halfwords & (1 << hw) != 0 {
-                    return Ok(None);
+                    return None;
                 }
                 set_halfwords |= 1 << hw;
                 value = Some((current & !(0xffff_u64 << shift)) | (imm16.raw() as u64) << shift);
             }
-            other => {
-                let written = writes(other)
-                    .ok_or(err(frag.offset(index), VerifyRule::OperandMetadata))?;
-                if written.gprs & (1 << DISPATCH_TARGET_REG) != 0 {
-                    return Ok(None);
-                }
-            }
+            // Not reachable (the caller passes `is_x13_wide_move` words only); the verifier
+            // rejects rather than panics.
+            _ => return None,
         }
     }
-    Ok(value)
+    value
 }
 
 fn alloc_positions(len: usize) -> Result<SharedVec<Option<u8>>, VerifyError> {

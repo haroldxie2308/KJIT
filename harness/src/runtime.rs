@@ -156,7 +156,7 @@ impl URuntime {
         config: URuntimeConfig,
     ) -> Self {
         let entry_pc = fragment
-            .vlabels
+            .entry_labels
             .iter()
             .find(|&&(_, offset)| offset == fragment.entry_offset)
             .map(|&(pc, _)| pc)
@@ -893,12 +893,13 @@ pub(crate) fn decide_runtime_return(
 }
 
 /// The ABI entry invariant: the prologue's `br` only ever targets a body label
-/// of this fragment (`entry_offset` is one; `offset_for_pc` returns them).
+/// of this fragment that is an entry label (A20; `entry_offset` is one,
+/// `offset_for_pc` returns them).
 pub(crate) fn validate_entry_offset(
     fragment: &ExecutionFragment,
     offset: usize,
 ) -> Result<(), String> {
-    if !fragment.vlabels.iter().any(|(_, label)| *label == offset) {
+    if !fragment.entry_labels.iter().any(|(_, label)| *label == offset) {
         return Err(format!(
             "runtime entry offset {offset:#x} is not a fragment label"
         ));

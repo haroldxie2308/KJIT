@@ -302,8 +302,8 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
 
     // The verifier's tables are exactly what the kernel installs: the fault
     // sites become the extable, and the entry table is every offset the runtime
-    // may pass as the entry address (entry_offset for `pc`, vlabels for
-    // chaining inside the fragment).
+    // may pass as the entry address, a dispatch or a link target: the fragment's
+    // entry labels (A20; `entry_offset` is one of them).
     let mut sites = KVec::with_capacity(fragment.fault_sites.len(), GFP_KERNEL)
         .map_err(|_| Failure::Alloc)?;
     let mut ksites = KVec::with_capacity(fragment.fault_sites.len(), GFP_KERNEL)
@@ -328,21 +328,18 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
             )
             .map_err(|_| Failure::Alloc)?;
     }
-    let mut entries = KVec::with_capacity(fragment.vlabels.len() + 1, GFP_KERNEL)
+    let mut entries = KVec::with_capacity(fragment.entry_labels.len(), GFP_KERNEL)
         .map_err(|_| Failure::Alloc)?;
-    entries
-        .push(fragment.entry_offset, GFP_KERNEL)
+    let mut kentries = KVec::with_capacity(fragment.entry_labels.len(), GFP_KERNEL)
         .map_err(|_| Failure::Alloc)?;
-    let mut kentries = KVec::with_capacity(fragment.vlabels.len(), GFP_KERNEL)
-        .map_err(|_| Failure::Alloc)?;
-    for &(label_pc, offset) in fragment.vlabels.iter() {
+    for &(label_pc, offset) in fragment.entry_labels.iter() {
         entries.push(offset, GFP_KERNEL).map_err(|_| Failure::Alloc)?;
         let entry = KjitEntry {
             pc: label_pc,
             offset: u32::try_from(offset).map_err(|_| Failure::Overflow)?,
             pad: 0,
         };
-        // Sorted by PC for the C side's binary search (vlabels hold each PC once).
+        // Sorted by PC for the C side's binary search (entry labels hold each PC once).
         let at = kentries.partition_point(|e: &KjitEntry| e.pc < label_pc);
         kentries
             .insert_within_capacity(at, entry)

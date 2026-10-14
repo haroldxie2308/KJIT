@@ -156,8 +156,10 @@ impl RegVirtError {
 /// Admission check for one decoded instruction, run by `build_cfg` before the
 /// instruction joins a block. It applies `RewritePlan::build` -- the same check
 /// `rewrite_user_semantic` runs -- to every user-semantic instruction rephrase
-/// lowers `insn` into, so admission and rewriting cannot drift. Invariant: reg-virt
-/// rewrites each original instruction independently of its neighbours.
+/// lowers `insn` into, so admission and rewriting cannot drift. Invariant: whether
+/// reg-virt can lower an original instruction, and with which scratch registers,
+/// is independent of its neighbours. Only the presence of the SP alignment check
+/// depends on them (`SpAlignment`, A20), and it never changes the scratch use.
 ///
 /// Runtime-exit payloads are not checked: they are synthesized from fixed return
 /// registers plus the param0 capture, which accepts every register class, so they
@@ -192,27 +194,106 @@ fn virtualize_insns(
     let mut rewritten =
         SharedVec::with_capacity(insns.len(), GFP_KERNEL).map_err(RegVirtError::Allocation)?;
 
+    let mut sp_align = SpAlignment::at_block_start();
     let mut index = 0;
     while index < insns.len() {
         let insn = insns[index];
+        let first = rewritten.len();
         if insn.kind.is_runtime_exit_payload() {
             index = virtualize_runtime_exit_group(insns, index, &mut rewritten)?;
         } else if cold {
             return Err(RegVirtError::MalformedRuntimeExitGroup { pc: insn.ori_pc });
         } else {
-            virtualize_insn(insn, &mut rewritten)?;
+            virtualize_insn(insn, &mut sp_align, &mut rewritten)?;
             index += 1;
         }
+        sp_align.observe_writes(&rewritten[first..]);
     }
     Ok(rewritten)
 }
 
+/// A20 (docs/pipeline.md, "SP alignment check deduplication (A20)"): the one fact
+/// reg-virt carries from one original instruction to the next. Per block: it starts
+/// unknown (`virtualize_insns` makes a fresh one for every block).
+///
+/// - Known aligned: after an SP alignment check (its `cbnz` not taken), while physical
+///   x17 (user SP) is written only by `add`/`sub x17, x17, #imm` with `imm % 16 == 0`.
+/// - Unknown: at the block start and after any other write to x17.
+///
+/// Every elided check would have passed, so each access that natively faults with
+/// SIGBUS still gets its check. Sound because a block is entered only at its start
+/// (docs/pipeline.md, "Entry labels (A20)": `ExecutionFragment::entry_labels`), so the fact
+/// holds on every path to a word.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct SpAlignment {
+    known_aligned: bool,
+}
+
+impl SpAlignment {
+    const fn at_block_start() -> Self {
+        Self {
+            known_aligned: false,
+        }
+    }
+
+    /// Whether an SP-based access must be preceded by the check.
+    const fn needs_check(self) -> bool {
+        !self.known_aligned
+    }
+
+    /// An SP alignment check was just emitted: past its `cbnz`, SP is aligned.
+    fn checked(&mut self) {
+        self.known_aligned = true;
+    }
+
+    /// Updates the fact for the words one original instruction lowered to (after
+    /// `checked`, if it emitted the check, which comes before everything else of the
+    /// instruction).
+    fn observe_writes(&mut self, lowered: &[RephrasedInsn]) {
+        for word in lowered {
+            if writes_physical_reg(word.insn, REG_VIRT_STABLE_MAPPED_SP_PHYS_REG)
+                && !is_sp_adjust_by_multiple_of_16(word.insn)
+            {
+                self.known_aligned = false;
+            }
+        }
+    }
+}
+
+/// Whether `insn` writes physical register `reg` (an exhaustive read of its operand
+/// roles). A role whose register the metadata cannot name counts as a write: the
+/// caller gives up its fact.
+fn writes_physical_reg(insn: A64Insn, reg: u8) -> bool {
+    insn.operand_roles().iter().any(|role| match *role {
+        A64OperandRole::RegWrite { field, .. } | A64OperandRole::RegReadWrite { field, .. } => {
+            insn.get_reg(field)
+                .map_or(true, |written| written.enc == reg)
+        }
+        A64OperandRole::ImplicitRegWrite { reg: written, .. } => written == reg,
+        _ => false,
+    })
+}
+
+/// `add`/`sub x17, x17, #imm` (optionally `lsl #12`) with an effective `imm % 16 == 0`:
+/// the only write to user SP that keeps an aligned SP aligned.
+fn is_sp_adjust_by_multiple_of_16(insn: A64Insn) -> bool {
+    let sp = REG_VIRT_STABLE_MAPPED_SP_PHYS_REG;
+    match insn {
+        A64Insn::AddAddsubImmAdd64AddsubImm { sh, imm12, rn, rd }
+        | A64Insn::SubAddsubImmSub64AddsubImm { sh, imm12, rn, rd } => {
+            rn.enc == sp && rd.enc == sp && (imm12.raw() << (12 * u32::from(sh))) % 16 == 0
+        }
+        _ => false,
+    }
+}
+
 fn virtualize_insn(
     rephrased: RephrasedInsn,
+    sp_align: &mut SpAlignment,
     out: &mut SharedVec<RephrasedInsn>,
 ) -> SharedResult<(), RegVirtError> {
     match rephrased.kind {
-        kind if kind.is_user_semantic() => rewrite_user_semantic(rephrased, out),
+        kind if kind.is_user_semantic() => rewrite_user_semantic(rephrased, sp_align, out),
         RephrasedInsnKind::RuntimeExitPayload => {
             validate_runtime_exit_payload(rephrased)?;
             push_rephrased(out, rephrased)
@@ -306,8 +387,10 @@ fn emit_runtime_exit_group(
                 validate_runtime_exit_payload(*payload)?;
                 push_rephrased(out, *payload)?;
             }
+            // A runtime-exit group ends its block: nothing after it uses the fact (its
+            // writes reach `virtualize_insns`' `observe_writes` all the same).
             RephrasedInsnKind::UserSynthetic => {
-                rewrite_user_semantic(*payload, out)?;
+                rewrite_user_semantic(*payload, &mut SpAlignment::at_block_start(), out)?;
             }
             _ => return Err(RegVirtError::MalformedRuntimeExitGroup { pc }),
         }
@@ -457,14 +540,15 @@ fn emit_dispatch_target(
 
 fn rewrite_user_semantic(
     rephrased: RephrasedInsn,
+    sp_align: &mut SpAlignment,
     out: &mut SharedVec<RephrasedInsn>,
 ) -> SharedResult<(), RegVirtError> {
     let plan = RewritePlan::build(rephrased)?;
 
     plan.emit_fills(rephrased.ori_pc, out)?;
     match plan.mem {
-        Some(MemPlan::Unpriv(mem)) => plan.emit_mem_lowering(rephrased, mem, out)?,
-        Some(MemPlan::Window(window)) => plan.emit_window(rephrased, window, out)?,
+        Some(MemPlan::Unpriv(mem)) => plan.emit_mem_lowering(rephrased, mem, sp_align, out)?,
+        Some(MemPlan::Window(window)) => plan.emit_window(rephrased, window, sp_align, out)?,
         None => {
             let rewritten = plan.rewrite_insn(rephrased)?;
             push_rephrased(
@@ -1301,6 +1385,7 @@ impl RewritePlan {
         &self,
         rephrased: RephrasedInsn,
         lowering: WindowLowering,
+        sp_align: &mut SpAlignment,
         out: &mut SharedVec<RephrasedInsn>,
     ) -> SharedResult<(), RegVirtError> {
         let pc = rephrased.ori_pc;
@@ -1319,10 +1404,11 @@ impl RewritePlan {
             rt: x(sb),
         };
 
-        if lowering.sp_check {
+        if lowering.sp_check && sp_align.needs_check() {
             for check in [and_15(REG_VIRT_STABLE_MAPPED_SP_PHYS_REG), cbnz()] {
                 push_rephrased(out, RephrasedInsn::align_check(pc, check))?;
             }
+            sp_align.checked();
         }
         if let Some(base) = lowering.addr_base {
             match (lowering.insn.index(), lowering.insn.offset()) {
@@ -1504,17 +1590,18 @@ impl RewritePlan {
         &self,
         rephrased: RephrasedInsn,
         mem: MemLowering,
+        sp_align: &mut SpAlignment,
         out: &mut SharedVec<RephrasedInsn>,
     ) -> SharedResult<(), RegVirtError> {
         let pc = rephrased.ori_pc;
         let shape = mem.shape;
         let helper = |insn| RephrasedInsn::reg_virt_helper(pc, insn);
 
-        if let Some(scratch) = mem.sp_align_scratch {
+        if let Some(scratch) = mem.sp_align_scratch.filter(|_| sp_align.needs_check()) {
             // `and xS, <mapped SP>, #15` (N=1, immr=0, imms=3: four ones), then
             // `cbnz xS` to this instruction's Mem stub; layout resolves the target.
-            // Flags are untouched.
-            let sp = A64Reg::x(REG_VIRT_STABLE_MAPPED_SP_PHYS_REG);
+            // Flags are untouched. Elided where SP is known aligned (A20).
+            let mapped_sp = A64Reg::x(REG_VIRT_STABLE_MAPPED_SP_PHYS_REG);
             push_rephrased(
                 out,
                 RephrasedInsn::align_check(
@@ -1523,7 +1610,7 @@ impl RewritePlan {
                         n: 1,
                         immr: uimm(0, 6),
                         imms: uimm(3, 6),
-                        rn: sp,
+                        rn: mapped_sp,
                         rd: A64Reg::x_sp(scratch),
                     },
                 ),
@@ -1538,6 +1625,7 @@ impl RewritePlan {
                     },
                 ),
             )?;
+            sp_align.checked();
         }
         if let Some(scratch) = mem.block_align_scratch {
             // An unaligned acquire/release access faults (SIGBUS) at EL0 iff it
@@ -4691,5 +4779,212 @@ mod tests {
             group(other),
             Err(RegVirtError::UnsupportedRuntimeExitSource { .. })
         ));
+    }
+
+    // ---- SP alignment check deduplication (A20) ----
+
+    /// Virtualizes `blocks` (original instructions, one block each, instruction `i` of
+    /// block `b` at pc `0x1000 * (b + 1) + 4 * i`) and returns, per block, the indices
+    /// of the instructions that carry an SP alignment check (`and xS, x17, #15`).
+    fn sp_checked(blocks: &[&[A64Insn]]) -> Vec<Vec<usize>> {
+        let mut program = SharedVec::new();
+        for (b, insns) in blocks.iter().enumerate() {
+            let start = 0x1000 * (b as u64 + 1);
+            let mut body = SharedVec::new();
+            for (i, insn) in insns.iter().enumerate() {
+                body.push(RephrasedInsn::original(start + 4 * i as u64, *insn), GFP_KERNEL)
+                    .unwrap();
+            }
+            program
+                .push(
+                    RephrasedBlock {
+                        start_addr: start,
+                        end_addr: start + 4 * insns.len() as u64,
+                        prev: SharedVec::new(),
+                        next: SharedVec::new(),
+                        insns: body,
+                        cold: SharedVec::new(),
+                    },
+                    GFP_KERNEL,
+                )
+                .unwrap();
+        }
+        let program = virtualize_registers(program).unwrap();
+        program
+            .iter()
+            .enumerate()
+            .map(|(b, block)| {
+                let start = 0x1000 * (b as u64 + 1);
+                let mut checked = Vec::new();
+                for insn in &block.insns {
+                    let is_sp_check = insn.kind == RephrasedInsnKind::AlignCheck
+                        && matches!(insn.insn, A64Insn::AndLogImmAnd64LogImm { rn, .. } if rn.enc == 17);
+                    if is_sp_check {
+                        let index = ((insn.ori_pc - start) / 4) as usize;
+                        assert!(!checked.contains(&index), "two SP checks for one instruction");
+                        checked.push(index);
+                    }
+                }
+                checked
+            })
+            .collect()
+    }
+
+    fn ldr_sp(offset: u32) -> A64Insn {
+        A64Insn::LdrImmGenLdr64LdstPos {
+            rt: x(0),
+            mem: mem_off(sp(), ldst64_offset(offset)),
+        }
+    }
+
+    /// An SP check is emitted for the first SP-based access of a block only; the
+    /// access forms differ, the fact does not.
+    #[test]
+    fn only_the_first_sp_access_of_a_block_is_checked() {
+        let ldp_post = A64Insn::LdpGenLdp64LdstpairPost {
+            rt2: x(2),
+            rt: x(1),
+            mem: mem_post(sp(), ldstpair64_offset(16)),
+        };
+        let reg_offset = A64Insn::LdrRegGenLdr64LdstRegoff {
+            rm: x(3),
+            option: 3,
+            s: 0,
+            rn: sp(),
+            rt: x(0),
+        };
+        let q_load = A64Insn::LdrImmFpsimdLdrQLdstPos {
+            rt: 0,
+            mem: mem_off(sp(), scaled_uimm(1, 12, 4)),
+        };
+        // Offsets that need the address scratch (outside simm9) change nothing.
+        let far = ldr_sp(0x800);
+        assert_eq!(
+            sp_checked(&[&[ldr_sp(0), ldr_sp(8), ldp_post, reg_offset, q_load, far, ldr_sp(16)]]),
+            [[0]]
+        );
+        // The first access need not be the block's first instruction, and an access
+        // that is not SP-based does not set the fact.
+        let other_base = A64Insn::LdrImmGenLdr64LdstPos {
+            rt: x(0),
+            mem: mem_off(A64Reg::x_sp(1), ldst64_offset(0)),
+        };
+        assert_eq!(
+            sp_checked(&[&[add_imm(3, 4, 0, 1), other_base, ldr_sp(0), other_base, ldr_sp(8)]]),
+            [[2]]
+        );
+    }
+
+    /// The block start resets the fact, whatever the previous block established.
+    #[test]
+    fn every_block_checks_sp_again() {
+        let block: &[A64Insn] = &[ldr_sp(0), ldr_sp(8)];
+        assert_eq!(sp_checked(&[block, block, block]), [[0], [0], [0]]);
+        let no_access: &[A64Insn] = &[add_imm(3, 4, 0, 1)];
+        assert_eq!(sp_checked(&[block, no_access, block]), vec![vec![0], vec![], vec![0]]);
+    }
+
+    /// Only `add`/`sub x17, x17, #imm` with `imm % 16 == 0` keep the fact; every other
+    /// write to SP drops it, so the next SP access is checked again (and sets the
+    /// fact again).
+    #[test]
+    fn sp_adjusts_by_multiples_of_16_keep_the_fact_and_everything_else_drops_it() {
+        let keep = [
+            add_imm(31, 31, 0, 16),
+            add_imm(31, 31, 0, 32),
+            add_imm(31, 31, 0, 0),
+            sub_imm(31, 31, 48),
+            // imm12 << 12: 4096 and 4096 * 5 are multiples of 16.
+            add_imm(31, 31, 1, 1),
+            add_imm(31, 31, 1, 5),
+            A64Insn::SubAddsubImmSub64AddsubImm {
+                sh: 1,
+                imm12: uimm(3, 12),
+                rn: A64Reg::x_sp(31),
+                rd: A64Reg::x_sp(31),
+            },
+        ];
+        for adjust in keep {
+            assert_eq!(sp_checked(&[&[ldr_sp(0), adjust, ldr_sp(0)]]), [[0]], "{adjust:?}");
+        }
+        let drop = [
+            add_imm(31, 31, 0, 8),
+            add_imm(31, 31, 0, 1),
+            sub_imm(31, 31, 8),
+            sub_imm(31, 31, 15),
+            sub_imm(31, 31, 17),
+            // `mov sp, xN`, `add sp, xN, #16` (a different source), SP from a register.
+            add_imm(31, 0, 0, 0),
+            add_imm(31, 4, 0, 16),
+            A64Insn::AddAddsubExtAdd64AddsubExt {
+                rm: x(1),
+                option: 3,
+                imm3: uimm(0, 3),
+                rn: A64Reg::x_sp(31),
+                rd: A64Reg::x_sp(31),
+            },
+        ];
+        for adjust in drop {
+            assert_eq!(
+                sp_checked(&[&[ldr_sp(0), adjust, ldr_sp(0), ldr_sp(8)]]),
+                [[0, 2]],
+                "{adjust:?}"
+            );
+        }
+        // Misaligned by 8, realigned by another 8: the fact stays dropped (the pair of
+        // adjusts is not provably aligned), the next access is checked, and then holds.
+        assert_eq!(
+            sp_checked(&[&[
+                ldr_sp(0),
+                sub_imm(31, 31, 8),
+                add_imm(31, 31, 0, 8),
+                ldr_sp(0),
+                ldr_sp(8),
+            ]]),
+            [[0, 3]]
+        );
+        // A write of another register, or of a user register mapped to a scratch,
+        // does not matter.
+        assert_eq!(
+            sp_checked(&[&[ldr_sp(0), add_imm(0, 0, 0, 1), add_imm(16, 16, 0, 8), ldr_sp(8)]]),
+            [[0]]
+        );
+    }
+
+    /// Pre/post-index writeback of SP is an `add`/`sub x17, x17`: by a multiple of 16 the
+    /// fact survives, by 8 it does not.
+    #[test]
+    fn sp_writeback_by_16_keeps_the_fact_and_by_8_drops_it() {
+        let stp_pre = |amount: i32| A64Insn::StpGenStp64LdstpairPre {
+            rt2: x(2),
+            rt: x(1),
+            mem: A64Mem::pre_index(A64Reg::x_sp(31), ldstpair64_offset(amount)),
+        };
+        let ldr_post = |amount: u32| A64Insn::LdrImmGenLdr64LdstImmpost {
+            rt: x(0),
+            mem: mem_post(sp(), simm(amount, 9)),
+        };
+        let str_pre_8 = A64Insn::StrImmGenStr64LdstImmpre {
+            rt: x(0),
+            mem: mem_pre(sp(), simm((-8i32) as u32 & 0x1ff, 9)),
+        };
+        // `stp x1, x2, [sp, #-16]!` as the first access: checked before the writeback,
+        // and the fact holds afterwards.
+        assert_eq!(sp_checked(&[&[stp_pre(-16), ldr_sp(0), stp_pre(-32), ldr_sp(8)]]), [[0]]);
+        // By 8: the next access is checked.
+        assert_eq!(sp_checked(&[&[str_pre_8, ldr_sp(0), ldr_sp(8)]]), [[0, 1]]);
+        assert_eq!(sp_checked(&[&[ldr_post(8), ldr_sp(0), ldr_sp(8)]]), [[0, 1]]);
+        // Two 8-byte writebacks: every access is checked (the second sees an SP the first
+        // one misaligned, and the third one the second's).
+        assert_eq!(sp_checked(&[&[ldr_post(8), ldr_post(8), ldr_sp(0)]]), [[0, 1, 2]]);
+        // Register-offset forms never write back.
+        let reg_offset = A64Insn::StrRegGenStr64LdstRegoff {
+            rm: x(3),
+            option: 3,
+            s: 0,
+            rn: sp(),
+            rt: x(0),
+        };
+        assert_eq!(sp_checked(&[&[reg_offset, reg_offset]]), [[0]]);
     }
 }
