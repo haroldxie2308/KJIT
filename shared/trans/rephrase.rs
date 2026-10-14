@@ -47,15 +47,16 @@ pub enum RephrasedInsnKind {
     /// frame slot, x16/x17 for x29/sp). Runtime-owned: x13 is scratch.
     DispatchTarget,
     /// One word of the dispatch template (`KJIT_DISPATCH_TEMPLATE`), in the body of a
-    /// branch site between its link write and its exit group. Runtime-owned,
-    /// reg-virt passes it through; layout resolves its miss branches (the main probe's
+    /// branch site between its target move (and, for a BL, its link slot) and its exit
+    /// group. Runtime-owned, reg-virt passes it through; layout resolves its miss branches (the main probe's
     /// to the victim probe's first word, the victim probe's to the exit group that
     /// follows the final `br`).
     DispatchLookup,
     /// A static `BL` site's link slot (A16; docs/pipeline.md, "Direct BL links
-    /// (A16)"): one `nop` between the link write and the dispatch template that the
-    /// runtime may turn into `b <host of target_pc>`. Runtime-owned, reg-virt passes
-    /// it through; layout lists it in `ExecutionFragment::link_sites`.
+    /// (A16)"): one `nop` right after the link write, ahead of the target move (A20)
+    /// and the dispatch template, that the runtime may turn into
+    /// `b <host of target_pc>`. Runtime-owned, reg-virt passes it through; layout
+    /// lists it in `ExecutionFragment::link_sites`.
     LinkSlot {
         target_pc: u64,
     },
@@ -316,11 +317,11 @@ pub(crate) fn rephrase_insn(
         }
         // Branch sites (A11, docs/pipeline.md "In-fragment branch dispatch (A11)",
         // Lowering). The budget
-        // check that precedes the whole sequence is added by `rephrase`. Order: the
-        // target into x13 (before any x30 write, so `blr x30` stays correct), the
-        // link write, (BL only, A16) the link slot, the dispatch template, then the
-        // exit group a miss takes: the same status and x11 as before the template
-        // existed, x10 = x13.
+        // check that precedes the whole sequence is added by `rephrase`. Order: for
+        // BLR/BR/RET the target into x13 (before any x30 write, so `blr x30` stays
+        // correct), then the link write; for BL (A16, A20) the link write, the link slot,
+        // the target into x13. Then the dispatch template, then the exit group a miss
+        // takes: the same status and x11 as before the template existed, x10 = x13.
         A64Insn::BlBlOnlyBranchImm { .. } => {
             let Some(RuntimeExitReason::Bl {
                 target_pc,
@@ -333,19 +334,21 @@ pub(crate) fn rephrase_insn(
             push_mov_imm64(
                 &mut ret,
                 insn.pc,
-                x(DISPATCH_TARGET_REG),
-                target_pc,
-                RephrasedInsnKind::DispatchTarget,
-            )?;
-            push_mov_imm64(
-                &mut ret,
-                insn.pc,
                 x(ABI_LINK_REG),
                 resume_pc,
                 RephrasedInsnKind::UserSynthetic,
             )?;
             // A16: the target is a translation-time constant, so the site can be linked.
             ret.push(RephrasedInsn::link_slot(insn.pc, target_pc), GFP_KERNEL)?;
+            // A20: the target move follows the slot, so a linked transfer skips it. Only
+            // the template reads x13, and the link write above is independent of it.
+            push_mov_imm64(
+                &mut ret,
+                insn.pc,
+                x(DISPATCH_TARGET_REG),
+                target_pc,
+                RephrasedInsnKind::DispatchTarget,
+            )?;
             push_dispatch_template(&mut ret, insn.pc)?;
             push_dispatch_miss_exit(&mut ret, insn.pc, RetStatus::Bl, resume_pc)?;
         }
@@ -984,13 +987,24 @@ mod tests {
             "the slot is a nop that carries the BL's target"
         );
         assert_eq!(bl[slot].insn, A64Insn::NopNopHiHints {});
-        assert_eq!(bl[slot + 1].kind, RephrasedInsnKind::DispatchLookup);
         assert_eq!(bl[slot - 1].kind, RephrasedInsnKind::UserSynthetic);
         assert!(matches!(
             bl[slot - 1].insn,
             A64Insn::MovzMovz64Movewide { rd, .. } | A64Insn::MovkMovk64Movewide { rd, .. }
                 if rd.enc == ABI_LINK_REG
         ));
+        // A20: slot, then the x13 movz/movk run, then the template.
+        let moves = bl[slot + 1..]
+            .iter()
+            .take_while(|insn| insn.kind == RephrasedInsnKind::DispatchTarget)
+            .count();
+        assert_eq!(moves, 4, "movz + three movk");
+        assert!(bl[slot + 1..slot + 1 + moves].iter().all(|insn| matches!(
+            insn.insn,
+            A64Insn::MovzMovz64Movewide { rd, .. } | A64Insn::MovkMovk64Movewide { rd, .. }
+                if rd.enc == DISPATCH_TARGET_REG
+        )));
+        assert_eq!(bl[slot + 1 + moves].kind, RephrasedInsnKind::DispatchLookup);
 
         // A target above 4 GiB takes the full movz + three movk.
         let far = rephrase_insn(IrInsn {

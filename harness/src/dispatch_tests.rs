@@ -270,11 +270,24 @@ fn a_retired_callee_misses_in_the_warm_run() {
     cache.check_invariants().unwrap();
 }
 
-/// A16: a cold run links the static BL sites to the callees it translated, and the
-/// warm run's linked calls execute fewer instructions than the same warm run through
-/// the dispatch template (both are compared with the original).
+/// A16, A20: a cold run links the static BL sites to the callees it translated, and
+/// the warm run's linked calls execute fewer instructions than the same warm run
+/// through the dispatch template (both are compared with the original). Exactly how
+/// many fewer: a linked call runs `b <callee>` where the unlinked one runs the slot
+/// `nop`, the four target-move words (A20 order: after the slot) and a main-probe hit
+/// of the template (9 words, `br x12` included); the link write and the budget check
+/// precede the slot on both paths. Before A20 the four target-move words ran on both
+/// paths, so a linked call saved 9 words, not 13.
 #[test]
 fn linked_bl_sites_skip_the_dispatch_template_in_the_warm_run() {
+    // `nested_calls_mark` executes 10 `bl`s: 2 to func_f, 2 per func_f call to func_g
+    // (4), and 1 per func_g call to func_h (4).
+    const BL_EXECUTIONS: usize = 10;
+    const SLOT_NOP: usize = 1;
+    const TARGET_MOVE_WORDS: usize = 4;
+    const MAIN_PROBE_HIT_WORDS: usize = 9;
+    const LINKED_B: usize = 1;
+
     let (case, state) = case("dispatch_calls", "nested_calls_mark");
     let warm_steps = |linking: bool| {
         let mut cache = new_interpreter_cache(case.text_base, &case.text_bytes);
@@ -292,6 +305,11 @@ fn linked_bl_sites_skip_the_dispatch_template_in_the_warm_run() {
     assert_eq!(template_stats.link_made, 0);
     assert!(
         linked_steps < template_steps,
+        "linked {linked_steps} steps, through the template {template_steps}"
+    );
+    assert_eq!(
+        template_steps - linked_steps,
+        BL_EXECUTIONS * (SLOT_NOP + TARGET_MOVE_WORDS + MAIN_PROBE_HIT_WORDS - LINKED_B),
         "linked {linked_steps} steps, through the template {template_steps}"
     );
 }
@@ -321,4 +339,30 @@ fn a_retired_callee_matches_native() {
     // retire and made again by the warm run.
     assert!(!summary.contains("links made 0 "), "{summary}");
     assert!(!summary.contains("restored 0"), "{summary}");
+}
+
+/// A20, "Entry labels": a `bl` into the middle of a block already translated from its start
+/// does not resolve to that fragment (no label there, so no table record and no link): the
+/// target is translated as its own fragment, entered at its own block start. The warm run
+/// then hits every transfer.
+#[test]
+fn a_transfer_into_the_middle_of_a_block_is_translated_as_its_own_fragment() {
+    let (case, cold, warm, _, cache) = cold_and_warm("sp_align_dedup", "sp_midblock_bl_ok_mark");
+    // entry: `add sp`, `mov x20, x30`, then `bl mid_callee`, `bl mid_callee_inner`, `bl mid_callee`.
+    let callee = bl_target(&case, case.entry_pc + 8);
+    let inner = bl_target(&case, case.entry_pc + 12);
+    assert_eq!(inner, callee + 4);
+    let from_start = cache.fragment_for_entry(callee).expect("callee translated from its start");
+    assert!(cache.fragments[from_start].fragment.body_offset_for_pc(inner).is_some());
+    assert!(
+        cache.fragments[from_start].label_for_pc(inner).is_none(),
+        "the middle of a block is not an entry label"
+    );
+    let own = cache.fragment_for_entry(inner).expect("the middle is translated as its own fragment");
+    assert_ne!(own, from_start);
+    for (index, fragment) in cache.fragments.iter().enumerate() {
+        assert_eq!(fragment.label_for_pc(inner).is_some(), index == own, "fragment {index}");
+    }
+    assert!(cold.runtime_entries > 0);
+    assert_eq!(warm.runtime_entries, 0, "every transfer of the warm run hits");
 }

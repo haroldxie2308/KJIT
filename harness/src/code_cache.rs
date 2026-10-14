@@ -411,7 +411,7 @@ impl CodeCache {
         cached.base = (self.loader)(&cached)?;
         let mut labels = cached
             .fragment
-            .vlabels
+            .entry_labels
             .iter()
             .map(|&(pc, offset)| (pc, offset))
             .collect::<Vec<_>>();
