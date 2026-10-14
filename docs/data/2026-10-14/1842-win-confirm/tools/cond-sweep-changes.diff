@@ -1,0 +1,17 @@
+127a128,137
+> # prep TEST N: the key space a run starts from, set outside the measured window. LPUSH starts from
+> # an empty list; RPOP from a list of exactly N elements (the run pops them all; filled by an
+> # unrecorded LPUSH run of N requests, in the current KJIT state).
+> prep() {
+>     case "$1" in
+>         lpush) cli del mylist > /dev/null ;;
+>         rpop) cli del mylist > /dev/null; bench_run lpush "$2" ;;
+>     esac
+> }
+> 
+184a195
+>     prep "$cfg_test" "$cfg_n"
+241a253
+>         prep "$cfg_test" "$cfg_n"
+248a261
+>         prep "$cfg_test" "$warm"
