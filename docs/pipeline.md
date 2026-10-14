@@ -310,7 +310,7 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
   instruction.
 - If the instruction cannot be lowered within the scratch pool, it is an
   intrinsic reg-virt rejection -> `Unsupported` exit at that PC.
-- **SP alignment check.** Linux runs EL0 with SP alignment checking
+- **SP alignment check** (deduplicated by A20, below). Linux runs EL0 with SP alignment checking
   (`SCTLR_EL1.SA0`): a load/store whose base is SP faults (SIGBUS) when SP is
   not 16-byte aligned. User SP lives in x17 in a fragment, which is never
   checked, so without a check KJIT would run code that natively faults. For
@@ -327,6 +327,26 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
   4). The interpreter models the fault (`FaultCause::SpAlignment`, precise,
   before any access); the native runner matches it at the SP value Linux
   reports (`el0_sp`).
+- **SP alignment check deduplication (A20).** Within one basic block, reg-virt
+  emits the check only where user SP is not already known to be 16-byte
+  aligned.
+  - Known aligned: after a check in the same block whose `cbnz` was not
+    taken, as long as x17 has since been written only by
+    `add`/`sub x17, x17, #imm` with `imm % 16 == 0`. That covers SP writeback
+    of a pair access by a multiple of 16, and `add`/`sub sp, sp, #imm` of a
+    multiple of 16.
+  - Unknown: at the start of every block, and after any other write to x17.
+  - Exact: SP changes only through x17 inside a fragment. A check already
+    proved alignment, and an aligned SP plus a multiple of 16 stays aligned.
+    So every elided check would have passed, and every access that natively
+    faults with SIGBUS still gets its check.
+  - Not a verifier rule: the verifier never checked SP alignment, which is
+    an exactness property of the translation, not kernel safety. The harness
+    differential proves it. Fixtures cover SP misaligned mid-block by
+    `sub sp, sp, #8`, misaligned by `mov sp, xN`, and realigned.
+  - Why: SP-based accesses carried about 1160 check words per redis request
+    (2 per access), mostly function prologues and epilogues that touch SP
+    several times in one block ([2026-10-13 15:25](journal/2026-10-13.md)).
 
 ### Fault sites (A5)
 
@@ -527,7 +547,8 @@ CFG stay in-fragment. `SVC` is not a branch: its resume stays a runtime path.
   ```text
   sub  x18, x18, #1               ; budget check (rule 6 form) -> Budget stub
   cbz  x18, <Budget stub of pc>
-  <T -> x13>                      ; BL: movz/movk of the target;
+  <T -> x13>                      ; BL: movz/movk of the target, after the link
+                                  ;   write and link slot (A16, order A20);
                                   ; BLR/BR/RET: mov or fill from the target's mapping,
                                   ; before any x30 write (`blr x30`)
   <x30 = resume>                  ; BL/BLR only (existing link write)
@@ -607,14 +628,16 @@ carries one link slot that the runtime patches into a direct `b` to a verified
 entry of a live fragment translated for that target. Every other transfer, and
 every site that is not linked, uses the dispatch template unchanged.
 
-- Lowering (rephrase): at a `BL` site, between the link write and the template's
-  first word, one `nop` (`RephrasedInsnKind::LinkSlot`):
+- Lowering (rephrase): at a `BL` site, right after the link write, one `nop`
+  (`RephrasedInsnKind::LinkSlot`), then the target move, then the template
+  (A20 order: a linked site skips the target move, which only the template
+  reads):
 
   ```text
   sub  x18, x18, #1 ; cbz x18, <Budget stub>   ; budget unit (unchanged)
-  movz/movk x13, #T                             ; target (unchanged)
-  movz/movk x30, #resume                        ; link write (unchanged)
+  movz/movk x30, #resume                        ; link write
   nop                                           ; link slot: runtime may make it `b <host of T>`
+  movz/movk x13, #T                             ; target, read only by the template
   <dispatch template, 20 words>                 ; unchanged
   ```
 
@@ -622,9 +645,13 @@ every site that is not linked, uses the dispatch template unchanged.
   `BLR`/`BR`/`RET` get no slot; their targets are dynamic.
 - Linked semantics: a linked slot branches where the template would have, had
   its probe hit a record for T. Every fragment's labels for T are translations
-  of the same text (section 8, Dispatch tables). The budget unit, x13 and x30
-  are already written when the slot runs, so a linked and an unlinked transfer
-  leave identical user state.
+  of the same text (section 8, Dispatch tables). The budget unit and x30 are
+  already written when the slot runs. x13 is runtime scratch that only the
+  template reads, so a linked transfer that skips its move leaves the same
+  user state as an unlinked one.
+- Why the A20 order: in redis, 99% of `BL` executions take a linked slot, and
+  the 4-word target move was dead on every one of them. That is about 600
+  hot-path words per request ([2026-10-13 15:25](journal/2026-10-13.md)).
 - Why (decided 2026-10-12): in redis, linking the static `BL` sites saved
   0.12-0.23 us of server CPU per request (3-5%), with 6 of 6 boots positive and
   99% of `BL` executions on linkable sites
@@ -1447,11 +1474,13 @@ Reject with `VerifyError { offset, rule }`.
      window accesses.
 9. Confidentiality: no kernel value reaches user-visible state; see
    "Confidentiality (rule 9)" below.
-10. Link slots (A16): every `link_sites` entry `(slot_offset, target_pc)` names
-    a body word that is `nop`, followed immediately by a dispatch template's
-    first word. Within that template's guarded run (rule 6), x13 is set exactly
-    once, by a `movz` and up to three `movk`s, to `target_pc` (`LinkSite`
-    otherwise). Two entries never share a slot. The slot is not a join point.
+10. Link slots (A16, order A20): every `link_sites` entry
+    `(slot_offset, target_pc)` names a body word that is `nop`, inside a
+    dispatch template's guarded run (rule 6). The words from the slot to the
+    template's first word are exactly the slot, then one `movz` and up to three
+    `movk`s of x13 (each halfword set once) giving `target_pc`, with nothing
+    else in between (`LinkSite` otherwise). Two entries never share a slot.
+    Neither the slot nor those words are join points.
 
 Join points (where the dataflow restarts): entry offsets, stubs, and direct
 branch targets; also after every unconditional `B`.
