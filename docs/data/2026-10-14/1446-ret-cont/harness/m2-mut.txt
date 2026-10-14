@@ -1,0 +1,14 @@
+verify-mutation asm fixture suite: 176 cases across 44 fixtures, 0 failed
+verifier mutation suite: 176 fragments, 30212 body words
+| ring entry accessed outside a ring group | 3905 of 3905 | DispatchTemplate 405, ExitGroup 112, FaultSiteNotUserAccess 35, FrameAccessOutOfRange 1796, KernelValueRead 465, LinkSite 2, MissingBudgetCheck 157, PtRegsAccessOutOfRange 500, RuntimeAccessBase 398, WindowRangeCheck 35 |
+| ring pop group: a branch into the group | 161 of 161 | MissingBudgetCheck 161 |
+| ring pop group: a miss branch retargeted | 322 of 322 | DispatchTemplate 322 |
+| ring pop group: a word replaced by a nop | 1127 of 1127 | BudgetRegisterAccess 161, DispatchTemplate 966 |
+| ring pop group: br x12 -> br x13 | 161 of 161 | BudgetRegisterAccess 161 |
+| ring pop group: budget sub removed | 161 of 161 | MissingBudgetCheck 161 |
+| ring pop group: ldp from another offset | 161 of 161 | DispatchTemplate 161 |
+| ring push group: a word replaced by a nop | 228 of 228 | MissingBudgetCheck 228 |
+| ring push group: adr to a word that is no entry | 171 of 171 | RingGroup 171 |
+| ring push group: stp with another base | 57 of 57 | MissingBudgetCheck 57 |
+| random body word | rejected 67518 / benign ALU 2877 / in-fragment branch 0 / in-bounds runtime access 0 / user access at a fault site 5 / other accepted 0 of 70400 | |
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 338 filtered out; finished in 255.42s

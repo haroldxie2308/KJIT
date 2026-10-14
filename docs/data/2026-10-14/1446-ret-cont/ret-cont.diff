@@ -1,0 +1,4188 @@
+diff --git a/harness/src/bin/attrib.rs b/harness/src/bin/attrib.rs
+new file mode 100644
+index 0000000..b782ffa
+--- /dev/null
++++ b/harness/src/bin/attrib.rs
+@@ -0,0 +1,471 @@
++//! EXPERIMENT (exp/redis-attrib), not for main.
++//!
++//! Per-instruction lowering classes for the instructions an E1 trace executed.
++//!
++//!   attrib --trace trace.txt --map CONTAINER_PATH=HOST_ELF ... --out FILE.tsv
++//!
++//! Reads the aggregate trace of `tools/e1-trace/kjit_trace.c` (records V B X M I S G H C J K
++//! T E). For every distinct executed instruction it prints one TSV row: the number of
++//! dynamic executions in "request gaps" and the words the shared translator emits for it
++//! (rephrase -> reg-virt, hot path: the cold region and the exit groups are not counted,
++//! the dispatch template counts its nine main-probe-hit words). Lowering is read from the
++//! translator: fragments are compiled from entries picked so every executed word is
++//! covered, over the real ELF text (not only the executed words), so the CFG is the one
++//! the kernel's translation of the same entry would build.
++//!
++//! "Request gaps": closed gaps whose start and end syscalls are both in {read 63,
++//! write 64, epoll_pwait 22} and whose length is within the largest bucket (10000).
++
++use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
++use std::fmt::Write as _;
++use std::fs;
++
++use kjit_harness::a64_forms::disassemble;
++use kjit_harness::shared::trans::cfg::{admit_word, build_cfg, RuntimeExitReason};
++use kjit_harness::shared::trans::retcont;
++use kjit_harness::shared::trans::input::{
++    CodeProvider, CodeReadError, TranslationRequest, TranslationTrigger,
++};
++use kjit_harness::shared::trans::reg_virt::virtualize_registers;
++use kjit_harness::shared::trans::rephrase::{rephrase, RephrasedInsnKind};
++
++const REQUEST_SYSCALLS: [i32; 3] = [22, 63, 64];
++
++struct Insn {
++    pc: u64,
++    word: u32,
++    image: usize,
++    file_off: u64,
++}
++
++struct Region {
++    pc: u64,
++    bytes: Vec<u8>,
++}
++
++struct Regions(Vec<Region>);
++
++impl CodeProvider for Regions {
++    fn entry_addr(&self) -> u64 {
++        0
++    }
++    fn read_exact(&self, pc: u64, dst: &mut [u8]) -> Result<(), CodeReadError> {
++        for r in &self.0 {
++            if pc >= r.pc && pc - r.pc + dst.len() as u64 <= r.bytes.len() as u64 {
++                let o = (pc - r.pc) as usize;
++                dst.copy_from_slice(&r.bytes[o..o + dst.len()]);
++                return Ok(());
++            }
++        }
++        Err(CodeReadError::Unmapped { pc, len: dst.len() })
++    }
++}
++
++fn die(msg: String) -> ! {
++    eprintln!("attrib: {msg}");
++    std::process::exit(1);
++}
++
++fn u64_at(b: &[u8], o: usize) -> u64 {
++    u64::from_le_bytes(b[o..o + 8].try_into().unwrap())
++}
++fn u32_at(b: &[u8], o: usize) -> u32 {
++    u32::from_le_bytes(b[o..o + 4].try_into().unwrap())
++}
++fn u16_at(b: &[u8], o: usize) -> u16 {
++    u16::from_le_bytes(b[o..o + 2].try_into().unwrap())
++}
++
++/// Executable PT_LOAD segments: (file offset, vaddr, filesz).
++fn exec_segments(elf: &[u8]) -> Vec<(u64, u64, u64)> {
++    if &elf[0..4] != b"\x7fELF" || elf[4] != 2 {
++        die("not an ELF64 file".into());
++    }
++    let phoff = u64_at(elf, 0x20) as usize;
++    let phentsize = u16_at(elf, 0x36) as usize;
++    let phnum = u16_at(elf, 0x38) as usize;
++    let mut v = Vec::new();
++    for i in 0..phnum {
++        let p = phoff + i * phentsize;
++        let (ty, flags) = (u32_at(elf, p), u32_at(elf, p + 4));
++        if ty == 1 && flags & 1 != 0 {
++            v.push((u64_at(elf, p + 8), u64_at(elf, p + 0x10), u64_at(elf, p + 0x20)));
++        }
++    }
++    v
++}
++
++#[derive(Default, Clone)]
++struct Lowering {
++    /// Emitted body words per class on the hot path.
++    c: BTreeMap<&'static str, u32>,
++}
++
++fn class_of(kind: RephrasedInsnKind, text: &str, dispatch_seen: &mut u32) -> Option<&'static str> {
++    use RephrasedInsnKind as K;
++    Some(match kind {
++        K::Original => "user_op",
++        K::UserSynthetic => "user_synth",
++        K::UserAccess => "user_access",
++        K::BudgetCheck => "budget",
++        K::AlignCheck => "align",
++        K::RangeCheck => "range",
++        K::WindowAccess => "window_access",
++        K::LinkSlot { .. } => "link_slot",
++        K::RingPush | K::RingPushAdr { .. } => "ring_push",
++        K::RingPop => "ring_pop",
++        K::DispatchTarget => "dispatch_target",
++        K::DispatchLookup => {
++            *dispatch_seen += 1;
++            if *dispatch_seen <= 9 {
++                "dispatch_lookup"
++            } else {
++                return None;
++            }
++        }
++        K::RuntimeExitPayload | K::RuntimeExitBranch => return None,
++        K::RegVirtHelper => {
++            if text.starts_with("ldr") && text.contains("[sp") {
++                "fill"
++            } else if text.starts_with("str") && text.contains("[sp") {
++                "spill"
++            } else {
++                "helper_other"
++            }
++        }
++    })
++}
++
++fn main() {
++    let mut trace_path = String::new();
++    let mut out_path = String::new();
++    let mut maps: HashMap<String, String> = HashMap::new();
++    // EXPERIMENT (exp/ret-cont): translation mode of the lowering, and whether to lower only
++    // the BL/BLR/RET sites (their words are the only ones a mode changes).
++    let mut mode = 0u8;
++    let mut transfers_only = false;
++    let mut args = std::env::args().skip(1);
++    while let Some(a) = args.next() {
++        match a.as_str() {
++            "--trace" => trace_path = args.next().unwrap(),
++            "--out" => out_path = args.next().unwrap(),
++            "--retcont" => mode = args.next().unwrap().parse().unwrap(),
++            "--transfers-only" => transfers_only = true,
++            "--map" => {
++                let m = args.next().unwrap();
++                let (k, v) = m.split_once('=').unwrap_or_else(|| die(format!("bad --map {m}")));
++                maps.insert(k.to_string(), v.to_string());
++            }
++            other => die(format!("unknown argument {other}")),
++        }
++    }
++    if trace_path.is_empty() || out_path.is_empty() {
++        die("usage: attrib --trace T --map CPATH=HOSTELF ... [--retcont 0|1|2] [--transfers-only] --out OUT.tsv".into());
++    }
++    retcont::set_mode(mode);
++
++    // ---- parse the trace ----
++    let text = fs::read_to_string(&trace_path).unwrap_or_else(|e| die(format!("{trace_path}: {e}")));
++    let mut images: Vec<String> = Vec::new();
++    let mut insns: Vec<Insn> = Vec::new();
++    // (start, end, bucket, id) -> count, only request gaps
++    let mut count: Vec<u64> = Vec::new();
++    let mut ind_pairs: Vec<(usize, usize, u64)> = Vec::new();
++    let mut ind_changes: HashMap<usize, u64> = HashMap::new();
++    let mut c_lines: Vec<(i32, i32, u32, usize, u64)> = Vec::new();
++    let mut ended = false;
++    for line in text.lines() {
++        let f: Vec<&str> = line.split_whitespace().collect();
++        match f.first().copied() {
++            Some("M") => {
++                let id: usize = f[1].parse().unwrap();
++                let path = line.splitn(3, ' ').nth(2).unwrap().to_string();
++                if images.len() <= id {
++                    images.resize(id + 1, String::new());
++                }
++                images[id] = path;
++            }
++            Some("I") => {
++                let id: usize = f[1].parse().unwrap();
++                if id != insns.len() {
++                    die("I records out of order".into());
++                }
++                insns.push(Insn {
++                    pc: u64::from_str_radix(f[2], 16).unwrap(),
++                    word: u32::from_str_radix(f[3], 16).unwrap(),
++                    image: f[4].parse().unwrap(),
++                    file_off: u64::from_str_radix(f[5], 16).unwrap(),
++                });
++            }
++            Some("C") => c_lines.push((
++                f[1].parse().unwrap(),
++                f[2].parse().unwrap(),
++                f[3].parse().unwrap(),
++                f[4].parse().unwrap(),
++                f[5].parse().unwrap(),
++            )),
++            Some("J") => ind_pairs.push((
++                f[1].parse().unwrap(),
++                f[2].parse().unwrap(),
++                f[3].parse().unwrap(),
++            )),
++            Some("K") => {
++                ind_changes.insert(f[1].parse().unwrap(), f[2].parse().unwrap());
++            }
++            Some("E") => ended = true,
++            _ => {}
++        }
++    }
++    if !ended {
++        die("trace has no end marker".into());
++    }
++    count.resize(insns.len(), 0);
++    for &(s, e, bucket, id, n) in &c_lines {
++        if REQUEST_SYSCALLS.contains(&s) && REQUEST_SYSCALLS.contains(&e) && bucket <= 2 {
++            count[id] += n;
++        }
++    }
++
++    // ---- code regions per image ----
++    let mut elf_cache: HashMap<usize, (Vec<u8>, Vec<(u64, u64, u64)>)> = HashMap::new();
++    let mut regions: Vec<Region> = Vec::new();
++    let mut elf_vaddr: HashMap<usize, u64> = HashMap::new(); // insn id -> ELF vaddr
++    let mut bias_seen: BTreeSet<(usize, u64)> = BTreeSet::new();
++    let executed: Vec<usize> = (0..insns.len()).filter(|&i| count[i] > 0).collect();
++    for &i in &executed {
++        let ins = &insns[i];
++        let path = &images[ins.image];
++        let host = maps
++            .get(path)
++            .unwrap_or_else(|| die(format!("no --map for image `{path}` (insn pc {:#x})", ins.pc)));
++        let entry = elf_cache.entry(ins.image).or_insert_with(|| {
++            let b = fs::read(host).unwrap_or_else(|e| die(format!("{host}: {e}")));
++            let segs = exec_segments(&b);
++            (b, segs)
++        });
++        let seg = entry
++            .1
++            .iter()
++            .find(|s| ins.file_off >= s.0 && ins.file_off < s.0 + s.2)
++            .unwrap_or_else(|| die(format!("insn {:#x} fileoff {:#x} in no exec segment of {path}", ins.pc, ins.file_off)));
++        let vaddr = seg.1 + (ins.file_off - seg.0);
++        elf_vaddr.insert(i, vaddr);
++        let bias = ins.pc - vaddr;
++        if bias_seen.insert((ins.image, bias)) {
++            let bytes = entry.0[seg.0 as usize..(seg.0 + seg.2) as usize].to_vec();
++            regions.push(Region { pc: bias + seg.1, bytes });
++        }
++        // The word in the trace must be the word in the file.
++        let o = ins.file_off as usize;
++        let fw = u32::from_le_bytes(entry.0[o..o + 4].try_into().unwrap());
++        if fw != ins.word {
++            die(format!("word mismatch at {:#x}: trace {:08x} file {:08x}", ins.pc, ins.word, fw));
++        }
++    }
++    let code = Regions(regions);
++
++    // ---- cover every executed, admitted word with compiled fragments ----
++    let mut exec_pcs: Vec<(u64, usize)> = executed.iter().map(|&i| (insns[i].pc, i)).collect();
++    exec_pcs.sort();
++    let mut lowering: HashMap<u64, Lowering> = HashMap::new(); // by pc
++    let mut unsupported: HashSet<u64> = HashSet::new();
++    let mut failed_entries = 0u32;
++    let mut fragments = 0u32;
++    let mut pending_words: Vec<u32> = Vec::new();
++    // First pass: compile; keep (kind, ori_pc, word) lists; disassemble later in one go.
++    struct Emitted {
++        kind: RephrasedInsnKind,
++        ori_pc: u64,
++        word: u32,
++    }
++    let mut per_pc: HashMap<u64, Vec<Emitted>> = HashMap::new();
++    for &(pc, _) in &exec_pcs {
++        let w = {
++            let mut b = [0u8; 4];
++            code.read_exact(pc, &mut b).unwrap();
++            u32::from_le_bytes(b)
++        };
++        match admit_word(w, pc) {
++            Ok(Ok(insn)) => {
++                if transfers_only
++                    && !matches!(
++                        insn.inner.runtime_exit_reason(pc),
++                        Some(
++                            RuntimeExitReason::Bl { .. }
++                                | RuntimeExitReason::Blr { .. }
++                                | RuntimeExitReason::Ret { .. }
++                        )
++                    )
++                {
++                    continue;
++                }
++            }
++            Ok(Err(_)) => {
++                unsupported.insert(pc);
++                continue;
++            }
++            Err(e) => die(format!("admit_word {pc:#x}: {e}")),
++        }
++        if per_pc.contains_key(&pc) {
++            continue;
++        }
++        let request = TranslationRequest {
++            entry_pc: pc,
++            trigger: TranslationTrigger::Manual,
++            regs: None,
++        };
++        let cfg = match build_cfg(&request, &code) {
++            Ok(c) => c,
++            Err(e) => {
++                eprintln!("attrib: cfg {pc:#x}: {e}");
++                failed_entries += 1;
++                continue;
++            }
++        };
++        let rephrased = match rephrase(cfg) {
++            Ok(r) => r,
++            Err(e) => die(format!("rephrase {pc:#x}: {e:?}")),
++        };
++        let virt = match virtualize_registers(rephrased) {
++            Ok(v) => v,
++            Err(e) => die(format!("reg-virt {pc:#x}: {e:?}")),
++        };
++        fragments += 1;
++        let mut local: HashMap<u64, Vec<Emitted>> = HashMap::new();
++        for block in virt.iter() {
++            for r in block.insns.iter() {
++                let word = r.insn.encode().unwrap_or_else(|e| die(format!("encode: {e:?}")));
++                local.entry(r.ori_pc).or_default().push(Emitted {
++                    kind: r.kind,
++                    ori_pc: r.ori_pc,
++                    word,
++                });
++            }
++        }
++        // Lowering is context-free: keep the first fragment's sequence for a pc.
++        for (opc, v) in local {
++            if !per_pc.contains_key(&opc) {
++                for e in &v {
++                    pending_words.push(e.word);
++                }
++                per_pc.insert(opc, v);
++            }
++        }
++    }
++
++    // ---- disassemble the distinct emitted words once ----
++    let mut distinct: Vec<u32> = pending_words.clone();
++    distinct.sort_unstable();
++    distinct.dedup();
++    let dis = disassemble(&distinct).unwrap_or_else(|e| die(e));
++    let text_of: HashMap<u32, String> = distinct
++        .iter()
++        .zip(dis)
++        .map(|(&w, t)| (w, t.unwrap_or_default()))
++        .collect();
++    // And the original words.
++    let mut owords: Vec<u32> = executed.iter().map(|&i| insns[i].word).collect();
++    owords.sort_unstable();
++    owords.dedup();
++    let odis = disassemble(&owords).unwrap_or_else(|e| die(e));
++    let otext: HashMap<u32, String> = owords
++        .iter()
++        .zip(odis)
++        .map(|(&w, t)| (w, t.unwrap_or_default()))
++        .collect();
++
++    for (&pc, v) in per_pc.iter() {
++        let mut low = Lowering::default();
++        let mut dispatch_seen = 0u32;
++        let mut budget_seen = 0u32;
++        for e in v {
++            let t = text_of.get(&e.word).map(String::as_str).unwrap_or("");
++            if let Some(mut cls) = class_of(e.kind, t, &mut dispatch_seen) {
++                // A ring RET has a second budget check, on its miss path only.
++                if cls == "budget" {
++                    budget_seen += 1;
++                    if budget_seen > 2 {
++                        cls = "budget2";
++                    }
++                }
++                *low.c.entry(cls).or_default() += 1;
++            }
++            let _ = e.ori_pc;
++        }
++        lowering.insert(pc, low);
++    }
++
++    // ---- output ----
++    let classes = [
++        "user_op", "user_synth", "user_access", "fill", "spill", "helper_other", "budget",
++        "align", "range", "pan_toggle", "window_access", "dispatch_target", "dispatch_lookup",
++        "link_slot", "ring_push", "ring_pop", "budget2",
++    ];
++    let mut out = String::new();
++    write!(out, "image\tvaddr\tpc\tcount\tword\tsupported\ttext").unwrap();
++    for c in classes {
++        write!(out, "\t{c}").unwrap();
++    }
++    out.push('\n');
++    let mut missing = 0u32;
++    for &i in &executed {
++        let ins = &insns[i];
++        let sup = !unsupported.contains(&ins.pc);
++        let low = lowering.get(&ins.pc);
++        if sup && low.is_none() {
++            missing += 1;
++        }
++        write!(
++            out,
++            "{}\t{:#x}\t{:#x}\t{}\t{:08x}\t{}\t{}",
++            images[ins.image],
++            elf_vaddr[&i],
++            ins.pc,
++            count[i],
++            ins.word,
++            if sup { 1 } else { 0 },
++            otext.get(&ins.word).map(String::as_str).unwrap_or("?")
++        )
++        .unwrap();
++        for c in classes {
++            write!(out, "\t{}", low.and_then(|l| l.c.get(c)).copied().unwrap_or(0)).unwrap();
++        }
++        out.push('\n');
++    }
++    fs::write(&out_path, out).unwrap_or_else(|e| die(format!("{out_path}: {e}")));
++
++    // Indirect-branch sites: id, pc, executions, distinct targets, last-target changes.
++    let mut sites: BTreeMap<usize, (u64, usize)> = BTreeMap::new();
++    for &(site, _tgt, n) in &ind_pairs {
++        let e = sites.entry(site).or_default();
++        e.0 += n;
++        e.1 += 1;
++    }
++    let mut s = String::from("image\tvaddr\tpc\tword\ttext\texecs\ttargets\tchanges\n");
++    for (&site, &(execs, targets)) in &sites {
++        let ins = &insns[site];
++        let v = elf_vaddr.get(&site).copied().unwrap_or(0);
++        writeln!(
++            s,
++            "{}\t{:#x}\t{:#x}\t{:08x}\t{}\t{}\t{}\t{}",
++            images[ins.image],
++            v,
++            ins.pc,
++            ins.word,
++            otext.get(&ins.word).map(String::as_str).unwrap_or("?"),
++            execs,
++            targets,
++            ind_changes.get(&site).copied().unwrap_or(0)
++        )
++        .unwrap();
++    }
++    fs::write(format!("{out_path}.indirect"), s).unwrap();
++    eprintln!(
++        "attrib: {} executed insns, {} fragments compiled, {} entries failed, {} unsupported pcs, {} supported pcs without lowering",
++        executed.len(),
++        fragments,
++        failed_entries,
++        unsupported.len(),
++        missing
++    );
++}
+diff --git a/harness/src/bin/check-case.rs b/harness/src/bin/check-case.rs
+index 459ddb9..b2c8a39 100644
+--- a/harness/src/bin/check-case.rs
++++ b/harness/src/bin/check-case.rs
+@@ -2,7 +2,7 @@
+ //! assembled fixture case (`make harness-test-asm`). The same `run_entry_fixture`
+ //! call the fixture suite makes, from the same initial state. Exits 1 on a mismatch.
+ 
+-use kjit_harness::{case_state, run_entry_fixture};
++use kjit_harness::{case_state, retcont_from_env, run_entry_fixture};
+ 
+ fn parse_u64(name: &str, value: &str) -> Result<u64, String> {
+     let parsed = match value.strip_prefix("0x").or_else(|| value.strip_prefix("0X")) {
+@@ -13,6 +13,7 @@ fn parse_u64(name: &str, value: &str) -> Result<u64, String> {
+ }
+ 
+ fn run() -> Result<String, String> {
++    retcont_from_env();
+     let args: Vec<String> = std::env::args().skip(1).collect();
+     let [text_bin, text_base, entry_pc, symbol] = args.as_slice() else {
+         return Err("usage: check-case <text-bin> <text-base> <entry-pc> <case-symbol>".to_string());
+diff --git a/harness/src/bin/dump-rephrase.rs b/harness/src/bin/dump-rephrase.rs
+index 05de64c..cc40808 100644
+--- a/harness/src/bin/dump-rephrase.rs
++++ b/harness/src/bin/dump-rephrase.rs
+@@ -95,6 +95,8 @@ fn main() {
+                         RephrasedInsnKind::DispatchTarget => "dispatch-target",
+                 RephrasedInsnKind::DispatchLookup => "dispatch-lookup",
+                 RephrasedInsnKind::LinkSlot { .. } => "link-slot",
++                RephrasedInsnKind::RingPush | RephrasedInsnKind::RingPushAdr { .. } => "ring-push",
++                RephrasedInsnKind::RingPop => "ring-pop",
+                 RephrasedInsnKind::RuntimeExitPayload => "rt-payload",
+                 RephrasedInsnKind::RuntimeExitBranch => "rt-branch",
+             };
+diff --git a/harness/src/bin/fuzz.rs b/harness/src/bin/fuzz.rs
+index f1ab9e6..c512536 100644
+--- a/harness/src/bin/fuzz.rs
++++ b/harness/src/bin/fuzz.rs
+@@ -45,6 +45,7 @@ struct Args {
+ static LAST_PANIC: Mutex<Option<String>> = Mutex::new(None);
+ 
+ fn main() -> ExitCode {
++    kjit_harness::retcont_from_env();
+     let args = match parse_args(std::env::args().skip(1).collect()) {
+         Ok(args) => args,
+         Err(message) => {
+diff --git a/harness/src/bin/retcont-dump.rs b/harness/src/bin/retcont-dump.rs
+new file mode 100644
+index 0000000..1c5a2f7
+--- /dev/null
++++ b/harness/src/bin/retcont-dump.rs
+@@ -0,0 +1,60 @@
++//! EXPERIMENT (exp/ret-cont): `retcont-dump <text-bin> <text-base> <entry-pc>`: translates the
++//! case in `$KJIT_RETCONT` mode, prints every fragment word (offset, word, disassembly,
++//! the labels at it) and the verifier's verdict.
++
++use kjit_harness::a64_forms::disassemble;
++use kjit_harness::shared::trans::input::{TranslationRequest, TranslationTrigger};
++use kjit_harness::shared::trans::translate::compile_request;
++use kjit_harness::{encode_fragment, retcont_from_env, verify_encoded_fragment, MockCodeProvider};
++
++fn num(text: &str) -> u64 {
++    match text.strip_prefix("0x") {
++        Some(hex) => u64::from_str_radix(hex, 16).unwrap(),
++        None => text.parse().unwrap(),
++    }
++}
++
++fn main() {
++    retcont_from_env();
++    let args: Vec<String> = std::env::args().skip(1).collect();
++    let [text_bin, text_base, entry_pc] = args.as_slice() else {
++        eprintln!("usage: retcont-dump <text-bin> <text-base> <entry-pc>");
++        std::process::exit(2);
++    };
++    let text = std::fs::read(text_bin).unwrap();
++    let code = MockCodeProvider::new(num(text_base), text);
++    let request = TranslationRequest {
++        entry_pc: num(entry_pc),
++        trigger: TranslationTrigger::Manual,
++        regs: None,
++    };
++    let fragment = compile_request(&request, &code).unwrap_or_else(|err| {
++        eprintln!("compile: {err}");
++        std::process::exit(1);
++    });
++    let bytes = encode_fragment(&fragment).unwrap();
++    let words: Vec<u32> = bytes
++        .chunks(4)
++        .map(|c| u32::from_le_bytes(c.try_into().unwrap()))
++        .collect();
++    let text = disassemble(&words).unwrap();
++    for (index, word) in words.iter().enumerate() {
++        let offset = index * 4;
++        let labels: Vec<String> = fragment
++            .vlabels
++            .iter()
++            .filter(|&&(_, o)| o == offset)
++            .map(|&(pc, _)| format!("L{pc:#x}"))
++            .collect();
++        println!(
++            "{offset:#06x}  {word:08x}  {:<40} {}",
++            text[index].clone().unwrap_or_else(|| "?".into()),
++            labels.join(" ")
++        );
++    }
++    println!("entry_offset={:#x} len={:#x}", fragment.entry_offset, bytes.len());
++    match verify_encoded_fragment(&fragment, &bytes) {
++        Ok(ok) => println!("verify: ok {ok:?}"),
++        Err(err) => println!("verify: REJECTED at {:#x}: {:?}", err.offset, err.rule),
++    }
++}
+diff --git a/harness/src/lib.rs b/harness/src/lib.rs
+index 502dc98..3838c70 100644
+--- a/harness/src/lib.rs
++++ b/harness/src/lib.rs
+@@ -27,6 +27,8 @@ mod asm_fixture_tests;
+ #[cfg(test)]
+ mod dispatch_tests;
+ #[cfg(test)]
++mod ring_tests;
++#[cfg(test)]
+ mod encoding_tests;
+ #[cfg(test)]
+ mod verify_mutation_tests;
+@@ -1107,6 +1109,19 @@ impl FragmentTables {
+     }
+ }
+ 
++/// EXPERIMENT (exp/ret-cont): sets the translation mode of this process from
++/// `$KJIT_RETCONT` (0, 1, 2 or 3; unset: 0). For the bins; tests read it themselves.
++pub fn retcont_from_env() {
++    if let Ok(value) = std::env::var("KJIT_RETCONT") {
++        let mode: u8 = value
++            .parse()
++            .ok()
++            .filter(|mode| *mode <= shared::trans::retcont::MODE_PUSH)
++            .unwrap_or_else(|| panic!("KJIT_RETCONT must be 0, 1, 2 or 3, not {value:?}"));
++        shared::trans::retcont::set_mode(mode);
++    }
++}
++
+ /// Runs the independent verifier over `code`, the encoding of `fragment`.
+ pub fn verify_encoded_fragment(
+     fragment: &ExecutionFragment,
+diff --git a/harness/src/ring_tests.rs b/harness/src/ring_tests.rs
+new file mode 100644
+index 0000000..e5bba34
+--- /dev/null
++++ b/harness/src/ring_tests.rs
+@@ -0,0 +1,201 @@
++//! EXPERIMENT (exp/ret-cont): what the return continuations (mode 1) and the shadow
++//! return ring (mode 2) do in the harness, beyond the cold/warm differential every
++//! `tests/arm64/*.s` case already gets in the mode of the process (`$KJIT_RETCONT`).
++//! Each test runs a case of `dispatch_calls.s` / `ring_returns.s` cold and warm in one
++//! explicit mode (compared with the original), then counts what the warm run executed.
++
++use std::path::Path;
++use std::sync::atomic::{AtomicUsize, Ordering};
++
++use crate::asm_fixture::{compile_case, CompiledCase};
++use crate::cached_run::{compare_cached, new_interpreter_cache, run_cached_differential};
++use crate::code_cache::CodeCache;
++use crate::model::MachineState;
++use crate::runtime::{URuntime, URuntimeConfig, URuntimeStepper};
++use crate::shared::abi::{ring_pop_matches, RING_POP_LEN};
++use crate::shared::trans::retcont::{self, MODE_CONT, MODE_OFF, MODE_RING};
++use crate::case_state;
++
++fn case(fixture: &str, symbol: &str) -> (CompiledCase, MachineState) {
++    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
++        .parent()
++        .expect("harness manifest dir has a parent");
++    static NEXT: AtomicUsize = AtomicUsize::new(0);
++    let out_dir = root.join("tmp").join(format!(
++        "ring-tests.{}.{}.{fixture}.{symbol}",
++        std::process::id(),
++        NEXT.fetch_add(1, Ordering::SeqCst)
++    ));
++    let compiled = compile_case(
++        root,
++        &root.join("tests/arm64").join(format!("{fixture}.s")),
++        symbol,
++        &out_dir,
++    )
++    .unwrap_or_else(|err| panic!("compile {fixture} {symbol}: {err}"));
++    std::fs::remove_dir_all(&out_dir).expect("remove ring test work dir");
++    let state =
++        case_state(symbol, compiled.text_base, &compiled.text_bytes).expect("fixture state");
++    (compiled, state)
++}
++
++/// What a run executed.
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++struct Counts {
++    /// Ring pop groups started: returns that looked at the ring.
++    pop_runs: u64,
++    /// Ring pop groups that branched to a cached host (`br x12` of the group executed).
++    pop_hits: u64,
++    /// Ring push groups executed.
++    push_runs: u64,
++    /// Instructions executed in fragments, over all runtime entries.
++    steps: u64,
++    /// Fragments installed.
++    fragments: usize,
++}
++
++/// The cold and the warm run of a case in `mode`, each equal to the original; the warm
++/// run's counts.
++fn warm_counts(fixture: &str, symbol: &str, mode: u8) -> Counts {
++    retcont::with_mode(mode, || {
++        let (case, state) = case(fixture, symbol);
++        let mut cache = new_interpreter_cache(case.text_base, &case.text_bytes);
++        for phase in ["cold", "warm"] {
++            let (run, next) = run_cached_differential(
++                cache,
++                case.text_base,
++                &case.text_bytes,
++                case.entry_pc,
++                &state,
++            )
++            .unwrap_or_else(|err| panic!("{fixture} {symbol} mode {mode} {phase}: {err}"));
++            compare_cached(phase, &run)
++                .unwrap_or_else(|mismatch| panic!("{fixture} {symbol} mode {mode}: {}", mismatch.message));
++            cache = next;
++        }
++        count_run(cache, &case, &state)
++    })
++}
++
++/// Runs the case once more over `cache` and counts the executions of the ring groups'
++/// first and last words, found by their exact words in every fragment.
++fn count_run(cache: CodeCache, case: &CompiledCase, state: &MachineState) -> Counts {
++    let entry = cache
++        .fragment_for_entry(case.entry_pc)
++        .expect("the cold run translated the entry");
++    // (fragment, instruction index) of every group's first / last word.
++    let mut pop_starts = std::collections::BTreeSet::new();
++    let mut pop_ends = std::collections::BTreeSet::new();
++    let mut push_starts = std::collections::BTreeSet::new();
++    for (index, frag) in cache.fragments.iter().enumerate() {
++        let words: Vec<u32> = frag.fragment.insns.iter().map(|i| i.encode().unwrap()).collect();
++        for start in 0..words.len().saturating_sub(RING_POP_LEN - 1) {
++            if ring_pop_matches(&words[start..start + RING_POP_LEN]) {
++                pop_starts.insert((index, start));
++                pop_ends.insert((index, start + RING_POP_LEN - 1));
++            }
++        }
++        for start in 0..words.len().saturating_sub(4) {
++            if crate::shared::abi::ring_push_matches(&words[start..start + 5]).is_some() {
++                push_starts.insert((index, start));
++            }
++        }
++    }
++    let fragments = cache.fragments.len();
++    let mut runtime = URuntime::with_cache(cache, entry, state.clone(), URuntimeConfig::default());
++    let mut counts = Counts { fragments, ..Counts::default() };
++    let mut stepper = URuntimeStepper::new(&mut runtime).expect("stepper");
++    while let Some(step) = stepper.advance().expect("advance") {
++        if step.executed {
++            counts.steps += 1;
++            if let Some(offset) = step.offset {
++                let at = (step.fragment, offset / 4);
++                counts.pop_runs += u64::from(pop_starts.contains(&at));
++                counts.pop_hits += u64::from(pop_ends.contains(&at));
++                counts.push_runs += u64::from(push_starts.contains(&at));
++            }
++        }
++        if step.halt.is_some() {
++            break;
++        }
++    }
++    counts
++}
++
++#[test]
++fn modes_0_and_1_have_no_ring() {
++    for mode in [MODE_OFF, MODE_CONT] {
++        let counts = warm_counts("ring_returns", "ring_loop_mark", mode);
++        assert_eq!((counts.pop_runs, counts.push_runs), (0, 0), "mode {mode}");
++    }
++}
++
++/// The common case: every return of a call/return loop finds its entry.
++#[test]
++fn a_loop_of_calls_returns_through_the_ring() {
++    let counts = warm_counts("ring_returns", "ring_loop_mark", MODE_RING);
++    // 300 iterations x (bump, bump2, bump inside bump2) = 900 returns, plus the final one.
++    assert!(counts.pop_runs >= 900, "{counts:?}");
++    assert_eq!(counts.pop_hits, counts.pop_runs - 1, "{counts:?}");
++    assert!(counts.push_runs >= 900, "{counts:?}");
++}
++
++#[test]
++fn deep_recursion_overflows_the_ring_and_stays_exact() {
++    let counts = warm_counts("ring_returns", "ring_deep_recursion_mark", MODE_RING);
++    // Sixty-one returns of `deep` and the final one; all the recursive ones share a
++    // resume pc, so even entries overwritten by deeper calls match.
++    assert!(counts.pop_runs >= 61, "{counts:?}");
++    assert!(counts.pop_hits >= 60, "{counts:?}");
++}
++
++/// Returns that must fall back: the pop group runs and does not branch.
++#[test]
++fn mismatched_returns_fall_back_to_the_template() {
++    for symbol in [
++        "ring_longjmp_mark",
++        "ring_alias_mark",
++        "ring_modified_lr_mark",
++        "ring_coroutine_mark",
++    ] {
++        let counts = warm_counts("ring_returns", symbol, MODE_RING);
++        assert!(counts.pop_runs > counts.pop_hits, "{symbol}: {counts:?}");
++        assert!(counts.pop_hits > 0 || symbol != "ring_alias_mark", "{symbol}: {counts:?}");
++    }
++}
++
++/// The empty ring entry (pc 0, host 0) must not match a return to 0: every case ends in
++/// a `ret` to x30 = 0, and the run ends in userspace there, not in a branch to host 0.
++#[test]
++fn a_return_to_zero_does_not_match_an_empty_entry() {
++    for fixture_symbol in [("dispatch_calls", "tail_calls_mark"), ("dispatch_recursion", "recursion_budget_mark")] {
++        warm_counts(fixture_symbol.0, fixture_symbol.1, MODE_RING);
++    }
++}
++
++/// Every case of `dispatch_calls.s` and `ring_returns.s`, all three modes.
++#[test]
++fn the_call_cases_are_exact_in_every_mode() {
++    for (fixture, symbols) in [
++        ("dispatch_calls", &["nested_calls_mark", "tail_calls_mark", "recursion_frames_mark"][..]),
++        (
++            "ring_returns",
++            &[
++                "ring_longjmp_mark",
++                "ring_deep_recursion_mark",
++                "ring_alias_mark",
++                "ring_tail_call_mark",
++                "ring_modified_lr_mark",
++                "ring_coroutine_mark",
++                "ring_blr_mark",
++                "ring_loop_mark",
++            ][..],
++        ),
++    ] {
++        for symbol in symbols {
++            for mode in [MODE_OFF, MODE_CONT, MODE_RING] {
++                warm_counts(fixture, symbol, mode);
++            }
++        }
++    }
++}
+diff --git a/harness/src/runtime.rs b/harness/src/runtime.rs
+index d7fdace..b5d2564 100644
+--- a/harness/src/runtime.rs
++++ b/harness/src/runtime.rs
+@@ -839,17 +839,6 @@ pub(crate) fn decide_runtime_return(
+     let status = RetStatus::from_reg(raw_status);
+     let resume_pc = param1;
+     let resume_offset = fragment.offset_for_pc(resume_pc);
+-    let continue_or_request_translation = |target_pc: u64| {
+-        if let Some(offset) = fragment.offset_for_pc(target_pc) {
+-            RuntimeAction::ContinueAt(offset)
+-        } else {
+-            RuntimeAction::Stop(URuntimeHalt::NeedsTranslation {
+-                status,
+-                target_pc,
+-                resume_offset,
+-            })
+-        }
+-    };
+ 
+     match status {
+         RetStatus::Svc => {
+@@ -862,17 +851,24 @@ pub(crate) fn decide_runtime_return(
+                 })
+             }
+         }
+-        RetStatus::Bl | RetStatus::Blr | RetStatus::Br => continue_or_request_translation(param0),
+-        RetStatus::Ret => {
+-            if let Some(offset) = fragment.offset_for_pc(param0) {
+-                RuntimeAction::ContinueAt(offset)
+-            } else {
+-                RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
+-                    status,
+-                    target_pc: param0,
+-                })
+-            }
++        // EXPERIMENT (exp/ret-cont): a single-fragment run stops at its first branch exit, also
++        // when the target is a label of the fragment (with call continuations a call's target
++        // or a return's target can be: a callee reached by the fall-through of the code after
++        // a non-returning call, a return to the continuation). The original halts at the first
++        // BL/BLR/BR/RET too (`OriginalStepper`, and the native original), so both stop there;
++        // chaining through the fragment's own labels is what the cached runs (`CodeCache::decide`)
++        // check.
++        RetStatus::Bl | RetStatus::Blr | RetStatus::Br => {
++            RuntimeAction::Stop(URuntimeHalt::NeedsTranslation {
++                status,
++                target_pc: param0,
++                resume_offset,
++            })
+         }
++        RetStatus::Ret => RuntimeAction::Stop(URuntimeHalt::ReturnedToUserspace {
++            status,
++            target_pc: param0,
++        }),
+         // Never continue inside the fragment: resuming at this PC would re-enter
+         // the same exit. Userspace executes the instruction natively: for
+         // Unsupported that runs it, for Mem it re-executes the faulting memory
+@@ -983,6 +979,8 @@ mod tests {
+ 
+     #[test]
+     fn bl_runtime_exit_writes_user_lr_before_epilogue() {
++    // EXPERIMENT (exp/ret-cont): asserts the mode-0 CFG and cache growth.
++    crate::shared::trans::retcont::set_mode(crate::shared::trans::retcont::MODE_OFF);
+         let base_pc = 0x3000;
+         let fragment = compile_insns(
+             base_pc,
+@@ -1437,6 +1435,8 @@ mod tests {
+     /// its loop does.
+     #[test]
+     fn budget_exits_exactly_on_the_budget_th_unit() {
++        // EXPERIMENT (exp/ret-cont): asserts the mode-0 lowering / cache growth.
++        crate::shared::trans::retcont::set_mode(crate::shared::trans::retcont::MODE_OFF);
+         use crate::shared::abi::KJIT_BACKEDGE_BUDGET;
+         let budget = KJIT_BACKEDGE_BUDGET as u32;
+ 
+diff --git a/harness/src/session/tests.rs b/harness/src/session/tests.rs
+index 8849db3..c8c59fa 100644
+--- a/harness/src/session/tests.rs
++++ b/harness/src/session/tests.rs
+@@ -151,6 +151,8 @@ fn a_pc_is_translated_exactly_when_its_hits_reach_the_threshold() {
+ 
+ #[test]
+ fn the_warm_path_of_a_chain_makes_no_runtime_round_trip() {
++    // EXPERIMENT (exp/ret-cont): asserts the mode-0 lowering / cache growth.
++    crate::shared::trans::retcont::set_mode(crate::shared::trans::retcont::MODE_OFF);
+     for (name, expect_link) in [
+         ("session_svc_loop", false),
+         ("session_call_loop", true),
+@@ -198,6 +200,8 @@ fn the_warm_path_of_a_chain_makes_no_runtime_round_trip() {
+ 
+ #[test]
+ fn cold_chains_continue_through_the_runtime_and_learn_the_callee() {
++    // EXPERIMENT (exp/ret-cont): asserts the mode-0 CFG and cache growth.
++    crate::shared::trans::retcont::set_mode(crate::shared::trans::retcont::MODE_OFF);
+     let session = session("session_call_loop");
+     // The callee and the return point are learned by exit-target misses.
+     let learned = session
+@@ -301,6 +305,8 @@ fn fragment_label_pc(cache: &crate::code_cache::CodeCache, fragment: usize, labe
+ 
+ #[test]
+ fn the_cache_grows_as_the_events_say() {
++    // EXPERIMENT (exp/ret-cont): asserts the mode-0 CFG and cache growth.
++    crate::shared::trans::retcont::set_mode(crate::shared::trans::retcont::MODE_OFF);
+     let session = session("session_call_loop");
+     let installs = session
+         .events()
+diff --git a/harness/src/tui/debug/fmt.rs b/harness/src/tui/debug/fmt.rs
+index 09d0927..6a064d2 100644
+--- a/harness/src/tui/debug/fmt.rs
++++ b/harness/src/tui/debug/fmt.rs
+@@ -115,6 +115,8 @@ pub fn tag(kind: RephrasedInsnKind) -> &'static str {
+         RephrasedInsnKind::DispatchTarget => "dtgt",
+         RephrasedInsnKind::DispatchLookup => "dlkp",
+         RephrasedInsnKind::LinkSlot { .. } => "link",
++        RephrasedInsnKind::RingPush | RephrasedInsnKind::RingPushAdr { .. } => "rpush",
++        RephrasedInsnKind::RingPop => "rpop",
+         RephrasedInsnKind::RuntimeExitPayload => "xpay",
+         RephrasedInsnKind::RuntimeExitBranch => "xbr",
+     }
+@@ -131,6 +133,9 @@ pub fn tag_style(kind: RephrasedInsnKind) -> Style {
+         RephrasedInsnKind::DispatchTarget
+         | RephrasedInsnKind::DispatchLookup
+         | RephrasedInsnKind::LinkSlot { .. }
++        | RephrasedInsnKind::RingPush
++        | RephrasedInsnKind::RingPushAdr { .. }
++        | RephrasedInsnKind::RingPop
+         | RephrasedInsnKind::RuntimeExitPayload
+         | RephrasedInsnKind::RuntimeExitBranch => Color::Magenta,
+     };
+diff --git a/harness/src/tui/observe/tests.rs b/harness/src/tui/observe/tests.rs
+index 963d052..5dfab22 100644
+--- a/harness/src/tui/observe/tests.rs
++++ b/harness/src/tui/observe/tests.rs
+@@ -134,6 +134,8 @@ fn playback_advances_by_the_speed_and_stops_at_the_end() {
+ 
+ #[test]
+ fn scrubbing_jumps_and_navigation_keys() {
++    // EXPERIMENT (exp/ret-cont): asserts the mode-0 CFG and cache growth.
++    crate::shared::trans::retcont::set_mode(crate::shared::trans::retcont::MODE_OFF);
+     let session = session("session_call_loop");
+     let ticks = session.ticks();
+     let large = ticks / 100;
+diff --git a/harness/src/verify_mutation_tests.rs b/harness/src/verify_mutation_tests.rs
+index edbaf95..5c7bd1f 100644
+--- a/harness/src/verify_mutation_tests.rs
++++ b/harness/src/verify_mutation_tests.rs
+@@ -12,6 +12,8 @@ use std::collections::BTreeMap;
+ use crate::asm_fixture::CompiledCase;
+ use crate::asm_fixture_tests::run_every_case;
+ use crate::shared::abi::{
++    ring_pop_matches, ring_push_adr, ring_push_matches, RING_POP_LEN, RING_PUSH_ADR_INDEX,
++    RING_PUSH_LEN, RUNTIME_FRAME_RING_OFFSET,
+     dispatch_template_matches, DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES,
+     DISPATCH_TEMPLATE_MISS_TARGETS, DISPATCH_TEMPLATE_VICTIM_PROBE, EPILOGUE_OFFSET,
+     KJIT_DISPATCH_TEMPLATE, PROLOGUE_LEN_BYTES, BUDGET_COUNTER_REG, RUNTIME_FRAME_IBTC_OFFSET,
+@@ -388,6 +390,7 @@ impl Suite {
+         self.kernel_values(fixture);
+         self.dispatch_templates(fixture);
+         self.link_slots(fixture);
++        self.ring_groups(fixture);
+         self.random_words(fixture);
+     }
+ 
+@@ -2170,6 +2173,181 @@ impl Suite {
+     /// template and branches into it (the victim probe's first word included), no
+     /// budget check, slot 200 read outside a template or written anywhere, a kernel
+     /// value in x13, every miss branch retargeted (the main probe's internal ones too).
++    /// EXPERIMENT (exp/ret-cont): the shadow return ring's groups (`KJIT_RING_PUSH`,
++    /// `KJIT_RING_POP`; only fragments translated in mode 2 have any). Every word of
++    /// every group changed, the pop's miss branches and budget guard, the push's `adr`
++    /// aimed at a word that is no entry, and ring entries written or read by
++    /// anything but a group.
++    fn ring_groups(&mut self, fixture: &Fixture) {
++        let nop = enc(A64Insn::NopNopHiHints {});
++        let body = fixture.body();
++        let mut pops = Vec::new();
++        let mut pushes = Vec::new();
++        for start in body.clone() {
++            if start + RING_POP_LEN <= fixture.words.len()
++                && ring_pop_matches(&fixture.words[start..start + RING_POP_LEN])
++            {
++                pops.push(start);
++            }
++            if start + RING_PUSH_LEN <= fixture.words.len()
++                && ring_push_matches(&fixture.words[start..start + RING_PUSH_LEN]).is_some()
++            {
++                pushes.push(start);
++            }
++        }
++        for &start in &pops {
++            for word in 0..RING_POP_LEN {
++                self.replace("ring pop group: a word replaced by a nop", fixture, start + word, nop, "nop");
++            }
++            // The branch out is no longer the group's `br x12`.
++            self.replace(
++                "ring pop group: br x12 -> br x13",
++                fixture,
++                start + RING_POP_LEN - 1,
++                enc(A64Insn::BrBr64BranchReg { rn: x(13) }),
++                "br x13",
++            );
++            // A miss branch aimed at another word.
++            self.replace(
++                "ring pop group: a miss branch retargeted",
++                fixture,
++                start + 4,
++                enc(cbnz_to(start + 4, start + 6, 14)),
++                "cbnz x14, +2",
++            );
++            self.replace(
++                "ring pop group: a miss branch retargeted",
++                fixture,
++                start + 5,
++                enc(cbz_to(start + 5, start + 9, 12)),
++                "cbz x12, +4",
++            );
++            // The entry read from another place.
++            self.replace(
++                "ring pop group: ldp from another offset",
++                fixture,
++                start + 2,
++                enc(A64Insn::LdpGenLdp64LdstpairOff {
++                    rt2: x(12),
++                    rt: x(14),
++                    mem: mem_off(x(12), ldstpair64_offset(RUNTIME_FRAME_RING_OFFSET as i32 + 16)),
++                }),
++                "ldp x14, x12, [x12, #224]",
++            );
++            // No budget check in front: its `sub` is gone, or the pop is entered past it.
++            let mut guard = None;
++            for back in 1..=20 {
++                if start >= back && fixture.words[start - back] == enc(budget_sub()) {
++                    guard = Some(start - back);
++                    break;
++                }
++            }
++            if let Some(sub) = guard {
++                self.replace("ring pop group: budget sub removed", fixture, sub, nop, "nop");
++            }
++            // An edge into the middle of the group: the word before it becomes a jump.
++            if start > 0 {
++                let jump = enc(A64Insn::BUncondBOnlyBranchImm {
++                    imm26: scaled_simm(3, 26, 2),
++                });
++                self.replace("ring pop group: a branch into the group", fixture, start - 1, jump, "b +3");
++            }
++        }
++        for &start in &pushes {
++            for word in 0..RING_PUSH_LEN {
++                if word != RING_PUSH_ADR_INDEX {
++                    self.replace("ring push group: a word replaced by a nop", fixture, start + word, nop, "nop");
++                }
++            }
++            // The host of the push must be an entry offset: aim the `adr` at the
++            // push's own `stp`, at the prologue, and at the end of the fragment.
++            let adr_at = start + RING_PUSH_ADR_INDEX;
++            for (what, target) in [
++                ("its own stp", adr_at + 1),
++                ("the prologue", 0),
++                ("past the end", fixture.words.len()),
++            ] {
++                let delta = target as i64 * 4 - adr_at as i64 * 4;
++                if let Some(adr) = ring_push_adr(delta) {
++                    self.replace(
++                        "ring push group: adr to a word that is no entry",
++                        fixture,
++                        adr_at,
++                        enc(adr),
++                        what,
++                    );
++                }
++            }
++            // The store goes through sp, or stores the wrong registers.
++            self.replace(
++                "ring push group: stp with another base",
++                fixture,
++                start + 3,
++                enc(A64Insn::StpGenStp64LdstpairOff {
++                    rt2: x(14),
++                    rt: x(30),
++                    mem: mem_off(sp(), ldstpair64_offset(RUNTIME_FRAME_RING_OFFSET as i32)),
++                }),
++                "stp x30, x14, [sp, #208]",
++            );
++        }
++        if pops.is_empty() && pushes.is_empty() {
++            return;
++        }
++        // A ring entry read or written by anything but a group, at a sample of words.
++        let ring = RUNTIME_FRAME_RING_OFFSET;
++        let outside = [
++            ("ldr x0, [sp, #ring]", ldr64(0, sp(), ring)),
++            ("ldr x12, [sp, #ring + 8]", ldr64(12, sp(), ring + 8)),
++            ("str x0, [sp, #ring + 8]", str64(0, sp(), ring + 8)),
++            ("str xzr, [sp, #ring + 248]", str64(31, sp(), ring + 248)),
++            // Based on x12, which at some sites is the proven pt_regs pointer (offsets
++            // below 256 are then pt_regs slots, legitimately): a ring-sized offset past
++            // pt_regs.
++            (
++                "stp x30, x14, [x12, #ring + 80] outside a group",
++                A64Insn::StpGenStp64LdstpairOff {
++                    rt2: x(14),
++                    rt: x(30),
++                    mem: mem_off(x(12), ldstpair64_offset(ring as i32 + 80)),
++                },
++            ),
++            (
++                "ldp x14, x12, [x12, #ring + 80] outside a group",
++                A64Insn::LdpGenLdp64LdstpairOff {
++                    rt2: x(12),
++                    rt: x(14),
++                    mem: mem_off(x(12), ldstpair64_offset(ring as i32 + 80)),
++                },
++            ),
++            (
++                "add x12, sp, x14, lsl #4 outside a group",
++                A64Insn::AddAddsubExtAdd64AddsubExt {
++                    rm: x(14),
++                    option: 0b011,
++                    imm3: uimm(4, 3),
++                    rn: sp(),
++                    rd: A64Reg::x_sp(12),
++                },
++            ),
++        ];
++        for (what, insn) in outside {
++            for index in body.clone().step_by(61) {
++                self.replace("ring entry accessed outside a ring group", fixture, index, enc(insn), what);
++            }
++        }
++        // A `br x12` that is not at the end of an exact group, in the ring's neighbourhood.
++        for index in body.clone().step_by(61) {
++            self.replace(
++                "br x12 outside a template or ring pop group",
++                fixture,
++                index,
++                enc(A64Insn::BrBr64BranchReg { rn: x(12) }),
++                "br x12",
++            );
++        }
++    }
++
+     fn dispatch_templates(&mut self, fixture: &Fixture) {
+         let nop = enc(A64Insn::NopNopHiHints {});
+         let x12 = A64Reg::x_sp(12);
+diff --git a/kjit_glue.c b/kjit_glue.c
+index f3fa714..82f76bf 100644
+--- a/kjit_glue.c
++++ b/kjit_glue.c
+@@ -197,6 +197,9 @@ enum kjit_note {
+ 	KJIT_NOTE_LINK_CLASS_REFUSED = 23,	/* link attempts only an FP/SIMD label could take */
+ };
+ void kjit_rs_note(u32 note, u64 n);
++/* EXPERIMENT (exp/ret-cont): the translation mode of shared/trans/retcont.rs. */
++int kjit_rs_set_retcont(u32 mode);
++u32 kjit_rs_retcont(void);
+ 
+ /* ------------------------------------------------------------------------- */
+ /* Types and functions shared with runtime/ffi.rs (keep in sync).              */
+@@ -218,6 +221,7 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
+ bool kjit_fpsimd_supported(void);
+ bool kjit_can_run(const struct pt_regs *regs);
+ struct kjit_frag *kjit_lookup(u64 pc, bool link, u64 *entry);
++struct kjit_frag *kjit_lookup_label(u64 pc, u64 *entry);
+ u64 kjit_frag_base(const struct kjit_frag *f);
+ u64 kjit_frag_link(struct kjit_frag *f, u64 pc);
+ u64 kjit_frag_table(const struct kjit_frag *f);
+@@ -1657,6 +1661,43 @@ struct kjit_frag *kjit_lookup(u64 pc, bool link, u64 *entry)
+ 	return found;
+ }
+ 
++/*
++ * EXPERIMENT (exp/ret-cont): the fragment of current's mm that has a label for @pc (any
++ * label: the continuation of a call, inside the fragment that made the call), and that
++ * label's host in @entry, or NULL. The branch exit that asked for @pc (a RET to a call's
++ * continuation) is then continued there, and the label is published in the dispatch
++ * tables as for any resolved target. Same lifetime rule as kjit_lookup().
++ */
++struct kjit_frag *kjit_lookup_label(u64 pc, u64 *entry)
++{
++	struct mm_struct *mm = current->mm;
++	struct kjit_label *label, *found = NULL;
++	struct kjit_mm *kmm;
++
++	if (!mm)
++		return NULL;
++	rcu_read_lock();
++	kmm = kjit_mm_find_rcu(mm);
++	if (kmm && !READ_ONCE(kmm->disabled)) {
++		spin_lock(&kmm->lock);
++		if (kmm->links) {
++			hlist_for_each_entry(label, kjit_link_label_bucket(kmm->links, pc), by_pc) {
++				if (label->pc == pc && !label->frag->retired) {
++					found = label;
++					break;
++				}
++			}
++		}
++		spin_unlock(&kmm->lock);
++	}
++	rcu_read_unlock();
++	if (!found)
++		return NULL;
++	kjit_ibtc_publish(found->frag, found);
++	*entry = found->host;
++	return found->frag;
++}
++
+ /* A fragment returned a status the runtime does not know: a kernel bug. */
+ void kjit_bad_status(u64 status, u64 pc)
+ {
+@@ -2487,6 +2528,10 @@ static ssize_t kjit_stats_read(struct file *file, char __user *ubuf, size_t coun
+ 	len += scnprintf(buf + len, size - len, "link_sites_linked %ld\nlink_sites_pending %ld\n",
+ 			 atomic_long_read(&kjit_links_linked),
+ 			 atomic_long_read(&kjit_links_pending));
++	/* EXPERIMENT (exp/ret-cont): live fragments and their code bytes, over all mms. */
++	len += scnprintf(buf + len, size - len, "frags_live %ld\ncode_live %ld\n",
++			 atomic_long_read(&kjit_total_frags),
++			 atomic_long_read(&kjit_total_code));
+ 	/* Gauges (A17, A19): arena chunks, the PMD-mapped ones among them, and bytes in live slots. */
+ 	len += scnprintf(buf + len, size - len, "arena_chunks %ld\narena_chunks_pmd %ld\narena_bytes %ld\n",
+ 			 atomic_long_read(&kjit_arena_nchunks),
+@@ -2687,6 +2732,51 @@ static int kjit_counter_cpu_online(unsigned int cpu)
+ 	return 0;
+ }
+ 
++/*
++ * EXPERIMENT (exp/ret-cont): debugfs `retcont` (0 off, 1 call continuations, 2 continuations
++ * and the shadow return ring, 3 continuations and the ring pushes only; shared/trans/retcont.rs). A write needs KJIT disabled
++ * (`enable` 0): it drops every fragment of every mm and waits for their retirement, so
++ * no fragment of the old mode is left, then sets the mode translations use.
++ */
++static int kjit_retcont_get(void *data, u64 *val)
++{
++	*val = kjit_rs_retcont();
++	return 0;
++}
++
++static int kjit_retcont_set(void *data, u64 val)
++{
++	struct kjit_mm *kmm;
++	unsigned int bkt;
++	bool any;
++	u64 n = 0;
++
++	if (val > 3)
++		return -EINVAL;
++	if (READ_ONCE(kjit_enabled))
++		return -EBUSY;
++	rcu_read_lock();
++	hash_for_each_rcu(kjit_mm_hash, bkt, kmm, hash_node) {
++		spin_lock(&kmm->lock);
++		kmm->seq++;
++		n += kjit_mm_flush_locked(kmm, 0, ULONG_MAX);
++		spin_unlock(&kmm->lock);
++	}
++	rcu_read_unlock();
++	if (n)
++		kjit_rs_note(KJIT_NOTE_INVALIDATED, n);
++	kjit_hook_srcu_barrier();
++	rcu_barrier();
++	flush_workqueue(kjit_wq);
++	spin_lock(&kjit_frags_lock);
++	any = !list_empty(&kjit_all_frags);
++	spin_unlock(&kjit_frags_lock);
++	if (any)
++		return -EBUSY;
++	return kjit_rs_set_retcont(val);
++}
++DEFINE_DEBUGFS_ATTRIBUTE(kjit_retcont_fops, kjit_retcont_get, kjit_retcont_set, "%llu\n");
++
+ int kjit_glue_init(void)
+ {
+ 	int ret, cpu;
+@@ -2722,6 +2812,7 @@ int kjit_glue_init(void)
+ 	debugfs_create_u32("hot_threshold", 0600, kjit_debugfs, &kjit_hot_threshold);
+ 	debugfs_create_u32("hot_window_ms", 0600, kjit_debugfs, &kjit_hot_window_ms);
+ 	debugfs_create_file_unsafe("chain_budget", 0600, kjit_debugfs, NULL, &kjit_chain_budget_fops);
++	debugfs_create_file_unsafe("retcont", 0600, kjit_debugfs, NULL, &kjit_retcont_fops);
+ 	debugfs_create_file("unsupported_top", 0400, kjit_debugfs, NULL, &kjit_unsupported_fops);
+ 	debugfs_create_file("ibtc_slots", 0600, kjit_debugfs, NULL, &kjit_ibtc_slots_fops);
+ 	debugfs_create_file_unsafe("neon_noise_us", 0600, kjit_debugfs, NULL, &kjit_neon_noise_fops);
+diff --git a/runtime/exec.rs b/runtime/exec.rs
+index 3a856be..4e779a6 100644
+--- a/runtime/exec.rs
++++ b/runtime/exec.rs
+@@ -13,6 +13,7 @@ use super::ffi::{self, KjitFrag, PtRegs};
+ use super::ibtc;
+ use super::stats::{self, Stat};
+ use crate::shared::abi::{RetStatus, EXTRA_PARAMS_WORDS, EXTRA_PARAM_IBTC_TABLE_INDEX};
++use crate::shared::trans::retcont;
+ 
+ /// `kjit_profile` kinds (`enum kjit_hot_kind` in kjit_glue.c).
+ const HOT_SVC_RESUME: u32 = 0;
+@@ -113,6 +114,30 @@ impl Running {
+         }
+     }
+ 
++    /// EXPERIMENT (exp/ret-cont): the fragment of the mm that has a label for `pc` (the
++    /// continuation of a call), its entry in `entry`, published in the tables.
++    fn lookup_label(pc: u64, entry: &mut u64) -> Option<Self> {
++        // SAFETY: called on the syscall path of the current task, inside the hook call.
++        let frag = unsafe { ffi::kjit_lookup_label(pc, entry) };
++        if frag.is_null() {
++            return None;
++        }
++        // SAFETY: `frag` stays allocated for this hook call.
++        let (base, fpsimd, table) = unsafe {
++            (
++                ffi::kjit_frag_base(frag),
++                ffi::kjit_frag_uses_fpsimd(frag),
++                ffi::kjit_frag_table(frag),
++            )
++        };
++        Some(Self {
++            frag,
++            base,
++            fpsimd,
++            table,
++        })
++    }
++
+     /// A branch exit's target `pc` resolved inside this fragment: its verified
+     /// entry address, if it has one, also published in the dispatch tables.
+     fn link(&self, pc: u64) -> Option<u64> {
+@@ -242,7 +267,22 @@ fn run_chain(
+                         stats::inc(Stat::Chains);
+                         continue;
+                     }
+-                    if let Some(next) = Running::lookup(target, true, &mut entry) {
++                    // EXPERIMENT (exp/ret-cont): a return to a call's continuation, a label inside
++                    // the fragment of the call (or of any fragment that holds one), not the
++                    // entry of a fragment: continue there instead of learning a fragment for
++                    // it.
++                    let found = Running::lookup(target, true, &mut entry).or_else(|| {
++                        if status == RET && retcont::continuations() {
++                            let found = Running::lookup_label(target, &mut entry);
++                            if found.is_some() {
++                                stats::inc(Stat::RetLabel);
++                            }
++                            found
++                        } else {
++                            None
++                        }
++                    });
++                    if let Some(next) = found {
+                         if next.fpsimd && !run.fpsimd {
+                             // Published in table_all only: this run's table
+                             // (table_nofp) never holds an FP/SIMD fragment.
+diff --git a/runtime/ffi.rs b/runtime/ffi.rs
+index 756a377..13d49e9 100644
+--- a/runtime/ffi.rs
++++ b/runtime/ffi.rs
+@@ -111,6 +111,7 @@ extern "C" {
+ 
+     pub(crate) fn kjit_can_run(regs: *const PtRegs) -> bool;
+     pub(crate) fn kjit_lookup(pc: u64, link: bool, entry: *mut u64) -> *mut KjitFrag;
++    pub(crate) fn kjit_lookup_label(pc: u64, entry: *mut u64) -> *mut KjitFrag;
+     pub(crate) fn kjit_frag_base(frag: *const KjitFrag) -> u64;
+     pub(crate) fn kjit_frag_link(frag: *mut KjitFrag, pc: u64) -> u64;
+     pub(crate) fn kjit_frag_table(frag: *const KjitFrag) -> u64;
+diff --git a/runtime/stats.rs b/runtime/stats.rs
+index 691c7ff..675fc06 100644
+--- a/runtime/stats.rs
++++ b/runtime/stats.rs
+@@ -142,9 +142,12 @@ pub(crate) enum Stat {
+     LinkOutOfRange,
+     /// ... or only FP/SIMD labels for a non-FP/SIMD site (the class rule).
+     LinkClassRefused,
++    /// EXPERIMENT (exp/ret-cont): `RET` exits whose target was no fragment's entry but a
++    /// label inside some fragment (a call's continuation), continued there.
++    RetLabel,
+ }
+ 
+-const COUNT: usize = Stat::LinkClassRefused as usize + 1;
++const COUNT: usize = Stat::RetLabel as usize + 1;
+ 
+ const NAMES: [&str; COUNT] = [
+     "syscalls_in_kernel",
+@@ -207,6 +210,7 @@ const NAMES: [&str; COUNT] = [
+     "link_restored",
+     "link_out_of_range",
+     "link_class_refused",
++    "ret_label",
+ ];
+ 
+ #[allow(clippy::declare_interior_mutable_const)]
+diff --git a/runtime/translate.rs b/runtime/translate.rs
+index e079559..bc41f51 100644
+--- a/runtime/translate.rs
++++ b/runtime/translate.rs
+@@ -21,6 +21,7 @@ use crate::shared::trans::cfg::{admit_at, UnsupportedExit};
+ use crate::shared::trans::input::{
+     CodeProvider, CodeReadError, TranslationRequest, TranslationTrigger,
+ };
++use crate::shared::trans::retcont;
+ use crate::shared::trans::translate::compile_request;
+ use crate::shared::verify::{verify_fragment, FaultSiteEntry, VerifyInput, VerifyRule};
+ 
+@@ -443,3 +444,20 @@ fn translate(kmm: *mut KjitMm, pc: u64, verbose: bool) -> Result<(), Failure> {
+     }
+     Ok(())
+ }
++
++/// EXPERIMENT (exp/ret-cont): sets the translation mode (`shared/trans/retcont.rs`);
++/// the C glue calls it from the debugfs `retcont` write, with KJIT disabled and no
++/// fragment left.
++#[no_mangle]
++extern "C" fn kjit_rs_set_retcont(mode: u32) -> c_int {
++    if mode > u32::from(retcont::MODE_PUSH) {
++        return EINVAL.to_errno();
++    }
++    retcont::set_mode(mode as u8);
++    0
++}
++
++#[no_mangle]
++extern "C" fn kjit_rs_retcont() -> u32 {
++    u32::from(retcont::mode())
++}
+diff --git a/scripts/native-test.sh b/scripts/native-test.sh
+index abfeb7b..9db0355 100755
+--- a/scripts/native-test.sh
++++ b/scripts/native-test.sh
+@@ -99,6 +99,7 @@ docker run --rm \
+     -e CARGO_HOME=/workspace/.kjit/native-cargo-home \
+     -e CARGO_TARGET_DIR=/workspace/.kjit/native-target \
+     -e KJIT_IGNORE_LOCAL_ENV=1 \
++    -e KJIT_RETCONT="${KJIT_RETCONT:-0}" \
+     -v "$ROOT_DIR:/workspace" \
+     -w /workspace \
+     "$image" \
+diff --git a/shared/abi/frame.rs b/shared/abi/frame.rs
+index aa714d2..fafeaca 100644
+--- a/shared/abi/frame.rs
++++ b/shared/abi/frame.rs
+@@ -12,9 +12,11 @@ use super::{
+ //   176..192 pt_regs pointer, extra-params pointer
+ //   192..200 stack-backed user x18 (A12; was the budget counter, which now lives in
+ //            physical x18)
+-//   200..208 dispatch table pointer (extra params [2], stored by the prologue);
+-//            also keeps sp 16-byte aligned
+-pub const RUNTIME_FRAME_SIZE_BYTES: u32 = 208;
++//   200..208 dispatch table pointer (extra params [2], stored by the prologue)
++//   208..464 EXPERIMENT (exp/ret-cont): the shadow return ring, `RING_ENTRIES` entries of
++//            { u64 user resume pc; u64 host address }, zeroed by the prologue on every
++//            fragment call (docs: shared/trans/retcont.rs); keeps sp 16-byte aligned
++pub const RUNTIME_FRAME_SIZE_BYTES: u32 = RUNTIME_FRAME_RING_OFFSET + RING_BYTES;
+ pub const RUNTIME_FRAME_ENTRY_ADDR_OFFSET: u32 = 80;
+ pub const RUNTIME_FRAME_PT_REGS_PTR_OFFSET: u32 = 176;
+ /// Slot of stack-backed user x18 (A12). Physical x18 is the budget counter
+@@ -27,6 +29,24 @@ pub const RUNTIME_FRAME_USER_X18_OFFSET: u32 = 192;
+ /// template's table loads (words 0 and 9) read it, and nothing in a body writes it.
+ pub const RUNTIME_FRAME_IBTC_OFFSET: u32 = 200;
+ 
++/// EXPERIMENT (exp/ret-cont): the shadow return ring (retcont mode 2). A direct-mapped
++/// array of `RING_ENTRIES` entries `{ pc @RING_ENTRY_PC_OFFSET; host @RING_ENTRY_HOST_OFFSET }`,
++/// indexed by bits `[RING_INDEX_LSB + RING_INDEX_BITS - 1 : RING_INDEX_LSB]` of the user sp
++/// (physical x17): a call stores its resume pc and the host address of its continuation
++/// label at the slot of the sp it calls with, the matching return (same sp, restored by
++/// the callee) finds it there. The prologue zeroes the whole ring; an entry is therefore
++/// `(0, 0)` or what a ring push wrote. The ring is written only by the push group and read
++/// only by the pop group (`KJIT_RING_PUSH`, `KJIT_RING_POP`).
++pub const RING_INDEX_LSB: u32 = 4;
++pub const RING_INDEX_BITS: u32 = 4;
++pub const RING_ENTRIES: usize = 1 << RING_INDEX_BITS;
++pub const RING_ENTRY_SHIFT: u32 = 4;
++pub const RING_ENTRY_BYTES: u32 = 1 << RING_ENTRY_SHIFT;
++pub const RING_ENTRY_PC_OFFSET: u32 = 0;
++pub const RING_ENTRY_HOST_OFFSET: u32 = 8;
++pub const RING_BYTES: u32 = RING_ENTRIES as u32 * RING_ENTRY_BYTES;
++pub const RUNTIME_FRAME_RING_OFFSET: u32 = 208;
++
+ /// Extra params block (`ABI_EXTRA_PARAMS_ARG_REG` points at it): `[0]`, `[1]` are
+ /// RET_PARAM0/1 (out, written by the epilogue), `[2]` is the run's dispatch table
+ /// (in, read by the prologue).
+@@ -93,7 +113,14 @@ const _: () = assert!(RUNTIME_FRAME_SIZE_BYTES % 16 == 0);
+ const _: () = assert!(RUNTIME_FRAME_USER_X18_OFFSET + 8 <= RUNTIME_FRAME_IBTC_OFFSET);
+ // The slot sits above the pt_regs / extra-params pointers and after the user x29/sp slots.
+ const _: () = assert!(RUNTIME_FRAME_USER_X18_OFFSET >= RUNTIME_FRAME_PT_REGS_PTR_OFFSET + 16);
+-const _: () = assert!(RUNTIME_FRAME_IBTC_OFFSET + 8 == RUNTIME_FRAME_SIZE_BYTES);
++const _: () = assert!(RUNTIME_FRAME_IBTC_OFFSET + 8 == RUNTIME_FRAME_RING_OFFSET);
++// `stp x29, x30, [sp, #-SIZE]!` and `ldp x29, x30, [sp], #SIZE` take a scaled signed 7-bit offset.
++const _: () = assert!(RUNTIME_FRAME_SIZE_BYTES <= 504);
++// `ldp/stp ..., [x12, #RING_OFFSET]` takes a scaled signed 7-bit offset; the entry is
++// 16 bytes, so the index shift is the entry shift and the index covers the whole ring.
++const _: () = assert!(RUNTIME_FRAME_RING_OFFSET <= 504 - RING_ENTRY_HOST_OFFSET);
++const _: () = assert!(RING_INDEX_LSB == RING_ENTRY_SHIFT);
++const _: () = assert!(RING_ENTRY_HOST_OFFSET as usize + 8 == RING_ENTRY_BYTES as usize);
+ // `ldr x12, [sp, #200]` and `ldr x12, [x1, #16]` take a scaled 12-bit offset.
+ const _: () = assert!(RUNTIME_FRAME_IBTC_OFFSET % 8 == 0 && RUNTIME_FRAME_IBTC_OFFSET / 8 < 4096);
+ const _: () = assert!(IBTC_RECORD_HOST_OFFSET as usize + 8 == IBTC_RECORD_BYTES);
+diff --git a/shared/abi/mod.rs b/shared/abi/mod.rs
+index 7121842..ecdcfae 100644
+--- a/shared/abi/mod.rs
++++ b/shared/abi/mod.rs
+@@ -12,7 +12,9 @@ pub use frame::{
+     EXTRA_PARAM_IBTC_TABLE_OFFSET, IBTC_BITS, IBTC_INDEX_LSB, IBTC_RECORD_BYTES,
+     IBTC_RECORD_HOST_OFFSET, IBTC_RECORD_PC_OFFSET, IBTC_SLOTS, IBTC_SLOT_BYTES, IBTC_SLOT_SHIFT,
+     IBTC_TABLE_BYTES, IBTC_TABLE_WORDS, IBTC_VICTIM_BITS, IBTC_VICTIM_FOLD_SHIFT,
+-    IBTC_VICTIM_OFFSET, IBTC_VICTIM_SLOTS, KJIT_BACKEDGE_BUDGET, RUNTIME_FRAME_ENTRY_ADDR_OFFSET,
++    IBTC_VICTIM_OFFSET, IBTC_VICTIM_SLOTS, KJIT_BACKEDGE_BUDGET, RING_BYTES, RING_ENTRIES,
++    RING_ENTRY_BYTES, RING_ENTRY_HOST_OFFSET, RING_ENTRY_PC_OFFSET, RING_ENTRY_SHIFT,
++    RING_INDEX_BITS, RING_INDEX_LSB, RUNTIME_FRAME_RING_OFFSET, RUNTIME_FRAME_ENTRY_ADDR_OFFSET,
+     RUNTIME_FRAME_IBTC_OFFSET, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
+     RUNTIME_FRAME_USER_X18_OFFSET,
+ };
+@@ -27,6 +29,8 @@ pub use regs::{
+ };
+ pub use wrapper::{
+     append_epilogue, append_prologue, copy_epilogue, copy_prologue, dispatch_template_matches,
++    ring_pop_matches, ring_push_adr, ring_push_matches, KJIT_RING_POP, KJIT_RING_PUSH, RING_POP_LEN,
++    RING_POP_MISS_DELTAS, RING_PUSH_LEN, RING_PUSH_ADR_INDEX,
+     ABI_INSN_SIZE, DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES,
+     DISPATCH_TEMPLATE_MISS_TARGETS, DISPATCH_TEMPLATE_VICTIM_PROBE, EPILOGUE_LEN_BYTES,
+     EPILOGUE_OFFSET, KJIT_DISPATCH_TEMPLATE, KJIT_EPILOGUE, KJIT_PROLOGUE, PROLOGUE_LEN_BYTES,
+diff --git a/shared/abi/wrapper.rs b/shared/abi/wrapper.rs
+index 6746d84..19e0118 100644
+--- a/shared/abi/wrapper.rs
++++ b/shared/abi/wrapper.rs
+@@ -3,9 +3,12 @@ use super::{
+     DISPATCH_KEY_REG, DISPATCH_SLOT_REG, DISPATCH_TARGET_REG, EXTRA_PARAM_IBTC_TABLE_OFFSET,
+     IBTC_BITS, IBTC_INDEX_LSB, IBTC_RECORD_HOST_OFFSET, IBTC_RECORD_PC_OFFSET, IBTC_SLOT_SHIFT,
+     IBTC_VICTIM_BITS, IBTC_VICTIM_FOLD_SHIFT, IBTC_VICTIM_OFFSET,
+-    KJIT_BACKEDGE_BUDGET, REG_VIRT_SCRATCH_GPR_START, RET_PARAM0_REG, RET_PARAM1_REG,
+-    RET_STATUS_REG, RUNTIME_FRAME_ENTRY_ADDR_OFFSET, RUNTIME_FRAME_IBTC_OFFSET,
+-    RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_SIZE_BYTES, RUNTIME_FRAME_USER_X18_OFFSET,
++    KJIT_BACKEDGE_BUDGET, REG_VIRT_SCRATCH_GPR_START, REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
++    RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG, RING_BYTES, RING_ENTRIES, RING_ENTRY_BYTES,
++    RING_ENTRY_PC_OFFSET, RING_ENTRY_SHIFT, RING_INDEX_BITS,
++    RING_INDEX_LSB, RUNTIME_FRAME_ENTRY_ADDR_OFFSET, RUNTIME_FRAME_IBTC_OFFSET,
++    RUNTIME_FRAME_PT_REGS_PTR_OFFSET, RUNTIME_FRAME_RING_OFFSET, RUNTIME_FRAME_SIZE_BYTES,
++    RUNTIME_FRAME_USER_X18_OFFSET,
+ };
+ use crate::shared::arm64::ergo::{
+     ldst64_offset, ldstpair64_offset, mem_off, mem_post, mem_pre, scaled_simm, sp, uimm, x, xzr,
+@@ -23,6 +26,22 @@ pub const EPILOGUE_LEN_BYTES: usize = KJIT_EPILOGUE.len() * ABI_INSN_SIZE;
+ /// slot when the branch runs.
+ const PROLOGUE_ENTRY_SCRATCH_REG: u8 = REG_VIRT_SCRATCH_GPR_START;
+ 
++
++/// `stp xzr, xzr, [sp, #(RUNTIME_FRAME_RING_OFFSET + 16 * entry)]`: clears ring entry `entry`.
++const fn w_zero_ring_entry(entry: u32) -> A64Insn {
++    A64Insn::StpGenStp64LdstpairOff {
++        rt2: xzr(),
++        rt: xzr(),
++        mem: mem_off(
++            sp(),
++            ldstpair64_offset((RUNTIME_FRAME_RING_OFFSET + entry * RING_ENTRY_BYTES) as i32),
++        ),
++    }
++}
++
++const _: () = assert!(RING_ENTRIES == 16, "the prologue clears one entry per word, 16 listed");
++const _: () = assert!(RING_BYTES as usize == RING_ENTRIES * RING_ENTRY_BYTES as usize);
++
+ /// Entered at offset 0 with x0 = pt_regs, x1 = extra params and
+ /// x2 = `ABI_ENTRY_ARG_REG` (absolute body address to start at). It stores the
+ /// run's dispatch table (extra params `[2]`) in the frame, moves user x18 to its frame
+@@ -109,6 +128,24 @@ pub const KJIT_PROLOGUE: &[A64Insn] = &[
+         rt: x(PROLOGUE_ENTRY_SCRATCH_REG),
+         mem: mem_off(sp(), ldst64_offset(RUNTIME_FRAME_IBTC_OFFSET)),
+     },
++    // EXPERIMENT (exp/ret-cont): the shadow return ring starts every fragment call empty
++    // (every entry (0, 0)); the frame is stack garbage until here.
++    w_zero_ring_entry(0),
++    w_zero_ring_entry(1),
++    w_zero_ring_entry(2),
++    w_zero_ring_entry(3),
++    w_zero_ring_entry(4),
++    w_zero_ring_entry(5),
++    w_zero_ring_entry(6),
++    w_zero_ring_entry(7),
++    w_zero_ring_entry(8),
++    w_zero_ring_entry(9),
++    w_zero_ring_entry(10),
++    w_zero_ring_entry(11),
++    w_zero_ring_entry(12),
++    w_zero_ring_entry(13),
++    w_zero_ring_entry(14),
++    w_zero_ring_entry(15),
+     A64Insn::LdpGenLdp64LdstpairOff {
+         rt2: x(1),
+         rt: x(0),
+@@ -582,6 +619,167 @@ pub const KJIT_DISPATCH_TEMPLATE: [A64Insn; DISPATCH_TEMPLATE_LEN] = [
+     w_br(),
+ ];
+ 
++
++// EXPERIMENT (exp/ret-cont): the shadow return ring's two groups. Both are byte-exact
++// like the dispatch template (the encoding is the contract; the verifier accepts exactly
++// these words), and use only the dispatch scratch registers: x12 (`DISPATCH_SLOT_REG`, the
++// one scratch that may hold a kernel value at a join), x14 (`DISPATCH_KEY_REG`) and x13
++// (`DISPATCH_TARGET_REG`, T, read by the pop only).
++
++/// `add x12, sp, x14, lsl #RING_ENTRY_SHIFT` (ADD extended register, UXTX): the address of
++/// ring entry `x14` minus `RUNTIME_FRAME_RING_OFFSET`. `x14 < RING_ENTRIES`, so the
++/// entry is inside the ring.
++const fn w_ring_slot_ptr() -> A64Insn {
++    A64Insn::AddAddsubExtAdd64AddsubExt {
++        rm: x(DISPATCH_KEY_REG),
++        option: 0b011,
++        imm3: uimm(RING_ENTRY_SHIFT, 3),
++        rn: sp(),
++        rd: A64Reg::x_sp(DISPATCH_SLOT_REG),
++    }
++}
++
++/// `ubfx x14, x17, #RING_INDEX_LSB, #RING_INDEX_BITS`: the ring index of the user sp.
++const fn w_ring_index() -> A64Insn {
++    w_ubfx(
++        DISPATCH_KEY_REG,
++        REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
++        RING_INDEX_LSB,
++        RING_INDEX_BITS,
++    )
++}
++
++pub const RING_PUSH_LEN: usize = 5;
++/// Word index of the push group's `adr` (the one word whose immediate varies).
++pub const RING_PUSH_ADR_INDEX: usize = 2;
++
++/// The ring push, emitted by a `BL`/`BLR` site right after its link write (x30 = the
++/// resume pc, a user value):
++///
++/// ```text
++/// ubfx x14, x17, #4, #4                 ; ring index of the user sp
++/// add  x12, sp, x14, lsl #4             ; x12 = &ring[index] - RUNTIME_FRAME_RING_OFFSET
++/// adr  x14, <continuation label>        ; host: a verified entry offset of this fragment
++/// stp  x30, x14, [x12, #RUNTIME_FRAME_RING_OFFSET]   ; { resume pc, host }
++/// movz x14, #0                          ; x14 is no longer a kernel value
++/// ```
++///
++/// The `adr` immediate is the only free field; the verifier requires its target to be an
++/// entry offset. After the group x12 holds a frame address (kernel value, allowed at a
++/// join) and x14 is zero, so a linked `b` out of the site's slot carries only x12.
++pub const KJIT_RING_PUSH: [A64Insn; RING_PUSH_LEN] = [
++    w_ring_index(),
++    w_ring_slot_ptr(),
++    A64Insn::AdrAdrOnlyPcreladdr {
++        immlo: uimm(0, 2),
++        immhi: uimm(0, 19),
++        rd: x(DISPATCH_KEY_REG),
++    },
++    A64Insn::StpGenStp64LdstpairOff {
++        rt2: x(DISPATCH_KEY_REG),
++        rt: x(ABI_LINK_REG),
++        mem: mem_off(
++            x(DISPATCH_SLOT_REG),
++            ldstpair64_offset((RUNTIME_FRAME_RING_OFFSET + RING_ENTRY_PC_OFFSET) as i32),
++        ),
++    },
++    A64Insn::MovzMovz64Movewide {
++        hw: 0,
++        imm16: uimm(0, 16),
++        rd: x(DISPATCH_KEY_REG),
++    },
++];
++
++pub const RING_POP_LEN: usize = 7;
++/// Byte deltas of the pop group's two miss branches (`cbnz x14`, `cbz x12`): both go to
++/// the word after the group's `br`, i.e. the site's budget check and dispatch template.
++pub const RING_POP_MISS_DELTAS: [i64; 2] = [3 * ABI_INSN_SIZE as i64, 2 * ABI_INSN_SIZE as i64];
++
++/// The ring pop, emitted by a `RET` site after its target move (T, the user target, in
++/// x13) and its budget check:
++///
++/// ```text
++/// ubfx x14, x17, #4, #4
++/// add  x12, sp, x14, lsl #4
++/// ldp  x14, x12, [x12, #RUNTIME_FRAME_RING_OFFSET]   ; { pc, host } of the entry
++/// sub  x14, x14, x13                    ; zero iff the entry's pc is T
++/// cbnz x14, 1f
++/// cbz  x12, 1f                          ; an empty entry (pc 0, host 0) matches T = 0
++/// br   x12                              ; host: written by a ring push of this fragment
++/// 1:
++/// ```
++pub const KJIT_RING_POP: [A64Insn; RING_POP_LEN] = [
++    w_ring_index(),
++    w_ring_slot_ptr(),
++    A64Insn::LdpGenLdp64LdstpairOff {
++        rt2: x(DISPATCH_SLOT_REG),
++        rt: x(DISPATCH_KEY_REG),
++        mem: mem_off(
++            x(DISPATCH_SLOT_REG),
++            ldstpair64_offset(RUNTIME_FRAME_RING_OFFSET as i32),
++        ),
++    },
++    w_compare(),
++    A64Insn::CbnzCbnz64Compbranch {
++        imm19: scaled_simm(3, 19, 2),
++        rt: x(DISPATCH_KEY_REG),
++    },
++    A64Insn::CbzCbz64Compbranch {
++        imm19: scaled_simm(2, 19, 2),
++        rt: x(DISPATCH_SLOT_REG),
++    },
++    w_br(),
++];
++
++/// Whether the encoded `words` are exactly `KJIT_RING_POP`.
++pub fn ring_pop_matches(words: &[u32]) -> bool {
++    words.len() == RING_POP_LEN
++        && words
++            .iter()
++            .zip(KJIT_RING_POP.iter())
++            .all(|(&word, expected)| expected.encode().ok() == Some(word))
++}
++
++/// `immlo` (bits 30:29) and `immhi` (bits 23:5) of ADR: the bits of the push's `adr`
++/// that vary.
++const ADR_IMM_MASK: u32 = 0x60ff_ffe0;
++
++/// Whether the encoded `words` are exactly `KJIT_RING_PUSH` up to the `adr` immediate.
++/// Returns that immediate as a byte delta from the `adr` itself.
++pub fn ring_push_matches(words: &[u32]) -> Option<i64> {
++    if words.len() != RING_PUSH_LEN {
++        return None;
++    }
++    let mut delta = 0_i64;
++    for (index, (&word, expected)) in words.iter().zip(KJIT_RING_PUSH.iter()).enumerate() {
++        let expected = expected.encode().ok()?;
++        if index == RING_PUSH_ADR_INDEX {
++            if word & !ADR_IMM_MASK != expected & !ADR_IMM_MASK {
++                return None;
++            }
++            let imm21 = (((word >> 5) & 0x7_ffff) << 2) | ((word >> 29) & 0x3);
++            delta = (((imm21 as i64) << 43) >> 43) as i64;
++        } else if word != expected {
++            return None;
++        }
++    }
++    Some(delta)
++}
++
++/// The `adr` of a ring push for a continuation `delta` bytes from it, or `None` if the
++/// distance is out of ADR's +-1 MiB.
++pub fn ring_push_adr(delta: i64) -> Option<A64Insn> {
++    if !(-(1_i64 << 20)..(1_i64 << 20)).contains(&delta) {
++        return None;
++    }
++    let imm21 = (delta as u32) & 0x1f_ffff;
++    Some(A64Insn::AdrAdrOnlyPcreladdr {
++        immlo: uimm(imm21 & 0x3, 2),
++        immhi: uimm(imm21 >> 2, 19),
++        rd: x(DISPATCH_KEY_REG),
++    })
++}
++
+ const _: () = assert!(IBTC_SLOT_SHIFT == 3, "the template's lsl #3 is option 0b011 with S = 1");
+ 
+ /// `imm19` of CBZ/CBNZ (bits 23:5): the only bits of a miss branch that vary.
+@@ -659,12 +857,14 @@ fn copy_abi_insns(
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    use crate::shared::arm64::A64Mem;
+     use crate::shared::platform::GFP_KERNEL;
+ 
+     #[test]
+     fn wrapper_lengths_match_contract() {
+-        assert_eq!(PROLOGUE_LEN_BYTES, 0xa8);
+-        assert_eq!(EPILOGUE_OFFSET, 0xa8);
++        // 0xa8 + the 16 words that clear the shadow return ring (EXPERIMENT, exp/ret-cont).
++        assert_eq!(PROLOGUE_LEN_BYTES, 0xa8 + 4 * RING_ENTRIES);
++        assert_eq!(EPILOGUE_OFFSET, 0xa8 + 4 * RING_ENTRIES);
+         assert_eq!(EPILOGUE_LEN_BYTES, 0x8c);
+     }
+ 
+@@ -828,6 +1028,63 @@ mod tests {
+         assert_eq!(DISPATCH_TEMPLATE_MISS_TARGETS, [9, 9, 20, 20]);
+     }
+ 
++    /// EXPERIMENT (exp/ret-cont): the ring groups are encodable, exact, and their
++    /// registers are the contract the verifier's dataflow steps assume.
++    #[test]
++    fn ring_groups_are_exact() {
++        let words = |insns: &[A64Insn]| -> Vec<u32> { insns.iter().map(|i| i.encode().unwrap()).collect() };
++        let pop = words(&KJIT_RING_POP);
++        assert!(ring_pop_matches(&pop));
++        for (index, _) in pop.iter().enumerate() {
++            let mut mutated = pop.clone();
++            mutated[index] ^= 1 << 16;
++            assert!(!ring_pop_matches(&mutated), "pop word {index}");
++        }
++        // Both miss branches target the word after the final `br`.
++        let end = RING_POP_LEN as i64 * ABI_INSN_SIZE as i64;
++        for (&at, &delta) in [4_usize, 5].iter().zip(&RING_POP_MISS_DELTAS) {
++            assert_eq!(at as i64 * ABI_INSN_SIZE as i64 + delta, end, "miss branch {at}");
++        }
++        assert!(matches!(KJIT_RING_POP[RING_POP_LEN - 1], A64Insn::BrBr64BranchReg { rn } if rn.enc == DISPATCH_SLOT_REG));
++
++        let push = words(&KJIT_RING_PUSH);
++        assert_eq!(ring_push_matches(&push), Some(0));
++        for (index, _) in push.iter().enumerate().filter(|(i, _)| *i != RING_PUSH_ADR_INDEX) {
++            let mut mutated = push.clone();
++            mutated[index] ^= 1 << 16;
++            assert_eq!(ring_push_matches(&mutated), None, "push word {index}");
++        }
++        for delta in [-(1_i64 << 20), -4, 0, 4, 1_000, (1 << 20) - 1] {
++            let adr = ring_push_adr(delta).unwrap();
++            let mut with = push.clone();
++            with[RING_PUSH_ADR_INDEX] = adr.encode().unwrap();
++            assert_eq!(ring_push_matches(&with), Some(delta));
++            assert_eq!(adr.pc_relative_address(0x1000), Some((0x1000 + delta) as u64));
++        }
++        assert!(ring_push_adr(1 << 20).is_none() && ring_push_adr(-(1 << 20) - 1).is_none());
++    }
++
++    /// The prologue clears the whole ring, once, with `xzr` pair stores, and nothing else
++    /// of the prologue touches it.
++    #[test]
++    fn the_prologue_clears_the_ring() {
++        let mut cleared = [0_u32; RING_ENTRIES];
++        for insn in KJIT_PROLOGUE {
++            if let A64Insn::StpGenStp64LdstpairOff { rt, rt2, mem } = insn {
++                if rt.enc() == 31 && rt2.enc() == 31 {
++                    let A64Mem::Offset { base, offset } = mem else { panic!("offset form") };
++                    assert!(base.enc() == 31);
++                    let off = offset.value() as u32;
++                    assert!(off >= RUNTIME_FRAME_RING_OFFSET && off < RUNTIME_FRAME_RING_OFFSET + RING_BYTES);
++                    assert_eq!((off - RUNTIME_FRAME_RING_OFFSET) % RING_ENTRY_BYTES, 0);
++                    cleared[((off - RUNTIME_FRAME_RING_OFFSET) / RING_ENTRY_BYTES) as usize] += 1;
++                }
++            }
++        }
++        assert_eq!(cleared, [1; RING_ENTRIES]);
++        assert_eq!(RUNTIME_FRAME_SIZE_BYTES, RUNTIME_FRAME_RING_OFFSET + RING_BYTES);
++    }
++
+     #[test]
+     fn wrapper_copy_helpers_preserve_sequences() {
+         let prologue = copy_prologue(GFP_KERNEL).unwrap();
+diff --git a/shared/emit/layout.rs b/shared/emit/layout.rs
+index b35e887..3bb9393 100644
+--- a/shared/emit/layout.rs
++++ b/shared/emit/layout.rs
+@@ -1,5 +1,6 @@
+ use crate::shared::abi::{
+-    append_epilogue, append_prologue, DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES,
++    append_epilogue, append_prologue, ring_push_adr, DISPATCH_TEMPLATE_LEN,
++    DISPATCH_TEMPLATE_MISS_BRANCHES,
+     DISPATCH_TEMPLATE_MISS_TARGETS, DISPATCH_TEMPLATE_VICTIM_PROBE, EPILOGUE_LEN_BYTES,
+     EPILOGUE_OFFSET, PROLOGUE_LEN_BYTES,
+ };
+@@ -272,6 +273,8 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
+     let mut dispatch_misses: SharedVec<(usize, usize, u64)> = SharedVec::new();
+     // Index of the link slot (A16) just laid out: the next word must start a template.
+     let mut link_slot_index: Option<usize> = None;
++    // EXPERIMENT (exp/ret-cont): ring push `adr`s: (instruction index, continuation pc).
++    let mut ring_adrs: SharedVec<(usize, u64)> = SharedVec::new();
+     // Original PC whose budget check has been emitted in the current run of
+     // instructions with that PC.
+     let mut budget_checked_pc = None;
+@@ -332,6 +335,10 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
+                     budget_branches.push((insn_index, rephrased.ori_pc), GFP_KERNEL)?;
+                     budget_checked_pc = Some(rephrased.ori_pc);
+                 }
++            } else if let RephrasedInsnKind::RingPushAdr { cont_pc } = rephrased.kind {
++                ring_adrs.push((insn_index, cont_pc), GFP_KERNEL)?;
++            } else if matches!(rephrased.kind, RephrasedInsnKind::RingPush | RephrasedInsnKind::RingPop) {
++                // Byte-exact groups (abi): nothing to resolve.
+             } else if let RephrasedInsnKind::LinkSlot { target_pc } = rephrased.kind {
+                 // A16: a `nop` right before the site's template (the next word must be
+                 // the template's first, checked when it arrives).
+@@ -466,6 +473,19 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
+         rewrite_branch_to_offset(&mut fragment, insn_index, stub_offset, ori_pc)?;
+     }
+ 
++    // EXPERIMENT (exp/ret-cont): a ring push's `adr` names the continuation label of its
++    // call's resume pc, in this fragment.
++    for &(insn_index, cont_pc) in &ring_adrs {
++        let label = find_vlabel(&fragment.vlabels, cont_pc).ok_or(LayoutError::MissingLabel {
++            target_original_pc: cont_pc,
++        })?;
++        let delta = label as i64 - (insn_index * 4) as i64;
++        fragment.insns[insn_index] = ring_push_adr(delta).ok_or(LayoutError::BranchOutOfRange {
++            insn_index,
++            target_original_pc: cont_pc,
++        })?;
++    }
++
+     fragment.entry_offset =
+         find_vlabel(&fragment.vlabels, entry_pc).ok_or(LayoutError::MissingLabel {
+             target_original_pc: entry_pc,
+diff --git a/shared/trans/cfg.rs b/shared/trans/cfg.rs
+index 45ef518..7c33969 100644
+--- a/shared/trans/cfg.rs
++++ b/shared/trans/cfg.rs
+@@ -1,6 +1,7 @@
+ use crate::shared::arm64::{decode_word, DecodeError, IrInsn};
+ use crate::shared::platform::{SharedAllocError, SharedVec, GFP_KERNEL};
+ use crate::shared::trans::input::{CodeProvider, CodeReadError, TranslationRequest};
++use crate::shared::trans::retcont;
+ use crate::shared::trans::reg_virt::{admit_insn, RegVirtError};
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+@@ -164,6 +165,17 @@ pub fn build_cfg<P: CodeProvider>(request: &TranslationRequest, code: &P) -> Res
+                     enqueue_block(resume_pc, &mut pending)?;
+                     break next_from_one(resume_pc)?;
+                 }
++                // EXPERIMENT (exp/ret-cont, shared/trans/retcont.rs): a call's resume pc
++                // is a successor, the continuation block. Nothing falls into it (the
++                // call's lowering ends in a branch); it is entered by a return.
++                if let RuntimeExitReason::Bl { resume_pc, .. }
++                | RuntimeExitReason::Blr { resume_pc, .. } = reason
++                {
++                    if retcont::continuations() {
++                        enqueue_block(resume_pc, &mut pending)?;
++                        break next_from_one(resume_pc)?;
++                    }
++                }
+                 break SharedVec::new();
+             }
+             if let Some((taken_pc, fallthrough_pc)) = insn.inner.conditional_targets(insn.pc) {
+diff --git a/shared/trans/mod.rs b/shared/trans/mod.rs
+index 517bbbf..72ad0aa 100644
+--- a/shared/trans/mod.rs
++++ b/shared/trans/mod.rs
+@@ -2,4 +2,5 @@ pub mod cfg;
+ pub mod input;
+ pub mod reg_virt;
+ pub mod rephrase;
++pub mod retcont;
+ pub mod translate;
+diff --git a/shared/trans/reg_virt.rs b/shared/trans/reg_virt.rs
+index 7649b55..f784387 100644
+--- a/shared/trans/reg_virt.rs
++++ b/shared/trans/reg_virt.rs
+@@ -228,6 +228,12 @@ fn virtualize_insn(
+         RephrasedInsnKind::DispatchTarget => emit_dispatch_target(rephrased, out),
+         // A16: a `nop` the runtime may patch (no registers): nothing to map.
+         RephrasedInsnKind::LinkSlot { .. } => push_rephrased(out, rephrased),
++        // EXPERIMENT (exp/ret-cont): the ring groups are runtime-owned scratch code
++        // (x12, x13, x14 at an instruction boundary, x17 the mapped user sp, x30 the user
++        // lr): nothing to map.
++        RephrasedInsnKind::RingPush
++        | RephrasedInsnKind::RingPushAdr { .. }
++        | RephrasedInsnKind::RingPop => push_rephrased(out, rephrased),
+         // These kinds are reg-virt output; seeing one here is a pipeline bug.
+         RephrasedInsnKind::RegVirtHelper
+         | RephrasedInsnKind::UserAccess
+@@ -4596,6 +4602,8 @@ mod tests {
+     /// before the template.
+     #[test]
+     fn dispatch_target_moves_the_users_register_into_x13() {
++        // EXPERIMENT (exp/ret-cont): asserts the mode-0 lowering / cache growth.
++        crate::shared::trans::retcont::set_mode(crate::shared::trans::retcont::MODE_OFF);
+         use crate::shared::abi::{reg_virt_stack_backed_slot_offset, DISPATCH_TARGET_REG};
+         use crate::shared::arm64::IrInsn;
+ 
+diff --git a/shared/trans/rephrase.rs b/shared/trans/rephrase.rs
+index 8bbce0f..e230bb5 100644
+--- a/shared/trans/rephrase.rs
++++ b/shared/trans/rephrase.rs
+@@ -1,11 +1,13 @@
+ use crate::shared::abi::{
+     RetStatus, ABI_LINK_REG, BUDGET_COUNTER_REG, DISPATCH_TARGET_REG, KJIT_DISPATCH_TEMPLATE,
+-    RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG, UNSUPPORTED_WORD_UNREADABLE,
++    KJIT_RING_POP, KJIT_RING_PUSH, RET_PARAM0_REG, RET_PARAM1_REG, RET_STATUS_REG,
++    RING_PUSH_ADR_INDEX, UNSUPPORTED_WORD_UNREADABLE,
+ };
+ use crate::shared::arm64::ergo::{scaled_simm, uimm, x, xzr};
+ use crate::shared::arm64::{A64Insn, A64Reg, IrInsn};
+ use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
+ use crate::shared::trans::cfg::{layout_block_order, Cfg, RuntimeExitReason};
++use crate::shared::trans::retcont;
+ 
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ pub enum RephrasedInsnKind {
+@@ -59,6 +61,18 @@ pub enum RephrasedInsnKind {
+     LinkSlot {
+         target_pc: u64,
+     },
++    /// EXPERIMENT (exp/ret-cont): a word of the ring push group (`KJIT_RING_PUSH`), in a
++    /// `BL`/`BLR` site between its link write and its link slot / template.
++    /// Runtime-owned, reg-virt passes it through.
++    RingPush,
++    /// The push group's `adr`: layout resolves its immediate to the offset of the
++    /// continuation label of `cont_pc` (the call's resume pc) in the same fragment.
++    RingPushAdr {
++        cont_pc: u64,
++    },
++    /// A word of the ring pop group (`KJIT_RING_POP`), in a `RET` site between its
++    /// target move and its second budget check. Runtime-owned.
++    RingPop,
+     RuntimeExitPayload,
+     RuntimeExitBranch,
+ }
+@@ -76,6 +90,9 @@ impl RephrasedInsnKind {
+             | Self::DispatchTarget
+             | Self::DispatchLookup
+             | Self::LinkSlot { .. }
++            | Self::RingPush
++            | Self::RingPushAdr { .. }
++            | Self::RingPop
+             | Self::RuntimeExitPayload
+             | Self::RuntimeExitBranch => false,
+         }
+@@ -94,7 +111,10 @@ impl RephrasedInsnKind {
+             | Self::WindowAccess
+             | Self::DispatchTarget
+             | Self::DispatchLookup
+-            | Self::LinkSlot { .. } => false,
++            | Self::LinkSlot { .. }
++            | Self::RingPush
++            | Self::RingPushAdr { .. }
++            | Self::RingPop => false,
+         }
+     }
+ 
+@@ -344,6 +364,9 @@ pub(crate) fn rephrase_insn(
+                 resume_pc,
+                 RephrasedInsnKind::UserSynthetic,
+             )?;
++            if retcont::ring_push() {
++                push_ring_push(&mut ret, insn.pc, resume_pc)?;
++            }
+             // A16: the target is a translation-time constant, so the site can be linked.
+             ret.push(RephrasedInsn::link_slot(insn.pc, target_pc), GFP_KERNEL)?;
+             push_dispatch_template(&mut ret, insn.pc)?;
+@@ -367,6 +390,9 @@ pub(crate) fn rephrase_insn(
+                 resume_pc,
+                 RephrasedInsnKind::UserSynthetic,
+             )?;
++            if retcont::ring_push() {
++                push_ring_push(&mut ret, insn.pc, resume_pc)?;
++            }
+             push_dispatch_template(&mut ret, insn.pc)?;
+             push_dispatch_miss_exit(&mut ret, insn.pc, RetStatus::Blr, resume_pc)?;
+         }
+@@ -388,6 +414,15 @@ pub(crate) fn rephrase_insn(
+             };
+ 
+             push_dispatch_target_capture(&mut ret, insn.pc, lr_reg)?;
++            if retcont::ring_pop() {
++                // EXPERIMENT (exp/ret-cont): a match with the ring slot of the user sp
++                // branches to the cached host; any other target takes today's path,
++                // behind a second budget check (the hit path is charged by the first).
++                push_ring_pop(&mut ret, insn.pc)?;
++                for check in budget_check(insn.pc) {
++                    ret.push(check, GFP_KERNEL)?;
++                }
++            }
+             push_dispatch_template(&mut ret, insn.pc)?;
+             push_dispatch_miss_exit(&mut ret, insn.pc, RetStatus::Ret, insn.pc.wrapping_add(4))?;
+         }
+@@ -535,6 +570,50 @@ fn push_dispatch_target_capture(
+     )
+ }
+ 
++
++/// EXPERIMENT (exp/ret-cont): the ring push group (`KJIT_RING_PUSH`) of a call whose
++/// resume pc is `cont_pc`.
++fn push_ring_push(
++    out: &mut SharedVec<RephrasedInsn>,
++    original_pc: u64,
++    cont_pc: u64,
++) -> SharedResult<(), SharedAllocError> {
++    for (index, insn) in KJIT_RING_PUSH.iter().enumerate() {
++        let kind = if index == RING_PUSH_ADR_INDEX {
++            RephrasedInsnKind::RingPushAdr { cont_pc }
++        } else {
++            RephrasedInsnKind::RingPush
++        };
++        out.push(
++            RephrasedInsn {
++                kind,
++                ori_pc: original_pc,
++                insn: *insn,
++            },
++            GFP_KERNEL,
++        )?;
++    }
++    Ok(())
++}
++
++/// EXPERIMENT (exp/ret-cont): the ring pop group (`KJIT_RING_POP`).
++fn push_ring_pop(
++    out: &mut SharedVec<RephrasedInsn>,
++    original_pc: u64,
++) -> SharedResult<(), SharedAllocError> {
++    for insn in KJIT_RING_POP.iter() {
++        out.push(
++            RephrasedInsn {
++                kind: RephrasedInsnKind::RingPop,
++                ori_pc: original_pc,
++                insn: *insn,
++            },
++            GFP_KERNEL,
++        )?;
++    }
++    Ok(())
++}
++
+ /// The dispatch template (`KJIT_DISPATCH_TEMPLATE`), miss branches unresolved.
+ fn push_dispatch_template(
+     out: &mut SharedVec<RephrasedInsn>,
+@@ -794,6 +873,8 @@ mod tests {
+ 
+     #[test]
+     fn runtime_exit_rewrites_have_explicit_exit_branch_only() {
++        // EXPERIMENT (exp/ret-cont): asserts the mode-0 lowering / cache growth.
++        crate::shared::trans::retcont::set_mode(crate::shared::trans::retcont::MODE_OFF);
+         let cases = [
+             A64Insn::BlBlOnlyBranchImm {
+                 imm26: scaled_simm(2, 26, 2),
+@@ -893,6 +974,73 @@ mod tests {
+         }
+     }
+ 
++    /// EXPERIMENT (exp/ret-cont): mode 2 puts a push group after a call's link write and a
++    /// pop group, a second budget check and the template after a return's target move;
++    /// modes 0 and 1 emit none of them.
++    #[test]
++    fn the_ring_groups_appear_in_mode_2_only() {
++        use crate::shared::trans::retcont::{with_mode, MODE_CONT, MODE_OFF, MODE_RING};
++        let lower = |inner| {
++            rephrase_insn(IrInsn {
++                pc: 0x1000,
++                word: 0,
++                inner,
++            })
++            .unwrap()
++        };
++        let count = |lowered: &[RephrasedInsn], kind: fn(RephrasedInsnKind) -> bool| {
++            lowered.iter().filter(|insn| kind(insn.kind)).count()
++        };
++        let is_push = |kind| matches!(kind, RephrasedInsnKind::RingPush | RephrasedInsnKind::RingPushAdr { .. });
++        let is_pop = |kind| matches!(kind, RephrasedInsnKind::RingPop);
++        let is_budget = |kind| matches!(kind, RephrasedInsnKind::BudgetCheck);
++        let bl = A64Insn::BlBlOnlyBranchImm {
++            imm26: scaled_simm(2, 26, 2),
++        };
++        let blr = A64Insn::BlrBlr64BranchReg { rn: x(4) };
++        let ret = A64Insn::RetRet64rBranchReg { rn: x(30) };
++
++        for mode in [MODE_OFF, MODE_CONT] {
++            with_mode(mode, || {
++                for insn in [bl, blr, ret] {
++                    let lowered = lower(insn);
++                    assert_eq!(count(&lowered, is_push) + count(&lowered, is_pop), 0, "{}", insn.key());
++                }
++            });
++        }
++        with_mode(MODE_RING, || {
++            for insn in [bl, blr] {
++                let lowered = lower(insn);
++                assert_eq!(count(&lowered, is_push), 5, "{}", insn.key());
++                assert_eq!(count(&lowered, is_pop), 0);
++                // After the link write (x30 = resume pc), before the link slot / template.
++                let first = lowered.iter().position(|i| is_push(i.kind)).unwrap();
++                assert!(lowered[first..first + 5].iter().all(|i| is_push(i.kind)));
++                assert!(matches!(
++                    lowered[first - 1].insn,
++                    A64Insn::MovkMovk64Movewide { rd, .. } if rd.enc == ABI_LINK_REG
++                ));
++                assert!(matches!(
++                    lowered[first + 2].kind,
++                    RephrasedInsnKind::RingPushAdr { cont_pc: 0x1004 }
++                ));
++                assert!(!matches!(
++                    lowered[first + 5].kind,
++                    RephrasedInsnKind::RingPush | RephrasedInsnKind::RingPop
++                ));
++            }
++            let lowered = lower(ret);
++            assert_eq!((count(&lowered, is_push), count(&lowered, is_pop)), (0, 7));
++            // target move, the pop group, the second budget check (rephrase() adds the first),
++            // then the template.
++            assert_eq!(lowered[0].kind, RephrasedInsnKind::DispatchTarget);
++            assert!(lowered[1..8].iter().all(|i| is_pop(i.kind)));
++            assert_eq!(count(&lowered, is_budget), 2);
++            assert!(lowered[8..10].iter().all(|i| is_budget(i.kind)));
++            assert_eq!(lowered[10].kind, RephrasedInsnKind::DispatchLookup);
++        });
++    }
++
+     #[test]
+     fn bl_and_blr_emit_user_semantic_link_update() {
+         let cases = [
+@@ -955,6 +1103,8 @@ mod tests {
+ 
+     #[test]
+     fn only_a_static_bl_gets_a_link_slot_right_before_the_template() {
++        // EXPERIMENT (exp/ret-cont): asserts the mode-0 lowering / cache growth.
++        crate::shared::trans::retcont::set_mode(crate::shared::trans::retcont::MODE_OFF);
+         let lower = |inner| {
+             rephrase_insn(IrInsn {
+                 pc: 0x1000,
+@@ -1283,6 +1433,8 @@ mod tests {
+     /// instruction.
+     #[test]
+     fn dispatch_sites_get_the_budget_check_before_the_whole_site() {
++        // EXPERIMENT (exp/ret-cont): asserts the mode-0 lowering / cache growth.
++        crate::shared::trans::retcont::set_mode(crate::shared::trans::retcont::MODE_OFF);
+         let sites = [
+             A64Insn::BlBlOnlyBranchImm {
+                 imm26: scaled_simm(8, 26, 2),
+diff --git a/shared/trans/retcont.rs b/shared/trans/retcont.rs
+new file mode 100644
+index 0000000..7a00d72
+--- /dev/null
++++ b/shared/trans/retcont.rs
+@@ -0,0 +1,96 @@
++//! EXPERIMENT (exp/ret-cont), not for main: the switch of the return-continuation
++//! experiment.
++//!
++//! - `MODE_OFF` (0): today's translation. A `BL`/`BLR` ends its block with no
++//!   successor; the code after the call is translated by whoever enters it.
++//! - `MODE_CONT` (1): (1) return continuations. The CFG follows a `BL`/`BLR`'s resume
++//!   pc into the same fragment (as it does an `SVC`'s). The continuation is a block
++//!   reached only by a return; like every body PC it is an entry label.
++//! - `MODE_RING` (2): (1) plus (2), the shadow return ring in the runtime frame: a
++//!   `BL`/`BLR` pushes (resume pc, host address of the continuation label), a `RET`
++//!   compares its target with the ring slot of the user sp and branches to the
++//!   cached host on a match.
++//! - `MODE_PUSH` (3): (1) plus the pushes of (2) and no pop: the cost of the pushes
++//!   alone (an ablation; the ring is written and never read).
++//!
++//! The mode is read at translation time only (cfg, rephrase); the verifier accepts
++//! the ring constructs whatever the mode is. The kernel module sets it through
++//! debugfs (kjit_glue.c, with KJIT disabled, flushing every fragment). Tests set it
++//! per thread (`with_mode`), defaulting to `$KJIT_RETCONT`.
++
++pub const MODE_OFF: u8 = 0;
++pub const MODE_CONT: u8 = 1;
++pub const MODE_RING: u8 = 2;
++pub const MODE_PUSH: u8 = 3;
++
++#[cfg(not(test))]
++mod imp {
++    use core::sync::atomic::{AtomicU8, Ordering};
++
++    static MODE: AtomicU8 = AtomicU8::new(super::MODE_OFF);
++
++    pub fn mode() -> u8 {
++        MODE.load(Ordering::Relaxed)
++    }
++
++    pub fn set_mode(mode: u8) {
++        MODE.store(mode, Ordering::Relaxed);
++    }
++}
++
++#[cfg(test)]
++mod imp {
++    use std::cell::Cell;
++    use std::sync::OnceLock;
++
++    thread_local! {
++        static OVERRIDE: Cell<Option<u8>> = const { Cell::new(None) };
++    }
++
++    fn env_mode() -> u8 {
++        static ENV: OnceLock<u8> = OnceLock::new();
++        *ENV.get_or_init(|| match std::env::var("KJIT_RETCONT") {
++            Ok(value) => value
++                .parse::<u8>()
++                .ok()
++                .filter(|mode| *mode <= super::MODE_PUSH)
++                .unwrap_or_else(|| panic!("KJIT_RETCONT must be 0, 1, 2 or 3, not {value:?}")),
++            Err(_) => super::MODE_OFF,
++        })
++    }
++
++    pub fn mode() -> u8 {
++        OVERRIDE.with(|cell| cell.get()).unwrap_or_else(env_mode)
++    }
++
++    pub fn set_mode(mode: u8) {
++        OVERRIDE.with(|cell| cell.set(Some(mode)));
++    }
++}
++
++pub use imp::{mode, set_mode};
++
++/// Run `f` with the translation mode set to `mode` on this thread (tests).
++#[cfg(test)]
++pub fn with_mode<R>(mode: u8, f: impl FnOnce() -> R) -> R {
++    let previous = imp::mode();
++    imp::set_mode(mode);
++    let result = f();
++    imp::set_mode(previous);
++    result
++}
++
++/// (1): follow a call's resume pc into the same fragment.
++pub fn continuations() -> bool {
++    mode() >= MODE_CONT
++}
++
++/// (2): the ring pushes of a call.
++pub fn ring_push() -> bool {
++    matches!(mode(), MODE_RING | MODE_PUSH)
++}
++
++/// (2): the ring pop of a return.
++pub fn ring_pop() -> bool {
++    mode() == MODE_RING
++}
+diff --git a/shared/trans/translate.rs b/shared/trans/translate.rs
+index e084c99..4d12196 100644
+--- a/shared/trans/translate.rs
++++ b/shared/trans/translate.rs
+@@ -119,6 +119,95 @@ mod tests {
+         }
+     }
+ 
++    /// EXPERIMENT (exp/ret-cont): in mode 2 the ring push's `adr` names the continuation label
++    /// of its call, and the verifier accepts the fragment; in mode 1 the continuation is
++    /// in the fragment without a push; in mode 0 it is not there.
++    #[test]
++    fn a_call_continuation_is_a_label_and_the_ring_push_points_at_it() {
++        use crate::shared::abi::{ring_push_matches, RING_PUSH_LEN};
++        use crate::shared::trans::retcont::{with_mode, MODE_CONT, MODE_OFF, MODE_RING};
++        use crate::shared::verify::{verify_fragment, FaultSiteEntry, VerifyInput};
++
++        struct Words(u64, alloc::vec::Vec<u32>);
++        impl CodeProvider for Words {
++            fn entry_addr(&self) -> u64 {
++                self.0
++            }
++            fn read_exact(&self, pc: u64, dst: &mut [u8]) -> Result<(), CodeReadError> {
++                let index = pc.checked_sub(self.0).filter(|d| d % 4 == 0).map(|d| (d / 4) as usize);
++                match index.and_then(|i| self.1.get(i)) {
++                    Some(word) if dst.len() == 4 => {
++                        dst.copy_from_slice(&word.to_le_bytes());
++                        Ok(())
++                    }
++                    _ => Err(CodeReadError::Unmapped { pc, len: dst.len() }),
++                }
++            }
++        }
++
++        let base = 0x4000;
++        let enc = |insn: A64Insn| insn.encode().unwrap();
++        // bl +8 ; nop (the continuation) ; ret ; callee: ret
++        let code = Words(
++            base,
++            alloc::vec![
++                enc(A64Insn::BlBlOnlyBranchImm { imm26: crate::shared::arm64::ergo::scaled_simm(3, 26, 2) }),
++                enc(A64Insn::NopNopHiHints {}),
++                enc(A64Insn::RetRet64rBranchReg { rn: crate::shared::arm64::ergo::x(30) }),
++                enc(A64Insn::RetRet64rBranchReg { rn: crate::shared::arm64::ergo::x(30) }),
++            ],
++        );
++        let request = TranslationRequest {
++            entry_pc: base,
++            trigger: TranslationTrigger::Manual,
++            regs: None,
++        };
++        let compile = |mode| with_mode(mode, || compile_request(&request, &code).unwrap());
++
++        assert_eq!(compile(MODE_OFF).offset_for_pc(base + 4), None);
++        let cont = compile(MODE_CONT);
++        assert!(cont.offset_for_pc(base + 4).is_some());
++        let words = |f: &ExecutionFragment| -> alloc::vec::Vec<u32> {
++            f.insns.iter().map(|i| i.encode().unwrap()).collect()
++        };
++        assert!(!words(&cont)
++            .windows(RING_PUSH_LEN)
++            .any(|w| ring_push_matches(w).is_some()));
++
++        let ring = compile(MODE_RING);
++        let ring_words = words(&ring);
++        let pushes: alloc::vec::Vec<(usize, i64)> = ring_words
++            .windows(RING_PUSH_LEN)
++            .enumerate()
++            .filter_map(|(at, w)| ring_push_matches(w).map(|delta| (at, delta)))
++            .collect();
++        assert_eq!(pushes.len(), 1);
++        let (at, delta) = pushes[0];
++        let adr_offset = ((at + crate::shared::abi::RING_PUSH_ADR_INDEX) * 4) as i64;
++        assert_eq!(
++            (adr_offset + delta) as usize,
++            ring.offset_for_pc(base + 4).unwrap(),
++            "the push stores the host of the call's continuation label"
++        );
++        let mut bytes = alloc::vec::Vec::new();
++        for word in &ring_words {
++            bytes.extend_from_slice(&word.to_le_bytes());
++        }
++        let entries: alloc::vec::Vec<usize> = ring.vlabels.iter().map(|&(_, o)| o).collect();
++        let sites: alloc::vec::Vec<FaultSiteEntry> = ring
++            .fault_sites
++            .iter()
++            .map(|s| FaultSiteEntry { access_offset: s.access_offset, stub_offset: s.stub_offset })
++            .collect();
++        verify_fragment(&VerifyInput {
++            code: &bytes,
++            fault_sites: &sites,
++            entry_offsets: &entries,
++            link_sites: &ring.link_sites,
++        })
++        .unwrap();
++    }
++
+     #[test]
+     fn compile_request_returns_encodable_wrapped_fragment() {
+         let base_pc = 0x4000;
+diff --git a/shared/verify/mod.rs b/shared/verify/mod.rs
+index 0c5afde..6b18b3a 100644
+--- a/shared/verify/mod.rs
++++ b/shared/verify/mod.rs
+@@ -16,7 +16,9 @@ mod rules;
+ mod taint;
+ 
+ use crate::shared::abi::{
+-    dispatch_template_matches, ABI_INSN_SIZE, BUDGET_COUNTER_REG, DISPATCH_SLOT_REG, DISPATCH_TARGET_REG,
++    dispatch_template_matches, ring_pop_matches, ring_push_matches, ABI_INSN_SIZE,
++    BUDGET_COUNTER_REG, DISPATCH_KEY_REG, DISPATCH_SLOT_REG, DISPATCH_TARGET_REG, RING_POP_LEN,
++    RING_PUSH_LEN, REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
+     DISPATCH_TEMPLATE_LEN, DISPATCH_TEMPLATE_MISS_BRANCHES, DISPATCH_TEMPLATE_MISS_TARGETS,
+     DISPATCH_TEMPLATE_VICTIM_PROBE, EPILOGUE_LEN_BYTES, EPILOGUE_OFFSET, KJIT_DISPATCH_TEMPLATE,
+     KJIT_EPILOGUE, KJIT_PROLOGUE, PROLOGUE_LEN_BYTES,
+@@ -133,6 +135,13 @@ pub enum VerifyRule {
+     /// whose template's guarded run does not set x13 once, by a `movz` and up to
+     /// three `movk`s, to the entry's target PC.
+     LinkSite,
++    /// EXPERIMENT (exp/ret-cont), rules 3/4/6/9: a ring push or pop group (abi
++    /// `KJIT_RING_PUSH`, `KJIT_RING_POP`) that is not the exact words, a push whose
++    /// `adr` does not name an entry offset, a pop whose `br x12` is not word 6 of the
++    /// exact group, a join point inside a group, a pop group not guarded by the budget
++    /// check, or a group word that breaks the dataflow (a kernel value read, or carried
++    /// over a control edge).
++    RingGroup,
+     /// 4: the last word can fall through past the fragment.
+     FallsOffEnd,
+     /// 4: an entry offset outside the body, in the cold region, or unaligned.
+@@ -184,11 +193,15 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
+     let body = decode_body(code)?;
+     // Dispatch templates (A11): every `br x12` is a probe's end of the exact template. Found before
+     // the other tables because every later check treats their words specially.
+-    let templates = find_dispatch_templates(code, &body)?;
++    // EXPERIMENT (exp/ret-cont): the ring groups. A pop's `br x12` is not a dispatch
++    // template's, so they are found first and `find_dispatch_templates` skips theirs.
++    let ring = find_ring_groups(code, &body, input.entry_offsets)?;
++    let templates = find_dispatch_templates(code, &body, &ring)?;
+     let frag = Fragment {
+         body: &body,
+         len: code.len(),
+         templates: &templates,
++        ring: &ring,
+     };
+ 
+     // Join points: every place control can arrive other than by falling through.
+@@ -264,6 +277,22 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
+         join[miss] = true;
+     }
+ 
++    // A ring pop group is guarded by the budget check like a template (every path to its
++    // `br x12` runs the check, so a chain of ring returns is bounded); its Budget stub is
++    // an exit group. Its two miss branches go to the word after its `br` (join point,
++    // set below with every branch target).
++    for index in 0..body.len() {
++        if ring.pop[index] != Some(0) {
++            continue;
++        }
++        let (_, stub) = frag
++            .template_guard(index)
++            .ok_or(err(frag.offset(index), VerifyRule::MissingBudgetCheck))?;
++        check_exit_group(&frag, stub, &mut exit_group_checked)?;
++        join[stub] = true;
++        cold_start = cold_start.min(stub);
++    }
++
+     // Cold region: from the first stub on, the fragment is exit groups only (layout
+     // order). It is entered by fault fixup or by a branch to an exit-group start,
+     // never through the entry table.
+@@ -348,6 +377,26 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
+         }
+     }
+ 
++    // EXPERIMENT (exp/ret-cont): nothing arrives inside a ring group, or between a pop
++    // group's budget check and the group, by any edge. The one edge a pop group makes
++    // itself is its miss branches to the word after its `br`.
++    for index in 0..body.len() {
++        if ring.pop[index] == Some(0) {
++            let (guard, _) = frag
++                .template_guard(index)
++                .ok_or(err(frag.offset(index), VerifyRule::MissingBudgetCheck))?;
++            if (index..index + RING_POP_LEN).any(|inner| join[inner]) {
++                return Err(err(frag.offset(index), VerifyRule::RingGroup));
++            }
++            if (guard + 1..index).any(|inner| join[inner]) {
++                return Err(err(frag.offset(index), VerifyRule::MissingBudgetCheck));
++            }
++        }
++        if ring.push[index] == Some(0) && (index + 1..index + RING_PUSH_LEN).any(|inner| join[inner]) {
++            return Err(err(frag.offset(index), VerifyRule::RingGroup));
++        }
++    }
++
+     // Rule 8: nothing jumps into a window access past its range check (the `ubfx`
+     // may be a join point: it recomputes the checked value).
+     for index in 0..body.len() {
+@@ -379,6 +428,14 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
+             state = step_dispatch_template(position, state, join_state, offset)?;
+             continue;
+         }
++        if let Some(position) = ring.push[index] {
++            state = step_ring_push(position, state, offset)?;
++            continue;
++        }
++        if let Some(position) = ring.pop[index] {
++            state = step_ring_pop(position, state, join_state, offset)?;
++            continue;
++        }
+         let form = classify(*insn);
+         check_budget_register(&frag, index, insn)?;
+         match form {
+@@ -477,6 +534,7 @@ struct Fragment<'a> {
+     body: &'a [A64Insn],
+     len: usize,
+     templates: &'a DispatchTemplates,
++    ring: &'a RingGroups,
+ }
+ 
+ /// Words of a budget check: `sub x18, x18, #1; cbz x18, <stub>`.
+@@ -544,7 +602,7 @@ impl Fragment<'_> {
+         let mut end = template;
+         while end > 0
+             && template - end < DISPATCH_GUARD_MAX_GAP
+-            && rules::is_dispatch_gap_word(&self.body[end - 1])
++            && self.is_gap_word(end - 1)
+         {
+             end -= 1;
+         }
+@@ -558,18 +616,28 @@ impl Fragment<'_> {
+         Some((start, self.body_index(usize::try_from(target).ok()?)?))
+     }
+ 
++    /// A word that may sit between a dispatch template's (or a ring pop group's) budget
++    /// `cbz` and the guarded group: `rules::is_dispatch_gap_word`, and a word of a ring
++    /// push group (EXPERIMENT, exp/ret-cont: a BL/BLR site's push sits between its link
++    /// write and its link slot).
++    fn is_gap_word(&self, index: usize) -> bool {
++        rules::is_dispatch_gap_word(&self.body[index]) || self.ring.push[index].is_some()
++    }
++
+     /// Whether a budget sequence starting at `start` is the guard of a dispatch
+-    /// template.
++    /// template or of a ring pop group.
+     fn guards_template(&self, start: usize) -> bool {
+         let mut index = start + BUDGET_CHECK_WORDS;
+         while index < self.body.len()
+             && index - (start + BUDGET_CHECK_WORDS) <= DISPATCH_GUARD_MAX_GAP
+-            && rules::is_dispatch_gap_word(&self.body[index])
++            && self.templates.position[index] != Some(0)
++            && self.ring.pop[index] != Some(0)
++            && self.is_gap_word(index)
+         {
+             index += 1;
+         }
+         index < self.body.len()
+-            && self.templates.position[index] == Some(0)
++            && (self.templates.position[index] == Some(0) || self.ring.pop[index] == Some(0))
+             && self
+                 .template_guard(index)
+                 .is_some_and(|(guard, _)| guard == start)
+@@ -608,6 +676,7 @@ struct DispatchTemplates {
+ fn find_dispatch_templates(
+     code: &[u8],
+     body: &[A64Insn],
++    ring: &RingGroups,
+ ) -> Result<DispatchTemplates, VerifyError> {
+     let offset = |index: usize| BODY_OFFSET + index * ABI_INSN_SIZE;
+     let mut templates = DispatchTemplates {
+@@ -618,7 +687,10 @@ fn find_dispatch_templates(
+         let A64Insn::BrBr64BranchReg { rn } = insn else {
+             continue;
+         };
+-        if rn.enc() != DISPATCH_SLOT_REG || templates.position[index].is_some() {
++        if rn.enc() != DISPATCH_SLOT_REG
++            || templates.position[index].is_some()
++            || ring.pop[index].is_some()
++        {
+             continue;
+         }
+         let reject = err(offset(index), VerifyRule::DispatchTemplate);
+@@ -672,6 +744,205 @@ fn find_dispatch_templates(
+     Ok(templates)
+ }
+ 
++/// EXPERIMENT (exp/ret-cont) facts: which body words belong to a ring push or pop group.
++struct RingGroups {
++    /// `Some(p)`: word `p` (0..`RING_PUSH_LEN`) of a push group.
++    push: SharedVec<Option<u8>>,
++    /// `Some(p)`: word `p` (0..`RING_POP_LEN`) of a pop group.
++    pop: SharedVec<Option<u8>>,
++}
++
++/// Finds the ring groups (abi `KJIT_RING_PUSH`, `KJIT_RING_POP`).
++///
++/// - Pop: every `br x12` that is word 6 of seven words equal to `KJIT_RING_POP`. Anything
++///   else is left to `find_dispatch_templates` and the main pass (`IndirectBranch`).
++/// - Push: every `adr`. It must be word 2 of five words equal to `KJIT_RING_PUSH` up to
++///   the `adr` immediate, and its target must be an entry offset of the fragment: the
++///   host a push stores is `image + a verified entry offset`. Any other `adr` is
++///   `PcRelative` in the main pass.
++///
++/// Why this is enough (the invariant the pop's `br x12` rests on): the ring is frame
++/// memory below the user-state slots; the frame rule (3) rejects every body access to
++/// it except through x12 inside these groups (`RuntimeAccessBase`), the prologue
++/// (byte-exact) clears it, so a non-zero host word was stored by a push group of this
++/// fragment image, i.e. is `image + entry offset`. The pop branches to it only when its
++/// pc word equals the target T and the host word is non-zero.
++fn find_ring_groups(
++    code: &[u8],
++    body: &[A64Insn],
++    entry_offsets: &[usize],
++) -> Result<RingGroups, VerifyError> {
++    let offset = |index: usize| BODY_OFFSET + index * ABI_INSN_SIZE;
++    let mut groups = RingGroups {
++        push: alloc_positions(body.len())?,
++        pop: alloc_positions(body.len())?,
++    };
++    let body_index = |off: usize| -> Option<usize> {
++        if off < BODY_OFFSET || off >= code.len() || off % ABI_INSN_SIZE != 0 {
++            return None;
++        }
++        Some((off - BODY_OFFSET) / ABI_INSN_SIZE)
++    };
++    let mut is_entry = alloc_bools(body.len())?;
++    for &entry in entry_offsets {
++        if let Some(index) = body_index(entry) {
++            is_entry[index] = true;
++        }
++    }
++    for (index, insn) in body.iter().enumerate() {
++        let reject = err(offset(index), VerifyRule::RingGroup);
++        match insn {
++            A64Insn::BrBr64BranchReg { rn } if rn.enc() == DISPATCH_SLOT_REG => {
++                let Some(start) = (index + 1).checked_sub(RING_POP_LEN) else {
++                    continue;
++                };
++                let mut words = [0_u32; RING_POP_LEN];
++                let mut readable = true;
++                for (position, word) in words.iter_mut().enumerate() {
++                    match read_word(code, offset(start + position)) {
++                        Some(read) => *word = read,
++                        None => readable = false,
++                    }
++                }
++                if !readable || !ring_pop_matches(&words) {
++                    continue;
++                }
++                if groups.pop[start..=index].iter().any(Option::is_some)
++                    || groups.push[start..=index].iter().any(Option::is_some)
++                {
++                    return Err(reject);
++                }
++                for (position, slot) in groups.pop[start..=index].iter_mut().enumerate() {
++                    *slot = Some(position as u8);
++                }
++            }
++            A64Insn::AdrAdrOnlyPcreladdr { rd, .. } if rd.enc() == DISPATCH_KEY_REG => {
++                let Some(start) = index.checked_sub(crate::shared::abi::RING_PUSH_ADR_INDEX) else {
++                    continue;
++                };
++                let mut words = [0_u32; RING_PUSH_LEN];
++                let mut readable = true;
++                for (position, word) in words.iter_mut().enumerate() {
++                    match read_word(code, offset(start + position)) {
++                        Some(read) => *word = read,
++                        None => readable = false,
++                    }
++                }
++                if !readable {
++                    continue;
++                }
++                let Some(delta) = ring_push_matches(&words) else {
++                    continue;
++                };
++                // The stored host is image + the target: an entry offset.
++                usize::try_from(offset(index) as i64 + delta)
++                    .ok()
++                    .and_then(body_index)
++                    .filter(|&target| is_entry[target])
++                    .ok_or(reject)?;
++                if groups.pop[start..start + RING_PUSH_LEN].iter().any(Option::is_some)
++                    || groups.push[start..start + RING_PUSH_LEN].iter().any(Option::is_some)
++                {
++                    return Err(reject);
++                }
++                for (position, slot) in groups.push[start..start + RING_PUSH_LEN].iter_mut().enumerate() {
++                    *slot = Some(position as u8);
++                }
++            }
++            _ => {}
++        }
++    }
++    Ok(groups)
++}
++
++/// Rules 3 and 9 for one word of a ring push group, whose bytes `find_ring_groups`
++/// proved exact (so the accesses are the group's: one `stp` of x30 and the host into the
++/// ring entry x12 points at, x12 = sp + 16 * (a 4-bit index)). Kernel values: x12 holds a
++/// frame address from word 1 on (the one scratch register a join point may hold one in),
++/// x14 the host from word 2 to word 3 and is zero after word 4, so the group leaves only
++/// x12 kernel-valued. It reads user values: x17 (the mapped user sp) must not be a
++/// kernel value, and x30 is stored (a user value; storing a kernel one would only
++/// change which pc the ring holds).
++fn step_ring_push(position: u8, state: Taint, offset: usize) -> Result<Taint, VerifyError> {
++    const SP: u32 = 1 << REG_VIRT_STABLE_MAPPED_SP_PHYS_REG;
++    const SLOT: u32 = 1 << DISPATCH_SLOT_REG;
++    const KEY: u32 = 1 << DISPATCH_KEY_REG;
++    let mut next = state;
++    match position {
++        0 => {
++            if state.kernel & SP != 0 {
++                return Err(err(offset, VerifyRule::KernelValueRead));
++            }
++            next.kernel &= !KEY;
++            next.pt_regs &= !KEY;
++        }
++        1 => {
++            next.kernel |= SLOT;
++            next.pt_regs &= !SLOT;
++        }
++        2 => {
++            next.kernel |= KEY;
++            next.pt_regs &= !KEY;
++        }
++        3 => {}
++        4 => {
++            next.kernel &= !KEY;
++            next.pt_regs &= !KEY;
++        }
++        _ => return Err(err(offset, VerifyRule::RingGroup)),
++    }
++    Ok(next)
++}
++
++/// Rules 3 and 9 for one word of a ring pop group (bytes proved exact). x17 must not be a
++/// kernel value (word 0), T (x13) must not (word 3). After word 1 x12 is a frame address,
++/// after word 2 x12 is the host (kernel) and x14 the entry's pc (a user value, or 0). The
++/// two miss branches and the `br x12` are control edges that carry only x12 as a kernel
++/// value, which every join point assumes; after the `br` only a join point (the miss
++/// edges' target) reaches the next word.
++fn step_ring_pop(
++    position: u8,
++    state: Taint,
++    join_state: Taint,
++    offset: usize,
++) -> Result<Taint, VerifyError> {
++    const SP: u32 = 1 << REG_VIRT_STABLE_MAPPED_SP_PHYS_REG;
++    const SLOT: u32 = 1 << DISPATCH_SLOT_REG;
++    const KEY: u32 = 1 << DISPATCH_KEY_REG;
++    const TARGET: u32 = 1 << DISPATCH_TARGET_REG;
++    let mut next = state;
++    match position {
++        0 => {
++            if state.kernel & SP != 0 {
++                return Err(err(offset, VerifyRule::KernelValueRead));
++            }
++            next.kernel &= !KEY;
++            next.pt_regs &= !KEY;
++        }
++        1 => {
++            next.kernel |= SLOT;
++            next.pt_regs &= !SLOT;
++        }
++        2 => {
++            next.kernel = (next.kernel & !KEY) | SLOT;
++            next.pt_regs &= !(KEY | SLOT);
++        }
++        3 => {
++            if state.kernel & TARGET != 0 {
++                return Err(err(offset, VerifyRule::KernelValueRead));
++            }
++        }
++        4..=6 => {
++            check_edge(state, join_state, offset)?;
++            if position == 6 {
++                next = join_state;
++            }
++        }
++        _ => return Err(err(offset, VerifyRule::RingGroup)),
++    }
++    Ok(next)
++}
++
+ /// Rule 10: the value the body words `start..end` (between a budget check and a
+ /// dispatch template) leave in `DISPATCH_TARGET_REG`: set by one `movz` (64-bit) and
+ /// up to three `movk`s, each halfword set once, and by nothing else. `Ok(None)` if the
+diff --git a/tests/arm64/ring_returns.s b/tests/arm64/ring_returns.s
+new file mode 100644
+index 0000000..1d71758
+--- /dev/null
++++ b/tests/arm64/ring_returns.s
+@@ -0,0 +1,293 @@
++// EXPERIMENT (exp/ret-cont) fixture: returns that a shadow return ring (retcont mode 2)
++// must treat exactly. A ring entry is only a cache of "the resume pc of the call made
++// with this sp, and where its continuation is"; every case below makes a RET whose
++// target is not that (or whose entry was overwritten, or never written), so the pop
++// must fall back to the dispatch template, and the ones that do match must still be
++// exact. Run in every mode (KJIT_RETCONT=0, 1, 2); the cold/warm differential check
++// compares each case with the original code.
++//
++//   make harness-test-asm ASM=tests/arm64/ring_returns.s HOT_SVC_SYMBOL=ring_longjmp_mark
++//
++// Initial fixture state: x12 = FIXTURE_DATA_BASE, a 16 KiB RW window (all zero); SP and
++// x30 are 0, so every case builds its stack inside the window. Every case ends in a
++// `ret` to the entry x30 (0): an unreadable target, where the run returns to userspace
++// (and where an empty ring entry, pc 0 and host 0, must not match).
++
++.text
++.global ring_returns_entry
++ring_returns_entry:
++
++// A longjmp: setjmp's resume pc is returned to with the sp of the setjmp call, from
++// three calls deeper. The `bl lj_a` that follows setjmp has the same sp, so it has
++// overwritten setjmp's ring entry: the return to setjmp's resume pc mismatches.
++.global ring_longjmp_mark
++ring_longjmp_mark:
++    svc #0
++    add sp, x12, #0x2000
++    mov x20, x30
++    add x1, x12, #0x100
++    movz x0, #0
++    bl my_setjmp
++    cbnz x0, .Ljumped
++    movz x0, #1
++    bl lj_a
++    movz x5, #0xdead
++.Ljumped:
++    add x6, x0, #7
++    mov x30, x20
++    ret
++
++my_setjmp:
++    mov x2, sp
++    stp x2, x30, [x1]
++    movz x0, #0
++    ret
++
++lj_a:
++    stp x29, x30, [sp, #-16]!
++    add x0, x0, #1
++    bl lj_b
++    ldp x29, x30, [sp], #16
++    ret
++
++lj_b:
++    stp x29, x30, [sp, #-32]!
++    add x0, x0, #2
++    bl lj_c
++    ldp x29, x30, [sp], #32
++    ret
++
++lj_c:
++    stp x29, x30, [sp, #-16]!
++    add x0, x0, #4
++    bl my_longjmp
++    ldp x29, x30, [sp], #16
++    ret
++
++my_longjmp:
++    ldp x2, x30, [x1]
++    mov sp, x2
++    ret
++
++// Recursion 60 deep with 48-byte frames: more live calls than ring entries, and sp
++// values that wrap the 16-entry index several times.
++.global ring_deep_recursion_mark
++ring_deep_recursion_mark:
++    svc #0
++    add sp, x12, #0x3000
++    mov x20, x30
++    movz x0, #60
++    movz x1, #0
++    bl deep
++    str x1, [x12, #0x20]
++    mov x30, x20
++    ret
++
++deep:
++    stp x29, x30, [sp, #-48]!
++    mov x29, sp
++    cbz x0, 1f
++    sub x0, x0, #1
++    add x1, x1, #3
++    bl deep
++    add x1, x1, #1
++1:  ldp x29, x30, [sp], #48
++    ret
++
++// A call whose callee moves sp by exactly the ring's span (256 bytes) and calls again:
++// the inner call's push lands on the outer call's entry, so the outer return finds a
++// different resume pc in its slot.
++.global ring_alias_mark
++ring_alias_mark:
++    svc #0
++    add sp, x12, #0x3000
++    mov x20, x30
++    movz x1, #0
++    bl alias_outer
++    add x1, x1, #1000
++    bl alias_outer
++    add x1, x1, #2000
++    mov x30, x20
++    ret
++
++alias_outer:
++    stp x29, x30, [sp, #-16]!
++    add x1, x1, #1
++    sub sp, sp, #256
++    bl alias_inner
++    add x1, x1, #2
++    add sp, sp, #256
++    ldp x29, x30, [sp], #16
++    ret
++
++alias_inner:
++    add x1, x1, #4
++    ret
++
++// Tail calls: the callee leaves through `b`, then `br`; the original call's return
++// is made by the last function, whose pc is not in any ring entry.
++.global ring_tail_call_mark
++ring_tail_call_mark:
++    svc #0
++    add sp, x12, #0x2000
++    mov x20, x30
++    movz x1, #0
++    bl tail_a
++    add x1, x1, #100
++    bl tail_a
++    add x1, x1, #200
++    mov x30, x20
++    ret
++
++tail_a:
++    stp x29, x30, [sp, #-16]!
++    add x1, x1, #1
++    ldp x29, x30, [sp], #16
++    b tail_b
++
++tail_b:
++    add x1, x1, #2
++    adr x9, tail_c
++    br x9
++
++tail_c:
++    add x1, x1, #4
++    ret
++
++// A callee that rewrites x30: one return skips an instruction (the resume pc + 4), one
++// returns to a label no call made, one returns to the resume pc of an earlier call.
++.global ring_modified_lr_mark
++ring_modified_lr_mark:
++    svc #0
++    add sp, x12, #0x2000
++    mov x20, x30
++    movz x1, #0
++    movz x7, #0
++    bl skip_next
++.Lskip_resume:
++    add x1, x1, #100
++    add x1, x1, #1
++    bl redirect
++    add x1, x1, #1000
++.Lredirected:
++    add x1, x1, #3000
++    bl first_again
++    add x1, x1, #100, lsl #12
++    mov x30, x20
++    ret
++
++skip_next:
++    add x30, x30, #4
++    ret
++
++redirect:
++    adr x30, .Lredirected
++    ret
++
++first_again:
++    cbnz x7, 1f
++    movz x7, #1
++    adr x30, .Lskip_resume
++1:  ret
++
++// Coroutine-style swap: two stacks, `switch` saves (sp, lr) of the running side, loads
++// the other's and returns into it; returns come back with a different sp than the call
++// that made their resume pc.
++.global ring_coroutine_mark
++ring_coroutine_mark:
++    svc #0
++    mov x20, x30
++    add x1, x12, #0x200
++    add x2, x12, #0x300
++    add x9, x12, #0x1000
++    add x9, x9, #0x800
++    adr x10, co_body
++    stp x9, x10, [x2]
++    add sp, x12, #0x2000
++    add sp, sp, #0x800
++    movz x3, #0
++    bl switch
++    add x3, x3, #1000
++    bl switch
++    add x3, x3, #100, lsl #12
++    mov x30, x20
++    ret
++
++switch:
++    mov x4, sp
++    stp x4, x30, [x1]
++    ldp x4, x30, [x2]
++    mov sp, x4
++    mov x4, x1
++    mov x1, x2
++    mov x2, x4
++    ret
++
++co_body:
++    add x3, x3, #1
++    bl switch
++    add x3, x3, #10
++    bl switch
++    add x3, x3, #7
++    b co_body
++
++// Indirect calls and returns through other registers: `blr x9`, `blr x30`, `ret x10`,
++// and `ret x13` (a stack-backed register: the target is filled before the pop).
++.global ring_blr_mark
++ring_blr_mark:
++    svc #0
++    add sp, x12, #0x2000
++    mov x20, x30
++    adr x9, blr_target
++    movz x1, #0
++    blr x9
++    add x1, x1, #1
++    adr x30, blr_target2
++    blr x30
++    add x1, x1, #2
++    adr x9, blr_target3
++    blr x9
++    add x1, x1, #4
++    mov x30, x20
++    ret
++
++blr_target:
++    add x1, x1, #10
++    mov x10, x30
++    ret x10
++
++blr_target2:
++    add x1, x1, #20
++    ret
++
++blr_target3:
++    add x1, x1, #40
++    mov x13, x30
++    ret x13
++
++// Many calls from one function, returns in a loop: the common hit case, with the loop's
++// back-edge and the call/return pairs charged to the budget.
++.global ring_loop_mark
++ring_loop_mark:
++    svc #0
++    add sp, x12, #0x2000
++    mov x20, x30
++    movz x1, #0
++    movz x2, #300
++1:  bl bump
++    bl bump2
++    sub x2, x2, #1
++    cbnz x2, 1b
++    mov x30, x20
++    ret
++
++bump:
++    add x1, x1, #1
++    ret
++
++bump2:
++    stp x29, x30, [sp, #-16]!
++    add x1, x1, #2
++    bl bump
++    ldp x29, x30, [sp], #16
++    ret
+diff --git a/tests/guest/cond-info.sh b/tests/guest/cond-info.sh
+new file mode 100644
+index 0000000..26549fc
+--- /dev/null
++++ b/tests/guest/cond-info.sh
+@@ -0,0 +1,13 @@
++#!/bin/sh
++# What the booted kernel enables (entry-cost knobs of the operating-condition sweep),
++# then the null-syscall round trip, KJIT off and on (ub-bench.sh sys, which prints
++# "ub <state> ..." lines). Inside the kjit-guest. No arguments: REPS via $1 (default 7).
++set -u
++grep -q " /sys/kernel/debug debugfs" /proc/mounts || mount -t debugfs debugfs /sys/kernel/debug
++echo "cond: cmdline: $(cat /proc/cmdline)"
++for f in /sys/devices/system/cpu/vulnerabilities/*; do
++    echo "cond: vuln $(basename "$f"): $(cat "$f")"
++done
++dmesg | grep -iE "spectre|ssb|mitigat|isolation|bhb|errata|workaround" | sed 's/^/cond: dmesg: /'
++echo "cond: kernel: $(uname -r) cpus: $(grep -c ^processor /proc/cpuinfo)"
++sh /opt/kjit-tests/ub-bench.sh sys "${1:-7}"
+diff --git a/tests/guest/host/quiet-wait.sh b/tests/guest/host/quiet-wait.sh
+new file mode 100755
+index 0000000..502d010
+--- /dev/null
++++ b/tests/guest/host/quiet-wait.sh
+@@ -0,0 +1,43 @@
++#!/usr/bin/env bash
++# EXPERIMENT (exp/ret-cont): polls every 0.1 s until no qemu-system-aarch64 runs and the 1-minute
++# load is <= UB_MAX_LOAD (default 6), takes the host (a placeholder process named
++# qemu-system-aarch64, which every ub-run.sh waits on), runs the command (host/ub-run.sh with
++# UB_NO_WAIT=1) and drops the placeholder as soon as the command's own guest is running.
++# Another agent's ub-run.sh polls every 3 s and found no gap between its back-to-back boots.
++#   quiet-wait.sh COMMAND...
++set -uo pipefail
++max_load="${UB_MAX_LOAD:-6}"
++lock_dir=/tmp/rc-lock
++mkdir -p "$lock_dir"
++ln -sf /bin/sleep "$lock_dir/qemu-system-aarch64"
++start=$(date +%s)
++while true; do
++    n=$({ pgrep -x qemu-system-aarch64 || true; } | wc -l | tr -d ' ')
++    l=$(sysctl -n vm.loadavg | awk '{ print $2 }')
++    if [[ "$n" == 0 ]] && awk -v l="$l" -v m="$max_load" 'BEGIN { exit !(l <= m) }'; then
++        # Take the host before anything else.
++        "$lock_dir/qemu-system-aarch64" 3600 &
++        placeholder=$!
++        sleep 0.2
++        # Someone else's guest started in the same instant: give the host back.
++        if [[ $({ pgrep -x qemu-system-aarch64 || true; } | wc -l | tr -d ' ') -gt 1 ]]; then
++            kill "$placeholder" 2> /dev/null
++            wait "$placeholder" 2> /dev/null
++            continue
++        fi
++        break
++    fi
++    sleep 0.1
++done
++echo "quiet-wait: host taken after $(( $(date +%s) - start )) s (load1 $l)" >&2
++UB_NO_WAIT=1 "$@" &
++cmd=$!
++# The command's guest is up when a qemu-system-aarch64 other than the placeholder exists.
++while kill -0 "$cmd" 2> /dev/null; do
++    others=$({ pgrep -x qemu-system-aarch64 || true; } | grep -v "^$placeholder$" | wc -l | tr -d ' ')
++    [[ "$others" -ge 1 ]] && break
++    sleep 0.1
++done
++kill "$placeholder" 2> /dev/null
++wait "$placeholder" 2> /dev/null
++wait "$cmd"
+diff --git a/tests/guest/host/retcont-sweep.sh b/tests/guest/host/retcont-sweep.sh
+new file mode 100755
+index 0000000..966d964
+--- /dev/null
++++ b/tests/guest/host/retcont-sweep.sh
+@@ -0,0 +1,63 @@
++#!/usr/bin/env bash
++# EXPERIMENT (exp/ret-cont), host driver of tests/guest/retcont-sweep.sh (from exp/win-map's
++# host/cond-sweep.sh): BOOTS boots of one kernel setting, each running the cells of
++# $RC_CELLS with the four states paired inside the boot.
++#
++#   host/retcont-sweep.sh TAG NAME:PROFILE:KERNEL_ARGS BOOTS REPS
++#
++# Environment: RC_CELLS (space-separated NAME:SRV:TEST:N:C:P:D:THR:SCPUS:CCPUS:XPORT cells,
++# required), RC_FIRST (number of the first boot, default 1), UB_MODULE (the experiment kjit.ko),
++# UB_TIMEOUT (default 2700), KJIT_BUILD_ROOT, QEMU_SSH_PORT, QEMU_GDB_PORT as host/ub-run.sh.
++# rodata=off is always added (kpti=1 does not boot without it). Boot label
++# rc-TAG-NAME-b<boot>, run directory $KJIT_BUILD_ROOT/runs/ub-<label>. The cells of one server
++# profile stay together; the cells of a block are rotated by the boot number and the blocks
++# alternate.
++set -euo pipefail
++
++[[ $# -eq 4 ]] || { echo "usage: retcont-sweep.sh TAG NAME:PROFILE:ARGS BOOTS REPS" >&2; exit 2; }
++tag=$1
++IFS=: read -r sname sprofile sargs <<< "$2"
++boots=$3
++reps=$4
++
++here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
++build_root="${KJIT_BUILD_ROOT:?set KJIT_BUILD_ROOT}"
++first="${RC_FIRST:-1}"
++export UB_TIMEOUT="${UB_TIMEOUT:-2700}"
++read -r -a cells <<< "${RC_CELLS:?set RC_CELLS}"
++
++rotate_cells() { # BOOT -> echoes the cells in this boot's order
++    local b=$1 i n srv cur="" blocks=() block=() order=() k off
++    n=${#cells[@]}
++    for ((i = 0; i < n; i++)); do
++        srv=$(cut -d: -f2 <<< "${cells[$i]}")
++        if [[ "$srv" != "$cur" ]]; then
++            [[ -z "$cur" ]] || blocks+=("${block[*]}")
++            block=()
++            cur=$srv
++        fi
++        block+=("${cells[$i]}")
++    done
++    blocks+=("${block[*]}")
++    local nb=${#blocks[@]}
++    for ((k = 0; k < nb; k++)); do
++        local bi=$(( (k + b - 1) % nb ))
++        read -r -a block <<< "${blocks[$bi]}"
++        off=$(( ((b - 1) * 5) % ${#block[@]} ))
++        for ((i = 0; i < ${#block[@]}; i++)); do
++            order+=("${block[$(( (i + off) % ${#block[@]} ))]}")
++        done
++    done
++    echo "${order[*]}"
++}
++
++for ((b = first; b < first + boots; b++)); do
++    label="rc-$tag-$sname-b$b"
++    run_dir="$build_root/runs/ub-$label"
++    mkdir -p "$run_dir"
++    cp "$here/../retcont-sweep.sh" "$here/../cond-info.sh" "$run_dir/"
++    order=$(rotate_cells "$b")
++    echo "retcont-sweep: boot $label ($(date '+%H:%M:%S')) profile=$sprofile args='$sargs'"
++    GUEST_PROFILE="$sprofile" UB_APPEND_EXTRA="rodata=off $sargs" "$here/quiet-wait.sh" "$here/ub-run.sh" "$label" 0 "sh /kjit/cond-info.sh 5; RC_STATES='${RC_STATES:-off m0 m1 m2}' sh /kjit/retcont-sweep.sh /tmp/cond $reps $order"
++done
++echo "retcont-sweep: done"
+diff --git a/tests/guest/host/ub-run.sh b/tests/guest/host/ub-run.sh
+index 3626f44..460b945 100755
+--- a/tests/guest/host/ub-run.sh
++++ b/tests/guest/host/ub-run.sh
+@@ -44,7 +44,9 @@ load1() { sysctl -n vm.loadavg | awk '{ print $2 }'; }
+ others() { { pgrep -x qemu-system-aarch64 || true; } | wc -l | tr -d ' '; }
+ 
+ waited=0
+-while true; do
++# EXPERIMENT (exp/ret-cont): UB_NO_WAIT=1 (set by quiet-wait.sh, which holds a placeholder
++# named qemu-system-aarch64 so that no other agent's ub-run.sh starts a guest meanwhile).
++while [[ -z "${UB_NO_WAIT:-}" ]]; do
+     n=$(others)
+     l=$(load1)
+     if [[ "$n" == 0 ]] && awk -v l="$l" -v m="$max_load" 'BEGIN { exit !(l <= m) }'; then
+diff --git a/tests/guest/retcont-gate.sh b/tests/guest/retcont-gate.sh
+new file mode 100644
+index 0000000..e681262
+--- /dev/null
++++ b/tests/guest/retcont-gate.sh
+@@ -0,0 +1,26 @@
++#!/bin/sh
++# EXPERIMENT (exp/ret-cont): runs the K2 / K3 guest suites with the experiment module's
++# translation mode set first (debugfs retcont; the suites toggle enable/auto, never retcont).
++#
++#   retcont-gate.sh MODE SUITE...      MODE 0|1|2; SUITE k2 | k3 (k3 args: 1 16 2)
++set -eu
++
++K=/sys/kernel/debug/kjit
++T=/opt/kjit-tests
++mode=$1
++shift
++grep -q " /sys/kernel/debug debugfs" /proc/mounts || mount -t debugfs debugfs /sys/kernel/debug
++[ -f "$K/retcont" ] || { echo "gate: $K/retcont missing (the experiment module?)"; exit 1; }
++echo 0 > "$K/enable"
++echo 0 > "$K/auto"
++echo "$mode" > "$K/retcont"
++echo "gate: retcont=$(cat "$K/retcont")"
++echo 1 > "$K/enable"
++for suite in "$@"; do
++    case $suite in
++        k2) sh "$T/run-k2.sh" 1 ;;
++        k3) sh "$T/run-k3.sh" 1 16 2 ;;
++        *) echo "gate: unknown suite $suite"; exit 2 ;;
++    esac
++done
++echo "gate: mode $mode PASS $*"
+diff --git a/tests/guest/retcont-smoke.sh b/tests/guest/retcont-smoke.sh
+new file mode 100644
+index 0000000..3797dc8
+--- /dev/null
++++ b/tests/guest/retcont-smoke.sh
+@@ -0,0 +1,49 @@
++#!/bin/sh
++# EXPERIMENT (exp/ret-cont): inside the kjit-guest with the experiment module. The redis smoke
++# test (deterministic output, tests/guest/redis-smoke.sh) with KJIT off and in modes 0, 1, 2
++# (debugfs retcont); the four outputs must be identical. Prints the counters that
++# say what each mode did (fragments, RET exits resolved to a label, translations that failed).
++#
++#   retcont-smoke.sh [requests]
++set -eu
++
++T=/opt/kjit-tests
++K=/sys/kernel/debug/kjit
++requests=${1:-100000}
++grep -q " /sys/kernel/debug debugfs" /proc/mounts || mount -t debugfs debugfs /sys/kernel/debug
++[ -f "$K/retcont" ] || { echo "smoke: $K/retcont missing (the experiment module?)"; exit 1; }
++work=$(mktemp -d)
++cd "$work"
++stat_of() { awk -v k="$2" '$1 == k { print $2 }' "$1"; }
++trap 'echo 0 > "$K/enable"; echo 0 > "$K/auto"' EXIT
++
++run() {
++    name=$1
++    mkdir -p "$work/$name"
++    cd "$work/$name"
++    case $name in
++        off) echo 0 > "$K/enable"; echo 0 > "$K/auto" ;;
++        m*)
++            echo 0 > "$K/enable"; echo 0 > "$K/auto"
++            echo "${name#m}" > "$K/retcont"
++            echo 1 > "$K/enable"; echo 1 > "$K/auto"
++            ;;
++    esac
++    cp "$K/stats" "$work/$name.before"
++    STATS_DIR="$work/$name" sh "$T/redis-smoke.sh" "$requests" > "$work/$name.out" 2> "$work/$name.err" \
++        || { echo "smoke: $name FAILED"; tail -20 "$work/$name.err"; cat "$work/$name.out"; exit 1; }
++    cp "$K/stats" "$work/$name.after"
++    d() { echo $(( $(stat_of "$work/$name.after" "$1") - $(stat_of "$work/$name.before" "$1") )); }
++    echo "smoke: $name mode=$(cat "$K/retcont") entries=$(d fragment_entries) in_kernel=$(d syscalls_in_kernel) exit_ret=$(d exit_ret) exit_bl=$(d exit_bl) ret_label=$(d ret_label) translate_ok=$(d translate_ok) compile_failed=$(d translate_compile_failed) text_unreadable=$(d translate_text_unreadable) verify_rejected=$(d translate_verify_rejected) frags_live=$(stat_of "$work/$name.after" frags_live) code_live=$(stat_of "$work/$name.after" code_live) invalid=$(d exit_invalid)"
++    cd "$work"
++}
++
++cd "$work"
++for name in off m0 m1 m2; do
++    run "$name"
++done
++for name in m0 m1 m2; do
++    cmp "$work/off.out" "$work/$name.out" || { diff "$work/off.out" "$work/$name.out" | head -20; echo "smoke: FAIL output of $name differs from KJIT off"; exit 1; }
++done
++echo "smoke: outputs identical in off, m0, m1, m2"
++echo "smoke: PASS"
+diff --git a/tests/guest/retcont-sweep.sh b/tests/guest/retcont-sweep.sh
+new file mode 100644
+index 0000000..30405c5
+--- /dev/null
++++ b/tests/guest/retcont-sweep.sh
+@@ -0,0 +1,310 @@
++#!/bin/sh
++# EXPERIMENT (exp/ret-cont), from tests/guest/cond-sweep.sh (exp/win-map): redis server CPU
++# per request with four states paired in one boot, per cell and rep:
++#   off  KJIT disabled (enable=0 auto=0), the fragments of earlier states stay installed
++#   m0   the experiment module with today's translation (debugfs retcont 0)
++#   m1   return continuations (retcont 1)
++#   m2   return continuations and the shadow return ring (retcont 2)
++# A change of the translation mode needs every fragment re-translated: the state switch
++# writes retcont (KJIT disabled; the module flushes all fragments and waits for them to retire)
++# and runs one unrecorded warm-up (min(N, WARM) requests) before the measured run.
++#
++#   retcont-sweep.sh WORKDIR REPS CELL...
++#
++# CELL = NAME:SRV:TEST:N:C:P:D:THR:SCPUS:CCPUS:XPORT
++#   SRV     server profile: base | aof_always | aof_always_unix | aof_everysec | aof_no | aof9p_always | unix | iot2
++#   TEST    redis-benchmark -t value (set get incr lpush ping_inline ping_mbulk mset ...), or
++#           pub<N><l|r>: PUBLISH to channel ch with N redis-cli subscribers on the server (l) or client (r) CPUs
++#   N       -n requests per measured run
++#   C       -c clients;  P  -P pipeline;  D  -d value size
++#   THR     --threads (0 = flag absent)
++#   SCPUS   taskset list of every server task;  CCPUS  taskset list of the load generator
++#   XPORT   tcp | unix (unix: redis-benchmark -s; needs SRV=unix)
++# Cells with the same SRV must be adjacent: one redis-server per run of equal SRV values.
++# Per cell: (GET only) a SET to create the key, then one unrecorded run of min(N,200000)
++# requests in m0 (translation), then REPS reps; a rep is one run per state, the order of
++# the four states rotated by the rep number. on = enable=1 auto=1 chain_budget=1024.
++#
++# Per run, one stdout line (also appended to $WORKDIR/cond.out), "cond run" (state=off|m0|m1|m2):
++#   cell= srv= test= n= c= p= d= thr= subs= rep= order= state= rps= wall_cs=
++#   ticks_u= ticks_s=            /proc/PID/stat utime stime (USER_HZ ticks, thread group)
++#   sched_ms= nvol= ninv=        sum of se.sum_exec_runtime (ms) and context switches over /proc/PID/task/*/sched
++#   c0_busy= c0_idle=            ticks of CPU 0 in /proc/stat (busy = all but idle, iowait)
++#   ipi_c0= ipi_other=           IPI interrupts received, CPU 0 and CPUs 1-3 (/proc/interrupts)
++#   <KJIT counter>=<delta> ...  and the gauges frags_live= code_live= (after the run)
++# After each cell one "cond unsup cell=<name> <word>(exits/entry_stops) ..." line: the most frequent
++# Unsupported words (unsupported_top delta over the cell, warm-ups included).
++# Exits non-zero when a run reports no throughput, a KJIT-on run shows no fragment entry, a
++# KJIT-off run shows one, or the runtime reports an invalid exit or a verifier rejection.
++set -eu
++
++. /opt/kjit-tests/k4-lib.sh
++
++[ $# -ge 3 ] || { echo "usage: cond-sweep.sh WORKDIR REPS CELL..." >&2; exit 2; }
++work=$1
++reps=$2
++shift 2
++cells="$*"
++chain=1024
++out=$work/cond.out
++sock=/tmp/cond.sock
++
++mkdir -p "$work"
++cd "$work"
++: > "$out"
++k4_debugfs
++for f in enable auto chain_budget stats; do
++    [ -f "$K/$f" ] || k4_fail "$K/$f missing"
++done
++
++counters="hook_calls syscalls_in_kernel fragment_entries chains exit_svc exit_bl exit_blr exit_br exit_ret
++exit_mem exit_unsupported exit_budget run_declined svc_declined fpsimd_entries translate_ok translate_exists
++translate_text_unreadable translate_compile_failed translate_verify_rejected translate_capped
++invalidated_fragments ret_label ibtc_insert ibtc_miss_cold ibtc_miss_conflict ibtc_miss_other
++ibtc_fpsimd_boundary chain_cap link_made link_restored"
++
++# The units build of the experiment module (epilogue exports the remaining budget) also counts
++# the budget units fragment calls spent.
++if grep -q '^budget_units ' "$K/stats"; then counters="$counters budget_units"; fi
++
++orig_budget=$(cat "$K/chain_budget")
++trap 'echo "$orig_budget" > "$K/chain_budget"; set_mode 0' EXIT
++
++emit() { echo "$*" | tee -a "$out"; }
++
++# The translation mode of the fragments that are installed: empty before the first on state.
++resident=
++warm_needed=0
++
++# set_state off|m0|m1|m2. A different mode than the resident one flushes every fragment
++# (retcont write, KJIT disabled) and asks for a warm-up run (warm_needed=1).
++set_state() {
++    local want
++    if [ "$1" = off ]; then
++        set_mode 0
++        return
++    fi
++    want=${1#m}
++    set_mode 0
++    if [ "$resident" != "$want" ]; then
++        echo "$want" > "$K/retcont" || k4_fail "retcont $want refused"
++        [ "$(cat "$K/retcont")" = "$want" ] || k4_fail "retcont did not become $want"
++        [ "$(stat_of "$K/stats" frags_live)" = 0 ] || k4_fail "fragments left after the flush"
++        resident=$want
++        warm_needed=1
++    fi
++    echo "$chain" > "$K/chain_budget"
++    [ "$(cat "$K/chain_budget")" = "$chain" ] || k4_fail "chain_budget did not become $chain"
++    set_mode 1
++}
++
++# warm_if_needed: one unrecorded run after a flush.
++warm_if_needed() {
++    if [ "$warm_needed" = 1 ]; then
++        bench_run "$cfg_test" "$warm"
++        warm_needed=0
++    fi
++}
++
++cfg_name= cfg_srv= cfg_test= cfg_n= cfg_c= cfg_p= cfg_d= cfg_thr= cfg_scpus= cfg_ccpus= cfg_xport=
++use_cell() {
++    local IFS=:
++    set -- $1
++    [ $# -eq 11 ] || k4_fail "bad CELL '$*'"
++    cfg_name=$1 cfg_srv=$2 cfg_test=$3 cfg_n=$4 cfg_c=$5 cfg_p=$6 cfg_d=$7 cfg_thr=$8
++    cfg_scpus=$9 cfg_ccpus=${10} cfg_xport=${11}
++    case "$cfg_xport" in tcp | unix) ;; *) k4_fail "bad XPORT '$cfg_xport'" ;; esac
++}
++
++# srv_start SRV: starts $server for the profile (sets $srv_dir).
++srv_start() {
++    srv_dir=$work/srv
++    case "$1" in
++        base) start_server "$srv_dir" ;;
++        aof_always) start_server "$srv_dir" --appendonly yes --appendfsync always --auto-aof-rewrite-percentage 0 ;;
++        aof_everysec) start_server "$srv_dir" --appendonly yes --appendfsync everysec --auto-aof-rewrite-percentage 0 ;;
++        aof_no) start_server "$srv_dir" --appendonly yes --appendfsync no --auto-aof-rewrite-percentage 0 ;;
++        aof9p_always)
++            # The data directory is on the 9p share: fsync and write go to the host.
++            srv_dir=/kjit/cond-srv-9p
++            rm -rf "$srv_dir"
++            start_server "$srv_dir" --appendonly yes --appendfsync always --auto-aof-rewrite-percentage 0
++            ;;
++        unix) start_server "$srv_dir" --unixsocket "$sock" --unixsocketperm 777 ;;
++        aof_always_unix) start_server "$srv_dir" --unixsocket "$sock" --unixsocketperm 777 --appendonly yes --appendfsync always --auto-aof-rewrite-percentage 0 ;;
++        iot2) start_server "$srv_dir" --io-threads 2 --io-threads-do-reads yes ;;
++        *) k4_fail "bad SRV '$1'" ;;
++    esac
++}
++
++# srv_stop SRV
++srv_stop() {
++    stop_server
++    case "$1" in aof9p_always) rm -rf /kjit/cond-srv-9p ;; esac
++    rm -rf "$work/srv" "$sock"
++}
++
++# bench_run TEST REQUESTS: one redis-benchmark run with the current cell; sets $rps.
++# TEST pub<N><l|r>: PUBLISH ch x with N subscribers (see subs_start).
++bench_run() {
++    local thr="" conn tflag="-t $1" tail=""
++    [ "$cfg_thr" = 0 ] || thr="--threads $cfg_thr"
++    if [ "$cfg_xport" = unix ]; then conn="-s $sock"; else conn="-p $PORT"; fi
++    case "$1" in pub*) tflag="" tail="PUBLISH ch x" ;; esac
++    # shellcheck disable=SC2086
++    taskset -c "$cfg_ccpus" "$T/nojit" "$R/redis-benchmark" $conn $tflag -n "$2" -c "$cfg_c" \
++        -P "$cfg_p" -d "$cfg_d" $thr -q $tail > "$work/bench.out" 2>&1 || { tail "$work/bench.out"; k4_fail "benchmark $1 ($cfg_name)"; }
++    # The last "<n> requests per second" of the -q output (titles differ: "MSET (10 keys):").
++    rps=$(tr '\r' '\n' < "$work/bench.out" | awk '$0 ~ /requests per second/ {
++        for (i = 2; i <= NF; i++) if ($i == "requests" && $(i + 1) == "per") v = $(i - 1) } END { print v }')
++    [ -n "$rps" ] || { cat "$work/bench.out"; k4_fail "no requests/s for $1 ($cfg_name)"; }
++}
++
++# subs_start / subs_stop: for TEST pub<N><l|r>, N redis-cli subscribers of channel ch (under nojit,
++# output to /dev/null) on the server CPUs (l: local wake-ups) or the client CPUs (r: remote).
++subs=0 subpids=
++subs_start() {
++    local spec cnt side cpus i
++    case "$cfg_test" in pub*) ;; *) return 0 ;; esac
++    spec=${cfg_test#pub}
++    side=${spec##*[0-9]}
++    cnt=${spec%"$side"}
++    case "$side" in l) cpus=$cfg_scpus ;; r) cpus=$cfg_ccpus ;; *) k4_fail "bad TEST $cfg_test" ;; esac
++    i=0
++    while [ "$i" -lt "$cnt" ]; do
++        taskset -c "$cpus" "$T/nojit" "$R/redis-cli" -p "$PORT" subscribe ch > /dev/null 2>&1 &
++        subpids="$subpids $!"
++        i=$((i + 1))
++    done
++    until [ "$(cli pubsub numsub ch | tail -1 | tr -d '\r')" = "$cnt" ]; do sleep 0.1; done
++    subs=$cnt
++}
++subs_stop() {
++    [ -z "$subpids" ] || kill $subpids 2> /dev/null || true
++    for p in $subpids; do wait "$p" 2> /dev/null || true; done
++    subpids= subs=0
++}
++
++snapall() {
++    snap "$1"
++    cp /proc/stat "$1.stat"
++    cp /proc/interrupts "$1.int"
++    cat /proc/"$server"/task/*/sched > "$1.sched"
++    cp /proc/"$server"/stat "$1.pstat"
++}
++
++pdelta() { awk -v f="$1" 'FILENAME == ARGV[1] { b = $f } FILENAME == ARGV[2] { a = $f } END { printf "%d", a - b }' "$2" "$3"; }
++
++# schedsum FILE: sum_exec_runtime (ms) nr_voluntary nr_involuntary summed over the tasks.
++schedsum() {
++    awk '$1 == "se.sum_exec_runtime" { s += $3 } $1 == "nr_voluntary_switches" { v += $3 }
++         $1 == "nr_involuntary_switches" { i += $3 } END { printf "%.6f %d %d\n", s, v, i }' "$1"
++}
++
++# cpu0 BEFORE AFTER: "busy idle" ticks of CPU 0.
++cpu0() {
++    awk 'FILENAME == ARGV[1] && $1 == "cpu0" { for (k = 2; k <= 9; k++) b[k] = $k }
++         FILENAME == ARGV[2] && $1 == "cpu0" { for (k = 2; k <= 9; k++) d[k] = $k - b[k]
++             printf "%d %d\n", d[2] + d[3] + d[4] + d[7] + d[8] + d[9], d[5] + d[6] }' "$1" "$2"
++}
++
++# ipis BEFORE AFTER: "ipi_c0 ipi_other": IPI rows of /proc/interrupts, CPU 0 and CPUs 1-3.
++ipis() {
++    awk 'FILENAME == ARGV[1] { if ($1 ~ /^IPI/) for (k = 2; k <= 5; k++) b[$1, k] = $k; next }
++         $1 ~ /^IPI/ { for (k = 2; k <= 5; k++) { d = $k - b[$1, k]; if (k == 2) c0 += d; else o += d } }
++         END { printf "%d %d\n", c0, o }' "$1" "$2"
++}
++
++measure() {
++    local order=$1 rep=$2 state=$3 t0 t1 line d c a b x
++    sleep 0.5
++    snapall "$work/b"
++    t0=$(awk '{ printf "%d", $1 * 100 }' /proc/uptime)
++    bench_run "$cfg_test" "$cfg_n"
++    t1=$(awk '{ printf "%d", $1 * 100 }' /proc/uptime)
++    snapall "$work/a"
++    a=$(schedsum "$work/a.sched")
++    b=$(schedsum "$work/b.sched")
++    line="cond run cell=$cfg_name srv=$cfg_srv test=$cfg_test n=$cfg_n c=$cfg_c p=$cfg_p d=$cfg_d thr=$cfg_thr subs=$subs"
++    line="$line rep=$rep order=$order state=$state rps=$rps wall_cs=$((t1 - t0))"
++    line="$line ticks_u=$(pdelta 14 "$work/b.pstat" "$work/a.pstat") ticks_s=$(pdelta 15 "$work/b.pstat" "$work/a.pstat")"
++    line="$line $(echo "$b $a" | awk '{ printf "sched_ms=%.6f nvol=%d ninv=%d", $4 - $1, $5 - $2, $6 - $3 }')"
++    x=$(cpu0 "$work/b.stat" "$work/a.stat")
++    line="$line c0_busy=${x% *} c0_idle=${x#* }"
++    x=$(ipis "$work/b.int" "$work/a.int")
++    line="$line ipi_c0=${x% *} ipi_other=${x#* }"
++    for c in $counters; do
++        d=$(( $(stat_of "$work/a.stats" "$c") - $(stat_of "$work/b.stats" "$c") ))
++        line="$line $c=$d"
++    done
++    line="$line frags_live=$(stat_of "$work/a.stats" frags_live) code_live=$(stat_of "$work/a.stats" code_live)"
++    emit "$line"
++    for c in exit_invalid translate_verify_rejected unsupported_bad_word; do
++        d=$(( $(stat_of "$work/a.stats" "$c") - $(stat_of "$work/b.stats" "$c") ))
++        [ "$d" = 0 ] || k4_fail "$state $cfg_test ($cfg_name): runtime counter $c grew by $d"
++    done
++    d=$(( $(stat_of "$work/a.stats" fragment_entries) - $(stat_of "$work/b.stats" fragment_entries) ))
++    if [ "$state" = off ]; then
++        [ "$d" = 0 ] || k4_fail "$state $cfg_test ($cfg_name): $d fragment entries with KJIT off"
++    else
++        [ "$d" -gt 0 ] || k4_fail "$state $cfg_test ($cfg_name): no fragment entry with KJIT on"
++    fi
++}
++
++emit "cond: cmdline: $(cat /proc/cmdline)"
++emit "cond: kernel: $(uname -r) cpus: $(grep -c ^processor /proc/cpuinfo) redis: $("$R/redis-server" --version)"
++emit "cond: reps=$reps chain_budget=$chain hz_ticks=$(getconf CLK_TCK) cells: $cells"
++[ -f "$K/retcont" ] || k4_fail "$K/retcont missing (the experiment module?)"
++emit "cond: module: $(cat "$K/hot_threshold") hot_threshold, $(cat "$K/hot_window_ms") hot_window_ms"
++
++# The states, rotated by the rep number; default the four of the header, RC_STATES may name
++# others (m3 = continuations and the ring pushes only).
++state_list=${RC_STATES:-off m0 m1 m2}
++prev_srv=
++for cell in $cells; do
++    use_cell "$cell"
++    if [ "$cfg_srv" != "$prev_srv" ]; then
++        [ -z "$prev_srv" ] || srv_stop "$prev_srv"
++        set_state m0
++        srv_start "$cfg_srv"
++        prev_srv=$cfg_srv
++        server_first=1
++    else
++        server_first=0
++    fi
++    taskset -a -pc "$cfg_scpus" "$server" > /dev/null
++    emit "cond: cell $cfg_name: server tasks allowed CPUs: $(cat /proc/"$server"/task/*/status | awk '/^Cpus_allowed_list/ { print $2 }' | sort | uniq -c | tr '\n' ' ')"
++    set_state m0
++    snap "$work/cellb"
++    subs_start
++    if [ "$cfg_test" = get ]; then bench_run set 5000; fi
++    warm=$cfg_n
++    [ "$warm" -le 200000 ] || warm=200000
++    if [ "$server_first" = 1 ]; then
++        bench_run "$cfg_test" "$cfg_n"
++        emit "cond: translate_ok after server warm-up: $(stat_of "$K/stats" translate_ok)"
++    fi
++    bench_run "$cfg_test" "$warm"
++    warm=$cfg_n
++    [ "$warm" -le 150000 ] || warm=150000
++    rep=1
++    while [ "$rep" -le "$reps" ]; do
++        states=$(echo "$state_list" | awk -v r="$rep" '{ n = NF; o = ""; for (i = 0; i < n; i++) o = o " " $(((i + r - 1) % n) + 1); print substr(o, 2) }')
++        order=$(echo "$states" | tr ' ' ',')
++        for state in $states; do
++            set_state "$state"
++            warm_if_needed
++            measure "$order" "$rep" "$state"
++        done
++        rep=$((rep + 1))
++    done
++    subs_stop
++    # The stopping words of the cell (warm-ups included): word(exits/entry_stops).
++    snap "$work/cella"
++    emit "cond unsup cell=$cfg_name $(awk 'FILENAME == ARGV[1] { e[$1] = $2; s[$1] = $3; next }
++        { de = $2 - e[$1]; ds = $3 - s[$1]; if (de + ds > 0) printf "%d %s(%d/%d)\n", de + ds, $1, de, ds }' \
++        "$work/cellb.unsup" "$work/cella.unsup" | sort -rn | head -6 | cut -d' ' -f2 | tr '\n' ' ')"
++done
++set_mode 0
++srv_stop "$prev_srv"
++emit "cond: done"
+diff --git a/tools/retcont/assemble.sh b/tools/retcont/assemble.sh
+new file mode 100755
+index 0000000..dd88f50
+--- /dev/null
++++ b/tools/retcont/assemble.sh
+@@ -0,0 +1,47 @@
++#!/usr/bin/env bash
++# EXPERIMENT (exp/ret-cont): collects the data of the 2026-10-14 ret-cont entry into docs/data/2026-10-14/.
++#   assemble.sh HHMM SCRATCH_DIR
++# SCRATCH_DIR: attrib-out/ (attrib TSVs), the harness test logs (full-m*.log, native-m*.log, m2-mut.log, m*-fix.log).
++set -euo pipefail
++hhmm=$1
++scr=$2
++root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
++runs=${KJIT_BUILD_ROOT:-/Volumes/CaseSentitiveLocal/KJIT/.kjit/build}/runs
++d=$root/docs/data/2026-10-14
++raw=$d/$hhmm-ret-cont
++mkdir -p "$raw/attrib" "$raw/harness"
++for r in "$runs"/ub-rc-rc-k* "$runs"/ub-rc-units-* "$runs"/ub-rc-diag-* "$runs"/ub-rc-push-* "$runs"/ub-rc-gate-* "$runs"/ub-retcont-smoke1; do
++    [[ -d $r ]] || continue
++    n=$(basename "$r")
++    [[ -f $r/host.txt ]] || continue   # a boot that never started
++    mkdir -p "$raw/$n"
++    for f in serial.log host.txt kjit-run.sh; do [[ -f $r/$f ]] && cp "$r/$f" "$raw/$n/"; done
++done
++python3 -I "$root/tools/retcont/summarize.py" --runs "$runs" --tag rc --csv "$d/$hhmm-ret-cont.csv" \
++    --boots-csv "$d/$hhmm-ret-cont-boots.csv" --tables "$raw/tables.md" > /dev/null
++python3 -I "$root/tools/retcont/summarize.py" --runs "$runs" --tag push --csv "$d/$hhmm-ret-cont-push.csv" \
++    --boots-csv "$raw/push-boots.csv" --tables "$raw/tables-push.md" > /dev/null
++if ls "$runs"/ub-rc-units-* > /dev/null 2>&1; then
++    python3 -I "$root/tools/retcont/summarize.py" --runs "$runs" --tag units --csv "$d/$hhmm-ret-cont-units.csv" \
++        --boots-csv "$raw/units-boots.csv" --tables "$raw/tables-units.md" > /dev/null
++fi
++{
++    # The measured ring hit rates (units build: 1 - (units(m2) - units(m1)) / RETs per request).
++    for t in set:0.9214 get:0.9354; do
++        python3 -I "$root/tools/retcont/words.py" "$scr/attrib-out/${t%%:*}-m0.tsv" "$scr/attrib-out/${t%%:*}-m2.tsv" \
++            --check1 "$scr/attrib-out/${t%%:*}-m1.tsv" --test "${t%%:*}" --csv "$raw/words-${t%%:*}.csv" --hit 1.0 0.95 "${t##*:}" 0.9 0.8
++    done
++} > "$raw/words.txt"
++head -1 "$raw/words-set.csv" > "$d/$hhmm-ret-cont-words.csv"
++tail -n +2 -q "$raw"/words-set.csv "$raw"/words-get.csv >> "$d/$hhmm-ret-cont-words.csv"
++rm -f "$raw"/words-set.csv "$raw"/words-get.csv
++# The BL / BLR / RET rows of the attrib TSVs, one file per test and mode.
++for t in set get; do
++    for m in 0 1 2; do
++        awk -F'\t' 'NR == 1 || $7 ~ /^(bl|blr|ret)( |$)/' "$scr/attrib-out/$t-m$m.tsv" > "$raw/attrib/$t-m$m-transfers.tsv"
++    done
++done
++for f in full-m0 full-m1 full-m2 native-m0 native-m1 native-m2 m2-mut; do
++    [[ -f $scr/$f.log ]] && grep -E "^test result|^test .*FAILED|asm fixture suite|^\| ring |^\| random|verifier mutation suite" "$scr/$f.log" | cut -c1-300 > "$raw/harness/$f.txt"
++done
++ls -R "$raw" | head -80
+diff --git a/tools/retcont/drive-push.sh b/tools/retcont/drive-push.sh
+new file mode 100755
+index 0000000..24a5937
+--- /dev/null
++++ b/tools/retcont/drive-push.sh
+@@ -0,0 +1,19 @@
++#!/usr/bin/env bash
++# EXPERIMENT (exp/ret-cont): the push-only ablation. KPTI-forced-on boots of the states
++# m0, m1, m2, m3 (m3 = continuations and the ring pushes, no pop) paired inside each boot,
++# on the module of mod-retcont3.   drive-push.sh FIRST LAST REPS
++set -uo pipefail
++WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
++export KJIT_BUILD_ROOT=${KJIT_BUILD_ROOT:-/Volumes/CaseSentitiveLocal/KJIT/.kjit/build}
++export QEMU_SSH_PORT=${QEMU_SSH_PORT:-12922} QEMU_GDB_PORT=${QEMU_GDB_PORT:-2352}
++export UB_MODULE=${UB_MODULE:-$KJIT_BUILD_ROOT/mod-retcont3/kjit.ko}
++export UB_TIMEOUT=${UB_TIMEOUT:-2400} UB_MAX_LOAD=${UB_MAX_LOAD:-6}
++export RC_STATES="m0 m1 m2 m3"
++CELLS="set_c50_p1_d1:base:set:1000000:50:1:1:2:0:1-3:tcp get_c50_p1_d1:base:get:1000000:50:1:1:2:0:1-3:tcp
++unix_get_c50_p1_d1:unix:get:1000000:50:1:1:2:0:1-3:unix unix_set_c50_p1_d1:unix:set:1000000:50:1:1:2:0:1-3:unix
++unix_pingm_c50_p1:unix:ping_mbulk:1000000:50:1:1:2:0:1-3:unix"
++for ((b = $1; b <= $2; b++)); do
++  RC_FIRST=$b RC_CELLS=$(echo $CELLS) "$WT/tests/guest/host/retcont-sweep.sh" push "k1:kjit-guest:kpti=1" 1 "$3"
++  echo "DRIVE: rc-push-k1-b$b status=$? $(date '+%H:%M:%S')"
++done
++echo "DRIVE: all done $(date '+%H:%M:%S')"
+diff --git a/tools/retcont/drive.sh b/tools/retcont/drive.sh
+new file mode 100755
+index 0000000..e726f31
+--- /dev/null
++++ b/tools/retcont/drive.sh
+@@ -0,0 +1,39 @@
++#!/usr/bin/env bash
++# EXPERIMENT (exp/ret-cont): interleaved k1 (KPTI forced on) / k0 (KPTI off) boots of
++# tests/guest/host/retcont-sweep.sh, the four states paired inside each boot.
++#   drive.sh K1_FIRST K1_LAST K0_FIRST K0_LAST REPS
++# Boot order: k1 b<first>, k0 b<first>, k1 b<first+1>, ... A boot that fails is logged and the
++# drive goes on (re-run it by number later). Environment: UB_MODULE (default mod-retcont).
++set -uo pipefail
++WT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
++export KJIT_BUILD_ROOT=${KJIT_BUILD_ROOT:-/Volumes/CaseSentitiveLocal/KJIT/.kjit/build}
++export QEMU_SSH_PORT=${QEMU_SSH_PORT:-12922} QEMU_GDB_PORT=${QEMU_GDB_PORT:-2352}
++export UB_MODULE=${UB_MODULE:-$KJIT_BUILD_ROOT/mod-retcont/kjit.ko}
++export UB_TIMEOUT=${UB_TIMEOUT:-2400}
++export UB_MAX_LOAD=${UB_MAX_LOAD:-6}
++reps=$5
++TAG=${RC_TAG:-rc}
++# NAME:SRV:TEST:N:C:P:D:THR:SCPUS:CCPUS:XPORT
++K1_CELLS="set_c50_p1_d1:base:set:1000000:50:1:1:2:0:1-3:tcp get_c50_p1_d1:base:get:1000000:50:1:1:2:0:1-3:tcp
++pingm_c50_p1:base:ping_mbulk:1000000:50:1:1:2:0:1-3:tcp
++unix_get_c50_p1_d1:unix:get:1000000:50:1:1:2:0:1-3:unix unix_set_c50_p1_d1:unix:set:1000000:50:1:1:2:0:1-3:unix
++unix_pingm_c50_p1:unix:ping_mbulk:1000000:50:1:1:2:0:1-3:unix"
++K0_CELLS="unix_get_c50_p1_d1:unix:get:1000000:50:1:1:2:0:1-3:unix unix_set_c50_p1_d1:unix:set:1000000:50:1:1:2:0:1-3:unix"
++run() { # NAME BOOT ARGS CELLS
++  local name=$1 b=$2 args=$3 cells=$4 label=rc-$TAG-$1-b$2 log
++  RC_FIRST=$b RC_CELLS=$(echo $cells) "$WT/tests/guest/host/retcont-sweep.sh" "$TAG" "$name:kjit-guest:$args" 1 "$reps"
++  local st=$?
++  log=$KJIT_BUILD_ROOT/runs/ub-$label/serial.log
++  local n; n=$(grep -c 'kernel page table isolation forced ON' "$log" 2>/dev/null)
++  if [[ $name == k1 ]]; then [[ ${n:-0} -gt 0 ]] || { echo "DRIVE: $label KPTI not forced on"; st=99; }
++  else [[ ${n:-0} -eq 0 ]] || { echo "DRIVE: $label KPTI unexpectedly on"; st=98; }; fi
++  grep -q '^cond: done' "$log" 2>/dev/null || { echo "DRIVE: $label did not finish"; st=97; }
++  echo "DRIVE: $label status=$st $(date '+%H:%M:%S') $(grep -h 'load1_before' $KJIT_BUILD_ROOT/runs/ub-$label/host.txt)"
++}
++b1=$1; e1=$2; b0=$3; e0=$4
++n=$(( e1-b1 > e0-b0 ? e1-b1 : e0-b0 ))
++for ((i=0;i<=n;i++)); do
++  (( b1+i <= e1 )) && run k1 $((b1+i)) kpti=1 "$K1_CELLS"
++  (( b0+i <= e0 )) && run k0 $((b0+i)) "" "$K0_CELLS"
++done
++echo "DRIVE: all done $(date '+%H:%M:%S')"
+diff --git a/tools/retcont/summarize.py b/tools/retcont/summarize.py
+new file mode 100644
+index 0000000..2371584
+--- /dev/null
++++ b/tools/retcont/summarize.py
+@@ -0,0 +1,232 @@
++#!/usr/bin/env python3
++"""EXPERIMENT (exp/ret-cont): paired server CPU per request of the four states off, m0, m1, m2.
++
++  summarize.py --runs RUNS_DIR --tag TAG [--csv OUT] [--boots-csv OUT] [--tables OUT]
++
++Reads RUNS_DIR/ub-rc-<TAG>-k<0|1>-b<N>/{serial.log,host.txt} (tests/guest/host/retcont-sweep.sh
++boots; the guest script is tests/guest/retcont-sweep.sh). Metric: server CPU per request =
++sum over the server's tasks of se.sum_exec_runtime (sched_ms) * 1000 / n, us.
++
++States: off = KJIT disabled; m0 = today's translation in the experiment module; m1 = return
++continuations; m2 = continuations and the shadow return ring. A pair = two states in one
++boot, cell and rep (all four run within about 15 s of each other, the order rotated by rep).
++Compared: m0 - off, m1 - m0, m2 - m0, m2 - m1 and m1 - off, m2 - off (us per request).
++Per cell: median [Q1..Q3] over pairs; boots+ = boots whose median pair gap is positive;
++CI = 95% percentile interval of the median pair gap from a cluster bootstrap (resample the
++boots, then the pairs inside each; 5000 draws, seed 1); verdict win = CI upper < 0, tie = CI
++contains 0, lose = CI lower > 0.
++"""
++import argparse
++import csv
++import glob
++import os
++import random
++import re
++import statistics
++import sys
++from collections import defaultdict
++
++KV = re.compile(r"(\w+)=(\S+)")
++STATES = ["off", "m0", "m1", "m2", "m3"]
++COUNTERS = ["hook_calls", "syscalls_in_kernel", "fragment_entries", "chains", "exit_svc", "exit_bl", "exit_blr",
++            "exit_br", "exit_ret", "exit_mem", "exit_unsupported", "exit_budget", "run_declined", "svc_declined",
++            "fpsimd_entries", "translate_ok", "translate_exists", "translate_text_unreadable",
++            "translate_compile_failed", "translate_verify_rejected", "translate_capped", "invalidated_fragments",
++            "ret_label", "ibtc_insert", "ibtc_miss_cold", "ibtc_miss_conflict", "ibtc_miss_other", "ibtc_fpsimd_boundary",
++            "chain_cap", "link_made", "link_restored", "budget_units"]
++COMPARE_ALL = [("m0", "off"), ("m1", "off"), ("m2", "off"), ("m1", "m0"), ("m2", "m0"), ("m2", "m1"),
++               ("m3", "m0"), ("m3", "m1"), ("m2", "m3")]
++
++
++def quart(xs):
++    xs = sorted(xs)
++    if len(xs) < 2:
++        return xs[0], xs[0], xs[0]
++    q = statistics.quantiles(xs, n=4, method="inclusive")
++    return q[0], statistics.median(xs), q[2]
++
++
++def parse(runs_dir, tag):
++    rows, boots = [], {}
++    pat = re.compile(r"^ub-rc-%s-(k[01])-b(\d+)$" % re.escape(tag))
++    for d in sorted(glob.glob(os.path.join(runs_dir, "ub-rc-%s-*" % tag))):
++        m = pat.match(os.path.basename(d))
++        if not m:
++            continue
++        setting, boot = m.group(1), int(m.group(2))
++        label = "%s-b%d" % (setting, boot)
++        if not os.path.exists(os.path.join(d, "host.txt")):
++            continue  # a boot still waiting for the host
++        host = open(os.path.join(d, "host.txt")).read()
++        mm = re.search(r"waited_s=(\d+) load1_before=([\d.]+)", host)
++        waited, load = int(mm.group(1)), float(mm.group(2))
++        la = re.search(r"load1_after=([\d.]+)", host)
++        append = re.search(r"^append=(.*)$", host, re.M).group(1)
++        n_run, done, forced = 0, False, 0
++        for line in open(os.path.join(d, "serial.log"), errors="replace"):
++            line = line.rstrip("\r\n")
++            if "kernel page table isolation forced ON" in line:
++                forced += 1
++            if line.startswith("cond run "):
++                kv = dict(KV.findall(line))
++                kv.update(setting=setting, boot=boot, label=label, load1_before=load, waited_s=waited)
++                rows.append(kv)
++                n_run += 1
++            elif line.startswith("cond: done"):
++                done = True
++        boots[label] = dict(setting=setting, boot=boot, kernel_append=append, kpti_forced_on_lines=forced,
++                            host_waited_s=waited, host_load1_before=load, host_load1_after=la.group(1) if la else "",
++                            runs=n_run, finished=int(done))
++    return rows, boots
++
++
++def derive(r):
++    n = int(r["n"])
++    r["kpti"] = 1 if r["setting"] == "k1" else 0
++    r["cpu_us_per_req"] = float(r["sched_ms"]) * 1000.0 / n
++    for c in COUNTERS:
++        r[c + "_per_req"] = int(r[c]) / n if c in r else float("nan")
++    r["blocks_per_kreq"] = int(r["nvol"]) * 1000.0 / n
++    r["frags_live_i"] = int(r["frags_live"])
++    r["code_live_i"] = int(r["code_live"])
++
++
++def paired(rows):
++    by = defaultdict(dict)
++    for r in rows:
++        by[(r["kpti"], r["cell"], r["label"], r["rep"])][r["state"]] = r
++    return by
++
++
++def cluster_ci(items, draws=5000, seed=1):
++    """items: [(boot, gap)]"""
++    byb = defaultdict(list)
++    for b, g in items:
++        byb[b].append(g)
++    labs = list(byb)
++    rnd = random.Random(seed)
++    meds = []
++    for _ in range(draws):
++        pool = []
++        for _ in labs:
++            v = byb[rnd.choice(labs)]
++            pool.extend(rnd.choice(v) for _ in v)
++        meds.append(statistics.median(pool))
++    meds.sort()
++    return meds[int(0.025 * draws)], meds[int(0.975 * draws) - 1]
++
++
++def gap_stats(by, kpti, cell, a, b):
++    items = [(lab, st[a]["cpu_us_per_req"] - st[b]["cpu_us_per_req"])
++             for (k, c, lab, rep), st in sorted(by.items()) if k == kpti and c == cell and a in st and b in st]
++    if not items:
++        return None
++    gaps = [g for _, g in items]
++    byb = defaultdict(list)
++    for lab, g in items:
++        byb[lab].append(g)
++    bmed = {k: statistics.median(v) for k, v in byb.items()}
++    q1, med, q3 = quart(gaps)
++    lo, hi = cluster_ci(items)
++    return dict(pairs=len(gaps), boots=len(bmed), boots_pos=sum(1 for v in bmed.values() if v > 0),
++                neg=sum(1 for g in gaps if g < 0), med=med, q1=q1, q3=q3, lo=lo, hi=hi,
++                verdict="win" if hi < 0 else ("lose" if lo > 0 else "tie"), bmed=bmed)
++
++
++def med_of(rows, state, key):
++    xs = [r[key] for r in rows if r["state"] == state]
++    return statistics.median(xs) if xs else float("nan")
++
++
++def main():
++    ap = argparse.ArgumentParser()
++    ap.add_argument("--runs", required=True)
++    ap.add_argument("--tag", required=True)
++    ap.add_argument("--csv")
++    ap.add_argument("--boots-csv")
++    ap.add_argument("--tables")
++    a = ap.parse_args()
++    rows, boots = parse(a.runs, a.tag)
++    for r in rows:
++        derive(r)
++    for b in boots.values():
++        if not b["finished"]:
++            print("WARNING: boot %s%d did not finish" % (b["setting"], b["boot"]), file=sys.stderr)
++    if a.csv:
++        cols = (["label", "boot", "kpti", "cell", "srv", "test", "n", "c", "p", "d", "thr", "rep", "order", "state", "rps",
++                 "wall_cs", "cpu_us_per_req", "sched_ms", "ticks_u", "ticks_s", "nvol", "ninv", "c0_busy", "c0_idle",
++                 "ipi_c0", "ipi_other", "frags_live", "code_live", "load1_before", "waited_s"] + COUNTERS)
++        names = {"label": "boot_label", "state": "kjit_state", "srv": "server_profile", "n": "requests", "c": "clients",
++                 "p": "pipeline", "d": "value_bytes", "thr": "benchmark_threads", "rps": "req_per_s",
++                 "sched_ms": "sched_exec_ms", "ticks_u": "utime_ticks", "ticks_s": "stime_ticks",
++                 "nvol": "voluntary_switches", "ninv": "involuntary_switches", "c0_busy": "cpu0_busy_ticks",
++                 "c0_idle": "cpu0_idle_ticks", "ipi_c0": "ipi_cpu0", "ipi_other": "ipi_cpus1_3",
++                 "frags_live": "fragments_live_after", "code_live": "code_bytes_live_after",
++                 "load1_before": "host_load1_before", "waited_s": "host_waited_s", "order": "rep_order",
++                 "cpu_us_per_req": "server_cpu_us_per_req"}
++        with open(a.csv, "w", newline="") as f:
++            w = csv.writer(f)
++            w.writerow([names.get(c, c) for c in cols])
++            for r in rows:
++                w.writerow([("%.5f" % r[c]) if isinstance(r.get(c), float) else r.get(c, "") for c in cols])
++    if a.boots_csv:
++        with open(a.boots_csv, "w", newline="") as f:
++            w = csv.writer(f)
++            w.writerow(["boot_label", "kpti", "kernel_append", "kpti_forced_on_lines", "host_waited_s", "host_load1_before",
++                        "host_load1_after", "runs", "finished"])
++            for lab, b in sorted(boots.items()):
++                w.writerow([lab, 1 if b["setting"] == "k1" else 0, b["kernel_append"], b["kpti_forced_on_lines"],
++                            b["host_waited_s"], b["host_load1_before"], b["host_load1_after"], b["runs"], b["finished"]])
++    by = paired(rows)
++    present = {r["state"] for r in rows}
++    COMPARE = [(x, y) for x, y in COMPARE_ALL if x in present and y in present]
++    states = [st for st in STATES if st in present]
++    cells = sorted({(k, c) for (k, c, _, _) in by})
++    out = ["### Boots\n", "| boot | kernel append | KPTI forced-ON lines | host load1 before | host wait (s) | runs |",
++           "|---|---|---|---|---|---|"]
++    for lab, b in sorted(boots.items(), key=lambda kv: (kv[1]["setting"], kv[1]["boot"])):
++        out.append("| %s | `%s` | %d | %.2f | %d | %d |" % (lab, b["kernel_append"].replace("console=ttyAMA0 panic=-1 nokaslr ", ""),
++                                                          b["kpti_forced_on_lines"], b["host_load1_before"], b["host_waited_s"], b["runs"]))
++    for kpti in (1, 0):
++        sel = [c for k, c in cells if k == kpti]
++        if not sel:
++            continue
++        out.append("\n### KPTI %s: server CPU per request, us (median over runs)\n" % ("forced on" if kpti else "off"))
++        out.append("| cell | runs/state | " + " | ".join(states) + " | frags m0 / m1 / m2 | code KB m0 / m1 / m2 | exit_ret/req m0 / m1 / m2 | ret_label/req m1 / m2 |")
++        out.append("|---|---|" + "---|" * len(states) + "---|---|---|---|")
++        for c in sel:
++            rr = [r for r in rows if r["kpti"] == kpti and r["cell"] == c]
++            nruns = {s_: sum(1 for r in rr if r["state"] == s_) for s_ in states}
++            f3 = lambda key, scale=1.0: " / ".join("%.0f" % (med_of(rr, s_, key) / scale) if s_ in present else "-" for s_ in ("m0", "m1", "m2"))
++            out.append("| %s | %s | %s | %s | %s | %s | %s |" % (
++                c, "/".join(str(nruns[s_]) for s_ in states),
++                " | ".join("%.3f" % med_of(rr, s_, "cpu_us_per_req") for s_ in states),
++                f3("frags_live_i"), f3("code_live_i", 1024),
++                " / ".join("%.4f" % med_of(rr, s_, "exit_ret_per_req") for s_ in ("m0", "m1", "m2")),
++                "%.4f / %.4f" % (med_of(rr, "m1", "ret_label_per_req"), med_of(rr, "m2", "ret_label_per_req"))))
++        out.append("\n### KPTI %s: paired gaps, us per request: median [Q1..Q3], 95%% CI, boots+/boots, pairs<0\n" % ("forced on" if kpti else "off"))
++        out.append("| cell | " + " | ".join("%s - %s" % p for p in COMPARE) + " |")
++        out.append("|---|" + "---|" * len(COMPARE))
++        for c in sel:
++            cellout = []
++            for x, y in COMPARE:
++                g = gap_stats(by, kpti, c, x, y)
++                if g is None:
++                    cellout.append("")
++                    continue
++                cellout.append("%+.3f [%+.3f..%+.3f] CI [%+.3f..%+.3f] %s (%d/%d, %d/%d<0)" % (
++                    g["med"], g["q1"], g["q3"], g["lo"], g["hi"], g["verdict"], g["boots_pos"], g["boots"], g["neg"], g["pairs"]))
++            out.append("| %s | %s |" % (c, " | ".join(cellout)))
++        pooled = []
++        for x, y in COMPARE:
++            meds = [g["med"] for g in (gap_stats(by, kpti, c, x, y) for c in sel) if g]
++            pooled.append("%+.3f (mean of %d cell medians; %d positive)" % (statistics.mean(meds), len(meds),
++                                                                          sum(1 for m in meds if m > 0)) if meds else "")
++        out.append("| **cells pooled** | %s |" % " | ".join(pooled))
++    text = "\n".join(out) + "\n"
++    if a.tables:
++        open(a.tables, "w").write(text)
++    print(text)
++
++
++main()
+diff --git a/tools/retcont/words.py b/tools/retcont/words.py
+new file mode 100644
+index 0000000..fbadee6
+--- /dev/null
++++ b/tools/retcont/words.py
+@@ -0,0 +1,151 @@
++#!/usr/bin/env python3
++"""EXPERIMENT (exp/ret-cont): hot-path words per request from `attrib` TSVs.
++
++  words.py M0.tsv M2.tsv [--bl-linked 0.99] [--hit 1.0 0.9 0.8] [--requests N]
++
++M0.tsv: `attrib` over the E1 trace with retcont mode 0 (every executed instruction);
++M2.tsv: the same with mode 2 (`--transfers-only` is enough: only BL/BLR/RET rows are used).
++Mode 1 lowers every instruction exactly as mode 0 (checked by --check1 M1.tsv).
++
++Rows' `count` is the dynamic count over the traced request gaps; the E1 trace is 100000
++requests (-c 50, one test), so words per request = sum(count * words) / requests.
++
++What a row executes (hot path):
++- ordinary instruction: all its emitted words (the cold region and exit groups are not
++  emitted into the tsv).
++- BL: budget + dispatch_target + user_synth (link write) [+ ring_push] + link_slot, then
++  the template (dispatch_lookup, the 9 main-probe-hit words) only if the site is not
++  linked: the tool's own totals count the 9 template words for every BL, which
++  overcounts the linked ones (99% in redis); `--bl-linked` is the fraction linked.
++- BLR/BR: budget + dispatch_target + user_synth + dispatch_lookup (9) [+ ring_push for BLR].
++- RET, modes 0/1: budget + dispatch_target + dispatch_lookup (9).
++- RET, mode 2, ring hit: budget (the first check) + dispatch_target + ring_pop.
++  ring miss: that + budget2 + dispatch_lookup (9).
++"""
++import csv
++import sys
++
++BASE = ["user_op", "user_synth", "user_access", "fill", "spill", "helper_other", "budget",
++        "align", "range", "pan_toggle", "window_access", "dispatch_target"]
++
++
++def rows(path):
++    with open(path) as f:
++        r = csv.DictReader(f, delimiter="\t")
++        out = {}
++        for row in r:
++            out[row["pc"]] = row
++    return out
++
++
++def kind(row):
++    t = row["text"].split()[0] if row["text"] else ""
++    if t == "bl":
++        return "bl"
++    if t == "blr":
++        return "blr"
++    if t == "br":
++        return "br"
++    if t == "ret":
++        return "ret"
++    return "other"
++
++
++def words(row, k, mode, bl_linked, hit):
++    g = lambda c: int(row.get(c, 0) or 0)
++    base = sum(g(c) for c in BASE)
++    if k == "other":
++        return base + g("dispatch_lookup") * 0  # no dispatch words on ordinary rows
++    if k == "bl":
++        w = base + g("link_slot") + g("ring_push") + (1 - bl_linked) * g("dispatch_lookup")
++        return w
++    if k in ("blr", "br"):
++        return base + g("dispatch_lookup") + g("ring_push")
++    if k == "ret":
++        if mode < 2:
++            return base + g("dispatch_lookup")
++        hit_path = base + g("ring_pop")
++        miss_path = hit_path + g("budget2") + g("dispatch_lookup")
++        return hit * hit_path + (1 - hit) * miss_path
++    raise SystemExit(k)
++
++
++def main():
++    a = sys.argv[1:]
++    bl_linked = 0.99
++    hits = [1.0, 0.9, 0.8]
++    requests = 100000
++    check1 = None
++    csv_out = None
++    test_name = ""
++    files = []
++    i = 0
++    while i < len(a):
++        if a[i] == "--bl-linked":
++            bl_linked = float(a[i + 1]); i += 2
++        elif a[i] == "--requests":
++            requests = int(a[i + 1]); i += 2
++        elif a[i] == "--check1":
++            check1 = a[i + 1]; i += 2
++        elif a[i] == "--csv":
++            csv_out = a[i + 1]; i += 2
++        elif a[i] == "--test":
++            test_name = a[i + 1]; i += 2
++        elif a[i] == "--hit":
++            hits = []
++            i += 1
++            while i < len(a) and not a[i].startswith("--"):
++                hits.append(float(a[i])); i += 1
++        else:
++            files.append(a[i]); i += 1
++    m0, m2 = rows(files[0]), rows(files[1])
++    counts = {}
++    for pc, row in m0.items():
++        counts[pc] = (int(row["count"]), kind(row))
++
++    def total(mode, hit):
++        t = 0.0
++        per = {"bl": 0.0, "blr": 0.0, "br": 0.0, "ret": 0.0, "other": 0.0}
++        n = {"bl": 0, "blr": 0, "br": 0, "ret": 0, "other": 0}
++        for pc, (cnt, k) in counts.items():
++            row = m0[pc] if (mode < 2 or k in ("other", "br")) else m2[pc]
++            w = words(row, k, mode, bl_linked, hit) * cnt
++            t += w
++            per[k] += w
++            n[k] += cnt
++        return t, per, n
++
++    rows_out = []
++    print(f"requests {requests}  BL linked {bl_linked}")
++    t0, per0, n0 = total(0, 1.0)
++    print(f"dynamic transfers per request: " + ", ".join(f"{k} {n0[k]/requests:.1f}" for k in ("bl", "blr", "br", "ret")))
++    print(f"mode 0/1 words per request {t0/requests:.0f}  (" + ", ".join(f"{k} {per0[k]/requests:.0f}" for k in per0) + ")")
++    for mode in (0, 1):
++        rows_out.append([test_name, mode, "", t0 / requests] + [per0[k] / requests for k in ("bl", "blr", "br", "ret", "other")])
++    for h in hits:
++        t2, per2, _ = total(2, h)
++        print(f"mode 2, ring hit rate {h:.2f}: words per request {t2/requests:.0f}  delta {(t2-t0)/requests:+.0f}  (" +
++              ", ".join(f"{k} {per2[k]/requests:.0f}" for k in per2) + ")")
++        rows_out.append([test_name, 2, h, t2 / requests] + [per2[k] / requests for k in ("bl", "blr", "br", "ret", "other")])
++    # The tool's own total (every emitted word, 9 template words for every site), for the
++    # comparison with the 10-13 15:25 entry.
++    allw = 0
++    for pc, (cnt, k) in counts.items():
++        row = m0[pc]
++        allw += cnt * (sum(int(row.get(c, 0) or 0) for c in BASE) + int(row.get("dispatch_lookup", 0) or 0))
++    if csv_out:
++        with open(csv_out, "w", newline="") as f:
++            w = csv.writer(f)
++            w.writerow(["test", "mode", "ring_hit_rate", "words_per_req", "bl_words_per_req", "blr_words_per_req",
++                        "br_words_per_req", "ret_words_per_req", "other_words_per_req"])
++            for r in rows_out:
++                w.writerow([r[0], r[1], r[2]] + ["%.1f" % x for x in r[3:]])
++    print(f"tool total as in 10-13 15:25 (all template words, no link slots): {allw/requests:.0f} per request")
++    if check1:
++        m1 = rows(check1)
++        lowered = [pc for pc in m1 if kind(m1[pc]) in ("bl", "blr", "ret")]
++        diff = [pc for pc in lowered if any(m1[pc].get(c) != m0[pc].get(c) for c in BASE + ["dispatch_lookup", "link_slot", "ring_push", "ring_pop", "budget2"])]
++        print(f"mode 1 lowering differs from mode 0 on {len(diff)} of {len(lowered)} BL/BLR/RET rows")
++
++
++main()
