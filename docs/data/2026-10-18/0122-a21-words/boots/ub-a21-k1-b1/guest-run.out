@@ -1,0 +1,523 @@
+guest-run: profile=kjit-guest run-dir=/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/a21/.kjit/build/runs/ub-a21-k1-b1
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1 (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #6 SMP PREEMPT Tue Oct 13 19:58:16 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] CPU features: kernel page table isolation forced ON by kpti command line option
+[    0.000000] CPU features: detected: Kernel page table isolation (KPTI)
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr kpti=1 rodata=off
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013b400000-0x000000013b800000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000108] Console: colour dummy device 80x25
+[    0.000115] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000116] pid_max: default: 32768 minimum: 301
+[    0.000256] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000264] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000345] VFS: Finished mounting rootfs on nullfs
+[    0.000486] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000603] rcu: Hierarchical SRCU implementation.
+[    0.000603] rcu: 	Max phase no-delay instances is 1000.
+[    0.000623] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000658] smp: Bringing up secondary CPUs ...
+[    0.000907] Detected PIPT I-cache on CPU1
+[    0.001028] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001267] Detected PIPT I-cache on CPU2
+[    0.001361] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001572] Detected PIPT I-cache on CPU3
+[    0.001711] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.001783] smp: Brought up 1 node, 4 CPUs
+[    0.001784] SMP: Total of 4 processors activated.
+[    0.001784] CPU: All CPU(s) started at EL1
+[    0.001786] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.001786] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.001786] CPU features: detected: CRC32 instructions
+[    0.001786] CPU features: detected: Data independent timing control (DIT)
+[    0.001787] CPU features: detected: E0PD
+[    0.001787] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.001788] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.001788] CPU features: detected: LSE atomic instructions
+[    0.001788] CPU features: detected: Privileged Access Never
+[    0.001789] CPU features: detected: Speculation barrier (SB)
+[    0.001789] CPU features: detected: TLB range maintenance instructions
+[    0.001789] CPU features: detected: XNX
+[    0.001963] alternatives: applying system-wide alternatives
+[    0.003104] Memory: 3914460K/4194304K available (5248K kernel code, 754K rwdata, 2360K rodata, 576K init, 405K bss, 276664K reserved, 0K cma-reserved)
+[    0.003376] devtmpfs: initialized
+[    0.003640] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.003649] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.003664] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.003669] 30384 pages in range for non-PLT usage
+[    0.003670] 521904 pages in range for PLT usage
+[    0.003722] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.004078] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.004113] ASID allocator initialised with 128 entries
+[    0.004120] Serial: AMBA PL011 UART driver
+[    0.004656] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.004858] printk: console [ttyAMA0] enabled
+[    0.010824] vgaarb: loaded
+[    0.011216] clocksource: Switched to clocksource arch_sys_counter
+[    0.014065] NET: Registered PF_INET protocol family
+[    0.014245] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.014759] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.014770] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.014776] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.014830] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.015023] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.015058] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.015107] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.015112] PCI: CLS 0 bytes, default 64
+[    0.015400] Unpacking initramfs...
+[    0.019919] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.020060] 9p: Installing v9fs 9p2000 file system support
+[    0.020681] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.020687] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.020689] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.020690] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.020699] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.020708] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.020722] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.020723] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.020724] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.020725] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.020725] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.020766] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.021083] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.021203] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.021229] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.021266] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.021269] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.021613] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.021770] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.021772] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.021782] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.022148] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.022338] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.022341] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.022360] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.022806] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.022809] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.022838] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.022948] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.022991] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.022996] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.023000] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.023020] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.023026] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.023031] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.023045] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.023046] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.023047] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.024325] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.025268] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.026033] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.081060] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.081085] rtc-pl031 9010000.pl031: setting system clock to 2026-10-18T16:05:29 UTC (1792339529)
+[    0.081184] NET: Registered PF_INET6 protocol family
+[    0.081644] Segment Routing with IPv6
+[    0.081649] In-situ OAM (IOAM) with IPv6
+[    0.081656] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.081709] NET: Registered PF_PACKET protocol family
+[    0.081715] 9pnet: Installing 9P2000 support
+[    0.086505] clk: Disabling unused clocks
+[    0.122497] Freeing initrd memory: 189832K
+[    0.122980] Freeing unused kernel memory: 576K
+[    0.123026] Kernel memory protection disabled.
+[    0.123041] Run /init as init process
+[    0.139894] kjit: loading out-of-tree module taints kernel.
+[    0.140783] rust_kjit: ######## Rust KJIT inits ########
+[    0.140843] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+cond: cmdline: console=ttyAMA0 panic=-1 nokaslr kpti=1 rodata=off
+cond: vuln gather_data_sampling: Not affected
+cond: vuln ghostwrite: Not affected
+cond: vuln indirect_target_selection: Not affected
+cond: vuln itlb_multihit: Not affected
+cond: vuln l1tf: Not affected
+cond: vuln mds: Not affected
+cond: vuln meltdown: Not affected
+cond: vuln mmio_stale_data: Not affected
+cond: vuln old_microcode: Not affected
+cond: vuln reg_file_data_sampling: Not affected
+cond: vuln retbleed: Not affected
+cond: vuln spec_rstack_overflow: Not affected
+cond: vuln spec_store_bypass: Vulnerable
+cond: vuln spectre_v1: Mitigation: __user pointer sanitization
+cond: vuln spectre_v2: Mitigation: CSV2, but not BHB
+cond: vuln srbds: Not affected
+cond: vuln tsa: Not affected
+cond: vuln tsx_async_abort: Not affected
+cond: vuln vmscape: Not affected
+cond: dmesg: [    0.000000] CPU features: detected: Spectre-v4
+cond: dmesg: [    0.000000] CPU features: detected: Spectre-BHB
+cond: dmesg: [    0.000000] CPU features: kernel page table isolation forced ON by kpti command line option
+cond: dmesg: [    0.000000] CPU features: detected: Kernel page table isolation (KPTI)
+cond: kernel: 7.1.0-rc1 cpus: 4
+ub: cmdline: console=ttyAMA0 panic=-1 nokaslr kpti=1 rodata=off
+ub: meltdown: Not affected
+ub: spectre_v2: Mitigation: CSV2, but not BHB
+ub: kpti dmesg: [    0.000000] CPU features: kernel page table isolation forced ON by kpti command line option
+[    0.000000] CPU features: detected: Kernel page table isolation (KPTI)
+ub: kernel: 7.1.0-rc1 cpus: 4
+ub: chain_budget: 1024 hot_threshold: 64
+ub off rep 0 mode=getppid size=1 enabled=0 ns_per_iter=204.28 ns_per_syscall=204.28
+ub off rep 1 mode=getppid size=1 enabled=0 ns_per_iter=205.16 ns_per_syscall=205.16
+ub off rep 2 mode=getppid size=1 enabled=0 ns_per_iter=204.80 ns_per_syscall=204.80
+ub off rep 3 mode=getppid size=1 enabled=0 ns_per_iter=204.72 ns_per_syscall=204.72
+ub off rep 4 mode=getppid size=1 enabled=0 ns_per_iter=204.74 ns_per_syscall=204.74
+ub off result mode=getppid size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=1 median_ns_per_iter=204.74 median_ns_per_syscall=204.74 min_ns_per_syscall=204.28
+ub off counters getppid hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=getppid size=1 enabled=1 ns_per_iter=68.10 ns_per_syscall=68.10
+ub on rep 1 mode=getppid size=1 enabled=1 ns_per_iter=65.91 ns_per_syscall=65.91
+ub on rep 2 mode=getppid size=1 enabled=1 ns_per_iter=67.41 ns_per_syscall=67.41
+ub on rep 3 mode=getppid size=1 enabled=1 ns_per_iter=66.75 ns_per_syscall=66.75
+ub on rep 4 mode=getppid size=1 enabled=1 ns_per_iter=66.75 ns_per_syscall=66.75
+ub on result mode=getppid size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=1 median_ns_per_iter=66.75 median_ns_per_syscall=66.75 min_ns_per_syscall=65.91
+ub on counters getppid hook_calls=999825 syscalls_in_kernel=999755 fragment_entries=999760 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=999755 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=getppid size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=raw_zn size=1 enabled=0 ns_per_iter=448.13 ns_per_syscall=224.07
+ub off rep 1 mode=raw_zn size=1 enabled=0 ns_per_iter=445.20 ns_per_syscall=222.60
+ub off rep 2 mode=raw_zn size=1 enabled=0 ns_per_iter=443.16 ns_per_syscall=221.58
+ub off rep 3 mode=raw_zn size=1 enabled=0 ns_per_iter=442.83 ns_per_syscall=221.42
+ub off rep 4 mode=raw_zn size=1 enabled=0 ns_per_iter=447.09 ns_per_syscall=223.55
+ub off result mode=raw_zn size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=445.20 median_ns_per_syscall=222.60 min_ns_per_syscall=221.42
+ub off counters raw_zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=raw_zn size=1 enabled=1 ns_per_iter=163.50 ns_per_syscall=81.75
+ub on rep 1 mode=raw_zn size=1 enabled=1 ns_per_iter=162.00 ns_per_syscall=81.00
+ub on rep 2 mode=raw_zn size=1 enabled=1 ns_per_iter=161.79 ns_per_syscall=80.90
+ub on rep 3 mode=raw_zn size=1 enabled=1 ns_per_iter=161.03 ns_per_syscall=80.51
+ub on rep 4 mode=raw_zn size=1 enabled=1 ns_per_iter=162.49 ns_per_syscall=81.25
+ub on result mode=raw_zn size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=162.00 median_ns_per_syscall=81.00 min_ns_per_syscall=80.51
+ub on counters raw_zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999515 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=raw_zn size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=raw_pipe size=1 enabled=0 ns_per_iter=483.76 ns_per_syscall=241.88
+ub off rep 1 mode=raw_pipe size=1 enabled=0 ns_per_iter=487.13 ns_per_syscall=243.56
+ub off rep 2 mode=raw_pipe size=1 enabled=0 ns_per_iter=483.75 ns_per_syscall=241.87
+ub off rep 3 mode=raw_pipe size=1 enabled=0 ns_per_iter=484.01 ns_per_syscall=242.00
+ub off rep 4 mode=raw_pipe size=1 enabled=0 ns_per_iter=484.66 ns_per_syscall=242.33
+ub off result mode=raw_pipe size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=484.01 median_ns_per_syscall=242.00 min_ns_per_syscall=241.87
+ub off counters raw_pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=raw_pipe size=1 enabled=1 ns_per_iter=204.53 ns_per_syscall=102.26
+ub on rep 1 mode=raw_pipe size=1 enabled=1 ns_per_iter=204.86 ns_per_syscall=102.43
+ub on rep 2 mode=raw_pipe size=1 enabled=1 ns_per_iter=203.06 ns_per_syscall=101.53
+ub on rep 3 mode=raw_pipe size=1 enabled=1 ns_per_iter=202.37 ns_per_syscall=101.18
+ub on rep 4 mode=raw_pipe size=1 enabled=1 ns_per_iter=204.33 ns_per_syscall=102.17
+ub on result mode=raw_pipe size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=204.33 median_ns_per_syscall=102.17 min_ns_per_syscall=101.18
+ub on counters raw_pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999515 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=5 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=raw_pipe size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=zn size=1 enabled=0 ns_per_iter=458.02 ns_per_syscall=229.01
+ub off rep 1 mode=zn size=1 enabled=0 ns_per_iter=454.55 ns_per_syscall=227.27
+ub off rep 2 mode=zn size=1 enabled=0 ns_per_iter=464.48 ns_per_syscall=232.24
+ub off rep 3 mode=zn size=1 enabled=0 ns_per_iter=457.16 ns_per_syscall=228.58
+ub off rep 4 mode=zn size=1 enabled=0 ns_per_iter=452.41 ns_per_syscall=226.20
+ub off result mode=zn size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=457.16 median_ns_per_syscall=228.58 min_ns_per_syscall=226.20
+ub off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=zn size=1 enabled=1 ns_per_iter=164.85 ns_per_syscall=82.42
+ub on rep 1 mode=zn size=1 enabled=1 ns_per_iter=163.52 ns_per_syscall=81.76
+ub on rep 2 mode=zn size=1 enabled=1 ns_per_iter=163.60 ns_per_syscall=81.80
+ub on rep 3 mode=zn size=1 enabled=1 ns_per_iter=164.04 ns_per_syscall=82.02
+ub on rep 4 mode=zn size=1 enabled=1 ns_per_iter=162.74 ns_per_syscall=81.37
+ub on result mode=zn size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=163.60 median_ns_per_syscall=81.80 min_ns_per_syscall=81.37
+ub on counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=zn size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=pipe size=1 enabled=0 ns_per_iter=493.51 ns_per_syscall=246.75
+ub off rep 1 mode=pipe size=1 enabled=0 ns_per_iter=491.39 ns_per_syscall=245.70
+ub off rep 2 mode=pipe size=1 enabled=0 ns_per_iter=489.44 ns_per_syscall=244.72
+ub off rep 3 mode=pipe size=1 enabled=0 ns_per_iter=490.77 ns_per_syscall=245.39
+ub off rep 4 mode=pipe size=1 enabled=0 ns_per_iter=489.73 ns_per_syscall=244.87
+ub off result mode=pipe size=1 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=490.77 median_ns_per_syscall=245.39 min_ns_per_syscall=244.72
+ub off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=pipe size=1 enabled=1 ns_per_iter=205.78 ns_per_syscall=102.89
+ub on rep 1 mode=pipe size=1 enabled=1 ns_per_iter=205.58 ns_per_syscall=102.79
+ub on rep 2 mode=pipe size=1 enabled=1 ns_per_iter=204.61 ns_per_syscall=102.30
+ub on rep 3 mode=pipe size=1 enabled=1 ns_per_iter=206.22 ns_per_syscall=103.11
+ub on rep 4 mode=pipe size=1 enabled=1 ns_per_iter=205.27 ns_per_syscall=102.63
+ub on result mode=pipe size=1 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=205.58 median_ns_per_syscall=102.79 min_ns_per_syscall=102.30
+ub on counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=pipe size=1 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=zn size=16 enabled=0 ns_per_iter=456.61 ns_per_syscall=228.30
+ub off rep 1 mode=zn size=16 enabled=0 ns_per_iter=456.03 ns_per_syscall=228.02
+ub off rep 2 mode=zn size=16 enabled=0 ns_per_iter=456.92 ns_per_syscall=228.46
+ub off rep 3 mode=zn size=16 enabled=0 ns_per_iter=453.23 ns_per_syscall=226.62
+ub off rep 4 mode=zn size=16 enabled=0 ns_per_iter=458.42 ns_per_syscall=229.21
+ub off result mode=zn size=16 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=456.61 median_ns_per_syscall=228.30 min_ns_per_syscall=226.62
+ub off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=zn size=16 enabled=1 ns_per_iter=166.96 ns_per_syscall=83.48
+ub on rep 1 mode=zn size=16 enabled=1 ns_per_iter=167.20 ns_per_syscall=83.60
+ub on rep 2 mode=zn size=16 enabled=1 ns_per_iter=163.62 ns_per_syscall=81.81
+ub on rep 3 mode=zn size=16 enabled=1 ns_per_iter=164.30 ns_per_syscall=82.15
+ub on rep 4 mode=zn size=16 enabled=1 ns_per_iter=162.45 ns_per_syscall=81.22
+ub on result mode=zn size=16 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=164.30 median_ns_per_syscall=82.15 min_ns_per_syscall=81.22
+ub on counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=zn size=16 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=pipe size=16 enabled=0 ns_per_iter=495.14 ns_per_syscall=247.57
+ub off rep 1 mode=pipe size=16 enabled=0 ns_per_iter=489.80 ns_per_syscall=244.90
+ub off rep 2 mode=pipe size=16 enabled=0 ns_per_iter=492.40 ns_per_syscall=246.20
+ub off rep 3 mode=pipe size=16 enabled=0 ns_per_iter=491.54 ns_per_syscall=245.77
+ub off rep 4 mode=pipe size=16 enabled=0 ns_per_iter=493.41 ns_per_syscall=246.70
+ub off result mode=pipe size=16 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=492.40 median_ns_per_syscall=246.20 min_ns_per_syscall=244.90
+ub off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=pipe size=16 enabled=1 ns_per_iter=204.90 ns_per_syscall=102.45
+ub on rep 1 mode=pipe size=16 enabled=1 ns_per_iter=205.28 ns_per_syscall=102.64
+ub on rep 2 mode=pipe size=16 enabled=1 ns_per_iter=205.02 ns_per_syscall=102.51
+ub on rep 3 mode=pipe size=16 enabled=1 ns_per_iter=206.06 ns_per_syscall=103.03
+ub on rep 4 mode=pipe size=16 enabled=1 ns_per_iter=205.90 ns_per_syscall=102.95
+ub on result mode=pipe size=16 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=205.28 median_ns_per_syscall=102.64 min_ns_per_syscall=102.45
+ub on counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=pipe size=16 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=zn size=64 enabled=0 ns_per_iter=455.58 ns_per_syscall=227.79
+ub off rep 1 mode=zn size=64 enabled=0 ns_per_iter=453.05 ns_per_syscall=226.53
+ub off rep 2 mode=zn size=64 enabled=0 ns_per_iter=455.42 ns_per_syscall=227.71
+ub off rep 3 mode=zn size=64 enabled=0 ns_per_iter=453.05 ns_per_syscall=226.53
+ub off rep 4 mode=zn size=64 enabled=0 ns_per_iter=457.11 ns_per_syscall=228.55
+ub off result mode=zn size=64 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=455.42 median_ns_per_syscall=227.71 min_ns_per_syscall=226.53
+ub off counters zn hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=zn size=64 enabled=1 ns_per_iter=164.55 ns_per_syscall=82.27
+ub on rep 1 mode=zn size=64 enabled=1 ns_per_iter=163.52 ns_per_syscall=81.76
+ub on rep 2 mode=zn size=64 enabled=1 ns_per_iter=162.93 ns_per_syscall=81.47
+ub on rep 3 mode=zn size=64 enabled=1 ns_per_iter=163.85 ns_per_syscall=81.92
+ub on rep 4 mode=zn size=64 enabled=1 ns_per_iter=164.56 ns_per_syscall=82.28
+ub on result mode=zn size=64 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=163.85 median_ns_per_syscall=81.92 min_ns_per_syscall=81.47
+ub on counters zn hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=zn size=64 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub off rep 0 mode=pipe size=64 enabled=0 ns_per_iter=494.40 ns_per_syscall=247.20
+ub off rep 1 mode=pipe size=64 enabled=0 ns_per_iter=490.82 ns_per_syscall=245.41
+ub off rep 2 mode=pipe size=64 enabled=0 ns_per_iter=493.43 ns_per_syscall=246.71
+ub off rep 3 mode=pipe size=64 enabled=0 ns_per_iter=492.50 ns_per_syscall=246.25
+ub off rep 4 mode=pipe size=64 enabled=0 ns_per_iter=491.83 ns_per_syscall=245.92
+ub off result mode=pipe size=64 enabled=0 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=492.50 median_ns_per_syscall=246.25 min_ns_per_syscall=245.41
+ub off counters pipe hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on rep 0 mode=pipe size=64 enabled=1 ns_per_iter=208.13 ns_per_syscall=104.06
+ub on rep 1 mode=pipe size=64 enabled=1 ns_per_iter=208.24 ns_per_syscall=104.12
+ub on rep 2 mode=pipe size=64 enabled=1 ns_per_iter=206.57 ns_per_syscall=103.29
+ub on rep 3 mode=pipe size=64 enabled=1 ns_per_iter=207.65 ns_per_syscall=103.83
+ub on rep 4 mode=pipe size=64 enabled=1 ns_per_iter=206.44 ns_per_syscall=103.22
+ub on result mode=pipe size=64 enabled=1 iters=200000 reps=5 syscalls_per_iter=2 median_ns_per_iter=207.65 median_ns_per_syscall=103.83 min_ns_per_syscall=103.22
+ub on counters pipe hook_calls=1999580 syscalls_in_kernel=1999510 fragment_entries=1999531 fpsimd_entries=0 fpsimd_preempted=0 chains=0 chain_cap=0 exit_svc=1999510 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=21 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0
+ub on kjit mode=pipe size=64 in_kernel_frac=0.9998 runtime_entries_per_syscall=0.9998
+ub: done
+cond: cmdline: console=ttyAMA0 panic=-1 nokaslr kpti=1 rodata=off
+cond: kernel: 7.1.0-rc1 cpus: 4 redis: Redis server v=7.0.15 sha=00000000:0 malloc=jemalloc-5.2.1 bits=64 build=fe67efb337924bf0
+cond: reps=3 boot=1 chain_budget=1024 hz_ticks=100 cells: unix_get_c50_p1_d1:unix:get:1000000:50:1:1:2:0:1-3:unix unix_set_c50_p1_d1:unix:set:1000000:50:1:1:2:0:1-3:unix unix_pingm_c50_p1:unix:ping_mbulk:1000000:50:1:1:2:0:1-3:unix get_c50_p1_d1:base:get:1000000:50:1:1:2:0:1-3:tcp set_c50_p1_d1:base:set:1000000:50:1:1:2:0:1-3:tcp
+cond: modules: /kjit/kjit-a21.ko(4278104) /kjit/kjit-main.ko(4231760) /kjit/kjit.ko(4278104) 
+cond: module: 64 hot_threshold, 100 hot_window_ms
+cond: cell unix_get_c50_p1_d1: server tasks allowed CPUs:       5 0 
+cond: translate_ok after server warm-up: 320
+[   11.672099] kjit: 0 of 320 translation requests still queued at unload (freed by the kernel)
+[   11.728117] rust_kjit: ######## Rust KJIT exits ########
+[   11.770141] rust_kjit: ######## Rust KJIT inits ########
+[   11.770201] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+[   12.617538] kjit: 0 of 269 translation requests still queued at unload (freed by the kernel)
+[   12.663317] rust_kjit: ######## Rust KJIT exits ########
+[   12.687793] rust_kjit: ######## Rust KJIT inits ########
+[   12.687859] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=unix_get_c50_p1_d1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=off rps=363372.09 wall_cs=276 ticks_u=72 ticks_s=124 sched_ms=1963.549603 nvol=16884 ninv=113 c0_busy=208 c0_idle=72 ipi_c0=16913 ipi_other=9684 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=265 abs_released=0 abs_arena_bytes=459184 abs_links_linked=236 abs_links_pending=199
+[   16.905130] kjit: 0 of 265 translation requests still queued at unload (freed by the kernel)
+[   16.964066] rust_kjit: ######## Rust KJIT exits ########
+[   16.982028] rust_kjit: ######## Rust KJIT inits ########
+[   16.982095] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+cond run cell=unix_get_c50_p1_d1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=main rps=363240.09 wall_cs=288 ticks_u=0 ticks_s=194 sched_ms=1945.739694 nvol=16859 ninv=152 c0_busy=223 c0_idle=102 ipi_c0=16911 ipi_other=11663 hook_calls=2155410 syscalls_in_kernel=2152512 fragment_entries=3154017 exit_svc=2152512 exit_bl=601 exit_blr=31 exit_br=999948 exit_ret=914 exit_mem=0 exit_unsupported=11 exit_budget=0 run_declined=39 svc_declined=0 fpsimd_entries=999886 translate_ok=9 invalidated_fragments=0 chains=999891 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=12 ibtc_miss_cold=1547 ibtc_miss_conflict=63 ibtc_miss_other=0 link_made=18 link_out_of_range=0 auto_req_exit_target=9 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=616640 abs_links_linked=256 abs_links_pending=205
+[   24.636655] kjit: 0 of 276 translation requests still queued at unload (freed by the kernel)
+[   24.697007] rust_kjit: ######## Rust KJIT exits ########
+[   24.719346] rust_kjit: ######## Rust KJIT inits ########
+[   24.719419] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=unix_get_c50_p1_d1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=a21 rps=333222.28 wall_cs=314 ticks_u=0 ticks_s=196 sched_ms=1955.077686 nvol=19028 ninv=47 c0_busy=204 c0_idle=125 ipi_c0=19064 ipi_other=12506 hook_calls=2147945 syscalls_in_kernel=2145068 fragment_entries=3146537 exit_svc=2145068 exit_bl=741 exit_blr=31 exit_br=1000049 exit_ret=634 exit_mem=0 exit_unsupported=14 exit_budget=0 run_declined=39 svc_declined=0 fpsimd_entries=999878 translate_ok=11 invalidated_fragments=0 chains=999884 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=14 ibtc_miss_cold=1516 ibtc_miss_conflict=63 ibtc_miss_other=0 link_made=20 link_out_of_range=0 auto_req_exit_target=11 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=493872 abs_links_linked=256 abs_links_pending=205
+cond run cell=unix_get_c50_p1_d1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=a21 rps=306936.78 wall_cs=338 ticks_u=2 ticks_s=228 sched_ms=2300.583292 nvol=18265 ninv=3 c0_busy=227 c0_idle=113 ipi_c0=18291 ipi_other=11658 hook_calls=2143080 syscalls_in_kernel=2140918 fragment_entries=3141677 exit_svc=2140918 exit_bl=537 exit_blr=34 exit_br=999885 exit_ret=245 exit_mem=3 exit_unsupported=55 exit_budget=0 run_declined=39 svc_declined=0 fpsimd_entries=999885 translate_ok=0 invalidated_fragments=0 chains=999885 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=816 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=493872 abs_links_linked=256 abs_links_pending=205
+[   39.661293] kjit: 0 of 276 translation requests still queued at unload (freed by the kernel)
+[   39.720054] rust_kjit: ######## Rust KJIT exits ########
+[   39.739073] rust_kjit: ######## Rust KJIT inits ########
+[   39.739130] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+cond run cell=unix_get_c50_p1_d1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=main rps=220848.06 wall_cs=466 ticks_u=4 ticks_s=316 sched_ms=3197.990029 nvol=16325 ninv=184 c0_busy=306 c0_idle=147 ipi_c0=16390 ipi_other=16894 hook_calls=2117271 syscalls_in_kernel=2113498 fragment_entries=3115877 exit_svc=2113499 exit_bl=710 exit_blr=46 exit_br=999921 exit_ret=1676 exit_mem=13 exit_unsupported=12 exit_budget=0 run_declined=41 svc_declined=1 fpsimd_entries=999921 translate_ok=2 invalidated_fragments=0 chains=999922 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=2 ibtc_miss_cold=2432 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=11 link_out_of_range=0 auto_req_exit_target=2 auto_req_svc_resume=0 abs_translate_ok=269 abs_released=0 abs_arena_bytes=583056 abs_links_linked=249 abs_links_pending=196
+cond run cell=unix_get_c50_p1_d1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=off rps=333111.25 wall_cs=300 ticks_u=88 ticks_s=133 sched_ms=2202.015348 nvol=16816 ninv=221 c0_busy=231 c0_idle=73 ipi_c0=16853 ipi_other=8187 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=269 abs_released=0 abs_arena_bytes=583056 abs_links_linked=249 abs_links_pending=196
+cond run cell=unix_get_c50_p1_d1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=main rps=333000.34 wall_cs=314 ticks_u=1 ticks_s=210 sched_ms=2113.286710 nvol=16834 ninv=82 c0_busy=230 c0_idle=110 ipi_c0=16873 ipi_other=12620 hook_calls=2144139 syscalls_in_kernel=2141449 fragment_entries=3142752 exit_svc=2141449 exit_bl=554 exit_blr=32 exit_br=1000016 exit_ret=690 exit_mem=0 exit_unsupported=11 exit_budget=0 run_declined=39 svc_declined=0 fpsimd_entries=999893 translate_ok=7 invalidated_fragments=0 chains=999897 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=10 ibtc_miss_cold=1338 ibtc_miss_conflict=63 ibtc_miss_other=0 link_made=7 link_out_of_range=0 auto_req_exit_target=7 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=616640 abs_links_linked=256 abs_links_pending=205
+[   59.880854] kjit: 0 of 276 translation requests still queued at unload (freed by the kernel)
+[   59.932356] rust_kjit: ######## Rust KJIT exits ########
+[   59.963876] rust_kjit: ######## Rust KJIT inits ########
+[   59.963970] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=unix_get_c50_p1_d1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=a21 rps=333111.25 wall_cs=312 ticks_u=0 ticks_s=207 sched_ms=2070.352809 nvol=19286 ninv=3 c0_busy=226 c0_idle=112 ipi_c0=19302 ipi_other=12438 hook_calls=2147382 syscalls_in_kernel=2144428 fragment_entries=3146002 exit_svc=2144428 exit_bl=641 exit_blr=31 exit_br=1000123 exit_ret=694 exit_mem=20 exit_unsupported=65 exit_budget=0 run_declined=40 svc_declined=0 fpsimd_entries=999897 translate_ok=10 invalidated_fragments=0 chains=999903 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=14 ibtc_miss_cold=1503 ibtc_miss_conflict=91 ibtc_miss_other=0 link_made=18 link_out_of_range=0 auto_req_exit_target=10 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=493872 abs_links_linked=256 abs_links_pending=205
+cond run cell=unix_get_c50_p1_d1 srv=unix test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=off rps=333222.28 wall_cs=302 ticks_u=79 ticks_s=126 sched_ms=2050.212239 nvol=16380 ninv=1 c0_busy=228 c0_idle=89 ipi_c0=16389 ipi_other=11261 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=493872 abs_links_linked=256 abs_links_pending=205
+cond unsup cell=unix_get_c50_p1_d1 0xd503203f(66/0) 
+cond: cell unix_set_c50_p1_d1: server tasks allowed CPUs:       5 0 
+[   72.059424] kjit: 0 of 276 translation requests still queued at unload (freed by the kernel)
+[   72.128735] rust_kjit: ######## Rust KJIT exits ########
+[   72.146280] rust_kjit: ######## Rust KJIT inits ########
+[   72.146355] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+[   73.001600] kjit: 0 of 293 translation requests still queued at unload (freed by the kernel)
+[   73.067979] rust_kjit: ######## Rust KJIT exits ########
+[   73.090495] rust_kjit: ######## Rust KJIT inits ########
+[   73.090603] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=unix_set_c50_p1_d1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=off rps=363504.19 wall_cs=275 ticks_u=87 ticks_s=119 sched_ms=2068.074025 nvol=11129 ninv=3 c0_busy=223 c0_idle=64 ipi_c0=11136 ipi_other=9785 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=294 abs_released=0 abs_arena_bytes=515936 abs_links_linked=279 abs_links_pending=204
+[   77.339663] kjit: 0 of 294 translation requests still queued at unload (freed by the kernel)
+[   77.419357] rust_kjit: ######## Rust KJIT exits ########
+[   77.439500] rust_kjit: ######## Rust KJIT inits ########
+[   77.439554] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+cond run cell=unix_set_c50_p1_d1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=main rps=363372.09 wall_cs=289 ticks_u=1 ticks_s=211 sched_ms=2110.708612 nvol=7874 ninv=196 c0_busy=231 c0_idle=90 ipi_c0=7921 ipi_other=9661 hook_calls=2163986 syscalls_in_kernel=2161711 fragment_entries=3162631 exit_svc=2161712 exit_bl=653 exit_blr=29 exit_br=999924 exit_ret=306 exit_mem=0 exit_unsupported=7 exit_budget=0 run_declined=41 svc_declined=1 fpsimd_entries=999924 translate_ok=1 invalidated_fragments=0 chains=999925 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=2 ibtc_miss_cold=988 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=1 link_out_of_range=0 auto_req_exit_target=1 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=651696 abs_links_linked=282 abs_links_pending=206
+[   84.931685] kjit: 0 of 297 translation requests still queued at unload (freed by the kernel)
+[   85.018434] rust_kjit: ######## Rust KJIT exits ########
+[   85.042693] rust_kjit: ######## Rust KJIT inits ########
+[   85.042803] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=unix_set_c50_p1_d1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=a21 rps=363240.09 wall_cs=288 ticks_u=0 ticks_s=211 sched_ms=2111.563847 nvol=12662 ninv=161 c0_busy=232 c0_idle=85 ipi_c0=12698 ipi_other=11421 hook_calls=2180713 syscalls_in_kernel=2178314 fragment_entries=3179329 exit_svc=2178315 exit_bl=612 exit_blr=30 exit_br=999904 exit_ret=436 exit_mem=21 exit_unsupported=11 exit_budget=0 run_declined=43 svc_declined=1 fpsimd_entries=999905 translate_ok=3 invalidated_fragments=0 chains=999908 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=7 ibtc_miss_cold=1078 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=3 link_out_of_range=0 auto_req_exit_target=3 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=522320 abs_links_linked=282 abs_links_pending=206
+cond run cell=unix_set_c50_p1_d1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=a21 rps=363372.09 wall_cs=288 ticks_u=0 ticks_s=201 sched_ms=2012.672098 nvol=11501 ninv=200 c0_busy=227 c0_idle=97 ipi_c0=11553 ipi_other=11079 hook_calls=2200388 syscalls_in_kernel=2198196 fragment_entries=3199008 exit_svc=2198196 exit_bl=625 exit_blr=30 exit_br=999899 exit_ret=240 exit_mem=11 exit_unsupported=7 exit_budget=0 run_declined=44 svc_declined=0 fpsimd_entries=999899 translate_ok=0 invalidated_fragments=0 chains=999899 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=895 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=522320 abs_links_linked=282 abs_links_pending=206
+[   99.321154] kjit: 0 of 297 translation requests still queued at unload (freed by the kernel)
+[   99.376543] rust_kjit: ######## Rust KJIT exits ########
+[   99.399823] rust_kjit: ######## Rust KJIT inits ########
+[   99.399950] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+cond run cell=unix_set_c50_p1_d1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=main rps=363504.19 wall_cs=289 ticks_u=0 ticks_s=211 sched_ms=2116.535738 nvol=8789 ninv=241 c0_busy=227 c0_idle=87 ipi_c0=8864 ipi_other=9865 hook_calls=2195765 syscalls_in_kernel=2193483 fragment_entries=3194382 exit_svc=2193485 exit_bl=649 exit_blr=29 exit_br=999899 exit_ret=311 exit_mem=5 exit_unsupported=4 exit_budget=0 run_declined=44 svc_declined=2 fpsimd_entries=999899 translate_ok=1 invalidated_fragments=0 chains=999900 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=2 ibtc_miss_cold=989 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=1 link_out_of_range=0 auto_req_exit_target=1 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=651696 abs_links_linked=282 abs_links_pending=206
+cond run cell=unix_set_c50_p1_d1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=off rps=363372.09 wall_cs=275 ticks_u=86 ticks_s=121 sched_ms=2073.716267 nvol=10885 ninv=213 c0_busy=222 c0_idle=62 ipi_c0=10922 ipi_other=9616 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=651696 abs_links_linked=282 abs_links_pending=206
+cond run cell=unix_set_c50_p1_d1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=main rps=363240.09 wall_cs=289 ticks_u=1 ticks_s=209 sched_ms=2102.177524 nvol=8137 ninv=121 c0_busy=231 c0_idle=87 ipi_c0=8191 ipi_other=9855 hook_calls=2174297 syscalls_in_kernel=2172079 fragment_entries=3172940 exit_svc=2172079 exit_bl=660 exit_blr=28 exit_br=999923 exit_ret=244 exit_mem=0 exit_unsupported=6 exit_budget=0 run_declined=42 svc_declined=0 fpsimd_entries=999923 translate_ok=0 invalidated_fragments=0 chains=999923 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=932 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=651696 abs_links_linked=282 abs_links_pending=206
+[  116.781782] kjit: 0 of 297 translation requests still queued at unload (freed by the kernel)
+[  116.840318] rust_kjit: ######## Rust KJIT exits ########
+[  116.876416] rust_kjit: ######## Rust KJIT inits ########
+[  116.876515] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=unix_set_c50_p1_d1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=a21 rps=333000.34 wall_cs=312 ticks_u=1 ticks_s=211 sched_ms=2113.013028 nvol=14730 ninv=40 c0_busy=222 c0_idle=106 ipi_c0=14768 ipi_other=11936 hook_calls=2162404 syscalls_in_kernel=2159834 fragment_entries=3161033 exit_svc=2159834 exit_bl=687 exit_blr=31 exit_br=999972 exit_ret=500 exit_mem=0 exit_unsupported=9 exit_budget=0 run_declined=43 svc_declined=0 fpsimd_entries=999908 translate_ok=6 invalidated_fragments=0 chains=999912 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=9 ibtc_miss_cold=1220 ibtc_miss_conflict=63 ibtc_miss_other=0 link_made=6 link_out_of_range=0 auto_req_exit_target=6 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=522320 abs_links_linked=282 abs_links_pending=206
+cond run cell=unix_set_c50_p1_d1 srv=unix test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=off rps=363372.09 wall_cs=275 ticks_u=91 ticks_s=118 sched_ms=2093.244188 nvol=12563 ninv=2 c0_busy=229 c0_idle=61 ipi_c0=12570 ipi_other=10356 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=522320 abs_links_linked=282 abs_links_pending=206
+cond unsup cell=unix_set_c50_p1_d1 
+cond: cell unix_pingm_c50_p1: server tasks allowed CPUs:       5 0 
+[  128.668048] kjit: 0 of 297 translation requests still queued at unload (freed by the kernel)
+[  128.717844] rust_kjit: ######## Rust KJIT exits ########
+[  128.730466] rust_kjit: ######## Rust KJIT inits ########
+[  128.730549] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+[  129.593930] kjit: 0 of 232 translation requests still queued at unload (freed by the kernel)
+[  129.656060] rust_kjit: ######## Rust KJIT exits ########
+[  129.670647] rust_kjit: ######## Rust KJIT inits ########
+[  129.670750] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=unix_pingm_c50_p1 srv=unix test=ping_mbulk n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=off rps=363504.19 wall_cs=275 ticks_u=73 ticks_s=121 sched_ms=1948.901764 nvol=18621 ninv=75 c0_busy=221 c0_idle=73 ipi_c0=18640 ipi_other=11056 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=233 abs_released=0 abs_arena_bytes=409232 abs_links_linked=212 abs_links_pending=183
+[  133.878382] kjit: 0 of 233 translation requests still queued at unload (freed by the kernel)
+[  133.944131] rust_kjit: ######## Rust KJIT exits ########
+[  133.968088] rust_kjit: ######## Rust KJIT inits ########
+[  133.968145] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+cond run cell=unix_pingm_c50_p1 srv=unix test=ping_mbulk n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=main rps=333000.34 wall_cs=314 ticks_u=0 ticks_s=190 sched_ms=1902.174811 nvol=20470 ninv=0 c0_busy=211 c0_idle=127 ipi_c0=20497 ipi_other=12855 hook_calls=2157929 syscalls_in_kernel=2154836 fragment_entries=3156520 exit_svc=2154836 exit_bl=1013 exit_blr=30 exit_br=1000389 exit_ret=241 exit_mem=0 exit_unsupported=11 exit_budget=0 run_declined=43 svc_declined=0 fpsimd_entries=999877 translate_ok=2 invalidated_fragments=0 chains=999878 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=2 ibtc_miss_cold=1796 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=2 link_out_of_range=0 auto_req_exit_target=2 auto_req_svc_resume=0 abs_translate_ok=236 abs_released=0 abs_arena_bytes=520944 abs_links_linked=214 abs_links_pending=192
+[  141.678343] kjit: 0 of 236 translation requests still queued at unload (freed by the kernel)
+[  141.735668] rust_kjit: ######## Rust KJIT exits ########
+[  141.756442] rust_kjit: ######## Rust KJIT inits ########
+[  141.756539] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=unix_pingm_c50_p1 srv=unix test=ping_mbulk n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=a21 rps=333000.34 wall_cs=314 ticks_u=1 ticks_s=187 sched_ms=1864.841353 nvol=22184 ninv=0 c0_busy=198 c0_idle=131 ipi_c0=22217 ipi_other=13066 hook_calls=2157926 syscalls_in_kernel=2154853 fragment_entries=3156496 exit_svc=2154853 exit_bl=995 exit_blr=31 exit_br=1000363 exit_ret=242 exit_mem=2 exit_unsupported=10 exit_budget=0 run_declined=43 svc_declined=0 fpsimd_entries=999853 translate_ok=3 invalidated_fragments=0 chains=999854 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=3 ibtc_miss_cold=1779 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=2 link_out_of_range=0 auto_req_exit_target=3 auto_req_svc_resume=0 abs_translate_ok=236 abs_released=0 abs_arena_bytes=417424 abs_links_linked=214 abs_links_pending=192
+cond run cell=unix_pingm_c50_p1 srv=unix test=ping_mbulk n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=a21 rps=333222.28 wall_cs=314 ticks_u=0 ticks_s=184 sched_ms=1841.495020 nvol=22910 ninv=72 c0_busy=195 c0_idle=134 ipi_c0=22939 ipi_other=12335 hook_calls=2159847 syscalls_in_kernel=2156612 fragment_entries=3158437 exit_svc=2156612 exit_bl=943 exit_blr=30 exit_br=1000246 exit_ret=583 exit_mem=14 exit_unsupported=9 exit_budget=0 run_declined=41 svc_declined=0 fpsimd_entries=999870 translate_ok=4 invalidated_fragments=0 chains=999872 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=5 ibtc_miss_cold=1764 ibtc_miss_conflict=169 ibtc_miss_other=0 link_made=12 link_out_of_range=0 auto_req_exit_target=4 auto_req_svc_resume=0 abs_translate_ok=240 abs_released=0 abs_arena_bytes=437216 abs_links_linked=226 abs_links_pending=190
+[  156.531831] kjit: 0 of 240 translation requests still queued at unload (freed by the kernel)
+[  156.600136] rust_kjit: ######## Rust KJIT exits ########
+[  156.629433] rust_kjit: ######## Rust KJIT inits ########
+[  156.629580] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+cond run cell=unix_pingm_c50_p1 srv=unix test=ping_mbulk n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=main rps=333222.28 wall_cs=314 ticks_u=0 ticks_s=193 sched_ms=1931.021328 nvol=20001 ninv=160 c0_busy=219 c0_idle=127 ipi_c0=20046 ipi_other=12270 hook_calls=2159408 syscalls_in_kernel=2156193 fragment_entries=3157986 exit_svc=2156193 exit_bl=1171 exit_blr=30 exit_br=1000337 exit_ret=242 exit_mem=3 exit_unsupported=10 exit_budget=0 run_declined=41 svc_declined=0 fpsimd_entries=999860 translate_ok=4 invalidated_fragments=0 chains=999861 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=3 ibtc_miss_cold=1921 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=3 link_out_of_range=0 auto_req_exit_target=4 auto_req_svc_resume=0 abs_translate_ok=236 abs_released=0 abs_arena_bytes=520944 abs_links_linked=214 abs_links_pending=192
+cond run cell=unix_pingm_c50_p1 srv=unix test=ping_mbulk n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=off rps=333222.28 wall_cs=300 ticks_u=77 ticks_s=122 sched_ms=1987.700230 nvol=18278 ninv=4 c0_busy=217 c0_idle=94 ipi_c0=18296 ipi_other=11198 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=236 abs_released=0 abs_arena_bytes=520944 abs_links_linked=214 abs_links_pending=192
+cond run cell=unix_pingm_c50_p1 srv=unix test=ping_mbulk n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=main rps=363504.19 wall_cs=287 ticks_u=0 ticks_s=191 sched_ms=1909.658358 nvol=19201 ninv=203 c0_busy=207 c0_idle=102 ipi_c0=19259 ipi_other=11976 hook_calls=2158165 syscalls_in_kernel=2155041 fragment_entries=3156765 exit_svc=2155041 exit_bl=764 exit_blr=30 exit_br=1000198 exit_ret=695 exit_mem=32 exit_unsupported=5 exit_budget=0 run_declined=44 svc_declined=0 fpsimd_entries=999879 translate_ok=4 invalidated_fragments=0 chains=999881 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=5 ibtc_miss_cold=1531 ibtc_miss_conflict=278 ibtc_miss_other=0 link_made=12 link_out_of_range=0 auto_req_exit_target=4 auto_req_svc_resume=0 abs_translate_ok=240 abs_released=0 abs_arena_bytes=546752 abs_links_linked=226 abs_links_pending=190
+[  174.525074] kjit: 0 of 240 translation requests still queued at unload (freed by the kernel)
+[  174.583745] rust_kjit: ######## Rust KJIT exits ########
+[  174.600957] rust_kjit: ######## Rust KJIT inits ########
+[  174.601054] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=unix_pingm_c50_p1 srv=unix test=ping_mbulk n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=a21 rps=333000.34 wall_cs=312 ticks_u=1 ticks_s=188 sched_ms=1887.359695 nvol=21913 ninv=2 c0_busy=204 c0_idle=129 ipi_c0=21936 ipi_other=12906 hook_calls=2157981 syscalls_in_kernel=2154882 fragment_entries=3156540 exit_svc=2154882 exit_bl=972 exit_blr=31 exit_br=999916 exit_ret=695 exit_mem=0 exit_unsupported=44 exit_budget=0 run_declined=42 svc_declined=0 fpsimd_entries=999852 translate_ok=4 invalidated_fragments=0 chains=999853 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=3 ibtc_miss_cold=1763 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=13 link_out_of_range=0 auto_req_exit_target=4 auto_req_svc_resume=0 abs_translate_ok=237 abs_released=0 abs_arena_bytes=418144 abs_links_linked=225 abs_links_pending=181
+cond run cell=unix_pingm_c50_p1 srv=unix test=ping_mbulk n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=off rps=333222.28 wall_cs=300 ticks_u=76 ticks_s=123 sched_ms=1982.198633 nvol=18846 ninv=163 c0_busy=206 c0_idle=93 ipi_c0=18885 ipi_other=10624 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=237 abs_released=0 abs_arena_bytes=418144 abs_links_linked=225 abs_links_pending=181
+cond unsup cell=unix_pingm_c50_p1 0xd503203f(38/0) 
+cond: cell get_c50_p1_d1: server tasks allowed CPUs:       5 0 
+cond: translate_ok after server warm-up: 516
+[  190.588047] kjit: 0 of 516 translation requests still queued at unload (freed by the kernel)
+[  190.647362] rust_kjit: ######## Rust KJIT exits ########
+[  190.687583] rust_kjit: ######## Rust KJIT inits ########
+[  190.687639] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+[  191.541490] kjit: 0 of 265 translation requests still queued at unload (freed by the kernel)
+[  191.596174] rust_kjit: ######## Rust KJIT exits ########
+[  191.610412] rust_kjit: ######## Rust KJIT inits ########
+[  191.610498] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=off rps=333222.28 wall_cs=300 ticks_u=69 ticks_s=217 sched_ms=2869.394447 nvol=812 ninv=133 c0_busy=289 c0_idle=13 ipi_c0=829 ipi_other=3975 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=266 abs_released=0 abs_arena_bytes=459760 abs_links_linked=238 abs_links_pending=197
+[  196.090435] kjit: 0 of 266 translation requests still queued at unload (freed by the kernel)
+[  196.176131] rust_kjit: ######## Rust KJIT exits ########
+[  196.199058] rust_kjit: ######## Rust KJIT inits ########
+[  196.199123] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=main rps=333222.28 wall_cs=313 ticks_u=1 ticks_s=291 sched_ms=2907.496347 nvol=773 ninv=223 c0_busy=292 c0_idle=37 ipi_c0=815 ipi_other=4909 hook_calls=2081038 syscalls_in_kernel=2077384 fragment_entries=3079653 exit_svc=2077385 exit_bl=662 exit_blr=37 exit_br=1000295 exit_ret=1274 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=52 svc_declined=1 fpsimd_entries=999957 translate_ok=6 invalidated_fragments=0 chains=999960 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=7 ibtc_miss_cold=2198 ibtc_miss_conflict=114 ibtc_miss_other=0 link_made=15 link_out_of_range=0 auto_req_exit_target=6 auto_req_svc_resume=0 abs_translate_ok=272 abs_released=0 abs_arena_bytes=607552 abs_links_linked=253 abs_links_pending=202
+[  203.915078] kjit: 0 of 272 translation requests still queued at unload (freed by the kernel)
+[  203.990843] rust_kjit: ######## Rust KJIT exits ########
+[  204.025141] rust_kjit: ######## Rust KJIT inits ########
+[  204.025243] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=a21 rps=333333.34 wall_cs=313 ticks_u=1 ticks_s=291 sched_ms=2911.821355 nvol=864 ninv=6 c0_busy=296 c0_idle=36 ipi_c0=880 ipi_other=4094 hook_calls=2099468 syscalls_in_kernel=2095696 fragment_entries=3098065 exit_svc=2095696 exit_bl=1182 exit_blr=45 exit_br=1000110 exit_ret=988 exit_mem=0 exit_unsupported=44 exit_budget=0 run_declined=54 svc_declined=0 fpsimd_entries=999938 translate_ok=11 invalidated_fragments=0 chains=999944 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=14 ibtc_miss_cold=2119 ibtc_miss_conflict=270 ibtc_miss_other=0 link_made=20 link_out_of_range=0 auto_req_exit_target=11 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=493872 abs_links_linked=256 abs_links_pending=205
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=a21 rps=333000.34 wall_cs=313 ticks_u=0 ticks_s=282 sched_ms=2826.964268 nvol=826 ninv=8 c0_busy=283 c0_idle=46 ipi_c0=851 ipi_other=4186 hook_calls=2085784 syscalls_in_kernel=2083457 fragment_entries=3084330 exit_svc=2083457 exit_bl=550 exit_blr=36 exit_br=999885 exit_ret=345 exit_mem=0 exit_unsupported=57 exit_budget=0 run_declined=46 svc_declined=0 fpsimd_entries=999885 translate_ok=0 invalidated_fragments=0 chains=999885 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=880 ibtc_miss_conflict=51 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=493872 abs_links_linked=256 abs_links_pending=205
+[  218.682511] kjit: 0 of 276 translation requests still queued at unload (freed by the kernel)
+[  218.744254] rust_kjit: ######## Rust KJIT exits ########
+[  218.764080] rust_kjit: ######## Rust KJIT inits ########
+[  218.764162] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=main rps=307597.66 wall_cs=338 ticks_u=1 ticks_s=296 sched_ms=2974.066648 nvol=683 ninv=157 c0_busy=300 c0_idle=55 ipi_c0=715 ipi_other=3905 hook_calls=2094103 syscalls_in_kernel=2090168 fragment_entries=3092695 exit_svc=2090170 exit_bl=1172 exit_blr=44 exit_br=1000181 exit_ret=1124 exit_mem=0 exit_unsupported=4 exit_budget=0 run_declined=53 svc_declined=2 fpsimd_entries=999939 translate_ok=11 invalidated_fragments=0 chains=999944 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=13 ibtc_miss_cold=2282 ibtc_miss_conflict=303 ibtc_miss_other=0 link_made=19 link_out_of_range=0 auto_req_exit_target=11 auto_req_svc_resume=0 abs_translate_ok=275 abs_released=0 abs_arena_bytes=614272 abs_links_linked=255 abs_links_pending=204
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=off rps=333000.34 wall_cs=301 ticks_u=73 ticks_s=222 sched_ms=2954.947382 nvol=800 ninv=189 c0_busy=297 c0_idle=5 ipi_c0=810 ipi_other=4674 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=275 abs_released=0 abs_arena_bytes=614272 abs_links_linked=255 abs_links_pending=204
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=main rps=307408.53 wall_cs=339 ticks_u=1 ticks_s=300 sched_ms=3001.925603 nvol=745 ninv=232 c0_busy=303 c0_idle=54 ipi_c0=787 ipi_other=6162 hook_calls=2071038 syscalls_in_kernel=2068432 fragment_entries=3069566 exit_svc=2068432 exit_bl=527 exit_blr=47 exit_br=999880 exit_ret=653 exit_mem=20 exit_unsupported=7 exit_budget=0 run_declined=55 svc_declined=0 fpsimd_entries=999881 translate_ok=1 invalidated_fragments=0 chains=999882 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=2 ibtc_miss_cold=1175 ibtc_miss_conflict=51 ibtc_miss_other=0 link_made=1 link_out_of_range=0 auto_req_exit_target=1 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=616640 abs_links_linked=256 abs_links_pending=205
+[  237.449566] kjit: 0 of 276 translation requests still queued at unload (freed by the kernel)
+[  237.510197] rust_kjit: ######## Rust KJIT exits ########
+[  237.540002] rust_kjit: ######## Rust KJIT inits ########
+[  237.540094] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=a21 rps=307408.53 wall_cs=339 ticks_u=0 ticks_s=295 sched_ms=2948.254115 nvol=999 ninv=129 c0_busy=298 c0_idle=59 ipi_c0=1025 ipi_other=4257 hook_calls=2102019 syscalls_in_kernel=2098563 fragment_entries=3100591 exit_svc=2098563 exit_bl=1083 exit_blr=34 exit_br=1000034 exit_ret=858 exit_mem=14 exit_unsupported=5 exit_budget=0 run_declined=43 svc_declined=0 fpsimd_entries=999908 translate_ok=12 invalidated_fragments=0 chains=999914 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=15 ibtc_miss_cold=1957 ibtc_miss_conflict=147 ibtc_miss_other=0 link_made=20 link_out_of_range=0 auto_req_exit_target=12 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=493872 abs_links_linked=256 abs_links_pending=205
+cond run cell=get_c50_p1_d1 srv=base test=get n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=off rps=307314.09 wall_cs=325 ticks_u=71 ticks_s=227 sched_ms=2979.371238 nvol=878 ninv=223 c0_busy=301 c0_idle=28 ipi_c0=912 ipi_other=4191 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=276 abs_released=0 abs_arena_bytes=493872 abs_links_linked=256 abs_links_pending=205
+cond unsup cell=get_c50_p1_d1 
+cond: cell set_c50_p1_d1: server tasks allowed CPUs:       5 0 
+[  250.231975] kjit: 0 of 276 translation requests still queued at unload (freed by the kernel)
+[  250.288119] rust_kjit: ######## Rust KJIT exits ########
+[  250.306381] rust_kjit: ######## Rust KJIT inits ########
+[  250.307305] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+[  251.161443] kjit: 0 of 286 translation requests still queued at unload (freed by the kernel)
+[  251.208319] rust_kjit: ######## Rust KJIT exits ########
+[  251.223825] rust_kjit: ######## Rust KJIT inits ########
+[  251.223892] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=off rps=307597.66 wall_cs=325 ticks_u=90 ticks_s=219 sched_ms=3100.051286 nvol=935 ninv=129 c0_busy=313 c0_idle=15 ipi_c0=946 ipi_other=8449 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=285 abs_released=0 abs_arena_bytes=486304 abs_links_linked=262 abs_links_pending=199
+[  255.942681] kjit: 0 of 285 translation requests still queued at unload (freed by the kernel)
+[  256.012104] rust_kjit: ######## Rust KJIT exits ########
+[  256.047884] rust_kjit: ######## Rust KJIT inits ########
+[  256.047942] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=main rps=285469.59 wall_cs=364 ticks_u=1 ticks_s=325 sched_ms=3252.844242 nvol=765 ninv=7 c0_busy=328 c0_idle=52 ipi_c0=791 ipi_other=15624 hook_calls=2055833 syscalls_in_kernel=2051839 fragment_entries=3054482 exit_svc=2051839 exit_bl=1736 exit_blr=37 exit_br=1000242 exit_ret=579 exit_mem=0 exit_unsupported=49 exit_budget=0 run_declined=43 svc_declined=0 fpsimd_entries=999993 translate_ok=6 invalidated_fragments=0 chains=999996 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=7 ibtc_miss_cold=2329 ibtc_miss_conflict=273 ibtc_miss_other=0 link_made=14 link_out_of_range=0 auto_req_exit_target=6 auto_req_svc_resume=0 abs_translate_ok=292 abs_released=0 abs_arena_bytes=641744 abs_links_linked=276 abs_links_pending=206
+[  264.262528] kjit: 0 of 292 translation requests still queued at unload (freed by the kernel)
+[  264.316657] rust_kjit: ######## Rust KJIT exits ########
+[  264.345100] rust_kjit: ######## Rust KJIT inits ########
+[  264.345194] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=1 order=off,main,a21 state=a21 rps=307597.66 wall_cs=337 ticks_u=0 ticks_s=312 sched_ms=3130.000227 nvol=743 ninv=209 c0_busy=316 c0_idle=38 ipi_c0=761 ipi_other=8425 hook_calls=2072192 syscalls_in_kernel=2068435 fragment_entries=3070824 exit_svc=2068435 exit_bl=1183 exit_blr=46 exit_br=1000304 exit_ret=853 exit_mem=3 exit_unsupported=0 exit_budget=0 run_declined=52 svc_declined=0 fpsimd_entries=999985 translate_ok=11 invalidated_fragments=0 chains=999991 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=14 ibtc_miss_cold=2289 ibtc_miss_conflict=114 ibtc_miss_other=0 link_made=20 link_out_of_range=0 auto_req_exit_target=11 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=522320 abs_links_linked=282 abs_links_pending=206
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=a21 rps=307597.66 wall_cs=337 ticks_u=1 ticks_s=301 sched_ms=3019.284615 nvol=728 ninv=241 c0_busy=304 c0_idle=51 ipi_c0=775 ipi_other=7840 hook_calls=2064688 syscalls_in_kernel=2062280 fragment_entries=3063267 exit_svc=2062280 exit_bl=640 exit_blr=46 exit_br=999933 exit_ret=351 exit_mem=17 exit_unsupported=0 exit_budget=0 run_declined=55 svc_declined=0 fpsimd_entries=999933 translate_ok=0 invalidated_fragments=0 chains=999933 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=986 ibtc_miss_conflict=51 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=522320 abs_links_linked=282 abs_links_pending=206
+[  279.614364] kjit: 0 of 297 translation requests still queued at unload (freed by the kernel)
+[  279.688041] rust_kjit: ######## Rust KJIT exits ########
+[  279.706485] rust_kjit: ######## Rust KJIT inits ########
+[  279.706585] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 832 fragment bytes match harness
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=main rps=307314.09 wall_cs=338 ticks_u=2 ticks_s=319 sched_ms=3203.334687 nvol=759 ninv=8 c0_busy=324 c0_idle=32 ipi_c0=775 ipi_other=12106 hook_calls=2061097 syscalls_in_kernel=2056847 fragment_entries=3059751 exit_svc=2056847 exit_bl=1617 exit_blr=40 exit_br=1000120 exit_ret=1069 exit_mem=12 exit_unsupported=46 exit_budget=0 run_declined=48 svc_declined=0 fpsimd_entries=999993 translate_ok=12 invalidated_fragments=0 chains=999998 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=13 ibtc_miss_cold=2714 ibtc_miss_conflict=142 ibtc_miss_other=0 link_made=20 link_out_of_range=0 auto_req_exit_target=12 auto_req_svc_resume=0 abs_translate_ok=296 abs_released=0 abs_arena_bytes=649328 abs_links_linked=281 abs_links_pending=205
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=2 order=a21,main,off state=off rps=307408.53 wall_cs=325 ticks_u=75 ticks_s=232 sched_ms=3072.809482 nvol=730 ninv=5 c0_busy=308 c0_idle=18 ipi_c0=745 ipi_other=9578 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=296 abs_released=0 abs_arena_bytes=649328 abs_links_linked=281 abs_links_pending=205
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=main rps=307503.06 wall_cs=339 ticks_u=0 ticks_s=307 sched_ms=3065.211542 nvol=697 ninv=260 c0_busy=311 c0_idle=46 ipi_c0=757 ipi_other=10346 hook_calls=2061804 syscalls_in_kernel=2059125 fragment_entries=3060418 exit_svc=2059125 exit_bl=647 exit_blr=42 exit_br=999961 exit_ret=631 exit_mem=0 exit_unsupported=12 exit_budget=0 run_declined=50 svc_declined=0 fpsimd_entries=999961 translate_ok=1 invalidated_fragments=0 chains=999962 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=2 ibtc_miss_cold=1269 ibtc_miss_conflict=51 ibtc_miss_other=0 link_made=1 link_out_of_range=0 auto_req_exit_target=1 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=651696 abs_links_linked=282 abs_links_pending=206
+[  298.590854] kjit: 0 of 297 translation requests still queued at unload (freed by the kernel)
+[  298.652079] rust_kjit: ######## Rust KJIT exits ########
+[  298.676064] rust_kjit: ######## Rust KJIT inits ########
+[  298.676157] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 676 fragment bytes match harness
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=a21 rps=307597.66 wall_cs=338 ticks_u=1 ticks_s=305 sched_ms=3064.034073 nvol=771 ninv=157 c0_busy=308 c0_idle=47 ipi_c0=799 ipi_other=7815 hook_calls=2068828 syscalls_in_kernel=2064978 fragment_entries=3067469 exit_svc=2064980 exit_bl=1087 exit_blr=42 exit_br=1000114 exit_ret=1231 exit_mem=8 exit_unsupported=7 exit_budget=0 run_declined=52 svc_declined=2 fpsimd_entries=999986 translate_ok=11 invalidated_fragments=0 chains=999992 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=14 ibtc_miss_cold=2200 ibtc_miss_conflict=290 ibtc_miss_other=0 link_made=20 link_out_of_range=0 auto_req_exit_target=11 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=522320 abs_links_linked=282 abs_links_pending=206
+cond run cell=set_c50_p1_d1 srv=base test=set n=1000000 c=50 p=1 d=1 thr=2 subs=0 rep=3 order=main,a21,off state=off rps=307503.06 wall_cs=325 ticks_u=78 ticks_s=231 sched_ms=3088.838861 nvol=736 ninv=162 c0_busy=313 c0_idle=16 ipi_c0=754 ipi_other=8718 hook_calls=0 syscalls_in_kernel=0 fragment_entries=0 exit_svc=0 exit_bl=0 exit_blr=0 exit_br=0 exit_ret=0 exit_mem=0 exit_unsupported=0 exit_budget=0 run_declined=0 svc_declined=0 fpsimd_entries=0 translate_ok=0 invalidated_fragments=0 chains=0 chain_cap=0 translate_exists=0 released_fragments=0 ibtc_insert=0 ibtc_miss_cold=0 ibtc_miss_conflict=0 ibtc_miss_other=0 link_made=0 link_out_of_range=0 auto_req_exit_target=0 auto_req_svc_resume=0 abs_translate_ok=297 abs_released=0 abs_arena_bytes=522320 abs_links_linked=282 abs_links_pending=206
+cond unsup cell=set_c50_p1_d1 
+cond: done
+[  310.478015] kjit: 0 of 297 translation requests still queued at unload (freed by the kernel)
+[  310.524105] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[  310.537429] reboot: Power down
+guest-run: PASS (/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/a21/.kjit/build/runs/ub-a21-k1-b1/serial.log)

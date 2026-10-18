@@ -1,0 +1,1686 @@
+===== SET: 30 original instructions with the most hot-path words per request =====
+
+#1  redis-server+0x1cc414  ret   exec/req=13.99  hot words/exec=12.00  words/req=167.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0038b  movk x11, #28, lsl #16             exit
+     35 f298830b  movk x11, #50200                   exit
+     36 14000000  b #0                               exit
+
+#2  redis-server+0x1cc404  adrp x16, #3272704   exec/req=13.99  hot words/exec=11.00  words/req=153.9
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f9001bec  str x12, [sp, #48]                 spill
+      2 f9401bec  ldr x12, [sp, #48]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f9001bec  str x12, [sp, #48]                 spill
+      5 f9401bec  ldr x12, [sp, #48]                 fill
+      6 f2a009cc  movk x12, #78, lsl #16             user_synth
+      7 f9001bec  str x12, [sp, #48]                 spill
+      8 f9401bec  ldr x12, [sp, #48]                 fill
+      9 f296000c  movk x12, #45056                   user_synth
+     10 f9001bec  str x12, [sp, #48]                 spill
+
+#3  redis-server+0x17b738  ret   exec/req=9.99  hot words/exec=12.00  words/req=119.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a002eb  movk x11, #23, lsl #16             exit
+     35 f296e78b  movk x11, #46908                   exit
+     36 14000000  b #0                               exit
+
+#4  redis-server+0x1cc410  ldadd x0, x0, [x1]   exec/req=13.99  hot words/exec=8.00  words/req=111.9
+      0 aa0103ec  mov x12, x1                        helper_other
+      1 92400d8d  and x13, x12, #0xf                 align
+      2 91001dad  add x13, x13, #7                   align
+      3 927c01ad  and x13, x13, #0x10                align
+      4 b500000d  cbnz x13, #0                       align
+      5 d370dd8d  ubfx x13, x12, #48, #8             range
+      6 b500000d  cbnz x13, #0                       range
+      7 f8200180  ldadd x0, x0, [x12]                window_access
+
+#5  redis-server+0x17b724  adrp x14, #933888   exec/req=9.99  hot words/exec=11.00  words/req=109.9
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f90013ec  str x12, [sp, #32]                 spill
+      2 f94013ec  ldr x12, [sp, #32]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f90013ec  str x12, [sp, #32]                 spill
+      5 f94013ec  ldr x12, [sp, #32]                 fill
+      6 f2a004ac  movk x12, #37, lsl #16             user_synth
+      7 f90013ec  str x12, [sp, #32]                 spill
+      8 f94013ec  ldr x12, [sp, #32]                 fill
+      9 f29e000c  movk x12, #61440                   user_synth
+     10 f90013ec  str x12, [sp, #32]                 spill
+
+#6  redis-server+0x72ef8  blr x1   exec/req=4.00  hot words/exec=16.00  words/req=63.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa0103ed  mov x13, x1                        dispatch_target_dyn
+      3 d2e0001e  movz x30, #0, lsl #48              link_write
+      4 f2c00abe  movk x30, #85, lsl #32             link_write
+      5 f2a000fe  movk x30, #7, lsl #16              link_write
+      6 f285df9e  movk x30, #12028                   link_write
+      7 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      8 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      9 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+     10 b400000c  cbz x12, #0                        dispatch_lookup
+     11 f940018e  ldr x14, [x12]                     dispatch_lookup
+     12 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+     13 b500000e  cbnz x14, #0                       dispatch_lookup
+     14 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     15 d61f0180  br x12                             dispatch_lookup
+     16 f94067ec  ldr x12, [sp, #200]                miss
+     17 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     18 d34225ce  ubfx x14, x14, #2, #8              miss
+     19 9140218c  add x12, x12, #8, lsl #12          miss
+     20 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     21 b400000c  cbz x12, #0                        miss
+     22 f940018e  ldr x14, [x12]                     miss
+     23 cb0d01ce  sub x14, x14, x13                  miss
+     24 b500000e  cbnz x14, #0                       miss
+     25 f940058c  ldr x12, [x12, #8]                 miss
+     26 d61f0180  br x12                             miss
+     27 f9405bec  ldr x12, [sp, #176]                exit
+     28 f9002589  str x9, [x12, #72]                 exit
+     29 f900298a  str x10, [x12, #80]                exit
+     30 f9002d8b  str x11, [x12, #88]                exit
+     31 d2e00009  movz x9, #0, lsl #48               exit
+     32 f2c00009  movk x9, #0, lsl #32               exit
+     33 f2a00009  movk x9, #0, lsl #16               exit
+     34 f2800049  movk x9, #2                        exit
+     35 910001aa  add x10, x13, #0                   exit
+     36 d2e0000b  movz x11, #0, lsl #48              exit
+     37 f2c00aab  movk x11, #85, lsl #32             exit
+     38 f2a000eb  movk x11, #7, lsl #16              exit
+     39 f285df8b  movk x11, #12028                   exit
+     40 14000000  b #0                               exit
+
+#7  redis-server+0x72f34  blr x3   exec/req=4.00  hot words/exec=16.00  words/req=63.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa0303ed  mov x13, x3                        dispatch_target_dyn
+      3 d2e0001e  movz x30, #0, lsl #48              link_write
+      4 f2c00abe  movk x30, #85, lsl #32             link_write
+      5 f2a000fe  movk x30, #7, lsl #16              link_write
+      6 f285e71e  movk x30, #12088                   link_write
+      7 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      8 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      9 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+     10 b400000c  cbz x12, #0                        dispatch_lookup
+     11 f940018e  ldr x14, [x12]                     dispatch_lookup
+     12 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+     13 b500000e  cbnz x14, #0                       dispatch_lookup
+     14 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     15 d61f0180  br x12                             dispatch_lookup
+     16 f94067ec  ldr x12, [sp, #200]                miss
+     17 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     18 d34225ce  ubfx x14, x14, #2, #8              miss
+     19 9140218c  add x12, x12, #8, lsl #12          miss
+     20 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     21 b400000c  cbz x12, #0                        miss
+     22 f940018e  ldr x14, [x12]                     miss
+     23 cb0d01ce  sub x14, x14, x13                  miss
+     24 b500000e  cbnz x14, #0                       miss
+     25 f940058c  ldr x12, [x12, #8]                 miss
+     26 d61f0180  br x12                             miss
+     27 f9405bec  ldr x12, [sp, #176]                exit
+     28 f9002589  str x9, [x12, #72]                 exit
+     29 f900298a  str x10, [x12, #80]                exit
+     30 f9002d8b  str x11, [x12, #88]                exit
+     31 d2e00009  movz x9, #0, lsl #48               exit
+     32 f2c00009  movk x9, #0, lsl #32               exit
+     33 f2a00009  movk x9, #0, lsl #16               exit
+     34 f2800049  movk x9, #2                        exit
+     35 910001aa  add x10, x13, #0                   exit
+     36 d2e0000b  movz x11, #0, lsl #48              exit
+     37 f2c00aab  movk x11, #85, lsl #32             exit
+     38 f2a000eb  movk x11, #7, lsl #16              exit
+     39 f285e70b  movk x11, #12088                   exit
+     40 14000000  b #0                               exit
+
+#8  redis-server+0x17b6bc  stp x29, x30, [sp, #-416]!   exec/req=9.99  hot words/exec=6.00  words/req=59.9
+      0 92400e2c  and x12, x17, #0xf                 align
+      1 b500000c  cbnz x12, #0                       align
+      2 d106822c  sub x12, x17, #416                 helper_other
+      3 f8000990  sttr x16, [x12]                    user_access
+      4 f800899e  sttr x30, [x12, #8]                user_access
+      5 d1068231  sub x17, x17, #416                 user_op
+
+#9  redis-server+0x851c0  ret   exec/req=4.99  hot words/exec=12.00  words/req=59.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0010b  movk x11, #8, lsl #16              exit
+     35 f28a388b  movk x11, #20932                   exit
+     36 14000000  b #0                               exit
+
+#10 redis-server+0x1776bc  ret   exec/req=4.97  hot words/exec=12.00  words/req=59.7
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a002eb  movk x11, #23, lsl #16             exit
+     35 f28ed80b  movk x11, #30400                   exit
+     36 14000000  b #0                               exit
+
+#11 redis-server+0x1747b8  ret   exec/req=4.97  hot words/exec=12.00  words/req=59.6
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a002eb  movk x11, #23, lsl #16             exit
+     35 f288f78b  movk x11, #18364                   exit
+     36 14000000  b #0                               exit
+
+#12 redis-server+0x1cc408  ldrb w16, [x16, #1240]   exec/req=13.99  hot words/exec=4.00  words/req=56.0
+      0 f9401bec  ldr x12, [sp, #48]                 fill
+      1 9113618d  add x13, x12, #1240                helper_other
+      2 384009ac  ldtrb w12, [x13]                   user_access
+      3 f9001bec  str x12, [sp, #48]                 spill
+
+#13 redis-server+0x177668  adrp x15, #950272   exec/req=4.97  hot words/exec=11.00  words/req=54.7
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f90017ec  str x12, [sp, #40]                 spill
+      2 f94017ec  ldr x12, [sp, #40]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f90017ec  str x12, [sp, #40]                 spill
+      5 f94017ec  ldr x12, [sp, #40]                 fill
+      6 f2a004ac  movk x12, #37, lsl #16             user_synth
+      7 f90017ec  str x12, [sp, #40]                 spill
+      8 f94017ec  ldr x12, [sp, #40]                 fill
+      9 f29e000c  movk x12, #61440                   user_synth
+     10 f90017ec  str x12, [sp, #40]                 spill
+
+#14 redis-server+0x17b72c  ldp x19, x20, [sp, #16]   exec/req=9.99  hot words/exec=5.00  words/req=49.9
+      0 92400e2c  and x12, x17, #0xf                 align
+      1 b500000c  cbnz x12, #0                       align
+      2 f8410a2c  ldtr x12, [x17, #16]               user_access
+      3 f8418a34  ldtr x20, [x17, #24]               user_access
+      4 aa0c03f3  mov x19, x12                       user_op
+
+#15 redis-server+0x8c438  ret   exec/req=4.00  hot words/exec=12.00  words/req=48.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0010b  movk x11, #8, lsl #16              exit
+     35 f298878b  movk x11, #50236                   exit
+     36 14000000  b #0                               exit
+
+#16 redis-server+0x6b39c  br x17   exec/req=4.00  hot words/exec=12.00  words/req=47.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 f9401fed  ldr x13, [sp, #56]                 dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800069  movk x9, #3                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a000cb  movk x11, #6, lsl #16              exit
+     35 f296740b  movk x11, #45984                   exit
+     36 14000000  b #0                               exit
+
+#17 redis-server+0x6bc8c  br x17   exec/req=4.00  hot words/exec=12.00  words/req=47.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 f9401fed  ldr x13, [sp, #56]                 dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800069  movk x9, #3                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a000cb  movk x11, #6, lsl #16              exit
+     35 f297920b  movk x11, #48272                   exit
+     36 14000000  b #0                               exit
+
+#18 libc.so.6+0x97788  ret   exec/req=4.00  hot words/exec=12.00  words/req=47.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a05d0b  movk x11, #744, lsl #16            exit
+     35 f28ef18b  movk x11, #30604                   exit
+     36 14000000  b #0                               exit
+
+#19 redis-server+0x969c0  ret   exec/req=4.00  hot words/exec=12.00  words/req=47.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0012b  movk x11, #9, lsl #16              exit
+     35 f28d388b  movk x11, #27076                   exit
+     36 14000000  b #0                               exit
+
+#20 redis-server+0x72f70  ret   exec/req=4.00  hot words/exec=12.00  words/req=47.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a000eb  movk x11, #7, lsl #16              exit
+     35 f285ee8b  movk x11, #12148                   exit
+     36 14000000  b #0                               exit
+
+#21 redis-server+0x11aec4  ret   exec/req=4.00  hot words/exec=12.00  words/req=47.9
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0022b  movk x11, #17, lsl #16             exit
+     35 f295d90b  movk x11, #44744                   exit
+     36 14000000  b #0                               exit
+
+#22 redis-server+0x6b390  adrp x16, #2052096   exec/req=4.00  hot words/exec=11.00  words/req=44.0
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f9001bec  str x12, [sp, #48]                 spill
+      2 f9401bec  ldr x12, [sp, #48]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f9001bec  str x12, [sp, #48]                 spill
+      5 f9401bec  ldr x12, [sp, #48]                 fill
+      6 f2a004cc  movk x12, #38, lsl #16             user_synth
+      7 f9001bec  str x12, [sp, #48]                 spill
+      8 f9401bec  ldr x12, [sp, #48]                 fill
+      9 f280000c  movk x12, #0                       user_synth
+     10 f9001bec  str x12, [sp, #48]                 spill
+
+#23 redis-server+0x6bc80  adrp x16, #2052096   exec/req=4.00  hot words/exec=11.00  words/req=43.9
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f9001bec  str x12, [sp, #48]                 spill
+      2 f9401bec  ldr x12, [sp, #48]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f9001bec  str x12, [sp, #48]                 spill
+      5 f9401bec  ldr x12, [sp, #48]                 fill
+      6 f2a004cc  movk x12, #38, lsl #16             user_synth
+      7 f9001bec  str x12, [sp, #48]                 spill
+      8 f9401bec  ldr x12, [sp, #48]                 fill
+      9 f280000c  movk x12, #0                       user_synth
+     10 f9001bec  str x12, [sp, #48]                 spill
+
+#24 redis-server+0x17b6b4  adrp x1, #933888   exec/req=9.99  hot words/exec=4.00  words/req=40.0
+      0 d2e00001  movz x1, #0, lsl #48               user_synth
+      1 f2c00aa1  movk x1, #85, lsl #32              user_synth
+      2 f2a004a1  movk x1, #37, lsl #16              user_synth
+      3 f29e0001  movk x1, #61440                    user_synth
+
+#25 redis-server+0x17b728  ldr x14, [x14, #3704]   exec/req=9.99  hot words/exec=4.00  words/req=40.0
+      0 f94013ec  ldr x12, [sp, #32]                 fill
+      1 9139e18d  add x13, x12, #3704                helper_other
+      2 f84009ac  ldtr x12, [x13]                    user_access
+      3 f90013ec  str x12, [sp, #32]                 spill
+
+#26 redis-server+0x17b730  ldr x0, [x14, x13, lsl #3]   exec/req=9.99  hot words/exec=4.00  words/req=40.0
+      0 f94013ec  ldr x12, [sp, #32]                 fill
+      1 f9400fed  ldr x13, [sp, #24]                 fill
+      2 8b2d6d8e  add x14, x12, x13, uxtx #3         helper_other
+      3 f84009c0  ldtr x0, [x14]                     user_access
+
+#27 redis-server+0x17b734  ldp x29, x30, [sp], #416   exec/req=9.99  hot words/exec=4.00  words/req=40.0
+      0 f8400a2c  ldtr x12, [x17]                    user_access
+      1 f8408a3e  ldtr x30, [x17, #8]                user_access
+      2 aa0c03f0  mov x16, x12                       user_op
+      3 91068231  add x17, x17, #416                 user_op
+
+#28 redis-server+0x75fd8  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a000eb  movk x11, #7, lsl #16              exit
+     35 f28bfb8b  movk x11, #24540                   exit
+     36 14000000  b #0                               exit
+
+#29 redis-server+0x6bf2c  br x17   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 f9401fed  ldr x13, [sp, #56]                 dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800069  movk x9, #3                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a000cb  movk x11, #6, lsl #16              exit
+     35 f297e60b  movk x11, #48944                   exit
+     36 14000000  b #0                               exit
+
+#30 libc.so.6+0x96d8c  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a05d0b  movk x11, #744, lsl #16            exit
+     35 f28db20b  movk x11, #28048                   exit
+     36 14000000  b #0                               exit
+===== GET: 30 original instructions with the most hot-path words per request =====
+
+#1  redis-server+0x1cc414  ret   exec/req=12.02  hot words/exec=12.00  words/req=144.2
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0038b  movk x11, #28, lsl #16             exit
+     35 f298830b  movk x11, #50200                   exit
+     36 14000000  b #0                               exit
+
+#2  redis-server+0x1cc404  adrp x16, #3272704   exec/req=12.02  hot words/exec=11.00  words/req=132.2
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f9001bec  str x12, [sp, #48]                 spill
+      2 f9401bec  ldr x12, [sp, #48]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f9001bec  str x12, [sp, #48]                 spill
+      5 f9401bec  ldr x12, [sp, #48]                 fill
+      6 f2a009cc  movk x12, #78, lsl #16             user_synth
+      7 f9001bec  str x12, [sp, #48]                 spill
+      8 f9401bec  ldr x12, [sp, #48]                 fill
+      9 f296000c  movk x12, #45056                   user_synth
+     10 f9001bec  str x12, [sp, #48]                 spill
+
+#3  redis-server+0x1cc410  ldadd x0, x0, [x1]   exec/req=12.02  hot words/exec=8.00  words/req=96.2
+      0 aa0103ec  mov x12, x1                        helper_other
+      1 92400d8d  and x13, x12, #0xf                 align
+      2 91001dad  add x13, x13, #7                   align
+      3 927c01ad  and x13, x13, #0x10                align
+      4 b500000d  cbnz x13, #0                       align
+      5 d370dd8d  ubfx x13, x12, #48, #8             range
+      6 b500000d  cbnz x13, #0                       range
+      7 f8200180  ldadd x0, x0, [x12]                window_access
+
+#4  redis-server+0x17b738  ret   exec/req=8.01  hot words/exec=12.00  words/req=96.2
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a002eb  movk x11, #23, lsl #16             exit
+     35 f296e78b  movk x11, #46908                   exit
+     36 14000000  b #0                               exit
+
+#5  redis-server+0x17b724  adrp x14, #933888   exec/req=8.01  hot words/exec=11.00  words/req=88.1
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f90013ec  str x12, [sp, #32]                 spill
+      2 f94013ec  ldr x12, [sp, #32]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f90013ec  str x12, [sp, #32]                 spill
+      5 f94013ec  ldr x12, [sp, #32]                 fill
+      6 f2a004ac  movk x12, #37, lsl #16             user_synth
+      7 f90013ec  str x12, [sp, #32]                 spill
+      8 f94013ec  ldr x12, [sp, #32]                 fill
+      9 f29e000c  movk x12, #61440                   user_synth
+     10 f90013ec  str x12, [sp, #32]                 spill
+
+#6  redis-server+0x6b39c  br x17   exec/req=5.00  hot words/exec=12.00  words/req=60.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 f9401fed  ldr x13, [sp, #56]                 dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800069  movk x9, #3                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a000cb  movk x11, #6, lsl #16              exit
+     35 f296740b  movk x11, #45984                   exit
+     36 14000000  b #0                               exit
+
+#7  redis-server+0x6b390  adrp x16, #2052096   exec/req=5.00  hot words/exec=11.00  words/req=55.0
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f9001bec  str x12, [sp, #48]                 spill
+      2 f9401bec  ldr x12, [sp, #48]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f9001bec  str x12, [sp, #48]                 spill
+      5 f9401bec  ldr x12, [sp, #48]                 fill
+      6 f2a004cc  movk x12, #38, lsl #16             user_synth
+      7 f9001bec  str x12, [sp, #48]                 spill
+      8 f9401bec  ldr x12, [sp, #48]                 fill
+      9 f280000c  movk x12, #0                       user_synth
+     10 f9001bec  str x12, [sp, #48]                 spill
+
+#8  redis-server+0x8c438  ret   exec/req=4.01  hot words/exec=12.00  words/req=48.1
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0010b  movk x11, #8, lsl #16              exit
+     35 f298878b  movk x11, #50236                   exit
+     36 14000000  b #0                               exit
+
+#9  redis-server+0x1cc408  ldrb w16, [x16, #1240]   exec/req=12.02  hot words/exec=4.00  words/req=48.1
+      0 f9401bec  ldr x12, [sp, #48]                 fill
+      1 9113618d  add x13, x12, #1240                helper_other
+      2 384009ac  ldtrb w12, [x13]                   user_access
+      3 f9001bec  str x12, [sp, #48]                 spill
+
+#10 redis-server+0x17b6bc  stp x29, x30, [sp, #-416]!   exec/req=8.01  hot words/exec=6.00  words/req=48.1
+      0 92400e2c  and x12, x17, #0xf                 align
+      1 b500000c  cbnz x12, #0                       align
+      2 d106822c  sub x12, x17, #416                 helper_other
+      3 f8000990  sttr x16, [x12]                    user_access
+      4 f800899e  sttr x30, [x12, #8]                user_access
+      5 d1068231  sub x17, x17, #416                 user_op
+
+#11 redis-server+0x851c0  ret   exec/req=4.01  hot words/exec=12.00  words/req=48.1
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0010b  movk x11, #8, lsl #16              exit
+     35 f28a388b  movk x11, #20932                   exit
+     36 14000000  b #0                               exit
+
+#12 redis-server+0x1776bc  ret   exec/req=3.99  hot words/exec=12.00  words/req=47.8
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a002eb  movk x11, #23, lsl #16             exit
+     35 f28ed80b  movk x11, #30400                   exit
+     36 14000000  b #0                               exit
+
+#13 redis-server+0x1747b8  ret   exec/req=3.99  hot words/exec=12.00  words/req=47.8
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a002eb  movk x11, #23, lsl #16             exit
+     35 f288f78b  movk x11, #18364                   exit
+     36 14000000  b #0                               exit
+
+#14 redis-server+0x177668  adrp x15, #950272   exec/req=3.99  hot words/exec=11.00  words/req=43.9
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f90017ec  str x12, [sp, #40]                 spill
+      2 f94017ec  ldr x12, [sp, #40]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f90017ec  str x12, [sp, #40]                 spill
+      5 f94017ec  ldr x12, [sp, #40]                 fill
+      6 f2a004ac  movk x12, #37, lsl #16             user_synth
+      7 f90017ec  str x12, [sp, #40]                 spill
+      8 f94017ec  ldr x12, [sp, #40]                 fill
+      9 f29e000c  movk x12, #61440                   user_synth
+     10 f90017ec  str x12, [sp, #40]                 spill
+
+#15 redis-server+0x17b72c  ldp x19, x20, [sp, #16]   exec/req=8.01  hot words/exec=5.00  words/req=40.1
+      0 92400e2c  and x12, x17, #0xf                 align
+      1 b500000c  cbnz x12, #0                       align
+      2 f8410a2c  ldtr x12, [x17, #16]               user_access
+      3 f8418a34  ldtr x20, [x17, #24]               user_access
+      4 aa0c03f3  mov x19, x12                       user_op
+
+#16 redis-server+0x6bc8c  br x17   exec/req=3.00  hot words/exec=12.00  words/req=36.1
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 f9401fed  ldr x13, [sp, #56]                 dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800069  movk x9, #3                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a000cb  movk x11, #6, lsl #16              exit
+     35 f297920b  movk x11, #48272                   exit
+     36 14000000  b #0                               exit
+
+#17 libc.so.6+0x97788  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.1
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a05d0b  movk x11, #744, lsl #16            exit
+     35 f28ef18b  movk x11, #30604                   exit
+     36 14000000  b #0                               exit
+
+#18 redis-server+0x969c0  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.1
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0012b  movk x11, #9, lsl #16              exit
+     35 f28d388b  movk x11, #27076                   exit
+     36 14000000  b #0                               exit
+
+#19 redis-server+0x11aec4  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.1
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0022b  movk x11, #17, lsl #16             exit
+     35 f295d90b  movk x11, #44744                   exit
+     36 14000000  b #0                               exit
+
+#20 redis-server+0x75fd8  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a000eb  movk x11, #7, lsl #16              exit
+     35 f28bfb8b  movk x11, #24540                   exit
+     36 14000000  b #0                               exit
+
+#21 redis-server+0x6bf2c  br x17   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 f9401fed  ldr x13, [sp, #56]                 dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800069  movk x9, #3                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a000cb  movk x11, #6, lsl #16              exit
+     35 f297e60b  movk x11, #48944                   exit
+     36 14000000  b #0                               exit
+
+#22 libc.so.6+0x96d8c  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a05d0b  movk x11, #744, lsl #16            exit
+     35 f28db20b  movk x11, #28048                   exit
+     36 14000000  b #0                               exit
+
+#23 redis-server+0x13f488  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0026b  movk x11, #19, lsl #16             exit
+     35 f29e918b  movk x11, #62604                   exit
+     36 14000000  b #0                               exit
+
+#24 libc.so.6+0x9d188  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a05d0b  movk x11, #744, lsl #16            exit
+     35 f29a318b  movk x11, #53644                   exit
+     36 14000000  b #0                               exit
+
+#25 redis-server+0x8c3d8  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0010b  movk x11, #8, lsl #16              exit
+     35 f2987b8b  movk x11, #50140                   exit
+     36 14000000  b #0                               exit
+
+#26 redis-server+0x8c4cc  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0010b  movk x11, #8, lsl #16              exit
+     35 f2989a0b  movk x11, #50384                   exit
+     36 14000000  b #0                               exit
+
+#27 redis-server+0x8f390  ret   exec/req=3.00  hot words/exec=12.00  words/req=36.0
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa1e03ed  mov x13, x30                       dispatch_target_dyn
+      3 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      4 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      5 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+      6 b400000c  cbz x12, #0                        dispatch_lookup
+      7 f940018e  ldr x14, [x12]                     dispatch_lookup
+      8 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+      9 b500000e  cbnz x14, #0                       dispatch_lookup
+     10 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     11 d61f0180  br x12                             dispatch_lookup
+     12 f94067ec  ldr x12, [sp, #200]                miss
+     13 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     14 d34225ce  ubfx x14, x14, #2, #8              miss
+     15 9140218c  add x12, x12, #8, lsl #12          miss
+     16 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     17 b400000c  cbz x12, #0                        miss
+     18 f940018e  ldr x14, [x12]                     miss
+     19 cb0d01ce  sub x14, x14, x13                  miss
+     20 b500000e  cbnz x14, #0                       miss
+     21 f940058c  ldr x12, [x12, #8]                 miss
+     22 d61f0180  br x12                             miss
+     23 f9405bec  ldr x12, [sp, #176]                exit
+     24 f9002589  str x9, [x12, #72]                 exit
+     25 f900298a  str x10, [x12, #80]                exit
+     26 f9002d8b  str x11, [x12, #88]                exit
+     27 d2e00009  movz x9, #0, lsl #48               exit
+     28 f2c00009  movk x9, #0, lsl #32               exit
+     29 f2a00009  movk x9, #0, lsl #16               exit
+     30 f2800089  movk x9, #4                        exit
+     31 910001aa  add x10, x13, #0                   exit
+     32 d2e0000b  movz x11, #0, lsl #48              exit
+     33 f2c00aab  movk x11, #85, lsl #32             exit
+     34 f2a0010b  movk x11, #8, lsl #16              exit
+     35 f29e728b  movk x11, #62356                   exit
+     36 14000000  b #0                               exit
+
+#28 redis-server+0x6bc80  adrp x16, #2052096   exec/req=3.00  hot words/exec=11.00  words/req=33.1
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f9001bec  str x12, [sp, #48]                 spill
+      2 f9401bec  ldr x12, [sp, #48]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f9001bec  str x12, [sp, #48]                 spill
+      5 f9401bec  ldr x12, [sp, #48]                 fill
+      6 f2a004cc  movk x12, #38, lsl #16             user_synth
+      7 f9001bec  str x12, [sp, #48]                 spill
+      8 f9401bec  ldr x12, [sp, #48]                 fill
+      9 f280000c  movk x12, #0                       user_synth
+     10 f9001bec  str x12, [sp, #48]                 spill
+
+#29 redis-server+0x6bf20  adrp x16, #2052096   exec/req=3.00  hot words/exec=11.00  words/req=33.0
+      0 d2e0000c  movz x12, #0, lsl #48              user_synth
+      1 f9001bec  str x12, [sp, #48]                 spill
+      2 f9401bec  ldr x12, [sp, #48]                 fill
+      3 f2c00aac  movk x12, #85, lsl #32             user_synth
+      4 f9001bec  str x12, [sp, #48]                 spill
+      5 f9401bec  ldr x12, [sp, #48]                 fill
+      6 f2a004cc  movk x12, #38, lsl #16             user_synth
+      7 f9001bec  str x12, [sp, #48]                 spill
+      8 f9401bec  ldr x12, [sp, #48]                 fill
+      9 f280000c  movk x12, #0                       user_synth
+     10 f9001bec  str x12, [sp, #48]                 spill
+
+#30 redis-server+0x72ef8  blr x1   exec/req=2.01  hot words/exec=16.00  words/req=32.1
+      0 d1000652  sub x18, x18, #1                   budget
+      1 b4000012  cbz x18, #0                        budget
+      2 aa0103ed  mov x13, x1                        dispatch_target_dyn
+      3 d2e0001e  movz x30, #0, lsl #48              link_write
+      4 f2c00abe  movk x30, #85, lsl #32             link_write
+      5 f2a000fe  movk x30, #7, lsl #16              link_write
+      6 f285df9e  movk x30, #12028                   link_write
+      7 f94067ec  ldr x12, [sp, #200]                dispatch_lookup
+      8 d34235ae  ubfx x14, x13, #2, #12             dispatch_lookup
+      9 f86e798c  ldr x12, [x12, x14, lsl #3]        dispatch_lookup
+     10 b400000c  cbz x12, #0                        dispatch_lookup
+     11 f940018e  ldr x14, [x12]                     dispatch_lookup
+     12 cb0d01ce  sub x14, x14, x13                  dispatch_lookup
+     13 b500000e  cbnz x14, #0                       dispatch_lookup
+     14 f940058c  ldr x12, [x12, #8]                 dispatch_lookup
+     15 d61f0180  br x12                             dispatch_lookup
+     16 f94067ec  ldr x12, [sp, #200]                miss
+     17 ca4d31ae  eor x14, x13, x13, lsr #12         miss
+     18 d34225ce  ubfx x14, x14, #2, #8              miss
+     19 9140218c  add x12, x12, #8, lsl #12          miss
+     20 f86e798c  ldr x12, [x12, x14, lsl #3]        miss
+     21 b400000c  cbz x12, #0                        miss
+     22 f940018e  ldr x14, [x12]                     miss
+     23 cb0d01ce  sub x14, x14, x13                  miss
+     24 b500000e  cbnz x14, #0                       miss
+     25 f940058c  ldr x12, [x12, #8]                 miss
+     26 d61f0180  br x12                             miss
+     27 f9405bec  ldr x12, [sp, #176]                exit
+     28 f9002589  str x9, [x12, #72]                 exit
+     29 f900298a  str x10, [x12, #80]                exit
+     30 f9002d8b  str x11, [x12, #88]                exit
+     31 d2e00009  movz x9, #0, lsl #48               exit
+     32 f2c00009  movk x9, #0, lsl #32               exit
+     33 f2a00009  movk x9, #0, lsl #16               exit
+     34 f2800049  movk x9, #2                        exit
+     35 910001aa  add x10, x13, #0                   exit
+     36 d2e0000b  movz x11, #0, lsl #48              exit
+     37 f2c00aab  movk x11, #85, lsl #32             exit
+     38 f2a000eb  movk x11, #7, lsl #16              exit
+     39 f285df8b  movk x11, #12028                   exit
+     40 14000000  b #0                               exit

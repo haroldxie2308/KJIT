@@ -1,0 +1,14 @@
+Does the test set bite? Each line: one deliberate defect in forward_slots (shared/trans/reg_virt.rs), then
+`cargo test --lib` of the five unit tests a_* (reg_virt::tests) and asm_fixture_tests::every_asm_fixture_case_matches_original
+(interpreter differential incl. fault injection over every fixture case, tests/arm64/*.s). The tree was restored after each.
+
+defect                                                     unit tests failing                          fixture cases failing
+pass 1 keeps facts across a join point                     a_fill_is_not_forwarded_past_...            none (a join inside a body is only the
+                                                                                                        word after b/br; blocks start empty)
+pass 1 ignores writes to the register                      2 of 5                                      yes (state mismatch)
+pass 1 keeps a slot's holders after another register's spill  a_fill_is_not_forwarded_past_...         hot_path_words.s fill_forwarding_mark
+pass 2: a memory access does not end a dead-spill run      a_spill_is_kept_when_anything_can_observe   9 cases (mem_faults.s split_ldp_mark, ...)
+pass 2: a branch does not end a run                        a_spill_is_kept_when_anything_can_observe   none (a branch inside a body is always followed
+                                                                                                        by a memory access or the block end)
+pass 2: a fill of the slot does not end its run            a_spill_is_kept_..., a_forwarded_fill_...   yes
+pass 2: an exit payload does not end a run                 a_spill_is_kept_when_anything_can_observe   none (payload words follow the template's br)
