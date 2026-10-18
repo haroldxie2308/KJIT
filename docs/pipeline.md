@@ -324,9 +324,13 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
     instruction boundary. It holds at run entry (the run condition). Every
     fragment keeps it, because each write to x17 falls into one of two
     classes:
-    - **Preserving (no code):** `add`/`sub x17, x17, #imm` with
+    - **Preserving (no code):** `add`/`sub x17, x17, #imm` (64-bit) with
       `imm % 16 == 0` (writeback of any memory form included), and
-      `and x17, xN, #mask` whose mask has its low 4 bits clear.
+      `and sp, xN|wN, #mask` of either width whose mask has its low 4 bits
+      clear. The 32-bit `add`/`sub wsp, wsp, #imm` zeroes the top half, so it
+      is guarded. `reg_virt::sp_write` is the one classification (rephrase uses
+      it for the `Mem` stub, reg-virt for the guard, the harness for the
+      original's stop).
     - **Guarded:** every other write (`mov sp, xN`, `add`/`sub` by a register
       or by an immediate that is not a multiple of 16, writeback that is not
       a multiple of 16, and so on). Reg-virt computes the new value into a
@@ -347,10 +351,14 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
     therefore happens in userspace, at the same instruction.
   - Not a verifier rule: the verifier never checked SP alignment, which is an
     exactness property and not kernel safety. The harness differential and
-    native oracle prove it. Fixtures cover a misaligning `sub sp, sp, #8`,
-    `mov sp, xN` (aligned and misaligned), pre-index writeback by 8, `and sp`,
-    and a run that the harness declines at a misaligned SP.
-    `FaultCause::SpAlignment` stays in the interpreter for the original code.
+    native oracle prove it: the original run stops before an instruction that
+    would misalign an aligned SP (`HaltReason::SpMisaligned`), where the
+    fragment leaves through `Mem`. Fixtures (`sp_run_alignment.s`) cover a
+    misaligning `sub sp, sp, #8`, `mov sp, xN` (aligned and misaligned),
+    pre-index writeback by 8, `and sp` and a loop that misaligns late. Unit
+    tests cover the run the harness declines at a misaligned SP, because a
+    fixture cannot set the initial SP. `FaultCause::SpAlignment` stays in the
+    interpreter for the original code.
   - Why: the SP checks were 460 hot words per redis SET request after A20
     ([2026-10-14 16:02](journal/2026-10-14.md), C4). In redis, a write to SP
     that is not a multiple of 16 occurs 0.002 times per request.
@@ -531,11 +539,13 @@ replaces a sequence with a shorter one that has the same effect.
   - Nodes: the CFG blocks of the fragment.
   - Edges: fall-through, and direct branches (`B`, `B.cond`, `CBZ`, `CBNZ`,
     `TBZ`, `TBNZ`) to a block of the fragment.
-  - Sinks: `BL`/`BLR`/`BR`/`RET` (their dispatch sites), `SVC` and every exit.
-    A transfer is a sink even when its target is in the same fragment,
-    because it goes through the template or a link slot, and both are already
-    charged one unit. The CFG's link from a `BL` to its return site is not an
-    edge.
+  - Sinks: a block ending in `BL`/`BLR`/`BR`/`RET` (a dispatch site), `SVC`
+    or any other exit. A transfer is a sink even when its target is in the same
+    fragment, because it goes through the template or a link slot, and both
+    are already charged one unit. `build_cfg` records an `SVC`'s resume block
+    as its successor. That is not an edge: the resume is a new run, which
+    restarts the counter. So a loop around an `SVC` has no budgeted back-edge,
+    and needs none.
 
   Every cycle of the graph contains a back-edge, because fall-throughs only go
   forward. All nodes of a cycle are in one component, so every cycle contains
@@ -1588,12 +1598,14 @@ Reject with `VerifyError { offset, rule }`.
    - Back-edge on a cycle (A22): a direct branch at word i to a body word
      t <= i, where t and i are in the same strongly connected component of the
      **body word graph**:
-     - Nodes: the body words (prologue, epilogue and cold region excluded).
-     - Edges: i -> i+1 unless word i is an unconditional `B` or a `BR`, and
-       i -> target for a direct branch into the body.
-     - Sinks: a branch to the cold region or the epilogue adds no edge. A
-       template's `br` and a link slot (a `b` out of the fragment once
-       linked) add none either; both sit in a guarded run.
+     - Nodes: every word after the epilogue, cold region included. Rules 4
+       and 7 already keep cycles out of the cold region, but rule 6 does not
+       rely on them.
+     - Edges: i -> i+1 unless word i is an unconditional `B` or an indirect
+       branch, and i -> target for a direct branch to such a word.
+     - Sinks: a branch to the epilogue adds no edge, and neither does an
+       indirect branch (a template's `br`). A link slot is a `nop` there,
+       and a `b` out of the fragment once linked; it sits in a guarded run.
 
      Iterative Tarjan, O(words), no recursion. A backward branch in a
      different component than its target needs no check; the mutation suite
@@ -3013,4 +3025,4 @@ milestone:
 | Return continuations, shadow return stack (experiment, rejected) | [2026-10-14 14:46](journal/2026-10-14.md) |
 | Hot-path word census | [2026-10-14 16:02](journal/2026-10-14.md) |
 | A21 hot-path word reduction | [2026-10-18 22:58](journal/2026-10-18.md) decided; [2026-10-19 01:22](journal/2026-10-19.md) implementation |
-| A22 run-wide SP alignment, budget only on cycles | [2026-10-19 01:31](journal/2026-10-19.md) decided |
+| A22 run-wide SP alignment, budget only on cycles | [2026-10-19 01:31](journal/2026-10-19.md) decided; [02:46](journal/2026-10-19.md) A22a; [03:09](journal/2026-10-19.md) A22b |
