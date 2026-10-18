@@ -5,7 +5,9 @@ use crate::shared::abi::{
 use crate::shared::arm64::ergo::{scaled_simm, uimm, x, xzr};
 use crate::shared::arm64::{A64Insn, A64Reg, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
-use crate::shared::trans::cfg::{layout_block_order, Cfg, RuntimeExitReason};
+use crate::shared::trans::cfg::{
+    block_containing, body_components, layout_block_order, Cfg, RuntimeExitReason,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RephrasedInsnKind {
@@ -240,6 +242,10 @@ impl RephrasedInsn {
 pub struct RephrasedBlock {
     pub start_addr: u64,
     pub end_addr: u64,
+    /// The block's strongly connected component in the fragment's body graph
+    /// (`cfg::body_components`): the budget check belongs on exactly those back-edges
+    /// whose two ends share it (A22). Layout re-checks that with it.
+    pub component: usize,
     pub prev: SharedVec<u64>,
     pub next: SharedVec<u64>,
     pub insns: SharedVec<RephrasedInsn>,
@@ -701,24 +707,32 @@ fn is_dispatch_site(insn: &IrInsn) -> bool {
     )
 }
 
-/// Whether the lowered sequence of one original instruction contains a back-edge: a
-/// user-semantic branch whose target label is at or before it in layout order
-/// (`layout_block_order`). A PC's label is its first emitted instruction, so that is
+/// Whether the lowered sequence of one original instruction contains a back-edge that
+/// needs a budget check: a user-semantic branch whose target label is at or before it
+/// in layout order (`layout_block_order`) and (A22) whose target lies in the same
+/// component as the instruction's own block -- `on_cycle(target)` tells that, so a
+/// jump back to a block that cannot reach the branch again runs once per pass and
+/// needs none. A PC's label is its first emitted instruction, so "at or before" is
 /// exactly "the target PC is in `placed`" (every PC emitted so far in layout order,
 /// this instruction's own included). Layout re-checks it on final offsets
 /// (`LayoutError::UnguardedBackEdge`).
-fn is_back_edge(lowered: &[RephrasedInsn], placed: &[u64]) -> bool {
+fn is_back_edge(
+    lowered: &[RephrasedInsn],
+    placed: &[u64],
+    on_cycle: impl Fn(u64) -> bool,
+) -> bool {
     lowered
         .iter()
         .filter(|insn| insn.kind.is_user_semantic())
         .filter_map(|insn| user_branch_target(insn.insn, insn.ori_pc))
-        .any(|target| placed.contains(&target))
+        .any(|target| placed.contains(&target) && on_cycle(target))
 }
 
 /// Rephrases every block. The output keeps the CFG's block order (the entry block
 /// first); blocks are visited in layout order only to find back-edges.
 pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
     let order = layout_block_order(cfg.blocks.iter().map(|block| block.start_addr))?;
+    let component = body_components(&cfg.blocks, &order)?;
     let mut rephrased: SharedVec<Option<RephrasedBlock>> =
         SharedVec::with_capacity(cfg.blocks.len(), GFP_KERNEL)?;
     for _ in 0..cfg.blocks.len() {
@@ -733,7 +747,12 @@ pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
         for insn in &block.insns {
             placed.push(insn.pc, GFP_KERNEL)?;
             let lowered = rephrase_insn(*insn)?;
-            if is_back_edge(&lowered, &placed) || is_dispatch_site(insn) {
+            let on_cycle = |target| {
+                // A placed label is inside a block, so the lookup finds one.
+                block_containing(&order, |other| cfg.blocks[other].start_addr, target)
+                    .is_some_and(|target_block| component[target_block] == component[index])
+            };
+            if is_back_edge(&lowered, &placed, on_cycle) || is_dispatch_site(insn) {
                 // The check precedes the whole lowered sequence, so the Budget exit
                 // leaves with the state before the instruction and userspace
                 // re-executes the branch natively.
@@ -767,6 +786,7 @@ pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
         rephrased[index] = Some(RephrasedBlock {
             start_addr: block.start_addr,
             end_addr: block.end_addr,
+            component: component[index],
             prev: copy_u64_vec(&block.prev)?,
             next: copy_u64_vec(&block.next)?,
             insns,
@@ -1278,10 +1298,13 @@ mod tests {
         ]
     }
 
-    /// One CFG block per slice, in the given (layout) order.
+    /// One CFG block per slice, in the given (layout) order. `next` follows
+    /// `build_cfg`: the branch targets and the fall-through, as far as a block starts
+    /// there (the synthetic programs end after their last block).
     fn cfg_of(blocks: &[&[(u64, A64Insn)]]) -> Cfg {
         use crate::shared::trans::cfg::BasicBlock;
 
+        let starts: Vec<u64> = blocks.iter().map(|block| block[0].0).collect();
         let mut out = SharedVec::new();
         for block in blocks {
             let mut insns = SharedVec::new();
@@ -1297,13 +1320,28 @@ mod tests {
                     )
                     .unwrap();
             }
+            let (last_pc, last) = block[block.len() - 1];
+            let end_addr = last_pc + 4;
+            let successors: Vec<u64> = if let Some(target) = last.direct_branch_target(last_pc) {
+                vec![target]
+            } else if let Some((taken, fallthrough)) = last.conditional_targets(last_pc) {
+                vec![taken, fallthrough]
+            } else if last.runtime_exit_reason(last_pc).is_some() {
+                vec![]
+            } else {
+                vec![end_addr]
+            };
+            let mut next = SharedVec::new();
+            for successor in successors.into_iter().filter(|pc| starts.contains(pc)) {
+                next.push(successor, GFP_KERNEL).unwrap();
+            }
             out.push(
                 BasicBlock {
                     start_addr: block[0].0,
-                    end_addr: block[block.len() - 1].0 + 4,
+                    end_addr,
                     insns,
                     prev: SharedVec::new(),
-                    next: SharedVec::new(),
+                    next,
                     unsupported_exit: None,
                 },
                 GFP_KERNEL,
@@ -1461,7 +1499,11 @@ mod tests {
         let nop = A64Insn::NopNopHiHints {};
         // Target block discovered later but laid out first: back-edge.
         for branch in branch_forms(-8) {
-            let program = rephrase(cfg_of(&[&[(0x1008, branch)], &[(0x1000, nop)]])).unwrap();
+            let program = rephrase(cfg_of(&[
+                &[(0x1008, branch)],
+                &[(0x1000, nop), (0x1004, nop)],
+            ]))
+            .unwrap();
             // The output keeps CFG order (entry block first).
             assert_eq!(program[0].start_addr, 0x1008);
             assert_budget_checked(&program[0], branch, 0x1008);
@@ -1472,6 +1514,59 @@ mod tests {
             let program = rephrase(cfg_of(&[&[(0x1010, nop)], &[(0x1000, branch)]])).unwrap();
             assert_not_budget_checked(&program[0]);
             assert_not_budget_checked(&program[1]);
+        }
+    }
+
+    /// A22: a branch back to a block that cannot reach it again runs once per pass,
+    /// so it carries no budget check. Here the target is a `ret` block, a dispatch
+    /// site that is charged by its own check.
+    #[test]
+    fn a_back_edge_to_a_block_on_no_cycle_gets_no_budget_check() {
+        let nop = A64Insn::NopNopHiHints {};
+        let ret = A64Insn::RetRet64rBranchReg { rn: x(30) };
+        for branch in branch_forms(-4) {
+            let program = rephrase(cfg_of(&[
+                &[(0x1000, nop)],
+                &[(0x1004, ret)],
+                &[(0x1008, branch)],
+            ]))
+            .unwrap();
+            assert_not_budget_checked(&program[2]);
+            // The ret is a dispatch site and keeps its unit.
+            assert_eq!(&program[1].insns[..BUDGET_CHECK_LEN], &budget_check(0x1004));
+        }
+    }
+
+    /// A22: a loop whose body contains a call is not a cycle of the fragment: the BL is
+    /// a sink, charged by its own check, and the return site's back-edge to it is not.
+    #[test]
+    fn a_loop_through_a_call_is_bounded_by_the_call() {
+        let bl = A64Insn::BlBlOnlyBranchImm {
+            imm26: scaled_simm(0x10, 26, 2),
+        };
+        for branch in branch_forms(-4) {
+            let program = rephrase(cfg_of(&[&[(0x1000, bl)], &[(0x1004, branch)]])).unwrap();
+            assert_eq!(&program[0].insns[..BUDGET_CHECK_LEN], &budget_check(0x1000));
+            assert_not_budget_checked(&program[1]);
+        }
+    }
+
+    /// A22: a back-edge whose block is on a cycle through a forward branch and a
+    /// fall-through still carries its check.
+    #[test]
+    fn a_loop_closed_through_a_forward_branch_keeps_its_check() {
+        let nop = A64Insn::NopNopHiHints {};
+        let forward = branch_forms(8)[3];
+        for back in branch_forms(-8) {
+            let program = rephrase(cfg_of(&[
+                &[(0x1000, nop)],
+                &[(0x1004, forward)],
+                &[(0x1008, nop)],
+                &[(0x100c, back)],
+            ]))
+            .unwrap();
+            assert_not_budget_checked(&program[1]);
+            assert_budget_checked(&program[3], back, 0x100c);
         }
     }
 
@@ -1486,14 +1581,16 @@ mod tests {
             RephrasedInsn::user_synthetic(0x1004, mov),
             RephrasedInsn::user_synthetic(0x1004, branch_forms(-4)[0]),
         ];
-        assert!(is_back_edge(&lowered, &[0x1000, 0x1004]));
-        assert!(!is_back_edge(&lowered, &[0x1004]));
+        assert!(is_back_edge(&lowered, &[0x1000, 0x1004], |_| true));
+        assert!(!is_back_edge(&lowered, &[0x1004], |_| true));
+        // A target outside the branch's component (A22) is no budgeted back-edge.
+        assert!(!is_back_edge(&lowered, &[0x1000, 0x1004], |_| false));
         // Runtime-exit branches are never user branches.
         let exit = [RephrasedInsn::runtime_exit_branch(
             0x1004,
             branch_forms(0)[0],
         )];
-        assert!(!is_back_edge(&exit, &[0x1004]));
+        assert!(!is_back_edge(&exit, &[0x1004], |_| true));
     }
 
     #[test]

@@ -13,6 +13,7 @@
 //! O(words) memory.
 
 mod rules;
+mod scc;
 mod taint;
 
 use crate::shared::abi::{
@@ -144,8 +145,8 @@ pub enum VerifyRule {
     Exception,
     /// 5: `ADR`/`ADRP` (kernel address into a user register).
     PcRelative,
-    /// 6: a back-edge not preceded by the budget check (plus only reg-virt fill
-    /// loads), or a dispatch template (A11) not preceded by it (plus only
+    /// 6: a back-edge on a cycle (A22) not preceded by the budget check (plus only
+    /// reg-virt fill loads), or a dispatch template (A11) not preceded by it (plus only
     /// data-processing words and fills), or a join point inside that run.
     MissingBudgetCheck,
     /// 7: a fault/budget stub that does not start an exit group, or an exit group
@@ -222,8 +223,8 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
         cold_start = cold_start.min(stub);
     }
 
-    // Budget stubs are exit groups too, and join points. A back-edge without its
-    // check is rejected in the main pass.
+    // Budget stubs are exit groups too, and join points. A back-edge on a cycle
+    // without its check is rejected in the main pass.
     for index in 0..body.len() {
         if !frag.is_back_edge(index) {
             continue;
@@ -375,6 +376,9 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
     // (and every exit) must carry no kernel value beyond it, so that start is
     // sound.
     let join_state = Taint::at_entry().ok_or(err(0, VerifyRule::Prologue))?;
+    let component =
+        scc::components(body.len(), |word, slot| frag.successor(word, slot, body.len()))
+            .map_err(|_| err(0, VerifyRule::Alloc))?;
     let mut state = join_state;
     let mut sites = input.fault_sites.iter();
     let mut uses_fpsimd = false;
@@ -400,7 +404,7 @@ pub fn verify_fragment(input: &VerifyInput<'_>) -> Result<VerifyOk, VerifyError>
             Form::IndirectBranch => return Err(err(offset, VerifyRule::IndirectBranch)),
             Form::Exception => return Err(err(offset, VerifyRule::Exception)),
             Form::Branch { .. } => {
-                if frag.is_back_edge(index) {
+                if frag.is_back_edge_on_cycle(&component, index) {
                     check_budget_before(&frag, &join, index)?;
                 }
                 // Into the body or the epilogue: the epilogue reads no register
@@ -518,7 +522,8 @@ impl Fragment<'_> {
     }
 
     /// A direct branch to a body word at or before itself (layout order is offset
-    /// order). Branches to the epilogue are exits, not back-edges.
+    /// order). Branches to the epilogue are exits, not back-edges. Whether it needs
+    /// a budget check is `is_back_edge_on_cycle`; a check on any back-edge is allowed.
     fn is_back_edge(&self, index: usize) -> bool {
         let Form::Branch { delta, .. } = classify(self.body[index]) else {
             return false;
@@ -526,6 +531,46 @@ impl Fragment<'_> {
         let offset = self.offset(index) as i64;
         let target = offset + delta;
         target <= offset && target >= BODY_OFFSET as i64
+    }
+
+    /// Slot `slot` (0 or 1) of word `index`'s successors in the body word graph of
+    /// rule 6 (A22), over the words before `nodes`: every word after the epilogue,
+    /// the cold region included, so that no cycle can hide in it whatever the other
+    /// rules allow there. The next word unless the word is an unconditional `B` or an
+    /// indirect branch, and the target of a direct branch after the epilogue. A
+    /// branch to the epilogue and a template's `br` add no edge.
+    fn successor(&self, index: usize, slot: usize, nodes: usize) -> Option<usize> {
+        let (target, falls_through) = match classify(self.body[index]) {
+            Form::Branch { delta, conditional } => {
+                let target = usize::try_from(self.offset(index) as i64 + delta)
+                    .ok()
+                    .and_then(|target| self.body_index(target));
+                (target, conditional)
+            }
+            Form::IndirectBranch => (None, false),
+            _ => (None, true),
+        };
+        [falls_through.then_some(index + 1), target]
+            .into_iter()
+            .flatten()
+            .filter(|&successor| successor < nodes)
+            .nth(slot)
+    }
+
+    /// Whether the branch at `index` is a back-edge on a cycle (A22): a back-edge
+    /// whose target shares its component of the body word graph (`component`, over
+    /// every word after the epilogue), so that the budget check is required.
+    fn is_back_edge_on_cycle(&self, component: &[usize], index: usize) -> bool {
+        let Form::Branch { delta, .. } = classify(self.body[index]) else {
+            return false;
+        };
+        let target = usize::try_from(self.offset(index) as i64 + delta)
+            .ok()
+            .and_then(|target| self.body_index(target));
+        self.is_back_edge(index)
+            && target.is_some_and(|target| {
+                index < component.len() && component[index] == component[target]
+            })
     }
 
     /// The budget check guarding the branch at `index`: the two-word sequence,

@@ -257,6 +257,132 @@ pub fn layout_block_order(
     Ok(order)
 }
 
+/// Index of the block containing `pc`: the last block in layout `order` whose start
+/// is at or before `pc` (blocks partition the PC space). `None` if `pc` is below the
+/// first block. A `pc` past the last block's end is attributed to that block; callers
+/// ask only about PCs that carry a label, which lie inside a block.
+pub fn block_containing(
+    order: &[usize],
+    start_of: impl Fn(usize) -> u64,
+    pc: u64,
+) -> Option<usize> {
+    let after = order.partition_point(|&index| start_of(index) <= pc);
+    after.checked_sub(1).map(|position| order[position])
+}
+
+/// Strongly connected components of the fragment's body graph (docs/pipeline.md,
+/// "Budgeted back-edges (A22)"): one component id per block, indexed like `blocks`
+/// (`order` is `layout_block_order` of them). Nodes are the blocks. Edges are the
+/// fall-through and the direct B/B.cond/CBZ/CBNZ/TBZ/TBNZ targets, which is
+/// `BasicBlock::next` -- except that a block ending in a runtime exit (BL, BLR, BR,
+/// RET, SVC) is a sink: it leaves through a dispatch site or the runtime, each already
+/// charged a budget unit, whatever `next` names (an SVC's resume block).
+///
+/// Iterative Tarjan: this runs in the kernel on a small stack.
+pub fn body_components(
+    blocks: &[BasicBlock],
+    order: &[usize],
+) -> Result<SharedVec<usize>, SharedAllocError> {
+    let successor = |block: usize, slot: usize| -> Option<usize> {
+        let node = &blocks[block];
+        if node.insns.last().is_some_and(|insn| insn.inner.runtime_exit_reason(insn.pc).is_some())
+        {
+            return None;
+        }
+        let target = *node.next.get(slot)?;
+        // `build_cfg` creates a block for every PC it records in `next`.
+        let successor = block_containing(order, |index| blocks[index].start_addr, target)
+            .filter(|&successor| blocks[successor].start_addr == target)
+            .expect("every CFG successor is a block start");
+        Some(successor)
+    };
+    strongly_connected_components(blocks.len(), successor)
+}
+
+/// Tarjan's algorithm with an explicit stack: component ids (numbered in the order
+/// components complete) of the graph on `0..count` whose `slot`-th successor of
+/// `node` is `successor(node, slot)` (`None`: no more). O(nodes + edges).
+fn strongly_connected_components(
+    count: usize,
+    successor: impl Fn(usize, usize) -> Option<usize>,
+) -> Result<SharedVec<usize>, SharedAllocError> {
+    const UNSET: usize = usize::MAX;
+    let filled = |value: usize| -> Result<SharedVec<usize>, SharedAllocError> {
+        let mut out = SharedVec::with_capacity(count, GFP_KERNEL)?;
+        for _ in 0..count {
+            out.push(value, GFP_KERNEL)?;
+        }
+        Ok(out)
+    };
+    // Discovery number, lowest discovery number reachable, component id (`UNSET`
+    // while the node is unvisited or still on the Tarjan stack).
+    let mut number = filled(UNSET)?;
+    let mut low = filled(0)?;
+    let mut component = filled(UNSET)?;
+    // Tarjan stack and call stack (node, next successor slot), each at most one
+    // entry per node; the `*_len` fields are their heights.
+    let mut open = filled(0)?;
+    let mut open_len = 0;
+    let mut calls = filled(0)?;
+    let mut call_slots = filled(0)?;
+    let mut calls_len;
+    let mut discovered = 0;
+    let mut components = 0;
+
+    for root in 0..count {
+        if number[root] != UNSET {
+            continue;
+        }
+        number[root] = discovered;
+        low[root] = discovered;
+        discovered += 1;
+        open[open_len] = root;
+        open_len += 1;
+        calls[0] = root;
+        call_slots[0] = 0;
+        calls_len = 1;
+
+        while calls_len > 0 {
+            let node = calls[calls_len - 1];
+            let slot = call_slots[calls_len - 1];
+            if let Some(next) = successor(node, slot) {
+                call_slots[calls_len - 1] += 1;
+                if number[next] == UNSET {
+                    number[next] = discovered;
+                    low[next] = discovered;
+                    discovered += 1;
+                    open[open_len] = next;
+                    open_len += 1;
+                    calls[calls_len] = next;
+                    call_slots[calls_len] = 0;
+                    calls_len += 1;
+                } else if component[next] == UNSET {
+                    // On the Tarjan stack: part of the current search tree.
+                    low[node] = low[node].min(number[next]);
+                }
+                continue;
+            }
+            calls_len -= 1;
+            if low[node] == number[node] {
+                loop {
+                    open_len -= 1;
+                    let member = open[open_len];
+                    component[member] = components;
+                    if member == node {
+                        break;
+                    }
+                }
+                components += 1;
+            }
+            if calls_len > 0 {
+                let parent = calls[calls_len - 1];
+                low[parent] = low[parent].min(low[node]);
+            }
+        }
+    }
+    Ok(component)
+}
+
 /// The single decision on whether the word at `pc` joins a translated block.
 /// `Ok(Ok(insn))`: translate it. `Ok(Err(u))`: end the block before it with an
 /// Unsupported exit. `Err`: translator bug. Shared with the harness original-code
@@ -603,5 +729,158 @@ mod tests {
                 word: UNDECODABLE
             }))
         );
+    }
+
+    /// The search is iterative: a path of 300000 nodes would overflow a recursive
+    /// one's stack.
+    #[test]
+    fn components_of_a_very_long_path_do_not_recurse() {
+        const NODES: usize = 300_000;
+        let path = |node: usize, slot: usize| (slot == 0 && node + 1 < NODES).then_some(node + 1);
+        let open = strongly_connected_components(NODES, path).unwrap();
+        assert_ne!(open[0], open[NODES - 1]);
+        let closed = strongly_connected_components(NODES, |node, slot| match (node, slot) {
+            (last, 0) if last + 1 == NODES => Some(0),
+            (node, 0) => Some(node + 1),
+            _ => None,
+        })
+        .unwrap();
+        assert!(closed.iter().all(|&component| component == closed[0]));
+    }
+
+    fn words(pc: u64, target: u64) -> i64 {
+        (target as i64 - pc as i64) / 4
+    }
+
+    fn b_to(pc: u64, target: u64) -> u32 {
+        enc(A64Insn::BUncondBOnlyBranchImm {
+            imm26: scaled_simm(words(pc, target) as u32 & 0x3ff_ffff, 26, 2),
+        })
+    }
+
+    fn bl_to(pc: u64, target: u64) -> u32 {
+        enc(A64Insn::BlBlOnlyBranchImm {
+            imm26: scaled_simm(words(pc, target) as u32 & 0x3ff_ffff, 26, 2),
+        })
+    }
+
+    fn cbnz_to(pc: u64, target: u64) -> u32 {
+        enc(A64Insn::CbnzCbnz64Compbranch {
+            imm19: scaled_simm(words(pc, target) as u32 & 0x7_ffff, 19, 2),
+            rt: x(0),
+        })
+    }
+
+    fn ret() -> u32 {
+        enc(A64Insn::RetRet64rBranchReg { rn: x(30) })
+    }
+
+    fn nop() -> u32 {
+        enc(A64Insn::NopNopHiHints {})
+    }
+
+    /// Component ids of the blocks starting at `starts`, in that order.
+    fn components_of(bytes: &[u8], starts: &[u64]) -> alloc::vec::Vec<usize> {
+        let cfg = cfg_for(bytes);
+        assert_eq!(cfg.blocks.len(), starts.len(), "blocks {:?}", cfg.blocks);
+        let order = layout_block_order(cfg.blocks.iter().map(|block| block.start_addr)).unwrap();
+        let component = body_components(&cfg.blocks, &order).unwrap();
+        starts
+            .iter()
+            .map(|&start| {
+                let index = cfg.blocks.iter().position(|b| b.start_addr == start).unwrap();
+                component[index]
+            })
+            .collect()
+    }
+
+    /// A22: loops are components, and a jump back to a block that cannot reach the
+    /// jump again is not.
+    #[test]
+    fn components_group_exactly_the_blocks_on_a_cycle() {
+        let at = |i: u64| BASE + 4 * i;
+        // A self-loop block, and its exit.
+        let ids = components_of(
+            &assemble(&[nop(), cbnz_to(at(1), at(0)), ret()]),
+            &[at(0), at(2)],
+        );
+        assert_ne!(ids[0], ids[1]);
+
+        // A loop entered from outside and left through its conditional back-edge:
+        // 0, then the loop block [1, 3), then 3.
+        let ids = components_of(
+            &assemble(&[nop(), nop(), cbnz_to(at(2), at(1)), ret()]),
+            &[at(0), at(1), at(3)],
+        );
+        assert_ne!(ids[0], ids[1]);
+        assert_ne!(ids[1], ids[2]);
+
+        // Nested loops: the inner body [2, 4) inside the outer loop 1..=4; a single
+        // component holds both.
+        let ids = components_of(
+            &assemble(&[
+                nop(),
+                nop(),
+                nop(),
+                cbnz_to(at(3), at(2)),
+                cbnz_to(at(4), at(1)),
+                ret(),
+            ]),
+            &[at(0), at(1), at(2), at(4), at(5)],
+        );
+        assert_eq!(ids[1], ids[2]);
+        assert_eq!(ids[1], ids[3]);
+        assert_ne!(ids[0], ids[1]);
+        assert_ne!(ids[4], ids[1]);
+    }
+
+    #[test]
+    fn a_jump_back_to_a_shared_ret_is_on_no_cycle() {
+        let at = |i: u64| BASE + 4 * i;
+        // 0: cbnz -> 3; 1: nop; 2: ret; 3: b 2. Blocks 0, 1, 2, 3.
+        let ids = components_of(
+            &assemble(&[cbnz_to(at(0), at(3)), nop(), ret(), b_to(at(3), at(2))]),
+            &[at(0), at(1), at(2), at(3)],
+        );
+        for first in 0..ids.len() {
+            for second in first + 1..ids.len() {
+                assert_ne!(ids[first], ids[second]);
+            }
+        }
+    }
+
+    /// BL, BLR, BR, RET and SVC are sinks: a path through one is no edge, even when
+    /// the CFG names the block after an SVC as its successor.
+    #[test]
+    fn transfers_and_exits_are_sinks() {
+        let at = |i: u64| BASE + 4 * i;
+        let svc = enc(A64Insn::SvcSvcExException {
+            imm16: uimm(0, 16),
+        });
+        // 0: svc (resume block 1); 1: b 0.
+        let bytes = assemble(&[svc, b_to(at(1), at(0))]);
+        let cfg = cfg_for(&bytes);
+        assert_eq!(&*cfg.blocks[0].next, &[at(1)]);
+        let ids = components_of(&bytes, &[at(0), at(1)]);
+        assert_ne!(ids[0], ids[1]);
+
+        // The return site of a call (entered at 1) jumps back to the call at 0.
+        let bytes = assemble(&[bl_to(at(0), at(8)), cbnz_to(at(1), at(0)), ret()]);
+        let code = SliceCode {
+            base: BASE,
+            bytes: &bytes,
+        };
+        let request = TranslationRequest {
+            entry_pc: at(1),
+            trigger: TranslationTrigger::Manual,
+            regs: None,
+        };
+        let cfg = build_cfg(&request, &code).unwrap();
+        let order = layout_block_order(cfg.blocks.iter().map(|block| block.start_addr)).unwrap();
+        let component = body_components(&cfg.blocks, &order).unwrap();
+        let of = |start| {
+            component[cfg.blocks.iter().position(|b| b.start_addr == start).unwrap()]
+        };
+        assert_ne!(of(at(0)), of(at(1)));
     }
 }

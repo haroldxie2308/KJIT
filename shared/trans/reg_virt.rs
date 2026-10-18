@@ -2426,6 +2426,7 @@ mod tests {
                 RephrasedBlock {
                     start_addr: first_pc,
                     end_addr: first_pc + 4,
+                    component: 0,
                     prev: SharedVec::new(),
                     next: SharedVec::new(),
                     insns,
@@ -5002,6 +5003,7 @@ mod tests {
                     RephrasedBlock {
                         start_addr: start,
                         end_addr: start + 4 * insns.len() as u64,
+                        component: 0,
                         prev: SharedVec::new(),
                         next: SharedVec::new(),
                         insns: body,
