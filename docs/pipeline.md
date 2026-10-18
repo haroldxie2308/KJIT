@@ -2867,4 +2867,13 @@ milestone:
 | A10 chain budget, counter reads | [2026-09-27 19:01](journal/2026-09-27.md); unload race [2026-09-28 00:09](journal/2026-09-28.md); `run_declined` [2026-09-28 00:16](journal/2026-09-28.md) |
 | A11 in-fragment dispatch | [2026-10-02 16:25](journal/2026-10-02.md) contract; [17:10](journal/2026-10-02.md) A11b; [17:14](journal/2026-10-02.md) Step 0; [17:28](journal/2026-10-02.md) A11a; [2026-10-05 11:47](journal/2026-10-05.md) integration |
 | Documentation restructure | [2026-10-09 00:54](journal/2026-10-09.md) |
-| ROX vs RWX, image placement; A17 packed arena | [2026-10-12 04:15](journal/2026-10-12.md) study; [2026-10-13 02:20](journal/2026-10-13.md) A17 |
+| A16 direct BL links | [2026-10-11 22:37](journal/2026-10-11.md) ablation; [2026-10-12 00:31](journal/2026-10-12.md) implementation |
+| Session recorder, TUI | [2026-10-12 00:57](journal/2026-10-12.md) decided; [01:28](journal/2026-10-12.md) recorder; [02:04](journal/2026-10-12.md) debug/observe modes |
+| ROX vs RWX, image placement; A17 packed arena | [2026-10-12 04:15](journal/2026-10-12.md) study; [2026-10-13 02:20](journal/2026-10-13.md) A17; [22:54](journal/2026-10-13.md) PMD experiment |
+| Redis overhead attribution and operating conditions | [2026-10-13 15:25](journal/2026-10-13.md) attribution; [16:45](journal/2026-10-13.md) condition sweep; [20:01](journal/2026-10-13.md) next steps; [23:55](journal/2026-10-13.md) `-c 1` |
+| A18 scalar FP | [2026-10-14 01:14](journal/2026-10-14.md) |
+| A19 PMD-mapped arena chunks | [2026-10-14 03:55](journal/2026-10-14.md); [04:29](journal/2026-10-14.md) post-merge gates |
+| Win map against KJIT-off | [2026-10-14 07:53](journal/2026-10-14.md) map; [18:42](journal/2026-10-14.md) confirmation (a tie) |
+| A20 shorter transfer and SP-check paths | [2026-10-14 10:05](journal/2026-10-14.md) decided; [13:56](journal/2026-10-14.md) implementation (15:20 final tree inside) |
+| Return continuations, shadow return stack (experiment, rejected) | [2026-10-14 14:46](journal/2026-10-14.md) |
+| Hot-path word census | [2026-10-14 16:02](journal/2026-10-14.md) |
