@@ -1,0 +1,28 @@
+--- docs/data/2026-10-19/0122-a21-words/tools/census.rs	2026-10-19 01:32:18
++++ docs/data/2026-10-19/0309-a22-budget/tools/census_verify.rs	2026-10-19 03:09:40
+@@ -21,6 +21,8 @@
+ use std::fs;
+ 
+ use kjit_harness::a64_forms::disassemble;
++use kjit_harness::shared::trans::translate::compile_request;
++use kjit_harness::{encode_fragment, verify_encoded_fragment};
+ use kjit_harness::shared::trans::cfg::{admit_word, build_cfg};
+ use kjit_harness::shared::trans::input::{
+     CodeProvider, CodeReadError, TranslationRequest, TranslationTrigger,
+@@ -295,6 +297,16 @@
+             trigger: TranslationTrigger::Manual,
+             regs: None,
+         };
++        match compile_request(&request, &code) {
++            Ok(fragment) => {
++                let bytes = encode_fragment(&fragment).unwrap();
++                match verify_encoded_fragment(&fragment, &bytes) {
++                    Ok(_) => eprintln!("VERIFY ok {pc:#x} words={}", bytes.len() / 4),
++                    Err(e) => eprintln!("VERIFY REJECTED {pc:#x} {e:?}"),
++                }
++            }
++            Err(e) => eprintln!("VERIFY compile-error {pc:#x} {e}"),
++        }
+         let cfg = match build_cfg(&request, &code) {
+             Ok(c) => c,
+             Err(e) => {

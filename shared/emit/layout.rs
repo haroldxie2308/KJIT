@@ -5,7 +5,7 @@ use crate::shared::abi::{
 };
 use crate::shared::arm64::{A64Insn, A64OperandRole, A64RewriteError};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
-use crate::shared::trans::cfg::layout_block_order;
+use crate::shared::trans::cfg::{block_containing, layout_block_order};
 use crate::shared::trans::rephrase::{RephrasedInsnKind, RephrasedProgram};
 
 pub type LayoutVLabels = SharedVec<(u64, usize)>;
@@ -114,9 +114,10 @@ pub enum LayoutError {
         insn_index: usize,
         ori_pc: u64,
     },
-    /// A user branch to a target at or before it in layout order without a budget
-    /// check in its original instruction's sequence: rephrase and layout disagree on
-    /// the layout order, and the loop would run unbounded.
+    /// A user branch to a target at or before it in layout order, in the same
+    /// component of the body graph (A22), without a budget check in its original
+    /// instruction's sequence: rephrase and layout disagree on the layout order or the
+    /// components, and the loop would run unbounded.
     UnguardedBackEdge {
         insn_index: usize,
         target_original_pc: u64,
@@ -226,8 +227,11 @@ pub(crate) struct BranchReloc {
     pub(crate) target_original_pc: u64,
     pub(crate) kind: BranchRelocKind,
     /// A budget check precedes the branch within its original instruction's
-    /// sequence. Required when the branch resolves backward.
+    /// sequence. Required when the branch resolves backward and (A22) its target
+    /// block shares the branch's component.
     pub(crate) budget_checked: bool,
+    /// The target's block is in the same component as the branch's own block.
+    pub(crate) same_component: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -252,8 +256,8 @@ pub(crate) enum BranchRelocKind {
 /// site's exit group starts. A budget check's
 /// `CBZ` and an alignment check's `CBNZ` resolve to the
 /// plain stub of their `ori_pc`, as do a window access's range-check `CBNZ` and its
-/// fault site (A8, A15). A user branch that resolves backward must be
-/// budget-checked.
+/// fault site (A8, A15). A user branch that resolves backward to a block of its own
+/// component (A22) must be budget-checked.
 pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragment, LayoutError> {
     let insn_count = program
         .iter()
@@ -411,6 +415,14 @@ pub fn layout_program(program: RephrasedProgram) -> SharedResult<ExecutionFragme
                     rephrased.ori_pc,
                     insn_index,
                     budget_checked_pc == Some(rephrased.ori_pc),
+                    |target| {
+                        // A label lies inside a block; a target with none is reported
+                        // as `MissingLabel` when the branch is resolved.
+                        block_containing(&order, |index| program[index].start_addr, target)
+                            .is_some_and(|target_block| {
+                                program[target_block].component == block.component
+                            })
+                    },
                 )? {
                     relocs.push(reloc, GFP_KERNEL)?;
                 }
@@ -572,6 +584,7 @@ fn branch_reloc_for(
     original_pc: u64,
     insn_index: usize,
     budget_checked: bool,
+    same_component: impl Fn(u64) -> bool,
 ) -> SharedResult<Option<BranchReloc>, LayoutError> {
     let Some((field, scale, bits)) = branch_target_role(insn) else {
         return Ok(None);
@@ -583,11 +596,13 @@ fn branch_reloc_for(
         return Ok(None);
     };
 
+    let target_original_pc = pc_relative_target(original_pc, encoded, bits, scale);
     Ok(Some(BranchReloc {
         insn_index,
-        target_original_pc: pc_relative_target(original_pc, encoded, bits, scale),
+        target_original_pc,
         kind,
         budget_checked,
+        same_component: same_component(target_original_pc),
     }))
 }
 
@@ -610,7 +625,7 @@ fn resolve_branch_relocs(
                 target_original_pc: reloc.target_original_pc,
             },
         )?;
-        if target_offset <= reloc.insn_index * 4 && !reloc.budget_checked {
+        if target_offset <= reloc.insn_index * 4 && reloc.same_component && !reloc.budget_checked {
             return Err(LayoutError::UnguardedBackEdge {
                 insn_index: reloc.insn_index,
                 target_original_pc: reloc.target_original_pc,
@@ -764,6 +779,7 @@ mod tests {
                 RephrasedBlock {
                     start_addr: 0x1000,
                     end_addr: 0x100c,
+                    component: 0,
                     prev: SharedVec::new(),
                     next: SharedVec::new(),
                     insns,
@@ -852,6 +868,7 @@ mod tests {
             RephrasedBlock {
                 start_addr: start,
                 end_addr: start + 4 * count,
+                component: 0,
                 prev: SharedVec::new(),
                 next: SharedVec::new(),
                 insns,
@@ -1101,6 +1118,7 @@ mod tests {
                 RephrasedBlock {
                     start_addr: 0x1010,
                     end_addr: 0x1014,
+                    component: 0,
                     prev: SharedVec::new(),
                     next: SharedVec::new(),
                     insns: vec_of(&[RephrasedInsn::original(0x1010, nop)]),
@@ -1131,6 +1149,7 @@ mod tests {
                 RephrasedBlock {
                     start_addr: 0x1000,
                     end_addr: 0x1008,
+                    component: 0,
                     prev: SharedVec::new(),
                     next: SharedVec::new(),
                     insns: vec_of(&[
@@ -1160,6 +1179,48 @@ mod tests {
                 insn_index: body_start_offset() / 4 + 3,
                 target_original_pc: 0x1000,
             })
+        );
+    }
+
+    /// The block of `backward_cbnz_block(false)` split at its branch: A holds the
+    /// nops, B the `cbnz x0, 0x1000`. The back-edge needs a check exactly when B is in
+    /// A's component (A22).
+    fn split_backward_cbnz(component_of_b: usize) -> RephrasedProgram {
+        let insns = backward_cbnz_block(false);
+        let block = |start: u64, end: u64, component: usize, insns: &[RephrasedInsn]| {
+            RephrasedBlock {
+                start_addr: start,
+                end_addr: end,
+                component,
+                prev: SharedVec::new(),
+                next: SharedVec::new(),
+                insns: vec_of(insns),
+                cold: SharedVec::new(),
+            }
+        };
+        let mut program = SharedVec::new();
+        program
+            .push(block(0x1000, 0x1008, 0, &insns[..3]), GFP_KERNEL)
+            .unwrap();
+        program
+            .push(block(0x1008, 0x100c, component_of_b, &insns[3..]), GFP_KERNEL)
+            .unwrap();
+        program
+    }
+
+    #[test]
+    fn a_backward_branch_needs_a_check_only_within_its_component() {
+        assert_eq!(
+            layout_program(split_backward_cbnz(0)),
+            Err(LayoutError::UnguardedBackEdge {
+                insn_index: body_start_offset() / 4 + 3,
+                target_original_pc: 0x1000,
+            })
+        );
+        let layout = layout_program(split_backward_cbnz(1)).unwrap();
+        assert_eq!(
+            layout.insns[body_start_offset() / 4 + 3].branch_target_imm("imm19"),
+            Some(524288 - 3)
         );
     }
 

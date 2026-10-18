@@ -1052,6 +1052,181 @@ fn budget_rule_rejects_altered_checks() {
     assert_eq!(Frag::new(&body).rule(), Some(VerifyRule::BudgetRegisterAccess));
 }
 
+fn cbnz_to(from: usize, rt: u8, to: usize) -> A64Insn {
+    A64Insn::CbnzCbnz64Compbranch {
+        imm19: branch_imm(at(to) as i64 - at(from) as i64, 19),
+        rt: x(rt),
+    }
+}
+
+fn cbz_to(from: usize, rt: u8, to: usize) -> A64Insn {
+    A64Insn::CbzCbz64Compbranch {
+        imm19: branch_imm(at(to) as i64 - at(from) as i64, 19),
+        rt: x(rt),
+    }
+}
+
+/// A22: the check is required exactly on the back-edges whose two ends are in one
+/// strongly connected component of the body word graph. Every shape below is a cycle
+/// through its back-edge, closed in a different way.
+#[test]
+fn back_edges_on_a_cycle_need_the_check() {
+    let unguarded = |body: &[A64Insn]| Frag::new(body).verify().unwrap_err();
+    // A conditional self-loop.
+    assert_eq!(
+        unguarded(&[cbnz_to(0, 0, 0), b_epi(1)]),
+        VerifyError {
+            offset: at(0),
+            rule: VerifyRule::MissingBudgetCheck
+        }
+    );
+    // A two-word loop closed by a conditional back-edge (the fall-through reaches it).
+    assert_eq!(
+        unguarded(&[NOP, cbnz_to(1, 0, 0), b_epi(2)]),
+        VerifyError {
+            offset: at(1),
+            rule: VerifyRule::MissingBudgetCheck
+        }
+    );
+    // Closed by an unconditional back-edge, the way into it a conditional fall-through.
+    assert_eq!(
+        unguarded(&[NOP, cbz_to(1, 0, 3), b(2, at(0) as i64), b_epi(3)]),
+        VerifyError {
+            offset: at(2),
+            rule: VerifyRule::MissingBudgetCheck
+        }
+    );
+    // The way from the target to the branch needs a forward branch and fall-throughs:
+    // 0 -> 1 -> 3 (taken) -> 4 -> 0.
+    assert_eq!(
+        unguarded(&[
+            NOP,
+            cbnz_to(1, 1, 3),
+            b_epi(2),
+            NOP,
+            cbnz_to(4, 0, 0),
+            b_epi(5)
+        ]),
+        VerifyError {
+            offset: at(4),
+            rule: VerifyRule::MissingBudgetCheck
+        }
+    );
+    // Two loops sharing a target: each back-edge is on a cycle.
+    assert_eq!(
+        unguarded(&[NOP, cbnz_to(1, 0, 0), cbnz_to(2, 1, 0), b_epi(3)]).offset,
+        at(1)
+    );
+
+    // The guarded forms are accepted: the loop of `budget_loop`, and the same with the
+    // way back closed through a forward branch.
+    assert_eq!(Frag::new(&budget_loop(&[])).rule(), None);
+    let guarded = [
+        NOP,
+        cbnz_to(1, 1, 3),
+        b_epi(2),
+        budget_sub(),
+        budget_cbz(4, 6),
+        b(5, at(0) as i64),
+        movz(9, 7),
+        b_epi(7),
+    ];
+    assert_eq!(Frag::new(&guarded).rule(), None);
+}
+
+/// A22: the cold region is part of the body word graph, so rule 6 does not depend on
+/// rules 4 and 7 keeping cycles out of it. Today they do, and reject both shapes
+/// below first: a stub that branches back to the loop head (without a check the loop
+/// would run on through the counter's wrap-around), and a forward `b` into a cold word
+/// that is no stub start, which jumps back.
+#[test]
+fn a_cycle_through_the_cold_region_needs_the_check() {
+    let through_cold = [
+        NOP,
+        budget_sub(),
+        budget_cbz(2, 4),
+        b(3, at(0) as i64),
+        cbnz_to(4, 0, 0),
+        b_epi(5),
+    ];
+    // Rule 7 rejects it first (a branch inside an exit group); rule 6 would too.
+    assert_eq!(Frag::new(&through_cold).rule(), Some(VerifyRule::ExitGroup));
+    // The way back from a cold word that is no stub start, reached by a forward `b`:
+    // 0 -> 1 -> 9 -> 0. Words 3-5 are a check on an off-cycle back-edge, only there to
+    // give the fragment a stub (7) and so a cold region.
+    let cold_tail = [
+        cbnz_to(0, 0, 3),
+        b(1, at(9) as i64),
+        b_epi(2),
+        budget_sub(),
+        budget_cbz(4, 7),
+        b(5, at(2) as i64),
+        b_epi(6),
+        movz(9, 7),
+        b_epi(8),
+        b(9, at(0) as i64),
+    ];
+    assert_eq!(
+        Frag::new(&cold_tail).rule(),
+        Some(VerifyRule::BranchTarget { target: at(9) as i64 })
+    );
+}
+
+/// A22: a backward branch whose target cannot reach it again runs at most once per
+/// pass through its target, so it needs no check. It is still accepted with one.
+#[test]
+fn back_edges_off_a_cycle_need_no_check() {
+    // A jump back to a shared exit block: 0 -> 3 (taken), 3 -> 2, 2 -> epilogue.
+    let shared_exit = [cbnz_to(0, 0, 3), NOP, b_epi(2), b(3, at(2) as i64)];
+    assert_eq!(Frag::new(&shared_exit).rule(), None);
+    // The same with a conditional back-edge.
+    let conditional = [
+        cbnz_to(0, 0, 3),
+        NOP,
+        b_epi(2),
+        cbz_to(3, 1, 2),
+        b_epi(4),
+    ];
+    assert_eq!(Frag::new(&conditional).rule(), None);
+    // An unconditional `B` has no fall-through. Word 2 jumps back to word 0, but only
+    // a jump over word 1 would reach it: with the jump it is a cycle, without it not.
+    let jump_over = [cbnz_to(0, 0, 2), b_epi(1), b(2, at(0) as i64)];
+    assert_eq!(Frag::new(&jump_over).rule(), Some(VerifyRule::MissingBudgetCheck));
+    let cut = [NOP, b_epi(1), b(2, at(0) as i64)];
+    assert_eq!(Frag::new(&cut).rule(), None);
+
+    // A dispatch site is a sink (its `br` and its exit group leave the fragment), so
+    // the return block after it, entered only from outside, jumping back to the word
+    // before the site is on no cycle: `0: nop; site; <dead b>; stub`.
+    let mut site = dispatch_site_from(1, &[movz(13, 0x4000)]);
+    let back = site.len() - 2;
+    let stub = back + 2;
+    site.insert(back, b(1 + back, at(0) as i64));
+    site[1] = budget_cbz(2, stub);
+    let last = site.len() - 1;
+    site[last] = b_epi(1 + last);
+    let mut body = alloc::vec![NOP];
+    body.extend(site);
+    assert_eq!(Frag::new(&body).entry(1 + back).rule(), None);
+
+    // A check on a back-edge that needs none is allowed (the translator may guard a
+    // superset), and is a check like any other: a gap in it is still an x18 access.
+    let guarded = [
+        cbnz_to(0, 0, 3),
+        NOP,
+        b_epi(2),
+        budget_sub(),
+        budget_cbz(4, 6),
+        b(5, at(2) as i64),
+        movz(9, 7),
+        b_epi(7),
+    ];
+    assert_eq!(Frag::new(&guarded).rule(), None);
+    let mut broken = guarded;
+    broken[4] = NOP;
+    assert_eq!(Frag::new(&broken).rule(), Some(VerifyRule::BudgetRegisterAccess));
+}
+
 /// Slot 192 is stack-backed user x18's: an ordinary user-state slot (A12), accessed
 /// as a whole 8 bytes by fills and spills; never half of a pair that reaches the
 /// pointer slots or the dispatch table pointer.

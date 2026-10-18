@@ -3466,6 +3466,96 @@ fn verifier_rejects_every_mutation_of_every_fixture_fragment() {
     );
 }
 
+/// Body word indices of the direct branches to a body word at or before themselves
+/// (the back-edges of rule 6).
+fn backward_branches(fixture: &Fixture) -> Vec<usize> {
+    fixture
+        .body()
+        .filter(|&index| {
+            let Some(insn) = fixture.decoded(index) else {
+                return false;
+            };
+            let pc = (index * 4) as u64;
+            let target = insn
+                .direct_branch_target(pc)
+                .or_else(|| insn.conditional_targets(pc).map(|(taken, _)| taken));
+            target.is_some_and(|target| target <= pc && target >= BODY_OFFSET as u64)
+        })
+        .collect()
+}
+
+/// The fixture fragments of `symbols` (cases of `tests/arm64`), as the translator
+/// emitted them.
+fn fixtures_of(symbols: &[&str]) -> Vec<(String, Fixture)> {
+    let mut found = Vec::new();
+    run_every_case("verify-budget-rule", &mut |case: &CompiledCase| {
+        if !symbols.contains(&case.symbol.as_str()) {
+            return Ok(String::new());
+        }
+        let fragment = compile_fixture_fragment(
+            case.text_base,
+            case.text_bytes.clone(),
+            case.entry_pc,
+            &case_state(&case.symbol, case.text_base, &case.text_bytes)?,
+        )?;
+        let code = encode_fragment(&fragment)?;
+        found.push((
+            case.symbol.clone(),
+            Fixture {
+                name: case.symbol.clone(),
+                words: code
+                    .chunks_exact(4)
+                    .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
+                    .collect(),
+                tables: FragmentTables::of(&fragment),
+            },
+        ));
+        Ok(String::new())
+    });
+    assert_eq!(found.len(), symbols.len(), "cases {symbols:?}");
+    found
+}
+
+/// A22 on real fragments: a backward branch to a shared `ret` block is on no cycle,
+/// so the translator leaves it unguarded and the verifier accepts it; the real loop
+/// next to it keeps its check, and the same fragment with that check dropped is
+/// rejected.
+#[test]
+fn back_edges_off_a_cycle_are_accepted_and_real_loops_are_not() {
+    let fixtures = fixtures_of(&["jump_back_to_ret_mark", "loop_with_shared_ret_mark"]);
+    for (symbol, fixture) in &fixtures {
+        assert_eq!(verify(&fixture.words, &fixture.tables), Ok(()), "{symbol}");
+        let guarded: Vec<usize> = Suite::budget_guards(fixture)
+            .into_iter()
+            .map(|(_, branch)| branch)
+            .collect();
+        let unguarded: Vec<usize> = backward_branches(fixture)
+            .into_iter()
+            .filter(|branch| !guarded.contains(branch))
+            .collect();
+        match symbol.as_str() {
+            "jump_back_to_ret_mark" => {
+                assert_eq!(guarded, Vec::<usize>::new(), "no loop, no check");
+                assert_eq!(unguarded.len(), 2, "two jumps back to the shared ret");
+            }
+            "loop_with_shared_ret_mark" => {
+                assert_eq!(guarded.len(), 1, "the loop's `b 2b`");
+                assert_eq!(unguarded.len(), 1, "the `cbz x0, 1b` to the ret");
+                // The guarded loop with its check dropped is a real unguarded loop.
+                let (start, branch) = Suite::budget_guards(fixture)[0];
+                let mut words = fixture.words.clone();
+                words[start..start + 2].fill(enc(A64Insn::NopNopHiHints {}));
+                let err = verify_fragment(&fixture.tables.input(&bytes(&words))).unwrap_err();
+                assert_eq!(
+                    (err.offset, err.rule),
+                    (branch * 4, VerifyRule::MissingBudgetCheck)
+                );
+            }
+            other => panic!("unexpected case {other}"),
+        }
+    }
+}
+
 /// The word lists mean what their names say: foreign words do not decode, the
 /// user-only and unprivileged words do (so their classes test the classification,
 /// not the decoder).
