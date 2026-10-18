@@ -352,6 +352,108 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
     (2 per access), mostly function prologues and epilogues that touch SP
     several times in one block ([2026-10-13 15:25](journal/2026-10-13.md)).
 
+### Hot-path word reduction (A21)
+
+Four translator-only changes. No verifier rule, ABI constant, kernel or
+runtime change. Each one either removes words whose effect is unobservable, or
+replaces a sequence with a shorter one that has the same effect.
+
+- **Constants: one word per non-zero halfword.** One helper builds every
+  64-bit constant the translator writes:
+  - ADR/ADRP results, link writes, BL targets, exit payloads and literal
+    addresses;
+  - for `value == 0` the output is `movz rd, #0`;
+  - otherwise it is `movz` of the lowest non-zero halfword (with its `hw`),
+    then a `movk` for each higher non-zero halfword.
+
+  rephrase's `push_mov_imm64` and reg-virt's `push_mov_address` both call it,
+  and no second copy remains. Exact: the result is the same 64-bit value, and
+  nothing between the words reads `rd` or can leave the sequence.
+  - Rule 10 already accepts this: "one `movz` and up to three `movk`s, each
+    halfword set once".
+  - Rule 6's guarded gap only gets shorter.
+  - User addresses have a zero top halfword, so a link write or BL target
+    becomes 3 words, and so does a typical ADRP.
+- **Block-local slot forwarding (reg-virt post-pass over each block body).**
+  It runs after `virtualize_insns` and only deletes words: it never adds,
+  reorders or changes any.
+  - Forward a fill: delete a fill `ldr xS, [sp, #slot]` when xS is known to
+    hold `slot`'s current value.
+  - Known: after a fill of `slot` into xS, or a spill `str xS, [sp, #slot]`.
+  - Forgotten for xS: at any write to xS (generated `operand_roles`; an
+    unknown or unclassified word forgets everything).
+  - Forgotten for `slot`: at a spill of `slot` from another register.
+  - Forgotten entirely: at every join point. Join points are a labelled word
+    (stub, direct-branch target, template miss target or exit-group start)
+    and the word after an unconditional `b` or `br`.
+  - Facts survive the fall-through of a conditional branch.
+  - Delete a dead spill: delete a spill of `slot` when a later spill of the
+    same `slot` follows in the same straight-line run. In between there may be
+    only data-processing words and fills/spills of *other* slots. Anything
+    else ends the run:
+    - any branch, conditional ones included (budget, align, range,
+      dispatch);
+    - any user or window access (a fault site);
+    - any other memory access, or a fill of `slot`;
+    - a join point, an exit payload or the block end.
+  - Exact:
+    - A fill that is deleted would have loaded the value the register already
+      holds.
+    - A spill that is deleted is overwritten before anything can observe the
+      frame slot. Only an exit (stub, fault, template) or a fill reads a
+      slot, and each of those ends the run.
+    - User and window accesses cannot alias the kernel stack: LDTR/STTR use
+      EL0 permissions, and window accesses are range-checked to the user VA.
+    - Blocks are entered only at their start (Entry labels (A20)).
+  - Admission is unaffected (the A20 invariant): the pass only removes words
+    after the lowering.
+  - Verifier: fills are optional everywhere rules 3, 6 and 9 allow them, and a
+    spill is a plain runtime store to a user-state slot. If rule 9's dataflow
+    rejects a forwarded fill, that is a contract issue: report it, do not
+    change the verifier.
+  - Effect in redis:
+    - the ADRP-into-stack-backed chain (`movz; str; ldr; movk; ...`, 11 words)
+      becomes `movz; movk; movk; str`;
+    - the fill after a spill of the same register in the next instruction
+      disappears;
+    - about 760 words per SET request together with the constants change
+      ([2026-10-14 16:02](journal/2026-10-14.md), C1 + C3).
+- **SP-based pair loads write their first register directly.** This applies
+  to an LDP/LDPSW of general registers (offset, pre- or post-index) whose
+  base is SP. When `(imm mod 16) + 2 * size <= 16`, the first access may
+  load straight into its final mapped register, with no scratch and no
+  `mov`. For post-index, `imm` is 0.
+  - Precondition: SP is 16-byte aligned at this word. Either this
+    instruction's SP check precedes it, or the A20 fact holds. Both accesses
+    then lie in one aligned 16-byte granule, which is in one page.
+  - Exact: if the first access succeeds, the second can only fault when the
+    mapping changes between the two accesses. That needs another thread's
+    `munmap`/`mprotect` racing with this load. Demand paging, reclaim and
+    migration go through `handle_mm_fault` and are retried, never sent to the
+    `Mem` stub.
+    - If the Arm ARM leaves a faulting load's destination registers UNKNOWN,
+      this is architecturally exact. The implementer must cite the clause
+      (section and rule id) in the journal.
+    - If it cannot be found, this change does not ship.
+  - Out of scope: SIMD&FP pairs, and non-SP bases (an 8-byte-aligned pair can
+    cross a page).
+- **Window access on a directly mapped base: no base copy.** When `Rn` is
+  mapped to a physical register (direct, or x16/x17 for x29/SP), `sA` is that
+  register. The checks read it and the access uses it, without
+  `mov sA, <mapped Rn>`.
+  - Exact: only scratch is written before the access, and the checks only read
+    `sA`.
+  - Rule 8 already allows it: it requires `rn == sA`, and any register below
+    31 qualifies.
+  - The 16-byte crossing check keeps its 4-word shape: a `tbz` form would need
+    a new rule-4 branch kind.
+- **Not in A21** ([2026-10-14 16:02](journal/2026-10-14.md) ranks them):
+  - run-wide SP alignment (C4), which is a run condition;
+  - budget units only on CFG cycles (C5), which rewrites rule 6;
+  - RET dispatch on x30 (C6), a second template shape;
+  - no budget on forward BL (C7);
+  - literal pools (C8).
+
 ### Fault sites (A5)
 
 - Each emitted user access is a fault site. `ExecutionFragment` carries a
@@ -592,7 +694,8 @@ CFG stay in-fragment. `SVC` is not a branch: its resume stays a runtime path.
   ```
 
   - New kinds `DispatchTarget` (T into physical x13) and `DispatchLookup` (a
-    template word). BL's target move is the usual four `movz`/`movk` words;
+    template word). BL's target move is the A21 constant (one word per non-zero
+    halfword);
     BLR/BR/RET use `orr x13, xzr, Xm` with `Xm` the *user* register, which
     reg-virt maps with the capture machinery the exit group's RET_PARAM0
     already had (stack-backed x12..x18 are loaded from their slot, user x29/sp
@@ -716,8 +819,9 @@ user form's element size and extension, so the loaded value needs no fix-up.
   `MOV`, exact because every pair load (LDP W zero-extends, LDPSW sign-extends)
   writes the whole X register. A pair's first load targets its final register
   directly only when that is XZR or a stack-backed register's scratch that is
-  not the access base; otherwise it loads into scratch and a `MOV` follows the
-  second access.
+  not the access base, or when the base is SP and both accesses share one
+  16-byte granule (A21, "Hot-path word reduction"); otherwise it loads into
+  scratch and a `MOV` follows the second access.
 - Commit-after-last-access is unchanged: all address materialization writes
   only scratch, before the first access.
 - **PRFM is dropped.** A prefetch is a hint: no architectural effect on
@@ -880,14 +984,14 @@ that executes with PAN clear (A15). SIMD&FP loads/stores use the same shape
   | --- | --- | --- |
   | fills | `ldr xS, [sp, #slot]` of stack-backed Rs/Rt(read)/Rn | RegVirtHelper |
   | SP base only | `and sB, x17, #15; cbnz sB, <Mem stub>` | AlignCheck |
-  | base not stack-backed | `mov sA, <mapped Rn>` (x17 for SP, x16 for x29) | RegVirtHelper |
   | size > 1, base not SP | `and sB, sA, #15; add sB, sB, #(size-1); and sB, sB, #16; cbnz sB, <Mem stub>` | AlignCheck |
   | range check | `ubfx sB, sA, #48, #8; cbnz sB, <Mem stub>` | RangeCheck |
   | access | `<atomic, Rs/Rt mapped, Rn = sA>` | WindowAccess |
   | spills | `str xS, [sp, #slot]` of the written stack-backed register | RegVirtHelper |
 
-  - `sA` is the stack-backed base's own fill scratch, else a fresh scratch; `sB`
-    is always a fresh scratch. Worst case 4, so admission never runs out.
+  - `sA` is the stack-backed base's own fill scratch, else the register `Rn`
+    is mapped to (x17 for SP, x16 for x29; A21: no copy); `sB` is always a
+    fresh scratch. Worst case 4, so admission never runs out.
   - Commit-after-last-access: before the atomic only scratch is written; the
     atomic writes its destination (Rt, or CAS's Rs) only when it retires; spills
     follow it.
@@ -2877,3 +2981,4 @@ milestone:
 | A20 shorter transfer and SP-check paths | [2026-10-14 10:05](journal/2026-10-14.md) decided; [13:56](journal/2026-10-14.md) implementation (15:20 final tree inside) |
 | Return continuations, shadow return stack (experiment, rejected) | [2026-10-14 14:46](journal/2026-10-14.md) |
 | Hot-path word census | [2026-10-14 16:02](journal/2026-10-14.md) |
+| A21 hot-path word reduction | [2026-10-18 22:58](journal/2026-10-18.md) decided |
