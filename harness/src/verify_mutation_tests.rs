@@ -1900,27 +1900,35 @@ impl Suite {
         }
 
         // At each window access: the pointer loaded before the range check and used
-        // as the atomic's data operand (the window shape is kept).
+        // as the atomic's data operand (the window shape is kept). A21: `sA` is the
+        // base's own register, so nothing but `sB` is written by the window; the
+        // pointer goes into a scratch that is neither, so the range check cannot
+        // overwrite it.
         for (ubfx, _, atomic) in Self::windows(fixture) {
-            let Some(A64Insn::UbfmUbfm64mBitfield { rn: sa, .. }) = fixture.decoded(ubfx) else {
+            let Some(A64Insn::UbfmUbfm64mBitfield { rn: sa, rd: sb, .. }) = fixture.decoded(ubfx)
+            else {
                 panic!("{}: window at {:#x} has no ubfx", fixture.name, atomic * 4);
             };
             let base = A64Reg::x_sp(sa.enc());
+            let pointer = (12..=15)
+                .find(|&reg| reg != sa.enc() && reg != sb.enc())
+                .expect("four scratch registers, at most two taken");
+            let load = enc(ldr64(pointer, sp(), RUNTIME_FRAME_PT_REGS_PTR_OFFSET));
             for (what, insn) in [
                 (
-                    "ldaddal x12, x0, [sA]",
+                    "ldaddal xP, x0, [sA]",
                     A64Insn::LdaddLdaddal64Memop {
-                        rs: x(12),
+                        rs: x(pointer),
                         rn: base,
                         rt: x(0),
                     },
                 ),
                 (
-                    "casal x0, x12, [sA]",
+                    "casal x0, xP, [sA]",
                     A64Insn::CasCasalC64Comswap {
                         rs: x(0),
                         rn: base,
-                        rt: x(12),
+                        rt: x(pointer),
                     },
                 ),
             ] {

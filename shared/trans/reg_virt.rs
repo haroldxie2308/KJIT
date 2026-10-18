@@ -1,8 +1,8 @@
 use crate::shared::abi::{
     pt_regs_x_slot_offset, reg_virt_scratch_gpr, reg_virt_stack_backed_slot_offset,
     reg_virt_is_stack_backed, DISPATCH_TARGET_REG, PAN_WINDOW_RANGE_TOP_BIT,
-    REG_VIRT_SCRATCH_GPR_LIMIT, REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
-    REG_VIRT_STABLE_MAPPED_X29_PHYS_REG, REG_VIRT_STABLE_MAPPED_X29_REG, RET_PARAM0_REG,
+    REG_VIRT_SCRATCH_GPR_LIMIT, REG_VIRT_SCRATCH_GPR_START, REG_VIRT_STABLE_MAPPED_SP_PHYS_REG,
+    REG_VIRT_STABLE_MAPPED_X29_PHYS_REG, REG_VIRT_STABLE_MAPPED_X29_REG, REG_VIRT_STACK_BACKED_REG_START, RET_PARAM0_REG,
     RET_PARAM1_REG, RET_STATUS_REG, RUNTIME_FRAME_PT_REGS_PTR_OFFSET, USER_VA_BITS,
 };
 use crate::shared::arm64::ergo::{ldst64_offset, mem_off, scaled_simm, simm, sp, uimm, x, xzr};
@@ -12,8 +12,8 @@ use crate::shared::arm64::{
 };
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::rephrase::{
-    is_dispatch_miss_param0_copy, rephrase_insn, RephrasedInsn, RephrasedInsnKind,
-    RephrasedProgram,
+    is_dispatch_miss_param0_copy, push_mov_imm64, rephrase_insn, RephrasedInsn,
+    RephrasedInsnKind, RephrasedProgram,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -178,7 +178,7 @@ pub fn virtualize_registers(
 ) -> SharedResult<RephrasedProgram, RegVirtError> {
     for block in program.iter_mut() {
         let body = core::mem::replace(&mut block.insns, SharedVec::new());
-        block.insns = virtualize_insns(&body, false)?;
+        block.insns = forward_slots(&virtualize_insns(&body, false)?)?;
         let cold = core::mem::replace(&mut block.cold, SharedVec::new());
         block.cold = virtualize_insns(&cold, true)?;
     }
@@ -210,6 +210,207 @@ fn virtualize_insns(
         sp_align.observe_writes(&rewritten[first..]);
     }
     Ok(rewritten)
+}
+
+/// The scratch registers a fill/spill pair moves through (x12..x15) and the user-state
+/// frame slots they move (x12..x17 and x18).
+const SCRATCH_REGS: usize = REG_VIRT_SCRATCH_GPR_LIMIT;
+const SLOT_COUNT: usize = 7;
+
+/// One reg-virt fill (`ldr xS, [sp, #slot]`) or spill (`str xS, [sp, #slot]`) of a
+/// user-state frame slot. `scratch` is `xS - REG_VIRT_SCRATCH_GPR_START`, `slot` the
+/// slot's index (the user register number minus 12, x18 last).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct SlotMove {
+    fill: bool,
+    scratch: usize,
+    slot: usize,
+}
+
+/// `Some` for exactly the words `emit_fills`/`emit_spills` produce (kind
+/// `RegVirtHelper`, 64-bit `ldr`/`str` at `[sp, #slot]` of a stack-backed register's
+/// slot, through a scratch register). Every other word, the pt_regs pointer load and
+/// the dispatch template's table load included, is not a slot move.
+fn slot_move(word: &RephrasedInsn) -> Option<SlotMove> {
+    if word.kind != RephrasedInsnKind::RegVirtHelper {
+        return None;
+    }
+    let (fill, rt, mem) = match word.insn {
+        A64Insn::LdrImmGenLdr64LdstPos { rt, mem } => (true, rt, mem),
+        A64Insn::StrImmGenStr64LdstPos { rt, mem } => (false, rt, mem),
+        _ => return None,
+    };
+    let A64Mem::Offset { base, offset } = mem else {
+        return None;
+    };
+    if classify_reg(base) != RegClass::Sp {
+        return None;
+    }
+    let scratch = usize::from(rt.enc.checked_sub(REG_VIRT_SCRATCH_GPR_START)?);
+    if scratch >= SCRATCH_REGS {
+        return None;
+    }
+    let offset = u32::try_from(offset.value()).ok()?;
+    let slot = (0..SLOT_COUNT).find(|&slot| {
+        let user_reg = REG_VIRT_STACK_BACKED_REG_START + slot as u8;
+        reg_virt_stack_backed_slot_offset(user_reg) == Some(offset)
+    })?;
+    Some(SlotMove {
+        fill,
+        scratch,
+        slot,
+    })
+}
+
+/// An unconditional `b` or `br`: the word after it is a join point.
+fn ends_straight_line(insn: A64Insn) -> bool {
+    matches!(
+        insn,
+        A64Insn::BUncondBOnlyBranchImm { .. } | A64Insn::BrBr64BranchReg { .. }
+    )
+}
+
+fn is_branch(insn: A64Insn) -> bool {
+    insn.operand_roles().iter().any(|role| {
+        matches!(
+            role,
+            A64OperandRole::ControlFlow | A64OperandRole::BranchTarget { .. }
+        )
+    })
+}
+
+/// A21 (docs/pipeline.md, "Hot-path word reduction (A21)"): block-local slot
+/// forwarding over one block body, after `virtualize_insns`. It only deletes words.
+///
+/// Pass 1 deletes a fill of `slot` into `xS` while `xS` is known to hold `slot`'s
+/// current value: after a fill of `slot` into `xS` or a spill of `xS` to `slot`;
+/// forgotten for `xS` at any write to it (generated operand roles; a role whose
+/// register the metadata cannot name counts as a write to every register) and for
+/// `slot` at a spill of it from another register; forgotten entirely at a join point
+/// and at any memory access that is not a fill/spill or a user/window access. User
+/// and window accesses cannot alias the kernel stack (LDTR/STTR run with EL0
+/// permissions, window accesses are range-checked to the user VA), so they only
+/// forget their destination registers.
+///
+/// Pass 2 deletes a spill of `slot` that a later spill of the same `slot` overwrites
+/// in the same straight-line run. Anything that can observe a slot ends the run: a
+/// branch (budget, alignment, range, dispatch and exit branches all lead to a stub
+/// or the epilogue, which write the slots back), a link slot (a branch once linked),
+/// a user or window access (a fault site), any other memory access, an exit payload,
+/// a fill of `slot`, a join point and the block end. Deleted fills of pass 1 are not fills.
+///
+/// Join points inside a body are its first word and the word after an unconditional
+/// `b` or `br` (the dispatch template's victim probe and the exit group behind it):
+/// a fragment is entered only at a block start (Entry labels (A20)), and every other
+/// label of a body is a branch target in the cold region or the epilogue. The cold
+/// region is not processed: its exit groups hold no fill that repeats a load.
+fn forward_slots(
+    body: &[RephrasedInsn],
+) -> SharedResult<SharedVec<RephrasedInsn>, RegVirtError> {
+    let mut keep: SharedVec<bool> =
+        SharedVec::with_capacity(body.len(), GFP_KERNEL).map_err(RegVirtError::Allocation)?;
+    for _ in body {
+        keep.push(true, GFP_KERNEL)
+            .map_err(RegVirtError::Allocation)?;
+    }
+    let is_join =
+        |index: usize| index == 0 || ends_straight_line(body[index - 1].insn);
+    // A word that touches memory the pass cannot name: not a fill/spill, not a
+    // user or window access.
+    let opaque_memory = |word: &RephrasedInsn| {
+        word.insn.accesses_memory()
+            && !matches!(
+                word.kind,
+                RephrasedInsnKind::UserAccess | RephrasedInsnKind::WindowAccess
+            )
+    };
+
+    // Pass 1: forward fills.
+    let mut held: [Option<usize>; SCRATCH_REGS] = [None; SCRATCH_REGS];
+    for (index, word) in body.iter().enumerate() {
+        if is_join(index) {
+            held = [None; SCRATCH_REGS];
+        }
+        match slot_move(word) {
+            Some(SlotMove {
+                fill: true,
+                scratch,
+                slot,
+            }) => {
+                if held[scratch] == Some(slot) {
+                    keep[index] = false;
+                }
+                held[scratch] = Some(slot);
+            }
+            Some(SlotMove {
+                fill: false,
+                scratch,
+                slot,
+            }) => {
+                for other in held.iter_mut().filter(|other| **other == Some(slot)) {
+                    *other = None;
+                }
+                held[scratch] = Some(slot);
+            }
+            None if opaque_memory(word) => held = [None; SCRATCH_REGS],
+            None => {
+                for (scratch, fact) in held.iter_mut().enumerate() {
+                    let reg = REG_VIRT_SCRATCH_GPR_START + scratch as u8;
+                    if writes_physical_reg(word.insn, reg) {
+                        *fact = None;
+                    }
+                }
+            }
+        }
+    }
+
+    // Pass 2: dead spills, scanning backwards. `overwritten[slot]`: a later spill of
+    // `slot` follows with nothing in between that can observe it.
+    let mut overwritten = [false; SLOT_COUNT];
+    for (index, word) in body.iter().enumerate().rev() {
+        if !keep[index] {
+            continue;
+        }
+        match slot_move(word) {
+            Some(SlotMove {
+                fill: true, slot, ..
+            }) => overwritten[slot] = false,
+            Some(SlotMove {
+                fill: false, slot, ..
+            }) => {
+                if overwritten[slot] {
+                    keep[index] = false;
+                }
+                overwritten[slot] = true;
+            }
+            None => {
+                // A link slot is a `nop` here, but the runtime may patch it into a
+                // `b` to another fragment (A16), which then reads the slots.
+                let observes = is_branch(word.insn)
+                    || word.insn.accesses_memory()
+                    || matches!(
+                        word.kind,
+                        RephrasedInsnKind::RuntimeExitPayload
+                            | RephrasedInsnKind::RuntimeExitBranch
+                            | RephrasedInsnKind::LinkSlot { .. }
+                    );
+                if observes {
+                    overwritten = [false; SLOT_COUNT];
+                }
+            }
+        }
+        if is_join(index) {
+            overwritten = [false; SLOT_COUNT];
+        }
+    }
+
+    let kept = keep.iter().filter(|&&kept| kept).count();
+    let mut out =
+        SharedVec::with_capacity(kept, GFP_KERNEL).map_err(RegVirtError::Allocation)?;
+    for (word, _) in body.iter().zip(keep.iter()).filter(|(_, &kept)| kept) {
+        push_rephrased(&mut out, *word)?;
+    }
+    Ok(out)
 }
 
 /// A20 (docs/pipeline.md, "SP alignment check deduplication (A20)"): the one fact
@@ -1056,12 +1257,14 @@ impl WindowInsn {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 struct WindowLowering {
     insn: WindowInsn,
-    /// `sA`: the scratch register holding the access address the window checks
-    /// and the access uses as its base. A stack-backed base's own fill scratch
-    /// when the offset is 0, else a fresh scratch loaded from `addr_base`.
+    /// `sA`: the register holding the access address the window checks and the
+    /// access uses as its base. For a base-only access (offset 0, no index; A21) it
+    /// is the register the base already lives in (a stack-backed base's fill
+    /// scratch, or its physical register), else a fresh scratch loaded from
+    /// `addr_base`.
     addr: u8,
-    /// `sA = <mapped base> + offset` (`mov` for offset 0; `add`/`sub` otherwise), or
-    /// for a register-offset form `sA = <mapped base> + ExtendReg(<mapped index>)`.
+    /// `sA = <mapped base> + offset` (`add`/`sub`), or for a register-offset form
+    /// `sA = <mapped base> + ExtendReg(<mapped index>)`. `None`: `sA` is the base.
     addr_base: Option<A64Reg>,
     /// `sB`: the range check's result; also the SP / block alignment check's
     /// scratch, which run first.
@@ -1323,19 +1526,39 @@ impl RewritePlan {
     fn plan_window(&mut self, insn: WindowInsn) -> SharedResult<WindowLowering, RegVirtError> {
         let base = insn.base();
         let base_class = classify_reg(base);
-        let (addr, addr_base) = if base_class == RegClass::StackBacked
-            && insn.offset() == 0
-            && insn.index().is_none()
-        {
-            // Mapped by the `MemBase` role in `build`; missing is a translator bug.
-            let mapping = self.stack_mapping(base.enc).ok_or(
-                RegVirtError::StackBackedRewriteNotImplemented {
-                    pc: self.pc,
-                    insn: self.insn,
-                    reg: base,
-                },
-            )?;
-            (mapping.scratch, None)
+        let (addr, addr_base) = if insn.offset() == 0 && insn.index().is_none() {
+            // A21: the address is the base itself, so `sA` is the register the base
+            // lives in and nothing is copied. A stack-backed base is mapped by the
+            // `MemBase` role in `build` (missing is a translator bug); every other
+            // base is a physical register already (direct, or x16/x17 for x29/SP).
+            // The checks only read `sA` and the access reads it before writing its
+            // destination, so only scratch is written ahead of the access.
+            let register = match base_class {
+                RegClass::StackBacked => {
+                    self.stack_mapping(base.enc)
+                        .ok_or(RegVirtError::StackBackedRewriteNotImplemented {
+                            pc: self.pc,
+                            insn: self.insn,
+                            reg: base,
+                        })?
+                        .scratch
+                }
+                RegClass::Direct
+                | RegClass::RuntimeReserved
+                | RegClass::StableMapped
+                | RegClass::Sp => self.phys(base).enc,
+                // Encoding 31 of a window base names SP (`Rn|SP`), never XZR; a decoded
+                // XZR base would be a metadata error, and native execution is exact.
+                RegClass::Zero => {
+                    return Err(RegVirtError::UnsupportedSpOperand {
+                        pc: self.pc,
+                        insn: self.insn,
+                        field: "Rn",
+                        reg: base,
+                    })
+                }
+            };
+            (register, None)
         } else {
             (self.alloc_scratch()?, Some(x(self.phys(base).enc)))
         };
@@ -1360,7 +1583,6 @@ impl RewritePlan {
     ///
     /// ```text
     ///   [and sB, x17, #15; cbnz sB, <Mem stub>]         SP base: EL0 SP alignment
-    ///   [mov sA, <mapped base>]                          offset 0, base not stack-backed
     ///   [add/sub sA, <mapped base>, #offset]             SIMD&FP offset/pre-index forms
     ///   [and sB, sA, #15; add sB, sB, #(size - 1);
     ///    and sB, sB, #16; cbnz sB, <Mem stub>]           atomic wider than a byte, base not SP
@@ -1422,16 +1644,6 @@ impl RewritePlan {
                         imm3: uimm(u32::from(index.shift), 3),
                         rn: A64Reg::x_sp(base.enc),
                         rd: A64Reg::x_sp(sa),
-                    }),
-                )?,
-                (None, 0) => push_rephrased(
-                    out,
-                    helper(A64Insn::OrrLogShiftOrr64LogShift {
-                        shift: 0,
-                        rm: base,
-                        imm6: uimm(0, 6),
-                        rn: xzr(),
-                        rd: x(sa),
                     }),
                 )?,
                 (None, offset) => self.push_add_sub_imm(out, helper, sa, base.enc, offset)?,
@@ -1953,42 +2165,16 @@ impl RewritePlan {
     }
 }
 
-/// `rd = address`: `MOVZ` of the low halfword, then a `MOVK` for every other
-/// non-zero halfword. Writes only `rd` (a scratch register).
+/// `rd = address` for a literal load's scratch: rephrase's constant helper, as
+/// reg-virt output.
 fn push_mov_address(
     out: &mut SharedVec<RephrasedInsn>,
     pc: u64,
     rd: u8,
     address: u64,
 ) -> SharedResult<(), RegVirtError> {
-    let halfword = |hw: u8| uimm(((address >> (16 * u32::from(hw))) & 0xFFFF) as u32, 16);
-    push_rephrased(
-        out,
-        RephrasedInsn::reg_virt_helper(
-            pc,
-            A64Insn::MovzMovz64Movewide {
-                hw: 0,
-                imm16: halfword(0),
-                rd: x(rd),
-            },
-        ),
-    )?;
-    for hw in 1..4 {
-        if halfword(hw).raw() != 0 {
-            push_rephrased(
-                out,
-                RephrasedInsn::reg_virt_helper(
-                    pc,
-                    A64Insn::MovkMovk64Movewide {
-                        hw,
-                        imm16: halfword(hw),
-                        rd: x(rd),
-                    },
-                ),
-            )?;
-        }
-    }
-    Ok(())
+    push_mov_imm64(out, pc, x(rd), address, RephrasedInsnKind::RegVirtHelper)
+        .map_err(RegVirtError::Allocation)
 }
 
 fn validate_runtime_exit_payload(rephrased: RephrasedInsn) -> SharedResult<(), RegVirtError> {
@@ -3406,14 +3592,13 @@ mod tests {
     #[test]
     fn lse_atomic_lowers_to_the_exact_window_access() {
         let w = A64Reg::w;
-        // ldaddal x0, x1, [x2]: direct base copied into sA = x12; sB = x13 does the
-        // block check and the range check.
-        let mut expected = vec![helper(mov(12, 2))];
-        expected.extend(block_align_check(13, 12, 8));
-        expected.extend(range_check(12, 13));
+        // ldaddal x0, x1, [x2]: A21: the direct base is sA itself, no copy; sB = x12
+        // does the block check and the range check.
+        let mut expected = block_align_check(12, 2, 8).to_vec();
+        expected.extend(range_check(2, 12));
         expected.extend(window_access(A64Insn::LdaddLdaddal64Memop {
             rs: x(0),
-            rn: A64Reg::x_sp(12),
+            rn: A64Reg::x_sp(2),
             rt: x(1),
         }));
         assert_eq!(
@@ -3448,14 +3633,13 @@ mod tests {
             expected
         );
 
-        // swpb w0, w16, [sp]: SP check through sB, then sA = x17; a byte needs no
-        // block check; the old value lands in the stack-backed x16's scratch.
-        let mut expected = sp_align_check(14).to_vec();
-        expected.push(helper(mov(13, 17)));
-        expected.extend(range_check(13, 14));
+        // swpb w0, w16, [sp]: SP check through sB, sA = x17 itself (A21); a byte needs
+        // no block check; the old value lands in the stack-backed x16's scratch.
+        let mut expected = sp_align_check(13).to_vec();
+        expected.extend(range_check(17, 13));
         expected.extend(window_access(A64Insn::SwpbSwpb32Memop {
             rs: w(0),
-            rn: A64Reg::x_sp(13),
+            rn: A64Reg::x_sp(17),
             rt: w(12),
         }));
         expected.push(spill(12, 16));
@@ -3469,13 +3653,12 @@ mod tests {
             expected
         );
 
-        // stadd w1, [x29]: x29 lives in x16; Rt = WZR stays.
-        let mut expected = vec![helper(mov(12, 16))];
-        expected.extend(block_align_check(13, 12, 4));
-        expected.extend(range_check(12, 13));
+        // stadd w1, [x29]: x29 lives in x16 and is sA (A21); Rt = WZR stays.
+        let mut expected = block_align_check(12, 16, 4).to_vec();
+        expected.extend(range_check(16, 12));
         expected.extend(window_access(A64Insn::LdaddLdadd32Memop {
             rs: w(1),
-            rn: A64Reg::x_sp(12),
+            rn: A64Reg::x_sp(16),
             rt: w(31),
         }));
         assert_eq!(
@@ -3537,7 +3720,15 @@ mod tests {
                         assert_eq!(atomic.lse_atomic().unwrap().rn.enc, sa.enc, "{out:?}");
                         let scratch = crate::shared::abi::REG_VIRT_SCRATCH_GPR_START
                             ..=crate::shared::abi::REG_VIRT_SCRATCH_GPR_END;
-                        assert!(scratch.contains(&sa.enc) && scratch.contains(&sb.enc));
+                        assert!(scratch.contains(&sb.enc));
+                        // A21: sA is the base's own register when it is not stack-backed
+                        // (x29 lives in x16, SP in x17), else its fill scratch.
+                        match rn {
+                            29 => assert_eq!(sa.enc, 16, "{insn:?}: {out:?}"),
+                            31 => assert_eq!(sa.enc, 17, "{insn:?}: {out:?}"),
+                            0 | 9 | 30 => assert_eq!(sa.enc, rn, "{insn:?}: {out:?}"),
+                            _ => assert!(scratch.contains(&sa.enc), "{insn:?}: {out:?}"),
+                        }
                         for before in &out[..window] {
                             assert!(
                                 !matches!(before.insn, A64Insn::StrImmGenStr64LdstPos { .. }),
@@ -3944,7 +4135,18 @@ mod tests {
                         panic!("{insn:?}: {out:?}");
                     };
                     assert!(out.iter().all(|r| r.insn.msr_pan().is_none()), "{out:?}");
-                    assert!(scratch.contains(&sa.enc) && scratch.contains(&sb.enc));
+                    assert!(scratch.contains(&sb.enc));
+                    // A21: a base-only access is based on the base's own register when
+                    // it is not stack-backed; a register-offset form computes sA.
+                    match rn {
+                        _ if insn.fpsimd_mem().unwrap().index.is_some() => {
+                            assert!(scratch.contains(&sa.enc), "{out:?}")
+                        }
+                        29 => assert_eq!(sa.enc, 16, "{insn:?}: {out:?}"),
+                        31 => assert_eq!(sa.enc, 17, "{insn:?}: {out:?}"),
+                        0 | 9 | 30 => assert_eq!(sa.enc, rn, "{insn:?}: {out:?}"),
+                        _ => assert!(scratch.contains(&sa.enc), "{insn:?}: {out:?}"),
+                    }
                     let mem = insn.fpsimd_mem().unwrap();
                     assert_eq!(
                         access,
@@ -4986,5 +5188,240 @@ mod tests {
             rt: x(0),
         };
         assert_eq!(sp_checked(&[&[reg_offset, reg_offset]]), [[0]]);
+    }
+
+    // ---- A21: block-local slot forwarding (`forward_slots`) ----
+
+    fn forwarded(words: &[RephrasedInsn]) -> Vec<RephrasedInsn> {
+        forward_slots(words).unwrap().iter().copied().collect()
+    }
+
+    fn dp(rd: u8) -> RephrasedInsn {
+        original(add_imm(rd, rd, 0, 1))
+    }
+
+    fn jump() -> RephrasedInsn {
+        original(A64Insn::BUncondBOnlyBranchImm {
+            imm26: scaled_simm(0, 26, 2),
+        })
+    }
+
+    fn cond_branch() -> RephrasedInsn {
+        original(A64Insn::CbzCbz64Compbranch {
+            imm19: scaled_simm(0, 19, 2),
+            rt: x(0),
+        })
+    }
+
+    /// `ldr x12, [sp, #176]`: the pt_regs pointer load, a reg-virt helper that is not a
+    /// user-state slot move.
+    fn pt_regs_load() -> RephrasedInsn {
+        helper(A64Insn::LdrImmGenLdr64LdstPos {
+            rt: x(12),
+            mem: frame_slot(176),
+        })
+    }
+
+    #[test]
+    fn a_fill_of_a_register_that_already_holds_the_slot_is_forwarded() {
+        // After a fill of the same slot into the same register.
+        assert_eq!(
+            forwarded(&[fill(12, 16), dp(13), fill(12, 16), dp(12)]),
+            [fill(12, 16), dp(13), dp(12)]
+        );
+        // After a spill of that register to the slot.
+        assert_eq!(
+            forwarded(&[dp(12), spill(12, 16), dp(13), fill(12, 16), dp(12)]),
+            [dp(12), spill(12, 16), dp(13), dp(12)]
+        );
+        // The same slot into another register is a different fill, and so is another
+        // slot into the same one.
+        assert_eq!(
+            forwarded(&[fill(12, 16), fill(13, 16), fill(12, 15)]),
+            [fill(12, 16), fill(13, 16), fill(12, 15)]
+        );
+        // Facts survive the fall-through of a conditional branch, a user access that
+        // writes another register and a window access.
+        assert_eq!(
+            forwarded(&[
+                fill(12, 16),
+                cond_branch(),
+                ldtr_x(x(0), 17, 0),
+                sttr_x(x(12), 17, 8),
+                fill(12, 16),
+            ]),
+            [fill(12, 16), cond_branch(), ldtr_x(x(0), 17, 0), sttr_x(x(12), 17, 8)]
+        );
+    }
+
+    #[test]
+    fn a_fill_is_not_forwarded_past_what_may_change_the_register_or_the_slot() {
+        // A write to the register (a data-processing word, a user load into it, a
+        // 32-bit write to its W half).
+        for write in [
+            dp(12),
+            ldtr_x(x(12), 17, 0),
+            original(A64Insn::MovzMovz32Movewide {
+                hw: 0,
+                imm16: uimm(1, 16),
+                rd: A64Reg::w(12),
+            }),
+        ] {
+            assert_eq!(
+                forwarded(&[fill(12, 16), write, fill(12, 16)]),
+                [fill(12, 16), write, fill(12, 16)],
+                "{write:?}"
+            );
+        }
+        // Another register's spill of the slot: the slot now holds that register.
+        assert_eq!(
+            forwarded(&[fill(12, 16), spill(13, 16), fill(12, 16), fill(13, 16)]),
+            [fill(12, 16), spill(13, 16), fill(12, 16)]
+        );
+        // A join point: the word after an unconditional branch.
+        assert_eq!(
+            forwarded(&[fill(12, 16), jump(), fill(12, 16)]),
+            [fill(12, 16), jump(), fill(12, 16)]
+        );
+        // A memory access the pass cannot name (here the pt_regs pointer load) forgets
+        // everything, including registers it does not write.
+        assert_eq!(
+            forwarded(&[fill(13, 16), pt_regs_load(), fill(13, 16)]),
+            [fill(13, 16), pt_regs_load(), fill(13, 16)]
+        );
+    }
+
+    #[test]
+    fn a_spill_overwritten_in_the_same_run_is_dead() {
+        assert_eq!(
+            forwarded(&[spill(12, 16), dp(13), spill(12, 16)]),
+            [dp(13), spill(12, 16)]
+        );
+        // Fills and spills of other slots and registers do not end the run.
+        assert_eq!(
+            forwarded(&[spill(12, 16), fill(13, 15), spill(14, 14), spill(13, 16)]),
+            [fill(13, 15), spill(14, 14), spill(13, 16)]
+        );
+        // The last spill of a run is kept (the block end), and so is a lone one.
+        assert_eq!(forwarded(&[dp(12), spill(12, 16)]), [dp(12), spill(12, 16)]);
+        // Three in a row: only the last stays.
+        assert_eq!(
+            forwarded(&[spill(12, 16), spill(12, 16), spill(12, 16)]),
+            [spill(12, 16)]
+        );
+    }
+
+    #[test]
+    fn a_spill_is_kept_when_anything_can_observe_the_slot() {
+        let payload = RephrasedInsn::runtime_exit_payload(0x1000, movz(x(9)));
+        let window = window_access(A64Insn::LdaddLdaddal64Memop {
+            rs: x(0),
+            rn: A64Reg::x_sp(1),
+            rt: x(2),
+        })[0];
+        for between in [
+            // A branch (budget, alignment, range, dispatch all branch to a stub or
+            // leave), conditional or not.
+            cond_branch(),
+            jump(),
+            // A user access and a window access are fault sites.
+            ldtr_x(x(0), 17, 0),
+            sttr_x(x(0), 17, 0),
+            window,
+            // Any other memory access.
+            pt_regs_load(),
+            // A fill of the slot itself.
+            fill(13, 16),
+            // An exit payload.
+            payload,
+            // A link slot: a `b` to another fragment once the runtime links it.
+            RephrasedInsn::link_slot(0x1000, 0x2000),
+        ] {
+            let words = [spill(12, 16), between, spill(12, 16)];
+            assert_eq!(forwarded(&words), words, "{between:?}");
+        }
+        // A join point between the two: the later spill is not in the same run.
+        let words = [spill(12, 16), jump(), spill(12, 16)];
+        assert_eq!(forwarded(&words), words);
+    }
+
+    #[test]
+    fn a_forwarded_fill_does_not_keep_a_spill_alive_or_dead() {
+        // spill; fill (forwarded); spill: the fill is gone, so the first spill is dead.
+        assert_eq!(
+            forwarded(&[spill(12, 16), fill(12, 16), dp(12), spill(12, 16)]),
+            [dp(12), spill(12, 16)]
+        );
+        // A fill that stays (the register changed) is a read of the slot: the spill
+        // before it stays.
+        let words = [spill(12, 16), dp(12), fill(12, 16), spill(12, 16)];
+        assert_eq!(forwarded(&words), words);
+    }
+
+    /// The redis ADRP into a stack-backed register: 11 words became
+    /// `movz; movk; movk; str` (docs/pipeline.md, "Hot-path word reduction (A21)").
+    #[test]
+    fn adrp_into_a_stack_backed_register_builds_in_scratch_and_spills_once() {
+        let adrp = rephrase_insn(IrInsn {
+            pc: 0x0000_0055_0025_f000,
+            word: 0,
+            inner: A64Insn::AdrpAdrpOnlyPcreladdr {
+                immlo: A64Imm::unsigned(0, 2),
+                immhi: A64Imm::unsigned(0, 19),
+                rd: x(16),
+            },
+        })
+        .unwrap();
+        let mut program = virtualize_registers(program_from_insns(&adrp)).unwrap();
+        let words: Vec<_> = core::mem::replace(&mut program[0].insns, SharedVec::new())
+            .iter()
+            .map(|word| word.insn)
+            .collect();
+        let movk = |hw, imm: u32| A64Insn::MovkMovk64Movewide {
+            hw,
+            imm16: uimm(imm, 16),
+            rd: x(12),
+        };
+        assert_eq!(
+            words,
+            [
+                A64Insn::MovzMovz64Movewide {
+                    hw: 0,
+                    imm16: uimm(0xf000, 16),
+                    rd: x(12),
+                },
+                movk(1, 0x25),
+                movk(2, 0x55),
+                spill(12, 16).insn,
+            ]
+        );
+    }
+
+    /// Two back-to-back updates of one stack-backed register: the second fill is the
+    /// register the first update left, and the first spill is overwritten.
+    #[test]
+    fn consecutive_instructions_on_one_stack_backed_register_share_the_fill() {
+        let bump = |pc| {
+            RephrasedInsn::original(
+                pc,
+                A64Insn::AddAddsubImmAdd64AddsubImm {
+                    sh: 0,
+                    imm12: uimm(8, 12),
+                    rn: A64Reg::x_sp(16),
+                    rd: A64Reg::x_sp(16),
+                },
+            )
+        };
+        let program = virtualize_registers(program_from_insns(&[bump(0x1000), bump(0x1004)]))
+            .unwrap();
+        assert_eq!(
+            program[0].insns.iter().map(|word| word.insn).collect::<Vec<_>>(),
+            [
+                fill(12, 16).insn,
+                add_imm(12, 12, 0, 8),
+                add_imm(12, 12, 0, 8),
+                spill(12, 16).insn,
+            ]
+        );
     }
 }

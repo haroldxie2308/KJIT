@@ -274,17 +274,18 @@ fn a_retired_callee_misses_in_the_warm_run() {
 /// the warm run's linked calls execute fewer instructions than the same warm run
 /// through the dispatch template (both are compared with the original). Exactly how
 /// many fewer: a linked call runs `b <callee>` where the unlinked one runs the slot
-/// `nop`, the four target-move words (A20 order: after the slot) and a main-probe hit
-/// of the template (9 words, `br x12` included); the link write and the budget check
-/// precede the slot on both paths. Before A20 the four target-move words ran on both
-/// paths, so a linked call saved 9 words, not 13.
+/// `nop`, the target-move words (A20 order: after the slot; A21: one per non-zero
+/// halfword, here a `movz` and a `movk` because the callees sit at `0x1xxxx`) and a
+/// main-probe hit of the template (9 words, `br x12` included); the link write and the
+/// budget check precede the slot on both paths. Before A20 the target-move words ran
+/// on both paths, so a linked call saved 9 words, not 9 plus the moves.
 #[test]
 fn linked_bl_sites_skip_the_dispatch_template_in_the_warm_run() {
     // `nested_calls_mark` executes 10 `bl`s: 2 to func_f, 2 per func_f call to func_g
     // (4), and 1 per func_g call to func_h (4).
     const BL_EXECUTIONS: usize = 10;
     const SLOT_NOP: usize = 1;
-    const TARGET_MOVE_WORDS: usize = 4;
+    const TARGET_MOVE_WORDS: usize = 2;
     const MAIN_PROBE_HIT_WORDS: usize = 9;
     const LINKED_B: usize = 1;
 

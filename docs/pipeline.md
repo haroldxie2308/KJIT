@@ -354,7 +354,7 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
 
 ### Hot-path word reduction (A21)
 
-Four translator-only changes. No verifier rule, ABI constant, kernel or
+Three translator-only changes. No verifier rule, ABI constant, kernel or
 runtime change. Each one either removes words whose effect is unobservable, or
 replaces a sequence with a shorter one that has the same effect.
 
@@ -383,16 +383,19 @@ replaces a sequence with a shorter one that has the same effect.
   - Forgotten for xS: at any write to xS (generated `operand_roles`; an
     unknown or unclassified word forgets everything).
   - Forgotten for `slot`: at a spill of `slot` from another register.
-  - Forgotten entirely: at every join point. Join points are a labelled word
-    (stub, direct-branch target, template miss target or exit-group start)
-    and the word after an unconditional `b` or `br`.
+  - Forgotten entirely: at every join point, and at any memory access that is
+    not a fill, a spill, a user access or a window access. Inside a body the
+    join points are its first word and the word after an unconditional `b` or
+    `br` (the template's victim probe and the exit group behind it). Every
+    other label is a block start or lies in the cold region, which the pass
+    does not process.
   - Facts survive the fall-through of a conditional branch.
   - Delete a dead spill: delete a spill of `slot` when a later spill of the
     same `slot` follows in the same straight-line run. In between there may be
     only data-processing words and fills/spills of *other* slots. Anything
     else ends the run:
     - any branch, conditional ones included (budget, align, range,
-      dispatch);
+      dispatch), and a link slot, which is a `b` once linked (A16);
     - any user or window access (a fault site);
     - any other memory access, or a fill of `slot`;
     - a join point, an exit payload or the block end.
@@ -418,25 +421,6 @@ replaces a sequence with a shorter one that has the same effect.
       disappears;
     - about 760 words per SET request together with the constants change
       ([2026-10-14 16:02](journal/2026-10-14.md), C1 + C3).
-- **SP-based pair loads write their first register directly.** This applies
-  to an LDP/LDPSW of general registers (offset, pre- or post-index) whose
-  base is SP. When `(imm mod 16) + 2 * size <= 16`, the first access may
-  load straight into its final mapped register, with no scratch and no
-  `mov`. For post-index, `imm` is 0.
-  - Precondition: SP is 16-byte aligned at this word. Either this
-    instruction's SP check precedes it, or the A20 fact holds. Both accesses
-    then lie in one aligned 16-byte granule, which is in one page.
-  - Exact: if the first access succeeds, the second can only fault when the
-    mapping changes between the two accesses. That needs another thread's
-    `munmap`/`mprotect` racing with this load. Demand paging, reclaim and
-    migration go through `handle_mm_fault` and are retried, never sent to the
-    `Mem` stub.
-    - If the Arm ARM leaves a faulting load's destination registers UNKNOWN,
-      this is architecturally exact. The implementer must cite the clause
-      (section and rule id) in the journal.
-    - If it cannot be found, this change does not ship.
-  - Out of scope: SIMD&FP pairs, and non-SP bases (an 8-byte-aligned pair can
-    cross a page).
 - **Window access on a directly mapped base: no base copy.** When `Rn` is
   mapped to a physical register (direct, or x16/x17 for x29/SP), `sA` is that
   register. The checks read it and the access uses it, without
@@ -448,6 +432,14 @@ replaces a sequence with a shorter one that has the same effect.
   - The 16-byte crossing check keeps its 4-word shape: a `tbz` form would need
     a new rule-4 branch kind.
 - **Not in A21** ([2026-10-14 16:02](journal/2026-10-14.md) ranks them):
+  - SP-based pair loads writing their first register directly (C2). After the
+    first access succeeds, the second can fault only through a racing
+    `munmap`/`mprotect` or a perf hardware watchpoint (`kjit_can_run` does
+    not decline those). Then the first register is already written. That is
+    exact only if the Arm ARM makes a faulting load's destinations UNKNOWN,
+    and the clause has not been cited
+    ([2026-10-18 01:22](journal/2026-10-18.md)). If it ships later, the
+    harness's fault footprint must allow either value.
   - run-wide SP alignment (C4), which is a run condition;
   - budget units only on CFG cycles (C5), which rewrites rule 6;
   - RET dispatch on x30 (C6), a second template shape;
@@ -819,9 +811,8 @@ user form's element size and extension, so the loaded value needs no fix-up.
   `MOV`, exact because every pair load (LDP W zero-extends, LDPSW sign-extends)
   writes the whole X register. A pair's first load targets its final register
   directly only when that is XZR or a stack-backed register's scratch that is
-  not the access base, or when the base is SP and both accesses share one
-  16-byte granule (A21, "Hot-path word reduction"); otherwise it loads into
-  scratch and a `MOV` follows the second access.
+  not the access base; otherwise it loads into scratch and a `MOV` follows the
+  second access.
 - Commit-after-last-access is unchanged: all address materialization writes
   only scratch, before the first access.
 - **PRFM is dropped.** A prefetch is a hint: no architectural effect on
@@ -2981,4 +2972,4 @@ milestone:
 | A20 shorter transfer and SP-check paths | [2026-10-14 10:05](journal/2026-10-14.md) decided; [13:56](journal/2026-10-14.md) implementation (15:20 final tree inside) |
 | Return continuations, shadow return stack (experiment, rejected) | [2026-10-14 14:46](journal/2026-10-14.md) |
 | Hot-path word census | [2026-10-14 16:02](journal/2026-10-14.md) |
-| A21 hot-path word reduction | [2026-10-18 22:58](journal/2026-10-18.md) decided |
+| A21 hot-path word reduction | [2026-10-18 22:58](journal/2026-10-18.md) decided; [2026-10-18 01:22](journal/2026-10-18.md) implementation |
