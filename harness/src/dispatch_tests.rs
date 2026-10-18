@@ -348,7 +348,7 @@ fn a_retired_callee_matches_native() {
 /// then hits every transfer.
 #[test]
 fn a_transfer_into_the_middle_of_a_block_is_translated_as_its_own_fragment() {
-    let (case, cold, warm, _, cache) = cold_and_warm("sp_align_dedup", "sp_midblock_bl_ok_mark");
+    let (case, cold, warm, _, cache) = cold_and_warm("sp_run_alignment", "sp_midblock_bl_ok_mark");
     // entry: `add sp`, `mov x20, x30`, then `bl mid_callee`, `bl mid_callee_inner`, `bl mid_callee`.
     let callee = bl_target(&case, case.entry_pc + 8);
     let inner = bl_target(&case, case.entry_pc + 12);

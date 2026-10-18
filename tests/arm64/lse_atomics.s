@@ -285,12 +285,13 @@ cas_cross_mark:
     casalh w1, w2, [x14]
     ret
 
-// SP-based atomic with SP not 16-byte aligned: the SP check fires first.
-.global sp_misaligned_mark
-sp_misaligned_mark:
+// SP-based atomic at a 16-byte aligned SP: no alignment code (A22; the misaligning
+// writes to SP are in sp_run_alignment.s).
+.global sp_atomic_mark
+sp_atomic_mark:
     svc #0
     add sp, x12, #0x2000
-    add sp, sp, #8
+    add sp, sp, #16
     movz x1, #1
     ldadd x1, x2, [sp]
     ret

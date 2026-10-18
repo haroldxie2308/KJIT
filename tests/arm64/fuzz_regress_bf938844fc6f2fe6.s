@@ -9,9 +9,10 @@
 // (SCTLR_EL1.SA0), so a load/store based on SP faults (SIGBUS) when SP is not
 // 16-byte aligned. After the pre-index writeback SP = 0x2000c and the
 // `ldr x0, [sp], #0` at 0x10010 faults on hardware; the translated code (user
-// SP in x17) did not. Now reg-virt checks SP before every SP-based user access
-// (`and xS, x17, #15; cbnz xS, <Mem stub>`) and the interpreter models the
-// fault, so all three sides stop at 0x10010.
+// SP in x17) did not. Since A22 SP is aligned for the whole run: the pre-index
+// writeback at 0x1000c is guarded (`and xT, xS, #15; cbnz xT, <Mem stub>` on the
+// new SP), the fragment leaves there with nothing done, the original is stopped
+// before it (`HaltReason::SpMisaligned`), and the native original is capped at it.
 
 .text
 .global hot_svc_mark

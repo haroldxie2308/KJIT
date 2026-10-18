@@ -142,11 +142,13 @@ stlrh_cross_mark:
     stlrh w1, [x15]
     ret
 
-// SP-based load-acquire with SP not 16-byte aligned: the SP check fires first.
-.global ldar_sp_misaligned_mark
-ldar_sp_misaligned_mark:
+// SP-based load-acquire at a 16-byte aligned SP: no alignment code (SP is aligned for
+// the whole run, A22; a misaligning write to SP exits at the write, see
+// sp_run_alignment.s).
+.global ldar_sp_mark
+ldar_sp_mark:
     svc #0
     add sp, x12, #0x2000
-    add sp, sp, #8
+    add sp, sp, #16
     ldar x0, [sp]
     ret

@@ -126,16 +126,16 @@ spill_kept_across_branch_not_taken_mark:
     mov x2, x14
     ret
 
-// ... across the SP alignment check of a misaligned SP: its Mem exit must see the
-// first update only.
-.global spill_kept_across_sp_check_mark
-spill_kept_across_sp_check_mark:
+// ... across the SP guard of a write that misaligns SP (`and xT, xS, #15; cbnz xT,
+// <Mem stub>`, A22): its Mem exit at the `add sp` must see the first update only.
+.global spill_kept_across_sp_guard_mark
+spill_kept_across_sp_guard_mark:
     svc #0
     add x1, x12, #0x2000
-    add sp, x1, #8
     add x14, x14, #1
-    ldr x0, [sp]
+    add sp, x1, #8
     add x14, x14, #2
+    ldr x0, [sp]
     ret
 
 // SP-based pairs inside the last 16 bytes of a mapped page (the read-only page at
@@ -236,11 +236,11 @@ window_simd_base_mark:
     ldr x2, [x12, #0x400]
     ret
 
-// A misaligned SP still faults natively on a window access (the SP check stays).
-.global window_sp_misaligned_mark
-window_sp_misaligned_mark:
+// An SP-based window access at a 16-byte aligned SP: no alignment code (A22).
+.global window_sp_mark
+window_sp_mark:
     svc #0
-    add sp, x12, #0x208
+    add sp, x12, #0x200
     movz x0, #0x10
     ldadd x0, x2, [sp]
     ret

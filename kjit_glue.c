@@ -1617,6 +1617,13 @@ bool kjit_can_run(const struct pt_regs *regs)
 	/* -ERESTARTSYS..-ERESTART_RESTARTBLOCK: the signal code must see it. */
 	if (x0 >= (unsigned long)-ERESTART_RESTARTBLOCK && x0 <= (unsigned long)-ERESTARTSYS)
 		return false;
+	/*
+	 * A22: fragments keep user SP 16-byte aligned and carry no SP alignment
+	 * checks, so a run never starts with a misaligned SP. Userspace then takes
+	 * the SP alignment fault of the access natively.
+	 */
+	if (regs->sp & 15)
+		return false;
 	return true;
 }
 

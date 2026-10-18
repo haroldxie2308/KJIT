@@ -1445,8 +1445,10 @@ fn text_index(pc: u64, text_base: u64, words: usize) -> Option<usize> {
     (offset % 4 == 0 && index < words).then_some(index)
 }
 
-/// Lets the hardware execute the capped branch at `at.pc` once and returns the
-/// registers at the instruction it went to (the branch writes no register).
+/// Lets the hardware execute the capped instruction at `at.pc` once and returns the
+/// registers at the instruction it went to. It is a branch (a back-edge or a dispatch
+/// site: the branch writes no register but the link), or, for an A22 stop, an
+/// instruction that writes SP, which an earlier arrival executes like any other.
 ///
 /// In place, in a text copy where every other word traps, the hardware picks both
 /// the direction and the target. A branch whose taken target is itself (`b .`,
@@ -1468,7 +1470,7 @@ fn step_capped_branch(
         .inner;
     let unexpected = |event: &Event| {
         format!(
-            "native capped branch at {:#x}: unexpected {}",
+            "native capped instruction at {:#x}: unexpected {}",
             at.pc,
             describe_event(event)
         )
@@ -1499,10 +1501,11 @@ fn step_capped_branch(
     }
     let taken = insn
         .direct_branch_target(at.pc)
-        .or_else(|| insn.conditional_targets(at.pc).map(|(taken, _)| taken))
-        .ok_or_else(|| format!("capped instruction at {:#x} is not a direct branch", at.pc))?;
+        .or_else(|| insn.conditional_targets(at.pc).map(|(taken, _)| taken));
 
-    if taken != at.pc {
+    // Not a branch to itself (a non-branch included): in place, in a text copy where
+    // every other word traps.
+    if taken != Some(at.pc) {
         let mut solo = vec![BRK_FILL; words.len()];
         solo[index] = word;
         text_map.install_code(&solo)?;
@@ -1602,11 +1605,10 @@ pub fn original_halt_matches(
             },
             NativeStop::Unsupported { pc: native_pc },
         ) if pc == native_pc => Ok(()),
-        (HaltReason::InstanceCap { pc, .. }, NativeStop::InstanceCap { pc: native_pc })
-            if pc == native_pc =>
-        {
-            Ok(())
-        }
+        (
+            HaltReason::InstanceCap { pc, .. } | HaltReason::SpMisaligned { pc, .. },
+            NativeStop::InstanceCap { pc: native_pc },
+        ) if pc == native_pc => Ok(()),
         // Linux reports an SP alignment fault at the SP value (`el0_sp`),
         // untagged like every fault address it reports.
         (HaltReason::Fault(fault), NativeStop::Fault { pc, addr })
@@ -1715,6 +1717,23 @@ pub fn run_fragment(
     let fragment_base = code.base();
     let fragment_end = fragment_base + encoded.len() as u64;
     let memory = UserMemory::map(initial, session.page, None)?;
+
+    // `kjit_can_run` (A22): a run never starts at a misaligned user SP. Declined
+    // before any call, like `URuntime`.
+    if initial.sp() % 16 != 0 {
+        let entry_pc = fragment
+            .entry_labels
+            .iter()
+            .find(|&&(_, label_offset)| label_offset == fragment.entry_offset)
+            .map(|&(pc, _)| pc)
+            .ok_or("the fragment's entry offset is not one of its labels")?;
+        return Ok(NativeFragment {
+            state: initial.clone(),
+            halt: URuntimeHalt::RunDeclined { pc: entry_pc },
+            calls: 0,
+            fault_redirects: 0,
+        });
+    }
 
     let mut pt_regs = initial_pt_regs(initial);
     // The run's dispatch table: empty, so every branch exit misses and takes the
@@ -1971,6 +1990,16 @@ pub fn run_cached(
     };
     native.cache.begin_run();
     native.flush()?;
+    // `kjit_can_run` (A22): a run never starts at a misaligned user SP. Declined
+    // after the entry is resolved and the run begun, like `URuntime::with_cache`.
+    if initial.sp() % 16 != 0 {
+        return Ok(NativeFragment {
+            state: initial.clone(),
+            halt: URuntimeHalt::RunDeclined { pc: entry_pc },
+            calls: 0,
+            fault_redirects: 0,
+        });
+    }
     let memory = UserMemory::map(initial, session.page, None)?;
     let mut pt_regs = initial_pt_regs(initial);
     let mut extra_params = [0u64; EXTRA_PARAMS_WORDS];
@@ -2428,6 +2457,66 @@ mod tests {
             },
             privilege: Privilege::User,
         }
+    }
+
+    /// A22's premise, on the hardware: Linux runs EL0 with SP alignment checking, so
+    /// an SP-based access at a misaligned SP is a SIGBUS at the SP value, at that
+    /// instruction (a fragment never lets SP get there: it exits at the write), and the
+    /// interpreter's original models it the same way (`FaultCause::SpAlignment`, no
+    /// A22 stop). `sub sp, sp, #8` itself does not fault.
+    #[test]
+    fn a_misaligned_sp_access_faults_on_the_hardware_like_in_the_interpreter() {
+        use crate::arm64::OriginalStepper;
+        use crate::shared::arm64::ergo::{ldst64_offset, mem_off, sp, uimm, x};
+        use crate::shared::arm64::A64Mem;
+        use crate::{fixture_state, FIXTURE_DATA_BASE, FIXTURE_TEXT_BASE};
+
+        let session = NativeSession::new().expect("set up native runner");
+        let text = [
+            A64Insn::SubAddsubImmSub64AddsubImm {
+                sh: 0,
+                imm12: uimm(8, 12),
+                rn: sp(),
+                rd: sp(),
+            },
+            A64Insn::LdrImmGenLdr64LdstPos {
+                rt: x(0),
+                mem: mem_off(sp(), ldst64_offset(0)),
+            },
+        ]
+        .map(|insn| insn.encode().unwrap())
+        .iter()
+        .flat_map(|word| word.to_le_bytes())
+        .collect::<Vec<u8>>();
+        let mut initial = fixture_state(FIXTURE_TEXT_BASE, &text).unwrap();
+        initial.set_sp(FIXTURE_DATA_BASE + 0x2000);
+
+        let native =
+            run_original(&session, FIXTURE_TEXT_BASE, &text, FIXTURE_TEXT_BASE, &initial, None, false)
+                .unwrap();
+        let mut stepper =
+            OriginalStepper::new(&text, FIXTURE_TEXT_BASE, FIXTURE_TEXT_BASE, &initial).unwrap();
+        let interpreted = loop {
+            let step = stepper.step().unwrap().unwrap();
+            if let Some(halt_reason) = step.halt_reason {
+                break ExecutionResult {
+                    state: step.state,
+                    halt_reason,
+                    steps: 1,
+                };
+            }
+        };
+        let HaltReason::Fault(fault) = interpreted.halt_reason else {
+            panic!("expected a fault, got {:?}", interpreted.halt_reason);
+        };
+        assert_eq!(fault.cause, FaultCause::SpAlignment);
+        assert_eq!(fault.pc, FIXTURE_TEXT_BASE + 4);
+        original_halt_matches(&interpreted, FIXTURE_TEXT_BASE, &text, &native.stop).unwrap();
+        assert_eq!(
+            diff_states("interp", &interpreted.state, "native", &native.state),
+            Vec::<String>::new()
+        );
+        assert_eq!(native.state.sp(), FIXTURE_DATA_BASE + 0x2000 - 8);
     }
 
     /// `svc #0; nop; ret`: the SVC and the RET are patched, the NOP is not, and

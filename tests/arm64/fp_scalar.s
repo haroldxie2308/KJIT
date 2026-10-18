@@ -794,7 +794,7 @@ fp_regoff_regs_mark:
 
 // Faults: a store to a read-only page, a load from an unmapped page, an address
 // with a bit above bit 47 set (the range check leaves through the Mem stub), a
-// wrapping index, and a misaligned SP base. The original faults natively; the
+// wrapping index. The original faults natively; the
 // fragment's Mem exit makes the interpreter re-execute it, with the state before it.
 .global fp_regoff_fault_ro_mark
 fp_regoff_fault_ro_mark:
@@ -834,15 +834,6 @@ fp_regoff_fault_wrap_mark:
     fmov d0, #2.5
     mov x1, #-8                         // x12 - 8: before the window, unmapped
     str d0, [x12, x1]
-    ret
-
-.global fp_regoff_fault_sp_mark
-fp_regoff_fault_sp_mark:
-    svc #0
-    add sp, x12, #0x1000
-    add sp, sp, #8                      // not 16-byte aligned: the SP check faults
-    movz x1, #0
-    ldr d0, [sp, x1]
     ret
 
 // The redis words: the event loop's integer-to-double conversion and compare, and

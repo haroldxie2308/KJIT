@@ -168,6 +168,15 @@ pub enum HaltReason {
         pc: u64,
         instance: u64,
     },
+    /// A22: stopped before the `instance`-th execution of `pc`, which would leave
+    /// SP not 16-byte aligned from an aligned SP; the instruction did not execute.
+    /// Inside a run, SP never becomes misaligned: a fragment exits (`Mem`) at such an
+    /// instruction and userspace executes it natively (docs/pipeline.md, "User SP is
+    /// 16-byte aligned for a whole run").
+    SpMisaligned {
+        pc: u64,
+        instance: u64,
+    },
 }
 
 impl fmt::Display for HaltReason {

@@ -20,6 +20,7 @@ use crate::cached_run::{compare_cached, new_interpreter_cache, run_cached_differ
 use crate::model::{AccessKind, HaltReason, MachineState, Privilege};
 use crate::runtime::{URuntime, URuntimeHalt};
 use crate::shared::abi::RetStatus;
+use crate::shared::trans::reg_virt::{sp_write, SpWrite};
 use crate::{
     case_state, compile_fixture_fragment, fragment_instance_cap, run_entry_fixture,
     run_original_with_mocked_svc,
@@ -66,6 +67,67 @@ fn every_asm_fixture_case_matches_original() {
             report.fragment_halt
         ))
     });
+}
+
+/// A22: the cases of `sp_run_alignment.s` named `_exit_` end in a `Mem` exit at an
+/// instruction `sp_write` classifies as guarded (the original stops there:
+/// `HaltReason::SpMisaligned`), and no other case of the fixture leaves through `Mem`:
+/// the guards of the aligned writes pass. `run_entry_fixture` already proves the
+/// fragment equals the original in both; this pins that the cases exercise what their
+/// names say.
+#[test]
+fn sp_run_alignment_cases_exit_where_documented() {
+    require_llvm_tools();
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("harness manifest dir has a parent")
+        .to_path_buf();
+    let fixture = root.join("tests/arm64/sp_run_alignment.s");
+    let work_dir = root
+        .join("tmp")
+        .join(format!("sp-run-alignment.{}", std::process::id()));
+    if work_dir.exists() {
+        std::fs::remove_dir_all(&work_dir).expect("remove stale work dir");
+    }
+    let symbols = list_cases(&root, &fixture, &work_dir.join("_list")).expect("list cases");
+    let (mut exits, mut passes) = (0, 0);
+    for symbol in &symbols {
+        let case = compile_case(&root, &fixture, symbol, &work_dir.join(symbol)).expect("compile");
+        let state = case_state(symbol, case.text_base, &case.text_bytes).expect("case state");
+        let report = run_entry_fixture(
+            "sp-run-alignment",
+            case.text_base,
+            case.text_bytes.clone(),
+            case.entry_pc,
+            &state,
+        )
+        .unwrap_or_else(|message| panic!("{symbol}: {message}"));
+        let mem_exit = match report.fragment_halt {
+            URuntimeHalt::ReturnedToUserspace {
+                status: RetStatus::Mem,
+                target_pc,
+            } => Some(target_pc),
+            _ => None,
+        };
+        if symbol.contains("_exit_") {
+            let target = mem_exit
+                .unwrap_or_else(|| panic!("{symbol}: expected a Mem exit, got {:?}", report.fragment_halt));
+            let offset = (target - case.text_base) as usize;
+            let word = u32::from_le_bytes(case.text_bytes[offset..offset + 4].try_into().unwrap());
+            let insn = crate::shared::arm64::A64Insn::decode(word).expect("decodes");
+            assert_eq!(
+                sp_write(insn),
+                SpWrite::Guarded,
+                "{symbol}: exits at {target:#x}, {insn:?}"
+            );
+            exits += 1;
+        } else {
+            assert_eq!(mem_exit, None, "{symbol}: unexpected exit");
+            passes += 1;
+        }
+    }
+    std::fs::remove_dir_all(&work_dir).expect("remove work dir");
+    assert!(exits >= 12 && passes >= 12, "{exits} exits, {passes} passes");
 }
 
 /// A11: the case runs cold (an empty code cache: every branch exit misses and is

@@ -421,6 +421,7 @@ pub fn run_differential(
     }
     let original_footprint = faulting_footprint(&text_bytes, text_base, &original)
         .map_err(|message| DifferentialError::Original(OriginalRunError::Harness(message)))?;
+    let original_cap = original_stop_cap(&original, original_cap);
     let mut cache = runtime.into_cache();
     Ok(DifferentialRun {
         fragment: cache.fragments.swap_remove(0).fragment,
@@ -431,6 +432,19 @@ pub fn run_differential(
         original_accesses,
         report,
     })
+}
+
+/// Where the original run stopped short of the end of its path, for the native run to
+/// stop at too: the `Budget`/`SVC` cap the fragment run asked for (`fragment_cap`), or
+/// the instruction before which the original's SP would become misaligned (A22).
+pub(crate) fn original_stop_cap(
+    original: &ExecutionResult,
+    fragment_cap: Option<InstanceCap>,
+) -> Option<InstanceCap> {
+    match original.halt_reason {
+        HaltReason::SpMisaligned { pc, instance } => Some(InstanceCap { pc, instance }),
+        _ => fragment_cap,
+    }
 }
 
 /// What a faulting original instruction may already have done when it aborted,
@@ -902,8 +916,9 @@ fn run_original(
     follow_branches: bool,
     before_step: &mut dyn FnMut(&OriginalStepper),
 ) -> Result<ExecutionResult, OriginalRunError> {
-    let mut stepper =
-        OriginalStepper::new(program, text_base, entry_pc, initial_state)?.record_accesses();
+    let mut stepper = OriginalStepper::new(program, text_base, entry_pc, initial_state)?
+        .record_accesses()
+        .stop_on_sp_misalignment();
     if follow_branches {
         stepper = stepper.follow_branches();
     }
@@ -1030,6 +1045,15 @@ pub(crate) fn runtime_halt_matches_original(original: &ExecutionResult, halt: &U
                 target_pc,
             },
         ) => fault.pc == *target_pc,
+        // A22: SP would become misaligned at `pc`, where the fragment's guard leaves
+        // through the instruction's Mem stub; userspace executes it natively.
+        (
+            HaltReason::SpMisaligned { pc, .. },
+            URuntimeHalt::ReturnedToUserspace {
+                status: crate::shared::abi::RetStatus::Mem,
+                target_pc,
+            },
+        ) => pc == *target_pc,
         // The original was capped at the dynamic instance the fragment's Budget exit
         // counted; userspace resumes natively at that back-edge branch.
         (

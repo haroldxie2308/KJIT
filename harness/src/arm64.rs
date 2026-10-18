@@ -6,7 +6,9 @@ use crate::shared::arm64::{
     A64Atomic, A64AtomicOp, A64Condition, A64Imm, A64Insn, A64Mem, A64Reg, A64Reg31Mode,
 };
 use crate::shared::trans::cfg::{admit_at, RuntimeExitReason};
+use crate::shared::trans::reg_virt::{sp_write, SpWrite};
 use crate::MockCodeProvider;
+use std::collections::BTreeMap;
 
 /// Why an instruction did not retire.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -117,6 +119,9 @@ pub struct OriginalStepper<'a> {
     /// over a code cache (A11) follows branches: its fragments call and return
     /// without leaving the runtime, so the original has no reason to stop there.
     follow_branches: bool,
+    /// A22: halt before an instruction that would misalign an aligned SP
+    /// (`HaltReason::SpMisaligned`), counting each pc's executions for its instance.
+    stop_on_sp_misalignment: Option<BTreeMap<u64, u64>>,
 }
 
 impl<'a> OriginalStepper<'a> {
@@ -138,7 +143,17 @@ impl<'a> OriginalStepper<'a> {
             user_accesses: UserAccessCounter::default(),
             access_log: None,
             follow_branches: false,
+            stop_on_sp_misalignment: None,
         })
+    }
+
+    /// Models the original under a KJIT run (A22): the run ends, and userspace
+    /// continues natively, right before an instruction that would leave SP
+    /// misaligned (`HaltReason::SpMisaligned`). A run never starts with a misaligned
+    /// SP, so a stepper that starts with one never stops this way.
+    pub fn stop_on_sp_misalignment(mut self) -> Self {
+        self.stop_on_sp_misalignment = Some(BTreeMap::new());
+        self
     }
 
     /// Executes BL/BLR/BR/RET like any instruction (the PC becomes the target,
@@ -259,6 +274,36 @@ impl<'a> OriginalStepper<'a> {
         }
 
         let pc = self.pc;
+        // A22: would this instruction leave an aligned SP misaligned? Decided by a dry
+        // run on a copy, before the real execution and with no injected fault, because a
+        // fragment's guard leaves before the instruction's first access. An instruction
+        // that faults by itself faults for real below (a fault and a stop both end the
+        // run at this pc).
+        let sp_was_aligned = self.state.sp() % 16 == 0;
+        if let Some(executions) = &self.stop_on_sp_misalignment {
+            if sp_was_aligned && sp_write(decoded.inner) != SpWrite::None {
+                let mut dry = self.state.clone();
+                let mut dry_ctx = AccessContext::Original {
+                    counter: None,
+                    log: None,
+                };
+                if execute_insn(decoded.inner, pc, &mut dry, &mut dry_ctx).is_ok()
+                    && dry.sp() % 16 != 0
+                {
+                    self.stopped = true;
+                    return Ok(Some(OriginalAdvance {
+                        pc,
+                        next_pc: None,
+                        executed: false,
+                        runtime_exit: None,
+                        halt_reason: Some(HaltReason::SpMisaligned {
+                            pc,
+                            instance: executions.get(&pc).copied().unwrap_or(0) + 1,
+                        }),
+                    }));
+                }
+            }
+        }
         let mut ctx = AccessContext::Original {
             counter: Some(&mut self.user_accesses),
             log: self.access_log.as_mut(),
@@ -277,6 +322,16 @@ impl<'a> OriginalStepper<'a> {
             }
             Err(InsnError::Error(message)) => return Err(message),
         };
+        if let Some(executions) = &mut self.stop_on_sp_misalignment {
+            if sp_was_aligned && self.state.sp() % 16 != 0 {
+                return Err(format!(
+                    "pc={pc:#x}: {} left SP misaligned although the dry run did not: the \
+                     instruction is not classified as an SP write (`sp_write`)",
+                    decoded.inner.key()
+                ));
+            }
+            *executions.entry(pc).or_default() += 1;
+        }
         self.pc = next_pc;
         Ok(Some(OriginalAdvance {
             pc,
@@ -3781,6 +3836,163 @@ mod tests {
             None,
         );
         assert_eq!(fault.access.addr, 0xa000);
+    }
+
+    /// The translator's `logical_imm_mask` (A22: whether an `and sp, xN, #mask` keeps
+    /// SP aligned) is the interpreter's `DecodeBitMasks` for every valid logical
+    /// immediate of either width.
+    #[test]
+    fn translator_logical_imm_mask_equals_decode_bit_masks() {
+        use crate::shared::trans::reg_virt::logical_imm_mask;
+        let mut checked = 0;
+        for n in 0..2u8 {
+            for immr in 0..64u32 {
+                for imms in 0..64u32 {
+                    for bits in [32u8, 64] {
+                        let Ok((wmask, _)) = decode_bit_masks(n, imms, immr, true, bits) else {
+                            continue;
+                        };
+                        assert_eq!(
+                            logical_imm_mask(n, immr, imms, u32::from(bits)),
+                            wmask,
+                            "N={n} immr={immr} imms={imms} bits={bits}"
+                        );
+                        checked += 1;
+                    }
+                }
+            }
+        }
+        assert!(checked > 10_000, "{checked}");
+    }
+
+    fn sub_sp_imm(imm: u32) -> A64Insn {
+        A64Insn::SubAddsubImmSub64AddsubImm {
+            sh: 0,
+            imm12: uimm(imm, 12),
+            rn: A64Reg::x_sp(31),
+            rd: A64Reg::x_sp(31),
+        }
+    }
+
+    /// A22: the original under a KJIT run stops before an instruction that leaves an
+    /// aligned SP misaligned, with the state, the access counter and the access log of
+    /// before it, and counts the instance of the pc.
+    #[test]
+    fn original_stepper_stops_before_an_sp_misaligning_instruction() {
+        let mut state = rw_page_at_0x9000();
+        state.set_sp(0x9ff0);
+        let str_pre_8 = A64Insn::StrImmGenStr64LdstImmpre {
+            rt: x(0),
+            mem: A64Mem::pre_index(A64Reg::x_sp(31), A64Imm::signed((-8i32 as u32) & 0x1ff, 9)),
+        };
+        let program = encode_insns(&[sub_sp_imm(16), str_pre_8, sub_sp_imm(8)]);
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state)
+            .unwrap()
+            .record_accesses()
+            .stop_on_sp_misalignment();
+        // An aligned adjust is not a stop.
+        assert!(stepper.step().unwrap().unwrap().halt_reason.is_none());
+        let before = stepper.state().clone();
+        // The pre-index store would write the stack and misalign SP: nothing of it
+        // happened, not even its access.
+        let step = stepper.step().unwrap().unwrap();
+        assert_eq!(
+            step.halt_reason,
+            Some(HaltReason::SpMisaligned {
+                pc: 0x4004,
+                instance: 1
+            })
+        );
+        assert!(!step.executed);
+        assert_eq!(step.state, before);
+        assert_eq!(stepper.user_accesses(), 0);
+        assert_eq!(stepper.access_log(), Some(&[][..]));
+        assert_eq!(stepper.pc(), 0x4004);
+        assert!(stepper.step().unwrap().is_none(), "the run ended");
+    }
+
+    #[test]
+    fn original_stepper_counts_the_instance_of_the_misaligning_pc() {
+        let state = MachineState::new();
+        // 0x4000: movz x1, #16; 0x4004: add sp, sp, x1; 0x4008: movz x1, #8; 0x400c: b 0x4004.
+        let program = encode_insns(&[
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(16, 16),
+                rd: x(1),
+            },
+            A64Insn::AddAddsubExtAdd64AddsubExt {
+                rm: x(1),
+                option: 3,
+                imm3: uimm(0, 3),
+                rn: A64Reg::x_sp(31),
+                rd: A64Reg::x_sp(31),
+            },
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(8, 16),
+                rd: x(1),
+            },
+            A64Insn::BUncondBOnlyBranchImm {
+                imm26: scaled_simm((-2i32 as u32) & 0x03ff_ffff, 26, 2),
+            },
+        ]);
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state)
+            .unwrap()
+            .stop_on_sp_misalignment();
+        let halt = loop {
+            let step = stepper.step().unwrap().unwrap();
+            if let Some(halt) = step.halt_reason {
+                break halt;
+            }
+        };
+        assert_eq!(
+            halt,
+            HaltReason::SpMisaligned {
+                pc: 0x4004,
+                instance: 2
+            }
+        );
+        assert_eq!(stepper.state().sp(), 16);
+    }
+
+    /// A run never starts at a misaligned SP, so a stepper that starts there never
+    /// stops this way: SP-based accesses fault natively (`FaultCause::SpAlignment`).
+    #[test]
+    fn original_stepper_does_not_stop_when_sp_starts_misaligned() {
+        let mut state = rw_page_at_0x9000();
+        state.set_sp(0x9ff8);
+        let program = encode_insns(&[
+            sub_sp_imm(8),
+            sub_sp_imm(1),
+            A64Insn::LdrImmGenLdr64LdstPos {
+                rt: x(0),
+                mem: A64Mem::offset(A64Reg::x_sp(31), A64Imm::scaled_unsigned(0, 12, 3)),
+            },
+        ]);
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state)
+            .unwrap()
+            .stop_on_sp_misalignment();
+        // 0x9ff8 -> 0x9ff0 (aligned) -> 0x9fef: this one does stop.
+        assert!(stepper.step().unwrap().unwrap().halt_reason.is_none());
+        assert_eq!(
+            stepper.step().unwrap().unwrap().halt_reason,
+            Some(HaltReason::SpMisaligned {
+                pc: 0x4004,
+                instance: 1
+            })
+        );
+        // The same program from SP = 0x9ffb: misaligned throughout, the access faults.
+        state.set_sp(0x9ffb);
+        let mut stepper = OriginalStepper::new(&program, 0x4000, 0x4000, &state)
+            .unwrap()
+            .stop_on_sp_misalignment();
+        assert!(stepper.step().unwrap().unwrap().halt_reason.is_none());
+        assert!(stepper.step().unwrap().unwrap().halt_reason.is_none());
+        let Some(HaltReason::Fault(fault)) = stepper.step().unwrap().unwrap().halt_reason else {
+            panic!("expected an SP alignment fault");
+        };
+        assert_eq!(fault.cause, FaultCause::SpAlignment);
     }
 
     /// EL0 SP alignment checking: an SP-based access faults when SP is not
