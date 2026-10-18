@@ -228,8 +228,8 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
   class, so they cannot reject intrinsically.
 - Invariant this rests on: reg-virt admits each original instruction
   independently of its neighbours: whether an instruction can be lowered, and
-  its scratch use. The emitted words may depend on block-local state, as A20's
-  SP alignment fact does, but admission never does. A context-sensitive
+  its scratch use. The emitted words may depend on block-local state, as A21's
+  slot forwarding does, but admission never does. A context-sensitive
   allocator would have to move admission to block level.
 - The harness original-code interpreters call `admit_at` (the raw trace view
   `admit_word`), so they stop exactly where the translated code exits, running
@@ -312,45 +312,48 @@ means; `URuntime` and the native runner share it. `Unsupported`, `Mem` and
   instruction.
 - If the instruction cannot be lowered within the scratch pool, it is an
   intrinsic reg-virt rejection -> `Unsupported` exit at that PC.
-- **SP alignment check** (deduplicated by A20, below). Linux runs EL0 with SP alignment checking
-  (`SCTLR_EL1.SA0`): a load/store whose base is SP faults (SIGBUS) when SP is
-  not 16-byte aligned. User SP lives in x17 in a fragment, which is never
-  checked, so without a check KJIT would run code that natively faults. For
-  every user access whose base is SP (immediate and register-offset forms)
-  reg-virt emits, before anything else of the instruction,
-  `and xS, x17, #15; cbnz xS, <Mem stub of that instruction>` (kind
-  `AlignCheck`, shared with the acquire/release alignment check; layout
-  resolves the `CBNZ` like a budget check's `CBZ`). Flags are untouched. `xS`
-  comes from the same scratch pool; it shares the address or pair first-load
-  scratch when the instruction has one, both being written only after the
-  check. The `Mem` exit returns to userspace at the instruction, which
-  re-executes natively and takes the SIGBUS itself: exact. The `CBNZ` is a
-  forward branch into the cold region, to an exit-group start (verifier rule
-  4). The interpreter models the fault (`FaultCause::SpAlignment`, precise,
-  before any access); the native runner matches it at the SP value Linux
-  reports (`el0_sp`).
-- **SP alignment check deduplication (A20).** Within one basic block, reg-virt
-  emits the check only where user SP is not already known to be 16-byte
-  aligned.
-  - Known aligned: after a check in the same block whose `cbnz` was not
-    taken, as long as x17 has since been written only by
-    `add`/`sub x17, x17, #imm` with `imm % 16 == 0`. That covers SP writeback
-    of a pair access by a multiple of 16, and `add`/`sub sp, sp, #imm` of a
-    multiple of 16.
-  - Unknown: at the start of every block, and after any other write to x17.
-    A block is entered only at its start (Entry labels (A20)), so the fact
-    holds on every path to the word.
-  - Exact: SP changes only through x17 inside a fragment. A check already
-    proved alignment, and an aligned SP plus a multiple of 16 stays aligned.
-    So every elided check would have passed, and every access that natively
-    faults with SIGBUS still gets its check.
-  - Not a verifier rule: the verifier never checked SP alignment, which is
-    an exactness property of the translation, not kernel safety. The harness
-    differential proves it. Fixtures cover SP misaligned mid-block by
-    `sub sp, sp, #8`, misaligned by `mov sp, xN`, and realigned.
-  - Why: SP-based accesses carried about 1160 check words per redis request
-    (2 per access), mostly function prologues and epilogues that touch SP
-    several times in one block ([2026-10-13 15:25](journal/2026-10-13.md)).
+- **User SP is 16-byte aligned for a whole run (A22).** This replaces the
+  per-access SP alignment check of A5 and its A20 deduplication.
+  - Background: Linux runs EL0 with SP alignment checking
+    (`SCTLR_EL1.SA0`), so a load/store whose base is SP faults (SIGBUS) when
+    SP is not 16-byte aligned. In a fragment, user SP lives in x17, which the
+    hardware never checks.
+  - Run condition: `regs->sp % 16 == 0` (section 8, Run conditions). The
+    harness `URuntime` refuses to start a run on the same condition.
+  - Invariant: inside a run, x17 is 16-byte aligned at every original
+    instruction boundary. It holds at run entry (the run condition). Every
+    fragment keeps it, because each write to x17 falls into one of two
+    classes:
+    - **Preserving (no code):** `add`/`sub x17, x17, #imm` with
+      `imm % 16 == 0` (writeback of any memory form included), and
+      `and x17, xN, #mask` whose mask has its low 4 bits clear.
+    - **Guarded:** every other write (`mov sp, xN`, `add`/`sub` by a register
+      or by an immediate that is not a multiple of 16, writeback that is not
+      a multiple of 16, and so on). Reg-virt computes the new value into a
+      scratch `xS` before the instruction's first access, then emits
+      `and xT, xS, #15; cbnz xT, <Mem stub of this instruction>` (kind
+      `AlignCheck`), and moves `xS` into x17 where the instruction would have
+      written SP. A misaligned result leaves through the `Mem` stub before
+      any access or commit. Userspace executes the instruction natively, and
+      the next hook declines while SP stays misaligned.
+  - Consequence: no SP-based access in a run can fault on SP alignment, so
+    reg-virt emits no SP alignment check at all. The A20 `SpAlignment` fact
+    goes away. The acquire/release and atomic 16-byte crossing checks stay:
+    they are about the address, not SP, and they are not needed for an SP base
+    at offset 0.
+  - Exact: whether `SCTLR_EL1.SA0` is set or not. A run never starts with a
+    misaligned SP. Inside a run, SP cannot become misaligned, because every
+    write that would do so exits first. Every native SIGBUS on SP alignment
+    therefore happens in userspace, at the same instruction.
+  - Not a verifier rule: the verifier never checked SP alignment, which is an
+    exactness property and not kernel safety. The harness differential and
+    native oracle prove it. Fixtures cover a misaligning `sub sp, sp, #8`,
+    `mov sp, xN` (aligned and misaligned), pre-index writeback by 8, `and sp`,
+    and a run that the harness declines at a misaligned SP.
+    `FaultCause::SpAlignment` stays in the interpreter for the original code.
+  - Why: the SP checks were 460 hot words per redis SET request after A20
+    ([2026-10-14 16:02](journal/2026-10-14.md), C4). In redis, a write to SP
+    that is not a multiple of 16 occurs 0.002 times per request.
 
 ### Hot-path word reduction (A21)
 
@@ -438,10 +441,8 @@ replaces a sequence with a shorter one that has the same effect.
     not decline those). Then the first register is already written. That is
     exact only if the Arm ARM makes a faulting load's destinations UNKNOWN,
     and the clause has not been cited
-    ([2026-10-18 01:22](journal/2026-10-18.md)). If it ships later, the
+    ([2026-10-19 01:22](journal/2026-10-19.md)). If it ships later, the
     harness's fault footprint must allow either value.
-  - run-wide SP alignment (C4), which is a run condition;
-  - budget units only on CFG cycles (C5), which rewrites rule 6;
   - RET dispatch on x30 (C6), a second template shape;
   - no budget on forward BL (C7);
   - literal pools (C8).
@@ -466,7 +467,7 @@ replaces a sequence with a shorter one that has the same effect.
   misses there. The runtime finds the target as a block start of another
   fragment, or the target is profiled and translated as its own entry.
   - Invariant: a fragment is entered only at a block start. Block-local
-    translation state is therefore sound: A20's SP alignment fact, and any
+    translation state is therefore sound: A21's slot forwarding, and any
     later block-local optimization.
   - Before A20 every original PC was enterable. That was harmless only while
     reg-virt kept no state across instructions.
@@ -518,12 +519,36 @@ replaces a sequence with a shorter one that has the same effect.
 - A back-edge is any branch whose target is at or before it in the final
   layout order. Layout order is a block order (`cfg::layout_block_order`:
   ascending block start address; blocks partition the PC space, so a
-  fall-through successor is the next block), so this is known before offsets
-  and can be checked on the final bytes without a CFG. The program vector keeps
+  fall-through successor is the next block). So it is known before offsets,
+  and it can be checked on the final bytes without a CFG. The program vector keeps
   CFG order (`program[0]` is the entry block). Layout fails with
   `LayoutError::FallthroughNotAdjacent` when a block with a successor at its
   own end is not followed by it, so lowering never adds explicit fall-through
   branches (they would be extra back-edge candidates).
+- **Budgeted back-edges (A22): only back-edges on a cycle.** A back-edge
+  carries a budget check only when its source and target lie in the same
+  strongly connected component of the fragment's **body graph**:
+  - Nodes: the CFG blocks of the fragment.
+  - Edges: fall-through, and direct branches (`B`, `B.cond`, `CBZ`, `CBNZ`,
+    `TBZ`, `TBNZ`) to a block of the fragment.
+  - Sinks: `BL`/`BLR`/`BR`/`RET` (their dispatch sites), `SVC` and every exit.
+    A transfer is a sink even when its target is in the same fragment,
+    because it goes through the template or a link slot, and both are already
+    charged one unit. The CFG's link from a `BL` to its return site is not an
+    edge.
+
+  Every cycle of the graph contains a back-edge, because fall-throughs only go
+  forward. All nodes of a cycle are in one component, so every cycle contains
+  a budgeted back-edge. The bound "4096 x the longest acyclic path" therefore
+  still holds between two units.
+  - A back-edge whose ends are in different components runs at most once per
+    pass through them. Examples are a jump back to a shared `ret`, or a loop
+    whose body contains a call; the call itself is charged.
+  - Why: of the 179 back-edge units per redis SET request, 160 (321 words)
+    are on no cycle ([2026-10-14 16:02](journal/2026-10-14.md), C5).
+  - The component computation lives in `cfg.rs` (translator) and,
+    independently, in the verifier (rule 6). They must agree on the edge set
+    above. A translator that guards a superset is still accepted.
 - The prologue sets physical x18 to `KJIT_BACKEDGE_BUDGET = 4096` (an ABI
   constant; `BUDGET_COUNTER_REG = 18`). Why 4096: one entry runs at most 4096 x
   the longest acyclic path before the runtime re-checks signals and
@@ -569,7 +594,8 @@ replaces a sequence with a shorter one that has the same effect.
   budgets. Back-edge test: visiting blocks in layout order, a lowered original
   instruction contains a user-semantic B/B.cond/CBZ/CBNZ/TBZ/TBNZ whose target
   PC is already placed (every PC emitted so far in layout order, the
-  instruction's own included). Forward branches into the cold region
+  instruction's own included), and (A22) whose target block is in the same
+  component of the body graph as its own block. Forward branches into the cold region
   (fault/alignment guards, budget `CBZ`) are not user branches and never
   back-edges. A branch inside a UserSynthetic sequence counts; the check then
   precedes the whole lowered sequence of its original instruction. Layout only
@@ -578,11 +604,12 @@ replaces a sequence with a shorter one that has the same effect.
   user-semantic, not a runtime exit). Reg-virt passes it through unchanged; in
   the cold region or inside an exit group it is `MalformedRuntimeExitGroup`.
 - Layout self-check: a user branch that resolves to `target_offset <= offset`
-  without a budget check earlier in its original instruction's run of
-  instructions fails with `LayoutError::UnguardedBackEdge`; a check whose PC has
+  with both ends in one component of the body graph (A22), without a budget
+  check earlier in its original instruction's run of instructions, fails with
+  `LayoutError::UnguardedBackEdge`; a check whose PC has
   no stub fails with `MissingBudgetStub`.
-- Verifier rule (V3, rule 6): every backward in-fragment branch is preceded by
-  exactly this sequence.
+- Verifier rule (V3, rule 6): every backward in-fragment branch that lies on a
+  cycle of the body's word graph is preceded by exactly this sequence.
 - Harness differential: the fragment runs first
   (`run_fragment_counting_instances`); on a `Budget` exit at pc P the dynamic
   instance k is the number of executions of P's body label (every entry,
@@ -846,7 +873,7 @@ MemAddr::Base }`):
 | user form | emitted (after fills) |
 | --- | --- |
 | `LDAR{,B,H} / LDAPR{,B,H} Rt, [Xn]`, `STLR{,B,H} Rt, [Xn]`, Xn not SP | [alignment check]; `dmb ish`; `LDTR*/STTR* Rt, [Xn, #0]`; `dmb ish` |
-| same, Xn = SP | SP check (`and xS, x17, #15; cbnz xS`); `dmb ish`; access via x17; `dmb ish` |
+| same, Xn = SP | `dmb ish`; access via x17; `dmb ish` (SP is aligned for the whole run, A22) |
 
 - Op per form: the same element size and extension as the plain load/store
   (`LDAR W`/`LDAPR W` -> `LDTR W`, `LDAR X`/`LDAPR X` -> `LDTR X`,
@@ -901,10 +928,10 @@ flags untouched):
 returns to userspace at the instruction, which re-executes natively and takes
 the SIGBUS itself: exact. `CBNZ` (imm19), not `TBNZ` (imm14, +-32 KiB), so a
 large fragment cannot put the cold region out of range. An SP base needs no
-such check: the SP check already requires SP 16-byte aligned and the access is
+such check: SP is 16-byte aligned for the whole run (A22) and the access is
 at SP. Bytes are always aligned. Interpreter: an ordered access that crosses a
 16-byte boundary is a `FaultCause::Alignment` fault before any access (after
-the SP check), on the untagged address; the native original reports it as a
+the EL0 SP check of original code), on the untagged address; the native original reports it as a
 SIGBUS at the instruction.
 
 Kernel assumptions (pinned at module init, section 8, Preconditions): FEAT_LSE2
@@ -974,7 +1001,6 @@ that executes with PAN clear (A15). SIMD&FP loads/stores use the same shape
   | step | emitted | kind |
   | --- | --- | --- |
   | fills | `ldr xS, [sp, #slot]` of stack-backed Rs/Rt(read)/Rn | RegVirtHelper |
-  | SP base only | `and sB, x17, #15; cbnz sB, <Mem stub>` | AlignCheck |
   | size > 1, base not SP | `and sB, sA, #15; add sB, sB, #(size-1); and sB, sB, #16; cbnz sB, <Mem stub>` | AlignCheck |
   | range check | `ubfx sB, sA, #48, #8; cbnz sB, <Mem stub>` | RangeCheck |
   | access | `<atomic, Rs/Rt mapped, Rn = sA>` | WindowAccess |
@@ -993,14 +1019,15 @@ that executes with PAN clear (A15). SIMD&FP loads/stores use the same shape
     checks `vabits_actual == 48` at init). Rejected addresses leave through the
     instruction's ordinary `Mem` stub, as do its faults (its fault-site entry
     names that stub); userspace re-executes the instruction natively.
-  - Alignment: SP-based atomics keep the SP alignment check. LSE atomics use
+  - Alignment: an SP base is aligned for the whole run (A22), so SP-based
+    atomics need no check. LSE atomics use
     `AArch64_UnalignedAccessFaults`'s `exclusive || atomicop` rule: with
     FEAT_LSE2 they fault iff not inside one `MemSingleGranule()` block,
     IMPLEMENTATION DEFINED >= 16 bytes, independent of `nAA`. The check uses 16
     (the minimum): an access it lets through never faults natively; one it
     stops leaves for userspace, which re-executes it natively, so on hardware
     with a larger granule it is conservative, never wrong.
-  - One stub per instruction: the range check, the alignment/SP checks and the
+  - One stub per instruction: the range check, the alignment checks and the
     fault site all name the instruction's `Mem` stub.
   - Layout: a `RangeCheck` `cbnz`, an `AlignCheck` and a `WindowAccess` fault
     site resolve to the `Mem` stub. `UntaggedPanWindow` if a kind and the
@@ -1108,9 +1135,8 @@ Translator:
   | step | emitted | kind |
   | --- | --- | --- |
   | fills | stack-backed base / LD1 index | RegVirtHelper |
-  | SP base | `and sB, x17, #15; cbnz sB, <Mem stub>` | AlignCheck |
   | offset 0, base stack-backed | sA = the base's fill scratch | |
-  | offset 0, otherwise | `mov sA, <mapped base>` | RegVirtHelper |
+  | offset 0, otherwise | sA = the base's physical register (A21: no copy) | |
   | offset != 0 | `add/sub sA, <mapped base>, #offset` (1-2 words) | RegVirtHelper |
   | range check | `ubfx sB, sA, #48, #8; cbnz sB, <Mem stub>` | RangeCheck |
   | access | `<base-only access on sA>` | WindowAccess |
@@ -1542,8 +1568,7 @@ Reject with `VerifyError { offset, rule }`.
    A barrier cannot confuse rules 6/7: it is not a fill (so one between a budget
    `cbz` and its back-edge is rejected) and not a branch, user access or runtime
    access.
-6. Budget (A6, A11): every back-edge (a direct branch to a body word at or before
-   itself; offset order is layout order) is preceded by
+6. Budget (A6, A11, A22): every back-edge on a cycle is preceded by
    `sub x18, x18, #1; cbz x18, <stub>` (`BUDGET_COUNTER_REG`), then any number
    of reg-virt fill loads `ldr x12..x15, [sp, <user-state slot>]` and nothing
    else, then the branch. The same check guards a dispatch template: between its
@@ -1560,6 +1585,19 @@ Reject with `VerifyError { offset, rule }`.
      own `sub`; it is read only by that `sub` and the check's `cbz`. A check that
      guards nothing, or any other x18 operand, is `BudgetRegisterAccess`; a gap
      violation is `MissingBudgetCheck`.
+   - Back-edge on a cycle (A22): a direct branch at word i to a body word
+     t <= i, where t and i are in the same strongly connected component of the
+     **body word graph**:
+     - Nodes: the body words (prologue, epilogue and cold region excluded).
+     - Edges: i -> i+1 unless word i is an unconditional `B` or a `BR`, and
+       i -> target for a direct branch into the body.
+     - Sinks: a branch to the cold region or the epilogue adds no edge. A
+       template's `br` and a link slot (a `b` out of the fragment once
+       linked) add none either; both sit in a guarded run.
+
+     Iterative Tarjan, O(words), no recursion. A backward branch in a
+     different component than its target needs no check; the mutation suite
+     keeps one accepted case of it and one rejected unguarded real loop.
 7. Exit groups: every fault stub, budget stub and template miss target starts an
    exit group: the word before it is an unconditional `B` or a template's `br`,
    and the straight-line run from it contains no user access and ends in
@@ -2252,7 +2290,9 @@ and one module shape is simpler than a K0-only build.
   ~_TIF_FOREIGN_FPSTATE) | _TIF_SYSCALL_WORK | _TIF_SINGLESTEP` (signals incl.
   `NOTIFY_SIGNAL`, both need_resched bits, `NOTIFY_RESUME` = task_work/rseq,
   uprobes, livepatch, MTE async faults); x0 not in
-  -ERESTARTSYS..-ERESTART_RESTARTBLOCK; `enable` set. `FOREIGN_FPSTATE` only asks
+  -ERESTARTSYS..-ERESTART_RESTARTBLOCK; `regs->sp % 16 == 0` (A22: fragments
+  keep user SP aligned and carry no SP alignment checks, section 4); `enable`
+  set. `FOREIGN_FPSTATE` only asks
   for an FP reload before EL0 runs; fragments without FP/SIMD never touch those
   registers, and fragments with FP/SIMD reload them inside their bracket.
 - Seccomp-filtered tasks never reach the hook (`TIF_SECCOMP` is syscall work).
@@ -2972,4 +3012,5 @@ milestone:
 | A20 shorter transfer and SP-check paths | [2026-10-14 10:05](journal/2026-10-14.md) decided; [13:56](journal/2026-10-14.md) implementation (15:20 final tree inside) |
 | Return continuations, shadow return stack (experiment, rejected) | [2026-10-14 14:46](journal/2026-10-14.md) |
 | Hot-path word census | [2026-10-14 16:02](journal/2026-10-14.md) |
-| A21 hot-path word reduction | [2026-10-18 22:58](journal/2026-10-18.md) decided; [2026-10-18 01:22](journal/2026-10-18.md) implementation |
+| A21 hot-path word reduction | [2026-10-18 22:58](journal/2026-10-18.md) decided; [2026-10-19 01:22](journal/2026-10-19.md) implementation |
+| A22 run-wide SP alignment, budget only on cycles | [2026-10-19 01:31](journal/2026-10-19.md) decided |
