@@ -1,0 +1,55 @@
+test,id,name,standalone_words_per_req,incremental_words_per_req_in_stack_order,standalone_pct_of_hot,risk_1_to_5,verifier_impact,standalone_words_per_risk
+set,C1,"minimal movz/movk chains; ADRP into a stack-backed register: build in scratch, one spill",0.0,0.0,0.0,1,none,0.0
+set,C2,SP-based LDP loads straight into the destination register,237.955,237.955,2.195,2,none,118.978
+set,C3,redundant fill peephole (block-local),0.0,0.0,0.0,2,none,0.0
+set,C4,"user SP aligned for the whole run: run-entry condition + SP-write guard, no SP checks",459.583,459.583,4.24,3,none (verifier never checked SP alignment),153.194
+set,C5,budget unit only on back-edges on an intra-fragment CFG cycle,0.0,0.0,0.0,3,rule 6 rewritten (cycle check over the body words),0.0
+set,C6,RET dispatches on x30 (second template shape),165.585,165.585,1.528,3,rule 4: second byte-exact template shape; miss payload exception,55.195
+set,C7,no budget unit on a forward direct BL,134.563,134.563,1.241,4,new rule trusting a translator-supplied site pc,33.641
+set,C10,"window access: no copy of a direct base, 3-word crossing check",16.001,16.001,0.148,1,none,16.001
+set,C8,synthesised constants as one pool literal load (after C1),316.494,316.494,2.92,5,new rule: pc-relative literal load from a fragment pool,63.299
+set,STACK,"C1..C7,C10 applied in order (C8 not included)",1013.686,1013.686,9.352,,,
+set,BASE,hot words per request on main (A20),10838.742,,,,,
+set,AFTER_STACK,hot words per request after the stack,9825.057,,,,,
+set,AFTER_STACK_CLASS,user_op,3242.048,,,,,
+set,AFTER_STACK_CLASS,user_synth,667.891,,,,,
+set,AFTER_STACK_CLASS,link_write,331.165,,,,,
+set,AFTER_STACK_CLASS,user_access,2100.036,,,,,
+set,AFTER_STACK_CLASS,fill,126.208,,,,,
+set,AFTER_STACK_CLASS,spill,208.399,,,,,
+set,AFTER_STACK_CLASS,helper_other,439.875,,,,,
+set,AFTER_STACK_CLASS,budget,603.979,,,,,
+set,AFTER_STACK_CLASS,align,48.002,,,,,
+set,AFTER_STACK_CLASS,range,50.017,,,,,
+set,AFTER_STACK_CLASS,window_access,25.009,,,,,
+set,AFTER_STACK_CLASS,link_slot,152.516,,,,,
+set,AFTER_STACK_CLASS,dispatch_target,4.575,,,,,
+set,AFTER_STACK_CLASS,dispatch_target_dyn,32.135,,,,,
+set,AFTER_STACK_CLASS,dispatch_lookup,1793.202,,,,,
+get,C1,"minimal movz/movk chains; ADRP into a stack-backed register: build in scratch, one spill",0.0,0.0,0.0,1,none,0.0
+get,C2,SP-based LDP loads straight into the destination register,188.547,188.547,2.092,2,none,94.273
+get,C3,redundant fill peephole (block-local),0.0,0.0,0.0,2,none,0.0
+get,C4,"user SP aligned for the whole run: run-entry condition + SP-write guard, no SP checks",386.728,386.728,4.29,3,none (verifier never checked SP alignment),128.909
+get,C5,budget unit only on back-edges on an intra-fragment CFG cycle,0.0,0.0,0.0,3,rule 6 rewritten (cycle check over the body words),0.0
+get,C6,RET dispatches on x30 (second template shape),141.035,141.035,1.565,3,rule 4: second byte-exact template shape; miss payload exception,47.012
+get,C7,no budget unit on a forward direct BL,108.936,108.936,1.208,4,new rule trusting a translator-supplied site pc,27.234
+get,C10,"window access: no copy of a direct base, 3-word crossing check",14.037,14.037,0.156,1,none,14.037
+get,C8,synthesised constants as one pool literal load (after C1),275.12,275.12,3.052,5,new rule: pc-relative literal load from a fragment pool,55.024
+get,STACK,"C1..C7,C10 applied in order (C8 not included)",839.283,839.283,9.311,,,
+get,BASE,hot words per request on main (A20),9014.34,,,,,
+get,AFTER_STACK,hot words per request after the stack,8175.057,,,,,
+get,AFTER_STACK_CLASS,user_op,2608.824,,,,,
+get,AFTER_STACK_CLASS,user_synth,587.627,,,,,
+get,AFTER_STACK_CLASS,link_write,282.067,,,,,
+get,AFTER_STACK_CLASS,user_access,1728.102,,,,,
+get,AFTER_STACK_CLASS,fill,105.374,,,,,
+get,AFTER_STACK_CLASS,spill,174.893,,,,,
+get,AFTER_STACK_CLASS,helper_other,396.884,,,,,
+get,AFTER_STACK_CLASS,budget,513.616,,,,,
+get,AFTER_STACK_CLASS,align,42.111,,,,,
+get,AFTER_STACK_CLASS,range,44.133,,,,,
+get,AFTER_STACK_CLASS,window_access,22.066,,,,,
+get,AFTER_STACK_CLASS,link_slot,131.926,,,,,
+get,AFTER_STACK_CLASS,dispatch_target,3.958,,,,,
+get,AFTER_STACK_CLASS,dispatch_target_dyn,25.229,,,,,
+get,AFTER_STACK_CLASS,dispatch_lookup,1508.248,,,,,
