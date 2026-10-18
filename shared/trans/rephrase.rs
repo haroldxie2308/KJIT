@@ -448,61 +448,63 @@ pub(crate) fn rephrase_insn(
     Ok(ret)
 }
 
-fn push_mov_imm64(
+/// `rd = value` (docs/pipeline.md, "Hot-path word reduction (A21)"): the one helper
+/// behind every 64-bit constant the translator writes (ADR/ADRP results, link writes,
+/// BL targets, exit payloads, literal addresses). One word per non-zero halfword: a
+/// `movz` of the lowest non-zero halfword (with its `hw`), then a `movk` for each
+/// higher non-zero halfword; `movz rd, #0` for zero. The result is `value` exactly,
+/// and only `rd` is written, so nothing between the words can observe a partial value.
+pub(crate) fn push_mov_imm64(
     out: &mut SharedVec<RephrasedInsn>,
     original_pc: u64,
     rd: A64Reg,
     value: u64,
     kind: RephrasedInsnKind,
 ) -> SharedResult<(), SharedAllocError> {
+    let halfword = |hw: u8| ((value >> (16 * u32::from(hw))) & 0xFFFF) as u32;
+    let Some(lowest) = (0..4_u8).find(|&hw| halfword(hw) != 0) else {
+        return out.push(
+            RephrasedInsn {
+                kind,
+                ori_pc: original_pc,
+                insn: A64Insn::MovzMovz64Movewide {
+                    hw: 0,
+                    imm16: uimm(0, 16),
+                    rd,
+                },
+            },
+            GFP_KERNEL,
+        );
+    };
     out.push(
         RephrasedInsn {
             kind,
             ori_pc: original_pc,
             insn: A64Insn::MovzMovz64Movewide {
-                hw: 3,
-                imm16: uimm(((value >> 48) & 0xFFFF) as u32, 16),
+                hw: lowest,
+                imm16: uimm(halfword(lowest), 16),
                 rd,
             },
         },
         GFP_KERNEL,
     )?;
-    out.push(
-        RephrasedInsn {
-            kind,
-            ori_pc: original_pc,
-            insn: A64Insn::MovkMovk64Movewide {
-                hw: 2,
-                imm16: uimm(((value >> 32) & 0xFFFF) as u32, 16),
-                rd,
-            },
-        },
-        GFP_KERNEL,
-    )?;
-    out.push(
-        RephrasedInsn {
-            kind,
-            ori_pc: original_pc,
-            insn: A64Insn::MovkMovk64Movewide {
-                hw: 1,
-                imm16: uimm(((value >> 16) & 0xFFFF) as u32, 16),
-                rd,
-            },
-        },
-        GFP_KERNEL,
-    )?;
-    out.push(
-        RephrasedInsn {
-            kind,
-            ori_pc: original_pc,
-            insn: A64Insn::MovkMovk64Movewide {
-                hw: 0,
-                imm16: uimm((value & 0xFFFF) as u32, 16),
-                rd,
-            },
-        },
-        GFP_KERNEL,
-    )
+    for hw in (lowest + 1)..4 {
+        if halfword(hw) != 0 {
+            out.push(
+                RephrasedInsn {
+                    kind,
+                    ori_pc: original_pc,
+                    insn: A64Insn::MovkMovk64Movewide {
+                        hw,
+                        imm16: uimm(halfword(hw), 16),
+                        rd,
+                    },
+                },
+                GFP_KERNEL,
+            )?;
+        }
+    }
+    Ok(())
 }
 
 fn push_runtime_exit_payload(
@@ -795,6 +797,27 @@ mod tests {
     use crate::shared::abi::DISPATCH_TEMPLATE_LEN;
     use crate::shared::arm64::A64Imm;
 
+    /// The values a run of `movz`/`movk` words builds: a `movz` starts a value, each
+    /// `movk` replaces its halfword. Every word must write `rd`'s own chain.
+    fn const_chains(words: &[RephrasedInsn]) -> Vec<(u8, u64)> {
+        let mut chains: Vec<(u8, u64)> = Vec::new();
+        for word in words {
+            match word.insn {
+                A64Insn::MovzMovz64Movewide { hw, imm16, rd } => {
+                    chains.push((rd.enc, u64::from(imm16.raw()) << (16 * u32::from(hw))));
+                }
+                A64Insn::MovkMovk64Movewide { hw, imm16, rd } => {
+                    let (chain_rd, value) = chains.last_mut().expect("a movk follows a movz");
+                    assert_eq!(*chain_rd, rd.enc, "one chain writes one register");
+                    let shift = 16 * u32::from(hw);
+                    *value = (*value & !(0xFFFF << shift)) | u64::from(imm16.raw()) << shift;
+                }
+                other => panic!("not a constant word: {other:?}"),
+            }
+        }
+        chains
+    }
+
     #[test]
     fn runtime_exit_rewrites_have_explicit_exit_branch_only() {
         let cases = [
@@ -998,7 +1021,7 @@ mod tests {
             .iter()
             .take_while(|insn| insn.kind == RephrasedInsnKind::DispatchTarget)
             .count();
-        assert_eq!(moves, 4, "movz + three movk");
+        assert_eq!(moves, 1, "0x1008 has one non-zero halfword: a lone movz");
         assert!(bl[slot + 1..slot + 1 + moves].iter().all(|insn| matches!(
             insn.insn,
             A64Insn::MovzMovz64Movewide { rd, .. } | A64Insn::MovkMovk64Movewide { rd, .. }
@@ -1006,19 +1029,30 @@ mod tests {
         )));
         assert_eq!(bl[slot + 1 + moves].kind, RephrasedInsnKind::DispatchLookup);
 
-        // A target above 4 GiB takes the full movz + three movk.
+        // A target with every halfword non-zero takes the full movz + three movk.
         let far = rephrase_insn(IrInsn {
-            pc: 0x1_2345_6000,
+            pc: 0x0001_0002_0003_6000,
             word: 0,
             inner: A64Insn::BlBlOnlyBranchImm {
                 imm26: scaled_simm(2, 26, 2),
             },
         })
         .unwrap();
+        let far_slot = slots(&far)[0];
         assert!(matches!(
-            far[slots(&far)[0]].kind,
-            RephrasedInsnKind::LinkSlot { target_pc: 0x1_2345_6008 }
+            far[far_slot].kind,
+            RephrasedInsnKind::LinkSlot { target_pc: 0x0001_0002_0003_6008 }
         ));
+        let far_moves: Vec<_> = far[far_slot + 1..]
+            .iter()
+            .take_while(|insn| insn.kind == RephrasedInsnKind::DispatchTarget)
+            .copied()
+            .collect();
+        assert_eq!(
+            const_chains(&far_moves),
+            [(DISPATCH_TARGET_REG, 0x0001_0002_0003_6008)]
+        );
+        assert_eq!(far_moves.len(), 4);
 
         for inner in [
             A64Insn::BlrBlr64BranchReg { rn: x(4) },
@@ -1033,6 +1067,67 @@ mod tests {
                 "{} has a dynamic target: no link slot",
                 inner.key()
             );
+        }
+    }
+
+    /// A21: the one constant helper. `(hw, imm16)` words, `movz` first.
+    #[test]
+    fn mov_imm64_emits_one_word_per_non_zero_halfword() {
+        let words = |value: u64| {
+            let mut out = SharedVec::new();
+            push_mov_imm64(&mut out, 0x1000, x(7), value, RephrasedInsnKind::UserSynthetic)
+                .unwrap();
+            assert!(out.iter().all(|word| word.ori_pc == 0x1000
+                && word.kind == RephrasedInsnKind::UserSynthetic));
+            out.iter()
+                .map(|word| match word.insn {
+                    A64Insn::MovzMovz64Movewide { hw, imm16, rd } => {
+                        assert_eq!(rd, x(7));
+                        ("movz", hw, imm16.raw())
+                    }
+                    A64Insn::MovkMovk64Movewide { hw, imm16, rd } => {
+                        assert_eq!(rd, x(7));
+                        ("movk", hw, imm16.raw())
+                    }
+                    other => panic!("not a move: {other:?}"),
+                })
+                .collect::<Vec<_>>()
+        };
+
+        // Zero is a single `movz #0`.
+        assert_eq!(words(0), [("movz", 0, 0)]);
+        // Only the lowest halfword: no movk.
+        assert_eq!(words(0x5a5a), [("movz", 0, 0x5a5a)]);
+        // Only the highest halfword: the movz carries its hw.
+        assert_eq!(words(0xbeef_0000_0000_0000), [("movz", 3, 0xbeef)]);
+        // A gap: the movz is the lowest non-zero halfword, the movk the next one up.
+        assert_eq!(
+            words(0x0000_0123_0000_4000),
+            [("movz", 0, 0x4000), ("movk", 2, 0x123)]
+        );
+        assert_eq!(
+            words(0x1111_2222_3333_4444),
+            [
+                ("movz", 0, 0x4444),
+                ("movk", 1, 0x3333),
+                ("movk", 2, 0x2222),
+                ("movk", 3, 0x1111),
+            ]
+        );
+        // A user address has a zero top halfword (and often a zero low one).
+        assert_eq!(
+            words(0x0000_0055_0025_f000),
+            [("movz", 0, 0xf000), ("movk", 1, 0x25), ("movk", 2, 0x55)]
+        );
+        assert_eq!(
+            words(0x0000_0055_0025_0000),
+            [("movz", 1, 0x25), ("movk", 2, 0x55)]
+        );
+        // Whatever the value, the chain builds exactly it.
+        for value in [0, 1, 0xffff, 0x1_0000, u64::MAX, 0x8000_0000_0000_0001, 0x0000_ffff_0000_ffff] {
+            let mut out = SharedVec::new();
+            push_mov_imm64(&mut out, 0, x(3), value, RephrasedInsnKind::UserSynthetic).unwrap();
+            assert_eq!(const_chains(&out), [(3, value)]);
         }
     }
 
@@ -1059,7 +1154,8 @@ mod tests {
             })
             .unwrap();
 
-            assert_eq!(rephrased.len(), 4);
+            // Both results are below 64 KiB: a lone `movz` (A21).
+            assert_eq!(rephrased.len(), 1);
             assert!(
                 rephrased
                     .iter()
@@ -1129,18 +1225,17 @@ mod tests {
         assert!(cold[..cold.len() - 1]
             .iter()
             .all(|insn| insn.kind == RephrasedInsnKind::RuntimeExitPayload));
-        // x9 = Mem, x10 = the original word, x11 = its PC (MOVZ/MOVK x3 of four).
-        let imm = |index: usize| match cold[index].insn {
-            A64Insn::MovzMovz64Movewide { imm16, .. }
-            | A64Insn::MovkMovk64Movewide { imm16, .. } => {
-                u64::from(imm16.raw()) << (16 * (3 - index % 4))
-            }
-            other => panic!("unexpected payload {other:?}"),
-        };
-        let value = |group: usize| (0..4).map(|i| imm(group * 4 + i)).sum::<u64>();
-        assert_eq!(value(0), RetStatus::Mem.as_reg());
-        assert_eq!(value(1), u64::from(ldp.encode().unwrap()));
-        assert_eq!(value(2), 0x1004);
+        // x9 = Mem, x10 = the original word, x11 = its PC (A21: one word per non-zero
+        // halfword).
+        let values = const_chains(&cold[..cold.len() - 1]);
+        assert_eq!(
+            values,
+            [
+                (RET_STATUS_REG, RetStatus::Mem.as_reg()),
+                (RET_PARAM0_REG, u64::from(ldp.encode().unwrap())),
+                (RET_PARAM1_REG, 0x1004),
+            ]
+        );
     }
 
     fn branch_forms(delta: i64) -> [A64Insn; 8] {
@@ -1221,20 +1316,16 @@ mod tests {
         }
     }
 
-    /// The four MOVZ/MOVK x3 values of a native-resume exit group:
-    /// (status, x10 = word, x11 = pc).
+    /// The three constants of a native-resume exit group: (status, x10 = word, x11 = pc).
     fn native_resume_values(group: &[RephrasedInsn]) -> (u64, u64, u64) {
-        assert_eq!(group.len(), 13);
-        assert!(group[12].kind.is_runtime_exit_branch());
-        let imm = |index: usize| match group[index].insn {
-            A64Insn::MovzMovz64Movewide { imm16, .. }
-            | A64Insn::MovkMovk64Movewide { imm16, .. } => {
-                u64::from(imm16.raw()) << (16 * (3 - index % 4))
-            }
-            other => panic!("unexpected payload {other:?}"),
-        };
-        let value = |g: usize| (0..4).map(|i| imm(g * 4 + i)).sum::<u64>();
-        (value(0), value(1), value(2))
+        let (branch, payload) = group.split_last().expect("a group ends in its branch");
+        assert!(branch.kind.is_runtime_exit_branch());
+        let values = const_chains(payload);
+        assert_eq!(
+            values.iter().map(|&(rd, _)| rd).collect::<Vec<_>>(),
+            [RET_STATUS_REG, RET_PARAM0_REG, RET_PARAM1_REG]
+        );
+        (values[0].1, values[1].1, values[2].1)
     }
 
     fn assert_budget_checked(block: &RephrasedBlock, branch: A64Insn, pc: u64) {
