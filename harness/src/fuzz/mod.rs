@@ -230,7 +230,9 @@ fn exit_target(halt: &HaltReason, pre_regs: &[u64; 32]) -> Option<u64> {
             RuntimeExitReason::Bl { target_pc, .. } => Some(target_pc),
             RuntimeExitReason::Svc { .. } | RuntimeExitReason::Unsupported { .. } => None,
         },
-        HaltReason::Fault(_) | HaltReason::InstanceCap { .. } => None,
+        HaltReason::Fault(_)
+        | HaltReason::InstanceCap { .. }
+        | HaltReason::SpMisaligned { .. } => None,
     }
 }
 
@@ -394,6 +396,7 @@ pub fn halt_label(halt: &HaltReason) -> &'static str {
             FaultCause::Alignment => "fault-align",
         },
         HaltReason::InstanceCap { .. } => "budget",
+        HaltReason::SpMisaligned { .. } => "sp-misaligned",
         HaltReason::RuntimeExit { reason } => match reason {
             RuntimeExitReason::Bl { .. } => "bl",
             RuntimeExitReason::Blr { .. } => "blr",

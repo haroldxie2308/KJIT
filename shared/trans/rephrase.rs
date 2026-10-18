@@ -6,6 +6,7 @@ use crate::shared::arm64::ergo::{scaled_simm, uimm, x, xzr};
 use crate::shared::arm64::{A64Insn, A64Reg, IrInsn};
 use crate::shared::platform::{SharedAllocError, SharedResult, SharedVec, GFP_KERNEL};
 use crate::shared::trans::cfg::{layout_block_order, Cfg, RuntimeExitReason};
+use crate::shared::trans::reg_virt::{sp_write, SpWrite};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RephrasedInsnKind {
@@ -20,13 +21,12 @@ pub enum RephrasedInsnKind {
     /// puts before a back-edge's lowered sequence. Runtime-owned: reg-virt passes it
     /// through unchanged; its `CBZ` targets the `Budget` stub of the same `ori_pc`.
     BudgetCheck,
-    /// One instruction of an alignment check reg-virt puts before a user access
-    /// that faults natively on alignment where its `LDTR*`/`STTR*` would not. It
-    /// ends in a `CBNZ` to the Mem stub of the same `ori_pc`, so the fragment
-    /// leaves and userspace takes the fault itself:
-    /// - SP base: `and xS, x17, #15; cbnz xS` (EL0 SP alignment checking; the
-    ///   mapped SP in x17 is never checked);
-    /// - acquire/release wider than a byte: `and xS, xN, #15; add xS, xS,
+    /// One instruction of an alignment check reg-virt emits. It ends in a `CBNZ` to
+    /// the Mem stub of the same `ori_pc`, so the fragment leaves and userspace takes
+    /// the fault itself:
+    /// - guard of a write to user SP that may misalign it (A22): `and xT, xS, #15;
+    ///   cbnz xT` on the new SP value, before the instruction commits;
+    /// - acquire/release or atomic wider than a byte: `and xS, xN, #15; add xS, xS,
     ///   #(size - 1); and xS, xS, #16; cbnz xS` (the access crosses a 16-byte
     ///   boundary, which alignment-faults natively).
     AlignCheck,
@@ -748,8 +748,9 @@ pub fn rephrase(cfg: Cfg) -> SharedResult<RephrasedProgram, SharedAllocError> {
                 )?;
             }
             insns.append(lowered, GFP_KERNEL)?;
-            if insn.inner.accesses_memory() {
-                // Fault stub: userspace re-executes the instruction and takes the fault.
+            if insn.inner.accesses_memory() || sp_write(insn.inner) == SpWrite::Guarded {
+                // Fault stub: userspace re-executes the instruction and takes the fault
+                // (for a guarded write to SP, the misaligned SP it leaves behind).
                 push_native_resume_exit(
                     &mut cold,
                     RetStatus::Mem,
@@ -1236,6 +1237,89 @@ mod tests {
                 (RET_PARAM1_REG, 0x1004),
             ]
         );
+    }
+
+    /// A22: a guarded write to SP leaves through its `Mem` stub (the guard's `cbnz`
+    /// targets it), so it gets one even without a memory access; a write that
+    /// preserves SP's alignment and any other instruction gets none.
+    #[test]
+    fn a_guarded_sp_write_gets_a_mem_stub_and_a_preserving_one_does_not() {
+        use crate::shared::arm64::{A64Reg, A64Reg31Mode};
+        use crate::shared::trans::cfg::BasicBlock;
+
+        let sp = A64Reg::new(31, crate::shared::arm64::A64RegWidth::X64, A64Reg31Mode::Sp);
+        let add_sp = |imm: u32, rn: A64Reg| A64Insn::AddAddsubImmAdd64AddsubImm {
+            sh: 0,
+            imm12: uimm(imm, 12),
+            rn,
+            rd: sp,
+        };
+        // pc 0x1000: sub-16 add (preserving); 0x1004: add sp, sp, #8 (guarded);
+        // 0x1008: mov sp, x0 (guarded); 0x100c: add x1, x1, #8 (not an SP write).
+        let insns_in = [
+            (0x1000, add_sp(16, sp)),
+            (0x1004, add_sp(8, sp)),
+            (0x1008, add_sp(0, x(0))),
+            (
+                0x100c,
+                A64Insn::AddAddsubImmAdd64AddsubImm {
+                    sh: 0,
+                    imm12: uimm(8, 12),
+                    rn: x(1),
+                    rd: x(1),
+                },
+            ),
+        ];
+        let mut insns = SharedVec::new();
+        for (pc, inner) in insns_in {
+            insns
+                .push(
+                    IrInsn {
+                        pc,
+                        word: inner.encode().unwrap(),
+                        inner,
+                    },
+                    GFP_KERNEL,
+                )
+                .unwrap();
+        }
+        let mut blocks = SharedVec::new();
+        blocks
+            .push(
+                BasicBlock {
+                    start_addr: 0x1000,
+                    end_addr: 0x1010,
+                    insns,
+                    prev: SharedVec::new(),
+                    next: SharedVec::new(),
+                    unsupported_exit: None,
+                },
+                GFP_KERNEL,
+            )
+            .unwrap();
+        let program = rephrase(Cfg {
+            entry_pc: 0x1000,
+            blocks,
+        })
+        .unwrap();
+
+        let mut stub_pcs: Vec<u64> = program[0].cold.iter().map(|insn| insn.ori_pc).collect();
+        stub_pcs.dedup();
+        assert_eq!(stub_pcs, [0x1004, 0x1008]);
+        let params = const_chains(
+            &program[0]
+                .cold
+                .iter()
+                .filter(|insn| insn.kind == RephrasedInsnKind::RuntimeExitPayload)
+                .copied()
+                .collect::<Vec<_>>(),
+        );
+        let statuses: Vec<u64> = params
+            .iter()
+            .filter(|&&(reg, _)| reg == RET_STATUS_REG)
+            .map(|&(_, value)| value)
+            .collect();
+        assert_eq!(statuses, [RetStatus::Mem.as_reg(); 2]);
     }
 
     fn branch_forms(delta: i64) -> [A64Insn; 8] {

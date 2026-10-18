@@ -1,7 +1,7 @@
 // A9a SIMD&FP faults: each case ends at a faulting SIMD&FP load/store. In a
 // fragment the access faults inside its PAN window and the fault site sends it
-// to the window's PAN stub (`msr pan, #1` + Mem exit); the SP alignment check
-// and the range check leave before the window. Userspace then re-executes the
+// to the window's PAN stub (`msr pan, #1` + Mem exit); the range check leaves
+// before the window. Userspace then re-executes the
 // instruction natively and takes the fault itself, so the Mem exit must leave
 // the pre-instruction state (up to the store footprint of an earlier element).
 //
@@ -73,27 +73,6 @@ st1_ro_mark:
     add x2, x2, #0xff8
     movz x3, #32
     st1 {v8.4s, v9.4s}, [x2], x3
-    ret
-
-// SP-based ldr q with SP 8 bytes off 16: EL0 SP alignment fault before any
-// access; the fragment's check leaves through the plain Mem stub.
-.global sp_misaligned_ldr_q_mark
-sp_misaligned_ldr_q_mark:
-    svc #0
-    add x4, x12, #0x1000
-    add sp, x4, #8
-    movi v3.16b, #0x5a
-    ldr q3, [sp]
-    ret
-
-// SP-based pre-indexed str q with a misaligned SP: faults, SP unchanged.
-.global sp_misaligned_str_q_mark
-sp_misaligned_str_q_mark:
-    svc #0
-    add x4, x12, #0x1000
-    add sp, x4, #4
-    movi v3.16b, #0x5b
-    str q3, [sp, #-16]!
     ret
 
 // A kernel-half pointer: the window's range check leaves through the PAN stub.

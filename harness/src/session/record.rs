@@ -294,6 +294,12 @@ impl<'a> Recorder<'a> {
     /// chains end in an `SVC` (each one is a new hook call after its syscall).
     fn hook(&mut self, mut resume: u64) -> Result<Option<Outcome>, SessionError> {
         loop {
+            // kjit_can_run, before the lookup and the profile (A22: the run conditions
+            // the harness models are user SP 16-byte aligned): userspace continues.
+            if self.user.state().sp() % 16 != 0 {
+                self.user.resume_at(resume);
+                return Ok(None);
+            }
             // kjit_lookup(pc, link = false): the fragment translated for exactly `resume`.
             let Some(fragment) = self.cache().fragment_for_entry(resume) else {
                 self.profile(resume, Trigger::SvcResume, resume.wrapping_sub(4))?;

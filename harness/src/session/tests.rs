@@ -103,6 +103,31 @@ fn every_program_exits_with_the_worlds_in_agreement() {
     }
 }
 
+/// A22, `kjit_can_run`: with a misaligned user SP every syscall-return hook is
+/// declined before the lookup and the profile, so userspace runs the whole program
+/// natively: no hit, no translation, no fragment run. At an aligned SP the same
+/// program runs fragments.
+#[test]
+fn a_misaligned_sp_declines_every_hook() {
+    let name = "session_svc_loop";
+    let mut misaligned = config(name);
+    misaligned.initial_state.set_sp(8);
+    let declined = Session::record(misaligned).unwrap();
+    assert_eq!(declined.outcome(), &Outcome::Exited);
+    assert_eq!(declined.syscalls().len() as u64, SYSCALLS);
+    assert!(
+        !declined.events().iter().any(|event| matches!(
+            event.kind,
+            EventKind::ProfileHit { .. } | EventKind::RunBegin { .. } | EventKind::Installed { .. }
+        )),
+        "a declined hook neither profiles nor runs"
+    );
+    assert_eq!(declined.final_state().sp(), 8);
+
+    let aligned = session(name);
+    assert!(aligned.events().iter().any(|event| matches!(event.kind, EventKind::RunBegin { .. })));
+}
+
 #[test]
 fn a_pc_is_translated_exactly_when_its_hits_reach_the_threshold() {
     for name in PROGRAMS {

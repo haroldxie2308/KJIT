@@ -92,6 +92,13 @@ pub enum URuntimeHalt {
         status: RetStatus,
         target_pc: u64,
     },
+    /// The run did not start: a run condition (`kjit_can_run`, docs/pipeline.md,
+    /// "Run conditions") fails. The harness models one, user SP 16-byte aligned
+    /// (A22). Userspace executes natively from `pc`, the entry pc; no fragment
+    /// instruction ran and the user state is the initial one.
+    RunDeclined {
+        pc: u64,
+    },
     InvalidReturnStatus {
         raw: u64,
     },
@@ -374,6 +381,14 @@ impl URuntime {
             .without_memory_ranges(&self.runtime_owned_ranges())
     }
 
+    /// Whether the user's SP in `pt_regs` (what the prologue loads) is 16-byte aligned.
+    fn user_sp_aligned(&self) -> bool {
+        self.state
+            .read_u64(self.config.pt_regs_addr + PT_REGS_SP_OFFSET)
+            % 16
+            == 0
+    }
+
     /// Runtime-owned memory is never user-accessible: no page it touches may
     /// be in the user page map.
     fn check_runtime_memory_not_user_mapped(&self) -> Result<(), String> {
@@ -418,6 +433,8 @@ struct URuntimeCursor {
     pc: u64,
     steps: usize,
     stopped: bool,
+    /// The run was declined at `new` (the entry pc): the first `advance` reports it.
+    declined_at: Option<u64>,
 }
 
 impl URuntimeCursor {
@@ -428,13 +445,19 @@ impl URuntimeCursor {
         if frag.fragment.len_bytes() <= PROLOGUE_LEN_BYTES {
             return Err("fragment is missing the ABI prologue".to_string());
         }
-        let (base, entry_offset) = (frag.base, frag.fragment.entry_offset);
-        runtime.prepare_entry_at(entry, entry_offset)?;
+        let (base, entry_offset, entry_pc) = (frag.base, frag.fragment.entry_offset, frag.entry_pc);
+        // `kjit_can_run` before the first entry (A22: user SP 16-byte aligned). Later
+        // entries cannot fail it: every fragment keeps SP aligned.
+        let declined_at = (!runtime.user_sp_aligned()).then_some(entry_pc);
+        if declined_at.is_none() {
+            runtime.prepare_entry_at(entry, entry_offset)?;
+        }
 
         Ok(Self {
             pc: base,
             steps: 0,
             stopped: false,
+            declined_at,
         })
     }
 
@@ -462,6 +485,21 @@ impl URuntimeCursor {
     fn advance(&mut self, runtime: &mut URuntime) -> Result<Option<Advanced>, String> {
         if self.stopped {
             return Ok(None);
+        }
+
+        if let Some(pc) = self.declined_at {
+            self.stopped = true;
+            return Ok(Some(Advanced {
+                fragment: runtime.entered,
+                offset: None,
+                insn_index: None,
+                next_offset: None,
+                executed: false,
+                runtime_transition: None,
+                halt: Some(URuntimeHalt::RunDeclined { pc }),
+                exit: None,
+                snapshot: Snapshot::UserFromPtRegs,
+            }));
         }
 
         if self.pc == runtime.config.return_pc {
@@ -598,6 +636,16 @@ impl URuntimeCursor {
                 fragment: fragment_to_enter,
                 offset: offset_to_enter,
             } => {
+                // `kjit_can_run` before a chained entry or an in-kernel syscall would
+                // decline a misaligned SP. Fragments keep SP aligned (A22), so one here
+                // is a translator bug, not a decline: report it.
+                if !runtime.user_sp_aligned() {
+                    return Err(format!(
+                        "user SP is not 16-byte aligned at a runtime exit ({:?}): a fragment \
+                         broke the run-wide SP alignment invariant (A22)",
+                        returned.status
+                    ));
+                }
                 runtime.prepare_entry_at(fragment_to_enter, offset_to_enter)?;
                 self.pc = runtime.cache.fragments[fragment_to_enter].base;
                 Ok(Advanced {
@@ -1097,6 +1145,71 @@ mod tests {
                 target_pc: 0xfeed_0000
             }
         );
+    }
+
+    /// A22, `kjit_can_run`: a run does not start at a user SP that is not 16-byte
+    /// aligned. Nothing runs, nothing of the user state changes, and the entry pc is
+    /// where userspace carries on; the same program at an aligned SP runs.
+    #[test]
+    fn a_run_at_a_misaligned_sp_is_declined() {
+        let base_pc = 0x5000;
+        let insns = [
+            A64Insn::MovzMovz64Movewide {
+                hw: 0,
+                imm16: uimm(9, 16),
+                rd: x(2),
+            },
+            A64Insn::RetRet64rBranchReg { rn: x(30) },
+        ];
+        for sp in [0x9008, 0x9001, 0x900f] {
+            let mut initial_state = MachineState::new();
+            initial_state.write_x(30, 0x7777_0000);
+            initial_state.set_sp(sp);
+
+            let mut runtime = URuntime::new(compile_insns(base_pc, &insns), initial_state.clone());
+            let report = runtime.run();
+            assert_eq!(report.halt, URuntimeHalt::RunDeclined { pc: base_pc }, "sp {sp:#x}");
+            assert_eq!(report.steps, 0);
+            assert_eq!(report.state, initial_state);
+            assert!(runtime.pan(), "no entry: PAN stays set");
+            assert_eq!(runtime.user_accesses(), 0);
+
+            // The stepper reports it too, and then has nothing more to say.
+            let mut stepper =
+                OwnedURuntimeStepper::new(URuntime::new(compile_insns(base_pc, &insns), initial_state))
+                    .unwrap();
+            let step = stepper.step().unwrap().unwrap();
+            assert!(!step.executed);
+            assert_eq!(step.halt, Some(URuntimeHalt::RunDeclined { pc: base_pc }));
+            assert!(stepper.step().unwrap().is_none());
+        }
+
+        let mut aligned = MachineState::new();
+        aligned.write_x(30, 0x7777_0000);
+        aligned.set_sp(0x9010);
+        let report = URuntime::new(compile_insns(base_pc, &insns), aligned).run();
+        assert_eq!(report.state.read_x(2), 9);
+        assert_eq!(report.state.sp(), 0x9010);
+    }
+
+    /// The same condition for a run over a code cache.
+    #[test]
+    fn a_cached_run_at_a_misaligned_sp_is_declined() {
+        let base_pc = 0x5000;
+        let fragment = compile_insns(base_pc, &[A64Insn::RetRet64rBranchReg { rn: x(30) }]);
+        let mut cache = CodeCache::new(
+            DEFAULT_CACHE_LAYOUT,
+            None,
+            synthetic_loader(DEFAULT_BASE_PC),
+        );
+        cache.install(base_pc, fragment, Vec::new(), false).unwrap();
+        let mut state = MachineState::new();
+        state.write_x(30, 0x7777_0000);
+        state.set_sp(0x9008);
+        let mut runtime = URuntime::with_cache(cache, 0, state.clone(), URuntimeConfig::default());
+        let report = runtime.run();
+        assert_eq!(report.halt, URuntimeHalt::RunDeclined { pc: base_pc });
+        assert_eq!(report.state, state);
     }
 
     #[test]

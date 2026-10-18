@@ -19,9 +19,9 @@ use crate::runtime::{
     URuntime, URuntimeConfig, URuntimeHalt, URuntimeReport, DEFAULT_BASE_PC, DEFAULT_CACHE_LAYOUT,
 };
 use crate::{
-    faulting_footprint, run_counting, run_original_following_branches, runtime_halt_matches_original,
-    undo_footprint, DifferentialError, Footprint, InstanceCap, Mismatch, MismatchKind,
-    MockCodeProvider, OriginalRunError,
+    faulting_footprint, original_stop_cap, run_counting, run_original_following_branches,
+    runtime_halt_matches_original, undo_footprint, DifferentialError, Footprint, InstanceCap,
+    Mismatch, MismatchKind, MockCodeProvider, OriginalRunError,
 };
 
 /// An empty cache over the fixture text, in the interpreter's synthetic address
@@ -106,10 +106,11 @@ pub fn run_cached_differential(
     }
     let original_footprint = faulting_footprint(text, text_base, &original)
         .map_err(|message| DifferentialError::Original(OriginalRunError::Harness(message)))?;
+    let original_cap = original_stop_cap(&original, counted.cap);
     Ok((
         CachedRun {
             original,
-            original_cap: counted.cap,
+            original_cap,
             original_footprint,
             original_accesses,
             report: counted.report,
