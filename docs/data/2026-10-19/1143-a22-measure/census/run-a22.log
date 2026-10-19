@@ -1,0 +1,23 @@
+   Compiling kjit-harness v0.1.0 (/Volumes/CaseSentitiveLocal/KJIT/.claude/worktrees/a22-measure/.kjit/scratch/src-ffb5fdc/harness)
+warning: constant `REQUEST_SYSCALLS` is never used
+  --> src/bin/census.rs:32:7
+   |
+32 | const REQUEST_SYSCALLS: [i32; 3] = [22, 63, 64];
+   |       ^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: field `file_off` is never read
+  --> src/bin/census.rs:38:5
+   |
+34 | struct Insn {
+   |        ---- field in this struct
+...
+38 |     file_off: u64,
+   |     ^^^^^^^^
+
+warning: `kjit-harness` (bin "census") generated 2 warnings
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.15s
+attrib: 8697 executed insns, 556 fragments compiled, 0 entries failed, 0 unsupported pcs, 0 supported pcs without lowering
+attrib: 8962 executed insns, 553 fragments compiled, 0 entries failed, 0 unsupported pcs, 0 supported pcs without lowering
+RUN-DONE

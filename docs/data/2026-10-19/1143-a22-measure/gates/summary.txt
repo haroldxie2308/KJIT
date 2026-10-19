@@ -1,0 +1,43 @@
+# gate summary (grep over the logs in this directory)
+## pass lines
+gate-campaign-kjit-guest.log:k4-campaign:   k4-bench: ALL PASS
+gate-campaign-kjit-guest.log:k4-campaign: RESULT PASS
+gate-campaign-kjit-guest-debug.log:k4-campaign:   k4-bench: ALL PASS
+gate-campaign-kjit-guest-debug.log:k4-campaign: RESULT PASS
+gate-k3-kjit-guest.log:k3: k2 ALL PASS (1 iterations, auto=1)
+gate-k3-kjit-guest.log:k3: ALL PASS (1 iterations, file 64 MiB, dd bs=1 4 MiB)
+gate-k3-kjit-guest-debug.log:k3: k2 ALL PASS (1 iterations, auto=1)
+gate-k3-kjit-guest-debug.log:k3: ALL PASS (1 iterations, file 64 MiB, dd bs=1 4 MiB)
+gate-k2-kjit-guest-debug.log:k2: ALL PASS (1 iterations, auto=0)
+gate-k2-kjit-guest.log:k2: ALL PASS (1 iterations, auto=0)
+## gates.progress
+k2 kjit-guest rc=0
+k2 kjit-guest-debug rc=0
+k3 kjit-guest rc=0
+k3 kjit-guest-debug rc=0
+campaign kjit-guest rc=0
+campaign kjit-guest-debug rc=0
+## verify refusals (all must be 0)
+gate-campaign-kjit-guest-debug.log: translate_verify_rejected values:  falls_off_end:  verify= values:       3 verify=0;
+gate-campaign-kjit-guest.log: translate_verify_rejected values:  falls_off_end:  verify= values:       3 verify=0;
+gate-k2-kjit-guest-debug.log: translate_verify_rejected values:       1 translate_verify_rejected 0; falls_off_end:       1 translate_verify_falls_off_end 0; verify= values: 
+gate-k2-kjit-guest.log: translate_verify_rejected values:       1 translate_verify_rejected 0; falls_off_end:       1 translate_verify_falls_off_end 0; verify= values: 
+gate-k3-kjit-guest-debug.log: translate_verify_rejected values:       1 translate_verify_rejected 0; falls_off_end:       1 translate_verify_falls_off_end 0; verify= values:      16 verify=0;
+gate-k3-kjit-guest.log: translate_verify_rejected values:       1 translate_verify_rejected 0; falls_off_end:       1 translate_verify_falls_off_end 0; verify= values:      16 verify=0;
+serial/gate-campaign-kjit-guest-debug.serial.log: translate_verify_rejected values:       2 translate_verify_rejected 0; falls_off_end:       1 translate_verify_falls_off_end 0; verify= values:      12 verify=0;
+serial/gate-campaign-kjit-guest.serial.log: translate_verify_rejected values:       2 translate_verify_rejected 0; falls_off_end:       1 translate_verify_falls_off_end 0; verify= values:      12 verify=0;
+## BUG/WARNING/Oops/lockdep/stall pattern over serial/*.log (only the boot banner 'RCU lockdep checking is enabled' of the debug kernel matches)
+serial/gate-campaign-kjit-guest-debug.serial.log:1
+serial/gate-campaign-kjit-guest.serial.log:0
+serial/gate-campaign-kjit-guest.campaign.log:0
+serial/gate-k3-kjit-guest.serial.log:0
+serial/gate-k3-kjit-guest-debug.serial.log:1
+serial/gate-k2-kjit-guest-debug.serial.log:1
+serial/gate-k2-kjit-guest.serial.log:0
+0
+## svc_declined > 0
+gate-campaign-kjit-guest-debug.log:16:k4-campaign:   k4:   clients256: exits svc=4445564 bl=9472 blr=601300 br=1999981 ret=160594 mem=612 unsupported=125 budget=0 invalid=0 svc_declined=1
+gate-k3-kjit-guest.log:373:k3:   svc_declined 3
+gate-k3-kjit-guest-debug.log:403:k3:   svc_declined 2
+gate-k2-kjit-guest-debug.log:15286:k2:   svc_declined 176
+gate-k2-kjit-guest.log:17777:k2:   svc_declined 57

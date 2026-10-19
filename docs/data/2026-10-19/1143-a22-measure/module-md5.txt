@@ -1,0 +1,8 @@
+kjit.ko md5 (built with tools/modbuild.sh against the shared kernels, no kernel rebuilt)
+a22  = this tree (ffb5fdc)   mod-a22/kjit-guest            5c834e70b98670d01338cdd91c546e18   (the a22 module of every boot; md5 of the copy in run dirs ub-a22-k1-b1, k1-b12 equal)
+a22  = this tree (ffb5fdc)   mod-a22/kjit-guest-debug      a8b73cfddc371f62e90f86bb6cdcbb6d   (gates only)
+a21  = git archive 56bc781   mod-a21-56bc781/kjit-guest    ecc4269d59cb8456a61daf2d4cb78217   (the a21 module of every boot; md5 of the copies in ub-a22-k1-b1, k0-b4 equal)
+a21  = git archive 56bc781   mod-a21-56bc781/kjit-guest-debug 8b15f4a9f9d7ea19e9b4be4b3f83eece (not used)
+mod-a21 (the A21 entry's module, built from 99abd95): kjit-guest f51024beed0da9e9daff97bc304d1f8a, kjit-guest-debug 0044d0be9eac77df99c5782b3a433a14.
+  md5 differs from the fresh 56bc781 build (the build path is in the object); `llvm-objdump -d` of kjit-guest, addresses and symbols stripped
+  (sed -E 's/^ *[0-9a-f]+:\s*//; s/0x[0-9a-f]+//g; s/<[^>]*>//g'): 106162 lines each, identical after the header line. The fresh 56bc781 build was used (the task: reuse only on md5 match).
