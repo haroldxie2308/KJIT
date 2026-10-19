@@ -1,0 +1,467 @@
+guest-run: profile=kjit-guest run-dir=/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/runs/ub-at22-M-k0-b1
+[    0.000000] Booting Linux on physical CPU 0x0000000000 [0x610f0000]
+[    0.000000] Linux version 7.1.0-rc1 (@kjit-dev-container) (Ubuntu clang version 18.1.3 (1ubuntu1), Ubuntu LLD 18.1.3) #6 SMP PREEMPT Tue Oct 13 19:58:16 UTC 2026
+[    0.000000] random: crng init done
+[    0.000000] Machine model: linux,dummy-virt
+[    0.000000] OF: reserved mem: Reserved memory: No reserved-memory node in the DT
+[    0.000000] psci: probing for conduit method from DT.
+[    0.000000] psci: PSCIv1.1 detected in firmware.
+[    0.000000] psci: Using standard PSCI v0.2 function IDs
+[    0.000000] psci: Trusted OS migration not required
+[    0.000000] psci: SMC Calling Convention v1.0
+[    0.000000] Zone ranges:
+[    0.000000]   Normal   [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000040000000-0x000000013fffffff]
+[    0.000000] percpu: Embedded 19 pages/cpu s38488 r8192 d31144 u77824
+[    0.000000] Detected PIPT I-cache on CPU0
+[    0.000000] CPU features: detected: Address authentication (IMP DEF algorithm)
+[    0.000000] CPU features: detected: Spectre-v4
+[    0.000000] CPU features: detected: Spectre-BHB
+[    0.000000] alternatives: applying boot alternatives
+[    0.000000] Kernel command line: console=ttyAMA0 panic=-1 nokaslr rodata=off
+[    0.000000] Unknown kernel command line parameters "nokaslr", will be passed to user space.
+[    0.000000] printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+[    0.000000] Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+[    0.000000] software IO TLB: SWIOTLB bounce buffer size adjusted to 4MB
+[    0.000000] software IO TLB: area num 4.
+[    0.000000] software IO TLB: mapped [mem 0x000000013b400000-0x000000013b800000] (4MB)
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 1048576
+[    0.000000] mem auto-init: stack:all(zero), heap alloc:off, heap free:off
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=4, Nodes=1
+[    0.000000] rcu: Preemptible hierarchical RCU implementation.
+[    0.000000] rcu: 	RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=4.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=4
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] Root IRQ handler: gic_handle_irq
+[    0.000000] GICv2m: range[mem 0x08020000-0x08020fff], SPI[80:143]
+[    0.000000] rcu: srcu_init: Setting srcu_struct sizes based on contention.
+[    0.000000] arch_timer: cp15 timer running at 24.00MHz (virt).
+[    0.000000] clocksource: arch_sys_counter: mask: 0xffffffffffffff max_cycles: 0x588fe9dc0, max_idle_ns: 440795202592 ns
+[    0.000000] sched_clock: 56 bits at 24MHz, resolution 41ns, wraps every 4398046511097ns
+[    0.000103] Console: colour dummy device 80x25
+[    0.000109] Calibrating delay loop (skipped), value calculated using timer frequency.. 48.00 BogoMIPS (lpj=96000)
+[    0.000113] pid_max: default: 32768 minimum: 301
+[    0.000250] Mount-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000261] Mountpoint-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000344] VFS: Finished mounting rootfs on nullfs
+[    0.000504] cacheinfo: Unable to detect cache hierarchy for CPU 0
+[    0.000625] rcu: Hierarchical SRCU implementation.
+[    0.000625] rcu: 	Max phase no-delay instances is 1000.
+[    0.000647] Timer migration: 1 hierarchy levels; 8 children per group; 1 crossnode level
+[    0.000686] smp: Bringing up secondary CPUs ...
+[    0.000916] Detected PIPT I-cache on CPU1
+[    0.001018] CPU1: Booted secondary processor 0x0000000001 [0x610f0000]
+[    0.001405] Detected PIPT I-cache on CPU2
+[    0.001523] CPU2: Booted secondary processor 0x0000000002 [0x610f0000]
+[    0.001840] Detected PIPT I-cache on CPU3
+[    0.001977] CPU3: Booted secondary processor 0x0000000003 [0x610f0000]
+[    0.002123] smp: Brought up 1 node, 4 CPUs
+[    0.002124] SMP: Total of 4 processors activated.
+[    0.002125] CPU: All CPU(s) started at EL1
+[    0.002126] CPU features: detected: ARMv8.4 Translation Table Level
+[    0.002126] CPU features: detected: Data cache clean to the PoU not required for I/D coherence
+[    0.002126] CPU features: detected: CRC32 instructions
+[    0.002126] CPU features: detected: Data independent timing control (DIT)
+[    0.002127] CPU features: detected: E0PD
+[    0.002127] CPU features: detected: Generic authentication (IMP DEF algorithm)
+[    0.002128] CPU features: detected: RCpc load-acquire (LDAPR)
+[    0.002128] CPU features: detected: LSE atomic instructions
+[    0.002129] CPU features: detected: Privileged Access Never
+[    0.002129] CPU features: detected: Speculation barrier (SB)
+[    0.002129] CPU features: detected: TLB range maintenance instructions
+[    0.002129] CPU features: detected: XNX
+[    0.002341] alternatives: applying system-wide alternatives
+[    0.003634] Memory: 3914460K/4194304K available (5248K kernel code, 754K rwdata, 2360K rodata, 576K init, 405K bss, 276664K reserved, 0K cma-reserved)
+[    0.003981] devtmpfs: initialized
+[    0.004299] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.004303] posixtimers hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.004320] futex hash table entries: 1024 (65536 bytes on 1 NUMA nodes, total 64 KiB, linear).
+[    0.004327] 30384 pages in range for non-PLT usage
+[    0.004327] 521904 pages in range for PLT usage
+[    0.004402] NET: Registered PF_NETLINK/PF_ROUTE protocol family
+[    0.004782] DMA: preallocated 512 KiB GFP_KERNEL pool for atomic allocations
+[    0.004830] ASID allocator initialised with 256 entries
+[    0.004837] Serial: AMBA PL011 UART driver
+[    0.005263] 9000000.pl011: ttyAMA0 at MMIO 0x9000000 (irq = 13, base_baud = 0) is a PL011 rev1
+[    0.005344] printk: console [ttyAMA0] enabled
+[    0.011003] vgaarb: loaded
+[    0.011342] clocksource: Switched to clocksource arch_sys_counter
+[    0.023625] NET: Registered PF_INET protocol family
+[    0.023761] IP idents hash table entries: 65536 (order: 7, 524288 bytes, linear)
+[    0.024280] tcp_listen_portaddr_hash hash table entries: 2048 (order: 3, 32768 bytes, linear)
+[    0.024287] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    0.024290] TCP established hash table entries: 32768 (order: 6, 262144 bytes, linear)
+[    0.024345] TCP bind hash table entries: 32768 (order: 8, 1048576 bytes, linear)
+[    0.024538] TCP: Hash tables configured (established 32768 bind 32768)
+[    0.024569] UDP hash table entries: 2048 (order: 5, 131072 bytes, linear)
+[    0.024608] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    0.024612] PCI: CLS 0 bytes, default 64
+[    0.024892] Unpacking initramfs...
+[    0.028101] workingset: timestamp_bits=46 (anon: 42) max_order=20 bucket_order=0 (anon: 0)
+[    0.028259] 9p: Installing v9fs 9p2000 file system support
+[    0.031637] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    0.031644] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    0.031647] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    0.031648] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    0.031654] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    0.031670] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    0.031690] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    0.031692] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.031693] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.031693] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    0.031694] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    0.031738] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000 conventional PCI endpoint
+[    0.032048] pci 0000:00:01.0: [1af4:1000] type 00 class 0x020000 conventional PCI endpoint
+[    0.032301] pci 0000:00:01.0: BAR 0 [io  0x0000-0x001f]
+[    0.032304] pci 0000:00:01.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.032324] pci 0000:00:01.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.032327] pci 0000:00:01.0: ROM [mem 0x00000000-0x0003ffff pref]
+[    0.032698] pci 0000:00:02.0: [1af4:1009] type 00 class 0x000200 conventional PCI endpoint
+[    0.032921] pci 0000:00:02.0: BAR 0 [io  0x0000-0x003f]
+[    0.032954] pci 0000:00:02.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.032961] pci 0000:00:02.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.033448] pci 0000:00:03.0: [1af4:1005] type 00 class 0x00ff00 conventional PCI endpoint
+[    0.033586] pci 0000:00:03.0: BAR 0 [io  0x0000-0x001f]
+[    0.033589] pci 0000:00:03.0: BAR 1 [mem 0x00000000-0x00000fff]
+[    0.033633] pci 0000:00:03.0: BAR 4 [mem 0x00000000-0x00003fff 64bit pref]
+[    0.034155] pci 0000:00:01.0: ROM [mem 0x10000000-0x1003ffff pref]: assigned
+[    0.034158] pci 0000:00:01.0: BAR 4 [mem 0x8000000000-0x8000003fff 64bit pref]: assigned
+[    0.034170] pci 0000:00:02.0: BAR 4 [mem 0x8000004000-0x8000007fff 64bit pref]: assigned
+[    0.034186] pci 0000:00:03.0: BAR 4 [mem 0x8000008000-0x800000bfff 64bit pref]: assigned
+[    0.034200] pci 0000:00:01.0: BAR 1 [mem 0x10040000-0x10040fff]: assigned
+[    0.034203] pci 0000:00:02.0: BAR 1 [mem 0x10041000-0x10041fff]: assigned
+[    0.034207] pci 0000:00:03.0: BAR 1 [mem 0x10042000-0x10042fff]: assigned
+[    0.034211] pci 0000:00:02.0: BAR 0 [io  0x1000-0x103f]: assigned
+[    0.034214] pci 0000:00:01.0: BAR 0 [io  0x1040-0x105f]: assigned
+[    0.034217] pci 0000:00:03.0: BAR 0 [io  0x1060-0x107f]: assigned
+[    0.034221] pci_bus 0000:00: resource 4 [io  0x0000-0xffff]
+[    0.034222] pci_bus 0000:00: resource 5 [mem 0x10000000-0x3efeffff]
+[    0.034222] pci_bus 0000:00: resource 6 [mem 0x8000000000-0xffffffffff]
+[    0.040040] virtio-pci 0000:00:01.0: enabling device (0000 -> 0003)
+[    0.040929] virtio-pci 0000:00:02.0: enabling device (0000 -> 0003)
+[    0.041836] virtio-pci 0000:00:03.0: enabling device (0000 -> 0003)
+[    0.052208] rtc-pl031 9010000.pl031: registered as rtc0
+[    0.052217] rtc-pl031 9010000.pl031: setting system clock to 2026-10-19T06:03:23 UTC (1792389803)
+[    0.053791] NET: Registered PF_INET6 protocol family
+[    0.055322] Segment Routing with IPv6
+[    0.055326] In-situ OAM (IOAM) with IPv6
+[    0.055334] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.055500] NET: Registered PF_PACKET protocol family
+[    0.055509] 9pnet: Installing 9P2000 support
+[    0.061081] clk: Disabling unused clocks
+[    0.139798] Freeing initrd memory: 189832K
+[    0.140204] Freeing unused kernel memory: 576K
+[    0.140244] Kernel memory protection disabled.
+[    0.140263] Run /init as init process
+[    0.157142] kjit: loading out-of-tree module taints kernel.
+[    0.158119] rust_kjit: ######## Rust KJIT inits ########
+[    0.158236] rust_kjit: golden tests/arm64/toy_cfg.s:hot_svc_mark PASS: 628 fragment bytes match harness
+kjit-init: insmod kjit.ko ok
+mic: cmdline: console=ttyAMA0 panic=-1 nokaslr rodata=off
+mic: meltdown: Not affected
+mic: x_micro cntfrq 24000000 can_run_ps 993 srcu_pair_ps 9673 pan_pair_ps 7798 bracket_ps 39248 cntvct_read_ps 12487 percpu_inc_ps 4170 lookup_miss_ps 4140 atomic_add_ps 2224
+mic: x_micro cntfrq 24000000 can_run_ps 1097 srcu_pair_ps 9448 pan_pair_ps 7550 bracket_ps 37068 cntvct_read_ps 12314 percpu_inc_ps 4161 lookup_miss_ps 4118 atomic_add_ps 2235
+mic off/getppid result mode=getppid size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=133.29 median_ns_per_syscall=133.29 min_ns_per_syscall=132.54
+[    0.605110] kjit: translate_svc_sites pid 75: 2 text ranges, 114 svc sites
+mic on/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=69.24 median_ns_per_syscall=69.24 min_ns_per_syscall=67.58
+[    0.741246] kjit: translate_svc_sites pid 77: 2 text ranges, 114 svc sites
+mic svcn/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=169.77 median_ns_per_syscall=169.77 min_ns_per_syscall=167.84
+[    1.023825] kjit: translate_svc_sites pid 83: 2 text ranges, 114 svc sites
+mic amptr32/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=329.06 median_ns_per_syscall=329.06 min_ns_per_syscall=326.13
+[    1.526786] kjit: translate_svc_sites pid 86: 2 text ranges, 114 svc sites
+mic amptr128/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=1104.04 median_ns_per_syscall=1104.04 min_ns_per_syscall=1097.61
+[    3.133175] kjit: translate_svc_sites pid 89: 2 text ranges, 114 svc sites
+mic ampcall32/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=549.93 median_ns_per_syscall=549.93 min_ns_per_syscall=548.52
+[    3.950874] kjit: translate_svc_sites pid 91: 2 text ranges, 114 svc sites
+mic ampcall128/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=1971.42 median_ns_per_syscall=1971.42 min_ns_per_syscall=1964.40
+[    6.784520] kjit: translate_svc_sites pid 93: 2 text ranges, 114 svc sites
+mic amprun16/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=725.66 median_ns_per_syscall=725.66 min_ns_per_syscall=720.84
+[    7.855861] kjit: translate_svc_sites pid 95: 2 text ranges, 114 svc sites
+mic amprun64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=2721.86 median_ns_per_syscall=2721.86 min_ns_per_syscall=2674.71
+[   11.857948] kjit: translate_svc_sites pid 98: 2 text ranges, 114 svc sites
+mic ampcr256/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=334.15 median_ns_per_syscall=334.15 min_ns_per_syscall=329.49
+[   12.373701] kjit: translate_svc_sites pid 100: 2 text ranges, 114 svc sites
+mic amplk64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=369.00 median_ns_per_syscall=369.00 min_ns_per_syscall=368.23
+[   12.941195] kjit: translate_svc_sites pid 102: 2 text ranges, 114 svc sites
+mic ampsr64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=678.67 median_ns_per_syscall=678.67 min_ns_per_syscall=670.77
+[   13.947659] kjit: translate_svc_sites pid 104: 2 text ranges, 114 svc sites
+mic amppan64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=563.01 median_ns_per_syscall=563.01 min_ns_per_syscall=559.40
+[   14.786198] kjit: translate_svc_sites pid 106: 2 text ranges, 114 svc sites
+mic ampat64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=194.71 median_ns_per_syscall=194.71 min_ns_per_syscall=193.53
+mic off/raw_zn result mode=raw_zn size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=295.23 median_ns_per_syscall=147.62 min_ns_per_syscall=147.28
+[   15.531658] kjit: translate_svc_sites pid 110: 2 text ranges, 114 svc sites
+mic on/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=166.29 median_ns_per_syscall=83.14 min_ns_per_syscall=82.09
+[   15.801834] kjit: translate_svc_sites pid 112: 2 text ranges, 114 svc sites
+mic svcn/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=370.59 median_ns_per_syscall=185.29 min_ns_per_syscall=184.30
+[   16.364853] kjit: translate_svc_sites pid 114: 2 text ranges, 114 svc sites
+mic amptr32/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=688.60 median_ns_per_syscall=344.30 min_ns_per_syscall=342.36
+[   17.389617] kjit: translate_svc_sites pid 116: 2 text ranges, 114 svc sites
+mic amptr128/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=2247.13 median_ns_per_syscall=1123.56 min_ns_per_syscall=1118.01
+[   20.623657] kjit: translate_svc_sites pid 118: 2 text ranges, 114 svc sites
+mic ampcall32/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1137.49 median_ns_per_syscall=568.75 min_ns_per_syscall=564.57
+[   22.285392] kjit: translate_svc_sites pid 120: 2 text ranges, 114 svc sites
+mic ampcall128/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=4000.89 median_ns_per_syscall=2000.45 min_ns_per_syscall=1992.90
+[   28.016158] kjit: translate_svc_sites pid 122: 2 text ranges, 114 svc sites
+mic amprun16/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1445.68 median_ns_per_syscall=722.84 min_ns_per_syscall=720.22
+[   30.107270] kjit: translate_svc_sites pid 124: 2 text ranges, 114 svc sites
+mic amprun64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=5285.53 median_ns_per_syscall=2642.77 min_ns_per_syscall=2635.26
+[   37.653150] kjit: translate_svc_sites pid 126: 2 text ranges, 114 svc sites
+mic ampcr256/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=700.26 median_ns_per_syscall=350.13 min_ns_per_syscall=347.04
+[   38.687571] kjit: translate_svc_sites pid 128: 2 text ranges, 114 svc sites
+mic amplk64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=768.12 median_ns_per_syscall=384.06 min_ns_per_syscall=381.73
+[   39.816572] kjit: translate_svc_sites pid 130: 2 text ranges, 114 svc sites
+mic ampsr64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1418.38 median_ns_per_syscall=709.19 min_ns_per_syscall=694.50
+[   41.867199] kjit: translate_svc_sites pid 132: 2 text ranges, 114 svc sites
+mic amppan64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1155.94 median_ns_per_syscall=577.97 min_ns_per_syscall=576.81
+[   43.541606] kjit: translate_svc_sites pid 134: 2 text ranges, 114 svc sites
+mic ampat64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=423.34 median_ns_per_syscall=211.67 min_ns_per_syscall=209.89
+mic off/getppid result mode=getppid size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=131.96 median_ns_per_syscall=131.96 min_ns_per_syscall=131.15
+[   44.376486] kjit: translate_svc_sites pid 138: 2 text ranges, 114 svc sites
+mic on/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=68.60 median_ns_per_syscall=68.60 min_ns_per_syscall=68.11
+[   44.512377] kjit: translate_svc_sites pid 140: 2 text ranges, 114 svc sites
+mic svcn/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=167.93 median_ns_per_syscall=167.93 min_ns_per_syscall=165.91
+[   44.790665] kjit: translate_svc_sites pid 142: 2 text ranges, 114 svc sites
+mic amptr32/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=328.80 median_ns_per_syscall=328.80 min_ns_per_syscall=327.54
+[   45.292146] kjit: translate_svc_sites pid 144: 2 text ranges, 114 svc sites
+mic amptr128/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=1103.72 median_ns_per_syscall=1103.72 min_ns_per_syscall=1094.60
+[   46.898553] kjit: translate_svc_sites pid 146: 2 text ranges, 114 svc sites
+mic ampcall32/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=550.35 median_ns_per_syscall=550.35 min_ns_per_syscall=549.33
+[   47.724219] kjit: translate_svc_sites pid 148: 2 text ranges, 114 svc sites
+mic ampcall128/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=1973.57 median_ns_per_syscall=1973.57 min_ns_per_syscall=1961.77
+[   50.567968] kjit: translate_svc_sites pid 150: 2 text ranges, 114 svc sites
+mic amprun16/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=715.23 median_ns_per_syscall=715.23 min_ns_per_syscall=713.43
+[   51.617883] kjit: translate_svc_sites pid 152: 2 text ranges, 114 svc sites
+mic amprun64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=2669.03 median_ns_per_syscall=2669.03 min_ns_per_syscall=2656.63
+[   55.444700] kjit: translate_svc_sites pid 154: 2 text ranges, 114 svc sites
+mic ampcr256/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=328.84 median_ns_per_syscall=328.84 min_ns_per_syscall=325.59
+[   55.950705] kjit: translate_svc_sites pid 156: 2 text ranges, 114 svc sites
+mic amplk64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=334.13 median_ns_per_syscall=334.13 min_ns_per_syscall=329.61
+[   56.468352] kjit: translate_svc_sites pid 158: 2 text ranges, 114 svc sites
+mic ampsr64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=672.31 median_ns_per_syscall=672.31 min_ns_per_syscall=670.15
+[   57.464345] kjit: translate_svc_sites pid 160: 2 text ranges, 114 svc sites
+mic amppan64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=559.35 median_ns_per_syscall=559.35 min_ns_per_syscall=557.21
+[   58.298857] kjit: translate_svc_sites pid 162: 2 text ranges, 114 svc sites
+mic ampat64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=194.04 median_ns_per_syscall=194.04 min_ns_per_syscall=193.53
+mic off/raw_zn result mode=raw_zn size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=297.13 median_ns_per_syscall=148.56 min_ns_per_syscall=147.17
+[   59.046189] kjit: translate_svc_sites pid 166: 2 text ranges, 114 svc sites
+mic on/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=165.89 median_ns_per_syscall=82.95 min_ns_per_syscall=82.44
+[   59.316053] kjit: translate_svc_sites pid 168: 2 text ranges, 114 svc sites
+mic svcn/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=372.90 median_ns_per_syscall=186.45 min_ns_per_syscall=185.23
+[   59.889730] kjit: translate_svc_sites pid 170: 2 text ranges, 114 svc sites
+mic amptr32/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=693.36 median_ns_per_syscall=346.68 min_ns_per_syscall=342.56
+[   60.907578] kjit: translate_svc_sites pid 172: 2 text ranges, 114 svc sites
+mic amptr128/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=2241.88 median_ns_per_syscall=1120.94 min_ns_per_syscall=1115.27
+[   64.131325] kjit: translate_svc_sites pid 174: 2 text ranges, 114 svc sites
+mic ampcall32/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1134.47 median_ns_per_syscall=567.24 min_ns_per_syscall=565.81
+[   65.782872] kjit: translate_svc_sites pid 176: 2 text ranges, 114 svc sites
+mic ampcall128/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=4026.26 median_ns_per_syscall=2013.13 min_ns_per_syscall=1995.99
+[   71.535088] kjit: translate_svc_sites pid 178: 2 text ranges, 114 svc sites
+mic amprun16/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1482.58 median_ns_per_syscall=741.29 min_ns_per_syscall=720.54
+[   73.666866] kjit: translate_svc_sites pid 180: 2 text ranges, 114 svc sites
+mic amprun64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=5292.89 median_ns_per_syscall=2646.44 min_ns_per_syscall=2637.50
+[   81.237485] kjit: translate_svc_sites pid 182: 2 text ranges, 114 svc sites
+mic ampcr256/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=698.59 median_ns_per_syscall=349.29 min_ns_per_syscall=347.59
+[   82.262900] kjit: translate_svc_sites pid 184: 2 text ranges, 114 svc sites
+mic amplk64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=767.08 median_ns_per_syscall=383.54 min_ns_per_syscall=382.31
+[   83.393372] kjit: translate_svc_sites pid 186: 2 text ranges, 114 svc sites
+mic ampsr64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1387.48 median_ns_per_syscall=693.74 min_ns_per_syscall=689.24
+[   85.404053] kjit: translate_svc_sites pid 188: 2 text ranges, 114 svc sites
+mic amppan64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1166.25 median_ns_per_syscall=583.13 min_ns_per_syscall=577.01
+[   87.095533] kjit: translate_svc_sites pid 190: 2 text ranges, 114 svc sites
+mic ampat64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=428.41 median_ns_per_syscall=214.21 min_ns_per_syscall=211.98
+mic off/getppid result mode=getppid size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=133.89 median_ns_per_syscall=133.89 min_ns_per_syscall=131.40
+[   87.945366] kjit: translate_svc_sites pid 194: 2 text ranges, 114 svc sites
+mic on/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=69.85 median_ns_per_syscall=69.85 min_ns_per_syscall=68.23
+[   88.079313] kjit: translate_svc_sites pid 196: 2 text ranges, 114 svc sites
+mic svcn/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=170.83 median_ns_per_syscall=170.83 min_ns_per_syscall=167.21
+[   88.363448] kjit: translate_svc_sites pid 198: 2 text ranges, 114 svc sites
+mic amptr32/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=330.09 median_ns_per_syscall=330.09 min_ns_per_syscall=327.86
+[   88.870954] kjit: translate_svc_sites pid 200: 2 text ranges, 114 svc sites
+mic amptr128/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=1097.76 median_ns_per_syscall=1097.76 min_ns_per_syscall=1092.95
+[   90.470353] kjit: translate_svc_sites pid 202: 2 text ranges, 114 svc sites
+mic ampcall32/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=548.08 median_ns_per_syscall=548.08 min_ns_per_syscall=543.63
+[   91.290283] kjit: translate_svc_sites pid 204: 2 text ranges, 114 svc sites
+mic ampcall128/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=1970.70 median_ns_per_syscall=1970.70 min_ns_per_syscall=1964.68
+[   94.132524] kjit: translate_svc_sites pid 206: 2 text ranges, 114 svc sites
+mic amprun16/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=719.65 median_ns_per_syscall=719.65 min_ns_per_syscall=714.33
+[   95.195967] kjit: translate_svc_sites pid 208: 2 text ranges, 114 svc sites
+mic amprun64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=2659.69 median_ns_per_syscall=2659.69 min_ns_per_syscall=2655.58
+[   99.023898] kjit: translate_svc_sites pid 210: 2 text ranges, 114 svc sites
+mic ampcr256/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=324.90 median_ns_per_syscall=324.90 min_ns_per_syscall=323.37
+[   99.523662] kjit: translate_svc_sites pid 212: 2 text ranges, 114 svc sites
+mic amplk64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=335.83 median_ns_per_syscall=335.83 min_ns_per_syscall=330.87
+[  100.043488] kjit: translate_svc_sites pid 214: 2 text ranges, 114 svc sites
+mic ampsr64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=678.24 median_ns_per_syscall=678.24 min_ns_per_syscall=674.42
+[  101.044618] kjit: translate_svc_sites pid 216: 2 text ranges, 114 svc sites
+mic amppan64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=569.39 median_ns_per_syscall=569.39 min_ns_per_syscall=564.74
+[  101.888239] kjit: translate_svc_sites pid 218: 2 text ranges, 114 svc sites
+mic ampat64/getppid result mode=getppid size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=1 median_ns_per_iter=197.46 median_ns_per_syscall=197.46 min_ns_per_syscall=193.47
+mic off/raw_zn result mode=raw_zn size=1 enabled=0 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=298.45 median_ns_per_syscall=149.23 min_ns_per_syscall=147.17
+[  102.642239] kjit: translate_svc_sites pid 222: 2 text ranges, 114 svc sites
+mic on/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=166.09 median_ns_per_syscall=83.04 min_ns_per_syscall=82.37
+[  102.908970] kjit: translate_svc_sites pid 224: 2 text ranges, 114 svc sites
+mic svcn/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=382.19 median_ns_per_syscall=191.09 min_ns_per_syscall=183.80
+[  103.488339] kjit: translate_svc_sites pid 226: 2 text ranges, 114 svc sites
+mic amptr32/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=711.28 median_ns_per_syscall=355.64 min_ns_per_syscall=353.24
+[  104.541519] kjit: translate_svc_sites pid 228: 2 text ranges, 114 svc sites
+mic amptr128/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=2252.45 median_ns_per_syscall=1126.23 min_ns_per_syscall=1123.41
+[  107.789998] kjit: translate_svc_sites pid 230: 2 text ranges, 114 svc sites
+mic ampcall32/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1150.62 median_ns_per_syscall=575.31 min_ns_per_syscall=571.08
+[  109.455990] kjit: translate_svc_sites pid 232: 2 text ranges, 114 svc sites
+mic ampcall128/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=4028.76 median_ns_per_syscall=2014.38 min_ns_per_syscall=2006.15
+[  115.215726] kjit: translate_svc_sites pid 234: 2 text ranges, 114 svc sites
+mic amprun16/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1452.66 median_ns_per_syscall=726.33 min_ns_per_syscall=720.40
+[  117.319815] kjit: translate_svc_sites pid 236: 2 text ranges, 114 svc sites
+mic amprun64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=5312.24 median_ns_per_syscall=2656.12 min_ns_per_syscall=2644.93
+[  124.912453] kjit: translate_svc_sites pid 238: 2 text ranges, 114 svc sites
+mic ampcr256/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=698.65 median_ns_per_syscall=349.32 min_ns_per_syscall=346.38
+[  125.944217] kjit: translate_svc_sites pid 240: 2 text ranges, 114 svc sites
+mic amplk64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=764.39 median_ns_per_syscall=382.19 min_ns_per_syscall=380.53
+[  127.063116] kjit: translate_svc_sites pid 242: 2 text ranges, 114 svc sites
+mic ampsr64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1383.99 median_ns_per_syscall=692.00 min_ns_per_syscall=686.74
+[  129.072048] kjit: translate_svc_sites pid 244: 2 text ranges, 114 svc sites
+mic amppan64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=1165.35 median_ns_per_syscall=582.67 min_ns_per_syscall=580.19
+[  130.769481] kjit: translate_svc_sites pid 246: 2 text ranges, 114 svc sites
+mic ampat64/raw_zn result mode=raw_zn size=1 enabled=1 iters=200000 reps=7 syscalls_per_iter=2 median_ns_per_iter=430.14 median_ns_per_syscall=215.07 min_ns_per_syscall=212.02
+mic entry_cost off gpr calls=1 result variant=gpr enabled=0 outer=20000 calls=1 reps=5 median_ns_per_outer=136.2 median_ns_per_call=136.16 min_ns_per_call=130.80 acc=120000 
+[  131.453195] kjit: translate_svc_sites pid 253: 2 text ranges, 111 svc sites
+[  131.453584] rust_kjit: kjit: pc 0x400fe8: installed 480 bytes, 0 fault sites, 1 entries, 0 link sites, text 0x400fe8..0x400ff0, fpsimd false
+[  131.454521] rust_kjit: kjit: pc 0x400fcc: installed 768 bytes, 1 fault sites, 6 entries, 1 link sites, text 0x400fbc..0x400fe8, fpsimd false
+mic entry_cost on gpr calls=1 result variant=gpr enabled=1 outer=20000 calls=1 reps=5 median_ns_per_outer=67.1 median_ns_per_call=67.13 min_ns_per_call=66.17 acc=120000 
+mic entry_cost off fp calls=1 result variant=fp enabled=0 outer=20000 calls=1 reps=5 median_ns_per_outer=135.0 median_ns_per_call=135.03 min_ns_per_call=131.09 acc=120000 
+[  131.572654] kjit: translate_svc_sites pid 261: 2 text ranges, 111 svc sites
+[  131.573020] rust_kjit: kjit: pc 0x401028: installed 488 bytes, 0 fault sites, 1 entries, 0 link sites, text 0x401028..0x401038, fpsimd true
+[  131.573627] rust_kjit: kjit: pc 0x40100c: installed 768 bytes, 1 fault sites, 6 entries, 1 link sites, text 0x400ffc..0x401028, fpsimd false
+mic entry_cost on fp calls=1 result variant=fp enabled=1 outer=20000 calls=1 reps=5 median_ns_per_outer=160.9 median_ns_per_call=160.94 min_ns_per_call=159.36 acc=120000 
+mic entry_cost off gpr calls=16 result variant=gpr enabled=0 outer=20000 calls=16 reps=5 median_ns_per_outer=146.7 median_ns_per_call=9.17 min_ns_per_call=9.02 acc=1920000 
+[  131.701566] kjit: translate_svc_sites pid 269: 2 text ranges, 111 svc sites
+[  131.702207] rust_kjit: kjit: pc 0x400fe8: installed 480 bytes, 0 fault sites, 1 entries, 0 link sites, text 0x400fe8..0x400ff0, fpsimd false
+[  131.703185] rust_kjit: kjit: pc 0x400fcc: installed 768 bytes, 1 fault sites, 6 entries, 1 link sites, text 0x400fbc..0x400fe8, fpsimd false
+mic entry_cost on gpr calls=16 result variant=gpr enabled=1 outer=20000 calls=16 reps=5 median_ns_per_outer=73.7 median_ns_per_call=4.60 min_ns_per_call=4.54 acc=1920000 
+mic entry_cost off fp calls=16 result variant=fp enabled=0 outer=20000 calls=16 reps=5 median_ns_per_outer=183.5 median_ns_per_call=11.47 min_ns_per_call=11.30 acc=1920000 
+[  131.837344] kjit: translate_svc_sites pid 277: 2 text ranges, 111 svc sites
+[  131.838118] rust_kjit: kjit: pc 0x401028: installed 488 bytes, 0 fault sites, 1 entries, 0 link sites, text 0x401028..0x401038, fpsimd true
+[  131.839181] rust_kjit: kjit: pc 0x40100c: installed 768 bytes, 1 fault sites, 6 entries, 1 link sites, text 0x400ffc..0x401028, fpsimd false
+mic entry_cost on fp calls=16 result variant=fp enabled=1 outer=20000 calls=16 reps=5 median_ns_per_outer=210.6 median_ns_per_call=13.16 min_ns_per_call=12.36 acc=1920000 
+mic entry_cost off gpr calls=128 result variant=gpr enabled=0 outer=20000 calls=128 reps=5 median_ns_per_outer=263.7 median_ns_per_call=2.06 min_ns_per_call=2.05 acc=15360000 
+[  131.989233] kjit: translate_svc_sites pid 285: 2 text ranges, 111 svc sites
+[  131.989432] rust_kjit: kjit: pc 0x400fe8: installed 480 bytes, 0 fault sites, 1 entries, 0 link sites, text 0x400fe8..0x400ff0, fpsimd false
+[  131.990088] rust_kjit: kjit: pc 0x400fcc: installed 768 bytes, 1 fault sites, 6 entries, 1 link sites, text 0x400fbc..0x400fe8, fpsimd false
+mic entry_cost on gpr calls=128 result variant=gpr enabled=1 outer=20000 calls=128 reps=5 median_ns_per_outer=190.2 median_ns_per_call=1.49 min_ns_per_call=1.47 acc=15360000 
+mic entry_cost off fp calls=128 result variant=fp enabled=0 outer=20000 calls=128 reps=5 median_ns_per_outer=546.9 median_ns_per_call=4.27 min_ns_per_call=4.21 acc=15360000 
+[  132.176844] kjit: translate_svc_sites pid 293: 2 text ranges, 111 svc sites
+[  132.177340] rust_kjit: kjit: pc 0x401028: installed 488 bytes, 0 fault sites, 1 entries, 0 link sites, text 0x401028..0x401038, fpsimd true
+[  132.178108] rust_kjit: kjit: pc 0x40100c: installed 768 bytes, 1 fault sites, 6 entries, 1 link sites, text 0x400ffc..0x401028, fpsimd false
+mic entry_cost on fp calls=128 result variant=fp enabled=1 outer=20000 calls=128 reps=5 median_ns_per_outer=573.7 median_ns_per_call=4.48 min_ns_per_call=4.31 acc=15360000 
+mic wake pid 298's current affinity list: 0-3
+mic wake pid 298's new affinity list: 1
+mic wake pid 296's current affinity list: 0-3
+mic wake pid 296's new affinity list: 0
+mic wake wakechild variant=remote child_us_per_wake=8.718
+mic wake wake variant=remote round=1 iters=20000 period_us=200 parent_us_per_iter=14.338 ipi_per_iter=1.015
+mic wake pid 301's current affinity list: 0
+mic wake pid 301's new affinity list: 0
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wakechild variant=local child_us_per_wake=0.964
+mic wake wake variant=local round=1 iters=20000 period_us=200 parent_us_per_iter=6.476 ipi_per_iter=0.002
+mic wake pid 304's current affinity list: 0
+mic wake pid 304's new affinity list: 1
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wake variant=spin round=1 iters=20000 period_us=200 parent_us_per_iter=6.674 ipi_per_iter=0.012
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wake variant=nowrite round=1 iters=20000 period_us=200 parent_us_per_iter=5.677 ipi_per_iter=0.003
+mic wake pid 308's current affinity list: 0
+mic wake pid 308's new affinity list: 1
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wakechild variant=remote child_us_per_wake=8.917
+mic wake wake variant=remote round=2 iters=20000 period_us=200 parent_us_per_iter=14.891 ipi_per_iter=1.015
+mic wake pid 311's current affinity list: 0
+mic wake pid 311's new affinity list: 0
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wakechild variant=local child_us_per_wake=0.971
+mic wake wake variant=local round=2 iters=20000 period_us=200 parent_us_per_iter=6.441 ipi_per_iter=0.003
+mic wake pid 314's current affinity list: 0
+mic wake pid 314's new affinity list: 1
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wake variant=spin round=2 iters=20000 period_us=200 parent_us_per_iter=6.745 ipi_per_iter=0.011
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wake variant=nowrite round=2 iters=20000 period_us=200 parent_us_per_iter=5.778 ipi_per_iter=0.004
+mic wake pid 318's current affinity list: 0
+mic wake pid 318's new affinity list: 1
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wakechild variant=remote child_us_per_wake=8.725
+mic wake wake variant=remote round=3 iters=20000 period_us=200 parent_us_per_iter=14.244 ipi_per_iter=1.014
+mic wake pid 321's current affinity list: 0
+mic wake pid 321's new affinity list: 0
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wakechild variant=local child_us_per_wake=0.949
+mic wake wake variant=local round=3 iters=20000 period_us=200 parent_us_per_iter=6.411 ipi_per_iter=0.002
+mic wake pid 324's current affinity list: 0
+mic wake pid 324's new affinity list: 1
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wake variant=spin round=3 iters=20000 period_us=200 parent_us_per_iter=6.748 ipi_per_iter=0.011
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wake variant=nowrite round=3 iters=20000 period_us=200 parent_us_per_iter=5.723 ipi_per_iter=0.003
+mic wake pid 328's current affinity list: 0
+mic wake pid 328's new affinity list: 1
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wakechild variant=remote child_us_per_wake=8.782
+mic wake wake variant=remote round=4 iters=20000 period_us=200 parent_us_per_iter=14.354 ipi_per_iter=1.015
+mic wake pid 331's current affinity list: 0
+mic wake pid 331's new affinity list: 0
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wakechild variant=local child_us_per_wake=0.970
+mic wake wake variant=local round=4 iters=20000 period_us=200 parent_us_per_iter=6.409 ipi_per_iter=0.003
+mic wake pid 334's current affinity list: 0
+mic wake pid 334's new affinity list: 1
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wake variant=spin round=4 iters=20000 period_us=200 parent_us_per_iter=6.703 ipi_per_iter=0.011
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wake variant=nowrite round=4 iters=20000 period_us=200 parent_us_per_iter=5.651 ipi_per_iter=0.003
+mic wake pid 338's current affinity list: 0
+mic wake pid 338's new affinity list: 1
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wakechild variant=remote child_us_per_wake=8.870
+mic wake wake variant=remote round=5 iters=20000 period_us=200 parent_us_per_iter=14.600 ipi_per_iter=1.014
+mic wake pid 341's current affinity list: 0
+mic wake pid 341's new affinity list: 0
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wakechild variant=local child_us_per_wake=0.978
+mic wake wake variant=local round=5 iters=20000 period_us=200 parent_us_per_iter=6.518 ipi_per_iter=0.003
+mic wake pid 344's current affinity list: 0
+mic wake pid 344's new affinity list: 1
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wake variant=spin round=5 iters=20000 period_us=200 parent_us_per_iter=6.654 ipi_per_iter=0.011
+mic wake pid 296's current affinity list: 0
+mic wake pid 296's new affinity list: 0
+mic wake wake variant=nowrite round=5 iters=20000 period_us=200 parent_us_per_iter=5.638 ipi_per_iter=0.002
+mic: done
+[  242.503109] kjit: 0 of 0 translation requests still queued at unload (freed by the kernel)
+[  242.532653] rust_kjit: ######## Rust KJIT exits ########
+kjit-init: rmmod kjit ok
+kjit-init: run exit=0
+[  242.546214] reboot: Power down
+guest-run: PASS (/Volumes/CaseSentitiveLocal/KJIT/.kjit/build/runs/ub-at22-M-k0-b1/serial.log)

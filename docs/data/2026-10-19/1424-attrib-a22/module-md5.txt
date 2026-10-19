@@ -1,0 +1,22 @@
+Modules (kjit-guest, built against the shared kernels with tools/modbuild1.sh from the worktree exp/attrib-a22; the md5 includes the build path):
+  plain  839d58aed3fa850e1d87a17fb6dcf2e5  uninstrumented, git HEAD 879cf18 (llvm-objdump of the code identical to mod-a22 of the 11:43 entry)
+  instr  9a11eefe57ea4e390ef43a7bbbb975e4  instrumented: timers, svcn, decl1/2, amplifiers (can_run, lookup, srcu, pan, brk, atomic, tramp, call, run), x_delay
+  instr2 077411cf745577279b0b2fdd4e65825f  instr + hook phase timers prep/chain/post, x_rep_link, x_rep_clookup
+  instr3 54fa7465caa9b75655fee16782d40524  instr2 + x_nostats (and the flag load in runtime/stats.rs)
+  4a7f09b55aaca2c555a99a8e5f3c850c         the first instr build (no x_delay), micro-k0-b0 only
+Per boot (md5 of the kjit.ko copied into the run directory):
+9a11eefe57ea4e390ef43a7bbbb975e4  kjit.ko (at22-A-k0-b1)
+077411cf745577279b0b2fdd4e65825f  kjit.ko (at22-A-k0-b2)
+077411cf745577279b0b2fdd4e65825f  kjit.ko (at22-A-k0-b3)
+9a11eefe57ea4e390ef43a7bbbb975e4  kjit.ko (at22-A-k1-b1)
+077411cf745577279b0b2fdd4e65825f  kjit.ko (at22-A-k1-b2)
+077411cf745577279b0b2fdd4e65825f  kjit.ko (at22-D-k0-b4)
+077411cf745577279b0b2fdd4e65825f  kjit.ko (at22-D-k1-b6)
+839d58aed3fa850e1d87a17fb6dcf2e5  kjit.ko (at22-H-k0-b1)
+839d58aed3fa850e1d87a17fb6dcf2e5  kjit.ko (at22-H-k0-b2)
+839d58aed3fa850e1d87a17fb6dcf2e5  kjit.ko (at22-H-k1-b1)
+54fa7465caa9b75655fee16782d40524  kjit.ko (at22-M-k0-b1)
+54fa7465caa9b75655fee16782d40524  kjit.ko (at22-N-k0-b7)
+54fa7465caa9b75655fee16782d40524  kjit.ko (at22-N-k1-b8)
+839d58aed3fa850e1d87a17fb6dcf2e5  kjit.ko (at22-P-k0-b9)
+4a7f09b55aaca2c555a99a8e5f3c850c  kjit.ko (at22-micro-k0-b0)

@@ -1,0 +1,724 @@
+diff --git a/kjit_glue.c b/kjit_glue.c
+index 336b8a6..771681e 100644
+--- a/kjit_glue.c
++++ b/kjit_glue.c
+@@ -147,6 +147,7 @@ static_assert(sizeof(struct exception_table_entry) == 12);
+ 
+ struct kjit_mm;
+ long kjit_rs_after_syscall(struct pt_regs *regs);
++void kjit_rs_x_nostats(u32 off);	/* EXPERIMENT */
+ int kjit_rs_translate(struct kjit_mm *kmm, u64 pc, bool verbose, u32 *entry_word);
+ size_t kjit_rs_stats_show(char *buf, size_t len);
+ size_t kjit_rs_unsupported_show(char *buf, size_t len);
+@@ -224,6 +225,7 @@ u64 kjit_frag_table(const struct kjit_frag *f);
+ bool kjit_frag_uses_fpsimd(const struct kjit_frag *f);
+ void kjit_bad_status(u64 status, u64 pc);
+ u64 kjit_call_fragment(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
++u64 kjit_call_fragment_raw(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
+ bool kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 base,
+ 			       u64 *status);
+ u64 kjit_fpsimd_run_max_ns(void);
+@@ -442,6 +444,386 @@ static bool kjit_enabled = true;
+ static atomic64_t kjit_mm_ids = ATOMIC64_INIT(0);
+ static DEFINE_PER_CPU(u64, kjit_hook_calls_pcpu);
+ 
++/* ========================================================================= */
++/* EXPERIMENT (exp/attrib-a22), never merged: attribution instrumentation.     */
++/*                                                                             */
++/* Everything is off by default (debugfs files x_*), so the module behaves as  */
++/* the A22 module unless a knob is written:                                    */
++/*  - timers (x_pid = tid): CNTVCT time of the hook, of fragment runs (plain   */
++/*    and inside the FP/SIMD bracket), of the bracket, and of the gaps between */
++/*    hook calls of that thread (x_timers, "reset" clears);                    */
++/*  - ablations that change cost, not semantics:                               */
++/*    x_svcnative=1  an SVC exit returns to EL0 and the SVC runs natively      */
++/*                   (the svc_declined path): the fragment code still runs in  */
++/*                   the kernel, only the syscall entry/exit is paid again;    */
++/*    x_decline=1|2  the hook runs kjit_can_run (1) and kjit_lookup (2) and    */
++/*                   then returns to EL0: the hook infrastructure with all     */
++/*                   user code native;                                         */
++/*  - amplifiers (pure, side-effect-free repeats of one operation, N times     */
++/*    per hook call / fragment run / bracket): the slope of server CPU in N    */
++/*    is the in-situ cost of that operation: x_rep_canrun, x_rep_lookup,       */
++/*    x_rep_srcu (per hook call), x_rep_pan (per fragment run: msr pan pair),  */
++/*    x_rep_brk (per bracket: kernel_neon_begin/load/save/end);                */
++/*    x_rep_tramp (per fragment run: the asm trampoline around a stub that     */
++/*    returns at once: NZCV load/store, PAN pair, blr, frame);                 */
++/*    micro boots only (they repeat a run on a copy of pt_regs, so the         */
++/*    fragment must be pure, e.g. a getppid loop): x_rep_call (per hook call:  */
++/*    the real fragment run, trampoline + prologue + body + epilogue),         */
++/*    x_rep_run (per hook call: the whole kjit_rs_after_syscall);              */
++/*  - x_delay=N: a busy loop of N iterations (about 0.3 ns each) at the start of */
++/*    every hook call, KJIT enabled or not: slows the server by a known amount */
++/*    in either state (dose-response of the scheduling effect);               */
++/*  - x_micro: hot-loop ns of the same operations, x_frags: fragment list.     */
++/* ========================================================================= */
++
++enum {
++	AT_HOOK_T, AT_HOOK_N,	/* inside kjit_after_syscall, KJIT enabled */
++	AT_FNOFP_T, AT_FNOFP_N,	/* fragment run outside the bracket */
++	AT_FFP_T, AT_FFP_N,	/* fragment run inside the FP/SIMD bracket */
++	AT_BRK_T, AT_BRK_N,	/* the whole bracket call */
++	AT_GSYS_T, AT_GSYS_N,	/* hook returned a syscall number -> next hook entry */
++	AT_GUSR_T, AT_GUSR_N,	/* hook returned to EL0 (or KJIT off) -> next hook entry */
++	AT_IDLE_T, AT_IDLE_N,	/* gaps over X_IDLE_TICKS (blocked in a syscall) */
++	AT_PREP_T, AT_PREP_N,	/* hook entry (after the gap bookkeeping) -> start of the first fragment run */
++	AT_CHAIN_T, AT_CHAIN_N,	/* end of a run -> start of the next run of the same hook call (a chained entry) */
++	AT_POST_T, AT_POST_N,	/* end of the last run -> hook return */
++	AT_N
++};
++#define X_IDLE_TICKS (1U << 15)	/* 1.36 ms at 24 MHz: a gap this long is a blocked server */
++
++struct x_pcpu {
++	u64 v[AT_N];
++	/* gaps by the syscall that just completed: [0] gsys, [1] gusr; nr 22, 63, 64, other */
++	u64 nr_t[2][4];
++	u64 nr_n[2][4];
++};
++static DEFINE_PER_CPU(struct x_pcpu, x_pc);
++static u32 x_pid;		/* thread id whose hook calls are timed; 0 = none */
++static u64 x_hook_t0, x_runend;	/* start of the timed hook call, end of its last fragment run */
++static u32 x_nruns;		/* fragment runs so far in the timed hook call */
++static u64 x_last_exit;		/* only written by that thread */
++static long x_last_ret = -1;
++static bool x_svcnative;
++static u32 x_decline, x_rep_canrun, x_rep_lookup, x_rep_srcu, x_rep_pan, x_rep_brk, x_rep_atomic;
++static u32 x_rep_tramp, x_rep_call, x_rep_run;
++static u32 x_rep_link, x_rep_clookup;
++static u32 x_nostats;	/* 1: the runtime's counter updates are skipped (Rust), 2: hook_calls per-CPU add, 4: the bracket's two CNTVCT reads */
++static u32 x_delay;	/* busy-loop iterations per hook call, before the enabled check (on and off alike) */
++static atomic64_t x_atom = ATOMIC64_INIT(0);
++DEFINE_STATIC_SRCU(x_srcu);
++
++static inline bool x_timed(void)
++{
++	u32 pid = READ_ONCE(x_pid);
++
++	return pid && (u32)current->pid == pid;
++}
++
++static inline void x_obs(int t, int n, u64 ticks)
++{
++	if ((t == AT_GSYS_T || t == AT_GUSR_T) && ticks > X_IDLE_TICKS) {
++		this_cpu_add(x_pc.v[AT_IDLE_T], ticks);
++		this_cpu_inc(x_pc.v[AT_IDLE_N]);
++		return;
++	}
++	this_cpu_add(x_pc.v[t], ticks);
++	this_cpu_inc(x_pc.v[n]);
++}
++
++static inline void x_nr(int kind, int nr, u64 ticks)
++{
++	int i = nr == 22 ? 0 : nr == 63 ? 1 : nr == 64 ? 2 : 3;
++
++	if (ticks > X_IDLE_TICKS)
++		return;
++	this_cpu_add(x_pc.nr_t[kind][i], ticks);
++	this_cpu_inc(x_pc.nr_n[kind][i]);
++}
++
++static int kjit_copy_cmd(char *buf, size_t size, const char __user *ubuf, size_t count);
++
++static void x_reset(void)
++{
++	int cpu;
++
++	for_each_possible_cpu(cpu)
++		memset(per_cpu_ptr(&x_pc, cpu), 0, sizeof(struct x_pcpu));
++	x_last_exit = 0;
++	x_last_ret = -1;
++}
++
++static ssize_t x_timers_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
++{
++	static const char *const names[AT_N] = {
++		"hook_t", "hook_n", "fnofp_t", "fnofp_n", "ffp_t", "ffp_n", "brk_t", "brk_n",
++		"gsys_t", "gsys_n", "gusr_t", "gusr_n", "idle_t", "idle_n", "prep_t", "prep_n", "chain_t", "chain_n",
++		"post_t", "post_n",
++	};
++	size_t size = PAGE_SIZE, len = 0;
++	u64 sum[AT_N] = {};
++	char *buf = kmalloc(size, GFP_KERNEL);
++	ssize_t ret;
++	int cpu, i, b;
++
++	if (!buf)
++		return -ENOMEM;
++	for_each_possible_cpu(cpu) {
++		struct x_pcpu *pc = per_cpu_ptr(&x_pc, cpu);
++
++		for (i = 0; i < AT_N; i++)
++			sum[i] += pc->v[i];
++	}
++	len += scnprintf(buf + len, size - len, "cntfrq %u\n", arch_timer_get_cntfrq());
++	for (i = 0; i < 2; i++) {
++		u64 t[4] = {}, nn[4] = {};
++
++		for_each_possible_cpu(cpu)
++			for (b = 0; b < 4; b++) {
++				t[b] += per_cpu_ptr(&x_pc, cpu)->nr_t[i][b];
++				nn[b] += per_cpu_ptr(&x_pc, cpu)->nr_n[i][b];
++			}
++		len += scnprintf(buf + len, size - len,
++				 "%s_by_nr epoll_pwait %llu %llu read %llu %llu write %llu %llu other %llu %llu\n",
++				 i ? "gusr" : "gsys", t[0], nn[0], t[1], nn[1], t[2], nn[2], t[3], nn[3]);
++	}
++	for (i = 0; i < AT_N; i++)
++		len += scnprintf(buf + len, size - len, "%s %llu\n", names[i], sum[i]);
++	ret = simple_read_from_buffer(ubuf, count, ppos, buf, len);
++	kfree(buf);
++	return ret;
++}
++
++static ssize_t x_timers_write(struct file *file, const char __user *ubuf, size_t count, loff_t *ppos)
++{
++	char buf[16];
++	int ret = kjit_copy_cmd(buf, sizeof(buf), ubuf, count);
++
++	if (ret)
++		return ret;
++	if (strcmp(strim(buf), "reset"))
++		return -EINVAL;
++	x_reset();
++	return count;
++}
++
++static const struct file_operations x_timers_fops = {
++	.owner = THIS_MODULE,
++	.read = x_timers_read,
++	.write = x_timers_write,
++};
++
++/* Amplifier sink: keeps the repeated pure operations from being optimized away. */
++static inline void x_sink(u64 v)
++{
++	asm volatile("" : : "r"(v));
++}
++
++/* The amplified per-hook-call operations. */
++static noinline void x_amp_hook(struct pt_regs *regs)
++{
++	u32 i, n;
++	u64 entry = 0;
++
++	n = READ_ONCE(x_rep_canrun);
++	for (i = 0; i < n; i++)
++		x_sink(kjit_can_run(regs));
++	n = READ_ONCE(x_rep_lookup);
++	for (i = 0; i < n; i++)
++		x_sink((u64)kjit_lookup(regs->pc, false, &entry));
++	n = READ_ONCE(x_rep_srcu);
++	for (i = 0; i < n; i++) {
++		int idx = srcu_read_lock(&x_srcu);
++
++		srcu_read_unlock(&x_srcu, idx);
++	}
++	n = READ_ONCE(x_rep_atomic);
++	for (i = 0; i < n; i++)
++		atomic64_add(1, &x_atom);	/* the runtime's stats counters are global relaxed atomics */
++}
++
++/* Stub the trampoline amplifier calls instead of a fragment base: returns at once. */
++static noinline u64 x_stub(void)
++{
++	return 0;
++}
++
++/* @n round trips through the asm trampoline into x_stub (in a run, around the real one). */
++static noinline void x_amp_tramp(struct pt_regs *regs)
++{
++	struct pt_regs tmp = *regs;
++	u64 extra[3] = {};
++	u32 i, n = READ_ONCE(x_rep_tramp);
++
++	for (i = 0; i < n; i++)
++		x_sink(kjit_call_fragment_raw(&tmp, extra, 0, (u64)x_stub));
++}
++
++/* Micro boots: @n real runs of the fragment for regs->pc on a copy of pt_regs (pure fragments only). */
++static noinline void x_amp_call(struct pt_regs *regs)
++{
++	struct pt_regs tmp;
++	u64 entry = 0, extra[3] = {};
++	struct kjit_frag *f = kjit_lookup(regs->pc, false, &entry);
++	u32 i, n = READ_ONCE(x_rep_call);
++
++	if (!f || kjit_frag_uses_fpsimd(f))
++		return;
++	extra[2] = kjit_frag_table(f);
++	for (i = 0; i < n; i++) {
++		tmp = *regs;
++		x_sink(kjit_call_fragment_raw(&tmp, extra, entry, kjit_frag_base(f)));
++	}
++}
++
++/* Micro boots: @n whole hook bodies on a copy of pt_regs (the syscall they return is not invoked). */
++static noinline void x_amp_run(struct pt_regs *regs)
++{
++	struct pt_regs tmp;
++	u32 i, n = READ_ONCE(x_rep_run);
++
++	for (i = 0; i < n; i++) {
++		tmp = *regs;
++		x_sink(kjit_rs_after_syscall(&tmp));
++	}
++}
++
++static noinline void x_amp_pan(void)
++{
++	u32 i, n = READ_ONCE(x_rep_pan);
++
++	for (i = 0; i < n; i++) {
++		asm volatile(SET_PSTATE_PAN(0) ::: "memory");
++		asm volatile(SET_PSTATE_PAN(1) ::: "memory");
++	}
++}
++
++/* One bracket's setup and teardown without a fragment run in between. */
++static noinline void x_bracket_once(void)
++{
++	struct user_fpsimd_state kbuf;
++	struct user_fpsimd_state *uw = &current->thread.uw.fpsimd_state;
++
++	kernel_neon_begin(&kbuf);
++	fpsimd_load_state(uw);
++	pagefault_disable();
++	pagefault_enable();
++	preempt_disable();
++	fpsimd_save_state(uw);
++	current->thread.fpsimd_cpu = NR_CPUS;
++	barrier();
++	kernel_neon_end(&kbuf);
++	preempt_enable();
++}
++
++static noinline void x_amp_brk(void)
++{
++	u32 i, n = READ_ONCE(x_rep_brk);
++
++	for (i = 0; i < n; i++)
++		x_bracket_once();
++}
++
++/* Hot-loop cost of the same operations, ns per operation (x_micro). */
++static ssize_t x_micro_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
++{
++	char buf[640];
++	struct pt_regs *regs = task_pt_regs(current);
++	u64 t0, t1, t2, t3, t4, t5, t6, t7, t8, ent = 0, hz = arch_timer_get_cntfrq();
++	u32 i;
++	size_t len;
++
++	if (!kjit_fpsimd_supported())
++		return -EOPNOTSUPP;
++	t0 = ktime_get_ns();
++	for (i = 0; i < 1000000; i++)
++		x_sink(kjit_can_run(regs));
++	t1 = ktime_get_ns();
++	for (i = 0; i < 1000000; i++) {
++		int idx = srcu_read_lock(&x_srcu);
++
++		srcu_read_unlock(&x_srcu, idx);
++	}
++	t2 = ktime_get_ns();
++	for (i = 0; i < 1000000; i++) {
++		asm volatile(SET_PSTATE_PAN(0) ::: "memory");
++		asm volatile(SET_PSTATE_PAN(1) ::: "memory");
++	}
++	t3 = ktime_get_ns();
++	for (i = 0; i < 100000; i++)
++		x_bracket_once();
++	t4 = ktime_get_ns();
++	for (i = 0; i < 1000000; i++)
++		x_sink(arch_timer_read_counter());
++	t5 = ktime_get_ns();
++	for (i = 0; i < 1000000; i++)
++		this_cpu_inc(x_pc.v[AT_IDLE_N]);
++	t6 = ktime_get_ns();
++	for (i = 0; i < 1000000; i++)
++		x_sink((u64)kjit_lookup(0, false, &ent));
++	t7 = ktime_get_ns();
++	for (i = 0; i < 1000000; i++)
++		atomic64_add(1, &x_atom);
++	t8 = ktime_get_ns();
++	len = scnprintf(buf, sizeof(buf),
++			"cntfrq %llu can_run_ps %llu srcu_pair_ps %llu pan_pair_ps %llu bracket_ps %llu "
++			"cntvct_read_ps %llu percpu_inc_ps %llu lookup_miss_ps %llu atomic_add_ps %llu\n",
++			hz, (t1 - t0) / 1000, (t2 - t1) / 1000, (t3 - t2) / 1000,
++			(t4 - t3) / 100, (t5 - t4) / 1000, (t6 - t5) / 1000,
++			(t7 - t6) / 1000, (t8 - t7) / 1000);
++	return simple_read_from_buffer(ubuf, count, ppos, buf, len);
++}
++
++static const struct file_operations x_micro_fops = {
++	.owner = THIS_MODULE,
++	.read = x_micro_read,
++};
++
++/* Fragment list, text: "F <image address> <entry pc> <code_len> <uses_fpsimd> <src_start> <src_end>". */
++static int x_frags_open(struct inode *inode, struct file *file)
++{
++	char *buf;
++	struct kjit_frag *f;
++	size_t cap = 1 << 20, len = 0;
++
++	buf = kvmalloc(cap, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++	spin_lock(&kjit_frags_lock);
++	list_for_each_entry(f, &kjit_all_frags, all_node) {
++		if (len + 128 > cap)
++			break;
++		len += scnprintf(buf + len, cap - len, "F %llx %llx %u %d %llx %llx\n", (u64)f->image,
++				 f->entry_pc, f->code_len, f->uses_fpsimd, f->src_start, f->src_end);
++	}
++	spin_unlock(&kjit_frags_lock);
++	file->private_data = buf;
++	((char *)buf)[len] = '\0';
++	return 0;
++}
++
++static ssize_t x_frags_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
++{
++	char *buf = file->private_data;
++
++	return simple_read_from_buffer(ubuf, count, ppos, buf, strlen(buf));
++}
++
++static int x_frags_release(struct inode *inode, struct file *file)
++{
++	kvfree(file->private_data);
++	return 0;
++}
++
++static const struct file_operations x_frags_fops = {
++	.owner = THIS_MODULE,
++	.open = x_frags_open,
++	.read = x_frags_read,
++	.release = x_frags_release,
++	.llseek = default_llseek,
++};
++/* ========================================================================= */
++
++
+ /*
+  * Auto mode (P3) and its limits. Module parameters (writable in
+  * /sys/module/kjit/parameters/); auto, hot_threshold and hot_window_ms are
+@@ -1093,6 +1475,15 @@ static void kjit_ibtc_publish(struct kjit_frag *f, struct kjit_label *label)
+ u64 kjit_frag_link(struct kjit_frag *f, u64 pc)
+ {
+ 	struct kjit_label *label = kjit_frag_find_label(f, pc);
++	u32 i, n = READ_ONCE(x_rep_link);
++
++	for (i = 0; i < n; i++) {	/* EXPERIMENT: x_rep_link repeats of the label search + publish */
++		struct kjit_label *l2 = kjit_frag_find_label(f, pc);
++
++		x_sink((u64)l2);
++		if (l2)
++			kjit_ibtc_publish(f, l2);
++	}
+ 
+ 	if (!label)
+ 		return 0;
+@@ -1657,8 +2048,15 @@ struct kjit_frag *kjit_lookup(u64 pc, bool link, u64 *entry)
+ 	}
+ 	rcu_read_unlock();
+ 	if (found) {
+-		if (link)
++		if (link) {
++			u32 i, n = READ_ONCE(x_rep_clookup);
++
++			for (i = 0; i < n; i++) {	/* EXPERIMENT: x_rep_clookup repeats of the publish */
++				kjit_ibtc_publish(found, found->entry_label);
++				x_sink(READ_ONCE(found->entry_label->host));
++			}
+ 			kjit_ibtc_publish(found, found->entry_label);
++		}
+ 		*entry = found->entry_label->host;
+ 	}
+ 	return found;
+@@ -1707,9 +2105,9 @@ void kjit_bad_status(u64 status, u64 pc)
+ asm(
+ "	.pushsection .text, \"ax\"\n"
+ "	.p2align 2\n"
+-"	.globl	kjit_call_fragment\n"
+-"	.type	kjit_call_fragment, %function\n"
+-"kjit_call_fragment:\n"
++"	.globl	kjit_call_fragment_raw\n"
++"	.type	kjit_call_fragment_raw, %function\n"
++"kjit_call_fragment_raw:\n"
+ "	stp	x29, x30, [sp, #-32]!\n"
+ "	mov	x29, sp\n"
+ "	str	x0, [sp, #16]\n"
+@@ -1727,9 +2125,43 @@ asm(
+ "	str	x10, [x1, #264]\n"
+ "	ldp	x29, x30, [sp], #32\n"
+ "	ret\n"
+-"	.size	kjit_call_fragment, . - kjit_call_fragment\n"
++"	.size	kjit_call_fragment_raw, . - kjit_call_fragment_raw\n"
+ "	.popsection\n");
+ 
++/* EXPERIMENT: kjit_call_fragment_raw() with the run timed and the msr pan amplifier. */
++static u64 x_call(struct pt_regs *regs, u64 *extra, u64 entry, u64 base, bool fp)
++{
++	u64 t0 = 0, t1, status;
++	bool timed = x_timed();
++
++	if (READ_ONCE(x_rep_pan))
++		x_amp_pan();
++	if (READ_ONCE(x_rep_tramp))
++		x_amp_tramp(regs);
++	if (timed)
++		t0 = arch_timer_read_counter();
++	status = kjit_call_fragment_raw(regs, extra, entry, base);
++	if (timed) {
++		t1 = arch_timer_read_counter();
++		if (fp)
++			x_obs(AT_FFP_T, AT_FFP_N, t1 - t0);
++		else
++			x_obs(AT_FNOFP_T, AT_FNOFP_N, t1 - t0);
++		if (!x_nruns)
++			x_obs(AT_PREP_T, AT_PREP_N, t0 - x_hook_t0);
++		else
++			x_obs(AT_CHAIN_T, AT_CHAIN_N, t0 - x_runend);
++		x_nruns++;
++		x_runend = t1;
++	}
++	return status;
++}
++
++u64 kjit_call_fragment(struct pt_regs *regs, u64 *extra, u64 entry, u64 base)
++{
++	return x_call(regs, extra, entry, base, false);
++}
++
+ /*
+  * Longest FP/SIMD bracket per CPU, in arch counter ticks (stats:
+  * fpsimd_run_max_ns). Written with preemption off, on the CPU the bracket ends
+@@ -1808,33 +2240,46 @@ bool kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64
+ 	struct user_fpsimd_state kbuf;
+ 	struct user_fpsimd_state *uw = &current->thread.uw.fpsimd_state;
+ 	unsigned long switches;
+-	u64 t0, ticks;
+-
++	u64 t0 = 0, ticks;
++	bool timed = x_timed();
++	u64 tb0 = 0;
++
++	if (READ_ONCE(x_rep_brk))
++		x_amp_brk();	/* EXPERIMENT */
++	if (timed)
++		tb0 = arch_timer_read_counter();
+ 	kernel_neon_begin(&kbuf);
+ 	if (uw->fpcr & KJIT_FPCR_TRAP_ENABLES) {
+ 		kernel_neon_end(&kbuf);
+ 		return false;
+ 	}
+ 	switches = current->nvcsw + current->nivcsw;
+-	t0 = arch_timer_read_counter();
++	if (!(READ_ONCE(x_nostats) & 4))
++		t0 = arch_timer_read_counter();
+ 	fpsimd_load_state(uw);
+ 	pagefault_disable();
+-	*status = kjit_call_fragment(regs, extra, entry, base);
++	*status = x_call(regs, extra, entry, base, true);
+ 	pagefault_enable();
+ 
+ 	preempt_disable();
+ 	fpsimd_save_state(uw);
+ 	current->thread.fpsimd_cpu = NR_CPUS;
+ 	barrier();
+-	ticks = arch_timer_read_counter() - t0;
+-	if (ticks > __this_cpu_read(kjit_fpsimd_max_ticks))
+-		__this_cpu_write(kjit_fpsimd_max_ticks, ticks);
++	if (!(READ_ONCE(x_nostats) & 4)) {
++		ticks = arch_timer_read_counter() - t0;
++		if (ticks > __this_cpu_read(kjit_fpsimd_max_ticks))
++			__this_cpu_write(kjit_fpsimd_max_ticks, ticks);
++	}
+ 	switches = current->nvcsw + current->nivcsw - switches;
+ 	kernel_neon_end(&kbuf);
+ 	preempt_enable();
+ 
+ 	if (switches)
+ 		kjit_rs_note(KJIT_NOTE_FPSIMD_PREEMPTED, 1);
++	if (timed) {
++		this_cpu_add(x_pc.v[AT_BRK_T], arch_timer_read_counter() - tb0);
++		this_cpu_inc(x_pc.v[AT_BRK_N]);
++	}
+ 	return true;
+ }
+ 
+@@ -1955,14 +2400,101 @@ static void kjit_neon_noise_stop(void)
+ 		hrtimer_cancel(per_cpu_ptr(&kjit_neon_timer, cpu));
+ }
+ 
+-static long kjit_after_syscall(struct pt_regs *regs)
++static int x_nostats_get(void *data, u64 *val)
++{
++	*val = READ_ONCE(x_nostats);
++	return 0;
++}
++
++static int x_nostats_set(void *data, u64 val)
++{
++	if (val & ~7ULL)
++		return -EINVAL;
++	WRITE_ONCE(x_nostats, val);
++	kjit_rs_x_nostats(val & 1);
++	return 0;
++}
++DEFINE_DEBUGFS_ATTRIBUTE(x_nostats_fops, x_nostats_get, x_nostats_set, "%llu\n");
++
++static noinline void x_delay_loop(u32 n)
++{
++	u32 i;
++
++	for (i = 0; i < n; i++)
++		asm volatile("" ::: "memory");
++}
++
++static long kjit_after_syscall_inner(struct pt_regs *regs)
+ {
++	if (READ_ONCE(x_delay))
++		x_delay_loop(READ_ONCE(x_delay));	/* EXPERIMENT */
+ 	if (!READ_ONCE(kjit_enabled))
+ 		return -1;
+-	this_cpu_inc(kjit_hook_calls_pcpu);
++	if (!(READ_ONCE(x_nostats) & 2))
++		this_cpu_inc(kjit_hook_calls_pcpu);
++	/* EXPERIMENT: amplifiers and the hook-only ablations. */
++	if (READ_ONCE(x_rep_canrun) | READ_ONCE(x_rep_lookup) | READ_ONCE(x_rep_srcu) | READ_ONCE(x_rep_atomic))
++		x_amp_hook(regs);
++	if (READ_ONCE(x_rep_call))
++		x_amp_call(regs);
++	if (READ_ONCE(x_rep_run))
++		x_amp_run(regs);
++	if (READ_ONCE(x_decline)) {
++		u64 entry = 0;
++
++		if (!kjit_can_run(regs))
++			return -1;
++		if (READ_ONCE(x_decline) > 1)
++			x_sink((u64)kjit_lookup(regs->pc, false, &entry));
++		return -1;
++	}
++	if (READ_ONCE(x_svcnative)) {
++		long ret = kjit_rs_after_syscall(regs);
++
++		if (ret >= 0) {
++			/* Userspace re-executes the SVC (the svc_declined path of exec.rs). */
++			regs->pc -= 4;
++			return -1;
++		}
++		return ret;
++	}
+ 	return kjit_rs_after_syscall(regs);
+ }
+ 
++/* EXPERIMENT: the hook with the gap and hook timers of the thread x_pid. */
++static long kjit_after_syscall(struct pt_regs *regs)
++{
++	bool timed = x_timed();
++	u64 t0 = 0, t1;
++	long ret;
++
++	if (!timed)
++		return kjit_after_syscall_inner(regs);
++	t0 = arch_timer_read_counter();
++	x_hook_t0 = t0;
++	x_nruns = 0;
++	if (x_last_exit) {
++		if (x_last_ret >= 0) {
++			x_obs(AT_GSYS_T, AT_GSYS_N, t0 - x_last_exit);
++			x_nr(0, regs->syscallno, t0 - x_last_exit);
++		} else {
++			x_obs(AT_GUSR_T, AT_GUSR_N, t0 - x_last_exit);
++			x_nr(1, regs->syscallno, t0 - x_last_exit);
++		}
++	}
++	ret = kjit_after_syscall_inner(regs);
++	t1 = arch_timer_read_counter();
++	if (READ_ONCE(kjit_enabled)) {
++		this_cpu_add(x_pc.v[AT_HOOK_T], t1 - t0);
++		this_cpu_inc(x_pc.v[AT_HOOK_N]);
++		if (x_nruns)
++			x_obs(AT_POST_T, AT_POST_N, t1 - x_runend);
++	}
++	x_last_exit = t1;
++	x_last_ret = ret;
++	return ret;
++}
++
+ /*
+  * Hook calls while enabled: every syscall without syscall work, in-kernel ones
+  * included.
+@@ -2733,6 +3265,26 @@ int kjit_glue_init(void)
+ 	debugfs_create_file("ibtc_slots", 0600, kjit_debugfs, NULL, &kjit_ibtc_slots_fops);
+ 	debugfs_create_file_unsafe("neon_noise_us", 0600, kjit_debugfs, NULL, &kjit_neon_noise_fops);
+ 	debugfs_create_file("neon_noise_hits", 0400, kjit_debugfs, NULL, &kjit_neon_hits_fops);
++	/* EXPERIMENT (exp/attrib-a22) */
++	debugfs_create_u32("x_pid", 0600, kjit_debugfs, &x_pid);
++	debugfs_create_file("x_timers", 0600, kjit_debugfs, NULL, &x_timers_fops);
++	debugfs_create_bool("x_svcnative", 0600, kjit_debugfs, &x_svcnative);
++	debugfs_create_u32("x_decline", 0600, kjit_debugfs, &x_decline);
++	debugfs_create_u32("x_rep_canrun", 0600, kjit_debugfs, &x_rep_canrun);
++	debugfs_create_u32("x_rep_lookup", 0600, kjit_debugfs, &x_rep_lookup);
++	debugfs_create_u32("x_rep_srcu", 0600, kjit_debugfs, &x_rep_srcu);
++	debugfs_create_u32("x_rep_pan", 0600, kjit_debugfs, &x_rep_pan);
++	debugfs_create_u32("x_rep_brk", 0600, kjit_debugfs, &x_rep_brk);
++	debugfs_create_u32("x_rep_atomic", 0600, kjit_debugfs, &x_rep_atomic);
++	debugfs_create_u32("x_rep_tramp", 0600, kjit_debugfs, &x_rep_tramp);
++	debugfs_create_u32("x_delay", 0600, kjit_debugfs, &x_delay);
++	debugfs_create_file_unsafe("x_nostats", 0600, kjit_debugfs, NULL, &x_nostats_fops);
++	debugfs_create_u32("x_rep_link", 0600, kjit_debugfs, &x_rep_link);
++	debugfs_create_u32("x_rep_clookup", 0600, kjit_debugfs, &x_rep_clookup);
++	debugfs_create_u32("x_rep_call", 0600, kjit_debugfs, &x_rep_call);
++	debugfs_create_u32("x_rep_run", 0600, kjit_debugfs, &x_rep_run);
++	debugfs_create_file("x_micro", 0400, kjit_debugfs, NULL, &x_micro_fops);
++	debugfs_create_file("x_frags", 0400, kjit_debugfs, NULL, &x_frags_fops);
+ 
+ 	ret = kjit_register_hook(&kjit_hook_ops);
+ 	if (ret) {
+diff --git a/runtime/stats.rs b/runtime/stats.rs
+index 691c7ff..d1a15b4 100644
+--- a/runtime/stats.rs
++++ b/runtime/stats.rs
+@@ -5,7 +5,7 @@
+ 
+ use core::fmt::Write;
+ use core::num::NonZeroU32;
+-use core::sync::atomic::{AtomicU64, Ordering};
++use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+ 
+ use kernel::alloc::flags::GFP_KERNEL;
+ use kernel::prelude::*;
+@@ -220,13 +220,27 @@ static CHAIN_MAX: AtomicU64 = ZERO;
+ const CHAIN_BUCKETS: usize = u32::BITS as usize;
+ static CHAIN_HIST: [AtomicU64; CHAIN_BUCKETS] = [ZERO; CHAIN_BUCKETS];
+ 
++/// EXPERIMENT (exp/attrib-a22): skip every counter update (`x_nostats` bit 0).
++static X_NOSTATS: AtomicBool = AtomicBool::new(false);
++
++#[no_mangle]
++extern "C" fn kjit_rs_x_nostats(off: u32) {
++    X_NOSTATS.store(off != 0, Ordering::Relaxed);
++}
++
+ /// Records one hook call's fragment entries.
+ pub(crate) fn note_chain(entries: NonZeroU32) {
++    if X_NOSTATS.load(Ordering::Relaxed) {
++        return;
++    }
+     CHAIN_MAX.fetch_max(u64::from(entries.get()), Ordering::Relaxed);
+     CHAIN_HIST[entries.ilog2() as usize].fetch_add(1, Ordering::Relaxed);
+ }
+ 
+ pub(crate) fn add(stat: Stat, n: u64) {
++    if X_NOSTATS.load(Ordering::Relaxed) {
++        return;
++    }
+     STATS[stat as usize].fetch_add(n, Ordering::Relaxed);
+ }
+ 
