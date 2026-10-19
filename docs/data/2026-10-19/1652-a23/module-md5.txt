@@ -1,0 +1,9 @@
+kjit.ko md5 (built with tools/modbuild.sh against the shared kernels, no kernel rebuilt)
+a23   = this tree  mod-a23/kjit-guest             3de1ba676225ffcba07fc60d5f21828d   (the a23 module of every sweep boot and of every gate; the copies in run dirs ub-a23-k0-b1, k0-b8, k1-b1, k1-b6 equal)
+a23   = this tree  mod-a23/kjit-guest-debug       2c69d9255a48c21f23b9f6b82e939514   (gates only)
+main  = git archive e16628d  mod-main-e16628d/kjit-guest        823713d95208972af615abd4662d0143   (the main module of every sweep boot; the copies in the run dirs equal)
+main  = git archive e16628d  mod-main-e16628d/kjit-guest-debug  f32d67ed26a610660f4e36d3bc00451d   (not used)
+final = the tree as left (mod-a23-final)  kjit-guest f982d534eca908e3d4b4b52199bd14bf, kjit-guest-debug 3166e0666a849303e70caea6005d428a.
+  The md5 of the final build differs from the measured and gated module: after the sweep a stray blank line in kjit_glue.c was removed and two doc comments in runtime/ were
+  edited (the measured module was built before both). `llvm-objdump -d` of the two kjit-guest modules, and of the two kjit-guest-debug modules, with addresses and symbols stripped
+  (sed -E 's/^ *[0-9a-f]+:\s*//; s/0x[0-9a-f]+//g; s/<[^>]*>//g', header line dropped): identical (108764 / 336133 lines). The final module itself was not run in a guest.

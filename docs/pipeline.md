@@ -1939,7 +1939,7 @@ no duplicate translation logic.
   memory (nothing points at them); record addresses are never reused, the code
   stays mapped.
 - `URuntime` executes over a cache: pc -> (fragment, offset), fault sites per
-  fragment, `extra[2]` = `table_for(entered.uses_fpsimd)` at every entry, tables
+  fragment, `extra[2]` = `table_for(entered)` at every entry (`table_all` when the entered fragment is bracketed: FP/SIMD or sticky, A23), tables
   and records in runtime-owned ranges (a PAN violation outside them). The
   interpreter models tables and records as runtime memory and executes the
   template. `URuntime::new(fragment, ..)` is a cache of one fragment that never
@@ -2360,7 +2360,7 @@ and one module shape is simpler than a K0-only build.
     variants B/B2, which bracketed every run (section 11).
 - Stats for the bracket: `fpsimd_entries` (brackets), `fpsimd_preempted`
   (brackets during which the task was switched out: `nvcsw + nivcsw` changed),
-  `fpsimd_exit_mem` (Mem exits of FP/SIMD runs, all taken with page faults
+  `fpsimd_exit_mem` (Mem exits of bracketed runs, sticky ones included, all taken with page faults
   disabled), `fpsimd_trap_declined` (brackets declined for an enabled FP trap,
   A18), `fpsimd_refused_sve_sme`, and `fpsimd_run_max_ns`. The last is the
   longest bracket since load, wall clock including time switched out: the
@@ -2820,12 +2820,14 @@ Code: `kjit_glue.c` ("Auto mode"), `runtime/exec.rs`, `runtime/translate.rs`,
   - Before it returns, it adds the non-zero deltas to per-CPU counters with
     non-atomic per-CPU adds (C `this_cpu_add` through one FFI flush call;
     preemption-safe on arm64). `chain_max` is a per-CPU maximum.
-  - Readers (`stats`, debugfs reset) sum (or take the maximum) over the
-    possible CPUs. Names and meanings of every counter are unchanged, so the
+  - The `stats` reader sums (for `chain_max`, takes the maximum) over the
+    possible CPUs, plus the global part of each counter. Names and meanings of every counter are unchanged, so the
     guest scripts read the same file.
   - Counters bumped outside the hook (translation, install, invalidation,
-    auto-mode notes, link bookkeeping, gauges) stay as they are; they are off
-    the per-request path.
+    auto-mode notes, link bookkeeping, gauges) stay global atomics. So do the
+    table-store counters `ibtc_insert`/`ibtc_replace`/`ibtc_clear` and the
+    per-slot `ibtc_slots` records (bumped under `kmm->lock` or at retirement,
+    about 1e-5 per request). They are off the per-request path.
   - Why: about 17 relaxed atomics per request, with the bracket's counter
     reads, cost 0.024-0.058 us per request in an ablation
     ([2026-10-19 14:24](journal/2026-10-19.md)).
@@ -3066,4 +3068,4 @@ milestone:
 | Hot-path word census | [2026-10-14 16:02](journal/2026-10-14.md) |
 | A21 hot-path word reduction | [2026-10-18 22:58](journal/2026-10-18.md) decided; [2026-10-19 01:22](journal/2026-10-19.md) implementation |
 | A22 run-wide SP alignment, budget only on cycles | [2026-10-19 01:31](journal/2026-10-19.md) decided; [02:46](journal/2026-10-19.md) A22a; [03:09](journal/2026-10-19.md) A22b; [11:43](journal/2026-10-19.md) measured; [14:24](journal/2026-10-19.md) overhead attribution |
-| A23 hot-path statistics, sticky FP bracket | [2026-10-19 14:24](journal/2026-10-19.md) attribution; [14:28](journal/2026-10-19.md) decided |
+| A23 hot-path statistics, sticky FP bracket | [2026-10-19 14:24](journal/2026-10-19.md) attribution; [14:28](journal/2026-10-19.md) decided; [16:52](journal/2026-10-19.md) implemented and measured |
