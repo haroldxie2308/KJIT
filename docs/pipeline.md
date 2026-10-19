@@ -3025,4 +3025,4 @@ milestone:
 | Return continuations, shadow return stack (experiment, rejected) | [2026-10-14 14:46](journal/2026-10-14.md) |
 | Hot-path word census | [2026-10-14 16:02](journal/2026-10-14.md) |
 | A21 hot-path word reduction | [2026-10-18 22:58](journal/2026-10-18.md) decided; [2026-10-19 01:22](journal/2026-10-19.md) implementation |
-| A22 run-wide SP alignment, budget only on cycles | [2026-10-19 01:31](journal/2026-10-19.md) decided; [02:46](journal/2026-10-19.md) A22a; [03:09](journal/2026-10-19.md) A22b |
+| A22 run-wide SP alignment, budget only on cycles | [2026-10-19 01:31](journal/2026-10-19.md) decided; [02:46](journal/2026-10-19.md) A22a; [03:09](journal/2026-10-19.md) A22b; [11:43](journal/2026-10-19.md) measured |
