@@ -1212,8 +1212,9 @@ Kernel (A9b, bracket revised by A13):
   that way for up to a whole run (15-42 ms measured in the redis suite):
   a kernel privilege handed to userspace. The prototype (variant A of
   [2026-10-09 02:31](journal/2026-10-09.md)) passed every gate at ~35-50 ns per
-  bracket and unchanged throughput. Bracketing non-FP/SIMD runs too (variants
-  B/B2, which remove the FP/SIMD boundary misses) stays deferred (section 11).
+  bracket and unchanged throughput. Bracketing every non-FP/SIMD run too
+  (variants B/B2) stays out; A23's sticky bracket (section 8, Call ABI) brackets
+  only runs entered at a fragment whose runs reached FP/SIMD code.
 - Why the invalidation: the module writes `thread.uw.fpsimd_state`, so no CPU's
   registers hold a current copy of it whatever `fpsimd_last_state` says. If the
   task last loaded its state on CPU X (`thread.fpsimd_cpu == X`), migrated, ran a
@@ -2333,16 +2334,41 @@ and one module shape is simpler than a K0-only build.
   side matches the raw status exactly (0..=7), not `RetStatus::from_reg` (which
   masks with 0xFFFF); anything else is the `WARN_ONCE` + disable path.
 - FP/SIMD fragments are called through `kjit_call_fragment_fpsimd()` (the bracket
-  of section 4, FP/SIMD in fragments), chosen from the entered fragment's
-  `uses_fpsimd` at every runtime entry.
+  of section 4, FP/SIMD in fragments). The choice is made at every runtime entry,
+  from the entered fragment F: the bracket is used, with `table_all`, when
+  `F.uses_fpsimd || F.fp_sticky`.
+- **Sticky bracket (A23).** `fp_sticky` is a per-fragment flag. The runtime sets
+  it, once, the first time a run entered at F takes an `ibtc_fpsimd_boundary`
+  exit (a branch exit whose target resolved to an FP/SIMD fragment). It is
+  never cleared; it dies with F.
+  - Effect: later runs entered at F start inside the bracket on `table_all`. A
+    transfer into an FP/SIMD fragment then hits in the table instead of leaving
+    for the runtime and chaining into a second, bracketed run.
+  - Exact: running non-FP/SIMD code inside the bracket changes nothing it
+    computes. Two things differ, both exact:
+    - its page faults leave through `Mem` instead of being handled in place
+      (page faults are disabled in a bracket);
+    - an enabled FPCR trap declines the run (A18).
+  - Linking is unchanged: a link from a fragment without FP/SIMD never targets
+    an FP/SIMD fragment, because other runs of it may be outside the bracket.
+  - Cost: a sticky F whose runs do not reach FP/SIMD pays a bracket (about
+    45 ns) per run for nothing. Bounded, and a pure speed policy.
+  - Stat: `fp_sticky_set` (flags set).
+  - Why: in redis every request crossed the boundary once. The chain exit plus
+    the extra run cost about 62 ns intrinsic per request
+    ([2026-10-19 14:24](journal/2026-10-19.md)). This replaces the deferred
+    variants B/B2, which bracketed every run (section 11).
 - Stats for the bracket: `fpsimd_entries` (brackets), `fpsimd_preempted`
   (brackets during which the task was switched out: `nvcsw + nivcsw` changed),
   `fpsimd_exit_mem` (Mem exits of FP/SIMD runs, all taken with page faults
   disabled), `fpsimd_trap_declined` (brackets declined for an enabled FP trap,
-  A18), `fpsimd_refused_sve_sme`, `fpsimd_run_max_ns` (the longest bracket
-  since load, wall clock including time switched out: per-CPU maximum of CNTVCT
-  deltas converted with CNTFRQ, recorded on the CPU the bracket ends on; not
-  reset by debugfs). `fpsimd_restores` was removed with A13: every bracket
+  A18), `fpsimd_refused_sve_sme`, and `fpsimd_run_max_ns`. The last is the
+  longest bracket since load, wall clock including time switched out: the
+  per-CPU maximum of CNTVCT deltas converted with CNTFRQ, recorded on the CPU
+  the bracket ends on, and not reset by debugfs. A23: it is measured only while
+  the module parameter `fpsimd_timing` is set (default 0), because its two
+  counter reads were a third of the bracket's cost. K2's `fp_budget` test sets
+  it, and the stat reads 0 otherwise. `fpsimd_restores` was removed with A13: every bracket
   loads the user state from memory.
 
 ### Code cache and lifetimes
@@ -2788,6 +2814,21 @@ Code: `kjit_glue.c` ("Auto mode"), `runtime/exec.rs`, `runtime/translate.rs`,
   `entry_stops`. Full table: `unsupported_top_dropped`.
 - C counters go through one `kjit_rs_note(enum kjit_note, n)` (values mirrored in
   `runtime/stats.rs`, `note_stat`).
+- **Hot-path counters are per CPU and flushed once per hook call (A23).**
+  - Inside one `after_syscall`, the runtime counts into a local accumulator:
+    `Stat` deltas, the chain length for `chain_max` and the chain histogram.
+  - Before it returns, it adds the non-zero deltas to per-CPU counters with
+    non-atomic per-CPU adds (C `this_cpu_add` through one FFI flush call;
+    preemption-safe on arm64). `chain_max` is a per-CPU maximum.
+  - Readers (`stats`, debugfs reset) sum (or take the maximum) over the
+    possible CPUs. Names and meanings of every counter are unchanged, so the
+    guest scripts read the same file.
+  - Counters bumped outside the hook (translation, install, invalidation,
+    auto-mode notes, link bookkeeping, gauges) stay as they are; they are off
+    the per-request path.
+  - Why: about 17 relaxed atomics per request, with the bracket's counter
+    reads, cost 0.024-0.058 us per request in an ablation
+    ([2026-10-19 14:24](journal/2026-10-19.md)).
 
 ## 10. Validation of the kernel runtime (K2-K4)
 
@@ -2853,10 +2894,9 @@ the reasoning, the numbers and the full list of what was not verified there.
   (patched direct `b` for `BL` sites became A16; a RAS-predicted `ret x12`
   measured slower in redis, [2026-10-11 22:37](journal/2026-10-11.md)) (revisit if a profile shows the ~20-word
   dispatch sequence dominating fragment time); a bracket that spans non-FP/SIMD
-  runs so that non-FP/SIMD -> FP/SIMD transfers stop missing (decide from
-  `ibtc_fpsimd_boundary`, about 1 per redis request after A11c; it trades page
-  faults handled in place for `Mem` exits and ~35-50 ns per bracket, variants
-  B/B2 of [2026-10-09 02:31](journal/2026-10-09.md)); re-entering after a Budget exit instead
+  runs (decided by A23 as the sticky bracket, section 8, Call ABI; the variants
+  B/B2 of [2026-10-09 02:31](journal/2026-10-09.md) that bracket every run stay
+  out); re-entering after a Budget exit instead
   of resuming in userspace (needs Budget resume PCs to be entry labels; decide
   from `exit_budget`); in-fragment code quality (stack-backed x12..x18
   fills/spills, `LDTR` imm9-only splits; the budget counter's memory chain is
@@ -3026,3 +3066,4 @@ milestone:
 | Hot-path word census | [2026-10-14 16:02](journal/2026-10-14.md) |
 | A21 hot-path word reduction | [2026-10-18 22:58](journal/2026-10-18.md) decided; [2026-10-19 01:22](journal/2026-10-19.md) implementation |
 | A22 run-wide SP alignment, budget only on cycles | [2026-10-19 01:31](journal/2026-10-19.md) decided; [02:46](journal/2026-10-19.md) A22a; [03:09](journal/2026-10-19.md) A22b; [11:43](journal/2026-10-19.md) measured; [14:24](journal/2026-10-19.md) overhead attribution |
+| A23 hot-path statistics, sticky FP bracket | [2026-10-19 14:24](journal/2026-10-19.md) attribution; [14:28](journal/2026-10-19.md) decided |
