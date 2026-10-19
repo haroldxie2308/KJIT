@@ -205,7 +205,7 @@ struct kjit_frag;
 struct kjit_site;
 struct kjit_entry;
 struct kjit_link_site;
-int kjit_glue_init(void);
+int kjit_glue_init(u32 hot_stats, u32 chain_buckets);
 void kjit_glue_exit(void);
 u64 kjit_mm_seq(struct kjit_mm *kmm);
 int kjit_read_text_page(struct kjit_mm *kmm, u64 addr, u8 *buf);
@@ -218,10 +218,16 @@ int kjit_install(struct kjit_mm *kmm, u64 seq, u64 entry_pc,
 bool kjit_fpsimd_supported(void);
 bool kjit_can_run(const struct pt_regs *regs);
 struct kjit_frag *kjit_lookup(u64 pc, bool link, u64 *entry);
-u64 kjit_frag_base(const struct kjit_frag *f);
 u64 kjit_frag_link(struct kjit_frag *f, u64 pc);
-u64 kjit_frag_table(const struct kjit_frag *f);
-bool kjit_frag_uses_fpsimd(const struct kjit_frag *f);
+/* Mirrors KjitRunClass (runtime/ffi.rs). */
+struct kjit_run_class {
+	u64 base;		/* the fragment's image: where a run calls it */
+	u64 table;		/* the dispatch table of runs entered at it */
+	bool uses_fpsimd;	/* verify_fragment's verdict */
+	bool bracketed;		/* its runs use the FP/SIMD bracket, and table_all */
+};
+void kjit_frag_run_class(const struct kjit_frag *f, struct kjit_run_class *out);
+bool kjit_frag_set_fp_sticky(struct kjit_frag *f);
 void kjit_bad_status(u64 status, u64 pc);
 u64 kjit_call_fragment(struct pt_regs *regs, u64 *extra, u64 entry, u64 base);
 bool kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 base,
@@ -229,6 +235,8 @@ bool kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 
 u64 kjit_fpsimd_run_max_ns(void);
 void kjit_profile(u64 pc, u32 kind);
 u64 kjit_hook_calls(void);
+void kjit_hot_flush(const u64 *counts, u64 touched, u32 chain_entries, u32 chain_bucket);
+u64 kjit_hot_read(u64 *sums);
 u32 kjit_chain_budget(void);
 
 /* kjit_profile()'s @kind: where the profiled PC came from. */
@@ -354,6 +362,17 @@ struct kjit_frag {
 	 * V0-V31/FPCR/FPSR, so every run goes through kjit_call_fragment_fpsimd().
 	 */
 	bool uses_fpsimd;
+	/*
+	 * A23, sticky FP/SIMD bracket (docs/pipeline.md, "Call ABI"): set, once,
+	 * the first time a run entered at this fragment takes an
+	 * ibtc_fpsimd_boundary exit (kjit_frag_set_fp_sticky()), and never
+	 * cleared: it lives exactly as long as the fragment (it is a field of
+	 * it; a retranslation of the same pc is a new fragment that starts
+	 * clear). Written with xchg() by runs in hook calls, read with READ_ONCE()
+	 * at every runtime entry (kjit_frag_run_class()). Runs entered at this
+	 * fragment use the FP/SIMD bracket and table_all, as if uses_fpsimd.
+	 */
+	bool fp_sticky;
 	const struct exception_table_entry *extable;
 	u32 n_extable;
 	struct hlist_head incoming;	/* links patched to one of our labels, under kmm->lock */
@@ -472,6 +491,15 @@ static unsigned long kjit_max_frags_total = 8192;
 module_param_named(max_frags_total, kjit_max_frags_total, ulong, 0644);
 static unsigned long kjit_max_code_total = 64UL << 20;
 module_param_named(max_code_total, kjit_max_code_total, ulong, 0644);
+/*
+ * A23: measure the FP/SIMD brackets' wall-clock length (stats:
+ * fpsimd_run_max_ns). Off by default: the two counter reads were a third of a
+ * bracket's cost. Module parameter and debugfs; tests/guest/run-k2.sh sets it
+ * for fp_budget.
+ */
+static bool kjit_fpsimd_timing;
+module_param_named(fpsimd_timing, kjit_fpsimd_timing, bool, 0644);
+MODULE_PARM_DESC(fpsimd_timing, "Measure FP/SIMD bracket lengths, stats fpsimd_run_max_ns (default off)");
 /*
  * Chaining (docs/pipeline.md, "Chaining rules"): at most chain_budget
  * fragment entries per hook call (after-syscall return path), the first one
@@ -968,25 +996,31 @@ static void kjit_frag_retire_locked(struct kjit_mm *kmm, struct kjit_frag *f)
 	kjit_hook_call_srcu(&f->retire, kjit_frag_retired_cb);
 }
 
-u64 kjit_frag_base(const struct kjit_frag *f)
+/*
+ * How a run entered at @f is called (the A23 sticky bracket, docs/pipeline.md,
+ * "Call ABI"), from one read of the sticky flag so the bracket and the
+ * dispatch table cannot disagree. A run inside the FP/SIMD bracket may
+ * continue into any fragment through table_all, any other run only into
+ * fragments without FP/SIMD through table_nofp (docs/pipeline.md, "Dispatch
+ * tables (A11, kernel side)"): the table is the extra[2] the run passes. Both
+ * tables exist before the first fragment of the mm does (kjit_install()).
+ */
+void kjit_frag_run_class(const struct kjit_frag *f, struct kjit_run_class *out)
 {
-	return (u64)f->image;
-}
-
-bool kjit_frag_uses_fpsimd(const struct kjit_frag *f)
-{
-	return f->uses_fpsimd;
+	out->base = (u64)f->image;
+	out->uses_fpsimd = f->uses_fpsimd;
+	out->bracketed = f->uses_fpsimd || READ_ONCE(f->fp_sticky);
+	out->table = (u64)(out->bracketed ? f->kmm->table_all : f->kmm->table_nofp);
 }
 
 /*
- * The dispatch table every run of @f passes as extra[2] (docs/pipeline.md,
- * "Dispatch tables (A11, kernel side)"): a run inside the FP/SIMD bracket may continue into any
- * fragment, any other run only into fragments without FP/SIMD. Both tables
- * exist before the first fragment of the mm does (kjit_install()).
+ * Sets @f's sticky flag; returns whether this call set it (false: already set,
+ * by an earlier run or a concurrent one), so fp_sticky_set counts each flag
+ * once. @f stays allocated for the calling hook call.
  */
-u64 kjit_frag_table(const struct kjit_frag *f)
+bool kjit_frag_set_fp_sticky(struct kjit_frag *f)
 {
-	return (u64)(f->uses_fpsimd ? f->kmm->table_all : f->kmm->table_nofp);
+	return !xchg(&f->fp_sticky, true);
 }
 
 /*
@@ -1693,7 +1727,7 @@ void kjit_bad_status(u64 status, u64 pc)
  * NZCV (regs->pstate) is live in PSTATE while it runs and is written back
  * afterwards; x19..x29, x30 and sp come back through the fragment epilogue.
  * Returns x0 = RetStatus; extra[0], extra[1] = x10, x11 (out), extra[2] = the
- * run's dispatch table (in, kjit_frag_table()).
+ * run's dispatch table (in, kjit_frag_run_class()).
  *
  * PSTATE.PAN is clear for exactly the fragment run (A15, docs/pipeline.md,
  * "Run-scoped PAN clear (A15)"): `msr pan, #0` right before the blr and
@@ -1732,8 +1766,9 @@ asm(
 
 /*
  * Longest FP/SIMD bracket per CPU, in arch counter ticks (stats:
- * fpsimd_run_max_ns). Written with preemption off, on the CPU the bracket ends
- * on; the stats file reads it racily.
+ * fpsimd_run_max_ns), recorded while fpsimd_timing is set. Written with
+ * preemption off, on the CPU the bracket ends on; the stats file reads it
+ * racily.
  */
 static DEFINE_PER_CPU(u64, kjit_fpsimd_max_ticks);
 
@@ -1796,7 +1831,8 @@ static DEFINE_PER_CPU(u64, kjit_fpsimd_max_ticks);
  * is called from the syscall hook, in task context with no NEON section open,
  * and no bracket is entered from inside another run.
  *
- * Bracket length stats: the bracket is measured from the return of
+ * Bracket length stats (only while fpsimd_timing is set, sampled once per
+ * bracket so both reads agree): the bracket is measured from the return of
  * kernel_neon_begin() to just before kernel_neon_end(), in wall clock, so time
  * switched out counts. The tail runs with preemption off, so the end time and
  * the per-CPU maximum are on the CPU the bracket ends on. A bracket is
@@ -1808,7 +1844,8 @@ bool kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 
 	struct user_fpsimd_state kbuf;
 	struct user_fpsimd_state *uw = &current->thread.uw.fpsimd_state;
 	unsigned long switches;
-	u64 t0, ticks;
+	bool timing = READ_ONCE(kjit_fpsimd_timing);
+	u64 t0 = 0, ticks;
 
 	kernel_neon_begin(&kbuf);
 	if (uw->fpcr & KJIT_FPCR_TRAP_ENABLES) {
@@ -1816,7 +1853,8 @@ bool kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 
 		return false;
 	}
 	switches = current->nvcsw + current->nivcsw;
-	t0 = arch_timer_read_counter();
+	if (timing)
+		t0 = arch_timer_read_counter();
 	fpsimd_load_state(uw);
 	pagefault_disable();
 	*status = kjit_call_fragment(regs, extra, entry, base);
@@ -1826,9 +1864,11 @@ bool kjit_call_fragment_fpsimd(struct pt_regs *regs, u64 *extra, u64 entry, u64 
 	fpsimd_save_state(uw);
 	current->thread.fpsimd_cpu = NR_CPUS;
 	barrier();
-	ticks = arch_timer_read_counter() - t0;
-	if (ticks > __this_cpu_read(kjit_fpsimd_max_ticks))
-		__this_cpu_write(kjit_fpsimd_max_ticks, ticks);
+	if (timing) {
+		ticks = arch_timer_read_counter() - t0;
+		if (ticks > __this_cpu_read(kjit_fpsimd_max_ticks))
+			__this_cpu_write(kjit_fpsimd_max_ticks, ticks);
+	}
 	switches = current->nvcsw + current->nivcsw - switches;
 	kernel_neon_end(&kbuf);
 	preempt_enable();
@@ -1975,6 +2015,67 @@ u64 kjit_hook_calls(void)
 	for_each_possible_cpu(cpu)
 		sum += per_cpu(kjit_hook_calls_pcpu, cpu);
 	return sum;
+}
+
+/*
+ * Hot-path counters (A23, docs/pipeline.md, "Accounting and diagnostics"):
+ * runtime/stats.rs counts a hook call's events in a local tally and flushes it
+ * here once, before kjit_rs_after_syscall() returns. One per-CPU array of
+ * u64, laid out by Rust (kjit_glue_init() takes the sizes): [0, kjit_hot_nstats)
+ * the Stat counters, then kjit_hot_nbuckets chain-length histogram buckets,
+ * then the maximum chain length.
+ */
+static u64 __percpu *kjit_hot;
+static u32 kjit_hot_nstats, kjit_hot_nbuckets;
+
+/*
+ * Adds @counts[i] to this CPU's counter i for each set bit i of @touched, and
+ * records one hook call of @chain_entries (0: none) fragment entries in
+ * histogram bucket @chain_bucket and the maximum. Preemption is off for the
+ * whole update, so the adds are plain per-CPU read-modify-writes on one CPU
+ * and the maximum cannot lose a compare to a migration; readers on other CPUs
+ * read the words racily (aligned u64).
+ */
+void kjit_hot_flush(const u64 *counts, u64 touched, u32 chain_entries, u32 chain_bucket)
+{
+	u64 mask = touched;
+
+	preempt_disable();
+	while (mask) {
+		u32 i = __ffs64(mask);
+
+		__this_cpu_add(kjit_hot[i], counts[i]);
+		mask &= mask - 1;
+	}
+	if (chain_entries) {
+		__this_cpu_add(kjit_hot[kjit_hot_nstats + chain_bucket], 1);
+		if (chain_entries > __this_cpu_read(kjit_hot[kjit_hot_nstats + kjit_hot_nbuckets]))
+			__this_cpu_write(kjit_hot[kjit_hot_nstats + kjit_hot_nbuckets], chain_entries);
+	}
+	preempt_enable();
+}
+
+/*
+ * Sums every CPU's counters and histogram buckets into @sums
+ * (kjit_hot_nstats + kjit_hot_nbuckets words) and returns the largest chain
+ * length any CPU saw.
+ */
+u64 kjit_hot_read(u64 *sums)
+{
+	u32 words = kjit_hot_nstats + kjit_hot_nbuckets;
+	u64 max = 0;
+	int cpu;
+	u32 i;
+
+	memset(sums, 0, words * sizeof(*sums));
+	for_each_possible_cpu(cpu) {
+		const u64 *p = per_cpu_ptr(kjit_hot, cpu);
+
+		for (i = 0; i < words; i++)
+			sums[i] += READ_ONCE(p[i]);
+		max = max_t(u64, max, READ_ONCE(p[words]));
+	}
+	return max;
 }
 
 /*
@@ -2694,7 +2795,7 @@ static int kjit_counter_cpu_online(unsigned int cpu)
 	return 0;
 }
 
-int kjit_glue_init(void)
+int kjit_glue_init(u32 hot_stats, u32 chain_buckets)
 {
 	int ret, cpu;
 
@@ -2720,12 +2821,22 @@ int kjit_glue_init(void)
 		cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
 		return -ENOMEM;
 	}
+	/* The per-CPU allocator zeroes: every counter starts at 0. */
+	kjit_hot = __alloc_percpu((hot_stats + chain_buckets + 1) * sizeof(u64), __alignof__(u64));
+	if (!kjit_hot) {
+		destroy_workqueue(kjit_wq);
+		cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
+		return -ENOMEM;
+	}
+	kjit_hot_nstats = hot_stats;
+	kjit_hot_nbuckets = chain_buckets;
 	kjit_debugfs = debugfs_create_dir("kjit", NULL);
 	debugfs_create_file("translate", 0200, kjit_debugfs, NULL, &kjit_translate_fops);
 	debugfs_create_file("translate_svc_sites", 0200, kjit_debugfs, NULL, &kjit_svc_sites_fops);
 	debugfs_create_file("stats", 0400, kjit_debugfs, NULL, &kjit_stats_fops);
 	debugfs_create_bool("enable", 0600, kjit_debugfs, &kjit_enabled);
 	debugfs_create_bool("auto", 0600, kjit_debugfs, &kjit_auto);
+	debugfs_create_bool("fpsimd_timing", 0600, kjit_debugfs, &kjit_fpsimd_timing);
 	debugfs_create_u32("hot_threshold", 0600, kjit_debugfs, &kjit_hot_threshold);
 	debugfs_create_u32("hot_window_ms", 0600, kjit_debugfs, &kjit_hot_window_ms);
 	debugfs_create_file_unsafe("chain_budget", 0600, kjit_debugfs, NULL, &kjit_chain_budget_fops);
@@ -2737,6 +2848,7 @@ int kjit_glue_init(void)
 	ret = kjit_register_hook(&kjit_hook_ops);
 	if (ret) {
 		debugfs_remove(kjit_debugfs);
+		free_percpu(kjit_hot);
 		destroy_workqueue(kjit_wq);
 		cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
 	}
@@ -2801,5 +2913,7 @@ void kjit_glue_exit(void)
 	/* ...and every slot is released and every chunk freed (A17). */
 	WARN_ON(atomic_long_read(&kjit_arena_nchunks) || atomic_long_read(&kjit_arena_npmd) ||
 		atomic_long_read(&kjit_arena_nbytes) || !list_empty(&kjit_arena_chunks));
+	/* The only users, hook calls and the stats file, are gone (above). */
+	free_percpu(kjit_hot);
 	cpuhp_remove_state_nocalls(kjit_counter_cpuhp);
 }

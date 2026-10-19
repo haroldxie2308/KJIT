@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0
 
-//! Global counters, read through `/sys/kernel/debug/kjit/stats`, and the
+//! Counters, read through `/sys/kernel/debug/kjit/stats`, and the
 //! Unsupported-word histogram behind `/sys/kernel/debug/kjit/unsupported_top`.
+//!
+//! A counter has two homes, both summed by the reader. The ones a hook call
+//! bumps (A23, docs/pipeline.md, "Accounting and diagnostics") are counted in a
+//! [`Tally`] local to the call and flushed once into per-CPU words owned by
+//! `kjit_glue.c`; every other one (translation, install, invalidation, auto
+//! mode, link bookkeeping) is a global atomic bumped by [`add`] / [`inc`] or
+//! `kjit_rs_note`.
 
 use core::fmt::Write;
 use core::num::NonZeroU32;
@@ -95,20 +102,21 @@ pub(crate) enum Stat {
     /// sentinel (a translator bug; not recorded in `unsupported_top`).
     UnsupportedBadWord,
     /// Brackets: fragment entries (chained ones included) of fragments that use
-    /// FP/SIMD, each inside the FP/SIMD bracket (kjit_glue.c).
+    /// FP/SIMD or are sticky (A23), each inside the FP/SIMD bracket
+    /// (kjit_glue.c).
     FpsimdEntries,
     /// ... during which the task was switched out (`nvcsw + nivcsw` changed;
     /// bumped through `kjit_rs_note`).
     FpsimdPreempted,
     /// `Mem` exits of those runs (page faults disabled: every user-access
-    /// fault ends the run).
+    /// fault ends the run). A sticky fragment's runs are bracketed too.
     FpsimdExitMem,
     /// Translations refused because they use FP/SIMD on a CPU with SVE/SME
     /// (or without FP/SIMD).
     FpsimdRefusedSveSme,
-    /// Runs of FP/SIMD fragments declined because the user's FPCR enables
-    /// floating-point traps (a subset of `run_declined`): userspace executes the
-    /// code natively.
+    /// Bracketed runs (FP/SIMD or sticky fragments) declined because the user's
+    /// FPCR enables floating-point traps (a subset of `run_declined`): userspace
+    /// executes the code natively.
     FpsimdTrapDeclined,
     /// Dispatch-table slot stores (A11), per table: one resolution of a branch
     /// target may store into `table_all` and `table_nofp`. Bumped through
@@ -142,9 +150,13 @@ pub(crate) enum Stat {
     LinkOutOfRange,
     /// ... or only FP/SIMD labels for a non-FP/SIMD site (the class rule).
     LinkClassRefused,
+    /// A23: fragments whose sticky FP/SIMD bracket flag was set (once each).
+    FpStickySet,
 }
 
-const COUNT: usize = Stat::LinkClassRefused as usize + 1;
+const COUNT: usize = Stat::FpStickySet as usize + 1;
+// `Tally::touched` has one bit per counter.
+const _: () = assert!(COUNT <= u64::BITS as usize);
 
 const NAMES: [&str; COUNT] = [
     "syscalls_in_kernel",
@@ -207,6 +219,7 @@ const NAMES: [&str; COUNT] = [
     "link_restored",
     "link_out_of_range",
     "link_class_refused",
+    "fp_sticky_set",
 ];
 
 #[allow(clippy::declare_interior_mutable_const)]
@@ -216,15 +229,57 @@ static STATS: [AtomicU64; COUNT] = [ZERO; COUNT];
 /// Fragment entries per hook call that ran a fragment (chained entries plus
 /// the first): the most seen, and a log2 histogram. Bucket `b` counts calls
 /// with `2^b <= entries < 2^(b+1)`, one bucket per bit of a `u32`.
-static CHAIN_MAX: AtomicU64 = ZERO;
 const CHAIN_BUCKETS: usize = u32::BITS as usize;
-static CHAIN_HIST: [AtomicU64; CHAIN_BUCKETS] = [ZERO; CHAIN_BUCKETS];
 
-/// Records one hook call's fragment entries.
-pub(crate) fn note_chain(entries: NonZeroU32) {
-    CHAIN_MAX.fetch_max(u64::from(entries.get()), Ordering::Relaxed);
-    CHAIN_HIST[entries.ilog2() as usize].fetch_add(1, Ordering::Relaxed);
+/// What one hook call counted, not yet visible to readers. Lives on the stack of
+/// `kjit_rs_after_syscall`, which flushes it once before returning: a hook call
+/// can be preempted and migrated, so the counts cannot be per-CPU until then.
+pub(crate) struct Tally {
+    counts: [u64; COUNT],
+    /// Bit `s as usize` is set iff `counts[s]` was bumped.
+    touched: u64,
+    chain: Option<NonZeroU32>,
 }
+
+impl Tally {
+    pub(crate) const fn new() -> Self {
+        Self {
+            counts: [0; COUNT],
+            touched: 0,
+            chain: None,
+        }
+    }
+
+    pub(crate) fn inc(&mut self, stat: Stat) {
+        self.counts[stat as usize] += 1;
+        self.touched |= 1 << stat as usize;
+    }
+
+    /// Records this hook call's fragment entries.
+    pub(crate) fn note_chain(&mut self, entries: NonZeroU32) {
+        self.chain = Some(entries);
+    }
+
+    /// Adds the call's counts to this CPU's counters: one FFI call, none if
+    /// nothing was counted.
+    pub(crate) fn flush(&self) {
+        if self.touched == 0 && self.chain.is_none() {
+            return;
+        }
+        let (entries, bucket) = match self.chain {
+            Some(entries) => (entries.get(), entries.ilog2()),
+            None => (0, 0),
+        };
+        // SAFETY: `counts` has `COUNT` words, the number `kjit_glue_init` was
+        // told; `touched` only has bits below `COUNT` (`inc`); `bucket` is
+        // below `CHAIN_BUCKETS` (`ilog2` of a u32).
+        unsafe { ffi::kjit_hot_flush(self.counts.as_ptr(), self.touched, entries, bucket) }
+    }
+}
+
+/// `kjit_glue_init`'s arguments: the sizes of the per-CPU words it allocates.
+pub(crate) const HOT_STATS: u32 = COUNT as u32;
+pub(crate) const HOT_CHAIN_BUCKETS: u32 = CHAIN_BUCKETS as u32;
 
 pub(crate) fn add(stat: Stat, n: u64) {
     STATS[stat as usize].fetch_add(n, Ordering::Relaxed);
@@ -394,9 +449,13 @@ extern "C" fn kjit_rs_stats_show(buf: *mut u8, len: usize) -> usize {
     // SAFETY: the C caller passes a writable buffer of `len` bytes.
     let buf = unsafe { core::slice::from_raw_parts_mut(buf, len) };
     let mut out = BufWriter { buf, len: 0 };
-    for (name, value) in NAMES.iter().zip(STATS.iter()) {
+    // The per-CPU sums: `COUNT` counters, then the `CHAIN_BUCKETS` histogram.
+    let mut hot = [0u64; COUNT + CHAIN_BUCKETS];
+    // SAFETY: `hot` has the `HOT_STATS + HOT_CHAIN_BUCKETS` words it fills.
+    let chain_max = unsafe { ffi::kjit_hot_read(hot.as_mut_ptr()) };
+    for (index, (name, value)) in NAMES.iter().zip(STATS.iter()).enumerate() {
         // `BufWriter` never fails.
-        let _ = writeln!(out, "{name} {}", value.load(Ordering::Relaxed));
+        let _ = writeln!(out, "{name} {}", value.load(Ordering::Relaxed) + hot[index]);
     }
     // SAFETY: plain read of per-CPU counters.
     let hook_calls = unsafe { ffi::kjit_hook_calls() };
@@ -404,11 +463,10 @@ extern "C" fn kjit_rs_stats_show(buf: *mut u8, len: usize) -> usize {
     // SAFETY: plain read of per-CPU maxima.
     let fpsimd_max = unsafe { ffi::kjit_fpsimd_run_max_ns() };
     let _ = writeln!(out, "fpsimd_run_max_ns {fpsimd_max}");
-    let _ = writeln!(out, "chain_max {}", CHAIN_MAX.load(Ordering::Relaxed));
+    let _ = writeln!(out, "chain_max {chain_max}");
     // `chain_hist_<lo>_<hi> n`: hook calls with lo <= entries <= hi, the
     // non-empty buckets only (entries never exceed chain_budget <= 65536).
-    for (bucket, count) in CHAIN_HIST.iter().enumerate() {
-        let count = count.load(Ordering::Relaxed);
+    for (bucket, &count) in hot[COUNT..].iter().enumerate() {
         if count != 0 {
             let lo = 1u64 << bucket;
             let _ = writeln!(out, "chain_hist_{lo}_{} {count}", 2 * lo - 1);

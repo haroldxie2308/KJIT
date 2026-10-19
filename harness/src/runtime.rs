@@ -308,8 +308,7 @@ impl URuntime {
                 },
             ));
         }
-        let run_fpsimd = self.cache.fragments[self.entered].uses_fpsimd;
-        let action = self.cache.decide(run_fpsimd, status, param0, param1)?;
+        let action = self.cache.decide(status, param0, param1)?;
         for (addr, value) in self.cache.drain_writes() {
             self.state.write_u64(addr, value);
         }
@@ -324,7 +323,7 @@ impl URuntime {
     fn prepare_entry_at(&mut self, fragment: usize, offset: usize) -> Result<(), String> {
         let frag = &self.cache.fragments[fragment];
         validate_entry_offset(&frag.fragment, offset)?;
-        let (base, table) = (frag.base, self.cache.table_for(frag.uses_fpsimd));
+        let (base, table) = (frag.base, self.cache.table_for(fragment));
         self.entered = fragment;
         self.cache.note_entry(fragment);
         self.state

@@ -9,9 +9,9 @@ use core::num::NonZeroU32;
 
 use kernel::ffi::c_long;
 
-use super::ffi::{self, KjitFrag, PtRegs};
+use super::ffi::{self, KjitFrag, KjitRunClass, PtRegs};
 use super::ibtc;
-use super::stats::{self, Stat};
+use super::stats::{self, Stat, Tally};
 use crate::shared::abi::{RetStatus, EXTRA_PARAMS_WORDS, EXTRA_PARAM_IBTC_TABLE_INDEX};
 
 /// `kjit_profile` kinds (`enum kjit_hot_kind` in kjit_glue.c).
@@ -38,10 +38,14 @@ const BUDGET: u64 = RetStatus::Budget.as_reg();
 struct Running {
     frag: *mut KjitFrag,
     base: u64,
-    /// Installed with the verifier's `uses_fpsimd`: every entry (chained ones
-    /// included) runs inside the FP/SIMD bracket.
-    fpsimd: bool,
-    /// The dispatch table of runs of this fragment (`kjit_frag_table`).
+    /// Installed with the verifier's `uses_fpsimd`.
+    uses_fpsimd: bool,
+    /// The run entered at this fragment is inside the FP/SIMD bracket and
+    /// dispatches through `table_all`: `uses_fpsimd`, or the fragment's sticky
+    /// flag (A23); `kjit_frag_run_class` reads the flag once, so the bracket
+    /// and the table agree.
+    bracketed: bool,
+    /// The dispatch table of runs of this fragment.
     table: u64,
 }
 
@@ -56,29 +60,43 @@ impl Running {
         if frag.is_null() {
             return None;
         }
-        // SAFETY: `frag` stays allocated for this hook call.
-        let (base, fpsimd, table) = unsafe {
-            (
-                ffi::kjit_frag_base(frag),
-                ffi::kjit_frag_uses_fpsimd(frag),
-                ffi::kjit_frag_table(frag),
-            )
+        let mut class = KjitRunClass {
+            base: 0,
+            table: 0,
+            uses_fpsimd: false,
+            bracketed: false,
         };
+        // SAFETY: `frag` stays allocated for this hook call; `class` is a
+        // `struct kjit_run_class`.
+        unsafe { ffi::kjit_frag_run_class(frag, &mut class) };
         Some(Self {
             frag,
-            base,
-            fpsimd,
-            table,
+            base: class.base,
+            uses_fpsimd: class.uses_fpsimd,
+            bracketed: class.bracketed,
+            table: class.table,
         })
+    }
+
+    /// A run entered at this fragment took an `ibtc_fpsimd_boundary` exit: its
+    /// later runs start inside the bracket (A23, docs/pipeline.md, "Sticky
+    /// bracket"). The flag is never cleared and dies with the fragment.
+    fn make_sticky(&self, tally: &mut Tally) {
+        // SAFETY: `frag` stays allocated for this hook call.
+        if unsafe { ffi::kjit_frag_set_fp_sticky(self.frag) } {
+            tally.inc(Stat::FpStickySet);
+        }
     }
 
     /// Runs the fragment from `entry` (the host address of one of its verified
     /// entries); `extra` receives x10/x11 and gets the dispatch table. Returns
     /// the status in x0, or `None` when nothing ran: the user's FPCR enables
-    /// floating-point traps, so an FP/SIMD fragment is declined (counted in
-    /// `run_declined` and `fpsimd_trap_declined`) and `regs` is as it was.
+    /// floating-point traps, so a bracketed run (FP/SIMD or sticky fragment) is
+    /// declined (counted in `run_declined` and `fpsimd_trap_declined`) and
+    /// `regs` is as it was.
     fn call(
         &self,
+        tally: &mut Tally,
         regs: *mut PtRegs,
         extra: &mut [u64; EXTRA_PARAMS_WORDS],
         entry: u64,
@@ -88,8 +106,9 @@ impl Running {
         // fragment; `extra` receives x10/x11 (epilogue `stp x10, x11, [x1]`)
         // and holds this run's dispatch table. A fragment the verifier found to
         // use FP/SIMD only runs inside the FP/SIMD bracket (kjit_glue.c), which
-        // loads the user's FP/SIMD state into the registers for the run.
-        if self.fpsimd {
+        // loads the user's FP/SIMD state into the registers for the run; so
+        // does a sticky one, whose run dispatches through `table_all`.
+        if self.bracketed {
             let mut status = 0u64;
             if !unsafe {
                 ffi::kjit_call_fragment_fpsimd(
@@ -100,15 +119,15 @@ impl Running {
                     &mut status,
                 )
             } {
-                stats::inc(Stat::RunDeclined);
-                stats::inc(Stat::FpsimdTrapDeclined);
+                tally.inc(Stat::RunDeclined);
+                tally.inc(Stat::FpsimdTrapDeclined);
                 return None;
             }
-            stats::inc(Stat::FragmentEntries);
-            stats::inc(Stat::FpsimdEntries);
+            tally.inc(Stat::FragmentEntries);
+            tally.inc(Stat::FpsimdEntries);
             Some(status)
         } else {
-            stats::inc(Stat::FragmentEntries);
+            tally.inc(Stat::FragmentEntries);
             Some(unsafe { ffi::kjit_call_fragment(regs, extra.as_mut_ptr(), entry, self.base) })
         }
     }
@@ -140,11 +159,19 @@ fn profile(pc: u64, kind: u32) {
 /// `regs` (epilogue), so either way is exact.
 #[no_mangle]
 extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
+    // The hook call's counters (A23): flushed once, on every way out.
+    let mut tally = Tally::new();
+    let ret = after_syscall(regs, &mut tally);
+    tally.flush();
+    ret
+}
+
+fn after_syscall(regs: *mut PtRegs, tally: &mut Tally) -> c_long {
     // SAFETY: the kernel passes the current task's pt_regs; nothing else
     // accesses them while this task runs this function.
     let pc = unsafe { (*regs).pc };
     if !can_run(regs) {
-        stats::inc(Stat::RunDeclined);
+        tally.inc(Stat::RunDeclined);
         return TO_USER;
     }
     let mut entry = 0u64;
@@ -154,19 +181,19 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
     };
     // SAFETY: reads a module parameter.
     let budget = unsafe { ffi::kjit_chain_budget() };
-    let (ret, entries) = run_chain(regs, run, entry, budget);
+    let (ret, entries) = run_chain(tally, regs, run, entry, budget);
     // `None`: the first entry was declined, no fragment ran.
     if let Some(entries) = entries {
-        stats::note_chain(entries);
+        tally.note_chain(entries);
     }
     ret
 }
 
 /// Runs `run` from `entry` and chains through branch exits while the run
 /// conditions hold, for at most `budget` fragment entries (the first one is
-/// attempted whatever the budget; an FP/SIMD fragment is declined, at any entry,
-/// when the user's FPCR enables floating-point traps): the `chain_budget` of
-/// docs/pipeline.md, "Chaining rules".
+/// attempted whatever the budget; a bracketed entry (FP/SIMD or sticky fragment)
+/// is declined, at any entry, when the user's FPCR enables floating-point
+/// traps): the `chain_budget` of docs/pipeline.md, "Chaining rules".
 /// Returns the hook's result and the number of entries made (`None`: the first
 /// entry was declined, `Running::call`).
 ///
@@ -176,6 +203,7 @@ extern "C" fn kjit_rs_after_syscall(regs: *mut PtRegs) -> c_long {
 /// run spends at most `KJIT_BACKEDGE_BUDGET` units (docs/pipeline.md, "Run
 /// conditions (kjit_can_run)", bounds).
 fn run_chain(
+    tally: &mut Tally,
     regs: *mut PtRegs,
     mut run: Running,
     mut entry: u64,
@@ -189,7 +217,7 @@ fn run_chain(
 
     loop {
         let mut extra = [0u64; EXTRA_PARAMS_WORDS];
-        let Some(status) = run.call(regs, &mut extra, entry) else {
+        let Some(status) = run.call(tally, regs, &mut extra, entry) else {
             // Declined (FPCR trap enables): the user state in `regs` is exact up
             // to `resume_pc` (the epilogue of the previous run wrote it back, a
             // branch exit's link register included); userspace executes from there.
@@ -202,7 +230,7 @@ fn run_chain(
         match status {
             SVC => {
                 // x11 = PC after the SVC; x8 holds the syscall number.
-                stats::inc(Stat::ExitSvc);
+                tally.inc(Stat::ExitSvc);
                 // SAFETY: as above.
                 let scno = unsafe { (*regs).regs[8] } as i32;
                 // The kernel's own entry uses the low 32 bits of x8 as a signed
@@ -211,16 +239,16 @@ fn run_chain(
                 if can_run(regs) && scno >= 0 {
                     // SAFETY: as above.
                     unsafe { (*regs).pc = param1 };
-                    stats::inc(Stat::SyscallsInKernel);
+                    tally.inc(Stat::SyscallsInKernel);
                     return (scno as c_long, Some(entries));
                 }
-                stats::inc(Stat::SvcDeclined);
+                tally.inc(Stat::SvcDeclined);
                 // SAFETY: as above. Userspace re-executes the SVC itself.
                 unsafe { (*regs).pc = param1.wrapping_sub(4) };
                 return (TO_USER, Some(entries));
             }
             BL | BLR | BR | RET => {
-                stats::inc(match status {
+                tally.inc(match status {
                     BL => Stat::ExitBl,
                     BLR => Stat::ExitBlr,
                     BR => Stat::ExitBr,
@@ -230,41 +258,44 @@ fn run_chain(
                 let target = param0;
                 // This exit is a dispatch miss: classify it against the run's
                 // own table before `link`/`lookup` publish into it.
-                let seen = ibtc::probe(run.table, run.fpsimd, target);
+                let seen = ibtc::probe(run.table, run.bracketed, target);
                 if entries.get() >= budget {
-                    stats::inc(Stat::ChainCap);
+                    tally.inc(Stat::ChainCap);
                 } else if can_run(regs) {
                     if let Some(next) = run.link(target) {
-                        ibtc::note_miss(seen, target);
+                        ibtc::note_miss(tally, seen, target);
                         entry = next;
                         resume_pc = target;
                         entries = entries.saturating_add(1);
-                        stats::inc(Stat::Chains);
+                        tally.inc(Stat::Chains);
                         continue;
                     }
                     if let Some(next) = Running::lookup(target, true, &mut entry) {
-                        if next.fpsimd && !run.fpsimd {
+                        if next.uses_fpsimd && !run.bracketed {
                             // Published in table_all only: this run's table
                             // (table_nofp) never holds an FP/SIMD fragment.
                             // Not classified by slot state (runtime/ibtc.rs).
-                            stats::inc(Stat::IbtcFpsimdBoundary);
+                            tally.inc(Stat::IbtcFpsimdBoundary);
+                            // Later runs entered at this fragment start in
+                            // the bracket, on table_all (A23).
+                            run.make_sticky(tally);
                         } else {
-                            ibtc::note_miss(seen, target);
+                            ibtc::note_miss(tally, seen, target);
                         }
                         run = next;
                         resume_pc = target;
                         entries = entries.saturating_add(1);
-                        stats::inc(Stat::Chains);
+                        tally.inc(Stat::Chains);
                         continue;
                     }
                     // Exit-target learning: userspace resumes at `target`.
                     profile(target, HOT_EXIT_TARGET);
                 } else {
-                    stats::inc(Stat::RunDeclined);
+                    tally.inc(Stat::RunDeclined);
                 }
                 // Nothing was continued (chain budget, run condition or an
                 // untranslatable target): still a dispatch miss.
-                ibtc::note_miss(seen, target);
+                ibtc::note_miss(tally, seen, target);
                 // SAFETY: as above.
                 unsafe { (*regs).pc = target };
                 return (TO_USER, Some(entries));
@@ -272,15 +303,15 @@ fn run_chain(
             // Never re-entered at x11: userspace executes that instruction (and
             // takes its fault, or runs the back-edge) natively.
             MEM | UNSUPPORTED | BUDGET => {
-                stats::inc(match status {
+                tally.inc(match status {
                     MEM => Stat::ExitMem,
                     UNSUPPORTED => Stat::ExitUnsupported,
                     _ => Stat::ExitBudget,
                 });
-                if status == MEM && run.fpsimd {
+                if status == MEM && run.bracketed {
                     // Taken under pagefault_disable(): includes faults that a
                     // fragment without FP/SIMD would have resolved in place.
-                    stats::inc(Stat::FpsimdExitMem);
+                    tally.inc(Stat::FpsimdExitMem);
                 }
                 if status == UNSUPPORTED {
                     // x10 = the word (or UNSUPPORTED_WORD_UNREADABLE).
@@ -291,7 +322,7 @@ fn run_chain(
                 return (TO_USER, Some(entries));
             }
             _ => {
-                stats::inc(Stat::ExitInvalid);
+                tally.inc(Stat::ExitInvalid);
                 // SAFETY: current task context; WARN_ONCE + disable this mm.
                 unsafe { ffi::kjit_bad_status(status, pc) };
                 // SAFETY: as above.

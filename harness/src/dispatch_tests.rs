@@ -182,7 +182,7 @@ fn two_evicted_pcs_sharing_a_victim_slot_lose_one_of_them() {
 /// holds no record of it (every call goes through the runtime, counted as a
 /// boundary), `table_all` does, and the callee's return hits.
 #[test]
-fn a_non_fpsimd_caller_reaches_an_fpsimd_callee_only_through_the_runtime() {
+fn a_non_fpsimd_caller_reaches_an_fpsimd_callee_through_the_runtime_until_sticky() {
     let (_, cold, warm, cold_stats, cache) = cold_and_warm("dispatch_fpsimd", "fp_callee_mark");
     let fp = cache
         .fragments
@@ -192,13 +192,17 @@ fn a_non_fpsimd_caller_reaches_an_fpsimd_callee_only_through_the_runtime() {
     let entry = cache.fragments[fp].entry_pc;
     assert_eq!(cache.lookup(true, entry), Some(fp));
     assert_eq!(cache.lookup(false, entry), None);
-    // Cold: both calls come from a non-FP/SIMD run and miss. Warm: the first call
-    // misses again; the run it starts is an FP/SIMD one, so the second call, made
-    // from non-FP/SIMD code that run continued into, dispatches through `table_all`
-    // and hits.
+    // Cold: both calls come from a non-FP/SIMD run and miss, each from a run
+    // entered at another fragment (the second call is in the code after the first
+    // call's return, a fragment of its own); each boundary exit makes the fragment
+    // its run entered sticky (A23). Warm: the run entered at the first is
+    // bracketed and dispatches through `table_all`, so both calls and the return
+    // hit and no boundary is taken again.
     assert_eq!(cold_stats.ibtc_fpsimd_boundary, 2);
-    assert_eq!(cache.stats.ibtc_fpsimd_boundary, 3);
-    assert!(warm.runtime_entries >= 1, "the first call is never a hit");
+    assert_eq!(cold_stats.fp_sticky_set, 2);
+    assert_eq!(cache.stats.ibtc_fpsimd_boundary, 2);
+    assert_eq!(cache.stats.fp_sticky_set, 2);
+    assert_eq!(warm.runtime_entries, 0);
     assert!(cold.runtime_entries > warm.runtime_entries);
     cache.check_invariants().unwrap();
 }

@@ -2018,8 +2018,9 @@ pub fn run_cached(
         let fixup_view = fixups.view();
         let frag = &native.cache.fragments[fragment];
         validate_entry_offset(&frag.fragment, offset)?;
-        let (base, uses_fpsimd) = (frag.base, frag.uses_fpsimd);
-        extra_params[EXTRA_PARAM_IBTC_TABLE_INDEX] = native.cache.table_for(uses_fpsimd);
+        let base = frag.base;
+        native.cache.note_entry(fragment);
+        extra_params[EXTRA_PARAM_IBTC_TABLE_INDEX] = native.cache.table_for(fragment);
         let ctx = session.call_fragment(
             &mut pt_regs,
             &mut extra_params,
@@ -2065,7 +2066,7 @@ pub fn run_cached(
         nzcv = ctx.nzcv & NZCV_MASK;
         let action = native
             .cache
-            .decide(uses_fpsimd, ctx.status, extra_params[0], extra_params[1])?;
+            .decide(ctx.status, extra_params[0], extra_params[1])?;
         native.flush()?;
         match action {
             CacheAction::ContinueAt {

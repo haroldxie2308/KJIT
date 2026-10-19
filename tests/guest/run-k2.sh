@@ -209,9 +209,17 @@ while [ "$i" -le "$iterations" ]; do
     # fp-bracket.sh lat, not from here.
     "$T/nojit" "$T/lat_probe" 2 1000 50 > lat_probe.out || fail "lat_probe"
     sed 's/^/k2:   /' lat_probe.out
+    # A23: bracket lengths are only measured while fpsimd_timing is set.
+    timing=$(cat "$K/fpsimd_timing")
+    echo 1 > "$K/fpsimd_timing"
     echo "k2:   fpsimd_run_max_ns=$(stat fpsimd_run_max_ns) before fp_budget"
     onoff fp_budget budget 0 "$T/fp_budget" 400
     echo "k2:   fpsimd_run_max_ns=$(stat fpsimd_run_max_ns) after fp_budget"
+    [ "$(stat fpsimd_run_max_ns)" -gt 0 ] || fail "fp_budget: no bracket length recorded with fpsimd_timing"
+    echo "$timing" > "$K/fpsimd_timing"
+    # A23: a non-FP/SIMD fragment that calls FP/SIMD code turns sticky at its
+    # first boundary exit; later runs start in the bracket.
+    onoff fp_sticky sticky 0 "$T/fp_sticky" 3000
 
     before=$(stat invalidated_fragments)
     onoff munmap_race inkernel 139 "$T/munmap_race"

@@ -175,6 +175,11 @@ pub struct CachedFragment {
     /// caller installed without verifying (`install_unverified`), the translator's
     /// view.
     pub uses_fpsimd: bool,
+    /// A23, the kernel's `fp_sticky`: set, once, by the first branch exit of a run
+    /// entered at this fragment that crosses the FP/SIMD boundary
+    /// (`ibtc_fpsimd_boundary`); never cleared. It lives in the fragment, so it dies
+    /// with it. A run entered at a sticky fragment is bracketed (`CodeCache::bracketed`).
+    pub fp_sticky: bool,
     /// Address of offset 0 in the code space.
     pub base: u64,
     pub retired: bool,
@@ -207,9 +212,11 @@ pub struct CacheStats {
     /// A slot that held another record.
     pub ibtc_replace: u64,
     pub ibtc_clear: u64,
-    /// A branch exit of a non-FP/SIMD run whose target resolved to an FP/SIMD
+    /// A branch exit of an unbracketed run whose target resolved to an FP/SIMD
     /// fragment.
     pub ibtc_fpsimd_boundary: u64,
+    /// A23: fragments whose sticky flag was set.
+    pub fp_sticky_set: u64,
     /// A16: slots patched `nop` -> `b`, and restored `b` -> `nop` by a retire.
     pub link_made: u64,
     pub link_restored: u64,
@@ -363,12 +370,18 @@ impl CodeCache {
         self.layout
     }
 
-    /// The table a run of a fragment with this `uses_fpsimd` dispatches through
-    /// (docs/pipeline.md "Dispatch tables (A11, kernel side)", Run): a run of an
-    /// FP/SIMD fragment, inside the bracket, may continue into any code; every other
-    /// run only into non-FP/SIMD code.
-    pub fn table_for(&self, uses_fpsimd: bool) -> u64 {
-        if uses_fpsimd {
+    /// Whether a run entered at `fragment` is inside the FP/SIMD bracket (A23,
+    /// docs/pipeline.md "Call ABI"): the fragment uses FP/SIMD or is sticky.
+    pub fn bracketed(&self, fragment: usize) -> bool {
+        let frag = &self.fragments[fragment];
+        frag.uses_fpsimd || frag.fp_sticky
+    }
+
+    /// The table a run entered at `fragment` dispatches through (docs/pipeline.md
+    /// "Dispatch tables (A11, kernel side)", Run): a bracketed run may continue into
+    /// any code; every other run only into non-FP/SIMD code.
+    pub fn table_for(&self, fragment: usize) -> u64 {
+        if self.bracketed(fragment) {
             self.layout.table_all
         } else {
             self.layout.table_nofp
@@ -402,6 +415,7 @@ impl CodeCache {
             fragment,
             encoded,
             uses_fpsimd,
+            fp_sticky: false,
             base: 0,
             retired: false,
             labels: Vec::new(),
@@ -950,7 +964,7 @@ impl CodeCache {
     }
 
     /// The runtime's decision after a fragment returned through its epilogue
-    /// (`run_fpsimd`: the entered fragment uses FP/SIMD). Mirrors the kernel's
+    /// (the run is the one `note_entry` last recorded). Mirrors the kernel's
     /// chaining: a branch exit resolves its target to a live fragment's label and
     /// publishes it. On a miss the harness translates the target (`RET` targets too:
     /// a return point is never a fragment entry until it is learned, so without this
@@ -960,7 +974,6 @@ impl CodeCache {
     /// halts on.
     pub fn decide(
         &mut self,
-        run_fpsimd: bool,
         raw_status: u64,
         param0: u64,
         param1: u64,
@@ -989,7 +1002,7 @@ impl CodeCache {
             RetStatus::Bl | RetStatus::Blr | RetStatus::Br | RetStatus::Ret
                 if self.miss_policy == MissPolicy::ReturnToUser =>
             {
-                self.decide_return_to_user(run_fpsimd, status, param0)
+                self.decide_return_to_user(status, param0)
             }
             RetStatus::Bl | RetStatus::Blr | RetStatus::Br | RetStatus::Ret => {
                 let target = param0;
@@ -1010,9 +1023,7 @@ impl CodeCache {
                 let Some((fragment, offset)) = resolved else {
                     unreachable!("a miss either translated the target or returned above");
                 };
-                if self.fragments[fragment].uses_fpsimd && !run_fpsimd {
-                    self.stats.ibtc_fpsimd_boundary += 1;
-                }
+                self.note_boundary(fragment);
                 self.publish(fragment, target)?;
                 self.run_entries += 1;
                 Ok(CacheAction::ContinueAt { fragment, offset })
@@ -1040,7 +1051,6 @@ impl CodeCache {
     /// the caller profiles.
     fn decide_return_to_user(
         &mut self,
-        run_fpsimd: bool,
         status: RetStatus,
         target: u64,
     ) -> Result<CacheAction, String> {
@@ -1063,12 +1073,26 @@ impl CodeCache {
         let Some((fragment, offset)) = resolved else {
             return Ok(userspace);
         };
-        if self.fragments[fragment].uses_fpsimd && !run_fpsimd {
-            self.stats.ibtc_fpsimd_boundary += 1;
-        }
+        self.note_boundary(fragment);
         self.publish(fragment, target)?;
         self.run_entries += 1;
         Ok(CacheAction::ContinueAt { fragment, offset })
+    }
+
+    /// A branch exit of the run entered at `self.entered` resolved to `target`. If
+    /// the run is unbracketed and `target` uses FP/SIMD it is an
+    /// `ibtc_fpsimd_boundary`, and the entered fragment turns sticky (A23, the
+    /// kernel's `Running::make_sticky`).
+    fn note_boundary(&mut self, target: usize) {
+        if !self.fragments[target].uses_fpsimd || self.bracketed(self.entered) {
+            return;
+        }
+        self.stats.ibtc_fpsimd_boundary += 1;
+        let entered = &mut self.fragments[self.entered];
+        if !entered.fp_sticky {
+            entered.fp_sticky = true;
+            self.stats.fp_sticky_set += 1;
+        }
     }
 }
 
@@ -1214,6 +1238,68 @@ mod tests {
         cache.check_invariants().unwrap();
     }
 
+    /// A23: the first `ibtc_fpsimd_boundary` exit of a run makes the fragment the run
+    /// entered sticky: its later runs are bracketed and use `table_all`. The flag is
+    /// set once, belongs to that fragment only, and dies with it.
+    #[test]
+    fn a_boundary_exit_makes_the_entered_fragment_sticky() {
+        let mut cache = cache();
+        let fp = cache.translate(0x2000, 0).unwrap().unwrap();
+        let plain = cache.translate(0x1000, 0).unwrap().unwrap();
+        let other = cache.translate(0x5000, 0).unwrap().unwrap();
+        assert!(cache.fragments[fp].uses_fpsimd && !cache.fragments[plain].uses_fpsimd);
+        assert!(!cache.bracketed(plain));
+        assert_eq!(cache.table_for(plain), DEFAULT_CACHE_LAYOUT.table_nofp);
+        assert_eq!(cache.table_for(fp), DEFAULT_CACHE_LAYOUT.table_all);
+
+        // A run entered at `plain` calls into FP/SIMD code: a boundary.
+        cache.begin_run();
+        cache.note_entry(plain);
+        let action = cache.decide(RetStatus::Bl.as_reg(), 0x2000, 0x1004).unwrap();
+        assert!(matches!(action, CacheAction::ContinueAt { fragment, .. } if fragment == fp));
+        assert_eq!(cache.stats.ibtc_fpsimd_boundary, 1);
+        assert_eq!(cache.stats.fp_sticky_set, 1);
+        assert!(cache.fragments[plain].fp_sticky);
+        assert!(cache.bracketed(plain));
+        assert_eq!(cache.table_for(plain), DEFAULT_CACHE_LAYOUT.table_all);
+        // Nothing else changed class, and the table invariants still hold: a sticky
+        // fragment is not an FP/SIMD one, so `table_nofp` may keep holding it.
+        assert!(!cache.fragments[other].fp_sticky && !cache.fragments[fp].fp_sticky);
+        assert_eq!(cache.table_for(other), DEFAULT_CACHE_LAYOUT.table_nofp);
+        cache.publish(plain, 0x1000).unwrap();
+        assert_eq!(cache.lookup(false, 0x1000), Some(plain));
+        cache.check_invariants().unwrap();
+
+        // A later run entered at `plain` is bracketed: the same call is no boundary
+        // and sets nothing.
+        cache.begin_run();
+        cache.note_entry(plain);
+        cache.decide(RetStatus::Bl.as_reg(), 0x2000, 0x1004).unwrap();
+        assert_eq!(cache.stats.ibtc_fpsimd_boundary, 1);
+        assert_eq!(cache.stats.fp_sticky_set, 1);
+
+        // A run entered at an FP/SIMD fragment is no boundary either way, and a
+        // run entered at `other` is judged by `other`'s own flag.
+        cache.note_entry(fp);
+        cache.decide(RetStatus::Bl.as_reg(), 0x1000, 0x2004).unwrap();
+        assert_eq!(cache.stats.ibtc_fpsimd_boundary, 1);
+        cache.note_entry(other);
+        cache.decide(RetStatus::Br.as_reg(), 0x2000, 0x5004).unwrap();
+        assert_eq!(cache.stats.ibtc_fpsimd_boundary, 2);
+        assert_eq!(cache.stats.fp_sticky_set, 2);
+        assert!(cache.fragments[other].fp_sticky);
+        // A second boundary at `other` does not count the flag again.
+        cache.decide(RetStatus::Br.as_reg(), 0x2000, 0x5004).unwrap();
+        assert_eq!(cache.stats.fp_sticky_set, 2);
+
+        // The flag dies with the fragment: a retranslation of the pc starts clear.
+        cache.retire(plain);
+        let again = cache.translate(0x1000, 0).unwrap().unwrap();
+        assert_ne!(again, plain);
+        assert!(!cache.fragments[again].fp_sticky && !cache.bracketed(again));
+        cache.check_invariants().unwrap();
+    }
+
     /// The invariant check itself: a `table_nofp` slot that points into an FP/SIMD
     /// fragment, or any slot into a retired fragment or at the wrong pc, is reported.
     #[test]
@@ -1263,17 +1349,17 @@ mod tests {
     fn decide_translates_return_targets_and_stops_at_unreadable_text() {
         let mut cache = cache();
         // A BL to readable text: translated, published, continued.
-        let action = cache.decide(false, RetStatus::Bl.as_reg(), 0x1000, 0x2004).unwrap();
+        let action = cache.decide(RetStatus::Bl.as_reg(), 0x1000, 0x2004).unwrap();
         assert!(matches!(action, CacheAction::ContinueAt { .. }), "{action:?}");
         assert_eq!(cache.stats.translations, 1);
         assert!(cache.lookup(false, 0x1000).is_some());
         // The same target again resolves without translating.
-        cache.decide(false, RetStatus::Ret.as_reg(), 0x1000, 0x3004).unwrap();
+        cache.decide(RetStatus::Ret.as_reg(), 0x1000, 0x3004).unwrap();
         assert_eq!(cache.stats.translations, 1);
         // Unreadable text is an `Unsupported` return to userspace at the target, for
         // every branch kind.
         for status in [RetStatus::Bl, RetStatus::Blr, RetStatus::Br, RetStatus::Ret] {
-            let action = cache.decide(false, status.as_reg(), 0x9_0000, 0x1004).unwrap();
+            let action = cache.decide(status.as_reg(), 0x9_0000, 0x1004).unwrap();
             assert_eq!(
                 action,
                 CacheAction::Stop(URuntimeHalt::ReturnedToUserspace {
@@ -1292,13 +1378,13 @@ mod tests {
         cache.begin_run();
         let svc = |cache: &mut CodeCache| {
             cache
-                .decide(false, RetStatus::Svc.as_reg(), 0, 0x1000)
+                .decide(RetStatus::Svc.as_reg(), 0, 0x1000)
                 .unwrap()
         };
         // Entry 1 is the run's first; the SVC exit makes entry 2, within the budget.
         assert!(matches!(svc(&mut cache), CacheAction::ContinueAt { .. }));
         // A branch exit is never stopped by the budget.
-        let action = cache.decide(false, RetStatus::Br.as_reg(), 0x1000, 0x2004).unwrap();
+        let action = cache.decide(RetStatus::Br.as_reg(), 0x1000, 0x2004).unwrap();
         assert!(matches!(action, CacheAction::ContinueAt { fragment: f, .. } if f == fragment));
         // The budget is spent: the next SVC returns to userspace at its resume pc.
         assert_eq!(
@@ -1589,31 +1675,31 @@ mod tests {
         };
 
         // 0x5000 has no fragment: back to userspace at it, nothing translated.
-        let action = cache.decide(false, RetStatus::Bl.as_reg(), 0x5000, 0x1004).unwrap();
+        let action = cache.decide(RetStatus::Bl.as_reg(), 0x5000, 0x1004).unwrap();
         assert_eq!(action, returned(RetStatus::Bl, 0x5000));
         assert!(!cache.chain_capped());
         assert_eq!(cache.stats.translations, 1);
         assert_eq!(cache.fragment_for_entry(0x5000), None);
         // Unreadable text is a miss like any other (the caller profiles it).
-        let action = cache.decide(false, RetStatus::Ret.as_reg(), 0x9_0000, 0x1004).unwrap();
+        let action = cache.decide(RetStatus::Ret.as_reg(), 0x9_0000, 0x1004).unwrap();
         assert_eq!(action, returned(RetStatus::Ret, 0x9_0000));
 
         // A label of the entered fragment: continue there and publish it.
-        let action = cache.decide(false, RetStatus::Ret.as_reg(), 0x1000, 0x1004).unwrap();
+        let action = cache.decide(RetStatus::Ret.as_reg(), 0x1000, 0x1004).unwrap();
         let offset = cache.fragments[a].label_for_pc(0x1000).unwrap().offset;
         assert_eq!(action, CacheAction::ContinueAt { fragment: a, offset });
         assert_eq!(cache.lookup(false, 0x1000), Some(a));
 
         // A fragment translated for the target.
         let b = cache.translate(0x5000, 0).unwrap().unwrap();
-        let action = cache.decide(false, RetStatus::Br.as_reg(), 0x5000, 0x1004).unwrap();
+        let action = cache.decide(RetStatus::Br.as_reg(), 0x5000, 0x1004).unwrap();
         let offset = cache.fragments[b].label_for_pc(0x5000).unwrap().offset;
         assert_eq!(action, CacheAction::ContinueAt { fragment: b, offset });
         assert_eq!(cache.lookup(false, 0x5000), Some(b));
 
         // Three entries made: the budget is spent. Every branch exit returns, hit or
         // not, and says it was the budget.
-        let action = cache.decide(false, RetStatus::Bl.as_reg(), 0x1000, 0x1004).unwrap();
+        let action = cache.decide(RetStatus::Bl.as_reg(), 0x1000, 0x1004).unwrap();
         assert_eq!(action, returned(RetStatus::Bl, 0x1000));
         assert!(cache.chain_capped());
         // A new run starts afresh.
@@ -1621,12 +1707,12 @@ mod tests {
         assert!(!cache.chain_capped());
 
         // An SVC exit returns whatever the cache holds for the resume pc.
-        let action = cache.decide(false, RetStatus::Svc.as_reg(), 0, 0x1000).unwrap();
+        let action = cache.decide(RetStatus::Svc.as_reg(), 0, 0x1000).unwrap();
         assert_eq!(action, returned(RetStatus::Svc, 0x1000));
         // The entered fragment is the one the runtime last entered: from `b`, 0x1000 is
         // `a`'s entry label, found by the fragment translated for it.
         cache.note_entry(b);
-        let action = cache.decide(false, RetStatus::Bl.as_reg(), 0x1000, 0x1004).unwrap();
+        let action = cache.decide(RetStatus::Bl.as_reg(), 0x1000, 0x1004).unwrap();
         assert!(matches!(action, CacheAction::ContinueAt { fragment, .. } if fragment == a));
     }
 

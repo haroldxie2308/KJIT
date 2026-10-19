@@ -25,7 +25,9 @@ use kernel::prelude::*;
 /// Registers the syscall hook and creates `/sys/kernel/debug/kjit/`.
 pub(crate) fn init() -> Result {
     // SAFETY: called once from module init.
-    kernel::error::to_result(unsafe { ffi::kjit_glue_init() })
+    kernel::error::to_result(unsafe {
+        ffi::kjit_glue_init(stats::HOT_STATS, stats::HOT_CHAIN_BUCKETS)
+    })
 }
 
 /// Unregisters the hook (waiting for calls in flight) and frees every fragment.

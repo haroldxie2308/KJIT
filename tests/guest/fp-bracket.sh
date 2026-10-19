@@ -33,7 +33,8 @@ cd "$work"
 fail() { echo "fpb: FAIL $*"; exit 1; }
 stat() { awk -v k="$1" '$1 == k { print $2 }' "$K/stats"; }
 hit() { awk -v k="$1" '{ for (i = 1; i < NF; i++) if ($i == k) print $(i + 1) }' "$K/neon_noise_hits"; }
-restore() { echo 0 > "$K/neon_noise_us" 2> /dev/null || true; echo 0 > "$K/enable"; echo 0 > "$K/auto"; }
+timing=$(cat "$K/fpsimd_timing")
+restore() { echo 0 > "$K/neon_noise_us" 2> /dev/null || true; echo 0 > "$K/enable"; echo 0 > "$K/auto"; echo "$timing" > "$K/fpsimd_timing"; }
 trap restore EXIT
 echo 0 > "$K/auto"
 
@@ -43,6 +44,8 @@ shift
 
 case "$cmd" in
 stress)
+    # A23: run_max_ns is only measured while fpsimd_timing is set (not for entry: it measures bracket cost).
+    echo 1 > "$K/fpsimd_timing"
     noise=${1:-25}
     rounds=${2:-3}
     for n in 0 "$noise"; do
@@ -60,6 +63,7 @@ stress)
     echo "fpb: stress PASS"
     ;;
 lat)
+    echo 1 > "$K/fpsimd_timing"
     reps=${1:?reps}
     secs=${2:-20}
     i=1

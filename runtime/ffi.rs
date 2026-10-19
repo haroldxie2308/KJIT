@@ -58,6 +58,15 @@ pub(crate) struct PtRegs {
     pub(crate) pstate: u64,
 }
 
+/// `struct kjit_run_class`: how a run entered at a fragment is called.
+#[repr(C)]
+pub(crate) struct KjitRunClass {
+    pub(crate) base: u64,
+    pub(crate) table: u64,
+    pub(crate) uses_fpsimd: bool,
+    pub(crate) bracketed: bool,
+}
+
 /// `struct kjit_site`: a user access at code offset `access` resumes at `stub`.
 #[repr(C)]
 pub(crate) struct KjitSite {
@@ -84,7 +93,9 @@ pub(crate) struct KjitLinkSite {
 }
 
 extern "C" {
-    pub(crate) fn kjit_glue_init() -> c_int;
+    /// `hot_stats`, `chain_buckets`: the sizes of the per-CPU hot-path counters
+    /// (`runtime/stats.rs`, `Tally`).
+    pub(crate) fn kjit_glue_init(hot_stats: u32, chain_buckets: u32) -> c_int;
     pub(crate) fn kjit_glue_exit();
 
     pub(crate) fn kjit_mm_seq(kmm: *mut KjitMm) -> u64;
@@ -111,10 +122,10 @@ extern "C" {
 
     pub(crate) fn kjit_can_run(regs: *const PtRegs) -> bool;
     pub(crate) fn kjit_lookup(pc: u64, link: bool, entry: *mut u64) -> *mut KjitFrag;
-    pub(crate) fn kjit_frag_base(frag: *const KjitFrag) -> u64;
     pub(crate) fn kjit_frag_link(frag: *mut KjitFrag, pc: u64) -> u64;
-    pub(crate) fn kjit_frag_table(frag: *const KjitFrag) -> u64;
-    pub(crate) fn kjit_frag_uses_fpsimd(frag: *const KjitFrag) -> bool;
+    pub(crate) fn kjit_frag_run_class(frag: *const KjitFrag, out: *mut KjitRunClass);
+    /// Sets the sticky flag; true iff this call set it.
+    pub(crate) fn kjit_frag_set_fp_sticky(frag: *mut KjitFrag) -> bool;
     pub(crate) fn kjit_bad_status(status: u64, pc: u64);
     pub(crate) fn kjit_call_fragment(regs: *mut PtRegs, extra: *mut u64, entry: u64, base: u64)
         -> u64;
@@ -131,5 +142,17 @@ extern "C" {
     pub(crate) fn kjit_fpsimd_run_max_ns() -> u64;
     pub(crate) fn kjit_profile(pc: u64, kind: u32);
     pub(crate) fn kjit_hook_calls() -> u64;
+    /// Adds `counts[i]` to this CPU's counter `i` for each set bit `i` of
+    /// `touched`; `chain_entries` != 0 also records one hook call of that many
+    /// entries in histogram bucket `chain_bucket` and the per-CPU maximum.
+    pub(crate) fn kjit_hot_flush(
+        counts: *const u64,
+        touched: u64,
+        chain_entries: u32,
+        chain_bucket: u32,
+    );
+    /// Sums the per-CPU counters then histogram buckets into `sums` (`HOT_STATS +
+    /// HOT_CHAIN_BUCKETS` words); returns the largest chain length of any CPU.
+    pub(crate) fn kjit_hot_read(sums: *mut u64) -> u64;
     pub(crate) fn kjit_chain_budget() -> u32;
 }

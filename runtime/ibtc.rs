@@ -16,7 +16,7 @@
 //!   (the publish that follows moves it to its own victim slot, dropping what
 //!   that held).
 //!
-//! Exits of a non-FP/SIMD run whose target resolves to an FP/SIMD fragment
+//! Exits of an unbracketed run whose target resolves to an FP/SIMD fragment
 //! (`ibtc_fpsimd_boundary`) are excluded from all three: `table_nofp` never
 //! holds such a target, so the slot state says nothing about capacity or
 //! aliasing, and no publish into it follows. Hence for any interval
@@ -27,8 +27,8 @@
 //!
 //! up to counters read while exits are in flight.
 //!
-//! Per main slot, for each table class (`table_all` is the table of FP/SIMD runs,
-//! `table_nofp` of all others), the conflicts are also counted, with the last
+//! Per main slot, for each table class (`table_all` is the table of bracketed
+//! runs: FP/SIMD or sticky fragments, `table_nofp` of all others), the conflicts are also counted, with the last
 //! missing pc and the last resident pc. The counters are global (all mms:
 //! tables of different mms are not distinguished) and `/sys/kernel/debug/kjit/
 //! ibtc_slots` lists the 32 slots with most conflicts per table; writing
@@ -41,8 +41,8 @@
 //! Cost, on the miss path only (a runtime round trip already costs a full
 //! epilogue, a trampoline call and a prologue): four loads (the two slots and
 //! their records, all just read by the fragment's template, so cache-hot), one
-//! atomic add for the class counter and, for a conflict, one more for the slot
-//! plus two plain stores. Hits run no runtime code.
+//! tally increment for the class counter and, for a conflict, one atomic add for
+//! the slot plus two plain stores. Hits run no runtime code.
 
 use core::fmt::Write;
 use core::sync::atomic::{AtomicU64, Ordering};
@@ -50,7 +50,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
 use kernel::alloc::flags::GFP_KERNEL;
 use kernel::prelude::*;
 
-use super::stats::{self, BufWriter, Stat};
+use super::stats::{BufWriter, Stat, Tally};
 use crate::shared::abi::{
     ibtc_lookup_slots, ibtc_plan_publish, IbtcSource, IBTC_RECORD_PC_OFFSET, IBTC_SLOTS,
 };
@@ -113,7 +113,7 @@ fn classify(target: u64, main: Option<u64>, victim: Option<u64>) -> Class {
 
 /// The pc of the record in word `slot` of `table`, if any.
 fn record_pc(table: *const u64, slot: usize) -> Option<u64> {
-    // SAFETY: `table` is a dispatch table (`kjit_frag_table`, or the table the
+    // SAFETY: `table` is a dispatch table (`kjit_frag_run_class`, or the table the
     // C glue plans a publish against under `kmm->lock`): IBTC_TABLE_WORDS
     // 8-byte slots, freed only after a hook-SRCU grace period, so valid for this
     // hook call; `slot` comes from `ibtc_lookup_slots` or a plan, below the
@@ -132,7 +132,7 @@ fn record_pc(table: *const u64, slot: usize) -> Option<u64> {
 }
 
 /// Reads the main and victim slot of `target` in `table`, the dispatch table of
-/// the run that exited (`all`: it is `table_all`, the table of an FP/SIMD run).
+/// the run that exited (`all`: it is `table_all`, the table of a bracketed run).
 /// Call before anything publishes into the table.
 pub(super) fn probe(table: u64, all: bool, target: u64) -> Seen {
     let [main, victim] = ibtc_lookup_slots(target);
@@ -144,13 +144,15 @@ pub(super) fn probe(table: u64, all: bool, target: u64) -> Seen {
     }
 }
 
-/// Counts the miss on `target` that `probe` classified.
-pub(super) fn note_miss(seen: Seen, target: u64) {
+/// Counts the miss on `target` that `probe` classified, in the hook call's
+/// `tally` (the per-slot diagnostics below are global, and only written on a
+/// conflict).
+pub(super) fn note_miss(tally: &mut Tally, seen: Seen, target: u64) {
     match seen.class {
-        Class::Cold => stats::inc(Stat::IbtcMissCold),
-        Class::Other => stats::inc(Stat::IbtcMissOther),
+        Class::Cold => tally.inc(Stat::IbtcMissCold),
+        Class::Other => tally.inc(Stat::IbtcMissOther),
         Class::Conflict(pc) => {
-            stats::inc(Stat::IbtcMissConflict);
+            tally.inc(Stat::IbtcMissConflict);
             let diag = &DIAG[seen.table * IBTC_SLOTS + seen.slot];
             diag.conflicts.fetch_add(1, Ordering::Relaxed);
             diag.evictor.store(target, Ordering::Relaxed);
